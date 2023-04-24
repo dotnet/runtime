@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,10 +22,8 @@ namespace System.IO.Compression
         // A specific constructor to allow decompression of Deflate64
         internal DeflateManagedStream(Stream stream, ZipArchiveEntry.CompressionMethodValues method, long uncompressedSize = -1)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream));
-            if (!stream.CanRead)
-                throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
+            ArgumentNullException.ThrowIfNull(stream);
+
             if (!stream.CanRead)
                 throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
@@ -97,19 +95,22 @@ namespace System.IO.Compression
         public override int Read(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
+            return Read(new Span<byte>(buffer, offset, count));
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
             EnsureNotDisposed();
 
-            int bytesRead;
-            int currentOffset = offset;
-            int remainingCount = count;
+            int initialLength = buffer.Length;
 
+            int bytesRead;
             while (true)
             {
-                bytesRead = _inflater.Inflate(buffer, currentOffset, remainingCount);
-                currentOffset += bytesRead;
-                remainingCount -= bytesRead;
+                bytesRead = _inflater.Inflate(buffer);
+                buffer = buffer.Slice(bytesRead);
 
-                if (remainingCount == 0)
+                if (buffer.Length == 0)
                 {
                     break;
                 }
@@ -136,25 +137,25 @@ namespace System.IO.Compression
                 _inflater.SetInput(_buffer, 0, bytes);
             }
 
-            return count - remainingCount;
+            return initialLength - buffer.Length;
+        }
+
+        public override int ReadByte()
+        {
+            byte b = default;
+            return Read(new Span<byte>(ref b)) == 1 ? b : -1;
         }
 
         private void EnsureNotDisposed()
         {
-            if (_stream == null)
-                ThrowStreamClosedException();
-        }
-
-        private static void ThrowStreamClosedException()
-        {
-            throw new ObjectDisposedException(nameof(DeflateStream), SR.ObjectDisposed_StreamClosed);
+            ObjectDisposedException.ThrowIf(_stream is null, this);
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-            TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
         public override int EndRead(IAsyncResult asyncResult) =>
-            TaskToApm.End<int>(asyncResult);
+            TaskToAsyncResult.End<int>(asyncResult);
 
         private ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken)
         {
@@ -169,7 +170,7 @@ namespace System.IO.Compression
             try
             {
                 // Try to read decompressed data in output buffer
-                int bytesRead = _inflater.Inflate(buffer);
+                int bytesRead = _inflater.Inflate(buffer.Span);
                 if (bytesRead != 0)
                 {
                     // If decompression output buffer is not empty, return immediately.
@@ -224,7 +225,7 @@ namespace System.IO.Compression
 
                     // Feed the data from base stream into decompression engine
                     _inflater.SetInput(_buffer, 0, bytesRead);
-                    bytesRead = _inflater.Inflate(buffer);
+                    bytesRead = _inflater.Inflate(buffer.Span);
 
                     if (bytesRead == 0 && !_inflater.Finished())
                     {
@@ -303,16 +304,8 @@ namespace System.IO.Compression
                 finally
                 {
                     _stream = null!;
-
-                    try
-                    {
-                        _inflater?.Dispose();
-                    }
-                    finally
-                    {
-                        _inflater = null!;
-                        base.Dispose(disposing);
-                    }
+                    _inflater = null!;
+                    base.Dispose(disposing);
                 }
             }
         }

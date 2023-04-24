@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="System.Security.Cryptography.Cose.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
+  </ItemGroup>
+</Project>

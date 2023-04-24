@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'b'// as "b"
+.assembly 'b44946'// as "b"
 {
 
 
@@ -19,14 +19,17 @@
   
   
 }
-.module 'b.exe'
+.assembly extern xunit.core {}
 // MVID: {0573B9C2-3980-4A83-9B01-889CCC1D6FBC}
 .namespace Test
 {
-  .class private auto ansi App extends [mscorlib]System.Object
+  .class public auto ansi App extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
+		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+		    01 00 00 00
+		)
 		.entrypoint
 		.maxstack  6
 		ldc.i4.0

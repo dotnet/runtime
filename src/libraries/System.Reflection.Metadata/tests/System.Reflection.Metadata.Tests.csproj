@@ -2,10 +2,16 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExternallyShipping>false</ExternallyShipping>
-    <NoWarn>436</NoWarn> <!-- Type conflicts on "Interop" due to InternalsVisibleTo access -->
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <!-- 436: Type conflicts on "Interop" due to InternalsVisibleTo access
+         SYSLIB0037: AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete. -->
+    <NoWarn>$(NoWarn);436;SYSLIB0037</NoWarn>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <DefineConstants Condition="'$(TargetOS)' == 'browser'">$(DefineConstants);TARGET_BROWSER</DefineConstants> 
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs"
@@ -135,11 +141,11 @@
     <ProjectReference Include="..\src\System.Reflection.Metadata.csproj" SkipUseReferenceAssembly="true" />
   </ItemGroup>
     <!-- For IncrementalHash -->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Security.Cryptography.Algorithms" Version="$(SystemSecurityCryptographyAlgorithmsVersion)" />
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
   </ItemGroup>
 </Project>

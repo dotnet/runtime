@@ -9,18 +9,13 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public abstract partial class ECKeyFileTests<T> where T : AsymmetricAlgorithm
+    public abstract partial class ECKeyFileTests<T> where T : ECAlgorithm
     {
         protected abstract T CreateKey();
-        protected abstract byte[] ExportECPrivateKey(T key);
-        protected abstract bool TryExportECPrivateKey(T key, Span<byte> destination, out int bytesWritten);
-        protected abstract void ImportECPrivateKey(T key, ReadOnlySpan<byte> source, out int bytesRead);
-        protected abstract void ImportParameters(T key, ECParameters ecParameters);
-        protected abstract ECParameters ExportParameters(T key, bool includePrivate);
         protected abstract void Exercise(T key);
         protected virtual Func<T, byte[]> PublicKeyWriteArrayFunc { get; } = null;
         protected virtual WriteKeyToSpanFunc PublicKeyWriteSpanFunc { get; } = null;
-        
+
         // This would need to be virtualized if there was ever a platform that
         // allowed explicit in ECDH or ECDSA but not the other.
         public static bool SupportsExplicitCurves { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupported;
@@ -51,7 +46,7 @@ namespace System.Security.Cryptography.Tests
 
             if (importKey)
             {
-                ImportParameters(key, EccTestData.GetNistP256ReferenceKey());
+                key.ImportParameters(EccTestData.GetNistP256ReferenceKey());
             }
 
             byte[] ecPrivate;
@@ -72,20 +67,20 @@ namespace System.Security.Cryptography.Tests
             // Also ensures all of the inputs are valid for the disposed tests.
             using (key)
             {
-                ecPrivate = ExportECPrivateKey(key);
+                ecPrivate = key.ExportECPrivateKey();
                 pkcs8Private = key.ExportPkcs8PrivateKey();
                 pkcs8EncryptedPrivate = key.ExportEncryptedPkcs8PrivateKey(pwStr, pbeParameters);
                 subjectPublicKeyInfo = key.ExportSubjectPublicKeyInfo();
             }
 
-            Assert.Throws<ObjectDisposedException>(() => ImportECPrivateKey(key, ecPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ImportECPrivateKey(ecPrivate, out _));
             Assert.Throws<ObjectDisposedException>(() => key.ImportPkcs8PrivateKey(pkcs8Private, out _));
             Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey(pwStr, pkcs8EncryptedPrivate, out _));
             Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey(pwBytes, pkcs8EncryptedPrivate, out _));
             Assert.Throws<ObjectDisposedException>(() => key.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo, out _));
 
-            Assert.Throws<ObjectDisposedException>(() => ExportECPrivateKey(key));
-            Assert.Throws<ObjectDisposedException>(() => TryExportECPrivateKey(key, ecPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ExportECPrivateKey());
+            Assert.Throws<ObjectDisposedException>(() => key.TryExportECPrivateKey(ecPrivate, out _));
             Assert.Throws<ObjectDisposedException>(() => key.ExportPkcs8PrivateKey());
             Assert.Throws<ObjectDisposedException>(() => key.TryExportPkcs8PrivateKey(pkcs8Private, out _));
             Assert.Throws<ObjectDisposedException>(() => key.ExportEncryptedPkcs8PrivateKey(pwStr, pbeParameters));
@@ -98,7 +93,7 @@ namespace System.Security.Cryptography.Tests
             // Check encrypted import with the wrong password.
             // It shouldn't do enough work to realize it was wrong.
             pwBytes = Array.Empty<byte>();
-            Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey("", pkcs8EncryptedPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"", pkcs8EncryptedPrivate, out _));
             Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey(pwBytes, pkcs8EncryptedPrivate, out _));
         }
 
@@ -200,7 +195,7 @@ qtlbnispri1a/EghiaPQ0po=";
 
             ReadWriteBase64EncryptedPkcs8(
                 base64,
-                Encoding.UTF8.GetBytes("qwerty"),
+                "qwerty"u8.ToArray(),
                 new PbeParameters(
                     PbeEncryptionAlgorithm.Aes256Cbc,
                     HashAlgorithmName.SHA1,
@@ -416,6 +411,7 @@ u2L/ySSNizmK/j4LXDwCs/43",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteSect163k1Key1ExplicitECPrivateKey()
         {
             ReadWriteBase64ECPrivateKey(
@@ -430,6 +426,7 @@ iv4+C1w8ArP+Nw==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteSect163k1Key1ExplicitPkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -444,6 +441,7 @@ ptwYh1UdB4j+u2L/ySSNizmK/j4LXDwCs/43",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteSect163k1Key1ExplicitEncryptedPkcs8()
         {
             ReadWriteBase64EncryptedPkcs8(
@@ -464,6 +462,7 @@ z2NFvWcpK0Fh9fCVGuXV9sjJ5qE=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteSect163k1Key1ExplicitSubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -583,6 +582,7 @@ BCcIMPehAJrWcKiN6SvVkkjMgTtF",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteC2pnb163v1ExplicitECPrivateKey()
         {
             ReadWriteBase64ECPrivateKey(
@@ -598,6 +598,7 @@ dJQjIkiqBCcIMPehAJrWcKiN6SvVkkjMgTtF",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteC2pnb163v1ExplicitPkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -613,6 +614,7 @@ BAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr1ZJIzIE7RQ==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteC2pnb163v1ExplicitEncryptedPkcs8()
         {
             ReadWriteBase64EncryptedPkcs8(
@@ -634,6 +636,7 @@ wxcZ+wOsnebIwy4ftKL+klh5EXv/9S5sCjC8g8J2cA6GmcZbiQ==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteC2pnb163v1ExplicitSubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -654,7 +657,7 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
             using (T key = CreateKey())
             {
                 int bytesRead = -1;
-                byte[] ecPriv = ExportECPrivateKey(key);
+                byte[] ecPriv = key.ExportECPrivateKey();
 
                 Assert.ThrowsAny<CryptographicException>(
                     () => key.ImportSubjectPublicKeyInfo(ecPriv, out bytesRead));
@@ -693,14 +696,14 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
                 byte[] spki = key.ExportSubjectPublicKeyInfo();
 
                 Assert.ThrowsAny<CryptographicException>(
-                    () => ImportECPrivateKey(key, spki, out bytesRead));
+                    () => key.ImportECPrivateKey(spki, out bytesRead));
 
                 Assert.Equal(-1, bytesRead);
 
                 byte[] pkcs8 = key.ExportPkcs8PrivateKey();
 
                 Assert.ThrowsAny<CryptographicException>(
-                    () => ImportECPrivateKey(key, pkcs8, out bytesRead));
+                    () => key.ImportECPrivateKey(pkcs8, out bytesRead));
 
                 Assert.Equal(-1, bytesRead);
 
@@ -714,7 +717,7 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
                         123));
 
                 Assert.ThrowsAny<CryptographicException>(
-                    () => ImportECPrivateKey(key, encryptedPkcs8, out bytesRead));
+                    () => key.ImportECPrivateKey(encryptedPkcs8, out bytesRead));
 
                 Assert.Equal(-1, bytesRead);
             }
@@ -733,7 +736,7 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
 
                 Assert.Equal(-1, bytesRead);
 
-                byte[] ecPriv = ExportECPrivateKey(key);
+                byte[] ecPriv = key.ExportECPrivateKey();
 
                 Assert.ThrowsAny<CryptographicException>(
                     () => key.ImportPkcs8PrivateKey(ecPriv, out bytesRead));
@@ -770,7 +773,7 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
 
                 Assert.Equal(-1, bytesRead);
 
-                byte[] ecPriv = ExportECPrivateKey(key);
+                byte[] ecPriv = key.ExportECPrivateKey();
 
                 Assert.ThrowsAny<CryptographicException>(
                     () => key.ImportEncryptedPkcs8PrivateKey(empty, ecPriv, out bytesRead));
@@ -793,13 +796,13 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
             {
                 ECParameters parameters = EccTestData.GetNistP521Key2();
                 parameters.D = null;
-                ImportParameters(key, parameters);
+                key.ImportParameters(parameters);
 
                 Assert.ThrowsAny<CryptographicException>(
-                    () => ExportECPrivateKey(key));
+                    () => key.ExportECPrivateKey());
 
                 Assert.ThrowsAny<CryptographicException>(
-                    () => TryExportECPrivateKey(key, Span<byte>.Empty, out _));
+                    () => key.TryExportECPrivateKey(Span<byte>.Empty, out _));
 
                 Assert.ThrowsAny<CryptographicException>(
                     () => key.ExportPkcs8PrivateKey());
@@ -964,6 +967,7 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
         public void DecryptPkcs12PbeTooManyIterations()
         {
             // pbeWithSHAAnd3-KeyTripleDES-CBC with 600,001 iterations
@@ -976,11 +980,12 @@ Tj/54rcY3i0gXT6da/r/o+qV");
             using (T key = CreateKey())
             {
                 Assert.ThrowsAny<CryptographicException>(
-                    () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
+                    () => key.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"test", high3DesIterationKey, out _));
             }
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/62547", TestPlatforms.Android)]
         public void ReadWriteEc256EncryptedPkcs8_Pbes2HighIterations()
         {
             // pkcs5PBES2 hmacWithSHA256 aes128-CBC with 600,001 iterations
@@ -1076,7 +1081,7 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
                         () => key.ImportEncryptedPkcs8PrivateKey(wrongPassword, encrypted, out _));
 
                     Assert.ThrowsAny<CryptographicException>(
-                        () => key.ImportEncryptedPkcs8PrivateKey("ThisBetterNotBeThePassword!", encrypted, out _));
+                        () => key.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"ThisBetterNotBeThePassword!", encrypted, out _));
 
                     int bytesRead = -1;
 
@@ -1100,17 +1105,17 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
                     base64Pkcs8,
                     expected,
                     (T key, ReadOnlySpan<byte> source, out int read) =>
-                        ImportECPrivateKey(key, source, out read),
-                    key => ExportECPrivateKey(key),
+                        key.ImportECPrivateKey(source, out read),
+                    key => key.ExportECPrivateKey(),
                     (T key, Span<byte> destination, out int bytesWritten) =>
-                        TryExportECPrivateKey(key, destination, out bytesWritten));
+                        key.TryExportECPrivateKey(destination, out bytesWritten));
             }
             else
             {
                 using (T key = CreateKey())
                 {
                     Exception e = Assert.ThrowsAny<Exception>(
-                        () => ImportECPrivateKey(key, Convert.FromBase64String(base64Pkcs8), out _));
+                        () => key.ImportECPrivateKey(Convert.FromBase64String(base64Pkcs8), out _));
 
                     Assert.True(
                         e is PlatformNotSupportedException || e is CryptographicException,
@@ -1216,7 +1221,7 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
                     Assert.Equal(arrayExport, publicArrayExport);
                 }
 
-                ECParameters ecParameters = ExportParameters(key, isPrivateKey);
+                ECParameters ecParameters = key.ExportParameters(isPrivateKey);
                 EccTestBase.AssertEqual(expected, ecParameters);
             }
 
@@ -1240,7 +1245,7 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
                 readAction(key, arrayExport, out int bytesRead);
                 Assert.Equal(arrayExport.Length, bytesRead);
 
-                ECParameters ecParameters = ExportParameters(key, isPrivateKey);
+                ECParameters ecParameters = key.ExportParameters(isPrivateKey);
                 EccTestBase.AssertEqual(expected, ecParameters);
 
                 Assert.False(

@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly legacy library ldfldstatic1 {}
-.class private auto ansi beforefieldinit ldfldstatic1
+.assembly legacy library 'ldfldstatic1_importer' {}
+.class public auto ansi beforefieldinit ldfldstatic1
        extends [mscorlib]System.Object
 {
   .field private static int32 fld
@@ -28,6 +29,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       23 (0x17)
     .maxstack  1

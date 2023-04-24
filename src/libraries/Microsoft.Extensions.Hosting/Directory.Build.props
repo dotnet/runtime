@@ -1,7 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <PackageDescription>Hosting and startup infrastructures for applications.</PackageDescription>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
 </Project>

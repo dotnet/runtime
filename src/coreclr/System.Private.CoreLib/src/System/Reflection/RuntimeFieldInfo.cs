@@ -9,9 +9,9 @@ namespace System.Reflection
     internal abstract class RuntimeFieldInfo : FieldInfo
     {
         #region Private Data Members
-        private BindingFlags m_bindingFlags;
-        protected RuntimeTypeCache m_reflectedTypeCache;
-        protected RuntimeType m_declaringType;
+        private readonly BindingFlags m_bindingFlags;
+        protected readonly RuntimeTypeCache m_reflectedTypeCache;
+        protected readonly RuntimeType m_declaringType;
         #endregion
 
         #region Constructor
@@ -46,6 +46,7 @@ namespace System.Reflection
 
         public override Module Module => GetRuntimeModule();
         public override bool IsCollectible => m_declaringType.IsCollectible;
+
         #endregion
 
         #region Object Overrides
@@ -63,12 +64,9 @@ namespace System.Reflection
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
@@ -76,12 +74,9 @@ namespace System.Reflection
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
@@ -89,7 +84,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributesInternal(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
         #endregion
 

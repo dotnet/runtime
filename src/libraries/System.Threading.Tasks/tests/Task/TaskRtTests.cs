@@ -512,6 +512,21 @@ namespace System.Threading.Tasks.Tests
             Assert.Same(Task.FromResult(UIntPtr.Zero), Task.FromResult(UIntPtr.Zero));
             Assert.Equal(UIntPtr.Zero, Task.FromResult(UIntPtr.Zero).Result);
 
+            Assert.Same(Task.FromResult((Half)default), Task.FromResult((Half)default));
+            Assert.Equal((Half)default, Task.FromResult((Half)default).Result);
+
+            Assert.Same(Task.FromResult((float)default), Task.FromResult((float)default));
+            Assert.Equal((float)default, Task.FromResult((float)default).Result);
+
+            Assert.Same(Task.FromResult((double)default), Task.FromResult((double)default));
+            Assert.Equal((double)default, Task.FromResult((double)default).Result);
+
+            Assert.Same(Task.FromResult((TimeSpan)default), Task.FromResult((TimeSpan)default));
+            Assert.Equal((TimeSpan)default, Task.FromResult((TimeSpan)default).Result);
+
+            Assert.Same(Task.FromResult((DateTime)default), Task.FromResult((DateTime)default));
+            Assert.Equal((DateTime)default, Task.FromResult((DateTime)default).Result);
+
             Assert.Same(Task.FromResult((object)null), Task.FromResult((object)null));
             Assert.Null(Task.FromResult((object)null).Result);
 
@@ -526,10 +541,11 @@ namespace System.Threading.Tasks.Tests
                 Assert.Equal(i, Task.FromResult(i).Result);
             }
 
-            Assert.NotSame(Task.FromResult((double)0), Task.FromResult((double)0));
-            Assert.NotSame(Task.FromResult((float)0), Task.FromResult((float)0));
-            Assert.NotSame(Task.FromResult((decimal)0), Task.FromResult((decimal)0));
-            Assert.NotSame(Task.FromResult((Half)0), Task.FromResult((Half)0));
+            Assert.NotSame(Task.FromResult((double)(+0.0)), Task.FromResult((double)(-0.0)));
+            Assert.NotSame(Task.FromResult((float)(+0.0)), Task.FromResult((float)(-0.0)));
+            Assert.NotSame(Task.FromResult((Half)(+0.0)), Task.FromResult((Half)(-0.0)));
+
+            Assert.NotSame(Task.FromResult((decimal)default), Task.FromResult((decimal)default));
         }
 
         [Fact]
@@ -689,6 +705,24 @@ namespace System.Threading.Tasks.Tests
                    ae.InnerException is OperationCanceledException && ((OperationCanceledException)ae.InnerException).CancellationToken == cts2.Token,
                    "RunDelayTests:    > FAILED.  Expected resulting OCE to contain canceled token.");
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void TaskDelay_Cancellation_ContinuationsInvokedAsynchronously()
+        {
+            var cts = new CancellationTokenSource();
+
+            var tl = new ThreadLocal<int>();
+            Task c = Task.Delay(-1, cts.Token).ContinueWith(_ =>
+            {
+                Assert.Equal(0, tl.Value);
+            }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
+            tl.Value = 42;
+            cts.Cancel();
+            tl.Value = 0;
+
+            c.GetAwaiter().GetResult();
         }
 
         // Test that exceptions are properly wrapped when thrown in various scenarios.

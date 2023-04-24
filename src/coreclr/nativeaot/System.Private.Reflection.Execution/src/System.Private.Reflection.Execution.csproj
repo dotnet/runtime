@@ -1,0 +1,85 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\System.Private.CoreLib\src\System.Private.CoreLib.csproj" />
+    <ProjectReference Include="..\..\System.Private.TypeLoader\src\System.Private.TypeLoader.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <NativeFormatCommonPath>$(CompilerCommonPath)\Internal\NativeFormat</NativeFormatCommonPath>
+    <!-- we access a lot of internals of System.Private.CoreLib, disable compiling against the ref assembly for now so we don't need to update it -->
+    <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Primitives.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Metadata.cs" />
+    <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Internal\Reflection\Execution\NativeFormatEnumInfo.cs" />
+    <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidator.cs" />
+    <Compile Include="Internal\Reflection\Execution\TypeLoader\ConstraintValidatorSupport.cs" />
+    <Compile Include="Internal\Reflection\Execution\TypeLoader\TypeCast.cs" />
+    <Compile Include="Internal\Reflection\Execution\ReflectionExecution.cs" />
+    <Compile Include="Internal\Reflection\Execution\ReflectionDomainSetupImplementation.cs" />
+    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.cs" />
+    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.Runtime.cs" />
+    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.MappingTables.cs" />
+    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.MetadataTable.cs" />
+    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.ManifestResources.cs" />
+    <Compile Include="Internal\Reflection\Execution\ReflectionExecutionDomainCallbacksImplementation.cs" />
+    <Compile Include="Internal\Reflection\Execution\MetadataReaderExtensions.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokeInfo.cs" />
+    <Compile Include="Internal\Reflection\Execution\RuntimeHandlesExtensions.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\InstanceFieldAccessor.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\LiteralFieldAccessor.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\PointerTypeFieldAccessorForInstanceFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\PointerTypeFieldAccessorForStaticFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\RegularStaticFieldAccessor.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\ReferenceTypeFieldAccessorForInstanceFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\ReferenceTypeFieldAccessorForStaticFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\StaticFieldAccessor.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\ValueTypeFieldAccessorForInstanceFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\ValueTypeFieldAccessorForStaticFields.cs" />
+    <Compile Include="Internal\Reflection\Execution\FieldAccessors\WritableStaticFieldAccessor.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokers\MethodInvokerWithMethodInvokeInfo.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokers\InstanceMethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokers\StaticMethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Execution\MethodInvokers\VirtualMethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Execution\PayForPlayExperience\DiagnosticMappingTables.cs" />
+    <Compile Include="Internal\Reflection\Execution\PayForPlayExperience\MissingMetadataExceptionCreator.cs" />
+    <Compile Include="Internal\Reflection\Extensions\NonPortable\DelegateMethodInfoRetriever.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MetadataBlob.cs" >
+      <Link>Internal\Runtime\MetadataBlob.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\NotImplemented.cs" >
+      <Link>System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\SR.cs" />
+    <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs" >
+      <Link>System\Collections\Generic\LowLevelList.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelDictionary.cs" >
+      <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\LowLevelLinq\LowLevelEnumerable.cs" >
+      <Link>Internal\LowLevelLinq\LowLevelEnumerable.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs" >
+      <Link>Internal\LowLevelLinq\LowLevelEnumerable.ToArray.cs</Link>
+    </Compile>
+    <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Collections\HashHelpers.cs" >
+      <Link>System\Collections\HashHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\System\Collections\Generic\Empty.cs" >
+      <Link>System\Collections\Generic\Empty.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs">
+      <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

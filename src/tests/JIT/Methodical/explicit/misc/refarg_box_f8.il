@@ -11,10 +11,10 @@
 .assembly 'refarg_box_f8'
 {
 }
-.module 'refarg_box_f8.exe'
-.namespace Test
+.assembly extern xunit.core {}
+.namespace Test_refarg_box_f8_il
 {
-  .class private auto ansi App extends [mscorlib]System.Object
+  .class public auto ansi App extends [mscorlib]System.Object
   {
     .field private static class System.Object s_aa
     .method private hidebysig static void
@@ -45,13 +45,13 @@
     } 
 
     .method private hidebysig static int32 
-            Test(float64& n) il managed
+            Test_refarg_box_f8_il(float64& n) il managed
     {
       .maxstack  4
       .locals (int32 V_0)
       IL_0000:  ldnull
-      IL_0001:  stsfld     class System.Object Test.App::s_aa
-      IL_0006:  call       void Test.App::Litter()
+      IL_0001:  stsfld     class System.Object Test_refarg_box_f8_il.App::s_aa
+      IL_0006:  call       void Test_refarg_box_f8_il.App::Litter()
       IL_000b:  ldarg.0
       IL_000c:  ldind.r8
                 dup
@@ -77,9 +77,12 @@
       IL_0035:  ret
     } 
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  1
       .locals (float64 ZZZZ,  
@@ -88,10 +91,10 @@
       IL_0000:  ldc.r8     0.
       IL_0009:  stloc.0
       
-      			ldsfld     class System.Object Test.App::s_aa
+      			ldsfld     class System.Object Test_refarg_box_f8_il.App::s_aa
       			unbox      [mscorlib]System.Double		
       
-      IL_000c:  call       int32 Test.App::Test(float64&)
+      IL_000c:  call       int32 Test_refarg_box_f8_il.App::Test_refarg_box_f8_il(float64&)
       IL_0011:  stloc.1
       IL_0012:  call       void [mscorlib]System.GC::Collect()
       IL_0017:  call       void [mscorlib]System.GC::WaitForPendingFinalizers()
@@ -112,7 +115,7 @@
       IL_0009:  stloc.0
       IL_000a:  ldloc.s   V_0
       IL_000c:  box     [mscorlib]System.Double
-      IL_0011:  stsfld     class System.Object Test.App::s_aa
+      IL_0011:  stsfld     class System.Object Test_refarg_box_f8_il.App::s_aa
       IL_0016:  ret
     } 
 

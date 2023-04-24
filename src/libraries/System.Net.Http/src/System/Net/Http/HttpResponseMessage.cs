@@ -10,7 +10,8 @@ namespace System.Net.Http
 {
     public class HttpResponseMessage : IDisposable
     {
-        private const HttpStatusCode defaultStatusCode = HttpStatusCode.OK;
+        private const HttpStatusCode DefaultStatusCode = HttpStatusCode.OK;
+        private static Version DefaultResponseVersion => HttpVersion.Version11;
 
         private HttpStatusCode _statusCode;
         private HttpResponseHeaders? _headers;
@@ -27,10 +28,7 @@ namespace System.Net.Http
             set
             {
 #if !PHONE
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 #endif
                 CheckDisposed();
 
@@ -69,10 +67,8 @@ namespace System.Net.Http
             get { return _statusCode; }
             set
             {
-                if (((int)value < 0) || ((int)value > 999))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative((int)value, nameof(value));
+                ArgumentOutOfRangeException.ThrowIfGreaterThan((int)value, 999, nameof(value));
                 CheckDisposed();
 
                 _statusCode = value;
@@ -94,7 +90,7 @@ namespace System.Net.Http
             }
             set
             {
-                if ((value != null) && ContainsNewLineCharacter(value))
+                if ((value != null) && HttpRuleParser.ContainsNewLine(value))
                 {
                     throw new FormatException(SR.net_http_reasonphrase_format_error);
                 }
@@ -137,7 +133,8 @@ namespace System.Net.Http
             set
             {
                 CheckDisposed();
-                if (value != null) NetEventSource.Associate(this, value);
+                if (value is not null && NetEventSource.Log.IsEnabled())
+                    NetEventSource.Associate(this, value);
                 _requestMessage = value;
             }
         }
@@ -148,19 +145,17 @@ namespace System.Net.Http
         }
 
         public HttpResponseMessage()
-            : this(defaultStatusCode)
+            : this(DefaultStatusCode)
         {
         }
 
         public HttpResponseMessage(HttpStatusCode statusCode)
         {
-            if (((int)statusCode < 0) || ((int)statusCode > 999))
-            {
-                throw new ArgumentOutOfRangeException(nameof(statusCode));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative((int)statusCode, nameof(statusCode));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((int)statusCode, 999, nameof(statusCode));
 
             _statusCode = statusCode;
-            _version = HttpUtilities.DefaultResponseVersion;
+            _version = DefaultResponseVersion;
         }
 
         public HttpResponseMessage EnsureSuccessStatusCode()
@@ -170,7 +165,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(
                     SR.Format(
                         System.Globalization.CultureInfo.InvariantCulture,
-                        SR.net_http_message_not_success_statuscode,
+                        string.IsNullOrWhiteSpace(ReasonPhrase) ? SR.net_http_message_not_success_statuscode : SR.net_http_message_not_success_statuscode_reason,
                         (int)_statusCode,
                         ReasonPhrase),
                     inner: null,
@@ -208,18 +203,6 @@ namespace System.Net.Http
             return sb.ToString();
         }
 
-        private bool ContainsNewLineCharacter(string value)
-        {
-            foreach (char character in value)
-            {
-                if ((character == HttpRuleParser.CR) || (character == HttpRuleParser.LF))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         #region IDisposable Members
 
         protected virtual void Dispose(bool disposing)
@@ -229,10 +212,7 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (_content != null)
-                {
-                    _content.Dispose();
-                }
+                _content?.Dispose();
             }
         }
 
@@ -246,10 +226,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(this.GetType().ToString());
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
     }
 }

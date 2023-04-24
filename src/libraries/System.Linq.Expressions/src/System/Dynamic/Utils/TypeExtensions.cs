@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Dynamic.Utils
@@ -15,7 +16,10 @@ namespace System.Dynamic.Utils
         /// Returns the matching method if the parameter types are reference
         /// assignable from the provided type arguments, otherwise null.
         /// </summary>
-        public static MethodInfo? GetAnyStaticMethodValidated(this Type type, string name, Type[] types)
+        public static MethodInfo? GetAnyStaticMethodValidated(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] this Type type,
+            string name,
+            Type[] types)
         {
             Debug.Assert(types != null);
             MethodInfo? method = type.GetMethod(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly, null, types, null);
@@ -76,7 +80,6 @@ namespace System.Dynamic.Utils
             return pis;
         }
 
-#if FEATURE_COMPILE
         // Expression trees/compiler just use IsByRef, why do we need this?
         // (see LambdaCompiler.EmitArguments for usage in the compiler)
         internal static bool IsByRefParameter(this ParameterInfo pi)
@@ -87,6 +90,5 @@ namespace System.Dynamic.Utils
 
             return (pi.Attributes & ParameterAttributes.Out) == ParameterAttributes.Out;
         }
-#endif
     }
 }

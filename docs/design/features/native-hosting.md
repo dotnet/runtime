@@ -188,6 +188,8 @@ The API should allow these scenarios:
   * The native app can get back a native function pointer which calls specified managed method
 * Get native function pointer for managed method
   * From native code get a native function pointer to already loaded managed method
+* Load managed component
+  * From native code load an assembly
 
 All the proposed APIs will be exports of the `hostfxr` library and will use the same calling convention and name mangling as existing `hostfxr` exports.
 
@@ -221,7 +223,8 @@ struct hostfxr_initialize_parameters
 The `hostfxr_initialize_parameters` structure stores parameters which are common to all forms of initialization.
 * `size` - the size of the structure. This is used for versioning. Should be set to `sizeof(hostfxr_initialize_parameters)`.
 * `host_path` - path to the native host (typically the `.exe`). This value is not used for anything by the hosting components. It's just passed to the CoreCLR as the path to the executable. It can point to a file which is not executable itself, if such file doesn't exist (for example in COM activation scenarios this points to the `comhost.dll`). This is used by PAL to initialize internal command line structures, process name and so on.
-* `dotnet_root` - path to the root of the .NET Core installation in use. This typically points to the install location from which the `hostfxr` has been loaded. For example on Windows this would typically point to `C:\Program Files\dotnet`. The path is used to search for shared frameworks and potentially SDKs.
+* `dotnet_root` - Optional. Path to the root of the .NET Core installation in use. This typically points to the install location from which the `hostfxr` has been loaded. For example on Windows this would typically point to `C:\Program Files\dotnet`. The path is used to search for shared frameworks and potentially SDKs.
+  * If not specified, `hostfxr` will determine the root based on its own location - the same directory if the runtime (`coreclr`) exists next to it (as in self-contained applications), otherwise a relative path per the [install layout](https://github.com/dotnet/designs/blob/main/accepted/2020/install-locations.md#net-core-install-layout).
 
 
 ``` C
@@ -235,7 +238,7 @@ int hostfxr_initialize_for_dotnet_command_line(
 
 Initializes the hosting components for running a managed application.
 The command line is parsed to determine the app path. The app path will be used to locate the `.runtimeconfig.json` and the `.deps.json` which will be used to load the application and its dependent frameworks.
-* `argc` and `argv` - the command line for running a managed application. These represent the arguments which would have been passed to the muxer if the app was being run from the command line.
+* `argc` and `argv` - the command line for running a managed application. These represent the arguments which would have been passed to the muxer if the app was being run from the command line. These are the parameters which are valid for the runtime installation by itself - SDK/CLI commands are not supported. For example, the arguments could be `app.dll app_argument_1 app_argument_2`. This API specifically doesn't support the `dotnet run` SDK command.
 * `parameters` - additional parameters - see `hostfxr_initialize_parameters` for details. (Could be made optional potentially)
 * `host_context_handle` - output parameter. On success receives an opaque value which identifies the initialized host context. The handle should be closed by calling `hostfxr_close`.
 
@@ -306,7 +309,7 @@ Returns the value of a runtime property specified by its name.
 
 Trying to get a property which doesn't exist is an error and will return an appropriate error code.
 
-We're proposing a fix in `hostpolicy` which will make sure that there are no duplicates possible after initialization (see [dotnet/core-setup#5529](https://github.com/dotnet/core-setup/issues/5529)). With that `hostfxr_get_runtime_property_value` will work always (as there can only be one value).
+We're proposing a fix in `hostpolicy` which will make sure that there are no duplicates possible after initialization (see [dotnet/runtime#3514](https://github.com/dotnet/runtime/issues/3514)). With that `hostfxr_get_runtime_property_value` will work always (as there can only be one value).
 
 
 ``` C
@@ -334,7 +337,7 @@ int hostfxr_get_runtime_properties(
 
 Returns the full set of all runtime properties for the specified host context.
 * `host_context_handle` - the initialized host context. If set to `NULL` the function will operate on runtime properties of the first host context in the process.
-* `count` - in/out parameter which must not be `NULL`. On input it specifies the size of the the `keys` and `values` buffers. On output it contains the number of entries used from `keys` and `values` buffers - the number of properties returned. If the size of the buffers is too small, the function returns a specific error code and fill the `count` with the number of available properties. If `keys` or `values` is `NULL` the function ignores the input value of `count` and just returns the number of properties.
+* `count` - in/out parameter which must not be `NULL`. On input it specifies the size of the `keys` and `values` buffers. On output it contains the number of entries used from `keys` and `values` buffers - the number of properties returned. If the size of the buffers is too small, the function returns a specific error code and fill the `count` with the number of available properties. If `keys` or `values` is `NULL` the function ignores the input value of `count` and just returns the number of properties.
 * `keys` - buffer which acts as an array of pointers to buffers with keys for the runtime properties.
 * `values` - buffer which acts as an array of pointer to buffers with values for the runtime properties.
 
@@ -371,12 +374,15 @@ Starts the runtime and returns a function pointer to specified functionality of 
   * `hdt_com_activation`, `hdt_com_register`, `hdt_com_unregister` - COM activation entry-points - see [COM activation](https://github.com/dotnet/runtime/tree/main/docs/design/features/COM-activation.md) for more details.
   * `hdt_load_in_memory_assembly` - IJW entry-point - see [IJW activation](https://github.com/dotnet/runtime/tree/main/docs/design/features/IJW-activation.md) for more details.
   * `hdt_winrt_activation` **[.NET 3.\* only]** - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/runtime/tree/main/docs/design/features/WinRT-activation.md) for more details. The delegate is not supported for .NET 5 and above.
-  * `hdt_get_function_pointer` **[.NET 5 and above]** - entry-point which finds a managed method and returns a function pointer to it. See below for details (Calling managed function).
+  * `hdt_get_function_pointer` **[.NET 5 and above]** - entry-point which finds a managed method and returns a function pointer to it. See [calling managed functions](#calling-managed-function-net-5-and-above) for details.
+  * `hdt_load_assembly` **[.NET 8 and above]** - entry-point which loads an assembly by its path. See [loading managed components](#loading-managed-components-net-8-and-above) for details.
+  * `hdt_load_assembly_bytes` **[.NET 8 and above]** - entry-point which loads an assembly from a byte array. See [loading managed components](#loading-managed-components-net-8-and-above) for details.
 * `delegate` - when successful, the native function pointer to the requested runtime functionality.
 
 In .NET Core 3.0 the function only works if `hostfxr_initialize_for_runtime_config` was used to initialize the host context.
 In .NET 5 the function also works if `hostfxr_initialize_for_dotnet_command_line` was used to initialize the host context. Also for .NET 5 it will only be allowed to request `hdt_load_assembly_and_get_function_pointer` or `hdt_get_function_pointer` on a context initialized via `hostfxr_initialize_for_dotnet_command_line`, all other runtime delegates will not be supported in this case.
 
+All returned runtime delegates use the `__stdcall` calling convention on x86.
 
 ### Cleanup
 ``` C
@@ -459,6 +465,43 @@ It is allowed to call the returned runtime helper many times for different types
 
 The returned native function pointer to managed method has the lifetime of the process and can be used to call the method many times over. Currently there's no way to "release" the native function pointer (and the respective managed delegate), this functionality may be added in a future release.
 
+### Loading managed components **[.NET 8 and above]**
+
+The runtime delegate type `hdt_load_assembly` allows loading a managed assembly by its path. Calling `hostfxr_get_runtime_delegate(handle, hdt_load_assembly, &helper)` returns a function pointer to the runtime helper with this signature:
+```C
+int load_assembly(
+    const char_t *assembly_path,
+    void         *load_context,
+    void         *reserved);
+```
+
+Calling this function will load the specified assembly in the default load context. It uses `AssemblyDependencyResolver` to register additional dependency resolution for the load context.
+* `assembly_path` - Path to the assembly to load - requirements match the `assemblyPath` parameter of [AssemblyLoadContext.LoadFromAssemblyPath](https://learn.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext.loadfromassemblypath). This path will also be used for dependency resolution via any `.deps.json` corresponding to the assembly.
+* `load_context` - the load context that will be used to load the assembly. For .NET 8 this parameter must be `NULL` and the API will only load the assembly in the default load context.
+* `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
+
+The runtime delegate type `hdt_load_assembly_bytes` allows loading a managed assembly from a byte array. Calling `hostfxr_get_runtime_delegate(handle, hdt_load_assembly_bytes, &helper)` returns a function pointer to the runtime helper with this signature:
+```C
+int load_assembly_bytes(
+    const void *assembly_bytes,
+    size_t     assembly_bytes_len,
+    const void *symbols_bytes,
+    size_t     symbols_bytes_len,
+    void       *load_context,
+    void       *reserved);
+```
+
+Calling this function will load the specified assembly in the default load context. It does not provide a mechanism for registering additional dependency resolution, as mechanisms like `.deps.json` and `AssemblyDependencyResolver` are file-based. Dependencies can be pre-loaded (for example, via a previous call to this function) or the specified assembly can explicitly register its own resolution logic (for example, via the [`AssemblyLodContext.Resolving`](https://learn.microsoft.com/dotnet/api/system.runtime.loader.assemblyloadcontext.resolving) event).
+* `assembly_bytes` - Bytes of the assembly to load.
+* `assembly_bytes_len` - Byte length of the assembly to load.
+* `symbols_bytes` - Bytes of the symbols for the assembly to load.
+* `symbols_bytes_len` - Byte length of the symbols for the assembly to load.
+* `load_context` - the load context that will be used to load the assembly. For .NET 8 this parameter must be `NULL` and the API will only load the assembly in the default load context.
+* `reserved` - parameter reserved for future extensibility, currently unused and must be `NULL`.
+
+These runtime delegates simply load the assembly. They do not return any representation of the loaded assembly and do not execute code in the assembly. To run code from the assembly, the delegate for [calling a managed function](#calling-managed-function-net-5-and-above) can be used to get a function pointer to a method in a loaded assembly by specifying the assembly-qualified type name containing the method.
+
+It is allowed to ask for this helper on any valid host context. The returned runtime helper can be called multiple times for different assemblies. It is not required to get the helper every time.
 
 ### Multiple host contexts interactions
 
@@ -537,7 +580,7 @@ params.dotnet_root = get_directory(get_directory(get_directory(hostfxr_path))); 
 hostfxr_handle host_context_handle;
 hostfxr_initialize_for_dotnet_command_line(
     _argc_,
-    _argv_,
+    _argv_,  // For example, 'app.dll app_argument_1 app_argument_2'
     &params,
     &host_context_handle);
 
@@ -592,3 +635,6 @@ hostfxr_close(host_context_handle);
 The exact impact on the `hostfxr`/`hostpolicy` interface needs to be investigated. The assumption is that new APIs will have to be added to `hostpolicy` to implement the proposed functionality.
 
 Part if this investigation will also be compatibility behavior. Currently "any" version of `hostfxr` needs to be able to use "any" version of `hostpolicy`. But the proposed functionality will need both new `hostfxr` and new `hostpolicy` to work. It is likely the proposed APIs will fail if the app resolves to a framework with old `hostpolicy` without the necessary new APIs. Part of the investigation will be if it's feasible to use the new `hostpolicy` APIs to implement existing old `hostfxr` APIs.
+
+## Incompatible with trimming
+Native hosting support on managed side is disabled by default on trimmed apps. Native hosting and trimming are incompatible since the trimmer cannot analyze methods that are called by native hosts. Native hosting support for trimming can be managed through the [feature switch](https://github.com/dotnet/runtime/blob/main/docs/workflow/trimming/feature-switches.md) settings specific to each native host.

@@ -125,6 +125,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
+                    VersionCheck();
                     Node? current = root;
                     T? result = default;
 
@@ -132,7 +133,7 @@ namespace System.Collections.Generic
                     {
 
                         int comp = _lBoundActive ? Comparer.Compare(_min, current.Item) : -1;
-                        if (comp == 1)
+                        if (comp > 0)
                         {
                             current = current.Right;
                         }
@@ -155,13 +156,14 @@ namespace System.Collections.Generic
             {
                 get
                 {
+                    VersionCheck();
                     Node? current = root;
                     T? result = default;
 
                     while (current != null)
                     {
                         int comp = _uBoundActive ? Comparer.Compare(_max, current.Item) : 1;
-                        if (comp == -1)
+                        if (comp < 0)
                         {
                             current = current.Left;
                         }
@@ -304,8 +306,8 @@ namespace System.Collections.Generic
 
             /// <summary>
             /// Checks whether this subset is out of date, and updates it if necessary.
-            /// <param name="updateCount">Updates the count variable if necessary.</param>
             /// </summary>
+            /// <param name="updateCount">Updates the count variable if necessary.</param>
             internal override void VersionCheck(bool updateCount = false) => VersionCheckImpl(updateCount);
 
             private void VersionCheckImpl(bool updateCount)

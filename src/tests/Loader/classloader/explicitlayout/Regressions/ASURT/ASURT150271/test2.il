@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // blittable, large field offset.
 // this case never caused a stack overflow.  
 // this test simply ensures continued correct behavior.
@@ -20,6 +21,9 @@
 }
 
 .method public static int32 Main(){
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 
 	.locals init(class Class1 c1)

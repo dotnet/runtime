@@ -29,10 +29,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The same <see cref="IConfigurationBuilder"/>.</returns>
         public IConfigurationBuilder Add(IConfigurationSource source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ThrowHelper.ThrowIfNull(source);
 
             Sources.Add(source);
             return this;

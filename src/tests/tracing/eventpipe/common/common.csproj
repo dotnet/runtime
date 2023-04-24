@@ -6,10 +6,17 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GitHubRepositoryName)' == 'runtime'">
+    <DefineConstants>$(DefineConstants);DIAGNOSTICS_RUNTIME</DefineConstants>
+    <NoWarn>CS1591,CS8073,CS0162</NoWarn>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="IpcTraceTest.cs" />
-    <Compile Include="StreamProxy.cs" />
-    <Compile Include="Reverse.cs" />
     <Compile Include="IpcUtils.cs" />
+    <Compile Include="Reverse.cs" />
+    <Compile Include="StreamProxy.cs" />
+    <ProjectReference Include="Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
   </ItemGroup>
 </Project>

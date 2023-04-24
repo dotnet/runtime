@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading;
@@ -11,7 +12,36 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
-    public sealed class MemorySendReceiveTest : SendReceiveTest
+
+    public sealed class InvokerMemorySendReceiveTest : MemorySendReceiveTest
+    {
+        public InvokerMemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class HttpClientMemorySendReceiveTest : MemorySendReceiveTest
+    {
+        public HttpClientMemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseHttpClient => true;
+    }
+
+    public sealed class InvokerArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
+    {
+        public InvokerArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public sealed class HttpClientArraySegmentSendReceiveTest : ArraySegmentSendReceiveTest
+    {
+        public HttpClientArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseHttpClient => true;
+    }
+
+    public class MemorySendReceiveTest : SendReceiveTest
     {
         public MemorySendReceiveTest(ITestOutputHelper output) : base(output) { }
 
@@ -31,7 +61,7 @@ namespace System.Net.WebSockets.Client.Tests
                 cancellationToken).AsTask();
     }
 
-    public sealed class ArraySegmentSendReceiveTest : SendReceiveTest
+    public class ArraySegmentSendReceiveTest : SendReceiveTest
     {
         public ArraySegmentSendReceiveTest(ITestOutputHelper output) : base(output) { }
 
@@ -49,7 +79,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         public SendReceiveTest(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server)
         {
@@ -60,7 +90,7 @@ namespace System.Net.WebSockets.Client.Tests
             var receiveBuffer = new byte[SendBufferSize / 2];
             var receiveSegment = new ArraySegment<byte>(receiveBuffer);
 
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -86,7 +116,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         [SkipOnPlatform(TestPlatforms.Browser, "JS Websocket does not support see issue https://github.com/dotnet/runtime/issues/46983")]
         public async Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server)
@@ -128,11 +158,11 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendAsync_SendCloseMessageType_ThrowsArgumentExceptionWithMessage(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -156,11 +186,12 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        // This will also pass when no exception is thrown. Current implementation doesn't throw.
         public async Task SendAsync_MultipleOutstandingSendOperations_Throws(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -215,11 +246,13 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        // This will also pass when no exception is thrown. Current implementation doesn't throw.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83517", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
 
@@ -255,12 +288,12 @@ namespace System.Net.WebSockets.Client.Tests
                                 "ReceiveAsync"),
                             ex.Message);
 
-                        Assert.Equal(WebSocketState.Aborted, cws.State);
+                        Assert.True(WebSocketState.Aborted == cws.State, cws.State+" state when InvalidOperationException");
                     }
                     else if (ex is WebSocketException)
                     {
                         // Multiple cases.
-                        Assert.Equal(WebSocketState.Aborted, cws.State);
+                        Assert.True(WebSocketState.Aborted == cws.State, cws.State + " state when WebSocketException");
 
                         WebSocketError errCode = (ex as WebSocketException).WebSocketErrorCode;
                         Assert.True(
@@ -269,7 +302,7 @@ namespace System.Net.WebSockets.Client.Tests
                     }
                     else if (ex is OperationCanceledException)
                     {
-                        Assert.Equal(WebSocketState.Aborted, cws.State);
+                        Assert.True(WebSocketState.Aborted == cws.State, cws.State + " state when OperationCanceledException");
                     }
                     else
                     {
@@ -279,11 +312,11 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
                 string message = "hello";
@@ -318,7 +351,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_VaryingLengthBuffers_Success(Uri server)
         {
@@ -358,13 +391,13 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_Concurrent_Success(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
-                var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
+                CancellationTokenSource ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
                 byte[] receiveBuffer = new byte[10];
                 byte[] sendBuffer = new byte[10];
@@ -380,16 +413,16 @@ namespace System.Net.WebSockets.Client.Tests
                     await Task.WhenAll(receive, send);
                     Assert.Equal(1, receive.Result.Count);
                 }
-                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SendReceive_VaryingLengthBuffers_Success", ctsDefault.Token);
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "SendReceive_Concurrent_Success", ctsDefault.Token);
 
                 Array.Reverse(receiveBuffer);
                 Assert.Equal<byte>(sendBuffer, receiveBuffer);
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalFact(nameof(WebSocketsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42852", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54153", TestPlatforms.Browser)]
         public async Task SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated()
         {
             var options = new LoopbackServer.Options { WebSocketEndpoint = true };
@@ -414,7 +447,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 // Initiate a connection attempt.
                 var cts = new CancellationTokenSource(TimeOutMilliseconds);
-                await clientSocket.ConnectAsync(url, cts.Token);
+                await ConnectAsync(clientSocket, url, cts.Token);
 
                 // Post a pending ReceiveAsync before the TCP connection is torn down.
                 var recvBuffer = new byte[100];
@@ -457,11 +490,11 @@ namespace System.Net.WebSockets.Client.Tests
             }, options);
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
         {
-            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            using (ClientWebSocket cws = await GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 

@@ -16,6 +16,10 @@ namespace Internal.TypeSystem
         ClassLoadValueClassTooLarge,
         ClassLoadRankTooLarge,
 
+        ClassLoadInlineArrayFieldCount,
+        ClassLoadInlineArrayLength,
+        ClassLoadInlineArrayExplicit,
+
         // MissingMethodException
         MissingMethod,
 
@@ -30,7 +34,6 @@ namespace Internal.TypeSystem
         InvalidProgramSpecific,
         InvalidProgramVararg,
         InvalidProgramCallVirtFinalize,
-        InvalidProgramUnmanagedCallersOnly,
         InvalidProgramCallAbstractMethod,
         InvalidProgramCallVirtStatic,
         InvalidProgramNonStaticMethod,
@@ -41,5 +44,8 @@ namespace Internal.TypeSystem
         // BadImageFormatException
         BadImageFormatGeneric,
         BadImageFormatSpecific,
+
+        // MarshalDirectiveException
+        MarshalDirectiveGeneric,
     }
 }

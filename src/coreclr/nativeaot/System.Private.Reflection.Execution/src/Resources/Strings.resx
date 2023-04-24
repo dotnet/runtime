@@ -1,0 +1,225 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Reflection_InsufficientMetadata_NoHelpAvailable" xml:space="preserve">
+    <value>This operation cannot be carried out because metadata for the following object was removed for performance reasons:\n\n  {0}\n\nNo further information is available. Rebuild in debug mode for better information.\n\n</value>
+  </data>
+  <data name="Reflection_InsufficientMetadata_EdbNeeded" xml:space="preserve">
+    <value>'{0}' is missing native code or metadata. This can happen for code that is not compatible with trimming or AOT. Inspect and fix trimming and AOT related warnings that were generated when the app was published. For more information see https://aka.ms/nativeaot-compatibility</value>
+  </data>
+  <data name="Arg_DlgtTargMeth" xml:space="preserve">
+    <value>Cannot bind to the target method because its signature is not compatible with that of the delegate type.</value>
+  </data>
+  <data name="Arg_EmptyArray" xml:space="preserve">
+    <value>Array may not be empty.</value>
+  </data>
+  <data name="MissingMember" xml:space="preserve">
+    <value>Member not found.</value>
+  </data>
+  <data name="Arg_HTCapacityOverflow" xml:space="preserve">
+    <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
+  </data>
+  <data name="InvalidOperation_NoValue" xml:space="preserve">
+    <value>Nullable object must have a value.</value>
+  </data>
+  <data name="RFLCT_Targ_StatFldReqTarg" xml:space="preserve">
+    <value>Non-static field requires a target.</value>
+  </data>
+  <data name="MissingConstructor_Name" xml:space="preserve">
+    <value>Constructor on type '{0}' not found.</value>
+  </data>
+  <data name="MultiDim_Of_This_Rank_Not_Supported" xml:space="preserve">
+    <value>Multidimensional arrays of rank {0} are not supported.</value>
+  </data>
+  <data name="Object_NotInvokable" xml:space="preserve">
+    <value>This object cannot be invoked because no code was generated for it: '{0}'.</value>
+  </data>
+  <data name="MakeGenericMethod_NoMetadata" xml:space="preserve">
+    <value>'{0}' is missing native code. MethodInfo.MakeGenericMethod() is not compatible with AOT compilation. Inspect and fix AOT related warnings that were generated when the app was published. For more information see https://aka.ms/nativeaot-compatibility</value>
+  </data>
+  <data name="PlatformNotSupported_CannotInvokeDelegateCtor" xml:space="preserve">
+    <value>Dynamic invocation of delegate constructors is not supported on this runtime.</value>
+  </data>
+  <data name="Argument_AddingDuplicate" xml:space="preserve">
+    <value>An item with the same key has already been added.</value>
+  </data>
+  <data name="Argument_GenericArgsCount" xml:space="preserve">
+    <value>The number of generic arguments provided doesn't equal the arity of the generic type definition.</value>
+  </data>
+  <data name="Argument_NeverValidGenericArgument" xml:space="preserve">
+    <value>The type '{0}' may not be used as a type argument.</value>
+  </data>
+  <data name="Argument_ConstraintFailed" xml:space="preserve">
+    <value>'{0}', on '{1}' violates the constraint of type '{2}'.</value>
+  </data>
+  <data name="Argument_ImplementIComparable" xml:space="preserve">
+    <value>At least one object must implement IComparable.</value>
+  </data>
+  <data name="InvalidOperation_AsyncIOInProgress" xml:space="preserve">
+    <value>The stream is currently in use by a previous operation on the stream.</value>
+  </data>
+  <data name="Argument_StreamNotReadable" xml:space="preserve">
+    <value>Stream was not readable.</value>
+  </data>
+  <data name="ObjectDisposed_ReaderClosed" xml:space="preserve">
+    <value>Cannot read from a closed TextReader.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="ArgumentNull_Buffer" xml:space="preserve">
+    <value>Buffer cannot be null.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="Acc_ReadOnly" xml:space="preserve">
+    <value>Cannot set a constant field.</value>
+  </data>
+  <data name="DelegateGetMethodInfo_NoDynamic" xml:space="preserve">
+    <value>Cannot retrieve a MethodInfo for this delegate because the method it targeted was not enabled for metadata.</value>
+  </data>
+  <data name="DelegateGetMethodInfo_NoDynamic_WithDisplayString" xml:space="preserve">
+    <value>Cannot retrieve a MethodInfo for this delegate because the method it targeted ({0}) was not enabled for metadata.</value>
+  </data>
+  <data name="DelegateGetMethodInfo_NoInstantiation" xml:space="preserve">
+    <value>Cannot retrieve a MethodInfo for this delegate because the necessary generic instantiation was not metadata-enabled.</value>
+  </data>
+  <data name="DelegateGetMethodInfo_ObjectArrayDelegate" xml:space="preserve">
+    <value>Cannot retrieve a MethodInfo for this delegate because the delegate target is an interpreted LINQ expression.</value>
+  </data>
+  <data name="Argument_InterfaceMap" xml:space="preserve">
+    <value>'this' type cannot be an interface itself.</value>
+  </data>
+  <data name="Arg_MustBeInterface" xml:space="preserve">
+    <value>Type passed must be an interface.</value>
+  </data>
+  <data name="Arg_NotFoundIFace" xml:space="preserve">
+    <value>Interface not found.</value>
+  </data>
+  <data name="Arg_InterfaceMapMustNotBeAbstract" xml:space="preserve">
+    <value>Could not retrieve the mapping of the interface '{0}' on type '{1}' because the type implements the interface abstractly.</value>
+  </data>
+  <data name="Acc_InitOnlyStatic" xml:space="preserve">
+    <value>Cannot set initonly static field after its owning type is initialized.</value>
+  </data>
+</root>

@@ -7,5 +7,5 @@ namespace System.ComponentModel.Design
     /// Represents the method that will handle the System.ComponentModel.Design.IDesignerEventService.DesignerEvent
     /// event raised when a document is created or disposed.
     /// </summary>
-    public delegate void DesignerEventHandler(object sender, DesignerEventArgs e);
+    public delegate void DesignerEventHandler(object? sender, DesignerEventArgs e);
 }

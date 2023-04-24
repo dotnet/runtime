@@ -7,6 +7,7 @@ using System.Reflection;
 
 namespace System.Runtime.Serialization
 {
+    [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public class ObjectManager
     {
         private const int DefaultInitialSize = 16;
@@ -14,7 +15,9 @@ namespace System.Runtime.Serialization
         private const int ArrayMask = MaxArraySize - 1;
         private const int MaxReferenceDepth = 100;
 
-        private const string ObjectManagerUnreferencedCodeMessage = "ObjectManager is not trim compatible because the Type of objects being managed cannot be statically discovered.";
+        private const string ObjectManagerUnreferencedCodeMessage = "ObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.";
+
+        private static readonly FieldInfo s_nullableValueField = typeof(Nullable<>).GetField("value", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
         private DeserializationEventHandler? _onDeserializationHandler;
         private SerializationEventHandler? _onDeserializedHandler;
@@ -42,7 +45,7 @@ namespace System.Runtime.Serialization
         }
 
         internal ObjectHolderList SpecialFixupObjects =>
-            _specialFixupObjects ?? (_specialFixupObjects = new ObjectHolderList());
+            _specialFixupObjects ??= new ObjectHolderList();
 
         internal ObjectHolder? FindObjectHolder(long objectID)
         {
@@ -383,14 +386,11 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-        [DynamicDependency("value", typeof(Nullable<>))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The Nullable<T>.value field will be preserved by the DynamicDependency.")]
         private static FieldInfo? GetNullableValueField(Type type)
         {
             if (Nullable.GetUnderlyingType(type) != null)
             {
-                return type.GetField("value", BindingFlags.NonPublic | BindingFlags.Instance)!;
+                return (FieldInfo)type.GetMemberWithSameMetadataDefinitionAs(s_nullableValueField);
             }
 
             return null;
@@ -401,8 +401,8 @@ namespace System.Runtime.Serialization
             FixupHolderList? fixups = holder._missingElements;
             FixupHolder? currentFixup;
             SerializationInfo? si;
-            object? fixupInfo = null;
-            ObjectHolder? tempObjectHolder = null;
+            object? fixupInfo;
+            ObjectHolder? tempObjectHolder;
             int fixupsPerformed = 0;
 
             Debug.Assert(holder != null, "[ObjectManager.CompleteObject]holder.m_object!=null");
@@ -661,10 +661,8 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(ObjectManagerUnreferencedCodeMessage)]
         public void RegisterObject(object obj, long objectID, SerializationInfo? info, long idOfContainingObj, MemberInfo? member, int[]? arrayIndex)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
+
             if (objectID <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(objectID), SR.ArgumentOutOfRange_ObjectID);
@@ -774,10 +772,8 @@ namespace System.Runtime.Serialization
         [RequiresUnreferencedCode(ObjectManagerUnreferencedCodeMessage)]
         internal void CompleteISerializableObject(object obj, SerializationInfo? info, StreamingContext context)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
+
             if (!(obj is ISerializable))
             {
                 throw new ArgumentException(SR.Serialization_NotISer);
@@ -932,10 +928,7 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentOutOfRangeException(objectToBeFixed <= 0 ? nameof(objectToBeFixed) : nameof(objectRequired), SR.Serialization_IdTooSmall);
             }
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
+            ArgumentNullException.ThrowIfNull(member);
             if (!(member is FieldInfo)) // .NET Framework checks specifically for RuntimeFieldInfo and SerializationFieldInfo, but the former is an implementation detail in corelib
             {
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, member.GetType()));
@@ -953,10 +946,7 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentOutOfRangeException(objectToBeFixed <= 0 ? nameof(objectToBeFixed) : nameof(objectRequired), SR.Serialization_IdTooSmall);
             }
-            if (memberName == null)
-            {
-                throw new ArgumentNullException(nameof(memberName));
-            }
+            ArgumentNullException.ThrowIfNull(memberName);
 
             //Create a new fixup holder
             FixupHolder fixup = new FixupHolder(objectRequired, memberName, FixupHolder.DelayedFixup);
@@ -977,10 +967,7 @@ namespace System.Runtime.Serialization
             {
                 throw new ArgumentOutOfRangeException(arrayToBeFixed <= 0 ? nameof(arrayToBeFixed) : nameof(objectRequired), SR.Serialization_IdTooSmall);
             }
-            if (indices == null)
-            {
-                throw new ArgumentNullException(nameof(indices));
-            }
+            ArgumentNullException.ThrowIfNull(indices);
 
             FixupHolder fixup = new FixupHolder(objectRequired, indices, FixupHolder.ArrayFixup);
             RegisterFixup(fixup, arrayToBeFixed, objectRequired);
@@ -1152,10 +1139,7 @@ namespace System.Runtime.Serialization
         /// <param name="manager">The associated object manager.</param>
         internal void AddFixup(FixupHolder fixup, ObjectManager manager)
         {
-            if (_missingElements == null)
-            {
-                _missingElements = new FixupHolderList();
-            }
+            _missingElements ??= new FixupHolderList();
             _missingElements.Add(fixup);
             _missingElementsRemaining++;
 
@@ -1194,10 +1178,7 @@ namespace System.Runtime.Serialization
         /// <param name="dependentObject">the id of the object which is dependent on this object being provided.</param>
         internal void AddDependency(long dependentObject)
         {
-            if (_dependentObjects == null)
-            {
-                _dependentObjects = new LongList();
-            }
+            _dependentObjects ??= new LongList();
             _dependentObjects.Add(dependentObject);
         }
 

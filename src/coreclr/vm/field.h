@@ -34,12 +34,9 @@
 class FieldDesc
 {
     friend class MethodTableBuilder;
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
   protected:
-    RelativePointer<PTR_MethodTable> m_pMTOfEnclosingClass;  // This is used to hold the log2 of the field size temporarily during class loading.  Yuck.
+    PTR_MethodTable m_pMTOfEnclosingClass;  // This is used to hold the log2 of the field size temporarily during class loading.  Yuck.
 
     // See also: FieldDesc::InitializeFrom method
 
@@ -48,8 +45,6 @@ class FieldDesc
         unsigned m_dword1;
         struct {
 #endif
-        // Note that we may store other information in the high bits if available --
-        // see enum_packedMBLayout and m_requiresFullMbValue for details.
         unsigned m_mb               : 24;
 
         // 8 bits...
@@ -57,8 +52,6 @@ class FieldDesc
         unsigned m_isThreadLocal    : 1;
         unsigned m_isRVA            : 1;
         unsigned m_prot             : 3;
-        // Does this field's mb require all 24 bits
-        unsigned m_requiresFullMbValue : 1;
 #if defined(DACCESS_COMPILE)
         };
     };
@@ -89,14 +82,13 @@ public:
 #ifndef DACCESS_COMPILE
     void InitializeFrom(const FieldDesc& sourceField, MethodTable *pMT)
     {
-        m_pMTOfEnclosingClass.SetValue(pMT);
+        m_pMTOfEnclosingClass = pMT;
 
         m_mb = sourceField.m_mb;
         m_isStatic = sourceField.m_isStatic;
         m_isThreadLocal = sourceField.m_isThreadLocal;
         m_isRVA = sourceField.m_isRVA;
         m_prot = sourceField.m_prot;
-        m_requiresFullMbValue = sourceField.m_requiresFullMbValue;
 
         m_dwOffset = sourceField.m_dwOffset;
         m_type = sourceField.m_type;
@@ -122,7 +114,7 @@ public:
     void SetMethodTable(MethodTable* mt)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pMTOfEnclosingClass.SetValue(mt);
+        m_pMTOfEnclosingClass = mt;
     }
 #endif
 
@@ -134,43 +126,15 @@ public:
               BOOL fIsThreadLocal,
               LPCSTR pszFieldName);
 
-    enum {
-        enum_packedMbLayout_MbMask        = 0x01FFFF,
-        enum_packedMbLayout_NameHashMask  = 0xFE0000
-    };
-
     void SetMemberDef(mdFieldDef mb)
     {
         WRAPPER_NO_CONTRACT;
-
-        // Check if we have to avoid using the packed mb layout
-        if (RidFromToken(mb) > enum_packedMbLayout_MbMask)
-        {
-            m_requiresFullMbValue = 1;
-        }
-
-        // Set only the portion of m_mb we are using
-        if (!m_requiresFullMbValue)
-        {
-            m_mb &= ~enum_packedMbLayout_MbMask;
-            m_mb |= RidFromToken(mb);
-        }
-        else
-        {
-            m_mb = RidFromToken(mb);
-        }
+        m_mb = RidFromToken(mb);
     }
 
     mdFieldDef GetMemberDef() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        // Check if this FieldDesc is using the packed mb layout
-        if (!m_requiresFullMbValue)
-        {
-            return TokenFromRid(m_mb & enum_packedMbLayout_MbMask, mdtFieldDef);
-        }
-
         return TokenFromRid(m_mb, mdtFieldDef);
     }
 
@@ -192,13 +156,11 @@ public:
         return m_prot;
     }
 
-        // Please only use this in a path that you have already guarenteed
+        // Please only use this in a path that you have already guaranteed
         // the assert is true
     DWORD GetOffsetUnsafe()
     {
         LIMITED_METHOD_CONTRACT;
-
-        g_IBCLogger.LogFieldDescsAccess(this);
         _ASSERTE(m_dwOffset <= FIELD_OFFSET_LAST_REAL_OFFSET);
         return m_dwOffset;
     }
@@ -206,7 +168,6 @@ public:
     DWORD GetOffset()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        g_IBCLogger.LogFieldDescsAccess(this);
         return GetOffset_NoLogging();
     }
 
@@ -356,15 +317,15 @@ public:
 
     BOOL IsObjRef();
 
-#ifdef FEATURE_PREJIT
-    void SaveContents(DataImage *image);
-    void Fixup(DataImage *image);
-#endif // FEATURE_PREJIT
+    BOOL IsByRef();
 
     UINT LoadSize();
 
     // Return -1 if the type isn't loaded yet (i.e. if LookupFieldTypeHandle() would return null)
     UINT GetSize();
+
+    // If the field is a valuetype, then either pMTOfValueTypeField must not be NULL or LookupFieldTypeHandle() must not return null
+    UINT GetSize(MethodTable *pMTOfValueTypeField);
 
     // These routines encapsulate the operation of getting and setting
     // fields.
@@ -395,13 +356,12 @@ public:
     PTR_MethodTable GetApproxEnclosingMethodTable_NoLogging()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pMTOfEnclosingClass.GetValue(PTR_HOST_MEMBER_TADDR(FieldDesc, this, m_pMTOfEnclosingClass));
+        return m_pMTOfEnclosingClass;
     }
 
     PTR_MethodTable GetApproxEnclosingMethodTable()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        g_IBCLogger.LogFieldDescsAccess(this);
         return GetApproxEnclosingMethodTable_NoLogging();
     }
 
@@ -483,22 +443,7 @@ public:
         return *(OBJECTREF *)GetCurrentStaticAddress();
     }
 
-    VOID SetStaticOBJECTREF(OBJECTREF objRef)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-            INJECT_FAULT(COMPlusThrowOM());
-        }
-        CONTRACTL_END
-
-        GCPROTECT_BEGIN(objRef);
-        OBJECTREF *pObjRef = (OBJECTREF *)GetCurrentStaticAddress();
-        SetObjectReference(pObjRef, objRef);
-        GCPROTECT_END();
-    }
+    VOID SetStaticOBJECTREF(OBJECTREF objRef);
 
     void*   GetStaticValuePtr()
     {
@@ -606,15 +551,6 @@ public:
         return GetApproxEnclosingMethodTable()->GetModule();
     }
 
-    BOOL IsZapped()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // Field Desc's are currently always saved into the same module as their
-        // corresponding method table.
-        return GetApproxEnclosingMethodTable()->IsZapped();
-    }
-
     Module *GetLoaderModule()
     {
         WRAPPER_NO_CONTRACT;
@@ -685,9 +621,6 @@ public:
 
         return GetMDImport()->GetNameOfFieldDef(GetMemberDef(), pszName);
     }
-
-    void PrecomputeNameHash();
-    BOOL MightHaveName(ULONG nameHashValue);
 
     // <TODO>@TODO: </TODO>This is slow, don't use it!
     DWORD   GetAttributes()

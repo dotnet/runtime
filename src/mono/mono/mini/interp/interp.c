@@ -22,7 +22,6 @@
 #include <math.h>
 #include <locale.h>
 
-#include <mono/utils/gc_wrapper.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -65,6 +64,11 @@
 #include "interp-internals.h"
 #include "mintops.h"
 #include "interp-intrins.h"
+#include "tiering.h"
+
+#ifdef INTERP_ENABLE_SIMD
+#include "interp-simd.h"
+#endif
 
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
@@ -72,14 +76,20 @@
 #include <mono/mini/llvm-runtime.h>
 #include <mono/mini/llvmonly-runtime.h>
 #include <mono/mini/jit-icalls.h>
-#include <mono/mini/debugger-agent.h>
 #include <mono/mini/ee.h>
 #include <mono/mini/trace.h>
+
+#include <mono/metadata/components.h>
 
 #ifdef TARGET_ARM
 #include <mono/mini/mini-arm.h>
 #endif
 #include <mono/metadata/icall-decl.h>
+
+#ifdef HOST_BROWSER
+#include "jiterpreter.h"
+#include <emscripten.h>
+#endif
 
 /* Arguments that are passed when invoking only a finally/filter clause from the frame */
 struct FrameClauseArgs {
@@ -91,11 +101,13 @@ struct FrameClauseArgs {
 	 * frame further down the stack.
 	 */
 	const guint16 *end_at_ip;
-	/* When exiting this clause we also exit the frame */
-	int exit_clause;
 	/* Frame that is executing this clause */
 	InterpFrame *exec_frame;
+	gboolean run_until_end;
 };
+
+static MONO_NEVER_INLINE void
+mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args);
 
 /*
  * This code synchronizes with interp_mark_stack () using compiler memory barriers.
@@ -147,7 +159,7 @@ frame_data_allocator_add_frag (FrameDataAllocator *stack, int size)
 	FrameDataFragment *new_frag;
 
 	// FIXME:
-	int frag_size = 4096;
+	guint frag_size = 4096;
 	if (size + sizeof (FrameDataFragment) > frag_size)
 		frag_size = size + sizeof (FrameDataFragment);
 	new_frag = frame_data_frag_new (frag_size);
@@ -244,10 +256,11 @@ static gboolean ss_enabled;
 
 static gboolean interp_init_done = FALSE;
 
-static void
-interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args);
+#ifdef HOST_WASI
+static gboolean debugger_enabled = FALSE;
+#endif
 
-static MonoException* do_transform_method (InterpFrame *frame, ThreadContext *context);
+static MonoException* do_transform_method (InterpMethod *imethod, InterpFrame *method, ThreadContext *context);
 
 static InterpMethod* lookup_method_pointer (gpointer addr);
 
@@ -394,8 +407,11 @@ get_context (void)
 	ThreadContext *context = (ThreadContext *) mono_native_tls_get_value (thread_context_id);
 	if (context == NULL) {
 		context = g_new0 (ThreadContext, 1);
-		context->stack_start = (guchar*)mono_valloc (0, INTERP_STACK_SIZE, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_INTERP_STACK);
-		context->stack_pointer = context->stack_start;
+		context->stack_start = (guchar*)mono_valloc_aligned (INTERP_STACK_SIZE, MINT_STACK_ALIGNMENT, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_INTERP_STACK);
+		context->stack_end = context->stack_start + INTERP_STACK_SIZE - INTERP_REDZONE_SIZE;
+		context->stack_real_end = context->stack_start + INTERP_STACK_SIZE;
+		/* We reserve a stack slot at the top of the interp stack to make temp objects visible to GC */
+		context->stack_pointer = context->stack_start + MINT_STACK_ALIGNMENT;
 
 		frame_data_allocator_init (&context->data_stack, 8192);
 		/* Make sure all data is initialized before publishing the context */
@@ -418,8 +434,6 @@ interp_free_context (gpointer ctx)
 		set_context (NULL);
 	}
 
-	context->safepoint_frame = NULL;
-
 	mono_vfree (context->stack_start, INTERP_STACK_SIZE, MONO_MEM_ACCOUNT_INTERP_STACK);
 	/* Prevent interp_mark_stack from trying to scan the data_stack, before freeing it */
 	context->stack_start = NULL;
@@ -428,17 +442,12 @@ interp_free_context (gpointer ctx)
 	g_free (context);
 }
 
+/* Continue unwinding if there is an exception that needs to be handled in an AOTed frame above us */
 static void
-context_set_safepoint_frame (ThreadContext *context, InterpFrame *frame)
+check_pending_unwind (ThreadContext *context)
 {
-	g_assert (!context->has_resume_state);
-	context->safepoint_frame = frame;
-}
-
-static void
-context_clear_safepoint_frame (ThreadContext *context)
-{
-	context->safepoint_frame = NULL;
+	if (context->has_resume_state && !context->handler_frame)
+		mono_llvm_cpp_throw_exception ();
 }
 
 void
@@ -462,14 +471,12 @@ lookup_imethod (MonoMethod *method)
 }
 
 InterpMethod*
-mono_interp_get_imethod (MonoMethod *method, MonoError *error)
+mono_interp_get_imethod (MonoMethod *method)
 {
 	InterpMethod *imethod;
 	MonoMethodSignature *sig;
 	MonoJitMemoryManager *jit_mm = jit_mm_for_method (method);
 	int i;
-
-	error_init (error);
 
 	jit_mm_lock (jit_mm);
 	imethod = (InterpMethod*)mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method);
@@ -485,6 +492,12 @@ mono_interp_get_imethod (MonoMethod *method, MonoError *error)
 	imethod->hasthis = sig->hasthis;
 	imethod->vararg = sig->call_convention == MONO_CALL_VARARG;
 	imethod->code_type = IMETHOD_CODE_UNKNOWN;
+	// This flag allows us to optimize out the interp_entry 'is this a delegate invoke' checks
+	imethod->is_invoke = (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) && !strcmp(method->name, "Invoke");
+	// always optimize code if tiering is disabled
+	// always optimize wrappers
+	if (!mono_interp_tiering_enabled () || method->wrapper_type != MONO_WRAPPER_NONE)
+		imethod->optimized = TRUE;
 	if (imethod->method->string_ctor)
 		imethod->rtype = m_class_get_byval_arg (mono_defaults.string_class);
 	else
@@ -494,8 +507,12 @@ mono_interp_get_imethod (MonoMethod *method, MonoError *error)
 		imethod->param_types [i] = mini_get_underlying_type (sig->params [i]);
 
 	jit_mm_lock (jit_mm);
-	if (!mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method))
+	InterpMethod *old_imethod;
+	if (!((old_imethod = mono_internal_hash_table_lookup (&jit_mm->interp_code_hash, method))))
 		mono_internal_hash_table_insert (&jit_mm->interp_code_hash, method, imethod);
+	else {
+		imethod = old_imethod; /* leak the newly allocated InterpMethod to the mempool */
+	}
 	jit_mm_unlock (jit_mm);
 
 	imethod->prof_flags = mono_profiler_get_call_instrumentation_flags (imethod->method);
@@ -575,17 +592,12 @@ static InterpMethod*
 get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 {
 	MonoMethod *m = imethod->method;
-	InterpMethod *ret = NULL;
 
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
-		if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
-			ERROR_DECL (error);
-			ret = mono_interp_get_imethod (mono_marshal_get_synchronized_wrapper (m), error);
-			mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
-		} else {
-			ret = imethod;
-		}
-		return ret;
+		if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+			return mono_interp_get_imethod (mono_marshal_get_synchronized_wrapper (m));
+		else
+			return imethod;
 	}
 
 	mono_class_setup_vtable (vtable->klass);
@@ -621,9 +633,7 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 		virtual_method = mono_marshal_get_synchronized_wrapper (virtual_method);
 	}
 
-	ERROR_DECL (error);
-	InterpMethod *virtual_imethod = mono_interp_get_imethod (virtual_method, error);
-	mono_error_cleanup (error); /* FIXME: don't swallow the error */
+	InterpMethod *virtual_imethod = mono_interp_get_imethod (virtual_method);
 	return virtual_imethod;
 }
 
@@ -646,6 +656,9 @@ append_imethod (MonoMemoryManager *memory_manager, GSList *list, InterpMethod *i
 	ret->data = entry;
 	ret = g_slist_concat (list, ret);
 
+	mono_interp_register_imethod_patch_site ((gpointer*)&entry->imethod);
+	mono_interp_register_imethod_patch_site ((gpointer*)&entry->target_imethod);
+
 	return ret;
 }
 
@@ -654,6 +667,9 @@ get_target_imethod (GSList *list, InterpMethod *imethod)
 {
 	while (list != NULL) {
 		InterpVTableEntry *entry = (InterpVTableEntry*) list->data;
+		// We don't account for tiering here so this comparison is racy
+		// The side effect is that we might end up with duplicates of the same
+		// method in the vtable list, but this is extremely uncommon.
 		if (entry->imethod == imethod)
 			return entry->target_imethod;
 		list = list->next;
@@ -661,11 +677,24 @@ get_target_imethod (GSList *list, InterpMethod *imethod)
 	return NULL;
 }
 
+static inline MonoVTableEEData*
+get_vtable_ee_data (MonoVTable *vtable)
+{
+	MonoVTableEEData *ee_data = (MonoVTableEEData*)vtable->ee_data;
+
+	if (G_UNLIKELY (!ee_data)) {
+		ee_data = m_class_alloc0 (vtable->klass, sizeof (MonoVTableEEData));
+		mono_memory_barrier ();
+		vtable->ee_data = ee_data;
+	}
+	return ee_data;
+}
+
 static gpointer*
 get_method_table (MonoVTable *vtable, int offset)
 {
 	if (offset >= 0)
-		return vtable->interp_vtable;
+		return get_vtable_ee_data (vtable)->interp_vtable;
 	else
 		return (gpointer*)vtable;
 }
@@ -677,7 +706,7 @@ alloc_method_table (MonoVTable *vtable, int offset)
 
 	if (offset >= 0) {
 		table = (gpointer*)m_class_alloc0 (vtable->klass, m_class_get_vtable_size (vtable->klass) * sizeof (gpointer));
-		vtable->interp_vtable = table;
+		get_vtable_ee_data (vtable)->interp_vtable = table;
 	} else {
 		table = (gpointer*)vtable;
 	}
@@ -689,11 +718,12 @@ static InterpMethod* // Inlining causes additional stack use in caller.
 get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 {
 	gpointer *table;
-	MonoMemoryManager *memory_manager = m_class_get_mem_manager (vtable->klass);
+	MonoMemoryManager *memory_manager = NULL;
 
 	table = get_method_table (vtable, offset);
 
-	if (!table) {
+	if (G_UNLIKELY (!table)) {
+		memory_manager = m_class_get_mem_manager (vtable->klass);
 		/* Lazily allocate method table */
 		mono_mem_manager_lock (memory_manager);
 		table = get_method_table (vtable, offset);
@@ -702,15 +732,19 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 		mono_mem_manager_unlock (memory_manager);
 	}
 
-	if (!table [offset]) {
+	if (G_UNLIKELY (!table [offset])) {
 		InterpMethod *target_imethod = get_virtual_method (imethod, vtable);
+		if (!memory_manager)
+			memory_manager = m_class_get_mem_manager (vtable->klass);
 		/* Lazily initialize the method table slot */
 		mono_mem_manager_lock (memory_manager);
 		if (!table [offset]) {
-			if (imethod->method->is_inflated || offset < 0)
+			if (imethod->method->is_inflated || offset < 0) {
 				table [offset] = append_imethod (memory_manager, NULL, imethod, target_imethod);
-			else
+			} else {
 				table [offset] = (gpointer) ((gsize)target_imethod | 0x1);
+				mono_interp_register_imethod_patch_site (&table [offset]);
+			}
 		}
 		mono_mem_manager_unlock (memory_manager);
 	}
@@ -722,8 +756,10 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 		/* Virtual generic or interface call. Multiple methods in slot */
 		InterpMethod *target_imethod = get_target_imethod ((GSList*)table [offset], imethod);
 
-		if (!target_imethod) {
+		if (G_UNLIKELY (!target_imethod)) {
 			target_imethod = get_virtual_method (imethod, vtable);
+			if (!memory_manager)
+				memory_manager = m_class_get_mem_manager (vtable->klass);
 			mono_mem_manager_lock (memory_manager);
 			if (!get_target_imethod ((GSList*)table [offset], imethod))
 				table [offset] = append_imethod (memory_manager, (GSList*)table [offset], imethod, target_imethod);
@@ -735,10 +771,72 @@ get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 
 // Returns the size it uses on the interpreter stack
 static int
+stackval_size (MonoType *type, gboolean pinvoke)
+{
+	if (m_type_is_byref (type))
+		return MINT_STACK_SLOT_SIZE;
+	switch (type->type) {
+	case MONO_TYPE_VOID:
+		return 0;
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U:
+	case MONO_TYPE_I:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_U4:
+		return MINT_STACK_SLOT_SIZE;
+	case MONO_TYPE_R4:
+		return MINT_STACK_SLOT_SIZE;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return MINT_STACK_SLOT_SIZE;
+	case MONO_TYPE_R8:
+		return MINT_STACK_SLOT_SIZE;
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_ARRAY:
+		return MINT_STACK_SLOT_SIZE;
+	case MONO_TYPE_VALUETYPE:
+		if (m_class_is_enumtype (type->data.klass)) {
+			return stackval_size (mono_class_enum_basetype_internal (type->data.klass), pinvoke);
+		} else {
+			int size;
+			if (pinvoke)
+				size = mono_class_native_size (type->data.klass, NULL);
+			else
+				size = mono_class_value_size (type->data.klass, NULL);
+			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+		}
+	case MONO_TYPE_GENERICINST: {
+		if (mono_type_generic_inst_is_valuetype (type)) {
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
+			int size;
+			if (pinvoke)
+				size = mono_class_native_size (klass, NULL);
+			else
+				size = mono_class_value_size (klass, NULL);
+			return ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
+		}
+		return stackval_size (m_class_get_byval_arg (type->data.generic_class->container_class), pinvoke);
+	}
+	default:
+		g_error ("got type 0x%02x", type->type);
+	}
+}
+
+// Returns the size it uses on the interpreter stack
+static int
 stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean pinvoke)
 {
-	type = mini_native_type_replace_type (type);
-	if (type->byref) {
+	if (m_type_is_byref (type)) {
 		result->data.p = *(gpointer*)data;
 		return MINT_STACK_SLOT_SIZE;
 	}
@@ -824,8 +922,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 static int
 stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 {
-	type = mini_native_type_replace_type (type);
-	if (type->byref) {
+	if (m_type_is_byref (type)) {
 		gpointer *p = (gpointer*)data;
 		*p = val->data.p;
 		return MINT_STACK_SLOT_SIZE;
@@ -835,7 +932,7 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1: {
 		guint8 *p = (guint8*)data;
-		*p = val->data.i;
+		*p = GINT32_TO_UINT8 (val->data.i);
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_BOOLEAN: {
@@ -847,7 +944,7 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	case MONO_TYPE_U2:
 	case MONO_TYPE_CHAR: {
 		guint16 *p = (guint16*)data;
-		*p = val->data.i;
+		*p = GINT32_TO_UINT16 (val->data.i);
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_I: {
@@ -936,6 +1033,19 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	}
 }
 
+typedef struct {
+	MonoException *ex;
+	MonoContext *ctx;
+} HandleExceptionCbData;
+
+static void
+handle_exception_cb (gpointer arg)
+{
+	HandleExceptionCbData *cb_data = (HandleExceptionCbData*)arg;
+
+	mono_handle_exception (cb_data->ctx, (MonoObject*)cb_data->ex);
+}
+
 /*
  * interp_throw:
  *   Throw an exception from the interpreter.
@@ -946,12 +1056,14 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	ERROR_DECL (error);
 	MonoLMFExt ext;
 
-	interp_push_lmf (&ext, frame);
 	/*
 	 * When explicitly throwing exception we pass the ip of the instruction that throws the exception.
 	 * Offset the subtraction from interp_frame_get_ip, so we don't end up in prev instruction.
 	 */
 	frame->state.ip = ip + 1;
+
+	// This LMF is pop'ed by the EH machinery before resuming
+	interp_push_lmf (&ext, frame);
 
 	if (mono_object_isinst_checked ((MonoObject *) ex, mono_defaults.exception_class, error)) {
 		MonoException *mono_ex = ex;
@@ -972,16 +1084,85 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 	 * Since ctx.ip is 0, this will start unwinding from the LMF frame
 	 * pushed above, which points to our frames.
 	 */
+
 	mono_handle_exception (&ctx, (MonoObject*)ex);
+
 	if (MONO_CONTEXT_GET_IP (&ctx) != 0) {
 		/* We need to unwind into non-interpreter code */
 		mono_restore_context (&ctx);
 		g_assert_not_reached ();
 	}
 
-	interp_pop_lmf (&ext);
-
 	g_assert (context->has_resume_state);
+}
+
+static MONO_NEVER_INLINE MonoException *
+interp_error_convert_to_exception (InterpFrame *frame, MonoError *error, const guint16 *ip)
+{
+	MonoLMFExt ext;
+	MonoException *ex;
+
+	/*
+	 * When calling runtime functions we pass the ip of the instruction triggering the runtime call.
+	 * Offset the subtraction from interp_frame_get_ip, so we don't end up in prev instruction.
+	 */
+	frame->state.ip = ip + 1;
+
+	interp_push_lmf (&ext, frame);
+	ex = mono_error_convert_to_exception (error);
+	interp_pop_lmf (&ext);
+	return ex;
+}
+
+#define INTERP_BUILD_EXCEPTION_TYPE_FUNC_NAME(prefix_name, type_name) \
+prefix_name ## _ ## type_name
+
+#define INTERP_GET_EXCEPTION(exception_type) \
+static MONO_NEVER_INLINE MonoException * \
+INTERP_BUILD_EXCEPTION_TYPE_FUNC_NAME(interp_get_exception, exception_type) (InterpFrame *frame, const guint16 *ip)\
+{ \
+	MonoLMFExt ext; \
+	MonoException *ex; \
+	frame->state.ip = ip + 1; \
+	interp_push_lmf (&ext, frame); \
+	ex = INTERP_BUILD_EXCEPTION_TYPE_FUNC_NAME(mono_get_exception,exception_type) (); \
+	interp_pop_lmf (&ext); \
+	return ex; \
+}
+
+#define INTERP_GET_EXCEPTION_CHAR_ARG(exception_type) \
+static MONO_NEVER_INLINE MonoException * \
+INTERP_BUILD_EXCEPTION_TYPE_FUNC_NAME(interp_get_exception, exception_type) (const char *arg, InterpFrame *frame, const guint16 *ip)\
+{ \
+	MonoLMFExt ext; \
+	MonoException *ex; \
+	frame->state.ip = ip + 1; \
+	interp_push_lmf (&ext, frame); \
+	ex = INTERP_BUILD_EXCEPTION_TYPE_FUNC_NAME(mono_get_exception,exception_type) (arg); \
+	interp_pop_lmf (&ext); \
+	return ex; \
+}
+
+INTERP_GET_EXCEPTION(null_reference)
+INTERP_GET_EXCEPTION(divide_by_zero)
+INTERP_GET_EXCEPTION(overflow)
+INTERP_GET_EXCEPTION(invalid_cast)
+INTERP_GET_EXCEPTION(index_out_of_range)
+INTERP_GET_EXCEPTION(array_type_mismatch)
+INTERP_GET_EXCEPTION(arithmetic)
+INTERP_GET_EXCEPTION_CHAR_ARG(argument_out_of_range)
+
+// Inlining throw logic into interp_exec_method makes it bigger and could push us up against
+//  internal limits in things like WASM compilers
+static MONO_NEVER_INLINE void
+interp_throw_ex_general (
+	MonoException *__ex, ThreadContext *context, InterpFrame *frame, const guint16 *ex_ip, gboolean rethrow
+)
+{
+	HANDLE_FUNCTION_ENTER ();
+	MonoExceptionHandle tmp_handle = MONO_HANDLE_NEW (MonoException, __ex);
+	interp_throw (context, MONO_HANDLE_RAW(tmp_handle), (frame), (ex_ip), (rethrow));
+	HANDLE_FUNCTION_RETURN ();
 }
 
 // We conservatively pin exception object here to avoid tweaking the
@@ -989,10 +1170,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 // this is not needed.
 #define THROW_EX_GENERAL(exception,ex_ip, rethrow)		\
 	do {							\
-		MonoException *__ex = (exception);		\
-		MONO_HANDLE_ASSIGN_RAW (tmp_handle, (MonoObject*)__ex); \
-		interp_throw (context, __ex, (frame), (ex_ip), (rethrow)); \
-		MONO_HANDLE_ASSIGN_RAW (tmp_handle, (MonoObject*)NULL); \
+		interp_throw_ex_general (exception, context, frame, ex_ip, rethrow); \
 		goto resume;							  \
 	} while (0)
 
@@ -1000,7 +1178,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 
 #define NULL_CHECK(o) do { \
 	if (G_UNLIKELY (!(o))) \
-		THROW_EX (mono_get_exception_null_reference (), ip); \
+		THROW_EX (interp_get_exception_null_reference (frame, ip), ip); \
 	} while (0)
 
 #define EXCEPTION_CHECKPOINT	\
@@ -1008,18 +1186,32 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 		if (mono_thread_interruption_request_flag && !mono_threads_is_critical_method (frame->imethod->method)) { \
 			MonoException *exc = mono_thread_interruption_checkpoint ();	\
 			if (exc)							\
-				THROW_EX (exc, ip);					\
+				THROW_EX_GENERAL (exc, ip, TRUE);					\
 		}									\
 	} while (0)
 
-/* Don't throw exception if thread is in GC Safe mode. Should only happen in managed-to-native wrapper. */
-#define EXCEPTION_CHECKPOINT_GC_UNSAFE	\
-	do {										\
-		if (mono_thread_interruption_request_flag && !mono_threads_is_critical_method (frame->imethod->method) && mono_thread_is_gc_unsafe_mode ()) { \
-			MonoException *exc = mono_thread_interruption_checkpoint ();	\
-			if (exc)							\
-				THROW_EX (exc, ip);					\
-		}									\
+// Reduce duplicate code in mono_interp_exec_method
+static MONO_NEVER_INLINE void
+do_safepoint (InterpFrame *frame, ThreadContext *context, const guint16 *ip)
+{
+	MonoLMFExt ext;
+
+	/*
+	 * When calling runtime functions we pass the ip of the instruction triggering the runtime call.
+	 * Offset the subtraction from interp_frame_get_ip, so we don't end up in prev instruction.
+	 */
+	frame->state.ip = ip + 1;
+
+	interp_push_lmf (&ext, frame);
+	/* Poll safepoint */
+	mono_threads_safepoint ();
+	interp_pop_lmf (&ext);
+}
+
+#define SAFEPOINT \
+	do {						\
+		if (G_UNLIKELY (mono_polling_required)) \
+			do_safepoint (frame, context, ip);	\
 	} while (0)
 
 static MonoObject*
@@ -1028,7 +1220,13 @@ ves_array_create (MonoClass *klass, int param_count, stackval *values, MonoError
 	int rank = m_class_get_rank (klass);
 	uintptr_t *lengths = g_newa (uintptr_t, rank * 2);
 	intptr_t *lower_bounds = NULL;
-	if (2 * rank == param_count) {
+
+	if (param_count > rank && m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY) {
+		// Special constructor for jagged arrays
+		for (int i = 0; i < param_count; ++i)
+			lengths [i] = values [i].data.i;
+		return (MonoObject*) mono_array_new_jagged_checked (klass, param_count, lengths, error);
+	} else if (2 * rank == param_count) {
 		for (int l = 0; l < 2; ++l) {
 			int src = l;
 			int dst = l * rank;
@@ -1135,12 +1333,16 @@ compute_arg_offset (MonoMethodSignature *sig, int index, int prev_offset)
 }
 
 static guint32*
-initialize_arg_offsets (InterpMethod *imethod)
+initialize_arg_offsets (InterpMethod *imethod, MonoMethodSignature *csig)
 {
 	if (imethod->arg_offsets)
 		return imethod->arg_offsets;
 
-	MonoMethodSignature *sig = mono_method_signature_internal (imethod->method);
+	// For pinvokes, csig represents the real signature with marshalled args. If an explicit
+	// marshalled signature was not provided, we use the managed signature of the method.
+	MonoMethodSignature *sig = csig;
+	if (!sig)
+		sig = mono_method_signature_internal (imethod->method);
 	int arg_count = sig->hasthis + sig->param_count;
 	g_assert (arg_count);
 	guint32 *arg_offsets = (guint32*) g_malloc ((sig->hasthis + sig->param_count) * sizeof (int));
@@ -1163,13 +1365,13 @@ initialize_arg_offsets (InterpMethod *imethod)
 }
 
 static guint32
-get_arg_offset_fast (InterpMethod *imethod, int index)
+get_arg_offset_fast (InterpMethod *imethod, MonoMethodSignature *sig, int index)
 {
 	guint32 *arg_offsets = imethod->arg_offsets;
 	if (arg_offsets)
 		return arg_offsets [index];
 
-	arg_offsets = initialize_arg_offsets (imethod);
+	arg_offsets = initialize_arg_offsets (imethod, sig);
 	g_assert (arg_offsets);
 	return arg_offsets [index];
 }
@@ -1178,7 +1380,7 @@ static guint32
 get_arg_offset (InterpMethod *imethod, MonoMethodSignature *sig, int index)
 {
 	if (imethod) {
-		return get_arg_offset_fast (imethod, index);
+		return get_arg_offset_fast (imethod, sig, index);
 	} else {
 		g_assert (!sig->hasthis);
 		return compute_arg_offset (sig, index, -1);
@@ -1190,7 +1392,8 @@ static MonoFuncV mono_native_to_interp_trampoline = NULL;
 #endif
 
 #ifndef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
-static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, InterpFrame *frame)
+static InterpMethodArguments*
+build_args_from_sig (MonoMethodSignature *sig, InterpFrame *frame)
 {
 	InterpMethodArguments *margs = g_malloc0 (sizeof (InterpMethodArguments));
 
@@ -1207,7 +1410,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 		margs->ilen++;
 
 	for (int i = 0; i < sig->param_count; i++) {
-		guint32 ptype = sig->params [i]->byref ? MONO_TYPE_PTR : sig->params [i]->type;
+		guint32 ptype = m_type_is_byref (sig->params [i]) ? MONO_TYPE_PTR : sig->params [i]->type;
 		switch (ptype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
@@ -1281,7 +1484,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 		MonoType *type = sig->params [i];
 		guint32 ptype;
 retry:
-		ptype = type->byref ? MONO_TYPE_PTR : type->type;
+		ptype = m_type_is_byref (type) ? MONO_TYPE_PTR : type->type;
 		switch (ptype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
@@ -1317,6 +1520,14 @@ retry:
 			margs->iargs [int_i] = sp_arg;
 #if DEBUG_INTERP
 			g_print ("build_args_from_sig: margs->iargs [%d]: %p (vt) (frame @ %d)\n", int_i, margs->iargs [int_i], i);
+#endif
+
+#ifdef HOST_WASM
+			{
+				/* Scalar vtypes are passed by value */
+				if (mini_wasm_is_scalar_vtype (sig->params [i]))
+					margs->iargs [int_i] = *(gpointer*)margs->iargs [int_i];
+			}
 #endif
 			int_i++;
 			break;
@@ -1407,11 +1618,11 @@ interp_frame_arg_to_data (MonoInterpFrameHandle frame, MonoMethodSignature *sig,
 
 	// If index == -1, we finished executing an InterpFrame and the result is at retval.
 	if (index == -1)
-		stackval_to_data (sig->ret, iframe->retval, data, TRUE);
+		stackval_to_data (sig->ret, iframe->retval, data, sig->pinvoke && !sig->marshalling_disabled);
 	else if (sig->hasthis && index == 0)
 		*(gpointer*)data = iframe->stack->data.p;
 	else
-		stackval_to_data (sig->params [index - sig->hasthis], STACK_ADD_BYTES (iframe->stack, get_arg_offset (imethod, sig, index)), data, sig->pinvoke);
+		stackval_to_data (sig->params [index - sig->hasthis], STACK_ADD_BYTES (iframe->stack, get_arg_offset (imethod, sig, index)), data, sig->pinvoke && !sig->marshalling_disabled);
 }
 
 static void
@@ -1422,11 +1633,11 @@ interp_data_to_frame_arg (MonoInterpFrameHandle frame, MonoMethodSignature *sig,
 
 	// Get result from pinvoke call, put it directly on top of execution stack in the caller frame
 	if (index == -1)
-		stackval_from_data (sig->ret, iframe->retval, data, TRUE);
+		stackval_from_data (sig->ret, iframe->retval, data, sig->pinvoke && !sig->marshalling_disabled);
 	else if (sig->hasthis && index == 0)
 		iframe->stack->data.p = *(gpointer*)data;
 	else
-		stackval_from_data (sig->params [index - sig->hasthis], STACK_ADD_BYTES (iframe->stack, get_arg_offset (imethod, sig, index)), data, sig->pinvoke);
+		stackval_from_data (sig->params [index - sig->hasthis], STACK_ADD_BYTES (iframe->stack, get_arg_offset (imethod, sig, index)), data, sig->pinvoke && !sig->marshalling_disabled);
 }
 
 static gpointer
@@ -1479,7 +1690,8 @@ ves_pinvoke_method (
 	stackval *ret_sp,
 	stackval *sp,
 	gboolean save_last_error,
-	gpointer *cache)
+	gpointer *cache,
+	gboolean *gc_transitions)
 {
 	InterpFrame frame = {0};
 	frame.parent = parent_frame;
@@ -1490,14 +1702,7 @@ ves_pinvoke_method (
 	MonoLMFExt ext;
 	gpointer args;
 
-	/*
-	 * When there's a calli in a pinvoke wrapper, we're in GC Safe mode.
-	 * When we're called for some other calli, we may be in GC Unsafe mode.
-	 *
-	 * On any code path where we call anything other than the entry_func,
-	 * we need to switch back to GC Unsafe before calling the runtime.
-	 */
-	MONO_REQ_GC_NEUTRAL_MODE;
+	MONO_REQ_GC_UNSAFE_MODE;
 
 #ifdef HOST_WASM
 	/*
@@ -1533,9 +1738,7 @@ ves_pinvoke_method (
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	CallContext ccontext;
-	MONO_ENTER_GC_UNSAFE;
 	mono_arch_set_native_call_context_args (&ccontext, &frame, sig);
-	MONO_EXIT_GC_UNSAFE;
 	args = &ccontext;
 #else
 	InterpMethodArguments *margs = build_args_from_sig (sig, &frame);
@@ -1543,23 +1746,30 @@ ves_pinvoke_method (
 #endif
 
 	INTERP_PUSH_LMF_WITH_CTX (&frame, ext, exit_pinvoke);
-	entry_func ((gpointer) addr, args);
+
+	if (*gc_transitions) {
+		MONO_ENTER_GC_SAFE;
+		entry_func ((gpointer) addr, args);
+		MONO_EXIT_GC_SAFE;
+		*gc_transitions = FALSE;
+	} else {
+		entry_func ((gpointer) addr, args);
+	}
+
 	if (save_last_error)
 		mono_marshal_set_last_error ();
 	interp_pop_lmf (&ext);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	if (!context->has_resume_state) {
-		MONO_ENTER_GC_UNSAFE;
 		mono_arch_get_native_call_context_ret (&ccontext, &frame, sig);
-		MONO_EXIT_GC_UNSAFE;
 	}
 
 	g_free (ccontext.stack);
 #else
 	// Only the vt address has been returned, we need to copy the entire content on interp stack
 	if (!context->has_resume_state && MONO_TYPE_ISSTRUCT (sig->ret))
-		stackval_from_data (sig->ret, frame.retval, (char*)frame.retval->data.p, sig->pinvoke);
+		stackval_from_data (sig->ret, frame.retval, (char*)frame.retval->data.p, sig->pinvoke && !sig->marshalling_disabled);
 
 	g_free (margs->iargs);
 	g_free (margs->fargs);
@@ -1579,19 +1789,22 @@ exit_pinvoke:
  *   Initialize del->interp_method.
  */
 static void
-interp_init_delegate (MonoDelegate *del, MonoError *error)
+interp_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo **out_info, MonoError *error)
 {
 	MonoMethod *method;
 
 	if (del->interp_method) {
 		/* Delegate created by a call to ves_icall_mono_delegate_ctor_interp () */
 		del->method = ((InterpMethod *)del->interp_method)->method;
-	} if (del->method_ptr && !del->method) {
+	} else if (del->method_ptr && !del->method) {
 		/* Delegate created from methodInfo.MethodHandle.GetFunctionPointer() */
 		del->interp_method = (InterpMethod *)del->method_ptr;
+		if (mono_llvm_only)
+			// FIXME:
+			g_assert_not_reached ();
 	} else if (del->method) {
 		/* Delegate created dynamically */
-		del->interp_method = mono_interp_get_imethod (del->method, error);
+		del->interp_method = mono_interp_get_imethod (del->method);
 	} else {
 		/* Created from JITted code */
 		g_assert_not_reached ();
@@ -1616,8 +1829,7 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 			 * FIXME We should do this later, when we also know the delegate on which the
 			 * target method is called.
 			 */
-			del->interp_method = mono_interp_get_imethod (mono_marshal_get_delegate_invoke (method, NULL), error);
-			mono_error_assert_ok (error);
+			del->interp_method = mono_interp_get_imethod (mono_marshal_get_delegate_invoke (method, NULL));
 		}
 	}
 
@@ -1626,15 +1838,91 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 		mono_interp_transform_method ((InterpMethod *) del->interp_method, get_context (), error);
 		return_if_nok (error);
 	}
+
+	/*
+	 * Compute a MonoDelegateTrampInfo for this delegate if possible and pass it back to
+	 * the caller.
+	 * Keep a 1 element cache in imethod->del_info. This should be good enough since most methods
+	 * are only associated with one delegate type.
+	 */
+	if (out_info)
+		*out_info = NULL;
+	if (mono_llvm_only) {
+		InterpMethod *imethod = del->interp_method;
+		method = imethod->method;
+		if (imethod->del_info && imethod->del_info->klass == del->object.vtable->klass) {
+			*out_info = imethod->del_info;
+		} else if (!imethod->del_info) {
+			imethod->del_info = mono_create_delegate_trampoline_info (del->object.vtable->klass, method, FALSE);
+			*out_info = imethod->del_info;
+		}
+	}
+}
+
+/* Convert a function pointer for a managed method to an InterpMethod* */
+static InterpMethod*
+ftnptr_to_imethod (gpointer addr, gboolean *need_unbox)
+{
+	InterpMethod *imethod;
+
+	if (mono_llvm_only) {
+		/* Function pointers are represented by a MonoFtnDesc structure */
+		MonoFtnDesc *ftndesc = (MonoFtnDesc*)addr;
+		g_assert (ftndesc);
+		g_assert (ftndesc->method);
+
+		if (!ftndesc->interp_method) {
+			imethod = mono_interp_get_imethod (ftndesc->method);
+			mono_memory_barrier ();
+			// FIXME Handle unboxing here ?
+			ftndesc->interp_method = imethod;
+		}
+		*need_unbox = INTERP_IMETHOD_IS_TAGGED_UNBOX (ftndesc->interp_method);
+		imethod = INTERP_IMETHOD_UNTAG_UNBOX (ftndesc->interp_method);
+	} else {
+		/* Function pointers are represented by their InterpMethod */
+		*need_unbox = INTERP_IMETHOD_IS_TAGGED_UNBOX (addr);
+		imethod = INTERP_IMETHOD_UNTAG_UNBOX (addr);
+	}
+	return imethod;
+}
+
+static gpointer
+imethod_to_ftnptr (InterpMethod *imethod, gboolean need_unbox)
+{
+	if (mono_llvm_only) {
+		ERROR_DECL (error);
+		/* Function pointers are represented by a MonoFtnDesc structure */
+		MonoFtnDesc **ftndesc_p;
+		if (need_unbox)
+			ftndesc_p = &imethod->ftndesc_unbox;
+		else
+			ftndesc_p = &imethod->ftndesc;
+		if (!*ftndesc_p) {
+			MonoFtnDesc *ftndesc = mini_llvmonly_load_method_ftndesc (imethod->method, FALSE, need_unbox, error);
+			mono_error_assert_ok (error);
+			if (need_unbox)
+				ftndesc->interp_method = INTERP_IMETHOD_TAG_UNBOX (imethod);
+			else
+				ftndesc->interp_method = imethod;
+			mono_memory_barrier ();
+			*ftndesc_p = ftndesc;
+		}
+		return *ftndesc_p;
+	} else {
+		if (need_unbox)
+			return INTERP_IMETHOD_TAG_UNBOX (imethod);
+		else
+			return imethod;
+	}
 }
 
 static void
 interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error)
 {
-	/*
-	 * addr is the result of an LDFTN opcode, i.e. an InterpMethod
-	 */
-	InterpMethod *imethod = (InterpMethod*)addr;
+	gboolean need_unbox;
+	/* addr is the result of an LDFTN opcode */
+	InterpMethod *imethod = ftnptr_to_imethod (addr, &need_unbox);
 
 	if (!(imethod->method->flags & METHOD_ATTRIBUTE_STATIC)) {
 		MonoMethod *invoke = mono_get_delegate_invoke_internal (mono_handle_class (this_obj));
@@ -1723,7 +2011,7 @@ dump_args (InterpFrame *inv)
 	GString *str = g_string_new ("");
 	int i;
 	MonoMethodSignature *signature = mono_method_signature_internal (inv->imethod->method);
-	
+
 	if (signature->param_count == 0 && !signature->hasthis)
 		return g_string_free (str, FALSE);
 
@@ -1837,8 +2125,7 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	sp [2].data.p = exc;
 	sp [3].data.p = target_method;
 
-	InterpMethod *imethod = mono_interp_get_imethod (invoke_wrapper, error);
-	mono_error_assert_ok (error);
+	InterpMethod *imethod = mono_interp_get_imethod (invoke_wrapper);
 
 	InterpFrame frame = {0};
 	frame.imethod = imethod;
@@ -1848,11 +2135,14 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	// The method to execute might not be transformed yet, so we don't know how much stack
 	// it uses. We bump the stack_pointer here so any code triggered by method compilation
 	// will not attempt to use the space that we used to push the args for this method.
-	// The real top of stack for this method will be set in interp_exec_method once the
+	// The real top of stack for this method will be set in mono_interp_exec_method once the
 	// method is transformed.
 	context->stack_pointer = (guchar*)(sp + 4);
+	g_assert (context->stack_pointer < context->stack_end);
 
-	interp_exec_method (&frame, context, NULL);
+	MONO_ENTER_GC_UNSAFE;
+	mono_interp_exec_method (&frame, context, NULL);
+	MONO_EXIT_GC_UNSAFE;
 
 	context->stack_pointer = (guchar*)sp;
 
@@ -1861,6 +2151,8 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 		 * This can happen on wasm where native frames cannot be skipped during EH.
 		 * EH processing will continue when control returns to the interpreter.
 		 */
+		if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP)
+			mono_llvm_cpp_throw_exception ();
 		return NULL;
 	}
 	// The return value is at the bottom of the stack
@@ -1903,6 +2195,18 @@ interp_entry (InterpEntryData *data)
 	sp_args = sp = (stackval*)context->stack_pointer;
 
 	method = rmethod->method;
+
+	if (rmethod->is_invoke) {
+		/*
+		 * This happens when AOT code for the invoke wrapper is not found.
+		 * Have to replace the method with the wrapper here, since the wrapper depends on the delegate.
+		 */
+		MonoDelegate *del = (MonoDelegate*)data->this_arg;
+		// FIXME: This is slow
+		method = mono_marshal_get_delegate_invoke (method, del);
+		data->rmethod = mono_interp_get_imethod (method);
+	}
+
 	sig = mono_method_signature_internal (method);
 
 	// FIXME: Optimize this
@@ -1918,7 +2222,7 @@ interp_entry (InterpEntryData *data)
 	else
 		params = data->args;
 	for (i = 0; i < sig->param_count; ++i) {
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
 			sp_args->data.p = params [i];
 			sp_args++;
 		} else {
@@ -1926,6 +2230,7 @@ interp_entry (InterpEntryData *data)
 			sp_args = STACK_ADD_BYTES (sp_args, size);
 		}
 	}
+	sp_args = (stackval*)ALIGN_TO (sp_args, MINT_STACK_ALIGNMENT);
 
 	InterpFrame frame = {0};
 	frame.imethod = data->rmethod;
@@ -1933,20 +2238,23 @@ interp_entry (InterpEntryData *data)
 	frame.retval = sp;
 
 	context->stack_pointer = (guchar*)sp_args;
+	g_assert (context->stack_pointer < context->stack_end);
 
-	interp_exec_method (&frame, context, NULL);
+	MONO_ENTER_GC_UNSAFE;
+	mono_interp_exec_method (&frame, context, NULL);
+	MONO_EXIT_GC_UNSAFE;
 
 	context->stack_pointer = (guchar*)sp;
-
-	g_assert (!context->has_resume_state);
-	g_assert (!context->safepoint_frame);
 
 	if (rmethod->needs_thread_attach)
 		mono_threads_detach_coop (orig_domain, &attach_cookie);
 
+	check_pending_unwind (context);
+
 	if (mono_llvm_only) {
 		if (context->has_resume_state)
-			mono_llvm_reraise_exception ((MonoException*)mono_gchandle_get_target_internal (context->exc_gchandle));
+			/* The exception will be handled in a frame above us */
+			mono_llvm_cpp_throw_exception ();
 	} else {
 		g_assert (!context->has_resume_state);
 	}
@@ -2057,7 +2365,7 @@ do_icall (MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpoi
 
 	/* convert the native representation to the stackval representation */
 	if (sig)
-		stackval_from_data (sig->ret, ret_sp, (char*) &ret_sp->data.p, sig->pinvoke);
+		stackval_from_data (sig->ret, ret_sp, (char*) &ret_sp->data.p, sig->pinvoke && !sig->marshalling_disabled);
 }
 
 /* MONO_NO_OPTIMIZATION is needed due to usage of INTERP_PUSH_LMF_WITH_CTX. */
@@ -2066,12 +2374,19 @@ do_icall (MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpoi
 #endif
 // Do not inline in case order of frame addresses matters, and maybe other reasons.
 static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE gpointer
-do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error)
+do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error, gboolean *gc_transitions)
 {
 	MonoLMFExt ext;
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_icall);
 
-	do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
+	if (*gc_transitions) {
+		MONO_ENTER_GC_SAFE;
+		do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
+		MONO_EXIT_GC_SAFE;
+		*gc_transitions = FALSE;
+	} else {
+		do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
+	}
 
 	interp_pop_lmf (&ext);
 
@@ -2088,6 +2403,7 @@ typedef struct {
 	int pindex;
 	gpointer jit_wrapper;
 	gpointer *args;
+	gpointer extra_arg;
 	MonoFtnDesc ftndesc;
 } JitCallCbData;
 
@@ -2099,7 +2415,7 @@ jit_call_cb (gpointer arg)
 	gpointer jit_wrapper = cb_data->jit_wrapper;
 	int pindex = cb_data->pindex;
 	gpointer *args = cb_data->args;
-	MonoFtnDesc *ftndesc = &cb_data->ftndesc;
+	gpointer ftndesc = cb_data->extra_arg;
 
 	switch (pindex) {
 	case 0: {
@@ -2165,6 +2481,34 @@ jit_call_cb (gpointer arg)
 		func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], args [7], ftndesc);
 		break;
 	}
+	case 9: {
+		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer);
+		T func = (T)jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], args [7], args [8], ftndesc);
+		break;
+	}
+	case 10: {
+		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer);
+		T func = (T)jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], args [7], args [8], args [9], ftndesc);
+		break;
+	}
+	case 11: {
+		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer);
+		T func = (T)jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], args [7], args [8], args [9], args [10], ftndesc);
+		break;
+	}
+	case 12: {
+		typedef void (*T)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer);
+		T func = (T)jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], args [7], args [8], args [9], args [10], args [11], ftndesc);
+		break;
+	}
 	default:
 		g_assert_not_reached ();
 		break;
@@ -2193,6 +2537,11 @@ struct _JitCallInfo {
 	guint8 *arginfo;
 	gint32 res_size;
 	int ret_mt;
+	gboolean no_wrapper;
+#if HOST_BROWSER
+	int hit_count;
+	WasmJitCallThunk jiterp_thunk;
+#endif
 };
 
 static MONO_NEVER_INLINE void
@@ -2211,20 +2560,38 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 	sig = mono_method_signature_internal (method);
 	g_assert (sig);
 
-	MonoMethod *wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
-	//printf ("J: %s %s\n", mono_method_full_name (method, 1), mono_method_full_name (wrapper, 1));
-
-	gpointer jit_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
-	mono_error_assert_ok (error);
-
 	gpointer addr = mono_jit_compile_method_jit_only (method, error);
 	return_if_nok (error);
 	g_assert (addr);
 
-	if (mono_llvm_only)
-		cinfo->addr = mini_llvmonly_add_method_wrappers (method, addr, FALSE, FALSE, &cinfo->extra_arg);
-	else
+	gboolean need_wrapper = TRUE;
+	if (mono_llvm_only) {
+		MonoAotMethodFlags flags = mono_aot_get_method_flags (addr);
+
+		if (flags & MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE) {
+			/*
+			 * The callee already has a gsharedvt signature, we can call it directly
+			 * instead of through a gsharedvt out wrapper.
+			 */
+			need_wrapper = FALSE;
+			cinfo->no_wrapper = TRUE;
+		}
+	}
+
+	gpointer jit_wrapper = NULL;
+	if (need_wrapper) {
+		MonoMethod *wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
+		jit_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
+		mono_error_assert_ok (error);
+	}
+
+	if (mono_llvm_only) {
+		gboolean caller_gsharedvt = !need_wrapper;
+		cinfo->addr = mini_llvmonly_add_method_wrappers (method, addr, caller_gsharedvt, FALSE, &cinfo->extra_arg);
+	} else {
 		cinfo->addr = addr;
+	}
+
 	cinfo->sig = sig;
 	cinfo->wrapper = jit_wrapper;
 
@@ -2238,7 +2605,7 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 			 * that could end up doing a jit call.
 			 */
 			gint32 size = mono_class_value_size (klass, NULL);
-			cinfo->res_size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
+			cinfo->res_size = ALIGN_TO (size, MINT_STACK_SLOT_SIZE);
 		} else {
 			cinfo->res_size = MINT_STACK_SLOT_SIZE;
 		}
@@ -2250,10 +2617,10 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 	if (sig->param_count) {
 		cinfo->arginfo = g_new0 (guint8, sig->param_count);
 
-		for (int i = 0; i < rmethod->param_count; ++i) {
+		for (guint i = 0; i < rmethod->param_count; ++i) {
 			MonoType *t = rmethod->param_types [i];
 			int mt = mint_type (t);
-			if (sig->params [i]->byref) {
+			if (m_type_is_byref (sig->params [i])) {
 				cinfo->arginfo [i] = JIT_ARG_BYVAL;
 			} else if (mt == MINT_TYPE_O) {
 				cinfo->arginfo [i] = JIT_ARG_BYREF;
@@ -2268,11 +2635,19 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 	rmethod->jit_call_info = cinfo;
 }
 
+#if HOST_BROWSER
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_register_jit_call_thunk (void *cinfo, WasmJitCallThunk thunk) {
+	((JitCallInfo*)cinfo)->jiterp_thunk = thunk;
+}
+#endif
+
 static MONO_NEVER_INLINE void
-do_jit_call (stackval *ret_sp, stackval *sp, InterpFrame *frame, InterpMethod *rmethod, MonoError *error)
+do_jit_call (ThreadContext *context, stackval *ret_sp, stackval *sp, InterpFrame *frame, InterpMethod *rmethod, MonoError *error)
 {
 	MonoLMFExt ext;
 	JitCallInfo *cinfo;
+	gboolean thrown = FALSE;
 
 	//printf ("jit_call: %s\n", mono_method_full_name (rmethod->method, 1));
 
@@ -2284,10 +2659,69 @@ do_jit_call (stackval *ret_sp, stackval *sp, InterpFrame *frame, InterpMethod *r
 		init_jit_call_info (rmethod, error);
 		mono_error_assert_ok (error);
 	}
+
 	cinfo = (JitCallInfo*)rmethod->jit_call_info;
 
+#if JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES
+	// The jiterpreter will compile a unique thunk for each do_jit_call call site if it is hot
+	//  enough to justify it. At that point we can invoke the thunk to efficiently do most of
+	//  the work that would normally be done by do_jit_call
+	if (mono_opt_jiterpreter_jit_call_enabled) {
+		// FIXME: Thread safety for the thunk pointer
+		WasmJitCallThunk thunk = cinfo->jiterp_thunk;
+		if (thunk) {
+			MonoFtnDesc ftndesc = {0};
+			ftndesc.addr = cinfo->addr;
+			ftndesc.arg = cinfo->extra_arg;
+			interp_push_lmf (&ext, frame);
+			if (
+				mono_opt_jiterpreter_wasm_eh_enabled ||
+				(mono_aot_mode != MONO_AOT_MODE_LLVMONLY_INTERP)
+			) {
+				// WASM EH is available or we are otherwise in a situation where we know
+				//  that the jiterpreter thunk was compiled with exception handling built-in
+				//  so we can just invoke it directly and errors will be handled
+				thunk (ret_sp, sp, &ftndesc, &thrown);
+			} else {
+				// Call a special JS function that will invoke the compiled jiterpreter thunk
+				//  and trap errors for us to set the thrown flag
+				mono_interp_invoke_wasm_jit_call_trampoline (
+					thunk, ret_sp, sp, &ftndesc, &thrown
+				);
+			}
+			interp_pop_lmf (&ext);
+
+			// We reuse do_jit_call's epilogue to do things like propagate thrown exceptions
+			//  and sign-extend return values instead of inlining that logic into every thunk
+			goto epilogue;
+		} else {
+			// FIXME: thread safety for the hit count
+			int count = cinfo->hit_count;
+			// If our hit count just reached the threshold, we request that a thunk be jitted
+			//  for this specific call site. It will go into a queue and wait until there
+			//  are enough jit calls waiting to be compiled into one WASM module
+			if (count == mono_opt_jiterpreter_jit_call_trampoline_hit_count) {
+				mono_interp_jit_wasm_jit_call_trampoline (
+					rmethod->method, rmethod, cinfo,
+					rmethod->arg_offsets, mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP
+				);
+			} else {
+				int excess = count - mono_opt_jiterpreter_jit_call_queue_flush_threshold;
+				if (excess <= 0)
+					cinfo->hit_count++;
+				// If our hit count just reached the flush threshold, that means that we
+				//  previously requested compilation for this call site and it didn't
+				//  happen yet. We will request a flush of the entire queue this one
+				//  time which will probably result in it being compiled
+				if (excess == 0)
+					mono_interp_flush_jitcall_queue ();
+			}
+		}
+	}
+#endif
+
 	/*
-	 * Convert the arguments on the interpeter stack to the format expected by the gsharedvt_out wrapper.
+	 * Convert the arguments on the interpreter stack to the format expected by the gsharedvt_out wrapper.
 	 */
 	gpointer args [32];
 	int pindex = 0;
@@ -2299,8 +2733,8 @@ do_jit_call (stackval *ret_sp, stackval *sp, InterpFrame *frame, InterpMethod *r
 	/* return address */
 	if (cinfo->ret_mt != -1)
 		args [pindex ++] = ret_sp;
-	for (int i = 0; i < rmethod->param_count; ++i) {
-		stackval *sval = STACK_ADD_BYTES (sp, get_arg_offset_fast (rmethod, stack_index + i));
+	for (guint i = 0; i < rmethod->param_count; ++i) {
+		stackval *sval = STACK_ADD_BYTES (sp, get_arg_offset_fast (rmethod, NULL, stack_index + i));
 		if (cinfo->arginfo [i] == JIT_ARG_BYVAL)
 			args [pindex ++] = sval->data.p;
 		else
@@ -2310,24 +2744,65 @@ do_jit_call (stackval *ret_sp, stackval *sp, InterpFrame *frame, InterpMethod *r
 
 	JitCallCbData cb_data;
 	memset (&cb_data, 0, sizeof (cb_data));
-	cb_data.jit_wrapper = cinfo->wrapper;
 	cb_data.pindex = pindex;
 	cb_data.args = args;
-	cb_data.ftndesc.addr = cinfo->addr;
-	cb_data.ftndesc.arg = cinfo->extra_arg;
+	if (cinfo->no_wrapper) {
+		cb_data.jit_wrapper = cinfo->addr;
+		cb_data.extra_arg = cinfo->extra_arg;
+	} else {
+		cb_data.ftndesc.addr = cinfo->addr;
+		cb_data.ftndesc.arg = cinfo->extra_arg;
+		cb_data.jit_wrapper = cinfo->wrapper;
+		cb_data.extra_arg = &cb_data.ftndesc;
+	}
 
 	interp_push_lmf (&ext, frame);
-	gboolean thrown = FALSE;
+
 	if (mono_aot_mode == MONO_AOT_MODE_LLVMONLY_INTERP) {
+#if JITERPRETER_ENABLE_SPECIALIZED_JIT_CALL
+		/*
+		 * invoke jit_call_cb via a single indirect function call that dispatches to
+		 *  either a specialized JS implementation or a specialized WASM EH version
+		 * see jiterpreter-jit-call.ts and do-jit-call.wat
+		 * NOTE: the first argument must ALWAYS be jit_call_cb for the specialization.
+		 *  the actual implementation cannot verify this at runtime, so get it right
+		 * this is faster than mono_llvm_cpp_catch_exception by avoiding the use of
+		 *  emscripten invoke_vi to find and invoke jit_call_cb indirectly
+		 */
+		jiterpreter_do_jit_call(jit_call_cb, &cb_data, &thrown);
+#else
 		/* Catch the exception thrown by the native code using a try-catch */
 		mono_llvm_cpp_catch_exception (jit_call_cb, &cb_data, &thrown);
+#endif
 	} else {
 		jit_call_cb (&cb_data);
 	}
+
 	interp_pop_lmf (&ext);
+
+#if JITERPRETER_ENABLE_JIT_CALL_TRAMPOLINES
+epilogue:
+#endif
 	if (thrown) {
-		MonoObject *obj = mono_llvm_load_exception ();
+		if (context->has_resume_state)
+			/*
+			 * This happens when interp_entry calls mono_llvm_reraise_exception ().
+			 */
+			return;
+		MonoJitTlsData *jit_tls = mono_get_jit_tls ();
+		if (jit_tls->resume_state.il_state) {
+			/*
+			 * This c++ exception is going to be caught by an AOTed frame above us.
+			 * We can't rethrow here, since that will skip the cleanup of the
+			 * interpreter stack space etc. So instruct the interpreter to unwind.
+			 */
+			context->has_resume_state = TRUE;
+			context->handler_frame = NULL;
+			return;
+		}
+		MonoObject *obj = mini_llvmonly_load_exception ();
 		g_assert (obj);
+		mini_llvmonly_clear_exception ();
 		mono_error_set_exception_instance (error, (MonoException*)obj);
 		return;
 	}
@@ -2370,29 +2845,34 @@ do_debugger_tramp (void (*tramp) (void), InterpFrame *frame)
 }
 
 static MONO_NEVER_INLINE MonoException*
-do_transform_method (InterpFrame *frame, ThreadContext *context)
+do_transform_method (InterpMethod *imethod, InterpFrame *frame, ThreadContext *context)
 {
 	MonoLMFExt ext;
 	/* Don't push lmf if we have no interp data */
 	gboolean push_lmf = frame->parent != NULL;
+	MonoException *ex = NULL;
 	ERROR_DECL (error);
-
-#if DEBUG_INTERP
-	char *mn = mono_method_full_name (frame->imethod->method, TRUE);
-	g_print ("(%p) Transforming %s\n", mono_thread_internal_current (), mn);
-	g_free (mn);
-#endif
 
 	/* Use the parent frame as the current frame is not complete yet */
 	if (push_lmf)
 		interp_push_lmf (&ext, frame->parent);
 
-	mono_interp_transform_method (frame->imethod, context, error);
+#if DEBUG_INTERP
+	if (imethod->method) {
+		char* mn = mono_method_full_name (imethod->method, TRUE);
+		g_print ("(%p) Transforming %s\n", mono_thread_internal_current (), mn);
+		g_free (mn);
+	}
+#endif
+
+	mono_interp_transform_method (imethod, context, error);
+	if (!is_ok (error))
+		ex = mono_error_convert_to_exception (error);
 
 	if (push_lmf)
 		interp_pop_lmf (&ext);
 
-	return mono_error_convert_to_exception (error);
+	return ex;
 }
 
 static void
@@ -2422,6 +2902,22 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
  * this/static * ret/void * 16 arguments -> 64 functions.
  */
 
+#if HOST_BROWSER
+/*
+ * For the jiterpreter, we want to record a hit count for interp_entry wrappers that can
+ *  be jitted, but not for ones that can't. As a result we need to put this in its own
+ *  macro instead of in INTERP_ENTRY_BASE, so that the generic wrappers don't have to
+ *  call it on every invocation.
+ * Once this gets called a few hundred times, the wrapper will be jitted so we'll stop
+ *  paying the cost of the hit counter and the entry will become faster.
+ */
+#define INTERP_ENTRY_UPDATE_HIT_COUNT(_method) \
+	if (mono_opt_jiterpreter_interp_entry_enabled) \
+		mono_interp_record_interp_entry (_method)
+#else
+#define INTERP_ENTRY_UPDATE_HIT_COUNT(_method)
+#endif
+
 #define INTERP_ENTRY_BASE(_method, _this_arg, _res) \
 	InterpEntryData data; \
 	(data).rmethod = (_method); \
@@ -2429,30 +2925,34 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	(data).this_arg = (_this_arg); \
 	(data).many_args = NULL;
 
+#define INTERP_ENTRY_BASE_WITH_HIT_COUNT(_method, _this_arg, _res) \
+	INTERP_ENTRY_BASE (_method, _this_arg, _res) \
+	INTERP_ENTRY_UPDATE_HIT_COUNT (_method);
+
 #define INTERP_ENTRY0(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY1(_this_arg, _res, _method) {	  \
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY2(_this_arg, _res, _method) {  \
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY3(_this_arg, _res, _method) { \
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY4(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -2460,7 +2960,7 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY5(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -2469,7 +2969,7 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY6(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -2479,7 +2979,7 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY7(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -2490,7 +2990,7 @@ init_arglist (InterpFrame *frame, MonoMethodSignature *sig, stackval *sp, char *
 	interp_entry (&data); \
 	}
 #define INTERP_ENTRY8(_this_arg, _res, _method) {	\
-	INTERP_ENTRY_BASE (_method, _this_arg, _res); \
+	INTERP_ENTRY_BASE_WITH_HIT_COUNT (_method, _this_arg, _res); \
 	(data).args [0] = arg1; \
 	(data).args [1] = arg2; \
 	(data).args [2] = arg3; \
@@ -2615,7 +3115,7 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 		if (type->type == MONO_TYPE_GENERICINST && !MONO_TYPE_IS_REFERENCE (type)) {
 			size = mono_class_value_size (mono_class_from_mono_type_internal (type), NULL);
 		} else if (type->type == MONO_TYPE_VALUETYPE) {
-			if (sig->pinvoke)
+			if (sig->pinvoke && !sig->marshalling_disabled)
 				size = mono_class_native_size (type->data.klass, NULL);
 			else
 				size = mono_class_value_size (type->data.klass, NULL);
@@ -2624,15 +3124,21 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 		}
 		newsp = STACK_ADD_BYTES (newsp, size);
 	}
+	newsp = (stackval*)ALIGN_TO (newsp, MINT_STACK_ALIGNMENT);
 	context->stack_pointer = (guchar*)newsp;
+	g_assert (context->stack_pointer < context->stack_end);
 
-	interp_exec_method (&frame, context, NULL);
+	MONO_ENTER_GC_UNSAFE;
+	mono_interp_exec_method (&frame, context, NULL);
+	MONO_EXIT_GC_UNSAFE;
 
 	context->stack_pointer = (guchar*)sp;
 	g_assert (!context->has_resume_state);
 
 	if (rmethod->needs_thread_attach)
 		mono_threads_detach_coop (orig_domain, &attach_cookie);
+
+	check_pending_unwind (context);
 
 	/* Write back the return value */
 	/* 'frame' is still valid */
@@ -2648,6 +3154,36 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 }
 
 #endif /* MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE */
+
+static void
+interp_entry_llvmonly (gpointer res, gpointer *args, gpointer imethod_untyped)
+{
+	InterpMethod *imethod = (InterpMethod*)imethod_untyped;
+
+	if (imethod->hasthis)
+		interp_entry_general (*(gpointer*)(args [0]), res, args + 1, imethod);
+	else
+		interp_entry_general (NULL, res, args, imethod);
+}
+
+static gpointer
+interp_get_interp_method (MonoMethod *method)
+{
+	return mono_interp_get_imethod (method);
+}
+
+static MonoJitInfo*
+interp_compile_interp_method (MonoMethod *method, MonoError *error)
+{
+	InterpMethod *imethod = mono_interp_get_imethod (method);
+
+	if (!imethod->transformed) {
+		mono_interp_transform_method (imethod, get_context (), error);
+		return_val_if_nok (error, NULL);
+	}
+
+	return imethod->jinfo;
+}
 
 static InterpMethod*
 lookup_method_pointer (gpointer addr)
@@ -2685,13 +3221,12 @@ no_llvmonly_interp_method_pointer (void)
 static MonoFtnDesc*
 interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoError *error)
 {
-	gpointer addr, entry_func, entry_wrapper;
+	gpointer addr, entry_func = NULL, entry_wrapper;
 	MonoMethodSignature *sig;
 	MonoMethod *wrapper;
 	InterpMethod *imethod;
 
-	imethod = mono_interp_get_imethod (method, error);
-	return_val_if_nok (error, NULL);
+	imethod = mono_interp_get_imethod (method);
 
 	if (unbox) {
 		if (imethod->llvmonly_unbox_entry)
@@ -2737,10 +3272,33 @@ interp_create_method_pointer_llvmonly (MonoMethod *method, gboolean unbox, MonoE
 	}
 	g_assert (entry_func);
 
+#if HOST_BROWSER
+	// FIXME: We don't support generating wasm trampolines for high arg counts yet
+	if (
+		(sig->param_count <= MAX_INTERP_ENTRY_ARGS) &&
+		mono_opt_jiterpreter_interp_entry_enabled
+	) {
+		jiterp_preserve_module();
+
+		const char *name = mono_method_full_name (method, FALSE);
+		gpointer wasm_entry_func = mono_interp_jit_wasm_entry_trampoline (
+			imethod, method, sig->param_count, (MonoType *)sig->params,
+			unbox, sig->hasthis, sig->ret->type != MONO_TYPE_VOID,
+			name, entry_func
+		);
+		g_free((void *)name);
+
+		// Compiling a trampoline can fail for various reasons, so in that case we will fall back to the pre-existing ones below
+		if (wasm_entry_func)
+			entry_func = wasm_entry_func;
+	}
+#endif
+
 	/* Encode unbox in the lower bit of imethod */
 	gpointer entry_arg = imethod;
 	if (unbox)
 		entry_arg = (gpointer)(((gsize)entry_arg) | 1);
+
 	MonoFtnDesc *entry_ftndesc = mini_llvmonly_create_ftndesc (method, entry_func, entry_arg);
 
 	addr = mini_llvmonly_create_ftndesc (method, entry_wrapper, entry_ftndesc);
@@ -2772,7 +3330,7 @@ static gpointer
 interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *error)
 {
 	gpointer addr, entry_func, entry_wrapper = NULL;
-	InterpMethod *imethod = mono_interp_get_imethod (method, error);
+	InterpMethod *imethod = mono_interp_get_imethod (method);
 
 	if (imethod->jit_entry)
 		return imethod->jit_entry;
@@ -2830,7 +3388,11 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 		 * the native caller expects a function pointer with the
 		 * right signature, so fail right away.
 		 */
-		mono_error_set_platform_not_supported (error, "No native to managed transitions on this platform.");
+		char *s = mono_method_get_full_name (orig_method);
+		char *msg = g_strdup_printf ("No native to managed transition for method '%s', missing [UnmanagedCallersOnly] attribute.", s);
+		mono_error_set_platform_not_supported (error, msg);
+		g_free (s);
+		g_free (msg);
 		return NULL;
 	}
 #endif
@@ -2933,7 +3495,7 @@ static long opcode_counts[MINT_LASTOP];
 
 #define COUNT_OP(op) opcode_counts[op]++
 #else
-#define COUNT_OP(op) 
+#define COUNT_OP(op)
 #endif
 
 #if DEBUG_INTERP
@@ -2941,20 +3503,38 @@ static long opcode_counts[MINT_LASTOP];
 	if (tracing > 1) { \
 		output_indent (); \
 		char *mn = mono_method_full_name (frame->imethod->method, FALSE); \
-		char *disasm = mono_interp_dis_mintop ((gint32)(ip - frame->imethod->code), TRUE, ip + 1, *ip); \
-		g_print ("(%p) %s -> %s\n", mono_thread_internal_current (), mn, disasm); \
+		g_print ("(%p) %s -> IL_%04x: %-10s\n", mono_thread_internal_current (), mn, (gint32)(ip - frame->imethod->code), mono_interp_opname (*ip)); \
 		g_free (mn); \
-		g_free (disasm); \
 	}
 #else
 #define DUMP_INSTR()
 #endif
 
+static MONO_NEVER_INLINE MonoException*
+do_init_vtable (MonoVTable *vtable, MonoError *error, InterpFrame *frame, const guint16 *ip)
+{
+	MonoLMFExt ext;
+	MonoException *ex = NULL;
+
+	/*
+	 * When calling runtime functions we pass the ip of the instruction triggering the runtime call.
+	 * Offset the subtraction from interp_frame_get_ip, so we don't end up in prev instruction.
+	 */
+	frame->state.ip = ip + 1;
+
+	interp_push_lmf (&ext, frame);
+	mono_runtime_class_init_full (vtable, error);
+	if (!is_ok (error))
+		ex = mono_error_convert_to_exception (error);
+	interp_pop_lmf (&ext);
+	return ex;
+}
+
 #define INIT_VTABLE(vtable) do { \
 		if (G_UNLIKELY (!(vtable)->initialized)) { \
-			mono_runtime_class_init_full ((vtable), error); \
-			if (!is_ok (error)) \
-				THROW_EX (mono_error_convert_to_exception (error), ip); \
+			MonoException *__init_vtable_ex = do_init_vtable ((vtable), error, frame, ip); \
+			if (G_UNLIKELY (__init_vtable_ex)) \
+				THROW_EX (__init_vtable_ex, ip); \
 		} \
 	} while (0);
 
@@ -2981,22 +3561,25 @@ mono_interp_isinst (MonoObject* object, MonoClass* klass)
 static MONO_NEVER_INLINE InterpMethod*
 mono_interp_get_native_func_wrapper (InterpMethod* imethod, MonoMethodSignature* csignature, guchar* code)
 {
-	ERROR_DECL(error);
-
 	/* Pinvoke call is missing the wrapper. See mono_get_native_calli_wrapper */
 	MonoMarshalSpec** mspecs = g_newa0 (MonoMarshalSpec*, csignature->param_count + 1);
 
 	MonoMethodPInvoke iinfo;
 	memset (&iinfo, 0, sizeof (iinfo));
 
-	MonoMethod* m = mono_marshal_get_native_func_wrapper (m_class_get_image (imethod->method->klass), csignature, &iinfo, mspecs, code);
+	MonoMethod *method = imethod->method;
+	MonoImage *image = NULL;
+	if (imethod->method->dynamic)
+		image = ((MonoDynamicMethod*)method)->assembly->image;
+	else
+		image = m_class_get_image (method->klass);
+	MonoMethod* m = mono_marshal_get_native_func_wrapper (image, csignature, &iinfo, mspecs, code);
 
 	for (int i = csignature->param_count; i >= 0; i--)
 		if (mspecs [i])
 			mono_metadata_free_marshal_spec (mspecs [i]);
 
-	InterpMethod *cmethod = mono_interp_get_imethod (m, error);
-	mono_error_cleanup (error); /* FIXME: don't swallow the error */
+	InterpMethod *cmethod = mono_interp_get_imethod (m);
 
 	return cmethod;
 }
@@ -3006,14 +3589,14 @@ static MONO_NEVER_INLINE MonoException*
 mono_interp_leave (InterpFrame* parent_frame)
 {
 	InterpFrame frame = {parent_frame};
-
+	gboolean gc_transitions = FALSE;
 	stackval tmp_sp;
 	/*
 	 * We need for mono_thread_get_undeniable_exception to be able to unwind
 	 * to check the abort threshold. For this to work we use frame as a
 	 * dummy frame that is stored in the lmf and serves as the transition frame
 	 */
-	do_icall_wrapper (&frame, NULL, MINT_ICALL_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE);
+	do_icall_wrapper (&frame, NULL, MINT_ICALL_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE, &gc_transitions);
 
 	return (MonoException*)tmp_sp.data.p;
 }
@@ -3064,7 +3647,7 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 	*out_ex = NULL;
 	if (!G_UNLIKELY (frame->imethod->transformed)) {
 		slow = TRUE;
-		MonoException *ex = do_transform_method (frame, context);
+		MonoException *ex = do_transform_method (frame->imethod, frame, context);
 		if (ex) {
 			*out_ex = ex;
 			/*
@@ -3079,7 +3662,7 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 	return slow;
 }
 
-/* Save the state of the interpeter main loop into FRAME */
+/* Save the state of the interpreter main loop into FRAME */
 #define SAVE_INTERP_STATE(frame) do { \
 	frame->state.ip = ip;  \
 	} while (0)
@@ -3103,6 +3686,123 @@ static long total_executed_opcodes;
 
 #define LOCAL_VAR(offset,type) (*(type*)(locals + (offset)))
 
+// The start of the stack has a reserved slot for a GC visible temp object pointer
+#ifdef TARGET_WASM
+#define SET_TEMP_POINTER(value) (*((volatile MonoObject * volatile *)context->stack_start) = value)
+#else
+#define SET_TEMP_POINTER(value) (*((MonoObject **)context->stack_start) = value)
+#endif
+
+static MONO_NEVER_INLINE int
+interp_newobj_slow_unopt (InterpFrame *frame, InterpMethod *cmethod, const guint16* ip, MonoError *error)
+{
+	char *locals = (char*)frame->stack;
+	int return_offset = ip [1];
+	int start_param_offset = ip [2];
+	guint16 param_size = ip [4];
+	guint16 ret_size = ip [5];
+	gpointer this_ptr;
+
+	// Should only be called in unoptimized code. This opcode moves the params around
+	// to compensate for the lack of use of a proper offset allocator in unoptimized code.
+	gboolean is_vt = ret_size != 0;
+	if (!is_vt)
+		ret_size = MINT_STACK_SLOT_SIZE;
+
+	MonoClass *newobj_class = cmethod->method->klass;
+
+	int call_args_offset = ALIGN_TO (return_offset + ret_size, MINT_STACK_ALIGNMENT);
+	// We allocate space on the stack for return value and for this pointer, that is passed to ctor
+	if (param_size) {
+		int param_offset;
+		if (ip [6]) // Check if first arg is simd type, which requires realigning param area
+			param_offset = ALIGN_TO (call_args_offset + MINT_STACK_SLOT_SIZE, MINT_SIMD_ALIGNMENT);
+		else
+			param_offset = call_args_offset + MINT_STACK_SLOT_SIZE;
+		memmove (locals + param_offset, locals + start_param_offset, param_size);
+	}
+
+	if (is_vt) {
+		this_ptr = locals + return_offset;
+		memset (this_ptr, 0, ret_size);
+	} else {
+		// FIXME push/pop LMF
+		MonoVTable *vtable = mono_class_vtable_checked (newobj_class, error);
+		return_val_if_nok (error, -1);
+		mono_runtime_class_init_full (vtable, error);
+		return_val_if_nok (error, -1);
+
+		this_ptr = mono_object_new_checked (newobj_class, error);
+		return_val_if_nok (error, -1);
+		LOCAL_VAR (return_offset, gpointer) = this_ptr; // return value
+	}
+	LOCAL_VAR (call_args_offset, gpointer) = this_ptr;
+	return call_args_offset;
+}
+
+/*
+ * Custom C implementations of the min/max operations for float and double.
+ * We cannot directly use the C stdlib functions because their semantics do not match
+ *  the C# methods in System.Math, but having interpreter opcodes for these operations
+ *  improves performance for FP math a lot in some cases.
+ */
+static float
+min_f (float lhs, float rhs)
+{
+	if (mono_isnan (lhs))
+		return lhs;
+	else if (mono_isnan (rhs))
+		return rhs;
+	else if (lhs == rhs)
+		return mono_signbit (lhs) ? lhs : rhs;
+	else
+		return fminf (lhs, rhs);
+}
+
+static float
+max_f (float lhs, float rhs)
+{
+	if (mono_isnan (lhs))
+		return lhs;
+	else if (mono_isnan (rhs))
+		return rhs;
+	else if (lhs == rhs)
+		return mono_signbit (rhs) ? lhs : rhs;
+	else
+		return fmaxf (lhs, rhs);
+}
+
+static double
+min_d (double lhs, double rhs)
+{
+	if (mono_isnan (lhs))
+		return lhs;
+	else if (mono_isnan (rhs))
+		return rhs;
+	else if (lhs == rhs)
+		return mono_signbit (lhs) ? lhs : rhs;
+	else
+		return fmin (lhs, rhs);
+}
+
+static double
+max_d (double lhs, double rhs)
+{
+	if (mono_isnan (lhs))
+		return lhs;
+	else if (mono_isnan (rhs))
+		return rhs;
+	else if (lhs == rhs)
+		return mono_signbit (rhs) ? lhs : rhs;
+	else
+		return fmax (lhs, rhs);
+}
+
+#if HOST_BROWSER
+// Dummy call info used outside of monitoring phase. We don't care what's in it
+static JiterpreterCallInfo jiterpreter_call_info = { 0 };
+#endif
+
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
@@ -3110,10 +3810,9 @@ static long total_executed_opcodes;
  * FRAME is only valid until the next call to alloc_frame ().
  */
 static MONO_NEVER_INLINE void
-interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args)
+mono_interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args)
 {
 	InterpMethod *cmethod;
-	MonoException *ex;
 	ERROR_DECL(error);
 
 	/* Interpreter main loop state (InterpState) */
@@ -3121,6 +3820,7 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 	unsigned char *locals = NULL;
 	int call_args_offset;
 	int return_offset;
+	gboolean gc_transitions = FALSE;
 
 #if DEBUG_INTERP
 	int tracing = global_tracing;
@@ -3128,11 +3828,11 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 #if USE_COMPUTED_GOTO
 	static void * const in_labels[] = {
 #define OPDEF(a,b,c,d,e,f) &&LAB_ ## a,
+#define IROPDEF(a,b,c,d,e,f)
 #include "mintops.def"
 	};
 #endif
 
-	HANDLE_FUNCTION_ENTER ();
 	/*
 	 * GC SAFETY:
 	 *
@@ -3148,25 +3848,32 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 	 * cleared. If we will need to have more objects pinned simultaneously, additional handles
 	 * can be reserved here.
 	 */
-	MonoObjectHandle tmp_handle = MONO_HANDLE_NEW (MonoObject, NULL);
-
+	MonoException *method_entry_ex;
 	if (method_entry (context, frame,
 #if DEBUG_INTERP
 		&tracing,
 #endif
-		&ex)) {
-		if (ex)
-			THROW_EX (ex, NULL);
+		&method_entry_ex)) {
+		if (method_entry_ex)
+			THROW_EX (method_entry_ex, NULL);
 		EXCEPTION_CHECKPOINT;
 	}
 
 	if (!clause_args) {
 		context->stack_pointer = (guchar*)frame->stack + frame->imethod->alloca_size;
+		g_assert (context->stack_pointer < context->stack_end);
 		/* Make sure the stack pointer is bumped before we store any references on the stack */
 		mono_compiler_barrier ();
 	}
 
 	INIT_INTERP_STATE (frame, clause_args);
+
+	if (clause_args && clause_args->run_until_end)
+		/*
+		 * Called from run_with_il_state to run the method until the end.
+		 * Clear this out so it doesn't confuse the rest of the code.
+		 */
+		clause_args = NULL;
 
 #ifdef ENABLE_EXPERIMENT_TIERED
 	mini_tiered_inc (frame->imethod->method, &frame->imethod->tiered_counter, 0);
@@ -3178,7 +3885,7 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 #endif
 main_loop:
 	/*
-	 * using while (ip < end) may result in a 15% performance drop, 
+	 * using while (ip < end) may result in a 15% performance drop,
 	 * but it may be useful for debug
 	 */
 	while (1) {
@@ -3194,15 +3901,10 @@ main_loop:
 			memset (locals + ip [1], 0, ip [2]);
 			ip += 3;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_NOP)
-		MINT_IN_CASE(MINT_NIY)
-		MINT_IN_CASE(MINT_DEF)
-		MINT_IN_CASE(MINT_DUMMY_USE)
-			g_assert_not_reached ();
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAK)
 			++ip;
-			do_debugger_tramp (mini_get_dbg_callbacks ()->user_break, frame);
+			SAVE_INTERP_STATE (frame);
+			do_debugger_tramp (mono_component_debugger ()->user_break, frame);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAKPOINT)
 			++ip;
@@ -3257,7 +3959,7 @@ main_loop:
 		MINT_IN_CASE(MINT_LDC_I4_8)
 			LDC(8);
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDC_I4_S) 
+		MINT_IN_CASE(MINT_LDC_I4_S)
 			LOCAL_VAR (ip [1], gint32) = (short)ip [2];
 			ip += 3;
 			MINT_IN_BREAK;
@@ -3282,23 +3984,45 @@ main_loop:
 			ip += 4;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_LDC_R8) 
+		MINT_IN_CASE(MINT_LDC_R8)
 			LOCAL_VAR (ip [1], gint64) = READ64 (ip + 2); /* note union usage */
 			ip += 6;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_TAILCALL)
+		MINT_IN_CASE(MINT_TAILCALL_VIRT)
 		MINT_IN_CASE(MINT_JMP) {
-			InterpMethod *new_method = (InterpMethod*)frame->imethod->data_items [ip [1]];
+			gboolean is_tailcall = *ip != MINT_JMP;
+			InterpMethod *new_method;
+
+			if (is_tailcall) {
+				guint16 params_offset = ip [1];
+				guint16 params_size = ip [3];
+
+				// Copy the params to their location at the start of the frame
+				memmove (frame->stack, (guchar*)frame->stack + params_offset, params_size);
+				new_method = (InterpMethod*)frame->imethod->data_items [ip [2]];
+
+				if (*ip == MINT_TAILCALL_VIRT) {
+					gint16 slot = (gint16)ip [4];
+					MonoObject *this_arg = LOCAL_VAR (0, MonoObject*);
+					new_method = get_virtual_method_fast (new_method, this_arg->vtable, slot);
+					if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (new_method->method->klass)) {
+						/* unbox */
+						gpointer unboxed = mono_object_unbox_internal (this_arg);
+						LOCAL_VAR (0, gpointer) = unboxed;
+					}
+				}
+			} else {
+				new_method = (InterpMethod*)frame->imethod->data_items [ip [1]];
+			}
 
 			if (frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL)
 				MONO_PROFILER_RAISE (method_tail_call, (frame->imethod->method, new_method->method));
 
 			if (!new_method->transformed) {
-				error_init_reuse (error);
-
-				mono_interp_transform_method (new_method, context, error);
-				MonoException *ex = mono_error_convert_to_exception (error);
-				if (ex)
-					THROW_EX (ex, ip);
+				MonoException *transform_ex = do_transform_method (new_method, frame, context);
+				if (transform_ex)
+					THROW_EX (transform_ex, ip);
 				EXCEPTION_CHECKPOINT;
 			}
 			/*
@@ -3306,8 +4030,22 @@ main_loop:
 			 * than the callee stack frame (at the interp level)
 			 */
 			context->stack_pointer = (guchar*)frame->stack + new_method->alloca_size;
+			if (G_UNLIKELY (context->stack_pointer >= context->stack_end)) {
+				context->stack_end = context->stack_real_end;
+				THROW_EX (mono_domain_get ()->stack_overflow_ex, ip);
+			}
+
 			frame->imethod = new_method;
 			ip = frame->imethod->code;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CALL_ALIGN_STACK) {
+			int call_offset = ip [1];
+			int aligned_call_offset = call_offset + MINT_STACK_SLOT_SIZE;
+			int params_stack_size = ip [2];
+
+			memmove (locals + aligned_call_offset, locals + call_offset, params_stack_size);
+			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALL_DELEGATE) {
@@ -3321,35 +4059,41 @@ main_loop:
 			InterpMethod *del_imethod = (InterpMethod*)del->interp_invoke_impl;
 
 			if (!del_imethod) {
+				// FIXME push/pop LMF
 				if (is_multicast) {
-					error_init_reuse (error);
 					MonoMethod *invoke = mono_get_delegate_invoke_internal (del->object.vtable->klass);
-					del_imethod = mono_interp_get_imethod (mono_marshal_get_delegate_invoke (invoke, del), error);
+					del_imethod = mono_interp_get_imethod (mono_marshal_get_delegate_invoke (invoke, del));
 					del->interp_invoke_impl = del_imethod;
-					mono_error_assert_ok (error);
 				} else if (!del->interp_method) {
 					// Not created from interpreted code
-					error_init_reuse (error);
 					g_assert (del->method);
-					del_imethod = mono_interp_get_imethod (del->method, error);
+					del_imethod = mono_interp_get_imethod (del->method);
 					del->interp_method = del_imethod;
 					del->interp_invoke_impl = del_imethod;
-					mono_error_assert_ok (error);
 				} else {
 					del_imethod = (InterpMethod*)del->interp_method;
 					if (del_imethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-						error_init_reuse (error);
-						del_imethod = mono_interp_get_imethod (mono_marshal_get_native_wrapper (del_imethod->method, FALSE, FALSE), error);
-						mono_error_assert_ok (error);
+						del_imethod = mono_interp_get_imethod (mono_marshal_get_native_wrapper (del_imethod->method, FALSE, FALSE));
 						del->interp_invoke_impl = del_imethod;
-					} else if (del_imethod->method->flags & METHOD_ATTRIBUTE_VIRTUAL && !del->target) {
+					} else if ((m_method_is_virtual (del_imethod->method) && !m_method_is_static (del_imethod->method)) && !del->target && !m_class_is_valuetype (del_imethod->method->klass)) {
 						// 'this' is passed dynamically, we need to recompute the target method
 						// with each call
-						del_imethod = get_virtual_method (del_imethod, LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, MonoObject*)->vtable);
+						MonoObject *obj = LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, MonoObject*);
+						del_imethod = get_virtual_method (del_imethod, obj->vtable);
+						if (m_class_is_valuetype (del_imethod->method->klass)) {
+							// We are calling into a value type method, `this` needs to be unboxed
+							LOCAL_VAR (call_args_offset + MINT_STACK_SLOT_SIZE, gpointer) = mono_object_unbox_internal (obj);
+						}
 					} else {
 						del->interp_invoke_impl = del_imethod;
 					}
 				}
+			}
+			if (del_imethod->optimized_imethod) {
+				del_imethod = del_imethod->optimized_imethod;
+				// don't patch for virtual calls
+				if (del->interp_invoke_impl)
+					del->interp_invoke_impl = del_imethod;
 			}
 			cmethod = del_imethod;
 			if (!is_multicast) {
@@ -3362,7 +4106,7 @@ main_loop:
 					MonoObject *this_arg = del->target;
 
 					// replace the MonoDelegate* on the stack with 'this' pointer
-					if (m_class_is_valuetype (this_arg->vtable->klass)) {
+					if (m_class_is_valuetype (cmethod->method->klass)) {
 						gpointer unboxed = mono_object_unbox_internal (this_arg);
 						LOCAL_VAR (call_args_offset, gpointer) = unboxed;
 					} else {
@@ -3379,34 +4123,30 @@ main_loop:
 			goto call;
 		}
 		MINT_IN_CASE(MINT_CALLI) {
-			MonoMethodSignature *csignature;
+			gboolean need_unbox;
 
-			csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [4]];
+			/* In mixed mode, stay in the interpreter for simplicity even if there is an AOT version of the callee */
+			cmethod = ftnptr_to_imethod (LOCAL_VAR (ip [2], gpointer), &need_unbox);
 
-			cmethod = LOCAL_VAR (ip [2], InterpMethod*);
 			if (cmethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-				cmethod = mono_interp_get_imethod (mono_marshal_get_native_wrapper (cmethod->method, FALSE, FALSE), error);
-				mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
+				// FIXME push/pop LMF
+				cmethod = mono_interp_get_imethod (mono_marshal_get_native_wrapper (cmethod->method, FALSE, FALSE));
 			}
 
 			return_offset = ip [1];
 			call_args_offset = ip [3];
 
-			if (csignature->hasthis) {
-				MonoObject *this_arg = LOCAL_VAR (call_args_offset, MonoObject*); 
-
-				if (m_class_is_valuetype (this_arg->vtable->klass)) {
-					gpointer unboxed = mono_object_unbox_internal (this_arg);
-					LOCAL_VAR (call_args_offset, gpointer) = unboxed;
-				}
+			if (need_unbox) {
+				MonoObject *this_arg = LOCAL_VAR (call_args_offset, MonoObject*);
+				LOCAL_VAR (call_args_offset, gpointer) = mono_object_unbox_internal (this_arg);
 			}
-			ip += 5;
+			ip += 4;
 
 			goto call;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
 			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [4]];
-			int opcode = ip [5];
+			int icall_opcode  = ip [5];
 			gboolean save_last_error = ip [6];
 
 			stackval *ret = (stackval*)(locals + ip [1]);
@@ -3415,8 +4155,8 @@ main_loop:
 			/* for calls, have ip pointing at the start of next instruction */
 			frame->state.ip = ip + 7;
 
-			do_icall_wrapper (frame, csignature, opcode, ret, args, target_ip, save_last_error);
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			do_icall_wrapper (frame, csignature, icall_opcode , ret, args, target_ip, save_last_error, &gc_transitions);
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 7;
 			MINT_IN_BREAK;
@@ -3428,6 +4168,7 @@ main_loop:
 			guchar* code = LOCAL_VAR (ip [2], guchar*);
 			call_args_offset = ip [3];
 
+			// FIXME push/pop LMF
 			cmethod = mono_interp_get_native_func_wrapper (frame->imethod, csignature, code);
 
 			ip += 5;
@@ -3443,9 +4184,9 @@ main_loop:
 			gpointer *cache = (gpointer*)&frame->imethod->data_items [ip [7]];
 			/* for calls, have ip pointing at the start of next instruction */
 			frame->state.ip = ip + 8;
-			ves_pinvoke_method (imethod, csignature, (MonoFuncV)code, context, frame, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [3]), save_last_error, cache);
+			ves_pinvoke_method (imethod, csignature, (MonoFuncV)code, context, frame, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [3]), save_last_error, cache, &gc_transitions);
 
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 
 			ip += 8;
@@ -3463,8 +4204,9 @@ main_loop:
 
 			slot = (gint16)ip [4];
 			ip += 5;
+			// FIXME push/pop LMF
 			cmethod = get_virtual_method_fast (cmethod, this_arg->vtable, slot);
-			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
+			if (m_class_is_valuetype (cmethod->method->klass)) {
 				/* unbox */
 				gpointer unboxed = mono_object_unbox_internal (this_arg);
 				LOCAL_VAR (call_args_offset, gpointer) = unboxed;
@@ -3477,6 +4219,7 @@ main_loop:
 			          code_type == IMETHOD_CODE_COMPILED);
 
 			if (G_UNLIKELY (code_type == IMETHOD_CODE_UNKNOWN)) {
+				// FIXME push/pop LMF
 				MonoMethodSignature *sig = mono_method_signature_internal (cmethod->method);
 				if (mono_interp_jit_call_supported (cmethod->method, sig))
 					code_type = IMETHOD_CODE_COMPILED;
@@ -3492,10 +4235,10 @@ main_loop:
 			} else if (code_type == IMETHOD_CODE_COMPILED) {
 				frame->state.ip = ip;
 				error_init_reuse (error);
-				do_jit_call ((stackval*)(locals + return_offset), (stackval*)(locals + call_args_offset), frame, cmethod, error);
+				do_jit_call (context, (stackval*)(locals + return_offset), (stackval*)(locals + call_args_offset), frame, cmethod, error);
 				if (!is_ok (error)) {
-					MonoException *ex = mono_error_convert_to_exception (error);
-					THROW_EX (ex, ip);
+					MonoException *call_ex = interp_error_convert_to_exception (frame, error, ip);
+					THROW_EX (call_ex, ip);
 				}
 
 				CHECK_RESUME_STATE (context);
@@ -3513,28 +4256,6 @@ main_loop:
 			goto call;
 		}
 
-		MINT_IN_CASE(MINT_CALLVIRT) {
-			// FIXME CALLVIRT opcodes are not used on netcore. We should kill them.
-			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
-			return_offset = ip [1];
-			call_args_offset = ip [2];
-
-			MonoObject *this_arg = LOCAL_VAR (call_args_offset, MonoObject*);
-
-			cmethod = get_virtual_method (cmethod, this_arg->vtable);
-			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
-				/* unbox */
-				gpointer unboxed = mono_object_unbox_internal (this_arg);
-				LOCAL_VAR (call_args_offset, gpointer) = unboxed;
-			}
-
-#ifdef ENABLE_EXPERIMENT_TIERED
-			ip += 5;
-#else
-			ip += 4;
-#endif
-			goto call;
-		}
 		MINT_IN_CASE(MINT_CALL) {
 			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
 			return_offset = ip [1];
@@ -3564,17 +4285,26 @@ call:
 				reinit_frame (child_frame, frame, cmethod, locals + return_offset, locals + call_args_offset);
 				frame = child_frame;
 			}
+			g_assert_checked (((gsize)frame->stack % MINT_STACK_ALIGNMENT) == 0);
+
+			MonoException *call_ex;
 			if (method_entry (context, frame,
 #if DEBUG_INTERP
 				&tracing,
 #endif
-				&ex)) {
-				if (ex)
-					THROW_EX (ex, NULL);
+				&call_ex)) {
+				if (call_ex)
+					THROW_EX (call_ex, NULL);
 				EXCEPTION_CHECKPOINT;
 			}
 
 			context->stack_pointer = (guchar*)frame->stack + cmethod->alloca_size;
+
+			if (G_UNLIKELY (context->stack_pointer >= context->stack_end)) {
+				context->stack_end = context->stack_real_end;
+				THROW_EX (mono_domain_get ()->stack_overflow_ex, ip);
+			}
+
 			/* Make sure the stack pointer is bumped before we store any references on the stack */
 			mono_compiler_barrier ();
 
@@ -3587,10 +4317,10 @@ call:
 			error_init_reuse (error);
 			/* for calls, have ip pointing at the start of next instruction */
 			frame->state.ip = ip + 4;
-			do_jit_call ((stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame, rmethod, error);
+			do_jit_call (context, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame, rmethod, error);
 			if (!is_ok (error)) {
-				MonoException *ex = mono_error_convert_to_exception (error);
-				THROW_EX (ex, ip);
+				MonoException *call_ex = interp_error_convert_to_exception (frame, error, ip);
+				THROW_EX (call_ex, ip);
 			}
 
 			CHECK_RESUME_STATE (context);
@@ -3605,10 +4335,10 @@ call:
 			error_init_reuse (error);
 
 			frame->state.ip = ip + 6;
-			do_jit_call ((stackval*)(locals + ip [1]), frame, rmethod, error);
+			do_jit_call (context, (stackval*)(locals + ip [1]), frame, rmethod, error);
 			if (!is_ok (error)) {
-				MonoException *ex = mono_error_convert_to_exception (error);
-				THROW_EX (ex, ip);
+				MonoException *call_ex = interp_error_convert_to_exception (frame, error);
+				THROW_EX (call_ex, ip);
 			}
 
 			CHECK_RESUME_STATE (context);
@@ -3619,13 +4349,20 @@ call:
 #endif
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CALLRUN) {
-			g_assert_not_reached ();
-
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_RET)
 			frame->retval [0] = LOCAL_VAR (ip [1], stackval);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_I1)
+			frame->retval [0].data.i = (gint8) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_U1)
+			frame->retval [0].data.i = (guint8) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_I2)
+			frame->retval [0].data.i = (gint16) LOCAL_VAR (ip [1], gint32);
+			goto exit_frame;
+		MINT_IN_CASE(MINT_RET_U2)
+			frame->retval [0].data.i = (guint16) LOCAL_VAR (ip [1], gint32);
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_I4_IMM)
 			frame->retval [0].data.i = (gint16)ip [1];
@@ -3696,23 +4433,11 @@ call:
 		MINT_IN_CASE(MINT_BRFALSE_I8_S)
 			ZEROP_S(gint64, ==);
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRFALSE_R4_S)
-			ZEROP_S(float, ==);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRFALSE_R8_S)
-			ZEROP_S(double, ==);
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRFALSE_I4)
 			ZEROP(gint32, ==);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRFALSE_I8)
 			ZEROP(gint64, ==);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRFALSE_R4)
-			ZEROP_S(float, ==);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRFALSE_R8)
-			ZEROP_S(double, ==);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRTRUE_I4_S)
 			ZEROP_S(gint32, !=);
@@ -3720,24 +4445,12 @@ call:
 		MINT_IN_CASE(MINT_BRTRUE_I8_S)
 			ZEROP_S(gint64, !=);
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRTRUE_R4_S)
-			ZEROP_S(float, !=);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRTRUE_R8_S)
-			ZEROP_S(double, !=);
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRTRUE_I4)
 			ZEROP(gint32, !=);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BRTRUE_I8)
 			ZEROP(gint64, !=);
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRTRUE_R4)
-			ZEROP(float, !=);
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BRTRUE_R8)
-			ZEROP(double, !=);
-		MINT_IN_BREAK;
 #define CONDBR_S(cond) \
 	if (cond) { \
 		gint16 br_offset = (gint16) ip [3]; \
@@ -4136,6 +4849,79 @@ call:
 			CONDBR(mono_isunordered (d1, d2) || d1 < d2)
 			MINT_IN_BREAK;
 		}
+
+#define ZEROP_SP(datatype, op) \
+	if (LOCAL_VAR (ip [1], datatype) op 0) { \
+		gint16 br_offset = (gint16) ip [2]; \
+		BACK_BRANCH_PROFILE (br_offset); \
+		SAFEPOINT; \
+		ip += br_offset; \
+	} else \
+		ip += 3;
+
+MINT_IN_CASE(MINT_BRFALSE_I4_SP) ZEROP_SP(gint32, ==); MINT_IN_BREAK;
+MINT_IN_CASE(MINT_BRFALSE_I8_SP) ZEROP_SP(gint64, ==); MINT_IN_BREAK;
+MINT_IN_CASE(MINT_BRTRUE_I4_SP) ZEROP_SP(gint32, !=); MINT_IN_BREAK;
+MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
+
+#define CONDBR_SP(cond) \
+	if (cond) { \
+		gint16 br_offset = (gint16) ip [3]; \
+		BACK_BRANCH_PROFILE (br_offset); \
+		SAFEPOINT; \
+		ip += br_offset; \
+	} else \
+		ip += 4;
+#define BRELOP_SP(datatype, op) \
+	CONDBR_SP(LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype))
+
+		MINT_IN_CASE(MINT_BEQ_I4_SP) BRELOP_SP(gint32, ==); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BEQ_I8_SP) BRELOP_SP(gint64, ==); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_I4_SP) BRELOP_SP(gint32, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_I8_SP) BRELOP_SP(gint64, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_I4_SP) BRELOP_SP(gint32, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_I8_SP) BRELOP_SP(gint64, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_I4_SP) BRELOP_SP(gint32, <); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_I8_SP) BRELOP_SP(gint64, <); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_I4_SP) BRELOP_SP(gint32, <=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_I8_SP) BRELOP_SP(gint64, <=); MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_BNE_UN_I4_SP) BRELOP_SP(guint32, !=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BNE_UN_I8_SP) BRELOP_SP(guint64, !=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_UN_I4_SP) BRELOP_SP(guint32, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_UN_I8_SP) BRELOP_SP(guint64, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_UN_I4_SP) BRELOP_SP(guint32, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_UN_I8_SP) BRELOP_SP(guint64, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_UN_I4_SP) BRELOP_SP(guint32, <=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_UN_I8_SP) BRELOP_SP(guint64, <=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_UN_I4_SP) BRELOP_SP(guint32, <); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_UN_I8_SP) BRELOP_SP(guint64, <); MINT_IN_BREAK;
+
+#define BRELOP_IMM_SP(datatype, op) \
+	CONDBR_SP(LOCAL_VAR (ip [1], datatype) op (datatype)(gint16)ip [2])
+
+		MINT_IN_CASE(MINT_BEQ_I4_IMM_SP) BRELOP_IMM_SP(gint32, ==); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BEQ_I8_IMM_SP) BRELOP_IMM_SP(gint64, ==); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_I4_IMM_SP) BRELOP_IMM_SP(gint32, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_I8_IMM_SP) BRELOP_IMM_SP(gint64, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_I4_IMM_SP) BRELOP_IMM_SP(gint32, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_I8_IMM_SP) BRELOP_IMM_SP(gint64, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_I4_IMM_SP) BRELOP_IMM_SP(gint32, <); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_I8_IMM_SP) BRELOP_IMM_SP(gint64, <); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_I4_IMM_SP) BRELOP_IMM_SP(gint32, <=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_I8_IMM_SP) BRELOP_IMM_SP(gint64, <=); MINT_IN_BREAK;
+
+		MINT_IN_CASE(MINT_BNE_UN_I4_IMM_SP) BRELOP_IMM_SP(guint32, !=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BNE_UN_I8_IMM_SP) BRELOP_IMM_SP(guint64, !=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_UN_I4_IMM_SP) BRELOP_IMM_SP(guint32, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGE_UN_I8_IMM_SP) BRELOP_IMM_SP(guint64, >=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_UN_I4_IMM_SP) BRELOP_IMM_SP(guint32, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BGT_UN_I8_IMM_SP) BRELOP_IMM_SP(guint64, >); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_UN_I4_IMM_SP) BRELOP_IMM_SP(guint32, <=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLE_UN_I8_IMM_SP) BRELOP_IMM_SP(guint64, <=); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_UN_I4_IMM_SP) BRELOP_IMM_SP(guint32, <); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_BLT_UN_I8_IMM_SP) BRELOP_IMM_SP(guint64, <); MINT_IN_BREAK;
+
 		MINT_IN_CASE(MINT_SWITCH) {
 			guint32 val = LOCAL_VAR (ip [1], guint32);
 			guint32 n = READ32 (ip + 2);
@@ -4150,6 +4936,7 @@ call:
 			MINT_IN_BREAK;
 		}
 #define LDIND(datatype,casttype,unaligned) do { \
+	MONO_DISABLE_WARNING(4127) \
 	gpointer ptr = LOCAL_VAR (ip [2], gpointer); \
 	NULL_CHECK (ptr); \
 	if (unaligned && ((gsize)ptr % SIZEOF_VOID_P)) \
@@ -4157,6 +4944,7 @@ call:
 	else \
 		LOCAL_VAR (ip [1], datatype) = *(casttype*)ptr; \
 	ip += 3; \
+	MONO_RESTORE_WARNING \
 } while (0)
 		MINT_IN_CASE(MINT_LDIND_I1)
 			LDIND(int, gint8, FALSE);
@@ -4193,6 +4981,7 @@ call:
 			MINT_IN_BREAK;
 
 #define LDIND_OFFSET(datatype,casttype,unaligned) do { \
+	MONO_DISABLE_WARNING(4127) \
 	gpointer ptr = LOCAL_VAR (ip [2], gpointer); \
 	NULL_CHECK (ptr); \
 	ptr = (char*)ptr + LOCAL_VAR (ip [3], mono_i); \
@@ -4201,6 +4990,7 @@ call:
 	else \
 		LOCAL_VAR (ip [1], datatype) = *(casttype*)ptr; \
 	ip += 4; \
+	MONO_RESTORE_WARNING \
 } while (0)
 		MINT_IN_CASE(MINT_LDIND_OFFSET_I1)
 			LDIND_OFFSET(int, gint8, FALSE);
@@ -4225,7 +5015,43 @@ call:
 #endif
 			MINT_IN_BREAK;
 
+#define LDIND_OFFSET_ADD_MUL(datatype,casttype,unaligned) do { \
+	MONO_DISABLE_WARNING(4127) \
+	gpointer ptr = LOCAL_VAR (ip [2], gpointer); \
+	NULL_CHECK (ptr); \
+	ptr = (char*)ptr + (LOCAL_VAR (ip [3], mono_i) + (gint16)ip [4]) * (gint16)ip [5]; \
+	if (unaligned && ((gsize)ptr % SIZEOF_VOID_P)) \
+		memcpy (locals + ip [1], ptr, sizeof (datatype)); \
+	else \
+		LOCAL_VAR (ip [1], datatype) = *(casttype*)ptr; \
+	ip += 6; \
+	MONO_RESTORE_WARNING \
+} while (0)
+		MINT_IN_CASE(MINT_LDIND_OFFSET_ADD_MUL_IMM_I1)
+			LDIND_OFFSET_ADD_MUL(gint32, gint8, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_ADD_MUL_IMM_U1)
+			LDIND_OFFSET_ADD_MUL(gint32, guint8, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_ADD_MUL_IMM_I2)
+			LDIND_OFFSET_ADD_MUL(gint32, gint16, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_ADD_MUL_IMM_U2)
+			LDIND_OFFSET_ADD_MUL(gint32, guint16, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_ADD_MUL_IMM_I4)
+			LDIND_OFFSET_ADD_MUL(gint32, gint32, FALSE);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDIND_OFFSET_ADD_MUL_IMM_I8)
+#ifdef NO_UNALIGNED_ACCESS
+			LDIND_OFFSET_ADD_MUL(gint64, gint64, TRUE);
+#else
+			LDIND_OFFSET_ADD_MUL(gint64, gint64, FALSE);
+#endif
+			MINT_IN_BREAK;
+
 #define LDIND_OFFSET_IMM(datatype,casttype,unaligned) do { \
+	MONO_DISABLE_WARNING(4127) \
 	gpointer ptr = LOCAL_VAR (ip [2], gpointer); \
 	NULL_CHECK (ptr); \
 	ptr = (char*)ptr + (gint16)ip [3]; \
@@ -4234,6 +5060,7 @@ call:
 	else \
 		LOCAL_VAR (ip [1], datatype) = *(casttype*)ptr; \
 	ip += 4; \
+	MONO_RESTORE_WARNING \
 } while (0)
 		MINT_IN_CASE(MINT_LDIND_OFFSET_IMM_I1)
 			LDIND_OFFSET_IMM(int, gint8, FALSE);
@@ -4265,6 +5092,7 @@ call:
 			MINT_IN_BREAK;
 		}
 #define STIND(datatype,unaligned) do { \
+	MONO_DISABLE_WARNING(4127) \
 	gpointer ptr = LOCAL_VAR (ip [1], gpointer); \
 	NULL_CHECK (ptr); \
 	if (unaligned && ((gsize)ptr % SIZEOF_VOID_P)) \
@@ -4272,6 +5100,7 @@ call:
 	else \
 		*(datatype*)ptr = LOCAL_VAR (ip [2], datatype); \
 	ip += 3; \
+	MONO_RESTORE_WARNING \
 } while (0)
 		MINT_IN_CASE(MINT_STIND_I1)
 			STIND(gint8, FALSE);
@@ -4301,6 +5130,7 @@ call:
 			MINT_IN_BREAK;
 
 #define STIND_OFFSET(datatype,unaligned) do { \
+	MONO_DISABLE_WARNING(4127) \
 	gpointer ptr = LOCAL_VAR (ip [1], gpointer); \
 	NULL_CHECK (ptr); \
 	ptr = (char*)ptr + LOCAL_VAR (ip [2], mono_i); \
@@ -4309,6 +5139,7 @@ call:
 	else \
 		*(datatype*)ptr = LOCAL_VAR (ip [3], datatype); \
 	ip += 4; \
+	MONO_RESTORE_WARNING \
 } while (0)
 		MINT_IN_CASE(MINT_STIND_OFFSET_I1)
 			STIND_OFFSET(gint8, FALSE);
@@ -4328,6 +5159,7 @@ call:
 			MINT_IN_BREAK;
 
 #define STIND_OFFSET_IMM(datatype,unaligned) do { \
+	MONO_DISABLE_WARNING(4127) \
 	gpointer ptr = LOCAL_VAR (ip [1], gpointer); \
 	NULL_CHECK (ptr); \
 	ptr = (char*)ptr + (gint16)ip [3]; \
@@ -4336,6 +5168,7 @@ call:
 	else \
 		*(datatype*)ptr = LOCAL_VAR (ip [2], datatype); \
 	ip += 4; \
+	MONO_RESTORE_WARNING \
 } while (0)
 		MINT_IN_CASE(MINT_STIND_OFFSET_IMM_I1)
 			STIND_OFFSET_IMM(gint8, FALSE);
@@ -4352,10 +5185,6 @@ call:
 #else
 			STIND_OFFSET_IMM(gint64, FALSE);
 #endif
-			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MONO_ATOMIC_STORE_I4)
-			mono_atomic_store_i32 (LOCAL_VAR (ip [1], gint32*), LOCAL_VAR (ip [2], gint32));
-			ip += 3;
 			MINT_IN_BREAK;
 #define BINOP(datatype, op) \
 	LOCAL_VAR (ip [1], datatype) = LOCAL_VAR (ip [2], datatype) op LOCAL_VAR (ip [3], datatype); \
@@ -4422,6 +5251,14 @@ call:
 			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) * (gint16)ip [3];
 			ip += 4;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ADD_MUL_I4_IMM)
+			LOCAL_VAR (ip [1], gint32) = (LOCAL_VAR (ip [2], gint32) + (gint16)ip [3]) * (gint16)ip [4];
+			ip += 5;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ADD_MUL_I8_IMM)
+			LOCAL_VAR (ip [1], gint64) = (LOCAL_VAR (ip [2], gint64) + (gint16)ip [3]) * (gint16)ip [4];
+			ip += 5;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MUL_R4)
 			BINOP(float, *);
 			MINT_IN_BREAK;
@@ -4432,9 +5269,9 @@ call:
 			gint32 i1 = LOCAL_VAR (ip [2], gint32);
 			gint32 i2 = LOCAL_VAR (ip [3], gint32);
 			if (i2 == 0)
-				THROW_EX (mono_get_exception_divide_by_zero (), ip);
+				THROW_EX (interp_get_exception_divide_by_zero (frame, ip), ip);
 			if (i2 == (-1) && i1 == G_MININT32)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = i1 / i2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -4443,9 +5280,9 @@ call:
 			gint64 l1 = LOCAL_VAR (ip [2], gint64);
 			gint64 l2 = LOCAL_VAR (ip [3], gint64);
 			if (l2 == 0)
-				THROW_EX (mono_get_exception_divide_by_zero (), ip);
+				THROW_EX (interp_get_exception_divide_by_zero (frame, ip), ip);
 			if (l2 == (-1) && l1 == G_MININT64)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint64) = l1 / l2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -4459,7 +5296,7 @@ call:
 		MINT_IN_CASE(MINT_DIV_UN_I4) {
 			guint32 i2 = LOCAL_VAR (ip [3], guint32);
 			if (i2 == 0)
-				THROW_EX (mono_get_exception_divide_by_zero (), ip);
+				THROW_EX (interp_get_exception_divide_by_zero (frame, ip), ip);
 			LOCAL_VAR (ip [1], guint32) = LOCAL_VAR (ip [2], guint32) / i2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -4467,7 +5304,7 @@ call:
 		MINT_IN_CASE(MINT_DIV_UN_I8) {
 			guint64 l2 = LOCAL_VAR (ip [3], guint64);
 			if (l2 == 0)
-				THROW_EX (mono_get_exception_divide_by_zero (), ip);
+				THROW_EX (interp_get_exception_divide_by_zero (frame, ip), ip);
 			LOCAL_VAR (ip [1], guint64) = LOCAL_VAR (ip [2], guint64) / l2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -4476,9 +5313,9 @@ call:
 			gint32 i1 = LOCAL_VAR (ip [2], gint32);
 			gint32 i2 = LOCAL_VAR (ip [3], gint32);
 			if (i2 == 0)
-				THROW_EX (mono_get_exception_divide_by_zero (), ip);
+				THROW_EX (interp_get_exception_divide_by_zero (frame, ip), ip);
 			if (i2 == (-1) && i1 == G_MININT32)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = i1 % i2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -4487,9 +5324,9 @@ call:
 			gint64 l1 = LOCAL_VAR (ip [2], gint64);
 			gint64 l2 = LOCAL_VAR (ip [3], gint64);
 			if (l2 == 0)
-				THROW_EX (mono_get_exception_divide_by_zero (), ip);
+				THROW_EX (interp_get_exception_divide_by_zero (frame, ip), ip);
 			if (l2 == (-1) && l1 == G_MININT64)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint64) = l1 % l2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -4505,7 +5342,7 @@ call:
 		MINT_IN_CASE(MINT_REM_UN_I4) {
 			guint32 i2 = LOCAL_VAR (ip [3], guint32);
 			if (i2 == 0)
-				THROW_EX (mono_get_exception_divide_by_zero (), ip);
+				THROW_EX (interp_get_exception_divide_by_zero (frame, ip), ip);
 			LOCAL_VAR (ip [1], guint32) = LOCAL_VAR (ip [2], guint32) % i2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -4513,7 +5350,7 @@ call:
 		MINT_IN_CASE(MINT_REM_UN_I8) {
 			guint64 l2 = LOCAL_VAR (ip [3], guint64);
 			if (l2 == 0)
-				THROW_EX (mono_get_exception_divide_by_zero (), ip);
+				THROW_EX (interp_get_exception_divide_by_zero (frame, ip), ip);
 			LOCAL_VAR (ip [1], guint64) = LOCAL_VAR (ip [2], guint64) % l2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -4581,6 +5418,14 @@ call:
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SHR_UN_I8_IMM)
 			LOCAL_VAR (ip [1], guint64) = LOCAL_VAR (ip [2], guint64) >> ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHL_AND_I4)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) << (LOCAL_VAR (ip [3], gint32) & 31);
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHL_AND_I8)
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) << (LOCAL_VAR (ip [3], gint64) & 63);
 			ip += 4;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_NEG_I4)
@@ -4697,7 +5542,7 @@ call:
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U4_R8)
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_U4
-			LOCAL_VAR (ip [1], gint32) = mono_fconv_u4_2 (LOCAL_VAR (ip [2], double));
+			LOCAL_VAR (ip [1], gint32) = mono_fconv_u4 (LOCAL_VAR (ip [2], double));
 #else
 			LOCAL_VAR (ip [1], gint32) = (guint32) LOCAL_VAR (ip [2], double);
 #endif
@@ -4753,7 +5598,7 @@ call:
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U8_R8)
 #ifdef MONO_ARCH_EMULATE_FCONV_TO_U8
-			LOCAL_VAR (ip [1], gint64) = mono_fconv_u8_2 (LOCAL_VAR (ip [2], double));
+			LOCAL_VAR (ip [1], gint64) = mono_fconv_u8 (LOCAL_VAR (ip [2], double));
 #else
 			LOCAL_VAR (ip [1], gint64) = (guint64) LOCAL_VAR (ip [2], double);
 #endif
@@ -4774,9 +5619,18 @@ call:
 			ip += 4;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_CPOBJ_VT_NOREF) {
+			gpointer src_addr = LOCAL_VAR (ip [2], gpointer);
+			NULL_CHECK (src_addr);
+			memcpy (LOCAL_VAR (ip [1], gpointer), src_addr, ip [3]);
+			ip += 4;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_LDOBJ_VT) {
 			guint16 size = ip [3];
-			memcpy (locals + ip [1], LOCAL_VAR (ip [2], gpointer), size);
+			gpointer srcAddr = LOCAL_VAR (ip [2], gpointer);
+			NULL_CHECK (srcAddr);
+			memcpy (locals + ip [1], srcAddr, size);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -4792,6 +5646,7 @@ call:
 			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
 				s = (MonoString*)mono_method_get_wrapper_data (method, strtoken);
 			} else if (method->wrapper_type != MONO_WRAPPER_NONE) {
+				// FIXME push/pop LMF
 				s = mono_string_new_wrapper_internal ((const char*)mono_method_get_wrapper_data (method, strtoken));
 			} else {
 				g_assert_not_reached ();
@@ -4807,9 +5662,10 @@ call:
 
 			newobj_class = (MonoClass*) frame->imethod->data_items [token];
 
+			// FIXME push/pop LMF
 			LOCAL_VAR (ip [1], MonoObject*) = ves_array_create (newobj_class, param_count, (stackval*)(locals + ip [2]), error);
 			if (!is_ok (error))
-				THROW_EX (mono_error_convert_to_exception (error), ip);
+				THROW_EX (interp_error_convert_to_exception (frame, error, ip), ip);
 			ip += 5;
 			MINT_IN_BREAK;
 		}
@@ -4824,6 +5680,21 @@ call:
 			ip += 4;
 			goto call;
 		}
+		MINT_IN_CASE(MINT_NEWOBJ_STRING_UNOPT) {
+			// Same as MINT_NEWOBJ_STRING but copy params into right place on stack
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [2]];
+			return_offset = ip [1];
+			call_args_offset = ip [1];
+			int aligned_call_args_offset = ALIGN_TO (call_args_offset, MINT_STACK_ALIGNMENT);
+
+			int param_size = ip [3];
+                        if (param_size)
+                                memmove (locals + aligned_call_args_offset + MINT_STACK_SLOT_SIZE, locals + call_args_offset, param_size);
+			call_args_offset = aligned_call_args_offset;
+			LOCAL_VAR (call_args_offset, gpointer) = NULL;
+			ip += 4;
+			goto call;
+		}
 		MINT_IN_CASE(MINT_NEWOBJ) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [4]];
 			INIT_VTABLE (vtable);
@@ -4831,10 +5702,11 @@ call:
 			return_offset = ip [1];
 			call_args_offset = ip [2];
 
+			// FIXME push/pop LMF
 			MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
 			if (G_UNLIKELY (!o)) {
 				mono_error_set_out_of_memory (error, "Could not allocate %i bytes", m_class_get_instance_size (vtable->klass));
-				THROW_EX (mono_error_convert_to_exception (error), ip);
+				THROW_EX (interp_error_convert_to_exception (frame, error, ip), ip);
 			}
 
 			// This is return value
@@ -4851,10 +5723,11 @@ call:
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [2]];
 			INIT_VTABLE (vtable);
 
+			// FIXME push/pop LMF
 			MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
 			if (G_UNLIKELY (!o)) {
 				mono_error_set_out_of_memory (error, "Could not allocate %i bytes", m_class_get_instance_size (vtable->klass));
-				THROW_EX (mono_error_convert_to_exception (error), ip);
+				THROW_EX (interp_error_convert_to_exception (frame, error, ip), ip);
 			}
 
 			// This is return value
@@ -4905,9 +5778,10 @@ call:
 
 			g_assert (!m_class_is_valuetype (newobj_class));
 
+			// FIXME push/pop LMF
 			MonoVTable *vtable = mono_class_vtable_checked (newobj_class, error);
 			if (!is_ok (error) || !mono_runtime_class_init_full (vtable, error)) {
-				MonoException *exc = mono_error_convert_to_exception (error);
+				MonoException *exc = interp_error_convert_to_exception (frame, error, ip);
 				g_assert (exc);
 				THROW_EX (exc, ip);
 			}
@@ -4921,11 +5795,142 @@ call:
 			ip += 4;
 			goto call;
 		}
+		MINT_IN_CASE(MINT_NEWOBJ_SLOW_UNOPT) {
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [3]];
+			int offset = interp_newobj_slow_unopt (frame, cmethod, ip, error);
+			if (offset == -1) {
+				MonoException *exc = interp_error_convert_to_exception (frame, error, ip);
+				g_assert (exc);
+				THROW_EX (exc, ip);
+			}
+			return_offset = 0; // unused, ctor has void return
+			call_args_offset = offset;
+			ip += 7;
+			goto call;
+		}
+
+		MINT_IN_CASE(MINT_ROL_I4_IMM) {
+			guint32 val = LOCAL_VAR (ip [2], guint32);
+			int amount = ip [3];
+			LOCAL_VAR (ip [1], guint32) = (val << amount) | (val >> (32 - amount));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_ROL_I8_IMM) {
+			guint64 val = LOCAL_VAR (ip [2], guint64);
+			int amount = ip [3];
+			LOCAL_VAR (ip [1], guint64) = (val << amount) | (val >> (64 - amount));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_ROR_I4_IMM) {
+			guint32 val = LOCAL_VAR (ip [2], guint32);
+			int amount = ip [3];
+			LOCAL_VAR (ip [1], guint32) = (val >> amount) | (val << (32 - amount));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_ROR_I8_IMM) {
+			guint64 val = LOCAL_VAR (ip [2], guint64);
+			int amount = ip [3];
+			LOCAL_VAR (ip [1], guint64) = (val >> amount) | (val << (64 - amount));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CLZ_I4) LOCAL_VAR (ip [1], gint32) = interp_intrins_clz_i4 (LOCAL_VAR (ip [2], guint32)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CLZ_I8) LOCAL_VAR (ip [1], gint64) = interp_intrins_clz_i8 (LOCAL_VAR (ip [2], guint64)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CTZ_I4) LOCAL_VAR (ip [1], gint32) = interp_intrins_ctz_i4 (LOCAL_VAR (ip [2], guint32)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CTZ_I8) LOCAL_VAR (ip [1], gint64) = interp_intrins_ctz_i8 (LOCAL_VAR (ip [2], guint64)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_POPCNT_I4) LOCAL_VAR (ip [1], gint32) = interp_intrins_popcount_i4 (LOCAL_VAR (ip [2], guint32)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_POPCNT_I8) LOCAL_VAR (ip [1], gint64) = interp_intrins_popcount_i8 (LOCAL_VAR (ip [2], guint64)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG2_I4) LOCAL_VAR (ip [1], gint32) = 31 ^ interp_intrins_clz_i4 (LOCAL_VAR (ip [2], guint32) | 1); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG2_I8) LOCAL_VAR (ip [1], gint32) = 63 ^ interp_intrins_clz_i8 (LOCAL_VAR (ip [2], guint64) | 1); ip += 3; MINT_IN_BREAK;
+
+#ifdef INTERP_ENABLE_SIMD
+		MINT_IN_CASE(MINT_SIMD_V128_LDC) {
+			memcpy (locals + ip [1], ip + 2, SIZEOF_V128);
+			ip += 10;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I1_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint8);
+			gint8 res_buffer [num_elements];
+			gint8 *args = (gint8*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint8);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I2_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint16);
+			gint16 res_buffer [num_elements];
+			gint16 *args = (gint16*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint16);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I4_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint32);
+			gint32 res_buffer [num_elements];
+			gint32 *args = (gint32*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint32);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_SIMD_V128_I8_CREATE) {
+			const int num_elements = SIZEOF_V128 / sizeof (gint64);
+			gint64 res_buffer [num_elements];
+			gint64 *args = (gint64*)(locals + ip [2]);
+			for (int i = 0; i < num_elements; i++) {
+				res_buffer [i] = *args;
+				args += MINT_STACK_SLOT_SIZE / sizeof (gint64);
+			}
+			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_P)
+			interp_simd_p_p_table [ip [3]] (locals + ip [1], locals + ip [2]);
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PP)
+			interp_simd_p_pp_table [ip [4]] (locals + ip [1], locals + ip [2], locals + ip [3]);
+			ip += 5;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PPP)
+			interp_simd_p_ppp_table [ip [5]] (locals + ip [1], locals + ip [2], locals + ip [3], locals + ip [4]);
+			ip += 6;
+			MINT_IN_BREAK;
+#else
+		MINT_IN_CASE(MINT_SIMD_V128_LDC)
+		MINT_IN_CASE(MINT_SIMD_V128_I1_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I2_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I4_CREATE)
+		MINT_IN_CASE(MINT_SIMD_V128_I8_CREATE)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_P)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PP)
+		MINT_IN_CASE(MINT_SIMD_INTRINS_P_PPP)
+			g_assert_not_reached ();
+			MINT_IN_BREAK;
+#endif
+
 		MINT_IN_CASE(MINT_INTRINS_SPAN_CTOR) {
 			gpointer ptr = LOCAL_VAR (ip [2], gpointer);
 			int len = LOCAL_VAR (ip [3], gint32);
 			if (len < 0)
-				THROW_EX (mono_get_exception_argument_out_of_range ("length"), ip);
+				THROW_EX (interp_get_exception_argument_out_of_range ("length", frame, ip), ip);
 			gpointer span = locals + ip [1];
 			*(gpointer*)span = ptr;
 			*(gint32*)((gpointer*)span + 1) = len;
@@ -4966,21 +5971,9 @@ call:
 			ip += 4;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_INTRINS_U32_TO_DECSTR) {
-			MonoArray **cache_addr = (MonoArray**)frame->imethod->data_items [ip [3]];
-			MonoVTable *string_vtable = (MonoVTable*)frame->imethod->data_items [ip [4]];
-			LOCAL_VAR (ip [1], MonoObject*) = (MonoObject*)interp_intrins_u32_to_decstr (LOCAL_VAR (ip [2], guint32), *cache_addr, string_vtable);
-			ip += 5;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_INTRINS_WIDEN_ASCII_TO_UTF16) {
 			LOCAL_VAR (ip [1], mono_u) = interp_intrins_widen_ascii_to_utf16 (LOCAL_VAR (ip [2], guint8*), LOCAL_VAR (ip [3], mono_unichar2*), LOCAL_VAR (ip [4], mono_u));
 			ip += 5;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_INTRINS_UNSAFE_BYTE_OFFSET) {
-			LOCAL_VAR (ip [1], mono_u) = LOCAL_VAR (ip [3], guint8*) - LOCAL_VAR (ip [2], guint8*);
-			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE) {
@@ -4999,6 +5992,7 @@ call:
 					isinst = TRUE;
 				} else if (m_class_is_array_special_interface (c)) {
 					/* slow path */
+					// FIXME push/pop LMF
 					isinst = mono_interp_isinst (o, c); // FIXME: do not swallow the error
 				} else {
 					isinst = FALSE;
@@ -5009,7 +6003,7 @@ call:
 					if (isinst_instr)
 						LOCAL_VAR (ip [1], MonoObject*) = NULL;
 					else
-						THROW_EX (mono_get_exception_invalid_cast (), ip);
+						THROW_EX (interp_get_exception_invalid_cast (frame, ip), ip);
 				} else {
 					LOCAL_VAR (ip [1], MonoObject*) = o;
 				}
@@ -5031,7 +6025,7 @@ call:
 					if (isinst_instr)
 						LOCAL_VAR (ip [1], MonoObject*) = NULL;
 					else
-						THROW_EX (mono_get_exception_invalid_cast (), ip);
+						THROW_EX (interp_get_exception_invalid_cast (frame, ip), ip);
 				} else {
 					LOCAL_VAR (ip [1], MonoObject*) = o;
 				}
@@ -5046,12 +6040,13 @@ call:
 			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
 			if (o) {
 				MonoClass* const c = (MonoClass*)frame->imethod->data_items [ip [3]];
+				// FIXME push/pop LMF
 				if (!mono_interp_isinst (o, c)) { // FIXME: do not swallow the error
 					gboolean const isinst_instr = *ip == MINT_ISINST;
 					if (isinst_instr)
 						LOCAL_VAR (ip [1], MonoObject*) = NULL;
 					else
-						THROW_EX (mono_get_exception_invalid_cast (), ip);
+						THROW_EX (interp_get_exception_invalid_cast (frame, ip), ip);
 				} else {
 					LOCAL_VAR (ip [1], MonoObject*) = o;
 				}
@@ -5075,34 +6070,22 @@ call:
 			MonoClass *c = (MonoClass*)frame->imethod->data_items [ip [3]];
 
 			if (!(m_class_get_rank (o->vtable->klass) == 0 && m_class_get_element_class (o->vtable->klass) == m_class_get_element_class (c)))
-				THROW_EX (mono_get_exception_invalid_cast (), ip);
+				THROW_EX (interp_get_exception_invalid_cast (frame, ip), ip);
 
 			LOCAL_VAR (ip [1], gpointer) = mono_object_unbox_internal (o);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_THROW) {
-			MonoException *ex = LOCAL_VAR (ip [1], MonoException*);
-			if (!ex)
-				ex = mono_get_exception_null_reference ();
+			MonoException *local_ex = LOCAL_VAR (ip [1], MonoException*);
+			if (!local_ex)
+				local_ex = interp_get_exception_null_reference (frame, ip);
 
-			THROW_EX (ex, ip);
+			THROW_EX (local_ex, ip);
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CHECKPOINT)
-			/* Do synchronous checking of abort requests */
-			EXCEPTION_CHECKPOINT;
-			++ip;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SAFEPOINT)
-			/* Do synchronous checking of abort requests */
-			EXCEPTION_CHECKPOINT;
-			if (G_UNLIKELY (mono_polling_required)) {
-				context_set_safepoint_frame (context, frame);
-				/* Poll safepoint */
-				mono_threads_safepoint ();
-				context_clear_safepoint_frame (context);
-			}
+			SAFEPOINT;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLDA_UNSAFE) {
@@ -5122,35 +6105,6 @@ call:
 			NULL_CHECK (o);
 			LOCAL_VAR (ip [1], MonoObject*) = o;
 			ip += 3;
-			MINT_IN_BREAK;
-		}
-
-// FIXME squash to load directly field type, LDFLD_VT is just a LDLOC
-#define LDFLD_VT_UNALIGNED(datatype, fieldtype, unaligned) do { \
-	if (unaligned) \
-		memcpy (locals + ip [1], (char *)locals + ip [2] + ip [3], sizeof (fieldtype)); \
-	else \
-		LOCAL_VAR (ip [1], datatype) = LOCAL_VAR (ip [2] + ip [3], fieldtype); \
-	ip += 4; \
-} while (0)
-
-#define LDFLD_VT(datatype, fieldtype) LDFLD_VT_UNALIGNED(datatype, fieldtype, FALSE)
-
-		MINT_IN_CASE(MINT_LDFLD_VT_I1) LDFLD_VT(gint32, gint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_U1) LDFLD_VT(gint32, guint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_I2) LDFLD_VT(gint32, gint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_U2) LDFLD_VT(gint32, guint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_I4) LDFLD_VT(gint32, gint32); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_I8) LDFLD_VT(gint64, gint64); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_R4) LDFLD_VT(float, float); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_R8) LDFLD_VT(double, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_O) LDFLD_VT(gpointer, gpointer); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_I8_UNALIGNED) LDFLD_VT_UNALIGNED(gint64, gint64, TRUE); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDFLD_VT_R8_UNALIGNED) LDFLD_VT_UNALIGNED(double, double, TRUE); MINT_IN_BREAK;
-
-		MINT_IN_CASE(MINT_LDFLD_VT_VT) {
-			memmove (locals + ip [1], locals + ip [2] + ip [3], ip [4]);
-			ip += 5;
 			MINT_IN_BREAK;
 		}
 
@@ -5192,7 +6146,7 @@ call:
 	if (unaligned) \
 		memcpy ((char *)o + ip [3], locals + ip [2], sizeof (fieldtype)); \
 	else \
-		* (fieldtype *)((char *)o + ip [3]) = LOCAL_VAR (ip [2], datatype); \
+		* (fieldtype *)((char *)o + ip [3]) = (fieldtype)(LOCAL_VAR (ip [2], datatype)); \
 	ip += 4; \
 } while (0)
 
@@ -5241,9 +6195,10 @@ call:
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_LDSSFLDA) {
-			guint32 offset = READ32(ip + 2);
-			LOCAL_VAR (ip [1], gpointer) = mono_get_special_static_data (offset);
+		MINT_IN_CASE(MINT_LDTSFLDA) {
+			MonoInternalThread *thread = mono_thread_internal_current ();
+			guint32 offset = READ32 (ip + 2);
+			LOCAL_VAR (ip [1], gpointer) = ((char*)thread->static_data [offset & 0x3f]) + (offset >> 6);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -5278,42 +6233,20 @@ call:
 			MINT_IN_BREAK;
 		}
 
-#define LDTSFLD(datatype, fieldtype) { \
-	MonoInternalThread *thread = mono_thread_internal_current (); \
-	guint32 offset = READ32 (ip + 2); \
-	gpointer addr = ((char*)thread->static_data [offset & 0x3f]) + (offset >> 6); \
-	LOCAL_VAR (ip [1], datatype) = *(fieldtype*)addr; \
-	ip += 4; \
-	}
-		MINT_IN_CASE(MINT_LDTSFLD_I1) LDTSFLD(gint32, gint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_U1) LDTSFLD(gint32, guint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_I2) LDTSFLD(gint32, gint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_U2) LDTSFLD(gint32, guint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_I4) LDTSFLD(gint32, gint32); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_I8) LDTSFLD(gint64, gint64); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_R4) LDTSFLD(float, float); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_R8) LDTSFLD(double, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDTSFLD_O) LDTSFLD(gpointer, gpointer); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDSFLD_W) {
+			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [READ32 (ip + 2)];
+			INIT_VTABLE (vtable);
+			gpointer addr = frame->imethod->data_items [READ32 (ip + 4)];
+			MonoClass *klass = frame->imethod->data_items [READ32 (ip + 6)];
+			stackval_from_data (m_class_get_byval_arg (klass), (stackval*)(locals + ip [1]), addr, FALSE);
+			ip += 8;
+			MINT_IN_BREAK;
+		}
 
-		MINT_IN_CASE(MINT_LDSSFLD) {
-			guint32 offset = READ32(ip + 3);
-			gpointer addr = mono_get_special_static_data (offset);
-			MonoClassField *field = (MonoClassField*)frame->imethod->data_items [ip [2]];
-			stackval_from_data (field->type, (stackval*)(locals + ip [1]), addr, FALSE);
-			ip += 5;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_LDSSFLD_VT) {
-			guint32 offset = READ32(ip + 2);
-			gpointer addr = mono_get_special_static_data (offset);
-			memcpy (locals + ip [1], addr, ip [4]);
-			ip += 5;
-			MINT_IN_BREAK;
-		}
 #define STSFLD(datatype, fieldtype) { \
 	MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [2]]; \
 	INIT_VTABLE (vtable); \
-	* (fieldtype *)(frame->imethod->data_items [ip [3]]) = LOCAL_VAR (ip [1], datatype); \
+	* (fieldtype *)(frame->imethod->data_items [ip [3]]) = (fieldtype)(LOCAL_VAR (ip [1], datatype)); \
 	ip += 4; \
 	}
 
@@ -5336,37 +6269,13 @@ call:
 			MINT_IN_BREAK;
 		}
 
-#define STTSFLD(datatype, fieldtype) { \
-	MonoInternalThread *thread = mono_thread_internal_current (); \
-	guint32 offset = READ32 (ip + 2); \
-	gpointer addr = ((char*)thread->static_data [offset & 0x3f]) + (offset >> 6); \
-	*(fieldtype*)addr = LOCAL_VAR (ip [1], datatype); \
-	ip += 4; \
-	}
-
-		MINT_IN_CASE(MINT_STTSFLD_I1) STTSFLD(gint32, gint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_U1) STTSFLD(gint32, guint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_I2) STTSFLD(gint32, gint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_U2) STTSFLD(gint32, guint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_I4) STTSFLD(gint32, gint32); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_I8) STTSFLD(gint64, gint64); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_R4) STTSFLD(float, float); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_R8) STTSFLD(double, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STTSFLD_O) STTSFLD(gpointer, gpointer); MINT_IN_BREAK;
-
-		MINT_IN_CASE(MINT_STSSFLD) {
-			guint32 offset = READ32(ip + 3);
-			gpointer addr = mono_get_special_static_data (offset);
-			MonoClassField *field = (MonoClassField*)frame->imethod->data_items [ip [2]];
-			stackval_to_data (field->type, (stackval*)(locals + ip [1]), addr, FALSE);
-			ip += 5;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_STSSFLD_VT) {
-			guint32 offset = READ32(ip + 2);
-			gpointer addr = mono_get_special_static_data (offset);
-			memcpy (addr, locals + ip [1], ip [4]);
-			ip += 5;
+		MINT_IN_CASE(MINT_STSFLD_W) {
+			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [READ32 (ip + 2)];
+			INIT_VTABLE (vtable);
+			gpointer addr = frame->imethod->data_items [READ32 (ip + 4)];
+			MonoClass *klass = frame->imethod->data_items [READ32 (ip + 6)];
+			stackval_to_data (m_class_get_byval_arg (klass), (stackval*)(locals + ip [1]), addr, FALSE);
+			ip += 8;
 			MINT_IN_BREAK;
 		}
 
@@ -5376,18 +6285,15 @@ call:
 			ip += 4;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CONV_OVF_I4_UN_R8) {
-			double val = LOCAL_VAR (ip [2], double);
-			if (val < 0 || val > G_MAXINT32)
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint32)val;
-			ip += 3;
+		MINT_IN_CASE(MINT_STOBJ_VT_NOREF) {
+			memcpy (LOCAL_VAR (ip [1], gpointer), locals + ip [2], ip [3]);
+			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U8_I4) {
 			gint32 val = LOCAL_VAR (ip [2], gint32);
 			if (val < 0)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], guint64) = val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5395,7 +6301,7 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_U8_I8) {
 			gint64 val = LOCAL_VAR (ip [2], gint64);
 			if (val < 0)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], guint64) = val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5403,68 +6309,49 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_I8_U8) {
 			guint64 val = LOCAL_VAR (ip [2], guint64);
 			if (val > G_MAXINT64)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint64) = val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U8_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (mono_isnan (val) || mono_trunc (val) != (guint64)val)
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], guint64) = (guint64)val;
+			if (!mono_try_trunc_u64 (val, (guint64*)(locals + ip [1])))
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U8_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (mono_isnan (val) || mono_trunc (val) != (guint64)val)
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], guint64) = (guint64)val;
-			ip += 3;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R8) {
-			double val = LOCAL_VAR (ip [2], double);
-			if (val < 0 || mono_isnan (val) || mono_trunc (val) != (gint64)val)
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint64) = (gint64)val;
-			ip += 3;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R4) {
-			float val = LOCAL_VAR (ip [2], float);
-			if (val < 0 || mono_isnan (val) || mono_trunc (val) != (gint64)val)
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint64) = (gint64)val;
+			if (!mono_try_trunc_u64 (val, (guint64*)(locals + ip [1])))
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I8_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (mono_isnan (val) || mono_trunc (val) != (gint64)val)
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint64) = (gint64)val;
+			if (!mono_try_trunc_i64 (val, (gint64*)(locals + ip [1])))
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I8_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (mono_isnan (val) || mono_trunc (val) != (gint64)val)
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint64) = (gint64)val;
+			if (!mono_try_trunc_i64 (val, (gint64*)(locals + ip [1])))
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BOX) {
 			MonoVTable *vtable = (MonoVTable*)frame->imethod->data_items [ip [3]];
 
+			// FIXME push/pop LMF
 			MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
-			MONO_HANDLE_ASSIGN_RAW (tmp_handle, o);
+			SET_TEMP_POINTER(o);
 			stackval_to_data (m_class_get_byval_arg (vtable->klass), (stackval*)(locals + ip [2]), mono_object_get_data (o), FALSE);
-			MONO_HANDLE_ASSIGN_RAW (tmp_handle, NULL);
-
 			LOCAL_VAR (ip [1], MonoObject*) = o;
+			SET_TEMP_POINTER(NULL);
+
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -5472,12 +6359,13 @@ call:
 			MonoVTable *vtable = (MonoVTable*)frame->imethod->data_items [ip [3]];
 			MonoClass *c = vtable->klass;
 
-			MonoObject* o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (c));
-			MONO_HANDLE_ASSIGN_RAW (tmp_handle, o);
+			// FIXME push/pop LMF
+			MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (c));
+			SET_TEMP_POINTER(o);
 			mono_value_copy_internal (mono_object_get_data (o), locals + ip [2], c);
-			MONO_HANDLE_ASSIGN_RAW (tmp_handle, NULL);
-
 			LOCAL_VAR (ip [1], MonoObject*) = o;
+			SET_TEMP_POINTER(NULL);
+
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -5485,28 +6373,31 @@ call:
 			MonoVTable *vtable = (MonoVTable*)frame->imethod->data_items [ip [3]];
 			MonoClass *c = vtable->klass;
 
-			MonoObject* o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (c));
-			MONO_HANDLE_ASSIGN_RAW (tmp_handle, o);
+			// FIXME push/pop LMF
+			MonoObject *o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (c));
+			SET_TEMP_POINTER(o);
 			mono_value_copy_internal (mono_object_get_data (o), LOCAL_VAR (ip [2], gpointer), c);
-			MONO_HANDLE_ASSIGN_RAW (tmp_handle, NULL);
-
 			LOCAL_VAR (ip [1], MonoObject*) = o;
+			SET_TEMP_POINTER(NULL);
+
 			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BOX_NULLABLE_PTR) {
 			MonoClass *c = (MonoClass*)frame->imethod->data_items [ip [3]];
 
+			// FIXME push/pop LMF
 			LOCAL_VAR (ip [1], MonoObject*) = mono_nullable_box (LOCAL_VAR (ip [2], gpointer), c, error);
 			mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
 			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_NEWARR) {
+			// FIXME push/pop LMF
 			MonoVTable *vtable = (MonoVTable*)frame->imethod->data_items [ip [3]];
 			LOCAL_VAR (ip [1], MonoObject*) = (MonoObject*) mono_array_new_specific_checked (vtable, LOCAL_VAR (ip [2], gint32), error);
 			if (!is_ok (error)) {
-				THROW_EX (mono_error_convert_to_exception (error), ip);
+				THROW_EX (interp_error_convert_to_exception (frame, error, ip), ip);
 			}
 			ip += 4;
 			/*if (profiling_classes) {
@@ -5517,6 +6408,14 @@ call:
 
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_NEWSTR) {
+			LOCAL_VAR (ip [1], MonoString*) = mono_string_new_size_checked (LOCAL_VAR (ip [2], gint32), error);
+			if (!is_ok (error)) {
+				THROW_EX (interp_error_convert_to_exception (frame, error, ip), ip);
+			}
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_LDLEN) {
 			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
 			NULL_CHECK (o);
@@ -5524,43 +6423,44 @@ call:
 			ip += 3;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_LDLEN_SPAN) {
-			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
-			NULL_CHECK (o);
-			// FIXME What's the point of this opcode ? It's just a LDFLD
-			gsize offset_length = (gsize)(gint16)ip [3];
-			LOCAL_VAR (ip [1], mono_u) = *(gint32 *) ((guint8 *) o + offset_length);
-			ip += 4;
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_GETCHR) {
 			MonoString *s = LOCAL_VAR (ip [2], MonoString*);
 			NULL_CHECK (s);
 			int i32 = LOCAL_VAR (ip [3], int);
 			if (i32 < 0 || i32 >= mono_string_length_internal (s))
-				THROW_EX (mono_get_exception_index_out_of_range (), ip);
+				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = mono_string_chars_internal (s)[i32];
 			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_GETITEM_SPAN) {
-			guint8 *span = LOCAL_VAR (ip [2], guint8*);
+			MonoSpanOfVoid *span = LOCAL_VAR (ip [2], MonoSpanOfVoid*);
 			int index = LOCAL_VAR (ip [3], int);
 			NULL_CHECK (span);
 
-			gsize offset_length = (gsize)(gint16)ip [5];
-
-			const gint32 length = *(gint32 *) (span + offset_length);
+			gint32 length = span->_length;
 			if (index < 0 || index >= length)
-				THROW_EX (mono_get_exception_index_out_of_range (), ip);
+				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 
 			gsize element_size = (gsize)(gint16)ip [4];
-			gsize offset_pointer = (gsize)(gint16)ip [6];
+			LOCAL_VAR (ip [1], gpointer) = (guint8*)span->_reference + index * element_size;
 
-			const gpointer pointer = *(gpointer *)(span + offset_pointer);
-			LOCAL_VAR (ip [1], gpointer) = (guint8 *) pointer + index * element_size;
+			ip += 5;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_GETITEM_LOCALSPAN) {
+			// Same as getitem span but we know the offset of the span structure on the stack
+			MonoSpanOfVoid *span = (MonoSpanOfVoid*)(locals + ip [2]);
+			int index = LOCAL_VAR (ip [3], int);
 
-			ip += 7;
+			gint32 length = span->_length;
+			if (index < 0 || index >= length)
+				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
+
+			gsize element_size = (gsize)(gint16)ip [4];
+			LOCAL_VAR (ip [1], gpointer) = (guint8*)span->_reference + index * element_size;
+
+			ip += 5;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STRLEN) {
@@ -5578,16 +6478,10 @@ call:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_ARRAY_ELEMENT_SIZE) {
+			// FIXME push/pop LMF
 			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
 			NULL_CHECK (o);
 			LOCAL_VAR (ip [1], gint32) = mono_array_element_size (mono_object_class (o));
-			ip += 3;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_ARRAY_IS_PRIMITIVE) {
-			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
-			NULL_CHECK (o);
-			LOCAL_VAR (ip [1], gint32) = m_class_is_primitive (m_class_get_element_class (mono_object_class (o)));
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -5595,9 +6489,9 @@ call:
 			/* No bounds, one direction */
 			MonoArray *ao = LOCAL_VAR (ip [2], MonoArray*);
 			NULL_CHECK (ao);
-			gint32 index = LOCAL_VAR (ip [3], gint32);
+			guint32 index = LOCAL_VAR (ip [3], guint32);
 			if (index >= ao->max_length)
-				THROW_EX (mono_get_exception_index_out_of_range (), ip);
+				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 			guint16 size = ip [4];
 			LOCAL_VAR (ip [1], gpointer) = mono_array_addr_with_size_fast (ao, size, index);
 			ip += 5;
@@ -5618,7 +6512,7 @@ call:
 				gint32 lower = ao->bounds [i].lower_bound;
 				guint32 len = ao->bounds [i].length;
 				if (idx < lower || (guint32)(idx - lower) >= len)
-					THROW_EX (mono_get_exception_index_out_of_range (), ip);
+					THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 				pos = (pos * len) + (guint32)(idx - lower);
 			}
 
@@ -5627,15 +6521,16 @@ call:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDELEMA_TC) {
+			// FIXME push/pop LMF
 			stackval *sp = (stackval*)(locals + ip [2]);
 
 			MonoObject *o = (MonoObject*) sp [0].data.o;
 			NULL_CHECK (o);
 
 			MonoClass *klass = (MonoClass*)frame->imethod->data_items [ip [3]];
-			MonoException *ex = ves_array_element_address (frame, klass, (MonoArray *) o, (gpointer*)(locals + ip [1]), sp + 1, TRUE);
-			if (ex)
-				THROW_EX (ex, ip);
+			MonoException *address_ex = ves_array_element_address (frame, klass, (MonoArray *) o, (gpointer*)(locals + ip [1]), sp + 1, TRUE);
+			if (address_ex)
+				THROW_EX (address_ex, ip);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -5643,9 +6538,9 @@ call:
 #define LDELEM(datatype,elemtype) do { \
 	MonoArray *o = LOCAL_VAR (ip [2], MonoArray*); \
 	NULL_CHECK (o); \
-	gint32 aindex = LOCAL_VAR (ip [3], gint32); \
+	guint32 aindex = LOCAL_VAR (ip [3], guint32); \
 	if (aindex >= mono_array_length_internal (o)) \
-		THROW_EX (mono_get_exception_index_out_of_range (), ip); \
+		THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip); \
 	LOCAL_VAR (ip [1], datatype) = mono_array_get_fast (o, elemtype, aindex); \
 	ip += 4; \
 } while (0)
@@ -5656,7 +6551,6 @@ call:
 		MINT_IN_CASE(MINT_LDELEM_I4) LDELEM(gint32, gint32); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_U4) LDELEM(gint32, guint32); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_I8) LDELEM(gint64, guint64); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDELEM_I)  LDELEM(mono_u, mono_i); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_R4) LDELEM(float, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_R8) LDELEM(double, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDELEM_REF) LDELEM(gpointer, gpointer); MINT_IN_BREAK;
@@ -5665,7 +6559,7 @@ call:
 			NULL_CHECK (o);
 			mono_u aindex = LOCAL_VAR (ip [3], gint32);
 			if (aindex >= mono_array_length_internal (o))
-				THROW_EX (mono_get_exception_index_out_of_range (), ip);
+				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 
 			guint16 size = ip [4];
 			char *src_addr = mono_array_addr_with_size_fast ((MonoArray *) o, size, aindex);
@@ -5679,12 +6573,12 @@ call:
 	NULL_CHECK (o); \
 	aindex = LOCAL_VAR (ip [2], gint32); \
 	if (aindex >= mono_array_length_internal (o)) \
-		THROW_EX (mono_get_exception_index_out_of_range (), ip); \
+		THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip); \
 } while (0)
 
 #define STELEM(datatype, elemtype) do { \
 	MonoArray *o; \
-	gint32 aindex; \
+	guint32 aindex; \
 	STELEM_PROLOG(o, aindex); \
 	mono_array_set_fast (o, elemtype, aindex, LOCAL_VAR (ip [3], datatype)); \
 	ip += 4; \
@@ -5695,19 +6589,19 @@ call:
 		MINT_IN_CASE(MINT_STELEM_U2) STELEM(gint32, guint16); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_I4) STELEM(gint32, gint32); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_I8) STELEM(gint64, gint64); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STELEM_I)  STELEM(mono_u, mono_i); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_R4) STELEM(float, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_R8) STELEM(double, double); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STELEM_REF) {
 			MonoArray *o;
-			gint32 aindex;
+			guint32 aindex;
 			STELEM_PROLOG(o, aindex);
 			MonoObject *ref = LOCAL_VAR (ip [3], MonoObject*);
 
 			if (ref) {
+				// FIXME push/pop LMF
 				gboolean isinst = mono_interp_isinst (ref, m_class_get_element_class (mono_object_class (o)));
 				if (!isinst)
-					THROW_EX (mono_get_exception_array_type_mismatch (), ip);
+					THROW_EX (interp_get_exception_array_type_mismatch (frame, ip), ip);
 			}
 			mono_array_setref_fast ((MonoArray *) o, aindex, ref);
 			ip += 4;
@@ -5717,9 +6611,9 @@ call:
 		MINT_IN_CASE(MINT_STELEM_VT) {
 			MonoArray *o = LOCAL_VAR (ip [1], MonoArray*);
 			NULL_CHECK (o);
-			gint32 aindex = LOCAL_VAR (ip [2], gint32);
+			guint32 aindex = LOCAL_VAR (ip [2], guint32);
 			if (aindex >= mono_array_length_internal (o))
-				THROW_EX (mono_get_exception_index_out_of_range (), ip);
+				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
 
 			guint16 size = ip [5];
 			char *dst_addr = mono_array_addr_with_size_fast ((MonoArray *) o, size, aindex);
@@ -5731,7 +6625,7 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_I4_U4) {
 			gint32 val = LOCAL_VAR (ip [2], gint32);
 			if (val < 0)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5739,7 +6633,7 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_I4_I8) {
 			gint64 val = LOCAL_VAR (ip [2], gint64);
 			if (val < G_MININT32 || val > G_MAXINT32)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = (gint32) val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5747,31 +6641,34 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_I4_U8) {
 			guint64 val = LOCAL_VAR (ip [2], guint64);
 			if (val > G_MAXINT32)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = (gint32) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (mono_isnan (val) || mono_trunc (val) != (gint32)val)
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint32) val;
+			double val_r8 = (double)val;
+			if (val_r8 > ((double)G_MININT32 - 1) && val_r8 < ((double)G_MAXINT32 + 1))
+				LOCAL_VAR (ip [1], gint32) = (gint32) val;
+			else
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val < G_MININT32 || val > G_MAXINT32 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint32)val;
+			if (val > ((double)G_MININT32 - 1) && val < ((double)G_MAXINT32 + 1))
+				LOCAL_VAR (ip [1], gint32) = (gint32) val;
+			else
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U4_I4) {
 			gint32 val = LOCAL_VAR (ip [2], gint32);
 			if (val < 0)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5779,31 +6676,34 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_U4_I8) {
 			gint64 val = LOCAL_VAR (ip [2], gint64);
 			if (val < 0 || val > G_MAXUINT32)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = (guint32) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U4_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (mono_isnan (val) || mono_trunc (val) != (guint32)val)
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (guint32)val;
+			double val_r8 = val;
+			if (val_r8 > -1.0 && val_r8 < ((double)G_MAXUINT32 + 1))
+				LOCAL_VAR (ip [1], gint32) = (guint32)val;
+			else
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U4_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val < 0 || val > G_MAXUINT32 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (guint32) val;
+			if (val > -1.0 && val < ((double)G_MAXUINT32 + 1))
+				LOCAL_VAR (ip [1], gint32) = (guint32)val;
+			else
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I2_I4) {
 			gint32 val = LOCAL_VAR (ip [2], gint32);
 			if (val < G_MININT16 || val > G_MAXINT16)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = (gint16)val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5811,7 +6711,7 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_I2_U4) {
 			gint32 val = LOCAL_VAR (ip [2], gint32);
 			if (val < 0 || val > G_MAXINT16)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = (gint16)val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5819,7 +6719,7 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_I2_I8) {
 			gint64 val = LOCAL_VAR (ip [2], gint64);
 			if (val < G_MININT16 || val > G_MAXINT16)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = (gint16) val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5827,46 +6727,33 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_I2_U8) {
 			gint64 val = LOCAL_VAR (ip [2], gint64);
 			if (val < 0 || val > G_MAXINT16)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = (gint16) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I2_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (val < G_MININT16 || val > G_MAXINT16 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint16) val;
+			if (val > (G_MININT16 - 1) && val < (G_MAXINT16 + 1))
+				LOCAL_VAR (ip [1], gint32) = (gint16) val;
+			else
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I2_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val < G_MININT16 || val > G_MAXINT16 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint16) val;
+			if (val > (G_MININT16 - 1) && val < (G_MAXINT16 + 1))
+				LOCAL_VAR (ip [1], gint32) = (gint16) val;
+			else
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_CONV_OVF_I2_UN_R4) {
-			float val = LOCAL_VAR (ip [2], float);
-			if (val < 0 || val > G_MAXINT16 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint16) val;
-			ip += 3;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_CONV_OVF_I2_UN_R8) {
-			double val = LOCAL_VAR (ip [2], double);
-			if (val < 0 || val > G_MAXINT16 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint16) val;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U2_I4) {
 			gint32 val = LOCAL_VAR (ip [2], gint32);
 			if (val < 0 || val > G_MAXUINT16)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5874,31 +6761,33 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_U2_I8) {
 			gint64 val = LOCAL_VAR (ip [2], gint64);
 			if (val < 0 || val > G_MAXUINT16)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = (guint16) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U2_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (val < 0 || val > G_MAXUINT16 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (guint16) val;
+			if (val > -1.0f && val < (G_MAXUINT16 + 1))
+				LOCAL_VAR (ip [1], gint32) = (guint16) val;
+			else
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U2_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val < 0 || val > G_MAXUINT16 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (guint16) val;
+			if (val > -1.0 && val < (G_MAXUINT16 + 1))
+				LOCAL_VAR (ip [1], gint32) = (guint16) val;
+			else
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I1_I4) {
 			gint32 val = LOCAL_VAR (ip [2], gint32);
 			if (val < G_MININT8 || val > G_MAXINT8)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5906,7 +6795,7 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_I1_U4) {
 			gint32 val = LOCAL_VAR (ip [2], gint32);
 			if (val < 0 || val > G_MAXINT8)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5914,7 +6803,7 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_I1_I8) {
 			gint64 val = LOCAL_VAR (ip [2], gint64);
 			if (val < G_MININT8 || val > G_MAXINT8)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = (gint8) val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5922,47 +6811,33 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_I1_U8) {
 			gint64 val = LOCAL_VAR (ip [2], gint64);
 			if (val < 0 || val > G_MAXINT8)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = (gint8) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I1_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (val < G_MININT8 || val > G_MAXINT8 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint8) val;
+			if (val > (G_MININT8 - 1) && val < (G_MAXINT8 + 1))
+				LOCAL_VAR (ip [1], gint32) = (gint8) val;
+			else
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_I1_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val < G_MININT8 || val > G_MAXINT8 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint8) val;
-			ip += 3;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_CONV_OVF_I1_UN_R4) {
-			float val = LOCAL_VAR (ip [2], float);
-			if (val < 0 || val > G_MAXINT8 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint8) val;
-			ip += 3;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_CONV_OVF_I1_UN_R8) {
-			double val = LOCAL_VAR (ip [2], double);
-			if (val < 0 || val > G_MAXINT8 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (gint8) val;
+			if (val > (G_MININT8 - 1) && val < (G_MAXINT8 + 1))
+				LOCAL_VAR (ip [1], gint32) = (gint8) val;
+			else
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U1_I4) {
 			gint32 val = LOCAL_VAR (ip [2], gint32);
 			if (val < 0 || val > G_MAXUINT8)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5970,31 +6845,41 @@ call:
 		MINT_IN_CASE(MINT_CONV_OVF_U1_I8) {
 			gint64 val = LOCAL_VAR (ip [2], gint64);
 			if (val < 0 || val > G_MAXUINT8)
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = (guint8) val;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U1_R4) {
 			float val = LOCAL_VAR (ip [2], float);
-			if (val < 0 || val > G_MAXUINT8 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (guint8) val;
+			if (val > -1.0f && val < (G_MAXUINT8 + 1))
+				LOCAL_VAR (ip [1], gint32) = (guint8)val;
+			else
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CONV_OVF_U1_R8) {
 			double val = LOCAL_VAR (ip [2], double);
-			if (val < 0 || val > G_MAXUINT8 || isnan (val))
-				THROW_EX (mono_get_exception_overflow (), ip);
-			LOCAL_VAR (ip [1], gint32) = (guint8) val;
+			if (val > -1.0 && val < (G_MAXUINT8 + 1))
+				LOCAL_VAR (ip [1], gint32) = (guint8)val;
+			else
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_CKFINITE) {
+		MINT_IN_CASE(MINT_CKFINITE_R4) {
+			float val = LOCAL_VAR (ip [2], float);
+			if (!mono_isfinite (val))
+				THROW_EX (interp_get_exception_arithmetic (frame, ip), ip);
+			LOCAL_VAR (ip [1], float) = val;
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CKFINITE_R8) {
 			double val = LOCAL_VAR (ip [2], double);
 			if (!mono_isfinite (val))
-				THROW_EX (mono_get_exception_arithmetic (), ip);
+				THROW_EX (interp_get_exception_arithmetic (frame, ip), ip);
 			LOCAL_VAR (ip [1], double) = val;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -6024,22 +6909,17 @@ call:
 
 			MonoClass *c = (MonoClass*)frame->imethod->data_items [ip [3]];
 			if (c != tref->klass)
-				THROW_EX (mono_get_exception_invalid_cast (), ip);
+				THROW_EX (interp_get_exception_invalid_cast (frame, ip), ip);
 
 			LOCAL_VAR (ip [1], gpointer) = tref->value;
 			ip += 4;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_LDTOKEN)
-			// FIXME same as MINT_MONO_LDPTR
-			LOCAL_VAR (ip [1], gpointer) = frame->imethod->data_items [ip [2]];
-			ip += 3;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ADD_OVF_I4) {
 			gint32 i1 = LOCAL_VAR (ip [2], gint32);
 			gint32 i2 = LOCAL_VAR (ip [3], gint32);
 			if (CHECK_ADD_OVERFLOW (i1, i2))
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = i1 + i2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6048,7 +6928,7 @@ call:
 			gint64 l1 = LOCAL_VAR (ip [2], gint64);
 			gint64 l2 = LOCAL_VAR (ip [3], gint64);
 			if (CHECK_ADD_OVERFLOW64 (l1, l2))
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint64) = l1 + l2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6057,7 +6937,7 @@ call:
 			guint32 i1 = LOCAL_VAR (ip [2], guint32);
 			guint32 i2 = LOCAL_VAR (ip [3], guint32);
 			if (CHECK_ADD_OVERFLOW_UN (i1, i2))
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], guint32) = i1 + i2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6066,7 +6946,7 @@ call:
 			guint64 l1 = LOCAL_VAR (ip [2], guint64);
 			guint64 l2 = LOCAL_VAR (ip [3], guint64);
 			if (CHECK_ADD_OVERFLOW64_UN (l1, l2))
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], guint64) = l1 + l2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6075,7 +6955,7 @@ call:
 			gint32 i1 = LOCAL_VAR (ip [2], gint32);
 			gint32 i2 = LOCAL_VAR (ip [3], gint32);
 			if (CHECK_MUL_OVERFLOW (i1, i2))
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = i1 * i2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6084,7 +6964,7 @@ call:
 			gint64 l1 = LOCAL_VAR (ip [2], gint64);
 			gint64 l2 = LOCAL_VAR (ip [3], gint64);
 			if (CHECK_MUL_OVERFLOW64 (l1, l2))
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint64) = l1 * l2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6093,7 +6973,7 @@ call:
 			guint32 i1 = LOCAL_VAR (ip [2], guint32);
 			guint32 i2 = LOCAL_VAR (ip [3], guint32);
 			if (CHECK_MUL_OVERFLOW_UN (i1, i2))
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], guint32) = i1 * i2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6102,7 +6982,7 @@ call:
 			guint64 l1 = LOCAL_VAR (ip [2], guint64);
 			guint64 l2 = LOCAL_VAR (ip [3], guint64);
 			if (CHECK_MUL_OVERFLOW64_UN (l1, l2))
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], guint64) = l1 * l2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6111,7 +6991,7 @@ call:
 			gint32 i1 = LOCAL_VAR (ip [2], gint32);
 			gint32 i2 = LOCAL_VAR (ip [3], gint32);
 			if (CHECK_SUB_OVERFLOW (i1, i2))
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint32) = i1 - i2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6120,7 +7000,7 @@ call:
 			gint64 l1 = LOCAL_VAR (ip [2], gint64);
 			gint64 l2 = LOCAL_VAR (ip [3], gint64);
 			if (CHECK_SUB_OVERFLOW64 (l1, l2))
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint64) = l1 - l2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6129,7 +7009,7 @@ call:
 			guint32 i1 = LOCAL_VAR (ip [2], guint32);
 			guint32 i2 = LOCAL_VAR (ip [3], guint32);
 			if (CHECK_SUB_OVERFLOW_UN (i1, i2))
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], guint32) = i1 - i2;
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6138,17 +7018,12 @@ call:
 			guint64 l1 = LOCAL_VAR (ip [2], guint64);
 			guint64 l2 = LOCAL_VAR (ip [3], guint64);
 			if (CHECK_SUB_OVERFLOW64_UN (l1, l2))
-				THROW_EX (mono_get_exception_overflow (), ip);
+				THROW_EX (interp_get_exception_overflow (frame, ip), ip);
 			LOCAL_VAR (ip [1], gint64) = l1 - l2;
 			ip += 4;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_START_ABORT_PROT)
-			mono_threads_begin_abort_protected_block ();
-			ip ++;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ENDFINALLY) {
-			mono_threads_end_abort_protected_block ();
 			guint16 clause_index = *(ip + 1);
 
 			guint16 *ret_ip = *(guint16**)(locals + frame->imethod->clause_data_offsets [clause_index]);
@@ -6173,36 +7048,30 @@ call:
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_LEAVE)
-		MINT_IN_CASE(MINT_LEAVE_S)
 		MINT_IN_CASE(MINT_LEAVE_CHECK)
 		MINT_IN_CASE(MINT_LEAVE_S_CHECK) {
-			int opcode = *ip;
-			gboolean const check = opcode == MINT_LEAVE_CHECK || opcode == MINT_LEAVE_S_CHECK;
+			int leave_opcode = *ip;
 
-			if (check && frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
+			if (frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
 				MonoException *abort_exc = mono_interp_leave (frame);
 				if (abort_exc)
 					THROW_EX (abort_exc, ip);
 			}
 
-			gboolean const short_offset = opcode == MINT_LEAVE_S || opcode == MINT_LEAVE_S_CHECK;
+			gboolean const short_offset = leave_opcode == MINT_LEAVE_S_CHECK;
 			ip += short_offset ? (gint16)*(ip + 1) : (gint32)READ32 (ip + 1);
-			// Check for any abort requests, once all finally blocks were invoked
-			if (!check)
-				EXCEPTION_CHECKPOINT;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_ICALL_V_V) 
-		MINT_IN_CASE(MINT_ICALL_P_V) 
+		MINT_IN_CASE(MINT_ICALL_V_V)
+		MINT_IN_CASE(MINT_ICALL_P_V)
 		MINT_IN_CASE(MINT_ICALL_PP_V)
 		MINT_IN_CASE(MINT_ICALL_PPP_V)
 		MINT_IN_CASE(MINT_ICALL_PPPP_V)
 		MINT_IN_CASE(MINT_ICALL_PPPPP_V)
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_V)
 			frame->state.ip = ip + 3;
-			do_icall_wrapper (frame, NULL, *ip, NULL, (stackval*)(locals + ip [1]), frame->imethod->data_items [ip [2]], FALSE);
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			do_icall_wrapper (frame, NULL, *ip, NULL, (stackval*)(locals + ip [1]), frame->imethod->data_items [ip [2]], FALSE, &gc_transitions);
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 3;
 			MINT_IN_BREAK;
@@ -6214,28 +7083,26 @@ call:
 		MINT_IN_CASE(MINT_ICALL_PPPPP_P)
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_P)
 			frame->state.ip = ip + 4;
-			do_icall_wrapper (frame, NULL, *ip, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame->imethod->data_items [ip [3]], FALSE);
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			do_icall_wrapper (frame, NULL, *ip, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame->imethod->data_items [ip [3]], FALSE, &gc_transitions);
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 4;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MONO_LDPTR) 
+		MINT_IN_CASE(MINT_LDPTR)
 			LOCAL_VAR (ip [1], gpointer) = frame->imethod->data_items [ip [2]];
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_NEWOBJ)
+			// FIXME push/pop LMF
 			LOCAL_VAR (ip [1], MonoObject*) = mono_interp_new ((MonoClass*)frame->imethod->data_items [ip [2]]); // FIXME: do not swallow the error
 			ip += 3;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_RETOBJ)
+			// FIXME push/pop LMF
 			stackval_from_data (mono_method_signature_internal (frame->imethod->method)->ret, frame->stack, LOCAL_VAR (ip [1], gpointer),
-			     mono_method_signature_internal (frame->imethod->method)->pinvoke);
+			     mono_method_signature_internal (frame->imethod->method)->pinvoke && !mono_method_signature_internal (frame->imethod->method)->marshalling_disabled);
 			frame_data_allocator_pop (&context->data_stack, frame);
 			goto exit_frame;
-		MINT_IN_CASE(MINT_MONO_SGEN_THREAD_INFO)
-			LOCAL_VAR (ip [1], gpointer) = mono_tls_get_sgen_thread_info ();
-			ip += 2;
-			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_MEMORY_BARRIER) {
 			++ip;
 			mono_memory_barrier ();
@@ -6245,6 +7112,7 @@ call:
 			gboolean flag = FALSE;
 			gint64 *dest = LOCAL_VAR (ip [2], gint64*);
 			gint64 exch = LOCAL_VAR (ip [3], gint64);
+			NULL_CHECK(dest);
 #if SIZEOF_VOID_P == 4
 			if (G_UNLIKELY (((size_t)dest) & 0x7)) {
 				gint64 result;
@@ -6261,13 +7129,48 @@ call:
 			ip += 4;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_I4) {
+			gint32 *dest = LOCAL_VAR(ip[2], gint32*);
+			gint32 value = LOCAL_VAR(ip[3], gint32);
+			gint32 comparand = LOCAL_VAR(ip[4], gint32);
+			NULL_CHECK(dest);
+
+			LOCAL_VAR(ip[1], gint32) = mono_atomic_cas_i32(dest, value, comparand);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_MONO_CMPXCHG_I8) {
+			gboolean flag = FALSE;
+			gint64 *dest = LOCAL_VAR(ip[2], gint64*);
+			gint64 value = LOCAL_VAR(ip[3], gint64);
+			gint64 comparand = LOCAL_VAR(ip[4], gint64);
+			NULL_CHECK(dest);
+
+#if SIZEOF_VOID_P == 4
+			if (G_UNLIKELY ((size_t)dest & 0x7)) {
+				gint64 old;
+				mono_interlocked_lock ();
+				old = *dest;
+				if (old == comparand)
+					*dest = value;
+				mono_interlocked_unlock ();
+				LOCAL_VAR(ip[1], gint64) = old;
+				flag = TRUE;
+			}
+#endif
+
+			if (!flag)
+				LOCAL_VAR(ip[1], gint64) = mono_atomic_cas_i64(dest, value, comparand);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_MONO_LDDOMAIN)
 			LOCAL_VAR (ip [1], gpointer) = mono_domain_get ();
 			ip += 2;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MONO_GET_SP)
-			LOCAL_VAR (ip [1], gpointer) = frame;
-			ip += 2;
+		MINT_IN_CASE(MINT_MONO_ENABLE_GCTRANS)
+			gc_transitions = TRUE;
+			ip++;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_INTR_LOC)
 			if (G_UNLIKELY (ss_enabled)) {
@@ -6275,6 +7178,7 @@ call:
 				static T ss_tramp;
 
 				if (!ss_tramp) {
+					// FIXME push/pop LMF
 					void *tramp = mini_get_single_step_trampoline ();
 					mono_memory_barrier ();
 					ss_tramp = (T)tramp;
@@ -6300,12 +7204,17 @@ call:
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_SEQ_POINT)
 			/* Just a placeholder for a breakpoint */
+#if HOST_WASI
+			if (debugger_enabled)
+				mono_component_debugger()->receive_and_process_command_from_debugger_agent ();
+#endif
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_BREAKPOINT) {
 			typedef void (*T) (void);
 			static T bp_tramp;
 			if (!bp_tramp) {
+				// FIXME push/pop LMF
 				void *tramp = mini_get_breakpoint_trampoline ();
 				mono_memory_barrier ();
 				bp_tramp = (T)tramp;
@@ -6459,25 +7368,46 @@ call:
 #undef RELOP_FP
 #undef RELOP_CAST
 
-		MINT_IN_CASE(MINT_LDFTN) {
+		MINT_IN_CASE(MINT_LDFTN_ADDR) {
 			LOCAL_VAR (ip [1], gpointer) = frame->imethod->data_items [ip [2]];
 			ip += 3;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_LDFTN) {
+			InterpMethod *m = (InterpMethod*)frame->imethod->data_items [ip [2]];
+
+			// FIXME push/pop LMF
+			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (m, FALSE);
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_LDVIRTFTN) {
-			InterpMethod *m = (InterpMethod*)frame->imethod->data_items [ip [3]];
+			InterpMethod *virtual_method = (InterpMethod*)frame->imethod->data_items [ip [3]];
 			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
 			NULL_CHECK (o);
-				
-			LOCAL_VAR (ip [1], gpointer) = get_virtual_method (m, o->vtable);
+
+			// FIXME push/pop LMF
+			InterpMethod *res_method = get_virtual_method (virtual_method, o->vtable);
+			gboolean need_unbox = m_class_is_valuetype (res_method->method->klass) && !m_class_is_valuetype (virtual_method->method->klass);
+			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (res_method, need_unbox);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDFTN_DYNAMIC) {
 			error_init_reuse (error);
-			InterpMethod *m = mono_interp_get_imethod (LOCAL_VAR (ip [2], MonoMethod*), error);
-			mono_error_assert_ok (error);
-			LOCAL_VAR (ip [1], gpointer) = m;
+
+			MonoMethod *local_cmethod = LOCAL_VAR (ip [2], MonoMethod*);
+
+			// FIXME push/pop LMF
+			if (G_UNLIKELY (mono_method_has_unmanaged_callers_only_attribute (local_cmethod))) {
+				local_cmethod = mono_marshal_get_managed_wrapper  (local_cmethod, NULL, (MonoGCHandle)0, error);
+				mono_error_assert_ok (error);
+				gpointer addr = mini_get_interp_callbacks ()->create_method_pointer (local_cmethod, TRUE, error);
+				LOCAL_VAR (ip [1], gpointer) = addr;
+			} else {
+				InterpMethod *m = mono_interp_get_imethod (local_cmethod);
+				LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (m, FALSE);
+			}
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -6490,6 +7420,7 @@ call:
 				MonoProfilerCallContext *prof_ctx = g_new0 (MonoProfilerCallContext, 1);
 				prof_ctx->interp_frame = frame;
 				prof_ctx->method = frame->imethod->method;
+				// FIXME push/pop LMF
 				if (flag & TRACING_FLAG)
 					mono_trace_enter_method (frame->imethod->method, frame->imethod->jinfo, prof_ctx);
 				if (flag & PROFILING_FLAG)
@@ -6521,6 +7452,7 @@ call:
 				prof_ctx->method = frame->imethod->method;
 				if (!is_void)
 					prof_ctx->return_value = frame->retval;
+				// FIXME push/pop LMF
 				if (flag & TRACING_FLAG)
 					mono_trace_leave_method (frame->imethod->method, frame->imethod->jinfo, prof_ctx);
 				if (flag & PROFILING_FLAG)
@@ -6541,11 +7473,27 @@ call:
 			MINT_IN_BREAK;
 		}
 
+		MINT_IN_CASE(MINT_TIER_ENTER_METHOD) {
+			frame->imethod->entry_count++;
+			if (frame->imethod->entry_count > INTERP_TIER_ENTRY_LIMIT && !clause_args)
+				ip = mono_interp_tier_up_frame_enter (frame, context);
+			else
+				ip++;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_TIER_PATCHPOINT) {
+			frame->imethod->entry_count++;
+			if (frame->imethod->entry_count > INTERP_TIER_ENTRY_LIMIT && !clause_args)
+				ip = mono_interp_tier_up_frame_patchpoint (frame, context, ip [1]);
+			else
+				ip += 2;
+			MINT_IN_BREAK;
+		}
+
 		MINT_IN_CASE(MINT_LDLOCA_S)
 			LOCAL_VAR (ip [1], gpointer) = locals + ip [2];
 			ip += 3;
 			MINT_IN_BREAK;
-
 
 #define MOV(argtype1,argtype2) \
 	LOCAL_VAR (ip [1], argtype1) = LOCAL_VAR (ip [2], argtype2); \
@@ -6554,10 +7502,15 @@ call:
 		// which is our minimum "register" size in interp. They are only needed when
 		// the address of the local is taken and we should try to optimize them out
 		// because the local can't be propagated.
-		MINT_IN_CASE(MINT_MOV_I1) MOV(guint32, gint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MOV_U1) MOV(guint32, guint8); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MOV_I2) MOV(guint32, gint16); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MOV_U2) MOV(guint32, guint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MOV_I4_I1) MOV(gint32, gint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MOV_I4_U1) MOV(gint32, guint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MOV_I4_I2) MOV(gint32, gint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MOV_I4_U2) MOV(gint32, guint16); MINT_IN_BREAK;
+		// These moves are used to store into the field of a local valuetype
+		// No sign extension is needed, we just move bytes from the execution
+		// stack, no additional conversion is needed.
+		MINT_IN_CASE(MINT_MOV_1) MOV(gint8, gint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MOV_2) MOV(gint16, gint16); MINT_IN_BREAK;
 		// Normal moves between locals
 		MINT_IN_CASE(MINT_MOV_4) MOV(guint32, guint32); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MOV_8) MOV(guint64, guint64); MINT_IN_BREAK;
@@ -6569,12 +7522,37 @@ call:
 			MINT_IN_BREAK;
 		}
 
+		MINT_IN_CASE(MINT_MOV_8_2)
+			LOCAL_VAR (ip [1], guint64) = LOCAL_VAR (ip [2], guint64);
+			LOCAL_VAR (ip [3], guint64) = LOCAL_VAR (ip [4], guint64);
+			ip += 5;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MOV_8_3)
+			LOCAL_VAR (ip [1], guint64) = LOCAL_VAR (ip [2], guint64);
+			LOCAL_VAR (ip [3], guint64) = LOCAL_VAR (ip [4], guint64);
+			LOCAL_VAR (ip [5], guint64) = LOCAL_VAR (ip [6], guint64);
+			ip += 7;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MOV_8_4)
+			LOCAL_VAR (ip [1], guint64) = LOCAL_VAR (ip [2], guint64);
+			LOCAL_VAR (ip [3], guint64) = LOCAL_VAR (ip [4], guint64);
+			LOCAL_VAR (ip [5], guint64) = LOCAL_VAR (ip [6], guint64);
+			LOCAL_VAR (ip [7], guint64) = LOCAL_VAR (ip [8], guint64);
+			ip += 9;
+			MINT_IN_BREAK;
+
 		MINT_IN_CASE(MINT_LOCALLOC) {
 			int len = LOCAL_VAR (ip [2], gint32);
-			gpointer mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, MINT_VT_ALIGNMENT));
+			gpointer mem;
+			if (len > 0) {
+				// We align len to 8 so we can safely load all primitive types on all platforms
+				mem = frame_data_allocator_alloc (&context->data_stack, frame, ALIGN_TO (len, sizeof (gint64)));
 
-			if (frame->imethod->init_locals)
-				memset (mem, 0, len);
+				if (frame->imethod->init_locals)
+					memset (mem, 0, len);
+			} else {
+				mem = NULL;
+			}
 			LOCAL_VAR (ip [1], gpointer) = mem;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -6590,18 +7568,20 @@ call:
 		MINT_IN_CASE(MINT_CPBLK) {
 			gpointer dest = LOCAL_VAR (ip [1], gpointer);
 			gpointer src = LOCAL_VAR (ip [2], gpointer);
-			if (!dest || !src)
-				THROW_EX (mono_get_exception_null_reference(), ip);
-			/* FIXME: value and size may be int64... */
-			memcpy (dest, src, LOCAL_VAR (ip [3], gint32));
+			guint32 size = LOCAL_VAR (ip [3], guint32);
+			if (size && (!dest || !src))
+				THROW_EX (interp_get_exception_null_reference(frame, ip), ip);
+			else
+				memcpy (dest, src, size);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INITBLK) {
 			gpointer dest = LOCAL_VAR (ip [1], gpointer);
-			NULL_CHECK (dest);
-			/* FIXME: value and size may be int64... */
-			memset (dest, LOCAL_VAR (ip [2], gint32), LOCAL_VAR (ip [3], gint32));
+			guint32 size = LOCAL_VAR (ip [3], guint32);
+			if (size)
+				NULL_CHECK (dest);
+			memset (dest, LOCAL_VAR (ip [2], gint32), size);
 			ip += 4;
 			MINT_IN_BREAK;
 		}
@@ -6611,32 +7591,33 @@ call:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_MONO_RETHROW) {
-			/* 
+			/*
 			 * need to clarify what this should actually do:
 			 *
 			 * Takes an exception from the stack and rethrows it.
 			 * This is useful for wrappers that don't want to have to
-			 * use CEE_THROW and lose the exception stacktrace. 
+			 * use CEE_THROW and lose the exception stacktrace.
 			 */
 
 			MonoException *exc = LOCAL_VAR (ip [1], MonoException*);
 			if (!exc)
-				exc = mono_get_exception_null_reference ();
+				exc = interp_get_exception_null_reference (frame, ip);
 
 			THROW_EX_GENERAL (exc, ip, TRUE);
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LD_DELEGATE_METHOD_PTR) {
+			// FIXME push/pop LMF
 			MonoDelegate *del = LOCAL_VAR (ip [2], MonoDelegate*);
 			if (!del->interp_method) {
 				/* Not created from interpreted code */
-				error_init_reuse (error);
 				g_assert (del->method);
-				del->interp_method = mono_interp_get_imethod (del->method, error);
-				mono_error_assert_ok (error);
+				del->interp_method = mono_interp_get_imethod (del->method);
+			} else if (((InterpMethod*)del->interp_method)->optimized_imethod) {
+				del->interp_method = ((InterpMethod*)del->interp_method)->optimized_imethod;
 			}
 			g_assert (del->interp_method);
-			LOCAL_VAR (ip [1], gpointer) = del->interp_method;
+			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (del->interp_method, FALSE);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -6649,7 +7630,6 @@ call:
 	LOCAL_VAR (ip [1], double) = mathfunc (LOCAL_VAR (ip [2], double), LOCAL_VAR (ip [3], double)); \
 	ip += 4;
 
-		MINT_IN_CASE(MINT_ABS) MATH_UNOP(fabs); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ASIN) MATH_UNOP(asin); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ASINH) MATH_UNOP(asinh); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ACOS) MATH_UNOP(acos); MINT_IN_BREAK;
@@ -6670,9 +7650,12 @@ call:
 		MINT_IN_CASE(MINT_SINH) MATH_UNOP(sinh); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TAN) MATH_UNOP(tan); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TANH) MATH_UNOP(tanh); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ABS) MATH_UNOP(fabs); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_ATAN2) MATH_BINOP(atan2); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_POW) MATH_BINOP(pow); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MIN) MATH_BINOP(min_d); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MAX) MATH_BINOP(max_d); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_FMA)
 			LOCAL_VAR (ip [1], double) = fma (LOCAL_VAR (ip [2], double), LOCAL_VAR (ip [3], double), LOCAL_VAR (ip [4], double));
 			ip += 5;
@@ -6681,19 +7664,6 @@ call:
 			LOCAL_VAR (ip [1], double) = scalbn (LOCAL_VAR (ip [2], double), LOCAL_VAR (ip [3], gint32));
 			ip += 4;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_ILOGB) {
-			int result;
-			double x = LOCAL_VAR (ip [2], double);
-			if (FP_ILOGB0 != INT_MIN && x == 0.0)
-				result = INT_MIN;
-			else if (FP_ILOGBNAN != INT_MAX && isnan(x))
-				result = INT_MAX;
-			else
-				result = ilogb (x);
-			LOCAL_VAR (ip [1],  gint32) = result;
-			ip += 3;
-			MINT_IN_BREAK;
-		}
 
 #define MATH_UNOPF(mathfunc) \
 	LOCAL_VAR (ip [1], float) = mathfunc (LOCAL_VAR (ip [2], float)); \
@@ -6702,7 +7672,6 @@ call:
 #define MATH_BINOPF(mathfunc) \
 	LOCAL_VAR (ip [1], float) = mathfunc (LOCAL_VAR (ip [2], float), LOCAL_VAR (ip [3], float)); \
 	ip += 4;
-		MINT_IN_CASE(MINT_ABSF) MATH_UNOPF(fabsf); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ASINF) MATH_UNOPF(asinf); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ASINHF) MATH_UNOPF(asinhf); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ACOSF) MATH_UNOPF(acosf); MINT_IN_BREAK;
@@ -6723,9 +7692,12 @@ call:
 		MINT_IN_CASE(MINT_SINHF) MATH_UNOPF(sinhf); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TANF) MATH_UNOPF(tanf); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TANHF) MATH_UNOPF(tanhf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_ABSF) MATH_UNOPF(fabsf); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_ATAN2F) MATH_BINOPF(atan2f); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_POWF) MATH_BINOPF(powf); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MINF) MATH_BINOPF(min_f); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MAXF) MATH_BINOPF(max_f); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_FMAF)
 			LOCAL_VAR (ip [1], float) = fmaf (LOCAL_VAR (ip [2], float), LOCAL_VAR (ip [3], float), LOCAL_VAR (ip [4], float));
 			ip += 5;
@@ -6734,19 +7706,6 @@ call:
 			LOCAL_VAR (ip [1], float) = scalbnf (LOCAL_VAR (ip [2], float), LOCAL_VAR (ip [3], gint32));
 			ip += 4;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_ILOGBF) {
-			int result;
-			float x = LOCAL_VAR (ip [2], float);
-			if (FP_ILOGB0 != INT_MIN && x == 0.0)
-				result = INT_MIN;
-			else if (FP_ILOGBNAN != INT_MAX && isnan(x))
-				result = INT_MAX;
-			else
-				result = ilogbf (x);
-			LOCAL_VAR (ip [1], gint32) = result;
-			ip += 3;
-			MINT_IN_BREAK;
-		}
 
 		MINT_IN_CASE(MINT_INTRINS_ENUM_HASFLAG) {
 			MonoClass *klass = (MonoClass*)frame->imethod->data_items [ip [4]];
@@ -6759,6 +7718,11 @@ call:
 			ip += 3;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_INTRINS_TRY_GET_HASHCODE) {
+			LOCAL_VAR (ip [1], gint32) = mono_object_try_get_hash_internal (LOCAL_VAR (ip [2], MonoObject*));
+			ip += 3;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_INTRINS_GET_TYPE) {
 			MonoObject *o = LOCAL_VAR (ip [2], MonoObject*);
 			NULL_CHECK (o);
@@ -6766,11 +7730,104 @@ call:
 			ip += 3;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_METADATA_UPDATE_LDFLDA) {
+			MonoObject *inst = LOCAL_VAR (ip [2], MonoObject*);
+			MonoType *field_type = frame->imethod->data_items [ip [3]];
+			uint32_t fielddef_token = GPOINTER_TO_UINT32 (frame->imethod->data_items [ip [4]]);
+			// FIXME: can we emit a call directly instead of a runtime-invoke?
+			gpointer field_addr = mono_metadata_update_added_field_ldflda (inst, field_type, fielddef_token, error);
+			/* FIXME: think about pinning the FieldStore and adding a second opcode to
+			 * unpin it */
+			LOCAL_VAR (ip [1], gpointer) = field_addr;
+			mono_interp_error_cleanup (error);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
+
+#ifdef HOST_BROWSER
+		MINT_IN_CASE(MINT_TIER_NOP_JITERPRETER) {
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+
+		MINT_IN_CASE(MINT_TIER_PREPARE_JITERPRETER) {
+			if (mono_opt_jiterpreter_traces_enabled) {
+				// We may lose a race with another thread here so we need to use volatile and be careful
+				volatile guint16 *mutable_ip = (volatile guint16*)ip;
+				/*
+				 * prepare_jiterpreter will update the trace's hit count and potentially either JIT it or
+				 *  disable this entry point based on whether it fails to JIT. the hit counting is necessary
+				 *  because a given method may contain many jiterpreter entry points, but some of them will
+				 *  not be actually hit often enough to justify the cost of jitting them. (for example, a
+				 *  trace that only runs inside an unlikely branch for throwing exceptions.)
+				 * thanks to the heuristic that runs during transform.c's codegen, most (95%+) of these
+				 *  entry points will JIT successfully, which will keep the number of NOT_JITTED nops low.
+				 * note: threading doesn't work yet, we will need to broadcast jitted traces to all of our
+				 *  JS workers in order to register them at the appropriate slots in the function pointer
+				 *  table. when growing the function pointer table we will also need to synchronize that.
+				 */
+				JiterpreterThunk prepare_result = mono_interp_tier_prepare_jiterpreter_fast(frame, frame->imethod->method, ip, frame->imethod->jinfo->code_start, frame->imethod->jinfo->code_size);
+				ptrdiff_t offset;
+				switch ((guint32)(void*)prepare_result) {
+					case JITERPRETER_TRAINING:
+						// jiterpreter still updating hit count before deciding to generate a trace,
+						//  so skip this opcode.
+						ip += 3;
+						break;
+					case JITERPRETER_NOT_JITTED:
+						// Patch opcode to disable it because this trace failed to JIT.
+						if (!mono_opt_jiterpreter_estimate_heat) {
+							mono_memory_barrier ();
+							*mutable_ip = MINT_TIER_NOP_JITERPRETER;
+							mono_memory_barrier ();
+						}
+						ip += 3;
+						break;
+					default:
+						/*
+						 * trace generated. patch opcode to disable it, then write the function
+						 *  pointer, then patch opcode again to turn this trace on.
+						 * we do this to ensure that other threads won't see an ENTER_JITERPRETER
+						 *  opcode that has no function pointer stored inside of it.
+						 * (note that right now threading doesn't work, but it's worth being correct
+						 *  here so that implementing thread support will be easier later.)
+						 */
+						*mutable_ip = MINT_TIER_MONITOR_JITERPRETER;
+						// now execute the trace
+						// this isn't important for performance, but it makes it easier to use the
+						//  jiterpreter early in automated tests where code only runs once
+						offset = prepare_result(frame, locals, &jiterpreter_call_info);
+						ip = (guint16*) (((guint8*)ip) + offset);
+						break;
+				}
+			} else {
+				ip += 3;
+			}
+
+			MINT_IN_BREAK;
+		}
+
+		MINT_IN_CASE(MINT_TIER_MONITOR_JITERPRETER) {
+			// The trace is in monitoring mode, where we track how far it actually goes
+			//  each time it is executed for a while. After N more hits, we either
+			//  turn it into an ENTER or a NOP depending on how well it is working
+			ptrdiff_t offset = mono_jiterp_monitor_trace (ip, frame, locals);
+			ip = (guint16*) (((guint8*)ip) + offset);
+			MINT_IN_BREAK;
+		}
+
+		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER) {
+			JiterpreterThunk thunk = (void*)READ32(ip + 1);
+			ptrdiff_t offset = thunk(frame, locals, &jiterpreter_call_info);
+			ip = (guint16*) (((guint8*)ip) + offset);
+			MINT_IN_BREAK;
+		}
+#endif
 
 #if !USE_COMPUTED_GOTO
 		default:
-			interp_error_xsx ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname (*ip), ip - frame->imethod->code);
-#endif
+			interp_error_xsx ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname (*ip), GPTRDIFF_TO_INT (ip - frame->imethod->code));
+#endif // USE_COMPUTED_GOTO
 		}
 	}
 
@@ -6836,9 +7893,9 @@ exit_clause:
 		context->stack_pointer = (guchar*)frame->stack;
 
 	DEBUG_LEAVE ();
-
-	HANDLE_FUNCTION_RETURN ();
 }
+
+#undef SET_TEMP_POINTER
 
 static void
 interp_parse_options (const char *options)
@@ -6852,27 +7909,56 @@ interp_parse_options (const char *options)
 	for (ptr = args; ptr && *ptr; ptr ++) {
 		char *arg = *ptr;
 
-		if (strncmp (arg, "jit=", 4) == 0)
+		if (strncmp (arg, "jit=", 4) == 0) {
 			mono_interp_jit_classes = g_slist_prepend (mono_interp_jit_classes, arg + 4);
-		else if (strncmp (arg, "interp-only=", strlen ("interp-only=")) == 0)
+		} else if (strncmp (arg, "interp-only=", strlen ("interp-only=")) == 0) {
 			mono_interp_only_classes = g_slist_prepend (mono_interp_only_classes, arg + strlen ("interp-only="));
-		else if (strncmp (arg, "-inline", 7) == 0)
-			mono_interp_opt &= ~INTERP_OPT_INLINE;
-		else if (strncmp (arg, "-cprop", 6) == 0)
-			mono_interp_opt &= ~INTERP_OPT_CPROP;
-		else if (strncmp (arg, "-super", 6) == 0)
-			mono_interp_opt &= ~INTERP_OPT_SUPER_INSTRUCTIONS;
-		else if (strncmp (arg, "-bblocks", 8) == 0)
-			mono_interp_opt &= ~INTERP_OPT_BBLOCKS;
-		else if (strncmp (arg, "-all", 4) == 0)
-			mono_interp_opt = INTERP_OPT_NONE;
+		} else {
+			gboolean invert;
+			int opt = 0;
+
+			if (*arg == '-') {
+				arg++;
+				invert = TRUE;
+			} else {
+				invert = FALSE;
+			}
+
+			if (strncmp (arg, "inline", 6) == 0)
+				opt = INTERP_OPT_INLINE;
+			else if (strncmp (arg, "cprop", 5) == 0)
+				opt = INTERP_OPT_CPROP;
+			else if (strncmp (arg, "super", 5) == 0)
+				opt = INTERP_OPT_SUPER_INSTRUCTIONS;
+			else if (strncmp (arg, "bblocks", 7) == 0)
+				opt = INTERP_OPT_BBLOCKS;
+			else if (strncmp (arg, "tiering", 7) == 0)
+				opt = INTERP_OPT_TIERING;
+			else if (strncmp (arg, "simd", 4) == 0)
+				opt = INTERP_OPT_SIMD;
+#if HOST_BROWSER
+			else if (strncmp (arg, "jiterp", 6) == 0)
+				opt = INTERP_OPT_JITERPRETER;
+#endif
+			else if (strncmp (arg, "all", 3) == 0)
+				opt = ~INTERP_OPT_NONE;
+
+			if (opt) {
+				if (invert)
+					mono_interp_opt &= ~opt;
+				else
+					mono_interp_opt |= opt;
+			}
+		}
 	}
 }
 
 /*
  * interp_set_resume_state:
  *
- *   Set the state the interpeter will continue to execute from after execution returns to the interpreter.
+ *   Set the state the interpreter will continue to execute from after execution returns to the interpreter.
+ * If INTERP_FRAME is NULL, that means the exception is caught in an AOTed frame and the interpreter needs to
+ * unwind back to AOT code.
  */
 static void
 interp_set_resume_state (MonoJitTlsData *jit_tls, MonoObject *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)
@@ -6890,8 +7976,10 @@ interp_set_resume_state (MonoJitTlsData *jit_tls, MonoObject *ex, MonoJitExcepti
 		mono_gchandle_free_internal (context->exc_gchandle);
 	context->exc_gchandle = mono_gchandle_new_internal ((MonoObject*)ex, FALSE);
 	/* Ditto */
-	if (ei)
-		*(MonoObject**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
+	if (context->handler_frame) {
+		if (ei)
+			*(MonoObject**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
+	}
 	context->handler_ip = (const guint16*)handler_ip;
 }
 
@@ -6912,22 +8000,22 @@ interp_get_resume_state (const MonoJitTlsData *jit_tls, gboolean *has_resume_sta
 /*
  * interp_run_finally:
  *
- *   Run the finally clause identified by CLAUSE_INDEX in the intepreter frame given by
+ *   Run the finally clause identified by CLAUSE_INDEX in the interpreter frame given by
  * frame->interp_frame.
  * Return TRUE if the finally clause threw an exception.
  */
 static gboolean
-interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip, gpointer handler_ip_end)
+interp_run_finally (StackFrameInfo *frame, int clause_index)
 {
 	InterpFrame *iframe = (InterpFrame*)frame->interp_frame;
+	MonoJitExceptionInfo *ei = &iframe->imethod->jinfo->clauses [clause_index];
 	ThreadContext *context = get_context ();
 	FrameClauseArgs clause_args;
 	const guint16 *state_ip;
 
 	memset (&clause_args, 0, sizeof (FrameClauseArgs));
-	clause_args.start_with_ip = (const guint16*)handler_ip;
-	clause_args.end_at_ip = (const guint16*)handler_ip_end;
-	clause_args.exit_clause = clause_index;
+	clause_args.start_with_ip = (const guint16*)ei->handler_start;
+	clause_args.end_at_ip = (const guint16*)ei->data.handler_end;
 	clause_args.exec_frame = iframe;
 
 	state_ip = iframe->state.ip;
@@ -6939,10 +8027,13 @@ interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip
 	// this informs MINT_ENDFINALLY to return to EH
 	*(guint16**)(frame_locals (iframe) + iframe->imethod->clause_data_offsets [clause_index]) = NULL;
 
-	interp_exec_method (iframe, context, &clause_args);
+	mono_interp_exec_method (iframe, context, &clause_args);
 
 	iframe->next_free = next_free;
 	iframe->state.ip = state_ip;
+
+	check_pending_unwind (context);
+
 	if (context->has_resume_state) {
 		return TRUE;
 	} else {
@@ -6953,7 +8044,7 @@ interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip
 /*
  * interp_run_filter:
  *
- *   Run the filter clause identified by CLAUSE_INDEX in the intepreter frame given by
+ *   Run the filter clause identified by CLAUSE_INDEX in the interpreter frame given by
  * frame->interp_frame.
  */
 // Do not inline in case order of frame addresses matters.
@@ -6980,21 +8071,171 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 	// Write the exception object in its reserved stack slot
 	*((MonoException**)((char*)child_frame.stack + iframe->imethod->clause_data_offsets [clause_index])) = ex;
 	context->stack_pointer += iframe->imethod->alloca_size;
+	g_assert (context->stack_pointer < context->stack_end);
 
 	memset (&clause_args, 0, sizeof (FrameClauseArgs));
 	clause_args.start_with_ip = (const guint16*)handler_ip;
 	clause_args.end_at_ip = (const guint16*)handler_ip_end;
 	clause_args.exec_frame = &child_frame;
 
-	interp_exec_method (&child_frame, context, &clause_args);
+	mono_interp_exec_method (&child_frame, context, &clause_args);
 
 	/* Copy back the updated frame */
 	memcpy (iframe->stack, child_frame.stack, iframe->imethod->locals_size);
 
 	context->stack_pointer = (guchar*)child_frame.stack;
 
+	check_pending_unwind (context);
+
 	/* ENDFILTER stores the result into child_frame->retval */
 	return retval.data.i ? TRUE : FALSE;
+}
+
+/* Returns TRUE if there is a pending exception */
+static gboolean
+interp_run_clause_with_il_state (gpointer il_state_ptr, int clause_index, MonoObject *ex, gboolean *filtered)
+{
+	MonoMethodILState *il_state = (MonoMethodILState*)il_state_ptr;
+	MonoMethodSignature *sig;
+	ThreadContext *context = get_context ();
+	stackval *orig_sp;
+	stackval *sp, *sp_args;
+	InterpMethod *imethod;
+	FrameClauseArgs clause_args;
+	ERROR_DECL (error);
+
+	sig = mono_method_signature_internal (il_state->method);
+	g_assert (sig);
+
+	imethod = mono_interp_get_imethod (il_state->method);
+	if (!imethod->transformed) {
+		// In case method is in process of being tiered up, make sure it is compiled
+                mono_interp_transform_method (imethod, context, error);
+		mono_error_assert_ok (error);
+	}
+
+	orig_sp = sp_args = sp = (stackval*)context->stack_pointer;
+
+	gpointer ret_addr = NULL;
+
+	int findex = 0;
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		ret_addr = il_state->data [findex];
+		findex ++;
+	}
+	if (sig->hasthis) {
+		if (il_state->data [findex])
+			sp_args->data.p = *(gpointer*)il_state->data [findex];
+		sp_args++;
+		findex ++;
+	}
+
+	for (int i = 0; i < sig->param_count; ++i) {
+		if (il_state->data [findex]) {
+			int size = stackval_from_data (sig->params [i], sp_args, il_state->data [findex], FALSE);
+			sp_args = STACK_ADD_BYTES (sp_args, size);
+		} else {
+			int size = stackval_size (sig->params [i], FALSE);
+			sp_args = STACK_ADD_BYTES (sp_args, size);
+		}
+		findex ++;
+	}
+	sp_args = (stackval*)ALIGN_TO (sp_args, MINT_STACK_ALIGNMENT);
+
+	/* Allocate frame */
+	InterpFrame frame = {0};
+	frame.imethod = imethod;
+	frame.stack = sp;
+	frame.retval = sp;
+
+	context->stack_pointer = (guchar*)sp_args;
+	context->stack_pointer += imethod->alloca_size;
+	g_assert (context->stack_pointer < context->stack_end);
+
+	MonoMethodHeader *header = mono_method_get_header_internal (il_state->method, error);
+	mono_error_assert_ok (error);
+
+	/* Init locals */
+	if (header->num_locals)
+		memset (frame_locals (&frame) + imethod->local_offsets [0], 0, imethod->locals_size);
+	/* Copy locals from il_state */
+	int locals_start = findex;
+	for (int i = 0; i < header->num_locals; ++i) {
+		if (il_state->data [locals_start + i])
+			stackval_from_data (header->locals [i], (stackval*)(frame_locals (&frame) + imethod->local_offsets [i]), il_state->data [locals_start + i], FALSE);
+	}
+
+	memset (&clause_args, 0, sizeof (FrameClauseArgs));
+	MonoJitExceptionInfo *ei = &imethod->jinfo->clauses [clause_index];
+	MonoExceptionEnum clause_type = ei->flags;
+	// For filter clauses, if filtered is set, then we run the filter, otherwise we run the catch handler
+	if (clause_type == MONO_EXCEPTION_CLAUSE_FILTER && !filtered)
+		clause_type = MONO_EXCEPTION_CLAUSE_NONE;
+
+	if (clause_type == MONO_EXCEPTION_CLAUSE_FILTER)
+		clause_args.start_with_ip = (const guint16*)ei->data.filter;
+	else
+		clause_args.start_with_ip = (const guint16*)ei->handler_start;
+	if (clause_type == MONO_EXCEPTION_CLAUSE_NONE || clause_type == MONO_EXCEPTION_CLAUSE_FILTER) {
+		/* Run until the end */
+		clause_args.end_at_ip = NULL;
+		clause_args.run_until_end = TRUE;
+	} else {
+		clause_args.end_at_ip = (const guint16*)ei->data.handler_end;
+	}
+	clause_args.exec_frame = &frame;
+
+	if (clause_type == MONO_EXCEPTION_CLAUSE_NONE || clause_type == MONO_EXCEPTION_CLAUSE_FILTER)
+		*(MonoObject**)(frame_locals (&frame) + imethod->jinfo->clauses [clause_index].exvar_offset) = ex;
+	else
+		// this informs MINT_ENDFINALLY to return to EH
+		*(guint16**)(frame_locals (&frame) + imethod->clause_data_offsets [clause_index]) = NULL;
+
+	/* Set in mono_handle_exception () */
+	context->has_resume_state = FALSE;
+
+	mono_interp_exec_method (&frame, context, &clause_args);
+
+	/* Write back args */
+	sp_args = sp;
+	findex = 0;
+	if (sig->ret->type != MONO_TYPE_VOID)
+		findex ++;
+	if (sig->hasthis) {
+		// FIXME: This
+		sp_args++;
+		findex ++;
+	}
+	for (int i = 0; i < sig->param_count; ++i) {
+		if (il_state->data [findex]) {
+			int size = stackval_to_data (sig->params [i], sp_args, il_state->data [findex], FALSE);
+			sp_args = STACK_ADD_BYTES (sp_args, size);
+		} else {
+			int size = stackval_size (sig->params [i], FALSE);
+			sp_args = STACK_ADD_BYTES (sp_args, size);
+		}
+		findex ++;
+	}
+	/* Write back locals */
+	for (int i = 0; i < header->num_locals; ++i) {
+		if (il_state->data [locals_start + i])
+			stackval_to_data (header->locals [i], (stackval*)(frame_locals (&frame) + imethod->local_offsets [i]), il_state->data [locals_start + i], FALSE);
+	}
+	mono_metadata_free_mh (header);
+
+	if (clause_type == MONO_EXCEPTION_CLAUSE_NONE && ret_addr) {
+		stackval_to_data (sig->ret, frame.retval, ret_addr, FALSE);
+	} else if (clause_type == MONO_EXCEPTION_CLAUSE_FILTER) {
+		g_assert (filtered);
+		*filtered = frame.retval->data.i;
+	}
+
+	memset (orig_sp, 0, (guint8*)context->stack_pointer - (guint8*)orig_sp);
+	context->stack_pointer = (guchar*)orig_sp;
+
+	check_pending_unwind (context);
+
+	return context->has_resume_state;
 }
 
 typedef struct {
@@ -7057,8 +8298,8 @@ interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 	} else {
 		frame->type = FRAME_TYPE_INTERP;
 		/* This is the offset in the interpreter IR. */
-		frame->native_offset = (guint8*)interp_frame_get_ip (iframe) - (guint8*)iframe->imethod->code;
-		if (!method->wrapper_type || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
+		frame->native_offset = GPTRDIFF_TO_INT ((guint8*)interp_frame_get_ip (iframe) - (guint8*)iframe->imethod->code);
+		if (method && (!method->wrapper_type || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD))
 			frame->managed = TRUE;
 	}
 	frame->ji = iframe->imethod->jinfo;
@@ -7113,7 +8354,7 @@ interp_frame_get_arg (MonoInterpFrameHandle frame, int pos)
 
 	g_assert (iframe->imethod);
 
-	return (char*)iframe->stack + get_arg_offset_fast (iframe->imethod, pos + iframe->imethod->hasthis);
+	return (char*)iframe->stack + get_arg_offset_fast (iframe->imethod, NULL, pos + iframe->imethod->hasthis);
 }
 
 static gpointer
@@ -7246,7 +8487,7 @@ static int num_methods;
 const int opcount_threshold = 100000;
 
 static void
-interp_add_imethod (gpointer method)
+interp_add_imethod (gpointer method, gpointer user_data)
 {
 	InterpMethod *imethod = (InterpMethod*) method;
 	if (imethod->opcounts > opcount_threshold)
@@ -7256,7 +8497,7 @@ interp_add_imethod (gpointer method)
 static int
 imethod_opcount_comparer (gconstpointer m1, gconstpointer m2)
 {
-	long diff = (*(InterpMethod**)m2)->opcounts > (*(InterpMethod**)m1)->opcounts;
+	long diff = (*(InterpMethod**)m2)->opcounts - (*(InterpMethod**)m1)->opcounts;
 	if (diff > 0)
 		return 1;
 	else if (diff < 0)
@@ -7272,7 +8513,7 @@ interp_print_method_counts (void)
 
 	jit_mm_lock (jit_mm);
 	imethods = (InterpMethod**) malloc (jit_mm->interp_code_hash.num_entries * sizeof (InterpMethod*));
-	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, interp_add_imethod);
+	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, interp_add_imethod, NULL);
 	jit_mm_unlock (jit_mm);
 
 	qsort (imethods, num_methods, sizeof (InterpMethod*), imethod_opcount_comparer);
@@ -7293,7 +8534,7 @@ interp_set_optimizations (guint32 opts)
 }
 
 static void
-invalidate_transform (gpointer imethod_)
+invalidate_transform (gpointer imethod_, gpointer user_data)
 {
 	InterpMethod *imethod = (InterpMethod *) imethod_;
 	imethod->transformed = FALSE;
@@ -7311,12 +8552,6 @@ copy_imethod_for_frame (InterpFrame *frame)
 	 */
 }
 
-static void
-interp_metadata_update_init (MonoError *error)
-{
-}
-
-#ifdef ENABLE_METADATA_UPDATE
 static void
 metadata_update_backup_frames (MonoThreadInfo *info, InterpFrame *frame)
 {
@@ -7337,16 +8572,6 @@ metadata_update_prepare_to_invalidate (void)
 		if (!info || !info->jit_data)
 			continue;
 
-		ThreadContext *context = (ThreadContext*)info->jit_data->interp_context;
-
-		/* If the thread was in the interpreter and hit a safepoint
-		 * opcode and suspended, backup the frames since the last lmf.
-		 */
-		if (context && context->safepoint_frame) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "threadinfo=%p, has safepoint frame %p", info, context->safepoint_frame);
-			metadata_update_backup_frames (info, context->safepoint_frame);
-		}
-
 		MonoLMF *lmf = info->jit_data->lmf;
 		while (lmf) {
 			if (((gsize) lmf->previous_lmf) & 2) {
@@ -7362,28 +8587,76 @@ metadata_update_prepare_to_invalidate (void)
 
 	/* (2) invalidate all the registered imethods */
 }
-#endif
 
 
 static void
 interp_invalidate_transformed (void)
 {
 	gboolean need_stw_restart = FALSE;
-#ifdef ENABLE_METADATA_UPDATE
-	need_stw_restart = TRUE;
-	mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC);
-	metadata_update_prepare_to_invalidate ();
-#endif
+        if (mono_metadata_has_updates ()) {
+                mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC);
+                metadata_update_prepare_to_invalidate ();
+                need_stw_restart = TRUE;
+        }
 
 	// FIXME: Enumerate all memory managers
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 
 	jit_mm_lock (jit_mm);
-	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, invalidate_transform);
+	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, invalidate_transform, NULL);
 	jit_mm_unlock (jit_mm);
 
 	if (need_stw_restart)
 		mono_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC);
+}
+
+typedef struct {
+	MonoJitInfo **jit_info_array;
+	gint size;
+	gint next;
+} InterpCopyJitInfoFuncUserData;
+
+static void
+interp_copy_jit_info_func (gpointer imethod, gpointer user_data)
+{
+	InterpCopyJitInfoFuncUserData *data = (InterpCopyJitInfoFuncUserData*)user_data;
+	if (data->next < data->size)
+		data->jit_info_array [data->next++] = ((InterpMethod *)imethod)->jinfo;
+}
+
+static void
+interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
+{
+	InterpCopyJitInfoFuncUserData copy_jit_info_data;
+
+	// FIXME: Enumerate all memory managers
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+
+	// Can't keep memory manager lock while iterating and calling callback since it might take other locks
+	// causing poential deadlock situations. Instead, create copy of interpreter imethod jinfo pointers into
+	// plain array and use pointers from array when when running callbacks.
+	copy_jit_info_data.size = mono_atomic_load_i32 (&(jit_mm->interp_code_hash.num_entries));
+	copy_jit_info_data.next = 0;
+	copy_jit_info_data.jit_info_array = (MonoJitInfo**) g_new (MonoJitInfo*, copy_jit_info_data.size);
+	if (copy_jit_info_data.jit_info_array) {
+		jit_mm_lock (jit_mm);
+		mono_internal_hash_table_apply (&jit_mm->interp_code_hash, interp_copy_jit_info_func, &copy_jit_info_data);
+		jit_mm_unlock (jit_mm);
+	}
+
+	if (copy_jit_info_data.jit_info_array) {
+		for (int i = 0; i < copy_jit_info_data.next; ++i)
+			func (copy_jit_info_data.jit_info_array [i], user_data);
+		g_free (copy_jit_info_data.jit_info_array);
+	}
+}
+
+static gboolean
+interp_sufficient_stack (gsize size)
+{
+	ThreadContext *context = get_context ();
+
+	return (context->stack_pointer + size) < (context->stack_start + INTERP_STACK_SIZE);
 }
 
 static void
@@ -7441,7 +8714,180 @@ mono_ee_interp_init (const char *opts)
 		mono_interp_opt = 0;
 	mono_interp_transform_init ();
 
+	if (mono_interp_opt & INTERP_OPT_TIERING)
+		mono_interp_tiering_init ();
+
 	mini_install_interp_callbacks (&mono_interp_callbacks);
 
 	register_interp_stats ();
+
+#ifdef HOST_WASI
+	debugger_enabled = mini_get_debug_options ()->mdb_optimizations;
+#endif
 }
+
+#ifdef HOST_BROWSER
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_stackval_to_data (MonoType *type, stackval *val, void *data)
+{
+	return stackval_to_data (type, val, data, FALSE);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_stackval_from_data (MonoType *type, stackval *result, const void *data)
+{
+	return stackval_from_data (type, result, data, FALSE);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_overflow_check_i4 (gint32 lhs, gint32 rhs, int opcode)
+{
+	switch (opcode) {
+		case MINT_MUL_OVF_I4:
+			if (CHECK_MUL_OVERFLOW (lhs, rhs))
+				return 1;
+		break;
+		case MINT_ADD_OVF_I4:
+			if (CHECK_ADD_OVERFLOW (lhs, rhs))
+				return 1;
+		break;
+	}
+
+	return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_overflow_check_u4 (guint32 lhs, guint32 rhs, int opcode)
+{
+	switch (opcode) {
+		case MINT_MUL_OVF_UN_I4:
+			if (CHECK_MUL_OVERFLOW_UN (lhs, rhs))
+				return 1;
+		break;
+		case MINT_ADD_OVF_UN_I4:
+			if (CHECK_ADD_OVERFLOW_UN (lhs, rhs))
+				return 1;
+		break;
+	}
+
+	return 0;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_ld_delegate_method_ptr (gpointer *destination, MonoDelegate **source)
+{
+	MonoDelegate *del = *source;
+	if (!del->interp_method) {
+		/* Not created from interpreted code */
+		g_assert (del->method);
+		del->interp_method = mono_interp_get_imethod (del->method);
+	} else if (((InterpMethod*)del->interp_method)->optimized_imethod) {
+		del->interp_method = ((InterpMethod*)del->interp_method)->optimized_imethod;
+	}
+	g_assert (del->interp_method);
+	*destination = imethod_to_ftnptr (del->interp_method, FALSE);
+}
+
+MONO_ALWAYS_INLINE void
+mono_jiterp_check_pending_unwind (ThreadContext *context)
+{
+	return check_pending_unwind (context);
+}
+
+MONO_ALWAYS_INLINE void *
+mono_jiterp_get_context (void)
+{
+	return get_context ();
+}
+
+MONO_ALWAYS_INLINE gpointer
+mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *frame, int size)
+{
+	return frame_data_allocator_alloc(stack, frame, size);
+}
+
+MONO_ALWAYS_INLINE gboolean
+mono_jiterp_isinst (MonoObject* object, MonoClass* klass)
+{
+	return mono_interp_isinst (object, klass);
+}
+
+// after interp_entry_prologue the wrapper will set up all the argument values
+//  in the correct place and compute the stack offset, then it passes that in to this
+//  function in order to actually enter the interpreter and process the return value
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res)
+{
+	JiterpEntryDataHeader header;
+	MonoType *type;
+
+	// Copy the scratch buffer into a local variable. This is necessary for us to be
+	//  reentrant-safe because mono_interp_exec_method could end up hitting the trampoline
+	//  again
+	g_assert(_data);
+	header = _data->header;
+
+	g_assert(header.rmethod);
+	g_assert(header.rmethod->method);
+	g_assert(sp_args);
+
+	stackval *sp = (stackval*)header.context->stack_pointer;
+
+	InterpFrame frame = {0};
+	frame.imethod = header.rmethod;
+	frame.stack = sp;
+	frame.retval = sp;
+
+	header.context->stack_pointer = (guchar*)sp_args;
+	g_assert ((guchar*)sp_args < header.context->stack_end);
+
+	MONO_ENTER_GC_UNSAFE;
+	mono_interp_exec_method (&frame, header.context, NULL);
+	MONO_EXIT_GC_UNSAFE;
+
+	header.context->stack_pointer = (guchar*)sp;
+
+	if (header.rmethod->needs_thread_attach)
+		mono_threads_detach_coop (header.orig_domain, &header.attach_cookie);
+
+	mono_jiterp_check_pending_unwind (header.context);
+
+	if (mono_llvm_only) {
+		if (header.context->has_resume_state)
+			/* The exception will be handled in a frame above us */
+			mono_llvm_cpp_throw_exception ();
+	} else {
+		g_assert (!header.context->has_resume_state);
+	}
+
+	// The return value is at the bottom of the stack, after the locals space
+	type = header.rmethod->rtype;
+	if (type->type != MONO_TYPE_VOID)
+		mono_jiterp_stackval_to_data (type, frame.stack, res);
+}
+
+EMSCRIPTEN_KEEPALIVE volatile size_t *
+mono_jiterp_get_polling_required_address ()
+{
+	return &mono_polling_required;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_do_safepoint (InterpFrame *frame, guint16 *ip)
+{
+	do_safepoint (frame, get_context(), ip);
+}
+
+EMSCRIPTEN_KEEPALIVE gpointer
+mono_jiterp_imethod_to_ftnptr (InterpMethod *imethod)
+{
+	return imethod_to_ftnptr (imethod, FALSE);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_enum_hasflag (MonoClass *klass, gint32 *dest, stackval *sp1, stackval *sp2)
+{
+	*dest = mono_interp_enum_hasflag (sp1, sp2, klass);
+}
+
+#endif

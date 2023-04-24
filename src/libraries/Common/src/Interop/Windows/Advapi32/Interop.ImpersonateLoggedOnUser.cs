@@ -9,7 +9,8 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Interop.Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool ImpersonateLoggedOnUser(SafeAccessTokenHandle userToken);
+        [LibraryImport(Interop.Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool ImpersonateLoggedOnUser(SafeAccessTokenHandle userToken);
     }
 }

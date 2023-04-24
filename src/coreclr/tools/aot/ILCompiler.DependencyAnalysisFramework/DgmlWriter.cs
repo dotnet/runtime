@@ -17,10 +17,10 @@ namespace ILCompiler.DependencyAnalysisFramework
         }
     }
 
-    internal class DgmlWriter<DependencyContextType> : IDisposable, IDependencyAnalyzerLogEdgeVisitor<DependencyContextType>, IDependencyAnalyzerLogNodeVisitor<DependencyContextType>
+    internal sealed class DgmlWriter<DependencyContextType> : IDisposable, IDependencyAnalyzerLogEdgeVisitor<DependencyContextType>, IDependencyAnalyzerLogNodeVisitor<DependencyContextType>
     {
         private XmlWriter _xmlWrite;
-        private bool _done = false;
+        private bool _done;
         private DependencyContextType _context;
 
         public DgmlWriter(XmlWriter xmlWrite, DependencyContextType context)
@@ -101,7 +101,7 @@ namespace ILCompiler.DependencyAnalysisFramework
         }
 
         private Dictionary<object, int> _nodeMappings = new Dictionary<object, int>();
-        private int _nodeNextId = 0;
+        private int _nodeNextId;
 
         private void AddNode(DependencyNodeCore<DependencyContextType> node)
         {

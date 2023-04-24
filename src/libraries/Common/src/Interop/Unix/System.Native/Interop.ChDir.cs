@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ChDir", SetLastError = true)]
-        internal static extern int ChDir(string path);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ChDir", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        internal static partial int ChDir(string path);
     }
 }

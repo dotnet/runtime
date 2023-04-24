@@ -4,8 +4,9 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly objectpin
+.assembly 'object-pin'
 {
 }
 
@@ -20,7 +21,7 @@
     ldarg.0
     call       instance void [mscorlib]System.Object::.ctor()
     ret
-  } 
+  }
 }
 
 .class auto ansi Consume
@@ -83,12 +84,15 @@ LOOP1:
 }
 
 
-.class auto ansi Pin1_Test
+.class public auto ansi Pin1_Test
 {
   .method public static pinvokeimpl("mirror" winapi) int32 Ret_Ptr(void *) il managed preservesig{ }
   .method public static pinvokeimpl("mirror" winapi) void Set_Val(void*,int32 c) il managed preservesig { }
-  .method public static int32 Main(class [mscorlib]System.String[] args) il managed
+  .method public static int32 Main() il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  400
     ldstr "Calling Not_Pinned() to assure that GC actually moves things"
@@ -119,7 +123,7 @@ FAILURE2:
     ldc.i4 1
     ret
 FAILURE3:
-    ldstr "Something is wrong, the assigment didnt work!"
+    ldstr "Something is wrong, the assignment didnt work!"
     call void [System.Console]System.Console::WriteLine(class [mscorlib]System.String)
     ldc.i4 1
     ret
@@ -291,38 +295,38 @@ AA_3:
 
     ldc.i4 55
     stloc 5
-    ldloc 2 
+    ldloc 2
     ldloc 5
     stfld      int32 Consume::yucko
- 
+
     ldloc 2
     conv.i
     ldflda      int32 Consume::yucko
     ldc.i4 66
     call       void Pin1_Test::Set_Val(void*,int32)
-    ldloc 2 
+    ldloc 2
     ldfld      int32 Consume::yucko
     ldc.i4 66
     beq Yippie1
     ldc.i4 1
-    ret    
+    ret
 Yippie1:
     call       void [mscorlib]System.GC::Collect()
-    ldloc 2 
+    ldloc 2
     ldloc 5
     stfld      int32 Consume::yucko
- 
+
     ldloc 2
     conv.i
     ldflda      int32 Consume::yucko
     ldc.i4 88
     call       void Pin1_Test::Set_Val(void*,int32)
-    ldloc 2 
+    ldloc 2
     ldfld      int32 Consume::yucko
     ldc.i4 88
     beq Yippie2
     ldc.i4 1
-    ret    
+    ret
 Yippie2:
     call       void [mscorlib]System.GC::Collect()
     ldloc 1

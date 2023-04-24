@@ -63,7 +63,7 @@ namespace System.Xml.Xsl.XsltOld
             this.stylesheetid = compiler.Stylesheetid;
             this.baseUri = compiler.Input.BaseURI;
             CompileAttributes(compiler);
-            CheckRequiredAttribute(compiler, this.name, "name");
+            CheckRequiredAttribute(this.name, "name");
 
 
             if (compiler.Recurse())
@@ -78,7 +78,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             if (this.containedActions != null)
             {
-                baseUri = baseUri + '#' + compiler.GetUnicRtfId();
+                baseUri = $"{baseUri}#{compiler.GetUnicRtfId()}";
             }
             else
             {

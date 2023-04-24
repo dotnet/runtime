@@ -9,6 +9,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 #if TARGET_BROWSER
 using HttpHandlerType = System.Net.Http.BrowserHttpHandler;
 #else
@@ -20,7 +21,13 @@ namespace System.Net.Http
     public partial class HttpClientHandler : HttpMessageHandler
     {
         private readonly HttpHandlerType _underlyingHandler;
-        private readonly DiagnosticsHandler? _diagnosticsHandler;
+
+#if TARGET_BROWSER
+        private HttpMessageHandler Handler { get; }
+#else
+        private HttpHandlerType Handler => _underlyingHandler;
+#endif
+
         private ClientCertificateOption _clientCertificateOptions;
 
         private volatile bool _disposed;
@@ -28,10 +35,15 @@ namespace System.Net.Http
         public HttpClientHandler()
         {
             _underlyingHandler = new HttpHandlerType();
+
+#if TARGET_BROWSER
+            Handler = _underlyingHandler;
             if (DiagnosticsHandler.IsGloballyEnabled())
             {
-                _diagnosticsHandler = new DiagnosticsHandler(_underlyingHandler);
+                Handler = new DiagnosticsHandler(Handler, DistributedContextPropagator.Current);
             }
+#endif
+
             ClientCertificateOptions = ClientCertificateOption.Manual;
         }
 
@@ -63,10 +75,7 @@ namespace System.Net.Http
             get => _underlyingHandler.CookieContainer;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 _underlyingHandler.CookieContainer = value;
             }
@@ -87,6 +96,8 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public IWebProxy? Proxy
         {
             get => _underlyingHandler.Proxy;
@@ -172,10 +183,7 @@ namespace System.Net.Http
 
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 if (value > HttpContent.MaxBufferSize)
                 {
@@ -184,7 +192,7 @@ namespace System.Net.Http
                         HttpContent.MaxBufferSize));
                 }
 
-                CheckDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 // No-op on property setter.
             }
@@ -210,7 +218,7 @@ namespace System.Net.Http
 #else
                         ThrowForModifiedManagedSslOptionsIfStarted();
                         _clientCertificateOptions = value;
-                        _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(ClientCertificates)!;
+                        _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(_underlyingHandler.SslOptions.ClientCertificates)!;
 #endif
                         break;
 
@@ -287,22 +295,19 @@ namespace System.Net.Http
 
         public IDictionary<string, object?> Properties => _underlyingHandler.Properties;
 
+        //
+        // Attributes are commented out due to https://github.com/dotnet/arcade/issues/7585
+        // API compat will fail until this is fixed
+        //
+        //[UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
-        protected internal override HttpResponseMessage Send(HttpRequestMessage request,
-            CancellationToken cancellationToken)
-        {
-            return DiagnosticsHandler.IsEnabled() && _diagnosticsHandler != null ?
-                _diagnosticsHandler.Send(request, cancellationToken) :
-                _underlyingHandler.Send(request, cancellationToken);
-        }
+        //[UnsupportedOSPlatform("ios")]
+        //[UnsupportedOSPlatform("tvos")]
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Handler.Send(request, cancellationToken);
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
-            CancellationToken cancellationToken)
-        {
-            return DiagnosticsHandler.IsEnabled() && _diagnosticsHandler != null ?
-                _diagnosticsHandler.SendAsync(request, cancellationToken) :
-                _underlyingHandler.SendAsync(request, cancellationToken);
-        }
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Handler.SendAsync(request, cancellationToken);
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
         private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
@@ -317,14 +322,6 @@ namespace System.Net.Http
             // Hack to trigger an InvalidOperationException if a property that's stored on
             // SslOptions is changed, since SslOptions itself does not do any such checks.
             _underlyingHandler.SslOptions = _underlyingHandler.SslOptions;
-        }
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
-            }
         }
     }
 }

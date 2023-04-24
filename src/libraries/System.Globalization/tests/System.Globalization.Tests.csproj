@@ -3,13 +3,20 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <UnicodeUcdVersion>13.0</UnicodeUcdVersion>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <UnicodeUcdVersion>15.0</UnicodeUcdVersion>
+
+     <!-- some tests require full ICU data, force it -->
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="IcuTests.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.cs" />
+    <Compile Include="CompareInfo\CompareInfoTestsBase.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IndexOf.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IsPrefix.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.Compare.cs" />
@@ -49,6 +56,7 @@
     <Compile Include="CultureInfo\CultureInfoGetFormat.cs" />
     <Compile Include="CultureInfo\CultureInfoGetHashCode.cs" />
     <Compile Include="CultureInfo\CultureInfoIsNeutralCulture.cs" />
+    <Compile Include="CultureInfo\CultureInfoNames.cs" />
     <Compile Include="CultureInfo\CultureInfoNativeName.cs" />
     <Compile Include="CultureInfo\CultureInfoNumberFormat.cs" />
     <Compile Include="CultureInfo\CultureInfoParent.cs" />

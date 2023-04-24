@@ -5,6 +5,7 @@
 //Similar to StrAccess1, but instead of using constants, different expression is used as the index to access the string
 
 using System;
+using Xunit;
 
 internal struct VT
 {
@@ -22,7 +23,7 @@ internal class CL
     public int[,] idx2darr = { { 5, 6 } };
 }
 
-internal unsafe class StrAccess2
+public unsafe class StrAccess2
 {
     public static String str1 = "test string";
     public static int idx1 = 2;
@@ -37,8 +38,18 @@ internal unsafe class StrAccess2
     {
         return arg;
     }
-    public static Random rand = new Random();
-    public static int Main()
+
+    public const int DefaultSeed = 20010415;
+    public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+    {
+        string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+        string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+        _ => DefaultSeed
+    };
+
+    public static Random rand = new Random(Seed);
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passed = true;
         int* p = stackalloc int[11];

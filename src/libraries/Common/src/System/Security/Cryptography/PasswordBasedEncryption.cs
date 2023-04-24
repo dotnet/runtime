@@ -7,6 +7,7 @@ using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
@@ -73,6 +74,14 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(destination.Length >= encryptedData.Length);
 
+            if (!Helpers.HasSymmetricEncryption)
+            {
+                throw new CryptographicException(
+                    SR.Format(
+                        SR.Cryptography_UnknownAlgorithmIdentifier,
+                        algorithmIdentifier.Algorithm));
+            }
+
             // Don't check that algorithmIdentifier.Parameters is set here.
             // Maybe some future PBES3 will have one with a default.
 
@@ -89,7 +98,7 @@ namespace System.Security.Cryptography
                     break;
                 case Oids.PbeWithMD5AndRC2CBC:
                     digestAlgorithmName = HashAlgorithmName.MD5;
-                    cipher = RC2.Create();
+                    cipher = CreateRC2();
                     break;
                 case Oids.PbeWithSha1AndDESCBC:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
@@ -97,7 +106,7 @@ namespace System.Security.Cryptography
                     break;
                 case Oids.PbeWithSha1AndRC2CBC:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
-                    cipher = RC2.Create();
+                    cipher = CreateRC2();
                     break;
                 case Oids.Pkcs12PbeWithShaAnd3Key3Des:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
@@ -112,13 +121,13 @@ namespace System.Security.Cryptography
                     break;
                 case Oids.Pkcs12PbeWithShaAnd128BitRC2:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
-                    cipher = RC2.Create();
+                    cipher = CreateRC2();
                     cipher.KeySize = 128;
                     pkcs12 = true;
                     break;
                 case Oids.Pkcs12PbeWithShaAnd40BitRC2:
                     digestAlgorithmName = HashAlgorithmName.SHA1;
-                    cipher = RC2.Create();
+                    cipher = CreateRC2();
                     cipher.KeySize = 40;
                     pkcs12 = true;
                     break;
@@ -160,7 +169,7 @@ namespace System.Security.Cryptography
                 using (IncrementalHash hasher = IncrementalHash.CreateHash(digestAlgorithmName))
                 {
                     Span<byte> buf = stackalloc byte[128];
-                    ReadOnlySpan<byte> effectivePasswordBytes = stackalloc byte[0];
+                    scoped ReadOnlySpan<byte> effectivePasswordBytes = default;
                     byte[]? rented = null;
                     System.Text.Encoding? encoding = null;
 
@@ -228,6 +237,14 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(pbeParameters != null);
 
+            if (!Helpers.HasSymmetricEncryption)
+            {
+                throw new CryptographicException(
+                    SR.Format(
+                        SR.Cryptography_UnknownAlgorithmIdentifier,
+                        pbeParameters.EncryptionAlgorithm));
+            }
+
             isPkcs12 = false;
 
             switch (pbeParameters.EncryptionAlgorithm)
@@ -257,7 +274,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_UnknownAlgorithmIdentifier,
-                            pbeParameters.HashAlgorithm.Name));
+                            pbeParameters.EncryptionAlgorithm));
             }
 
             HashAlgorithmName prf = pbeParameters.HashAlgorithm;
@@ -441,7 +458,7 @@ namespace System.Security.Cryptography
             Span<byte> destination)
         {
             Span<byte> buf = stackalloc byte[128];
-            ReadOnlySpan<byte> effectivePasswordBytes = stackalloc byte[0];
+            scoped ReadOnlySpan<byte> effectivePasswordBytes = default;
             byte[]? rented = null;
             System.Text.Encoding? encoding = null;
 
@@ -555,6 +572,12 @@ namespace System.Security.Cryptography
         {
             string? algId = encryptionScheme.Algorithm;
 
+            if (!Helpers.HasSymmetricEncryption)
+            {
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_AlgorithmNotSupported, algId));
+            }
+
             if (algId == Oids.Aes128Cbc ||
                 algId == Oids.Aes192Cbc ||
                 algId == Oids.Aes256Cbc)
@@ -635,7 +658,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
-                RC2 rc2 = RC2.Create();
+                RC2 rc2 = CreateRC2();
                 rc2.KeySize = requestedKeyLength.Value * 8;
                 rc2.EffectiveKeySize = rc2Parameters.GetEffectiveKeyBits();
 
@@ -1077,6 +1100,17 @@ namespace System.Security.Cryptography
             }
 
             return iterationCount;
+        }
+
+        [SuppressMessage("Microsoft.Security", "CA5351", Justification = "RC2 used when specified by the input data")]
+        private static RC2 CreateRC2()
+        {
+            if (!Helpers.IsRC2Supported)
+            {
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RC2)));
+            }
+
+            return RC2.Create();
         }
     }
 }

@@ -26,9 +26,9 @@ namespace System.Threading
                 Interop.Kernel32.CreateIoCompletionPort(new IntPtr(-1), IntPtr.Zero, UIntPtr.Zero, maximumSignalCount);
             if (_completionPort == IntPtr.Zero)
             {
-                int error = Marshal.GetLastWin32Error();
+                int hr = Marshal.GetHRForLastWin32Error();
                 var exception = new OutOfMemoryException();
-                exception.HResult = error;
+                exception.HResult = hr;
                 throw exception;
             }
         }
@@ -45,8 +45,8 @@ namespace System.Threading
         {
             Debug.Assert(timeoutMs >= -1);
 
-            bool success = Interop.Kernel32.GetQueuedCompletionStatus(_completionPort, out int numberOfBytes, out UIntPtr completionKey, out IntPtr pointerToOverlapped, timeoutMs);
-            Debug.Assert(success || (Marshal.GetLastWin32Error() == WaitHandle.WaitTimeout));
+            bool success = Interop.Kernel32.GetQueuedCompletionStatus(_completionPort, out _, out _, out _, timeoutMs);
+            Debug.Assert(success || (Marshal.GetLastPInvokeError() == WaitHandle.WaitTimeout));
             return success;
         }
 
@@ -58,7 +58,7 @@ namespace System.Threading
             {
                 if (!Interop.Kernel32.PostQueuedCompletionStatus(_completionPort, 1, UIntPtr.Zero, IntPtr.Zero))
                 {
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
                     var exception = new OutOfMemoryException();
                     exception.HResult = lastError;
                     throw exception;

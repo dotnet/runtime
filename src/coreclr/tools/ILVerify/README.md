@@ -65,7 +65,7 @@ dotnet.(cmd/sh) msbuild ./src/tests/ilverify/ILVerification.Tests.csproj /p:Conf
 In order to run the tests, execute:
 
 ```sh
-artifacts/tests/coreclr/(Windows/Linux).x64.Release/ilverify/ILVerification.Tests.(cmd/sh) -coreroot=artifacts/tests/coreclr/(Windows/Linux).x64.Release/Tests/Core_Root
+artifacts/tests/coreclr/(windows/linux).x64.Release/ilverify/ILVerification.Tests.(cmd/sh) -coreroot=artifacts/tests/coreclr/(windows/linux).x64.Release/Tests/Core_Root
 ```
 
 
@@ -92,7 +92,7 @@ E.g.: ```SimpleAdd_Valid```
 The method name must contain 2 '`_`' characters.
  1. part: a friendly name
  2. part: must be the word 'Invalid' (Case sensitive)
- 3. part: the expected [VerifierErrors](../ILVerification/src/VerifierError.cs) as string separated by '.'. We assert on these errors; the test fails if ILVerify does not report these errors.
+ 3. part: the expected [VerifierErrors](../ILVerification/VerifierError.cs) as string separated by '.'. We assert on these errors; the test fails if ILVerify does not report these errors.
 
  E.g.: ```SimpleAdd_Invalid_ExpectedNumericType```
 

@@ -4,7 +4,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -48,13 +47,13 @@ namespace System.Threading
         public static double Read(ref double location)
         {
             long result = Read(ref Unsafe.As<double, long>(ref location));
-            return *(double*)&result;
+            return BitConverter.Int64BitsToDouble(result);
         }
 
         [Intrinsic]
         [NonVersionable]
         public static void Write(ref double location, double value) =>
-            Write(ref Unsafe.As<double, long>(ref location), *(long*)&value);
+            Write(ref Unsafe.As<double, long>(ref location), BitConverter.DoubleToInt64Bits(value));
         #endregion
 
         #region Int16
@@ -100,7 +99,7 @@ namespace System.Threading
         [NonVersionable]
         public static void Write(ref long location, long value) =>
 #if TARGET_64BIT
-            Unsafe.As<long, VolatileIntPtr>(ref location).Value = (IntPtr)value;
+            Unsafe.As<long, VolatileIntPtr>(ref location).Value = (nint)value;
 #else
             // On 32-bit, we use Interlocked, since an ordinary volatile write would not be atomic.
             Interlocked.Exchange(ref location, value);
@@ -218,13 +217,13 @@ namespace System.Threading
 
         [Intrinsic]
         [NonVersionable]
-        [return: NotNullIfNotNull("location")]
-        public static T Read<T>([NotNullIfNotNull("location")] ref T location) where T : class? =>
+        [return: NotNullIfNotNull(nameof(location))]
+        public static T Read<T>([NotNullIfNotNull(nameof(location))] ref T location) where T : class? =>
             Unsafe.As<T>(Unsafe.As<T, VolatileObject>(ref location).Value);
 
         [Intrinsic]
         [NonVersionable]
-        public static void Write<T>([NotNullIfNotNull("value")] ref T location, T value) where T : class? =>
+        public static void Write<T>([NotNullIfNotNull(nameof(value))] ref T location, T value) where T : class? =>
             Unsafe.As<T, VolatileObject>(ref location).Value = value;
         #endregion
     }

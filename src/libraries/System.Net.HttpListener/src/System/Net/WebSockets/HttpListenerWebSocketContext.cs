@@ -86,6 +86,7 @@ namespace System.Net.WebSockets
 
         public override WebSocket WebSocket => _webSocket;
 
+#pragma warning disable CA1859
         private static IPrincipal? CopyPrincipal(IPrincipal user)
         {
             if (user != null)
@@ -101,11 +102,18 @@ namespace System.Net.WebSockets
                 else
                 {
                     // AuthenticationSchemes.Digest, AuthenticationSchemes.Negotiate, AuthenticationSchemes.NTLM.
+#if TARGET_WINDOWS
+                    WindowsIdentity windowsIdentity = (WindowsIdentity)user.Identity!;
+                    return new WindowsPrincipal(new WindowsIdentity(windowsIdentity.Token, windowsIdentity.AuthenticationType!, WindowsAccountType.Normal, true));
+#else
                     throw new PlatformNotSupportedException();
+#endif
+
                 }
             }
 
             return null;
         }
+#pragma warning disable CA1859
     }
 }

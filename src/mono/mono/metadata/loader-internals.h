@@ -11,6 +11,7 @@
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/mono-conc-hash.h>
 #include <mono/metadata/mono-hash.h>
+#include <mono/metadata/weak-hash.h>
 #include <mono/metadata/object-forward.h>
 #include <mono/utils/mono-codeman.h>
 #include <mono/utils/mono-coop-mutex.h>
@@ -120,13 +121,13 @@ struct _MonoAssemblyLoadContext {
 	MonoCoopMutex pinvoke_lock;
 	// Maps malloc-ed char* pinvoke scope -> MonoDl*
 	GHashTable *pinvoke_scopes;
+	// The managed name, owned by this structure
+	char *name;
 };
 
 struct _MonoMemoryManager {
-	// Whether the MemoryManager can be unloaded on netcore; should only be set at creation
+	// Whether the MemoryManager can be unloaded; should only be set at creation
 	gboolean collectible;
-	// Whether this is a singleton or generic MemoryManager
-	gboolean is_generic;
 	// Whether the MemoryManager is in the process of being freed
 	gboolean freeing;
 
@@ -154,13 +155,22 @@ struct _MonoMemoryManager {
 	/* Information maintained by the execution engine */
 	gpointer runtime_info;
 
+	// Handles pointing to the corresponding LoaderAllocator object
+	MonoGCHandle loader_allocator_handle;
+	MonoGCHandle loader_allocator_weak_handle;
+
 	// Hashtables for Reflection handles
 	MonoGHashTable *type_hash;
 	MonoConcGHashTable *refobject_hash;
-	// Maps class -> type initializaiton exception object
+	// Maps class -> type initialization exception object
 	MonoGHashTable *type_init_exception_hash;
 	// Maps delegate trampoline addr -> delegate object
 	//MonoGHashTable *delegate_hash_table;
+
+	/* Same hashes for collectible mem managers */
+	MonoWeakHashTable *weak_type_hash;
+	MonoWeakHashTable *weak_refobject_hash;
+	MonoWeakHashTable *weak_type_init_exception_hash;
 
 	/*
 	 * Generic instances and aggregated custom modifiers depend on many alcs, and they need to be deleted if one
@@ -252,6 +262,7 @@ mono_alc_invoke_resolve_using_resolving_event_nofail (MonoAssemblyLoadContext *a
 MonoAssembly*
 mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
+MONO_COMPONENT_API
 MonoAssemblyLoadContext *
 mono_alc_get_default (void);
 
@@ -266,6 +277,19 @@ mono_alc_get_ambient (void)
 	return mono_alc_get_default ();
 }
 
+static inline MonoGCHandle
+mono_alc_get_gchandle_for_resolving (MonoAssemblyLoadContext *alc)
+{
+	/* for the default ALC, pass NULL to ask for the Default ALC - see
+	 * AssemblyLoadContext.GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext) - which
+	 * will create the managed ALC object if it hasn't been created yet
+	 */
+	if (alc->gchandle == mono_alc_get_default ()->gchandle)
+		return NULL;
+	else
+		return GUINT_TO_POINTER (alc->gchandle);
+}
+
 MonoAssemblyLoadContext *
 mono_alc_from_gchandle (MonoGCHandle alc_gchandle);
 
@@ -278,7 +302,7 @@ mono_alc_add_assembly (MonoAssemblyLoadContext *alc, MonoAssembly *ass);
 MonoAssembly*
 mono_alc_find_assembly (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
-GPtrArray*
+MONO_COMPONENT_API GPtrArray*
 mono_alc_get_all_loaded_assemblies (void);
 
 MONO_API void
@@ -293,12 +317,13 @@ mono_mem_manager_free (MonoMemoryManager *memory_manager, gboolean debug_unload)
 void
 mono_mem_manager_free_objects (MonoMemoryManager *memory_manager);
 
-void
+MONO_COMPONENT_API void
 mono_mem_manager_lock (MonoMemoryManager *memory_manager);
 
-void
+MONO_COMPONENT_API void
 mono_mem_manager_unlock (MonoMemoryManager *memory_manager);
 
+MONO_COMPONENT_API
 void *
 mono_mem_manager_alloc (MonoMemoryManager *memory_manager, guint size);
 
@@ -338,6 +363,27 @@ mono_mem_manager_get_generic (MonoImage **images, int nimages);
 
 MonoMemoryManager*
 mono_mem_manager_merge (MonoMemoryManager *mm1, MonoMemoryManager *mm2);
+
+static inline GSList*
+g_slist_prepend_mem_manager (MonoMemoryManager *memory_manager, GSList *list, gpointer data)
+{
+	GSList *new_list;
+
+	new_list = (GSList *) mono_mem_manager_alloc (memory_manager, sizeof (GSList));
+	new_list->data = data;
+	new_list->next = list;
+
+	return new_list;
+}
+
+MonoGCHandle
+mono_mem_manager_get_loader_alloc (MonoMemoryManager *mem_manager);
+
+void
+mono_mem_manager_init_reflection_hashes (MonoMemoryManager *mem_manager);
+
+void
+mono_mem_manager_start_unload (MonoMemoryManager *mem_manager);
 
 G_END_DECLS
 

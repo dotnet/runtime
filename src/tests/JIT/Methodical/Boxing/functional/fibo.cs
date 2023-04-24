@@ -3,11 +3,12 @@
 
 
 using System;
+using Xunit;
 
 
-namespace BoxTest
+namespace BoxTest_fibo_cs
 {
-    internal class Test
+    public class Test
     {
         protected object Fibonacci(object num, object flag)
         {
@@ -35,7 +36,8 @@ namespace BoxTest
             return N;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             new Test().Fibonacci(20, true);
             Console.WriteLine();

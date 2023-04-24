@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <HWITestsArm64Only>true</HWITestsArm64Only>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="*.cs" />
+    <Compile Include="Program.Vector64_1.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
 </Project>

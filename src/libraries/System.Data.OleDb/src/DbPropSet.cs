@@ -24,19 +24,19 @@ namespace System.Data.OleDb
         internal DBPropSet(int propertysetCount) : this()
         {
             this.propertySetCount = propertysetCount;
-            IntPtr countOfBytes = (IntPtr)(propertysetCount * ODB.SizeOf_tagDBPROPSET);
+            nuint countOfBytes = (nuint)(propertysetCount * ODB.SizeOf_tagDBPROPSET);
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             { }
             finally
             {
-                base.handle = SafeNativeMethods.CoTaskMemAlloc(countOfBytes);
-                if (ADP.PtrZero != base.handle)
+                base.handle = Interop.Ole32.CoTaskMemAlloc(countOfBytes);
+                if (IntPtr.Zero != base.handle)
                 {
                     SafeNativeMethods.ZeroMemory(base.handle, (int)countOfBytes);
                 }
             }
-            if (ADP.PtrZero == base.handle)
+            if (IntPtr.Zero == base.handle)
             {
                 throw new OutOfMemoryException();
             }
@@ -99,15 +99,22 @@ namespace System.Data.OleDb
         private void SetLastErrorInfo(OleDbHResult lastErrorHr)
         {
             // note: OleDbHResult is actually a simple wrapper over HRESULT with OLEDB-specific codes
-            UnsafeNativeMethods.IErrorInfo? errorInfo = null;
             string message = string.Empty;
 
-            OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
+            OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, out UnsafeNativeMethods.IErrorInfo? errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
             if ((errorInfoHr == OleDbHResult.S_OK) && (errorInfo != null))
             {
-                ODB.GetErrorDescription(errorInfo, lastErrorHr, out message);
-                // note that either GetErrorInfo or GetErrorDescription might fail in which case we will have only the HRESULT value in exception message
+                try
+                {
+                    ODB.GetErrorDescription(errorInfo, lastErrorHr, out message);
+                    // note that either GetErrorInfo or GetErrorDescription might fail in which case we will have only the HRESULT value in exception message
+                }
+                finally
+                {
+                    UnsafeNativeMethods.ReleaseErrorInfoObject(errorInfo);
+                }
             }
+
             lastErrorFromProvider = new COMException(message, (int)lastErrorHr);
         }
 
@@ -124,25 +131,25 @@ namespace System.Data.OleDb
             // NOTE: The SafeHandle class guarantees this will be called exactly once and is non-interrutible.
             IntPtr ptr = base.handle;
             base.handle = IntPtr.Zero;
-            if (ADP.PtrZero != ptr)
+            if (IntPtr.Zero != ptr)
             {
                 int count = this.propertySetCount;
                 for (int i = 0, offset = 0; i < count; ++i, offset += ODB.SizeOf_tagDBPROPSET)
                 {
                     IntPtr rgProperties = Marshal.ReadIntPtr(ptr, offset);
-                    if (ADP.PtrZero != rgProperties)
+                    if (IntPtr.Zero != rgProperties)
                     {
-                        int cProperties = Marshal.ReadInt32(ptr, offset + ADP.PtrSize);
+                        int cProperties = Marshal.ReadInt32(ptr, offset + IntPtr.Size);
 
                         IntPtr vptr = ADP.IntPtrOffset(rgProperties, ODB.OffsetOf_tagDBPROP_Value);
                         for (int k = 0; k < cProperties; ++k, vptr = ADP.IntPtrOffset(vptr, ODB.SizeOf_tagDBPROP))
                         {
-                            SafeNativeMethods.VariantClear(vptr);
+                            Interop.OleAut32.VariantClear(vptr);
                         }
-                        SafeNativeMethods.CoTaskMemFree(rgProperties);
+                        Interop.Ole32.CoTaskMemFree(rgProperties);
                     }
                 }
-                SafeNativeMethods.CoTaskMemFree(ptr);
+                Interop.Ole32.CoTaskMemFree(ptr);
             }
             return true;
         }
@@ -219,7 +226,7 @@ namespace System.Data.OleDb
             Debug.Assert(Guid.Empty != propertySet, "invalid propertySet");
             Debug.Assert((null != properties) && (0 < properties.Length), "invalid properties");
 
-            IntPtr countOfBytes = (IntPtr)(properties.Length * ODB.SizeOf_tagDBPROP);
+            nuint countOfBytes = (nuint)(properties.Length * ODB.SizeOf_tagDBPROP);
             tagDBPROPSET propset = new tagDBPROPSET(properties.Length, propertySet);
 
             bool mustRelease = false;
@@ -236,8 +243,8 @@ namespace System.Data.OleDb
                 finally
                 {
                     // must allocate and clear the memory without interruption
-                    propset.rgProperties = SafeNativeMethods.CoTaskMemAlloc(countOfBytes);
-                    if (ADP.PtrZero != propset.rgProperties)
+                    propset.rgProperties = Interop.Ole32.CoTaskMemAlloc(countOfBytes);
+                    if (IntPtr.Zero != propset.rgProperties)
                     {
                         // clearing is important so that we don't treat existing
                         // garbage as important information during releaseHandle
@@ -247,14 +254,14 @@ namespace System.Data.OleDb
                         Marshal.StructureToPtr(propset, propsetPtr, false/*deleteold*/);
                     }
                 }
-                if (ADP.PtrZero == propset.rgProperties)
+                if (IntPtr.Zero == propset.rgProperties)
                 {
                     throw new OutOfMemoryException();
                 }
 
                 for (int i = 0; i < properties.Length; ++i)
                 {
-                    Debug.Assert(null != properties[i], "null tagDBPROP " + i.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(null != properties[i], $"null tagDBPROP {i.ToString(CultureInfo.InvariantCulture)}");
                     IntPtr propertyPtr = ADP.IntPtrOffset(propset.rgProperties, i * ODB.SizeOf_tagDBPROP);
                     Marshal.StructureToPtr(properties[i], propertyPtr, false/*deleteold*/);
                 }

@@ -3,13 +3,21 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.ComTypes;
 
 internal static partial class Interop
 {
     internal static partial class Ole32
     {
-        [DllImport(Libraries.Ole32, PreserveSig = false)]
-        internal static extern IStream CreateStreamOnHGlobal(IntPtr hGlobal, bool fDeleteOnRelease);
+        internal static unsafe int CoGetObjectContext(in Guid riid, out IntPtr ppv)
+        {
+            fixed (Guid* riidPtr = &riid)
+            fixed (IntPtr* ppvPtr = &ppv)
+            {
+                return CoGetObjectContext(riidPtr, ppvPtr);
+            }
+        }
+
+        [LibraryImport(Libraries.Ole32)]
+        internal static unsafe partial int CoGetObjectContext(Guid* riid, IntPtr* ppv);
     }
 }

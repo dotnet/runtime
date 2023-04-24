@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime {auto}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Console {auto}
 .assembly DevDiv_534476 {}
+.assembly extern xunit.core {}
 
 // The test showed a problem with stack level calculations during morph phase
 // that did not reflect code movements in the later phases.
@@ -11,7 +12,7 @@
 // In this case a helper call, created for IL_002c, will create a put_arg, but it will be moved from IL_0026 to IL_0014.
 // This  put_arg movement will affect throw edge at IL_0021, that will have incorrect stack level.
 
-.class private auto ansi beforefieldinit DevDiv_534476.ILGEN_CLASS
+.class public auto ansi beforefieldinit DevDiv_534476.ILGEN_CLASS
        extends [System.Runtime]System.Object
 {
   .method private static float32 
@@ -34,8 +35,11 @@
 	IL_002d: ret
   } // end of method ILGEN_CLASS::ILGEN_METHOD
 
-.method private hidebysig static int32  Main(string[] args) cil managed
+.method public hidebysig static int32  Main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   // Code size       30 (0x1e)
   .maxstack  6

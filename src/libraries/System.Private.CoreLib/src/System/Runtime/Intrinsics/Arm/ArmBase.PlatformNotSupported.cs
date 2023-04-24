@@ -91,5 +91,11 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: RBIT Wd, Wn
         /// </summary>
         public static uint ReverseElementBits(uint value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   A32: YIELD
+        ///   A64: YIELD
+        /// </summary>
+        public static void Yield() { throw new PlatformNotSupportedException(); }
     }
 }

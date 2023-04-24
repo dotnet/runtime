@@ -34,7 +34,7 @@ typedef SgenGrayQueue GrayQueue;
 static int no_finalize = 0;
 
 /*
- * The finalizable hash has the object as the key, the 
+ * The finalizable hash has the object as the key, the
  * disappearing_link hash, has the link address as key.
  *
  * Copyright 2011 Xamarin Inc.
@@ -136,7 +136,7 @@ sgen_collect_bridge_objects (int generation, ScanCopyContext ctx)
 		copy_func (&copy, queue);
 
 		sgen_client_bridge_register_finalized_object (copy);
-		
+
 		if (hash_table == &minor_finalizable_hash && !ptr_in_nursery (copy)) {
 			/* remove from the list */
 			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
@@ -188,6 +188,13 @@ sgen_finalize_in_range (int generation, ScanCopyContext ctx)
 		object = tagged_object_get_object (object);
 		if (!sgen_major_collector.is_object_live (object)) {
 			gboolean is_fin_ready = sgen_gc_is_object_ready_for_finalization (object);
+			if (is_fin_ready && sgen_client_object_finalize_eagerly (object)) {
+				/* just remove an eagerly finalized object */
+				SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
+
+				SGEN_LOG (5, "Eagerly finalized object: %p (%s) (was at %p)", object, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (object)), object);
+				continue;
+			}
 			GCObject *copy = object;
 			copy_func (&copy, queue);
 			if (is_fin_ready) {
@@ -561,7 +568,7 @@ sgen_object_register_for_finalization (GCObject *obj, SGenFinalizationProc user_
 
 /* LOCKING: requires that the GC lock is held */
 static MONO_PERMIT (need (sgen_gc_locked)) void
-finalize_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, SgenHashTable *hash_table)
+finalize_all (SgenHashTable *hash_table)
 {
 	GCObject *object;
 	gpointer dummy G_GNUC_UNUSED;
@@ -571,15 +578,10 @@ finalize_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, Sge
 	SGEN_HASH_TABLE_FOREACH (hash_table, GCObject *, object, gpointer, dummy) {
 		object = tagged_object_get_object (object);
 
-		if (predicate (object, user_data)) {
-			/* remove and put in out_array */
-			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
-			sgen_queue_finalization_entry (object);
-			SGEN_LOG (5, "Enqueuing object for finalization: %p (%s) (%d)", object, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (object)), sgen_hash_table_num_entries (hash_table));
-		}
-
-		if (sgen_suspend_finalizers)
-			break;
+		/* remove and put in out_array */
+		SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
+		sgen_queue_finalization_entry (object);
+		SGEN_LOG (5, "Enqueuing object for finalization: %p (%s) (%d)", object, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (object)), sgen_hash_table_num_entries (hash_table));
 	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
@@ -600,30 +602,13 @@ finalize_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, Sge
  * objects are still alive.
  */
 void
-sgen_finalize_if (SgenObjectPredicateFunc predicate, void *user_data)
+sgen_finalize_all ()
 {
 	LOCK_GC;
 	sgen_process_fin_stage_entries ();
-	finalize_with_predicate (predicate, user_data, &minor_finalizable_hash);
-	finalize_with_predicate (predicate, user_data, &major_finalizable_hash);
+	finalize_all (&minor_finalizable_hash);
+	finalize_all (&major_finalizable_hash);
 	UNLOCK_GC;
-}
-
-void
-sgen_remove_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, int generation)
-{
-	SgenHashTable *hash_table = get_finalize_entry_hash_table (generation);
-	GCObject *object;
-	gpointer dummy G_GNUC_UNUSED;
-
-	SGEN_HASH_TABLE_FOREACH (hash_table, GCObject *, object, gpointer, dummy) {
-		object = tagged_object_get_object (object);
-
-		if (predicate (object, user_data)) {
-			SGEN_HASH_TABLE_FOREACH_REMOVE (TRUE);
-			continue;
-		}
-	} SGEN_HASH_TABLE_FOREACH_END;	
 }
 
 void

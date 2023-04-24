@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -49,7 +49,7 @@ $SED -e "s/TYPE1/${TEST_TYPE1}/g" -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE2
 	POST_OP
 	pop
 	ldc.i4.0
-	ret 
+	ret
 }
 
 //EOF

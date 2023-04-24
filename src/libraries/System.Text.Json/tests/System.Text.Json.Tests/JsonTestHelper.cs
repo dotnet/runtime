@@ -15,9 +15,9 @@ using Xunit.Sdk;
 
 namespace System.Text.Json
 {
-    internal static class JsonTestHelper
+    internal static partial class JsonTestHelper
     {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
         public const string DoubleFormatString = null;
         public const string SingleFormatString = null;
 #else
@@ -25,16 +25,10 @@ namespace System.Text.Json
         public const string SingleFormatString = "G9";
 #endif
 
-        private const string CompiledNewline = @"
-";
-
-        private static readonly bool s_replaceNewlines =
-            !StringComparer.Ordinal.Equals(CompiledNewline, Environment.NewLine);
-
         public static string NewtonsoftReturnStringHelper(TextReader reader)
         {
             var sb = new StringBuilder();
-            var json = new JsonTextReader(reader);
+            var json = new JsonTextReader(reader) { MaxDepth = null };
             while (json.Read())
             {
                 if (json.Value != null)
@@ -144,6 +138,20 @@ namespace System.Text.Json
             var state = new JsonReaderState(new JsonReaderOptions { CommentHandling = commentHandling, MaxDepth = maxDepth });
             var reader = new Utf8JsonReader(sequence, true, state);
             return ReaderLoop(data.Length, out length, ref reader);
+        }
+
+        public delegate void Utf8JsonReaderAction(ref Utf8JsonReader reader);
+
+        public static void AssertWithSingleAndMultiSegmentReader(string json, Utf8JsonReaderAction action, JsonReaderOptions options = default)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+
+            var singleSegmentReader = new Utf8JsonReader(utf8, options);
+            action(ref singleSegmentReader);
+
+            ReadOnlySequence<byte> sequence = GetSequence(utf8, segmentSize: 1);
+            var multiSegmentReader = new Utf8JsonReader(sequence, options);
+            action(ref multiSegmentReader);
         }
 
         public static ReadOnlySequence<byte> CreateSegments(byte[] data)
@@ -350,7 +358,7 @@ namespace System.Text.Json
             {
                 writer.Formatting = Formatting.Indented;
 
-                var newtonsoft = new JsonTextReader(new StringReader(jsonString));
+                var newtonsoft = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null };
                 writer.WriteComment("comment");
                 while (newtonsoft.Read())
                 {
@@ -364,7 +372,7 @@ namespace System.Text.Json
 
         public static List<JsonTokenType> GetTokenTypes(string jsonString)
         {
-            var newtonsoft = new JsonTextReader(new StringReader(jsonString));
+            var newtonsoft = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null };
             int totalReads = 0;
             while (newtonsoft.Read())
             {
@@ -375,7 +383,7 @@ namespace System.Text.Json
 
             for (int i = 0; i < totalReads; i++)
             {
-                newtonsoft = new JsonTextReader(new StringReader(jsonString));
+                newtonsoft = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null };
                 for (int j = 0; j < i; j++)
                 {
                     Assert.True(newtonsoft.Read());
@@ -695,7 +703,7 @@ namespace System.Text.Json
 
         public static string GetCompactString(string jsonString)
         {
-            using (JsonTextReader jsonReader = new JsonTextReader(new StringReader(jsonString)))
+            using (var jsonReader = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null })
             {
                 jsonReader.FloatParseHandling = FloatParseHandling.Decimal;
                 JToken jtoken = JToken.ReadFrom(jsonReader);
@@ -741,7 +749,7 @@ namespace System.Text.Json
 
         public static void AssertContentsAgainstJsonNet(string expectedValue, string value, bool skipSpecialRules)
         {
-            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(skipSpecialRules), value.NormalizeToJsonNetFormat(skipSpecialRules));
+            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(skipSpecialRules), value.NormalizeToJsonNetFormat(skipSpecialRules), ignoreLineEndingDifferences: true);
         }
 
         public static void AssertContentsNotEqualAgainstJsonNet(string expectedValue, string value, bool skipSpecialRules)
@@ -749,16 +757,16 @@ namespace System.Text.Json
             Assert.NotEqual(expectedValue.NormalizeToJsonNetFormat(skipSpecialRules), value.NormalizeToJsonNetFormat(skipSpecialRules));
         }
 
-        public delegate void AssertThrowsActionUtf8JsonReader(Utf8JsonReader json);
+        public delegate void AssertThrowsActionUtf8JsonReader(ref Utf8JsonReader json);
 
         // Cannot use standard Assert.Throws() when testing Utf8JsonReader - ref structs and closures don't get along.
-        public static void AssertThrows<E>(Utf8JsonReader json, AssertThrowsActionUtf8JsonReader action) where E : Exception
+        public static TException AssertThrows<TException>(ref Utf8JsonReader json, AssertThrowsActionUtf8JsonReader action) where TException : Exception
         {
             Exception ex;
 
             try
             {
-                action(json);
+                action(ref json);
                 ex = null;
             }
             catch (Exception e)
@@ -766,51 +774,23 @@ namespace System.Text.Json
                 ex = e;
             }
 
-            if (ex == null)
+            if (ex is TException matchingEx)
             {
-                throw new ThrowsException(typeof(E));
+                return matchingEx;
             }
 
-            if (!(ex is E))
-            {
-                throw new ThrowsException(typeof(E), ex);
-            }
+            throw ex is null ? new ThrowsException(typeof(TException)) : new ThrowsException(typeof(TException), ex);
         }
 
-        public delegate void AssertThrowsActionUtf8JsonWriter(ref Utf8JsonWriter writer);
+#if NETCOREAPP
+        // This is needed due to the fact that git might normalize line endings when checking-out files
+        public static string NormalizeLineEndings(this string value) => value.ReplaceLineEndings();
+#else
+        private const string CompiledNewline = @"
+";
 
-        public static void AssertThrows<E>(
-            ref Utf8JsonWriter writer,
-            AssertThrowsActionUtf8JsonWriter action)
-            where E : Exception
-        {
-            Exception ex;
-
-            try
-            {
-                action(ref writer);
-                ex = null;
-            }
-            catch (Exception e)
-            {
-                ex = e;
-            }
-
-            if (ex == null)
-            {
-                throw new ThrowsException(typeof(E));
-            }
-
-            if (ex.GetType() != typeof(E))
-            {
-                throw new ThrowsException(typeof(E), ex);
-            }
-        }
-
-        private static readonly Regex s_stripWhitespace = new Regex(@"\s+", RegexOptions.Compiled);
-
-        public static string StripWhitespace(this string value)
-            => s_stripWhitespace.Replace(value, string.Empty);
+        private static readonly bool s_replaceNewlines =
+            !StringComparer.Ordinal.Equals(CompiledNewline, Environment.NewLine);
 
         // Should be called only on compile-time strings
         // This is needed due to the fact that git might normalize line endings when checking-out files
@@ -818,64 +798,6 @@ namespace System.Text.Json
             => s_replaceNewlines ?
             value.Replace(CompiledNewline, Environment.NewLine) :
             value;
-
-        public static void AssertJsonEqual(string expected, string actual)
-        {
-            using JsonDocument expectedDom = JsonDocument.Parse(expected);
-            using JsonDocument actualDom = JsonDocument.Parse(actual);
-            AssertJsonEqual(expectedDom.RootElement, actualDom.RootElement);
-        }
-
-        private static void AssertJsonEqual(JsonElement expected, JsonElement actual)
-        {
-            JsonValueKind valueKind = expected.ValueKind;
-            Assert.Equal(valueKind, actual.ValueKind);
-
-            switch (valueKind)
-            {
-                case JsonValueKind.Object:
-                    var propertyNames = new HashSet<string>();
-
-                    foreach (JsonProperty property in expected.EnumerateObject())
-                    {
-                        propertyNames.Add(property.Name);
-                    }
-
-                    foreach (JsonProperty property in actual.EnumerateObject())
-                    {
-                        propertyNames.Add(property.Name);
-                    }
-
-                    foreach (string name in propertyNames)
-                    {
-                        AssertJsonEqual(expected.GetProperty(name), actual.GetProperty(name));
-                    }
-                    break;
-                case JsonValueKind.Array:
-                    JsonElement.ArrayEnumerator expectedEnumerator = actual.EnumerateArray();
-                    JsonElement.ArrayEnumerator actualEnumerator = expected.EnumerateArray();
-
-                    while (expectedEnumerator.MoveNext())
-                    {
-                        Assert.True(actualEnumerator.MoveNext());
-                        AssertJsonEqual(expectedEnumerator.Current, actualEnumerator.Current);
-                    }
-
-                    Assert.False(actualEnumerator.MoveNext());
-                    break;
-                case JsonValueKind.String:
-                    Assert.Equal(expected.GetString(), actual.GetString());
-                    break;
-                case JsonValueKind.Number:
-                case JsonValueKind.True:
-                case JsonValueKind.False:
-                case JsonValueKind.Null:
-                    Assert.Equal(expected.GetRawText(), actual.GetRawText());
-                    break;
-                default:
-                    Debug.Fail($"Unexpected JsonValueKind: JsonValueKind.{valueKind}.");
-                    break;
-            }
-        }
+#endif
     }
 }

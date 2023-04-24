@@ -1,11 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ForeignThreadExceptions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

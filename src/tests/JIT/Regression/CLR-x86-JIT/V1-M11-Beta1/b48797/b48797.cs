@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         static object m_xForward2;
 
         static void Method1(float param1, double[] ad) { }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             float[] local3 = new float[2];
             try

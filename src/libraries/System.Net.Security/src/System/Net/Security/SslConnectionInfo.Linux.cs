@@ -6,11 +6,28 @@ using System.Security.Authentication;
 
 namespace System.Net.Security
 {
-    internal sealed partial class SslConnectionInfo
+    internal partial struct SslConnectionInfo
     {
-        public SslConnectionInfo(SafeSslHandle sslContext)
+        public void UpdateSslConnectionInfo(SafeSslHandle sslContext)
         {
             Protocol = (int)MapProtocolVersion(Interop.Ssl.SslGetVersion(sslContext));
+            ReadOnlySpan<byte> alpn = Interop.Ssl.SslGetAlpnSelected(sslContext);
+            if (alpn.SequenceEqual(s_http1))
+            {
+                ApplicationProtocol = s_http1;
+            }
+            else if (alpn.SequenceEqual(s_http2))
+            {
+                ApplicationProtocol = s_http2;
+            }
+            else if (alpn.SequenceEqual(s_http3))
+            {
+                ApplicationProtocol = s_http3;
+            }
+            else if (alpn.Length > 0)
+            {
+                ApplicationProtocol = alpn.ToArray();
+            }
 
             MapCipherSuite(SslGetCurrentCipherSuite(sslContext));
         }
@@ -48,6 +65,7 @@ namespace System.Net.Security
                 {
                     if (b[5] == '\0')
                     {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                         return SslProtocols.Tls;
                     }
                     else if (b[5] == '.' && b[6] != '\0' && b[7] == '\0')
@@ -55,6 +73,7 @@ namespace System.Net.Security
                         switch (b[6])
                         {
                             case (byte)'1': return SslProtocols.Tls11;
+#pragma warning restore SYSLIB0039
                             case (byte)'2': return SslProtocols.Tls12;
                             case (byte)'3': return SslProtocols.Tls13;
                         }

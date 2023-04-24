@@ -9,11 +9,11 @@ namespace System.Net.Sockets
     public partial class SocketException : Win32Exception
     {
         /// <summary>Creates a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the default error code.</summary>
-        public SocketException() : this(Marshal.GetLastWin32Error())
+        public SocketException() : this(Marshal.GetLastPInvokeError())
         {
         }
 
-        internal SocketException(SocketError errorCode, uint platformError)
+        internal SocketException(SocketError errorCode, uint _ /*platformError*/)
             : this(errorCode)
         {
             // platformError is unused on Windows. It's the same value as errorCode.

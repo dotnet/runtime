@@ -7,7 +7,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly initblk.exe{}
+.assembly 'DevDiv_255263'{}
+.assembly extern xunit.core {}
 
 .class public sealed Foo
     extends [mscorlib]System.ValueType
@@ -18,7 +19,7 @@
     .field public uint8 b
 }
 
-.class DevDiv_255263 {
+.class public DevDiv_255263 {
 
 
 //    .data d = int32(0x00000000)
@@ -28,8 +29,11 @@
 //-------------------------
 // Entry point - Main
 //-------------------------
-.method static int32 Main(class [mscorlib]System.String[])
+.method public static int32 Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
     .maxstack  10
     .locals init (class [mscorlib]System.Random V_0,

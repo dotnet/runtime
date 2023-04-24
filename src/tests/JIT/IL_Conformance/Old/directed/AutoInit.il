@@ -3,11 +3,15 @@
 
 
 .assembly extern legacy library mscorlib {}
-.assembly autoinit.exe{}
+.assembly AutoInit {}
+.assembly extern xunit.core {}
 
 .class public auto_init {
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
 .zeroinit
 .entrypoint
 .locals	(int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32,int32)

@@ -6,18 +6,22 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern mscorlib { auto }
 
-.assembly template
+.assembly 'static-none'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 )
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
+.assembly extern xunit.core {}
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_static_none
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main(string[] args) cil managed noinlining
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  4
     .locals init (bool V_0,

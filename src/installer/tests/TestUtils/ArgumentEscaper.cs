@@ -32,20 +32,6 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-        public static string EscapeAndConcatenateArgArrayForCmdProcessStart(IEnumerable<string> args)
-        {
-            return string.Join(" ", EscapeArgArrayForCmd(args));
-        }
-
-        /// <summary>
-        /// Undo the processing which took place to create string[] args in Main,
-        /// so that the next process will receive the same string[] args
-        ///
-        /// See here for more info:
-        /// https://docs.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
-        /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
         private static IEnumerable<string> EscapeArgArray(IEnumerable<string> args)
         {
             var escapedArgs = new List<string>();
@@ -53,28 +39,6 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             foreach (var arg in args)
             {
                 escapedArgs.Add(EscapeArg(arg));
-            }
-
-            return escapedArgs;
-        }
-
-        /// <summary>
-        /// This prefixes every character with the '^' character to force cmd to
-        /// interpret the argument string literally. An alternative option would
-        /// be to do this only for cmd metacharacters.
-        ///
-        /// See here for more info:
-        /// https://docs.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
-        /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        private static IEnumerable<string> EscapeArgArrayForCmd(IEnumerable<string> arguments)
-        {
-            var escapedArgs = new List<string>();
-
-            foreach (var arg in arguments)
-            {
-                escapedArgs.Add(EscapeArgForCmd(arg));
             }
 
             return escapedArgs;
@@ -122,49 +86,6 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             }
 
             if (quoted) sb.Append('"');
-
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// Prepare as single argument to
-        /// roundtrip properly through cmd.
-        ///
-        /// This prefixes every character with the '^' character to force cmd to
-        /// interpret the argument string literally. An alternative option would
-        /// be to do this only for cmd metacharacters.
-        ///
-        /// See here for more info:
-        /// https://docs.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
-        /// </summary>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        private static string EscapeArgForCmd(string argument)
-        {
-            var sb = new StringBuilder();
-
-            var quoted = ShouldSurroundWithQuotes(argument);
-
-            if (quoted) sb.Append("^\"");
-
-            foreach (var character in argument)
-            {
-
-                if (character == '"')
-                {
-                    sb.Append('^');
-                    sb.Append('"');
-                    sb.Append('^');
-                    sb.Append(character);
-                }
-                else
-                {
-                    sb.Append('^');
-                    sb.Append(character);
-                }
-            }
-
-            if (quoted) sb.Append("^\"");
 
             return sb.ToString();
         }

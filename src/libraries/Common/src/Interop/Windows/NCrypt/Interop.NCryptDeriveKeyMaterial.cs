@@ -15,14 +15,14 @@ internal static partial class Interop
         /// <summary>
         ///     Generate a key from a secret agreement
         /// </summary>
-        [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
-        private static extern ErrorCode NCryptDeriveKey(
+        [LibraryImport(Interop.Libraries.NCrypt, StringMarshalling = StringMarshalling.Utf16)]
+        private static partial ErrorCode NCryptDeriveKey(
             SafeNCryptSecretHandle hSharedSecret,
             string pwszKDF,
-            [In] ref NCryptBufferDesc pParameterList,
-            [Out, MarshalAs(UnmanagedType.LPArray)] byte[]? pbDerivedKey,
+            ref NCryptBufferDesc pParameterList,
+            [MarshalAs(UnmanagedType.LPArray)] byte[]? pbDerivedKey,
             int cbDerivedKey,
-            [Out] out int pcbResult,
+            out int pcbResult,
             SecretAgreementFlags dwFlags);
 
         /// <summary>
@@ -140,7 +140,7 @@ internal static partial class Interop
                     out int keySize,
                     flags);
 
-                if (error != ErrorCode.ERROR_SUCCESS && error != ErrorCode.NTE_BUFFER_TOO_SMALL)
+                if (error != ErrorCode.ERROR_SUCCESS && !error.IsBufferTooSmall())
                 {
                     throw error.ToCryptographicException();
                 }
@@ -240,6 +240,26 @@ internal static partial class Interop
                     buffers,
                     flags);
             }
+        }
+
+        internal static unsafe byte[] DeriveKeyMaterialTruncate(
+            SafeNCryptSecretHandle secretAgreement,
+            SecretAgreementFlags flags)
+        {
+            if (!OperatingSystem.IsWindowsVersionAtLeast(10))
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            byte[] result = DeriveKeyMaterial(
+                secretAgreement,
+                BCryptNative.KeyDerivationFunction.Raw,
+                ReadOnlySpan<NCryptBuffer>.Empty,
+                flags);
+
+            // Win32 returns the result as little endian. So we need to flip it to big endian.
+            Array.Reverse(result);
+            return result;
         }
     }
 }

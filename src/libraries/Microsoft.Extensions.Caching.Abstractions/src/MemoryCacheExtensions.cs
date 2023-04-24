@@ -9,20 +9,20 @@ namespace Microsoft.Extensions.Caching.Memory
 {
     public static class CacheExtensions
     {
-        public static object Get(this IMemoryCache cache, object key)
+        public static object? Get(this IMemoryCache cache, object key)
         {
-            cache.TryGetValue(key, out object value);
+            cache.TryGetValue(key, out object? value);
             return value;
         }
 
-        public static TItem Get<TItem>(this IMemoryCache cache, object key)
+        public static TItem? Get<TItem>(this IMemoryCache cache, object key)
         {
-            return (TItem)(cache.Get(key) ?? default(TItem));
+            return (TItem?)(cache.Get(key) ?? default(TItem));
         }
 
-        public static bool TryGetValue<TItem>(this IMemoryCache cache, object key, out TItem value)
+        public static bool TryGetValue<TItem>(this IMemoryCache cache, object key, out TItem? value)
         {
-            if (cache.TryGetValue(key, out object result))
+            if (cache.TryGetValue(key, out object? result))
             {
                 if (result == null)
                 {
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.Caching.Memory
             return value;
         }
 
-        public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value, MemoryCacheEntryOptions options)
+        public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value, MemoryCacheEntryOptions? options)
         {
             using ICacheEntry entry = cache.CreateEntry(key);
             if (options != null)
@@ -89,9 +89,9 @@ namespace Microsoft.Extensions.Caching.Memory
             return value;
         }
 
-        public static TItem GetOrCreate<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, TItem> factory)
+        public static TItem? GetOrCreate<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, TItem> factory)
         {
-            if (!cache.TryGetValue(key, out object result))
+            if (!cache.TryGetValue(key, out object? result))
             {
                 using ICacheEntry entry = cache.CreateEntry(key);
 
@@ -99,12 +99,12 @@ namespace Microsoft.Extensions.Caching.Memory
                 entry.Value = result;
             }
 
-            return (TItem)result;
+            return (TItem?)result;
         }
 
-        public static async Task<TItem> GetOrCreateAsync<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, Task<TItem>> factory)
+        public static async Task<TItem?> GetOrCreateAsync<TItem>(this IMemoryCache cache, object key, Func<ICacheEntry, Task<TItem>> factory)
         {
-            if (!cache.TryGetValue(key, out object result))
+            if (!cache.TryGetValue(key, out object? result))
             {
                 using ICacheEntry entry = cache.CreateEntry(key);
 
@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 entry.Value = result;
             }
 
-            return (TItem)result;
+            return (TItem?)result;
         }
     }
 }

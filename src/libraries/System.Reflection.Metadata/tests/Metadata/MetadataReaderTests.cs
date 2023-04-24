@@ -126,8 +126,8 @@ namespace System.Reflection.Metadata.Tests
             PEHeaders headers = new PEHeaders(new MemoryStream(peImage));
 
             //find index for mscorlib
-            int mscorlibIndex = IndexOf(peImage, Encoding.ASCII.GetBytes("mscorlib"), headers.MetadataStartOffset);
-            Assert.NotEqual(mscorlibIndex, -1);
+            int mscorlibIndex = IndexOf(peImage, "mscorlib"u8.ToArray(), headers.MetadataStartOffset);
+            Assert.NotEqual(-1, mscorlibIndex);
             //mutate mscorlib
             peImage[mscorlibIndex + headers.MetadataStartOffset] = 0xFF;
 
@@ -145,11 +145,11 @@ namespace System.Reflection.Metadata.Tests
 
             // mutate CLR to reach MetadataKind.WindowsMetadata
             // find CLR
-            int clrIndex = IndexOf(peImage, Encoding.ASCII.GetBytes("CLR"), headers.MetadataStartOffset);
-            Assert.NotEqual(clrIndex, -1);
+            int clrIndex = IndexOf(peImage, "CLR"u8.ToArray(), headers.MetadataStartOffset);
+            Assert.NotEqual(-1, clrIndex);
             //find 5, This is the streamcount and is the last thing that should be read befor the test.
             int fiveIndex = IndexOf(peImage, new byte[] {5}, headers.MetadataStartOffset + clrIndex);
-            Assert.NotEqual(fiveIndex, -1);
+            Assert.NotEqual(-1, fiveIndex);
 
             peImage[clrIndex + headers.MetadataStartOffset] = 0xFF;
 
@@ -173,7 +173,7 @@ namespace System.Reflection.Metadata.Tests
 
             //find 5, This is the streamcount we'll change to one to leave out loops.
             int fiveIndex = IndexOf(peImage, new byte[] { 5 }, headers.MetadataStartOffset);
-            Assert.NotEqual(fiveIndex, -1);
+            Assert.NotEqual(-1, fiveIndex);
             Array.Copy(BitConverter.GetBytes((ushort)1), 0, peImage, fiveIndex + headers.MetadataStartOffset, BitConverter.GetBytes((ushort)1).Length);
 
             string[] streamNames= new string[]
@@ -206,7 +206,7 @@ namespace System.Reflection.Metadata.Tests
 
             //0x900001447 is the external table mask from PortablePdbs.DocumentsPdb
             int externalTableMaskIndex = IndexOf(peImage, new byte[] { 0x47, 0x14, 0, 0, 9, 0, 0, 0 }, 0);
-            Assert.NotEqual(externalTableMaskIndex, -1);
+            Assert.NotEqual(-1, externalTableMaskIndex);
 
             Array.Copy(new byte[] { 0x48, 0x14, 0, 0, 9, 0, 0, 0 }, 0, peImage, externalTableMaskIndex, 8);
             Assert.Throws<BadImageFormatException>(() => new MetadataReader((byte*)pinned.AddrOfPinnedObject(), peImage.Length));
@@ -219,13 +219,13 @@ namespace System.Reflection.Metadata.Tests
             GCHandle pinned = GetPinnedPEImage(peImage);
             //Find COR20Constants.StringStreamName to be changed to COR20Constants.MinimalDeltaMetadataTableStreamName
             int stringIndex = IndexOf(peImage, Encoding.ASCII.GetBytes(COR20Constants.StringStreamName), 0);
-            Assert.NotEqual(stringIndex, -1);
+            Assert.NotEqual(-1, stringIndex);
             //find remainingBytes to be increased because we are changing to uncompressed
             int remainingBytesIndex = IndexOf(peImage, BitConverter.GetBytes(180), 0);
-            Assert.NotEqual(remainingBytesIndex, -1);
+            Assert.NotEqual(-1, remainingBytesIndex);
             //find compressed to change to uncompressed
             int compressedIndex = IndexOf(peImage, Encoding.ASCII.GetBytes(COR20Constants.CompressedMetadataTableStreamName), 0);
-            Assert.NotEqual(compressedIndex, -1);
+            Assert.NotEqual(-1, compressedIndex);
 
             Array.Copy(Encoding.ASCII.GetBytes(COR20Constants.MinimalDeltaMetadataTableStreamName), 0, peImage, stringIndex, Encoding.ASCII.GetBytes(COR20Constants.MinimalDeltaMetadataTableStreamName).Length);
             peImage[stringIndex + COR20Constants.MinimalDeltaMetadataTableStreamName.Length] = (byte)0;
@@ -248,10 +248,10 @@ namespace System.Reflection.Metadata.Tests
 
             //0x0570 is the remaining bytes from NetModule.AppCS
             int remainingBytesIndex = IndexOf(peImage, new byte[] { 0x70, 0x05, 0, 0 }, headers.MetadataStartOffset);
-            Assert.NotEqual(remainingBytesIndex, -1);
+            Assert.NotEqual(-1, remainingBytesIndex);
             //0xcc90da21757 is the presentTables from NetModule.AppCS, must be after remainingBytesIndex
             int presentTablesIndex = IndexOf(peImage, new byte[] { 0x57, 0x17, 0xa2, 0x0d, 0xc9, 0x0c, 0, 0 }, headers.MetadataStartOffset + remainingBytesIndex);
-            Assert.NotEqual(presentTablesIndex, -1);
+            Assert.NotEqual(-1, presentTablesIndex);
 
             //Set this.ModuleTable.NumberOfRows to 0
             Array.Copy(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }, 0, peImage, presentTablesIndex + remainingBytesIndex + headers.MetadataStartOffset + 16, 8);
@@ -435,7 +435,7 @@ namespace System.Reflection.Metadata.Tests
                 winrtDef.Attributes);
 
             var strReader = reader.GetBlobReader(winrtDef.Name);
-            Assert.Equal(Encoding.UTF8.GetBytes("Class1"), strReader.ReadBytes("Class1".Length));
+            Assert.Equal("Class1"u8.ToArray(), strReader.ReadBytes("Class1".Length));
             Assert.Equal(0, strReader.RemainingBytes);
 
             // .class /*02000003*/ private auto ansi import windowsruntime sealed beforefieldinit Lib.'<WinRT>Class1'
@@ -449,7 +449,7 @@ namespace System.Reflection.Metadata.Tests
                 clrDef.Attributes);
 
             strReader = reader.GetBlobReader(clrDef.Name);
-            Assert.Equal(Encoding.UTF8.GetBytes("<WinRT>Class1"), strReader.ReadBytes("<WinRT>Class1".Length));
+            Assert.Equal("<WinRT>Class1"u8.ToArray(), strReader.ReadBytes("<WinRT>Class1".Length));
             Assert.Equal(0, strReader.RemainingBytes);
         }
 
@@ -469,7 +469,7 @@ namespace System.Reflection.Metadata.Tests
                 winrtDef.Attributes);
 
             var strReader = reader.GetBlobReader(winrtDef.Name);
-            Assert.Equal(Encoding.UTF8.GetBytes("<CLR>Class1"), strReader.ReadBytes("<CLR>Class1".Length));
+            Assert.Equal("<CLR>Class1"u8.ToArray(), strReader.ReadBytes("<CLR>Class1".Length));
             Assert.Equal(0, strReader.RemainingBytes);
 
             // .class /*02000003*/ public auto ansi windowsruntime sealed beforefieldinit Lib.Class1
@@ -483,7 +483,7 @@ namespace System.Reflection.Metadata.Tests
                 clrDef.Attributes);
 
             strReader = reader.GetBlobReader(clrDef.Name);
-            Assert.Equal(Encoding.UTF8.GetBytes("Class1"), strReader.ReadBytes("Class1".Length));
+            Assert.Equal("Class1"u8.ToArray(), strReader.ReadBytes("Class1".Length));
             Assert.Equal(0, strReader.RemainingBytes);
         }
 
@@ -497,14 +497,14 @@ namespace System.Reflection.Metadata.Tests
             Assert.Equal("System.Runtime.CompilerServices", reader.GetString(typeRef.Namespace));
 
             var strReader = reader.GetBlobReader(typeRef.Namespace);
-            Assert.Equal(Encoding.UTF8.GetBytes("System.Runtime.CompilerServices"), strReader.ReadBytes("System.Runtime.CompilerServices".Length));
+            Assert.Equal("System.Runtime.CompilerServices"u8.ToArray(), strReader.ReadBytes("System.Runtime.CompilerServices".Length));
             Assert.Equal(0, strReader.RemainingBytes);
 
             var dotTerminated = typeRef.Namespace.WithDotTermination();
             Assert.Equal("System", reader.GetString(dotTerminated));
 
             strReader = reader.GetBlobReader(dotTerminated);
-            Assert.Equal(Encoding.UTF8.GetBytes("System"), strReader.ReadBytes("System".Length));
+            Assert.Equal("System"u8.ToArray(), strReader.ReadBytes("System".Length));
             Assert.Equal(0, strReader.RemainingBytes);
         }
 
@@ -652,7 +652,7 @@ namespace System.Reflection.Metadata.Tests
         {
             // AppCS has 2 modules
             var expMods = new string[] { "ModuleCS01.mod", "ModuleVB01.mod" };
-            var expHashs = new byte[][]
+            var expHashes = new byte[][]
             {
                 // ModuleCS01.mod - 2B 56 10 8B 34 A1 DC CD CC B5 CF 66 5E 43 94 5E 09 9F 34 A3
                 new byte[] { 0x2B, 0x56, 0x10, 0x8B, 0x34, 0xA1, 0xDC, 0xCD, 0xCC, 0xB5, 0xCF, 0x66, 0x5E, 0x43, 0x94, 0x5E, 0x09, 0x9F, 0x34, 0xA3 },
@@ -686,10 +686,10 @@ namespace System.Reflection.Metadata.Tests
                 Assert.True(file.ContainsMetadata);
 
                 var hv = reader.GetBlobBytes(file.HashValue);
-                Assert.Equal(hv.Length, expHashs[i].Length);
+                Assert.Equal(hv.Length, expHashes[i].Length);
                 for (int j = 0; j < hv.Length; j++)
                 {
-                    Assert.Equal(hv[j], expHashs[i][j]);
+                    Assert.Equal(hv[j], expHashes[i][j]);
                 }
 
                 i++;
@@ -710,7 +710,7 @@ namespace System.Reflection.Metadata.Tests
         {
             // AppCS has 2 modules
             var expMods = new string[] { "ModuleCS00.mod" };
-            var expHashs = new byte[][]
+            var expHashes = new byte[][]
             {
                 // ModuleCS00.mod
                 // new byte [] { 0xd4, 0x6b, 0xec, 0x25, 0x47, 0x01, 0x20, 0x30, 0x05, 0x42, 0x34, 0x4b, 0x31, 0x22, 0x44, 0xd8, 0x1c, 0x87, 0xd0, 0x98 },
@@ -3069,6 +3069,35 @@ namespace System.Reflection.Metadata.Tests
             }
 
             return obfuscated;
+        }
+
+        [Fact]
+        public void GetAssemblyName()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => MetadataReader.GetAssemblyName(null));
+            AssertExtensions.Throws<ArgumentException>("path", null, () => MetadataReader.GetAssemblyName(string.Empty));
+            Assert.Throws<FileNotFoundException>(() => MetadataReader.GetAssemblyName("IDontExist"));
+
+            using (var tempFile = new TempFile(Path.GetTempFileName(), 0)) // Zero-size file
+            {
+                Assert.Throws<BadImageFormatException>(() => MetadataReader.GetAssemblyName(tempFile.Path));
+            }
+
+            using (var tempFile = new TempFile(Path.GetTempFileName(), 42))
+            {
+                Assert.Throws<BadImageFormatException>(() => MetadataReader.GetAssemblyName(tempFile.Path));
+            }
+
+            if (PlatformDetection.HasAssemblyFiles)
+            {
+                Assembly a = typeof(MetadataReader).Assembly;
+                AssemblyName name = MetadataReader.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a));
+                Assert.Equal(new AssemblyName(a.FullName).ToString(), name.ToString());
+
+#pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
+                Assert.Equal(ProcessorArchitecture.None, name.ProcessorArchitecture);
+#pragma warning restore SYSLIB0037
+            }
         }
     }
 }

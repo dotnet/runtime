@@ -126,7 +126,18 @@ namespace TestLibrary
                     else
                     {
                         Delegate d = Marshal.GetDelegateForFunctionPointer(errorWriterPtr, _corehost_error_writer_fnType);
-                        return (string message) => { d.DynamicInvoke(message); };
+                        return (string message) =>
+                        {
+                            IntPtr messagePtr = Marshal.StringToCoTaskMemAuto(message);
+                            try
+                            {
+                                d.DynamicInvoke(messagePtr);
+                            }
+                            finally
+                            {
+                                Marshal.FreeCoTaskMem(messagePtr);
+                            }
+                        };
                     }
                 }
             }

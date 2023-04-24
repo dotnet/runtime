@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -281,7 +282,7 @@ namespace System.Data
             }
             else
             {
-                iDest = destination.Tables.IndexOf(Table!.TableName, Table.Namespace, false); // pass false for last param to be backward compatable
+                iDest = destination.Tables.IndexOf(Table!.TableName, Table.Namespace, false); // pass false for last param to be backward compatible
             }
 
             if (iDest < 0)
@@ -388,7 +389,7 @@ namespace System.Data
         /// <summary>
         /// Compares this constraint to a second to determine if both are identical.
         /// </summary>
-        public override bool Equals(object? key2)
+        public override bool Equals([NotNullWhen(true)] object? key2)
         {
             if (!(key2 is UniqueConstraint))
                 return false;

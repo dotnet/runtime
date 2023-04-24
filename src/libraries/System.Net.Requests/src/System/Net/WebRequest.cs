@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -37,16 +38,19 @@ namespace System.Net
         protected WebRequest() { }
 
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected WebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for WebRequest.")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for WebRequest.")]
         protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
@@ -145,10 +149,7 @@ namespace System.Net
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static WebRequest Create(string requestUriString)
         {
-            if (requestUriString == null)
-            {
-                throw new ArgumentNullException(nameof(requestUriString));
-            }
+            ArgumentNullException.ThrowIfNull(requestUriString);
 
             return Create(new Uri(requestUriString), false);
         }
@@ -166,10 +167,7 @@ namespace System.Net
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static WebRequest Create(Uri requestUri)
         {
-            if (requestUri == null)
-            {
-                throw new ArgumentNullException(nameof(requestUri));
-            }
+            ArgumentNullException.ThrowIfNull(requestUri);
 
             return Create(requestUri, false);
         }
@@ -188,10 +186,7 @@ namespace System.Net
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static WebRequest CreateDefault(Uri requestUri)
         {
-            if (requestUri == null)
-            {
-                throw new ArgumentNullException(nameof(requestUri));
-            }
+            ArgumentNullException.ThrowIfNull(requestUri);
 
             return Create(requestUri, true);
         }
@@ -199,20 +194,16 @@ namespace System.Net
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static HttpWebRequest CreateHttp(string requestUriString)
         {
-            if (requestUriString == null)
-            {
-                throw new ArgumentNullException(nameof(requestUriString));
-            }
+            ArgumentNullException.ThrowIfNull(requestUriString);
+
             return CreateHttp(new Uri(requestUriString));
         }
 
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static HttpWebRequest CreateHttp(Uri requestUri)
         {
-            if (requestUri == null)
-            {
-                throw new ArgumentNullException(nameof(requestUri));
-            }
+            ArgumentNullException.ThrowIfNull(requestUri);
+
             if ((requestUri.Scheme != "http") && (requestUri.Scheme != "https"))
             {
                 throw new NotSupportedException(SR.net_unknown_prefix);
@@ -239,18 +230,12 @@ namespace System.Net
         //     True if the registration worked, false otherwise.
         public static bool RegisterPrefix(string prefix, IWebRequestCreate creator)
         {
+            ArgumentNullException.ThrowIfNull(prefix);
+            ArgumentNullException.ThrowIfNull(creator);
+
             bool Error = false;
             int i;
             WebRequestPrefixElement Current;
-
-            if (prefix == null)
-            {
-                throw new ArgumentNullException(nameof(prefix));
-            }
-            if (creator == null)
-            {
-                throw new ArgumentNullException(nameof(creator));
-            }
 
             // Lock this object, then walk down PrefixList looking for a place to
             // to insert this prefix.
@@ -565,7 +550,7 @@ namespace System.Net
 
         public static IWebProxy? DefaultWebProxy
         {
-            get => LazyInitializer.EnsureInitialized<IWebProxy>(ref s_DefaultWebProxy, ref s_DefaultWebProxyInitialized, ref s_internalSyncObject, () => GetSystemWebProxy());
+            get => LazyInitializer.EnsureInitialized<IWebProxy>(ref s_DefaultWebProxy, ref s_DefaultWebProxyInitialized, ref s_internalSyncObject, GetSystemWebProxy);
             set
             {
                 lock (s_internalSyncObject)

@@ -1,19 +1,10 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-;; ==++==
-;;
-
-;;
-;; ==--==
 #include "ksarm64.h"
 #include "asmconstants.h"
 #include "asmmacros.h"
 
-#ifdef FEATURE_PREJIT
-    IMPORT VirtualMethodFixupWorker
-    IMPORT StubDispatchFixupWorker
-#endif
     IMPORT ExternalMethodFixupWorker
     IMPORT PreStubWorker
     IMPORT NDirectImportWorker
@@ -25,12 +16,12 @@
     IMPORT UMEntryPrestubUnwindFrameChainHandler
     IMPORT TheUMEntryPrestubWorker
     IMPORT GetCurrentSavedRedirectContext
-    IMPORT LinkFrameAndThrow
-    IMPORT FixContextHandler
     IMPORT OnHijackWorker
 #ifdef FEATURE_READYTORUN
     IMPORT DynamicHelperWorker
 #endif
+    IMPORT HijackHandler
+    IMPORT ThrowControlForThread
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     IMPORT  g_sw_ww_table
@@ -61,7 +52,12 @@
 #ifdef FEATURE_COMINTEROP
     IMPORT CLRToCOMWorker
 #endif // FEATURE_COMINTEROP
-    TEXTAREA
+
+    IMPORT JIT_WriteBarrier_Table_Loc
+    IMPORT JIT_WriteBarrier_Loc
+
+    ;;like TEXTAREA, but with 64 byte alignment so that we can align the patchable pool below to 64 without warning
+    AREA    |.text|,ALIGN=6,CODE,READONLY
 
 ;; LPVOID __stdcall GetCurrentIP(void);
     LEAF_ENTRY GetCurrentIP
@@ -210,27 +206,6 @@ Done
         NESTED_END
 
 ; ------------------------------------------------------------------
-; The call in fixup precode initally points to this function.
-; The pupose of this function is to load the MethodDesc and forward the call to prestub.
-        NESTED_ENTRY PrecodeFixupThunk
-
-        ; x12 = FixupPrecode *
-        ; On Exit
-        ; x12 = MethodDesc*
-        ; x13, x14 Trashed
-        ; Inline computation done by FixupPrecode::GetMethodDesc()
-        ldrb    w13, [x12, #Offset_PrecodeChunkIndex]              ; m_PrecodeChunkIndex
-        ldrb    w14, [x12, #Offset_MethodDescChunkIndex]           ; m_MethodDescChunkIndex
-
-        add     x12,x12,w13,uxtw #FixupPrecode_ALIGNMENT_SHIFT_1
-        add     x13,x12,w13,uxtw #FixupPrecode_ALIGNMENT_SHIFT_2
-        ldr     x13, [x13,#SIZEOF__FixupPrecode]
-        add     x12,x13,w14,uxtw #MethodDesc_ALIGNMENT_SHIFT
-
-        b ThePreStub
-
-        NESTED_END
-; ------------------------------------------------------------------
 
         NESTED_ENTRY ThePreStub
 
@@ -259,7 +234,7 @@ ThePreStubPatchLabel
         LEAF_END
 
 ;-----------------------------------------------------------------------------
-; The following Macros help in WRITE_BARRIER Implemetations
+; The following Macros help in WRITE_BARRIER Implementations
     ; WRITE_BARRIER_ENTRY
     ;
     ; Declare the start of a write barrier function. Use similarly to NESTED_ENTRY. This is the only legal way
@@ -289,7 +264,7 @@ ThePreStubPatchLabel
     LEAF_END
 
 ;-----------------------------------------------------------------------------
-; void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck)
+; void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset)
 ;
 ; Update shadow copies of the various state info required for barrier
 ;
@@ -308,6 +283,7 @@ ThePreStubPatchLabel
         ; x12 will be used for pointers
 
         mov      x8, x0
+        mov      x9, x1
 
         adrp     x12, g_card_table
         ldr      x0, [x12, g_card_table]
@@ -346,7 +322,9 @@ EphemeralCheckEnabled
         ldr      x7, [x12, g_highest_address]
 
         ; Update wbs state
-        adr      x12, wbs_begin
+        adrp     x12, JIT_WriteBarrier_Table_Loc
+        ldr      x12, [x12, JIT_WriteBarrier_Table_Loc]
+        add      x12, x12, x9
         stp      x0, x1, [x12], 16
         stp      x2, x3, [x12], 16
         stp      x4, x5, [x12], 16
@@ -355,9 +333,11 @@ EphemeralCheckEnabled
         EPILOG_RESTORE_REG_PAIR fp, lr, #16!
         EPILOG_RETURN
 
+    WRITE_BARRIER_END JIT_UpdateWriteBarrierState
+
         ; Begin patchable literal pool
         ALIGN 64  ; Align to power of two at least as big as patchable literal pool so that it fits optimally in cache line
-
+    WRITE_BARRIER_ENTRY JIT_WriteBarrier_Table
 wbs_begin
 wbs_card_table
         DCQ 0
@@ -375,14 +355,7 @@ wbs_lowest_address
         DCQ 0
 wbs_highest_address
         DCQ 0
-
-    WRITE_BARRIER_END JIT_UpdateWriteBarrierState
-
-; ------------------------------------------------------------------
-; End of the writeable code region
-    LEAF_ENTRY JIT_PatchedCodeLast
-        ret      lr
-    LEAF_END
+    WRITE_BARRIER_END JIT_WriteBarrier_Table
 
 ; void JIT_ByRefWriteBarrier
 ; On entry:
@@ -501,15 +474,19 @@ ShadowUpdateDisabled
 CheckCardTable
         ; Branch to Exit if the reference is not in the Gen0 heap
         ;
-        adr      x12,  wbs_ephemeral_low
-        ldp      x12,  x16, [x12]
+        ldr      x12,  wbs_ephemeral_low
         cbz      x12,  SkipEphemeralCheck
-
         cmp      x15,  x12
-        blo      Exit
 
-        cmp      x15,  x16
-        bhi      Exit
+        ldr      x12,  wbs_ephemeral_high
+
+        ; Compare against the upper bound if the previous comparison indicated
+        ; that the destination address is greater than or equal to the lower
+        ; bound. Otherwise, set the C flag (specified by the 0x2) so that the
+        ; branch to exit is taken.
+        ccmp     x15,  x12, #0x2, hs
+
+        bhs      Exit
 
 SkipEphemeralCheck
         ; Check if we need to update the card table
@@ -546,90 +523,11 @@ Exit
         ret      lr
     WRITE_BARRIER_END JIT_WriteBarrier
 
-#ifdef FEATURE_PREJIT
-;------------------------------------------------
-; VirtualMethodFixupStub
-;
-; In NGEN images, virtual slots inherited from cross-module dependencies
-; point to a jump thunk that calls into the following function that will
-; call into a VM helper. The VM helper is responsible for patching up
-; thunk, upon executing the precode, so that all subsequent calls go directly
-; to the actual method body.
-;
-; This is done lazily for performance reasons.
-;
-; On entry:
-;
-; x0 = "this" pointer
-; x12 = Address of thunk
-
-    NESTED_ENTRY VirtualMethodFixupStub
-
-    ; Save arguments and return address
-    PROLOG_SAVE_REG_PAIR           fp, lr, #-224!
-    SAVE_ARGUMENT_REGISTERS        sp, 16
-    SAVE_FLOAT_ARGUMENT_REGISTERS  sp, 96
-
-    ; Refer to ZapImportVirtualThunk::Save
-    ; for details on this.
-    ;
-    ; Move the thunk start address in x1
-    mov         x1, x12
-
-    ; Call the helper in the VM to perform the actual fixup
-    ; and tell us where to tail call. x0 already contains
-    ; the this pointer.
-    bl VirtualMethodFixupWorker
-    ; On return, x0 contains the target to tailcall to
-    mov         x12, x0
-
-    ; pop the stack and restore original register state
-    RESTORE_ARGUMENT_REGISTERS        sp, 16
-    RESTORE_FLOAT_ARGUMENT_REGISTERS  sp, 96
-    EPILOG_RESTORE_REG_PAIR           fp, lr, #224!
-
-    PATCH_LABEL VirtualMethodFixupPatchLabel
-
-    ; and tailcall to the actual method
-    EPILOG_BRANCH_REG x12
-
-    NESTED_END
-#endif // FEATURE_PREJIT
-
-;------------------------------------------------
-; ExternalMethodFixupStub
-;
-; In NGEN images, calls to cross-module external methods initially
-; point to a jump thunk that calls into the following function that will
-; call into a VM helper. The VM helper is responsible for patching up the
-; thunk, upon executing the precode, so that all subsequent calls go directly
-; to the actual method body.
-;
-; This is done lazily for performance reasons.
-;
-; On entry:
-;
-; x12 = Address of thunk
-
-    NESTED_ENTRY ExternalMethodFixupStub
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
-    mov         x1, x12                         ; pThunk
-    mov         x2, #0                          ; sectionIndex
-    mov         x3, #0                          ; pModule
-
-    bl          ExternalMethodFixupWorker
-
-    ; mov the address we patched to in x12 so that we can tail call to it
-    mov         x12, x0
-
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL ExternalMethodFixupPatchLabel
-    EPILOG_BRANCH_REG   x12
-
-    NESTED_END
+; ------------------------------------------------------------------
+; End of the writeable code region
+    LEAF_ENTRY JIT_PatchedCodeLast
+        ret      lr
+    LEAF_END
 
 ; void SinglecastDelegateInvokeStub(Delegate *pThis)
     LEAF_ENTRY SinglecastDelegateInvokeStub
@@ -1139,24 +1037,28 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 
 ; ------------------------------------------------------------------
 ;
-; Helpers for async (NullRef, AccessViolation) exceptions
+; Helpers for ThreadAbort exceptions
 ;
 
-        NESTED_ENTRY NakedThrowHelper2,,FixContextHandler
+        NESTED_ENTRY RedirectForThreadAbort2,,HijackHandler
         PROLOG_SAVE_REG_PAIR fp,lr, #-16!
+
+        ; stack must be 16 byte aligned
+        CHECK_STACK_ALIGNMENT
 
         ; On entry:
         ;
-        ; X0 = Address of FaultingExceptionFrame
-        bl LinkFrameAndThrow
+        ; x0 = address of FaultingExceptionFrame
+        ;
+        ; Invoke the helper to setup the FaultingExceptionFrame and raise the exception
+        bl              ThrowControlForThread
 
-        ; Target should not return.
+        ; ThrowControlForThread doesn't return.
         EMIT_BREAKPOINT
 
-        NESTED_END NakedThrowHelper2
+        NESTED_END RedirectForThreadAbort2
 
-
-        GenerateRedirectedStubWithFrame NakedThrowHelper, NakedThrowHelper2
+        GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 
 ; ------------------------------------------------------------------
 ; ResolveWorkerChainLookupAsmStub
@@ -1215,10 +1117,10 @@ Success
         blt     Promote
 
         ldr     x16, [x9, #ResolveCacheElem__target]    ; get the ImplTarget
-        br      x16               ; branch to interface implemenation target
+        br      x16               ; branch to interface implementation target
 
 Promote
-                                  ; Move this entry to head postion of the chain
+                                  ; Move this entry to head position of the chain
         mov     x16, #256
         str     x16, [x13]        ; be quick to reset the counter so we don't get a bunch of contending threads
         orr     x11, x11, #PROMOTE_CHAIN_FLAG   ; set PROMOTE_CHAIN_FLAG
@@ -1263,8 +1165,9 @@ Fail
     mov x12, x0
 
     EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    ; Share patch label
-    b ExternalMethodFixupPatchLabel
+    PATCH_LABEL ExternalMethodFixupPatchLabel
+    EPILOG_BRANCH_REG   x12
+
     NESTED_END
 
     MACRO
@@ -1294,29 +1197,6 @@ Fail
     DynamicHelper DynamicHelperFrameFlags_ObjectArg, _Obj
     DynamicHelper DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_ObjectArg2, _ObjObj
 #endif // FEATURE_READYTORUN
-
-#ifdef FEATURE_PREJIT
-;; ------------------------------------------------------------------
-;; void StubDispatchFixupStub(args in regs x0-x7 & stack and possibly retbuff arg in x8, x11:IndirectionCellAndFlags)
-;;
-;; The stub dispatch thunk which transfers control to StubDispatchFixupWorker.
-        NESTED_ENTRY StubDispatchFixupStub
-
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        add x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
-        and x1, x11, #-4 ; Indirection cell
-        mov x2, #0 ; sectionIndex
-        mov x3, #0 ; pModule
-        bl StubDispatchFixupWorker
-        mov x12, x0
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        PATCH_LABEL StubDispatchFixupPatchLabel
-        EPILOG_BRANCH_REG  x12
-
-        NESTED_END
-#endif
 
 #ifdef FEATURE_COMINTEROP
 ; ------------------------------------------------------------------
@@ -1417,9 +1297,10 @@ CallHelper2
     mov     x14, x0                     ; x14 = dst
     mov     x15, x1                     ; x15 = val
 
-    ; Branch to the write barrier (which is already correctly overwritten with
-    ; single or multi-proc code based on the current CPU
-    b       JIT_WriteBarrier
+    ; Branch to the write barrier
+    adrp    x17, JIT_WriteBarrier_Loc
+    ldr     x17, [x17, JIT_WriteBarrier_Loc]
+    br      x17
 
     LEAF_END
 
@@ -1434,7 +1315,7 @@ CallHelper2
  #define PROFILE_ENTER    1
  #define PROFILE_LEAVE    2
  #define PROFILE_TAILCALL 4
- #define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 272
+ #define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 320
 
 ; ------------------------------------------------------------------
     MACRO
@@ -1493,7 +1374,7 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         PROLOG_WITH_TRANSITION_BLOCK
 
         add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
-        mov     x1, x10 ; stub-identifying token
+        mov     x1, x9 ; stub-identifying token
         bl      OnCallCountThresholdReached
         mov     x9, x0
 
@@ -1502,6 +1383,14 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
     NESTED_END
 
 #endif ; FEATURE_TIERED_COMPILATION
+
+    LEAF_ENTRY  JIT_ValidateIndirectCall
+        ret lr
+    LEAF_END
+
+    LEAF_ENTRY  JIT_DispatchIndirectCall
+        br x9
+    LEAF_END
 
 ; Must be at very end of file
     END

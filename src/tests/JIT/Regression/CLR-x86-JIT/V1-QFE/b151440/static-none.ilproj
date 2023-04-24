@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for UnloadabilityIncompatible and Main(args) usage / GetCommandLineArgs -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- This is failing due to the fact that it compares main arguments with the GetCommandLineArgs function result -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>1</CLRTestPriority>

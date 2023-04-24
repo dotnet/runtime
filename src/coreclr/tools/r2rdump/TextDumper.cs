@@ -9,25 +9,21 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
-
 using ILCompiler.Reflection.ReadyToRun;
-using Internal.ReadyToRunConstants;
 using Internal.Runtime;
 
 namespace R2RDump
 {
-    class TextDumper : Dumper
+    internal sealed class TextDumper : Dumper
     {
-        private const int GuidByteSize = 16;
-
-        public TextDumper(ReadyToRunReader r2r, TextWriter writer, Disassembler disassembler, DumpOptions options)
-            : base(r2r, writer, disassembler, options)
+        public TextDumper(ReadyToRunReader r2r, TextWriter writer, Disassembler disassembler, DumpModel model)
+            : base(r2r, writer, disassembler, model)
         {
         }
 
-        internal override void Begin()
+        public override void Begin()
         {
-            if (!_options.Normalize)
+            if (!_model.Normalize)
             {
                 _writer.WriteLine($"Filename: {_r2r.Filename}");
                 _writer.WriteLine($"OS: {_r2r.OperatingSystem}");
@@ -37,26 +33,26 @@ namespace R2RDump
             }
         }
 
-        internal override void End()
+        public override void End()
         {
             _writer.WriteLine("=============================================================");
             SkipLine();
         }
 
-        internal override void WriteDivider(string title)
+        public override void WriteDivider(string title)
         {
             int len = Math.Max(61 - title.Length - 2, 2);
             _writer.WriteLine(new String('=', len / 2) + " " + title + " " + new String('=', (len + 1) / 2));
             SkipLine();
         }
 
-        internal override void WriteSubDivider()
+        public override void WriteSubDivider()
         {
             _writer.WriteLine("_______________________________________________");
             SkipLine();
         }
 
-        internal override void SkipLine()
+        public override void SkipLine()
         {
             _writer.WriteLine();
         }
@@ -64,11 +60,11 @@ namespace R2RDump
         /// <summary>
         /// Dumps the R2RHeader and all the sections in the header
         /// </summary>
-        internal override void DumpHeader(bool dumpSections)
+        public override void DumpHeader(bool dumpSections)
         {
             _writer.WriteLine(_r2r.ReadyToRunHeader.ToString());
 
-            if (_options.Raw)
+            if (_model.Raw)
             {
                 DumpBytes(_r2r.ReadyToRunHeader.RelativeVirtualAddress, (uint)_r2r.ReadyToRunHeader.Size);
             }
@@ -90,14 +86,8 @@ namespace R2RDump
                     int assemblyIndex = 0;
                     foreach (string assemblyName in _r2r.ManifestReferenceAssemblies.OrderBy(kvp => kvp.Value).Select(kvp => kvp.Key))
                     {
-                        string dividerName = $@"Component Assembly [{assemblyIndex}]: {assemblyName}";
-                        if (_r2r.ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ManifestAssemblyMvids, out ReadyToRunSection mvidSection))
-                        {
-                            int mvidOffset = _r2r.GetOffset(mvidSection.RelativeVirtualAddress) + GuidByteSize * assemblyIndex;
-                            Guid mvid = new Guid(new ReadOnlySpan<byte>(_r2r.Image, mvidOffset, GuidByteSize));
-                            dividerName += $@" - MVID {mvid:b}";
-                        }
-                        WriteDivider(dividerName);
+                        Guid mvid = _r2r.GetAssemblyMvid(assemblyIndex);
+                        WriteDivider($@"Component Assembly [{assemblyIndex}]: {assemblyName} - MVID {mvid:b}");
                         ReadyToRunCoreHeader assemblyHeader = _r2r.ReadyToRunAssemblyHeaders[assemblyIndex];
                         foreach (ReadyToRunSection section in NormalizedSections(assemblyHeader))
                         {
@@ -114,24 +104,24 @@ namespace R2RDump
         /// <summary>
         /// Dumps one R2RSection
         /// </summary>
-        internal override void DumpSection(ReadyToRunSection section)
+        public override void DumpSection(ReadyToRunSection section)
         {
             WriteSubDivider();
-            section.WriteTo(_writer, _options);
+            section.WriteTo(_writer, _model);
 
-            if (_options.Raw)
+            if (_model.Raw)
             {
                 DumpBytes(section.RelativeVirtualAddress, (uint)section.Size);
                 SkipLine();
             }
-            if (_options.SectionContents)
+            if (_model.SectionContents)
             {
                 DumpSectionContents(section);
                 SkipLine();
             }
         }
 
-        internal override void DumpEntryPoints()
+        public override void DumpEntryPoints()
         {
             WriteDivider($@"R2R Entry Points");
             foreach (ReadyToRunMethod method in NormalizedMethods())
@@ -140,7 +130,7 @@ namespace R2RDump
             }
         }
 
-        internal override void DumpAllMethods()
+        public override void DumpAllMethods()
         {
             WriteDivider("R2R Methods");
             _writer.WriteLine($"{_r2r.Methods.Count()} methods");
@@ -148,7 +138,7 @@ namespace R2RDump
 
             HashSet<PgoInfoKey> pgoEntriesNotDumped = new HashSet<PgoInfoKey>();
 
-            if (_options.Pgo)
+            if (_model.Pgo)
             {
                 if (_r2r != null)
                 {
@@ -163,7 +153,7 @@ namespace R2RDump
                 TextWriter temp = _writer;
                 _writer = new StringWriter();
                 DumpMethod(method);
-                if (_options.Pgo && method.PgoInfo != null)
+                if (_model.Pgo && method.PgoInfo != null)
                 {
                     pgoEntriesNotDumped.Remove(method.PgoInfo.Key);
                 }
@@ -176,7 +166,7 @@ namespace R2RDump
                 WriteDivider("Pgo entries without code");
                 _writer.WriteLine($"{pgoEntriesNotDumped.Count()} Pgo blobs");
                 IEnumerable<PgoInfoKey> pgoEntriesToDump = pgoEntriesNotDumped;
-                if (_options.Normalize)
+                if (_model.Normalize)
                 {
                     pgoEntriesToDump = pgoEntriesToDump.OrderBy((p) => p.SignatureString);
                 }
@@ -193,30 +183,30 @@ namespace R2RDump
         /// <summary>
         /// Dumps one R2RMethod.
         /// </summary>
-        internal override void DumpMethod(ReadyToRunMethod method)
+        public override void DumpMethod(ReadyToRunMethod method)
         {
             WriteSubDivider();
-            method.WriteTo(_writer, _options);
+            method.WriteTo(_writer, _model);
 
-            if (_options.GC && method.GcInfo != null)
+            if (_model.GC && method.GcInfo != null)
             {
                 BaseGcInfo gcInfo = method.GcInfo;
                 _writer.WriteLine("GC info:");
                 _writer.Write(gcInfo);
 
-                if (_options.Raw)
+                if (_model.Raw)
                 {
                     DumpBytes(method.GcInfoRva, (uint)gcInfo.Size);
                 }
             }
             SkipLine();
 
-            if (_options.Pgo && method.PgoInfo != null)
+            if (_model.Pgo && method.PgoInfo != null)
             {
                 _writer.WriteLine("PGO info:");
                 _writer.Write(method.PgoInfo);
 
-                if (_options.Raw)
+                if (_model.Raw)
                 {
                     DumpBytes(method.PgoInfo.Offset, (uint)method.PgoInfo.Size, convertToOffset: false);
                 }
@@ -232,26 +222,26 @@ namespace R2RDump
         /// <summary>
         /// Dumps one runtime function.
         /// </summary>
-        internal override void DumpRuntimeFunction(RuntimeFunction rtf)
+        public override void DumpRuntimeFunction(RuntimeFunction rtf)
         {
             _writer.WriteLine(rtf.Method.SignatureString);
-            rtf.WriteTo(_writer, _options);
+            rtf.WriteTo(_writer, _model);
 
-            if (_options.Disasm)
+            if (_model.Disasm)
             {
                 DumpDisasm(rtf, _r2r.GetOffset(rtf.StartAddress));
             }
 
-            if (_options.Raw)
+            if (_model.Raw)
             {
                 _writer.WriteLine("Raw Bytes:");
                 DumpBytes(rtf.StartAddress, (uint)rtf.Size);
             }
-            if (_options.Unwind)
+            if (_model.Unwind)
             {
                 _writer.WriteLine("UnwindInfo:");
                 _writer.Write(rtf.UnwindInfo);
-                if (_options.Raw)
+                if (_model.Raw)
                 {
                     DumpBytes(rtf.UnwindRVA, (uint)rtf.UnwindInfo.Size);
                 }
@@ -262,7 +252,7 @@ namespace R2RDump
         /// <summary>
         /// Dumps disassembly and register liveness
         /// </summary>
-        internal override void DumpDisasm(RuntimeFunction rtf, int imageOffset)
+        public override void DumpDisasm(RuntimeFunction rtf, int imageOffset)
         {
             string indentString = new string(' ', _disassembler.MnemonicIndentation);
             int codeOffset = rtf.CodeOffset;
@@ -283,7 +273,7 @@ namespace R2RDump
                     }
                     _writer.WriteLine();
                 }
-                BaseGcInfo gcInfo = (_options.HideTransitions ? null : rtf.Method?.GcInfo);
+                BaseGcInfo gcInfo = (_model.HideTransitions ? null : rtf.Method?.GcInfo);
                 if (gcInfo != null && gcInfo.Transitions != null && gcInfo.Transitions.TryGetValue(codeOffset, out List<BaseGcTransition> transitionsForOffset))
                 {
                     string[] formattedTransitions = new string[transitionsForOffset.Count];
@@ -291,7 +281,7 @@ namespace R2RDump
                     {
                         formattedTransitions[transitionIndex] = transitionsForOffset[transitionIndex].ToString();
                     }
-                    if (_options.Normalize)
+                    if (_model.Normalize)
                     {
                         Array.Sort(formattedTransitions);
                     }
@@ -314,7 +304,7 @@ namespace R2RDump
         /// <summary>
         /// Prints a formatted string containing a block of bytes from the relative virtual address and size
         /// </summary>
-        internal override void DumpBytes(int rva, uint size, string name = "Raw", bool convertToOffset = true)
+        public override void DumpBytes(int rva, uint size, string name = "Raw", bool convertToOffset = true)
         {
             int start = rva;
             if (convertToOffset)
@@ -347,12 +337,12 @@ namespace R2RDump
             SkipLine();
         }
 
-        internal override void DumpSectionContents(ReadyToRunSection section)
+        public override void DumpSectionContents(ReadyToRunSection section)
         {
             switch (section.Type)
             {
                 case ReadyToRunSectionType.AvailableTypes:
-                    if (!_options.Naked)
+                    if (!_model.Naked)
                     {
                         uint availableTypesSectionOffset = (uint)_r2r.GetOffset(section.RelativeVirtualAddress);
                         NativeParser availableTypesParser = new NativeParser(_r2r.Image, availableTypesSectionOffset);
@@ -371,7 +361,7 @@ namespace R2RDump
                     }
                     break;
                 case ReadyToRunSectionType.MethodDefEntryPoints:
-                    if (!_options.Naked)
+                    if (!_model.Naked)
                     {
                         NativeArray methodEntryPoints = new NativeArray(_r2r.Image, (uint)_r2r.GetOffset(section.RelativeVirtualAddress));
                         _writer.Write(methodEntryPoints.ToString());
@@ -388,7 +378,7 @@ namespace R2RDump
                     }
                     break;
                 case ReadyToRunSectionType.InstanceMethodEntryPoints:
-                    if (!_options.Naked)
+                    if (!_model.Naked)
                     {
                         uint instanceSectionOffset = (uint)_r2r.GetOffset(section.RelativeVirtualAddress);
                         NativeParser instanceParser = new NativeParser(_r2r.Image, instanceSectionOffset);
@@ -425,16 +415,26 @@ namespace R2RDump
                     _writer.WriteLine(_r2r.CompilerIdentifier);
                     break;
                 case ReadyToRunSectionType.ImportSections:
-                    if (_options.Naked)
+                    if (_model.Naked)
                     {
-                        DumpNakedImportSections();
+                        List<ReadyToRunImportSection.ImportSectionEntry> entries = new();
+                        foreach (ReadyToRunImportSection importSection in _r2r.ImportSections)
+                        {
+                            entries.AddRange(importSection.Entries);
+                        }
+                        entries.Sort((e1, e2) => e1.Signature.ToString(_model.SignatureFormattingOptions).CompareTo(e2.Signature.ToString(_model.SignatureFormattingOptions)));
+                        foreach (ReadyToRunImportSection.ImportSectionEntry entry in entries)
+                        {
+                            entry.WriteTo(_writer, _model);
+                            _writer.WriteLine();
+                        }
                     }
                     else
                     {
                         foreach (ReadyToRunImportSection importSection in _r2r.ImportSections)
                         {
                             importSection.WriteTo(_writer);
-                            if (_options.Raw && importSection.Entries.Count != 0)
+                            if (_model.Raw && importSection.Entries.Count != 0)
                             {
                                 if (importSection.SectionRVA != 0)
                                 {
@@ -454,7 +454,7 @@ namespace R2RDump
                             }
                             foreach (ReadyToRunImportSection.ImportSectionEntry entry in importSection.Entries)
                             {
-                                entry.WriteTo(_writer, _options);
+                                entry.WriteTo(_writer, _model);
                                 _writer.WriteLine();
                             }
                             _writer.WriteLine();
@@ -507,18 +507,25 @@ namespace R2RDump
                     int oceOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
                     if (_r2r.Image[oceOffset + section.Size - 1] != 0)
                     {
-                        R2RDump.WriteWarning("String is not zero-terminated");
+                        Program.WriteWarning("String is not zero-terminated");
                     }
-                    string ownerCompositeExecutable = Encoding.UTF8.GetString(_r2r.Image, oceOffset, section.Size - 1); // exclude the zero terminator
-                    _writer.WriteLine("Composite executable: {0}", ownerCompositeExecutable.ToEscapedString());
+                    _writer.WriteLine("Composite executable: {0}", _r2r.OwnerCompositeExecutable);
                     break;
                 case ReadyToRunSectionType.ManifestAssemblyMvids:
-                    int mvidOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
-                    int mvidCount = section.Size / GuidByteSize;
+                    int mvidCount = section.Size / ReadyToRunReader.GuidByteSize;
                     for (int mvidIndex = 0; mvidIndex < mvidCount; mvidIndex++)
                     {
-                        Guid mvid = new Guid(new Span<byte>(_r2r.Image, mvidOffset + GuidByteSize * mvidIndex, GuidByteSize));
-                        _writer.WriteLine("MVID[{0}] = {1:b}", mvidIndex, mvid);
+                        _writer.WriteLine("MVID[{0}] = {1:b}", mvidIndex, _r2r.GetAssemblyMvid(mvidIndex));
+                    }
+                    break;
+                case ReadyToRunSectionType.HotColdMap:
+                    int count = section.Size / 8;
+                    int hotColdMapOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    for (int i = 0; i < count; i++)
+                    {
+                        _writer.Write(NativeReader.ReadInt32(_r2r.Image, ref hotColdMapOffset));
+                        _writer.Write(",");
+                        _writer.WriteLine(NativeReader.ReadInt32(_r2r.Image, ref hotColdMapOffset));
                     }
                     break;
                 default:
@@ -527,31 +534,16 @@ namespace R2RDump
             }
         }
 
-        private void DumpNakedImportSections()
-        {
-            List<ReadyToRunImportSection.ImportSectionEntry> entries = new List<ReadyToRunImportSection.ImportSectionEntry>();
-            foreach (ReadyToRunImportSection importSection in _r2r.ImportSections)
-            {
-                entries.AddRange(importSection.Entries);
-            }
-            entries.Sort((e1, e2) => e1.Signature.ToString(_options.GetSignatureFormattingOptions()).CompareTo(e2.Signature.ToString(_options.GetSignatureFormattingOptions())));
-            foreach (ReadyToRunImportSection.ImportSectionEntry entry in entries)
-            {
-                entry.WriteTo(_writer, _options);
-                _writer.WriteLine();
-            }
-        }
-
-        internal override void DumpQueryCount(string q, string title, int count)
+        public override void DumpQueryCount(string q, string title, int count)
         {
             _writer.WriteLine(count + " result(s) for \"" + q + "\"");
             SkipLine();
         }
 
-        internal override void DumpFixupStats()
+        public override void DumpFixupStats()
         {
             WriteDivider("Eager fixup counts across all methods");
-            
+
             // Group all fixups across methods by fixup kind, and sum each category
             var sortedFixupCounts = _r2r.Methods.Where(m => m.Fixups != null)
                 .SelectMany(m => m.Fixups)
@@ -561,13 +553,51 @@ namespace R2RDump
                     Count = group.Count()
                 }).OrderByDescending(x => x.Count);
 
-            Console.WriteLine($"                      Fixup | Count");
+            /* Runtime Repo GH Issue #49249:
+             *
+             * In order to format the fixup counts results table, we need to
+             * know beforehand the size of each column. The padding is calculated
+             * as follows:
+             *
+             * Fixup: Length of the longest Fixup Kind name.
+             * Count: Since a total is always bigger than its operands, we set
+             *        the padding to the total's number of digits.
+             *
+             * The reason we want them to be at least 5, is because in the case of only
+             * getting values shorter than 5 digits (Length of "Fixup" and "Count"),
+             * the formatting could be messed up. The likelihood of this happening
+             * is apparently 0%, but better safe than sorry. */
+
+            int fixupPadding = 5;
+            int sortedFixupCountsTotal = sortedFixupCounts.Sum(x => x.Count);
+            int countPadding = Math.Max(sortedFixupCountsTotal.ToString().Length, 5);
+
+            /* We look at all the Fixup Kinds that will be printed. We
+             * then store the length of the longest one's name. */
+
             foreach (var fixupAndCount in sortedFixupCounts)
             {
-                Console.WriteLine($"{fixupAndCount.FixupKind, 27} | {fixupAndCount.Count, 5}");
+                int kindLength = fixupAndCount.FixupKind.ToString().Length;
+
+                if (kindLength > fixupPadding)
+                    fixupPadding = kindLength;
             }
-            Console.WriteLine("-----------------------------------");
-            Console.WriteLine($"                      Total | {sortedFixupCounts.Sum(x => x.Count), 5}");
+
+            _writer.WriteLine(
+                $"{"Fixup".PadLeft(fixupPadding)} | {"Count".PadLeft(countPadding)}"
+            );
+            foreach (var fixupAndCount in sortedFixupCounts)
+            {
+                _writer.WriteLine(
+                    $"{fixupAndCount.FixupKind.ToString().PadLeft(fixupPadding)} | {fixupAndCount.Count.ToString().PadLeft(countPadding)}"
+                );
+            }
+
+            // The +3 in this divider is to account for the " | " table division.
+            _writer.WriteLine(new string('-', fixupPadding + countPadding + 3));
+            _writer.WriteLine(
+                $"{"Total".PadLeft(fixupPadding)} | {sortedFixupCountsTotal.ToString().PadLeft(countPadding)}"
+            );
             SkipLine();
         }
     }

@@ -25,19 +25,26 @@ namespace System.IO.Pipes.Tests
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [OuterLoop("Needs sudo access")]
-        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
-        [InlineData(PipeOptions.None, PipeOptions.None)]
-        [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly)]
-        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None)]
-        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly)]
+        [InlineData(PipeOptions.None, PipeOptions.None, PipeDirection.In)]
+        [InlineData(PipeOptions.None, PipeOptions.None, PipeDirection.InOut)]
+        [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly, PipeDirection.In)]
+        [InlineData(PipeOptions.None, PipeOptions.CurrentUserOnly, PipeDirection.InOut)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None, PipeDirection.In)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.None, PipeDirection.InOut)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly, PipeDirection.In)]
+        [InlineData(PipeOptions.CurrentUserOnly, PipeOptions.CurrentUserOnly, PipeDirection.InOut)]
         public async Task Connection_UnderDifferentUsers_BehavesAsExpected(
-            PipeOptions serverPipeOptions, PipeOptions clientPipeOptions)
+            PipeOptions serverPipeOptions, PipeOptions clientPipeOptions, PipeDirection clientPipeDirection)
         {
+            bool isRoot = Environment.IsPrivilegedProcess;
+            if (clientPipeOptions == PipeOptions.CurrentUserOnly && isRoot)
+            {
+                throw new SkipTestException("Current user is root, RemoteExecutor is unable to use a different user for CurrentUserOnly.");
+            }
 
             // Use an absolute path, otherwise, the test can fail if the remote invoker and test runner have
             // different working and/or temp directories.
             string pipeName = "/tmp/" + Path.GetRandomFileName();
-            bool isRoot = Environment.UserName == "root";
 
             _output.WriteLine("Starting as {0} on '{1}'", Environment.UserName, pipeName);
 
@@ -47,9 +54,10 @@ namespace System.IO.Pipes.Tests
                 Task serverTask = server.WaitForConnectionAsync(CancellationToken.None);
 
                 using (RemoteExecutor.Invoke(
-                    new Action<string, string>(ConnectClientFromRemoteInvoker),
+                    new Action<string, string, string>(ConnectClientFromRemoteInvoker),
                     pipeName,
-                    clientPipeOptions == PipeOptions.CurrentUserOnly && !isRoot ? "true" : "false",
+                    clientPipeOptions == PipeOptions.CurrentUserOnly ? "true" : "false",
+                    clientPipeDirection == PipeDirection.In ? "true" : "false",
                     new RemoteInvokeOptions { RunAsSudo = true }))
                 {
                 }
@@ -61,10 +69,12 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        private static void ConnectClientFromRemoteInvoker(string pipeName, string isCurrentUserOnly)
+        private static void ConnectClientFromRemoteInvoker(string pipeName, string isCurrentUserOnly, string isReadOnly)
         {
             PipeOptions pipeOptions = bool.Parse(isCurrentUserOnly) ? PipeOptions.CurrentUserOnly : PipeOptions.None;
-            using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, pipeOptions))
+            PipeDirection pipeDirection = bool.Parse(isReadOnly) ? PipeDirection.In : PipeDirection.InOut;
+
+            using (var client = new NamedPipeClientStream(".", pipeName, pipeDirection, pipeOptions))
             {
                 if (pipeOptions == PipeOptions.CurrentUserOnly)
                     Assert.Throws<UnauthorizedAccessException>(() => client.Connect());

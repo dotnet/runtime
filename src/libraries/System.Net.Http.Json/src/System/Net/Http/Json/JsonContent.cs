@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#if !NETCOREAPP
 using System.Diagnostics;
+#endif
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -13,21 +16,19 @@ namespace System.Net.Http.Json
 {
     public sealed partial class JsonContent : HttpContent
     {
-        internal const string JsonMediaType = "application/json";
-        internal const string JsonType = "application";
-        internal const string JsonSubtype = "json";
-        private static MediaTypeHeaderValue DefaultMediaType
-            => new MediaTypeHeaderValue(JsonMediaType) { CharSet = "utf-8" };
-
-        internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-
         private readonly JsonSerializerOptions? _jsonSerializerOptions;
         public Type ObjectType { get; }
         public object? Value { get; }
 
-        private JsonContent(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? options)
+        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
+        private JsonContent(
+            object? inputValue,
+            Type inputType,
+            MediaTypeHeaderValue? mediaType,
+            JsonSerializerOptions? options)
         {
-            if (inputType == null)
+            if (inputType is null)
             {
                 throw new ArgumentNullException(nameof(inputType));
             }
@@ -39,13 +40,17 @@ namespace System.Net.Http.Json
 
             Value = inputValue;
             ObjectType = inputType;
-            Headers.ContentType = mediaType ?? DefaultMediaType;
-            _jsonSerializerOptions = options ?? s_defaultSerializerOptions;
+            Headers.ContentType = mediaType ?? JsonHelpers.GetDefaultMediaType();
+            _jsonSerializerOptions = options ?? JsonHelpers.s_defaultSerializerOptions;
         }
 
+        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => Create(inputValue, typeof(T), mediaType, options);
 
+        [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => new JsonContent(inputValue, inputType, mediaType, options);
 
@@ -58,9 +63,13 @@ namespace System.Net.Http.Json
             return false;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The ctor is annotated with RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The ctor is annotated with RequiresDynamicCode.")]
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
-            Encoding? targetEncoding = GetEncoding(Headers.ContentType?.CharSet);
+            Encoding? targetEncoding = JsonHelpers.GetEncoding(this);
 
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
             if (targetEncoding != null && targetEncoding != Encoding.UTF8)
@@ -75,10 +84,7 @@ namespace System.Net.Http.Json
                     }
                     else
                     {
-                        // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
-                        // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
-                        using var writer = new Utf8JsonWriter(transcodingStream);
-                        JsonSerializer.Serialize(writer, Value, ObjectType, _jsonSerializerOptions);
+                        JsonSerializer.Serialize(transcodingStream, Value, ObjectType, _jsonSerializerOptions);
                     }
                 }
                 finally
@@ -116,44 +122,12 @@ namespace System.Net.Http.Json
                 else
                 {
 #if NETCOREAPP
-                    // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
-                    // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
-                    using var writer = new Utf8JsonWriter(targetStream);
-                    JsonSerializer.Serialize(writer, Value, ObjectType, _jsonSerializerOptions);
+                    JsonSerializer.Serialize(targetStream, Value, ObjectType, _jsonSerializerOptions);
 #else
                     Debug.Fail("Synchronous serialization is only supported since .NET 5.0");
 #endif
                 }
             }
-        }
-
-        internal static Encoding? GetEncoding(string? charset)
-        {
-            Encoding? encoding = null;
-
-            if (charset != null)
-            {
-                try
-                {
-                    // Remove at most a single set of quotes.
-                    if (charset.Length > 2 && charset[0] == '\"' && charset[charset.Length - 1] == '\"')
-                    {
-                        encoding = Encoding.GetEncoding(charset.Substring(1, charset.Length - 2));
-                    }
-                    else
-                    {
-                        encoding = Encoding.GetEncoding(charset);
-                    }
-                }
-                catch (ArgumentException e)
-                {
-                    throw new InvalidOperationException(SR.CharSetInvalid, e);
-                }
-
-                Debug.Assert(encoding != null);
-            }
-
-            return encoding;
         }
     }
 }

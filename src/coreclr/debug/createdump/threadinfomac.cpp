@@ -6,8 +6,16 @@
 ThreadInfo::ThreadInfo(CrashInfo& crashInfo, pid_t tid, mach_port_t port) :
     m_crashInfo(crashInfo),
     m_tid(tid),
+    m_ppid(0),
+    m_tgid(0),
+    m_managed(false),
+    m_exceptionObject(0),
+    m_exceptionHResult(0),
+    m_repeatedFrames(0),
     m_port(port)
 {
+    m_beginRepeat = m_frames.end();
+    m_endRepeat = m_frames.end();
 }
 
 ThreadInfo::~ThreadInfo()
@@ -15,7 +23,7 @@ ThreadInfo::~ThreadInfo()
     kern_return_t result = ::mach_port_deallocate(mach_task_self(), m_port);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "~ThreadInfo: mach_port_deallocate FAILED %x %s\n", result, mach_error_string(result));
+        printf_error("Internal error: ~ThreadInfo: mach_port_deallocate FAILED %s (%x)\n", mach_error_string(result), result);
     }
 }
 
@@ -30,7 +38,7 @@ ThreadInfo::Initialize()
     kern_return_t result = ::thread_get_state(Port(), x86_THREAD_STATE64, (thread_state_t)&m_gpRegisters, &stateCount);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
+        printf_error("thread_get_state(%x) FAILED %s (%x)\n", m_tid, mach_error_string(result), result);
         return false;
     }
 
@@ -38,7 +46,7 @@ ThreadInfo::Initialize()
     result = ::thread_get_state(Port(), x86_FLOAT_STATE64, (thread_state_t)&m_fpRegisters, &stateCount);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
+        printf_error("thread_get_state(%x) FAILED %s (%x)\n", m_tid, mach_error_string(result), result);
         return false;
     }
 #elif defined(__aarch64__)
@@ -46,7 +54,7 @@ ThreadInfo::Initialize()
     kern_return_t result = ::thread_get_state(Port(), ARM_THREAD_STATE64, (thread_state_t)&m_gpRegisters, &stateCount);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
+        printf_error("thread_get_state(%x) FAILED %s (%x)\n", m_tid,  mach_error_string(result), result);
         return false;
     }
 
@@ -54,7 +62,7 @@ ThreadInfo::Initialize()
     result = ::thread_get_state(Port(), ARM_NEON_STATE64, (thread_state_t)&m_fpRegisters, &stateCount);
     if (result != KERN_SUCCESS)
     {
-        fprintf(stderr, "thread_get_state(%x) FAILED %x %s\n", m_tid, result, mach_error_string(result));
+        printf_error("thread_get_state(%x) FAILED %s (%x)\n", m_tid, mach_error_string(result), result);
         return false;
     }
 #else

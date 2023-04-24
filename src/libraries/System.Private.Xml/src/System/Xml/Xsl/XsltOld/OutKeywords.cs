@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Xml;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Xml;
-
     internal sealed class OutKeywords
     {
 #if DEBUG
@@ -107,6 +107,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
+#pragma warning disable CA1822
         [System.Diagnostics.Conditional("DEBUG")]
         private void CheckKeyword(string keyword)
         {
@@ -115,5 +116,6 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert((object)keyword == (object?)_NameTable.Get(keyword));
 #endif
         }
+#pragma warning restore CA1822
     }
 }

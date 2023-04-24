@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -22,13 +23,8 @@ namespace System.Net.Sockets.Tests
             _log = output;
         }
 
-        [Fact]
-        public void OSSupportsUnixDomainSockets_ReturnsCorrectValue()
-        {
-            Assert.Equal(PlatformSupportsUnixDomainSockets, Socket.OSSupportsUnixDomainSockets);
-        }
-
-        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_Success()
         {
             string path = null;
@@ -78,12 +74,11 @@ namespace System.Net.Sockets.Tests
             {
                 server.Dispose();
 
-                try { File.Delete(path); }
-                catch { }
+                Assert.False(File.Exists(path));
             }
         }
 
-        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_NotServer()
         {
             string path = GetRandomNonExistingFilePath();
@@ -103,6 +98,10 @@ namespace System.Net.Sockets.Tests
                     if (willRaiseEvent)
                     {
                         await complete.Task;
+
+                        Assert.Equal(
+                            OperatingSystem.IsWindows() ? SocketError.ConnectionRefused : SocketError.AddressNotAvailable,
+                            args.SocketError);
                     }
 
                     Assert.Equal(
@@ -117,136 +116,122 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public void Socket_SendReceive_Success()
         {
             string path = GetRandomNonExistingFilePath();
             var endPoint = new UnixDomainSocketEndPoint(path);
-            try
+            using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             {
-                using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
-                using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                server.Bind(endPoint);
+                server.Listen(1);
+
+                client.Connect(endPoint);
+                using (Socket accepted = server.Accept())
                 {
-                    server.Bind(endPoint);
-                    server.Listen(1);
-
-                    client.Connect(endPoint);
-                    using (Socket accepted = server.Accept())
+                    var data = new byte[1];
+                    for (int i = 0; i < 10; i++)
                     {
-                        var data = new byte[1];
-                        for (int i = 0; i < 10; i++)
-                        {
-                            data[0] = (byte)i;
+                        data[0] = (byte)i;
 
-                            accepted.Send(data);
-                            data[0] = 0;
+                        accepted.Send(data);
+                        data[0] = 0;
 
-                            Assert.Equal(1, client.Receive(data));
-                            Assert.Equal(i, data[0]);
-                        }
+                        Assert.Equal(1, client.Receive(data));
+                        Assert.Equal(i, data[0]);
                     }
                 }
             }
-            finally
-            {
-                try { File.Delete(path); }
-                catch { }
-            }
+
+            Assert.False(File.Exists(path));
         }
 
-        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public void Socket_SendReceive_Clone_Success()
         {
             string path = GetRandomNonExistingFilePath();
             var endPoint = new UnixDomainSocketEndPoint(path);
-            try
+            using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             {
-                using var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-                using var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                server.Bind(endPoint);
+                server.Listen(1);
+                client.Connect(endPoint);
+
+                using (Socket accepted = server.Accept())
                 {
-                    server.Bind(endPoint);
-                    server.Listen(1);
-                    client.Connect(endPoint);
+                    using var clientClone = new Socket(client.SafeHandle);
+                    using var acceptedClone = new Socket(accepted.SafeHandle);
 
-                    using (Socket accepted = server.Accept())
+                    _log.WriteLine($"accepted: LocalEndPoint={accepted.LocalEndPoint} RemoteEndPoint={accepted.RemoteEndPoint}");
+                    _log.WriteLine($"acceptedClone: LocalEndPoint={acceptedClone.LocalEndPoint} RemoteEndPoint={acceptedClone.RemoteEndPoint}");
+
+                    Assert.True(clientClone.Connected);
+                    Assert.True(acceptedClone.Connected);
+                    Assert.Equal(client.LocalEndPoint.ToString(), clientClone.LocalEndPoint.ToString());
+                    Assert.Equal(client.RemoteEndPoint.ToString(), clientClone.RemoteEndPoint.ToString());
+                    Assert.Equal(accepted.LocalEndPoint.ToString(), acceptedClone.LocalEndPoint.ToString());
+                    Assert.Equal(accepted.RemoteEndPoint.ToString(), acceptedClone.RemoteEndPoint.ToString());
+
+                    var data = new byte[1];
+                    for (int i = 0; i < 10; i++)
                     {
-                        using var clientClone = new Socket(client.SafeHandle);
-                        using var acceptedClone = new Socket(accepted.SafeHandle);
+                        data[0] = (byte)i;
 
-                        _log.WriteLine($"accepted: LocalEndPoint={accepted.LocalEndPoint} RemoteEndPoint={accepted.RemoteEndPoint}");
-                        _log.WriteLine($"acceptedClone: LocalEndPoint={acceptedClone.LocalEndPoint} RemoteEndPoint={acceptedClone.RemoteEndPoint}");
+                        acceptedClone.Send(data);
+                        data[0] = 0;
 
-                        Assert.True(clientClone.Connected);
-                        Assert.True(acceptedClone.Connected);
-                        Assert.Equal(client.LocalEndPoint.ToString(), clientClone.LocalEndPoint.ToString());
-                        Assert.Equal(client.RemoteEndPoint.ToString(), clientClone.RemoteEndPoint.ToString());
-                        Assert.Equal(accepted.LocalEndPoint.ToString(), acceptedClone.LocalEndPoint.ToString());
-                        Assert.Equal(accepted.RemoteEndPoint.ToString(), acceptedClone.RemoteEndPoint.ToString());
-
-                        var data = new byte[1];
-                        for (int i = 0; i < 10; i++)
-                        {
-                            data[0] = (byte)i;
-
-                            acceptedClone.Send(data);
-                            data[0] = 0;
-
-                            Assert.Equal(1, clientClone.Receive(data));
-                            Assert.Equal(i, data[0]);
-                        }
+                        Assert.Equal(1, clientClone.Receive(data));
+                        Assert.Equal(i, data[0]);
                     }
                 }
             }
-            finally
-            {
-                try { File.Delete(path); }
-                catch { }
-            }
+
+            Assert.False(File.Exists(path));
         }
 
-        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public async Task Socket_SendReceiveAsync_Success()
         {
             string path = GetRandomNonExistingFilePath();
             var endPoint = new UnixDomainSocketEndPoint(path);
-            try
+            using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             {
-                using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
-                using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                server.Bind(endPoint);
+                server.Listen(1);
+
+                await client.ConnectAsync(endPoint);
+                using (Socket accepted = await server.AcceptAsync())
                 {
-                    server.Bind(endPoint);
-                    server.Listen(1);
-
-                    await client.ConnectAsync(endPoint);
-                    using (Socket accepted = await server.AcceptAsync())
+                    var data = new byte[1];
+                    for (int i = 0; i < 10; i++)
                     {
-                        var data = new byte[1];
-                        for (int i = 0; i < 10; i++)
-                        {
-                            data[0] = (byte)i;
+                        data[0] = (byte)i;
 
-                            await accepted.SendAsync(new ArraySegment<byte>(data), SocketFlags.None);
-                            data[0] = 0;
+                        await accepted.SendAsync(new ArraySegment<byte>(data), SocketFlags.None);
+                        data[0] = 0;
 
-                            Assert.Equal(1, await client.ReceiveAsync(new ArraySegment<byte>(data), SocketFlags.None));
-                            Assert.Equal(i, data[0]);
-                        }
+                        Assert.Equal(1, await client.ReceiveAsync(new ArraySegment<byte>(data), SocketFlags.None));
+                        Assert.Equal(i, data[0]);
                     }
                 }
             }
-            finally
-            {
-                try { File.Delete(path); }
-                catch { }
-            }
+
+            Assert.False(File.Exists(path));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26189", TestPlatforms.Windows)]
-        [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalTheory(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
         [InlineData(5000, 1, 1)]
         [InlineData(500, 18, 21)]
         [InlineData(500, 21, 18)]
         [InlineData(5, 128000, 64000)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public async Task Socket_SendReceiveAsync_PropagateToStream_Success(int iterations, int writeBufferSize, int readBufferSize)
         {
             var writeBuffer = new byte[writeBufferSize * iterations];
@@ -255,59 +240,54 @@ namespace System.Net.Sockets.Tests
 
             string path = GetRandomNonExistingFilePath();
             var endPoint = new UnixDomainSocketEndPoint(path);
-            try
+            using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             {
-                using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
-                using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                server.Bind(endPoint);
+                server.Listen(1);
+
+                Task<Socket> serverAccept = server.AcceptAsync();
+                await Task.WhenAll(serverAccept, client.ConnectAsync(endPoint));
+
+                Task clientReceives = Task.Run(async () =>
                 {
-                    server.Bind(endPoint);
-                    server.Listen(1);
-
-                    Task<Socket> serverAccept = server.AcceptAsync();
-                    await Task.WhenAll(serverAccept, client.ConnectAsync(endPoint));
-
-                    Task clientReceives = Task.Run(async () =>
+                    byte[] buffer = new byte[readBufferSize];
+                    while (true)
                     {
-                        byte[] buffer = new byte[readBufferSize];
-                        while (true)
+                        int bytesRead = await client.ReceiveAsync(new Memory<byte>(buffer), SocketFlags.None);
+                        if (bytesRead == 0)
                         {
-                            int bytesRead = await client.ReceiveAsync(new Memory<byte>(buffer), SocketFlags.None);
-                            if (bytesRead == 0)
-                            {
-                                break;
-                            }
-                            Assert.InRange(bytesRead, 1, writeBuffer.Length - readData.Length);
-                            readData.Write(buffer, 0, bytesRead);
+                            break;
                         }
-                    });
-
-                    using (Socket accepted = await serverAccept)
-                    {
-                        for (int iter = 0; iter < iterations; iter++)
-                        {
-                            Task<int> sendTask = accepted.SendAsync(new ArraySegment<byte>(writeBuffer, iter * writeBufferSize, writeBufferSize), SocketFlags.None);
-                            await await Task.WhenAny(clientReceives, sendTask);
-                            Assert.Equal(writeBufferSize, await sendTask);
-                        }
+                        Assert.InRange(bytesRead, 1, writeBuffer.Length - readData.Length);
+                        readData.Write(buffer, 0, bytesRead);
                     }
+                });
 
-                    await clientReceives;
+                using (Socket accepted = await serverAccept)
+                {
+                    for (int iter = 0; iter < iterations; iter++)
+                    {
+                        Task<int> sendTask = accepted.SendAsync(new ArraySegment<byte>(writeBuffer, iter * writeBufferSize, writeBufferSize), SocketFlags.None);
+                        await await Task.WhenAny(clientReceives, sendTask);
+                        Assert.Equal(writeBufferSize, await sendTask);
+                    }
                 }
 
-                Assert.Equal(writeBuffer.Length, readData.Length);
-                Assert.Equal(writeBuffer, readData.ToArray());
+                await clientReceives;
             }
-            finally
-            {
-                try { File.Delete(path); }
-                catch { }
-            }
+
+            Assert.Equal(writeBuffer.Length, readData.Length);
+            AssertExtensions.SequenceEqual(writeBuffer, readData.ToArray());
+
+            Assert.False(File.Exists(path));
         }
 
-        [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalTheory(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/26189", TestPlatforms.Windows)]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public async Task ConcurrentSendReceive(bool forceNonBlocking)
         {
             using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -345,11 +325,12 @@ namespace System.Net.Sockets.Tests
                 }
                 await TestSettings.WhenAllOrAnyFailedWithTimeout(writes.Concat(reads).ToArray());
 
-                Assert.Equal(sendData.OrderBy(i => i), receiveData.OrderBy(i => i));
+                AssertExtensions.SequenceEqual(sendData.OrderBy(i => i).ToArray(), receiveData.OrderBy(i => i).ToArray());
             }
         }
 
-        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public async Task ConcurrentSendReceiveAsync()
         {
             using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
@@ -383,11 +364,11 @@ namespace System.Net.Sockets.Tests
 
                 await TestSettings.WhenAllOrAnyFailedWithTimeout(writes.Concat(reads).ToArray());
 
-                Assert.Equal(sendData, receiveData);
+                AssertExtensions.SequenceEqual(sendData, receiveData);
             }
         }
 
-        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
         public void UnixDomainSocketEndPoint_InvalidPaths_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => new UnixDomainSocketEndPoint(null));
@@ -401,9 +382,10 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new UnixDomainSocketEndPoint(invalidLengthString));
         }
 
-        [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalTheory(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public void UnixDomainSocketEndPoint_RemoteEndPointEqualsBindAddress(bool abstractAddress)
         {
             string serverAddress;
@@ -412,7 +394,7 @@ namespace System.Net.Sockets.Tests
             if (abstractAddress)
             {
                 // abstract socket addresses are a Linux feature.
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                if (!OperatingSystem.IsLinux())
                 {
                     return;
                 }
@@ -428,41 +410,32 @@ namespace System.Net.Sockets.Tests
                 expectedClientAddress = clientAddress;
             }
 
-            try
+            using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
             {
-                using (Socket server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
-                {
-                    server.Bind(new UnixDomainSocketEndPoint(serverAddress));
-                    server.Listen(1);
+                server.Bind(new UnixDomainSocketEndPoint(serverAddress));
+                server.Listen(1);
 
-                    using (Socket client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                using (Socket client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                {
+                    // Bind the client.
+                    client.Bind(new UnixDomainSocketEndPoint(clientAddress));
+                    client.Connect(new UnixDomainSocketEndPoint(serverAddress));
+                    using (Socket acceptedClient = server.Accept())
                     {
-                        // Bind the client.
-                        client.Bind(new UnixDomainSocketEndPoint(clientAddress));
-                        client.Connect(new UnixDomainSocketEndPoint(serverAddress));
-                        using (Socket acceptedClient = server.Accept())
-                        {
-                            // Verify the client address on the server.
-                            EndPoint clientAddressOnServer = acceptedClient.RemoteEndPoint;
-                            Assert.True(string.CompareOrdinal(expectedClientAddress, clientAddressOnServer.ToString()) == 0);
-                        }
+                        // Verify the client address on the server.
+                        EndPoint clientAddressOnServer = acceptedClient.RemoteEndPoint;
+                        Assert.True(string.CompareOrdinal(expectedClientAddress, clientAddressOnServer.ToString()) == 0);
                     }
                 }
             }
-            finally
-            {
-                if (!abstractAddress)
-                {
-                    try { File.Delete(serverAddress); }
-                    catch { }
-                    try { File.Delete(clientAddress); }
-                    catch { }
-                }
-            }
+
+            Assert.False(File.Exists(serverAddress));
+            Assert.False(File.Exists(clientAddress));
         }
 
-        [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Linux)] // Don't support abstract socket addresses.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public void UnixDomainSocketEndPoint_UsingAbstractSocketAddressOnUnsupported_Throws()
         {
             // An abstract socket address starts with a zero byte.
@@ -491,6 +464,78 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<PlatformNotSupportedException>(() => new UnixDomainSocketEndPoint("hello"));
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        public void UnixDomainSocketEndPoint_RelativePathDeletesFile()
+        {
+            if (!Socket.OSSupportsUnixDomainSockets)
+            {
+                return;
+            }
+            RemoteExecutor.Invoke(() =>
+            {
+                using (Socket socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                {
+                    // Bind to a relative path.
+                    string path = GetRandomNonExistingFilePath();
+                    string wd = Path.GetDirectoryName(path);
+                    Directory.SetCurrentDirectory(wd);
+                    socket.Bind(new UnixDomainSocketEndPoint(Path.GetFileName(path)));
+                    Assert.True(File.Exists(path));
+
+                    string otherDir = GetRandomNonExistingFilePath();
+                    Directory.CreateDirectory(otherDir);
+                    try
+                    {
+                        // Change to another directory.
+                        Directory.SetCurrentDirectory(Path.GetDirectoryName(path));
+
+                        // Dispose deletes file from original path.
+                        socket.Dispose();
+                        Assert.False(File.Exists(path));
+                    }
+                    finally
+                    {
+                        Directory.SetCurrentDirectory(wd);
+                        Directory.Delete(otherDir);
+                    }
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
+        public void AbstractPathEquality()
+        {
+            string abstractPath = '\0' + Guid.NewGuid().ToString();
+            UnixDomainSocketEndPoint endPoint1 = new(abstractPath);
+            UnixDomainSocketEndPoint endPoint2 = new(abstractPath);
+            UnixDomainSocketEndPoint endPoint3 = new('\0' + Guid.NewGuid().ToString());
+
+            Assert.Equal(endPoint1, endPoint2);
+            Assert.Equal(endPoint1.GetHashCode(), endPoint2.GetHashCode());
+
+            Assert.NotEqual(endPoint1, endPoint3);
+            Assert.NotEqual(endPoint2, endPoint3);
+        }
+
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
+        public void FilePathEquality()
+        {
+            string path1 = "relative" + Path.DirectorySeparatorChar + "path";
+            string path2 = new(path1); // make a copy to avoid reference equality
+            string path3 = GetRandomNonExistingFilePath();
+
+            UnixDomainSocketEndPoint endPoint1 = new(path1);
+            UnixDomainSocketEndPoint endPoint2 = new(path2);
+            UnixDomainSocketEndPoint endPoint3 = new(path3);
+
+            Assert.Equal(endPoint1, endPoint2);
+            Assert.Equal(endPoint1.GetHashCode(), endPoint2.GetHashCode());
+
+            Assert.NotEqual(endPoint1, endPoint3);
+            Assert.NotEqual(endPoint2, endPoint3);
+        }
+
         private static string GetRandomNonExistingFilePath()
         {
             string result;
@@ -502,26 +547,6 @@ namespace System.Net.Sockets.Tests
             while (File.Exists(result));
 
             return result;
-        }
-
-        private static bool PlatformSupportsUnixDomainSockets
-        {
-            get
-            {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    try
-                    {
-                        using var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Tcp);
-                    }
-                    catch (SocketException se)
-                    {
-                        return se.SocketErrorCode != SocketError.AddressFamilyNotSupported;
-                    }
-                }
-
-                return true;
-            }
         }
 
         private static bool IsSubWindows10 => PlatformDetection.IsWindows && PlatformDetection.WindowsVersion < 10;

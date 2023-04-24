@@ -4,17 +4,18 @@ project(monodroid)
 
 enable_language(C ASM)
 
-if(NOT USE_LLVM)
-    # the assembler code we generate is GNU which isn't understood by llvm
-    add_compile_options(-no-integrated-as)
+if(ANDROID_NDK_MAJOR VERSION_LESS "23")
+    message(FATAL_ERROR "Error: need at least Android NDK 23, got ${ANDROID_NDK_REVISION}!")
 endif()
 
 add_library(
     monodroid
     SHARED
-    monodroid.c
+    %MONODROID_SOURCE%
     %AotModulesSource%
-    %AotSources%)
+)
+
+%AotSources%
 
 %Defines%
 
@@ -22,16 +23,9 @@ include_directories("%MonoInclude%")
 
 target_link_libraries(
     monodroid
-    %NativeLibrariesToLink%
+    PRIVATE
     libz.so
     log
-    "-u GlobalizationNative_LoadICU"
-    "-u GlobalizationNative_GetLatestJapaneseEra"
-    "-u GlobalizationNative_ChangeCase"
-    "-u GlobalizationNative_CloseSortHandle"
-    "-u GlobalizationNative_GetLocales"
-    "-u GlobalizationNative_GetLocaleInfoInt"
-    "-u GlobalizationNative_GetLocaleTimeFormat"
-    "-u GlobalizationNative_ToUnicode"
-    "-u GlobalizationNative_NormalizeString"
-    "-u GlobalizationNative_GetTimeZoneDisplayName")
+    %NativeLibrariesToLink%
+    %APP_LINKER_ARGS%
+)

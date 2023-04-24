@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Reflection.Internal;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Metadata
 {
@@ -11,27 +12,40 @@ namespace System.Reflection.Metadata
     {
         private const int Size = BlobUtilities.SizeOfGuid + sizeof(uint);
 
-        public Guid Guid { get; }
-        public uint Stamp { get; }
+        private readonly Guid _guid;
+        private readonly uint _stamp;
+
+        public Guid Guid => _guid;
+        public uint Stamp => _stamp;
 
         public BlobContentId(Guid guid, uint stamp)
         {
-            Guid = guid;
-            Stamp = stamp;
+            _guid = guid;
+            _stamp = stamp;
         }
 
         public BlobContentId(ImmutableArray<byte> id)
-            : this(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(id)!)
         {
-        }
-
-        public unsafe BlobContentId(byte[] id)
-        {
-            if (id == null)
+            if (id.IsDefault)
             {
-                throw new ArgumentNullException(nameof(id));
+                Throw.ArgumentNull(nameof(id));
             }
 
+            Initialize(id.AsSpan(), out _guid, out _stamp);
+        }
+
+        public BlobContentId(byte[] id)
+        {
+            if (id is null)
+            {
+                Throw.ArgumentNull(nameof(id));
+            }
+
+            Initialize(id, out _guid, out _stamp);
+        }
+
+        private static unsafe void Initialize(ReadOnlySpan<byte> id, out Guid guid, out uint stamp)
+        {
             if (id.Length != Size)
             {
                 throw new ArgumentException(SR.Format(SR.UnexpectedArrayLength, Size), nameof(id));
@@ -40,8 +54,8 @@ namespace System.Reflection.Metadata
             fixed (byte* ptr = &id[0])
             {
                 var reader = new BlobReader(ptr, id.Length);
-                Guid = reader.ReadGuid();
-                Stamp = reader.ReadUInt32();
+                guid = reader.ReadGuid();
+                stamp = reader.ReadUInt32();
             }
         }
 
@@ -49,17 +63,27 @@ namespace System.Reflection.Metadata
 
         public static BlobContentId FromHash(ImmutableArray<byte> hashCode)
         {
-            return FromHash(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(hashCode)!);
+            if (hashCode.IsDefault)
+            {
+                Throw.ArgumentNull(nameof(hashCode));
+            }
+
+            return FromHash(hashCode.AsSpan());
         }
 
         public static BlobContentId FromHash(byte[] hashCode)
         {
-            const int minHashSize = 20;
-
-            if (hashCode == null)
+            if (hashCode is null)
             {
-                throw new ArgumentNullException(nameof(hashCode));
+                Throw.ArgumentNull(nameof(hashCode));
             }
+
+            return FromHash(hashCode.AsSpan());
+        }
+
+        private static BlobContentId FromHash(ReadOnlySpan<byte> hashCode)
+        {
+            const int minHashSize = 20;
 
             if (hashCode.Length < minHashSize)
             {
@@ -68,8 +92,8 @@ namespace System.Reflection.Metadata
 
             // extract guid components from input data
             uint a = ((uint)hashCode[3] << 24 | (uint)hashCode[2] << 16 | (uint)hashCode[1] << 8 | hashCode[0]);
-            ushort b = (ushort)((ushort)hashCode[5] << 8 | (ushort)hashCode[4]);
-            ushort c = (ushort)((ushort)hashCode[7] << 8 | (ushort)hashCode[6]);
+            ushort b = (ushort)(hashCode[5] << 8 | hashCode[4]);
+            ushort c = (ushort)(hashCode[7] << 8 | hashCode[6]);
             byte d = hashCode[8];
             byte e = hashCode[9];
             byte f = hashCode[10];
@@ -100,7 +124,7 @@ namespace System.Reflection.Metadata
         }
 
         public bool Equals(BlobContentId other) => Guid == other.Guid && Stamp == other.Stamp;
-        public override bool Equals(object? obj) => obj is BlobContentId bcid && Equals(bcid);
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is BlobContentId bcid && Equals(bcid);
         public override int GetHashCode() => Hash.Combine(Stamp, Guid.GetHashCode());
         public static bool operator ==(BlobContentId left, BlobContentId right) => left.Equals(right);
         public static bool operator !=(BlobContentId left, BlobContentId right) => !left.Equals(right);

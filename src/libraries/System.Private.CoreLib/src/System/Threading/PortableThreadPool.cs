@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -28,8 +29,16 @@ namespace System.Threading
         private const int CpuUtilizationHigh = 95;
         private const int CpuUtilizationLow = 80;
 
-        private static readonly short s_forcedMinWorkerThreads = AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0, false);
-        private static readonly short s_forcedMaxWorkerThreads = AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MaxThreads", 0, false);
+#if CORECLR
+#pragma warning disable CA1823
+        private static readonly bool s_initialized = ThreadPool.EnsureConfigInitialized();
+#pragma warning restore CA1823
+#endif
+
+        private static readonly short ForcedMinWorkerThreads =
+            AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MinThreads", 0, false);
+        private static readonly short ForcedMaxWorkerThreads =
+            AppContextConfigHelper.GetInt16Config("System.Threading.ThreadPool.MaxThreads", 0, false);
 
         [ThreadStatic]
         private static object? t_completionCountObject;
@@ -43,43 +52,60 @@ namespace System.Threading
         private int _cpuUtilization; // SOS's ThreadPool command depends on this name
         private short _minThreads;
         private short _maxThreads;
-        private readonly LowLevelLock _maxMinThreadLock = new LowLevelLock();
+        private short _legacy_minIOCompletionThreads;
+        private short _legacy_maxIOCompletionThreads;
 
         [StructLayout(LayoutKind.Explicit, Size = Internal.PaddingHelpers.CACHE_LINE_SIZE * 6)]
         private struct CacheLineSeparated
         {
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 1)]
             public ThreadCounts counts; // SOS's ThreadPool command depends on this name
+
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 2)]
             public int lastDequeueTime;
+
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 3)]
             public int priorCompletionCount;
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 3 + sizeof(int))]
             public int priorCompletedWorkRequestsTime;
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 3 + sizeof(int) * 2)]
             public int nextCompletedWorkRequestsTime;
+
             [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 4)]
             public volatile int numRequestedWorkers;
-            [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 5)]
+            [FieldOffset(Internal.PaddingHelpers.CACHE_LINE_SIZE * 4 + sizeof(int))]
             public int gateThreadRunningState;
         }
 
-        private CacheLineSeparated _separated; // SOS's ThreadPool command depends on this name
         private long _currentSampleStartTime;
         private readonly ThreadInt64PersistentCounter _completionCounter = new ThreadInt64PersistentCounter();
         private int _threadAdjustmentIntervalMs;
 
-        private readonly LowLevelLock _hillClimbingThreadAdjustmentLock = new LowLevelLock();
+        private short _numBlockedThreads;
+        private short _numThreadsAddedDueToBlocking;
+        private PendingBlockingAdjustment _pendingBlockingAdjustment;
+
+        private long _memoryUsageBytes;
+        private long _memoryLimitBytes;
+
+#if TARGET_WINDOWS
+        private readonly nint _ioPort;
+        private IOCompletionPoller[]? _ioCompletionPollers;
+#endif
+
+        private readonly LowLevelLock _threadAdjustmentLock = new LowLevelLock();
+
+        private CacheLineSeparated _separated; // SOS's ThreadPool command depends on this name
 
         private PortableThreadPool()
         {
-            _minThreads = s_forcedMinWorkerThreads > 0 ? s_forcedMinWorkerThreads : (short)Environment.ProcessorCount;
+            _minThreads = HasForcedMinThreads ? ForcedMinWorkerThreads : (short)Environment.ProcessorCount;
             if (_minThreads > MaxPossibleThreadCount)
             {
                 _minThreads = MaxPossibleThreadCount;
             }
 
-            _maxThreads = s_forcedMaxWorkerThreads > 0 ? s_forcedMaxWorkerThreads : DefaultMaxWorkerThreadCount;
+            _maxThreads = HasForcedMaxThreads ? ForcedMaxWorkerThreads : DefaultMaxWorkerThreadCount;
             if (_maxThreads > MaxPossibleThreadCount)
             {
                 _maxThreads = MaxPossibleThreadCount;
@@ -89,14 +115,29 @@ namespace System.Threading
                 _maxThreads = _minThreads;
             }
 
-            _separated = new CacheLineSeparated
+            _legacy_minIOCompletionThreads = 1;
+            _legacy_maxIOCompletionThreads = 1000;
+
+            if (NativeRuntimeEventSource.Log.IsEnabled())
             {
-                counts = new ThreadCounts
-                {
-                    NumThreadsGoal = _minThreads
-                }
-            };
+                NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
+                    (ushort)_minThreads,
+                    (ushort)_maxThreads,
+                    (ushort)_legacy_minIOCompletionThreads,
+                    (ushort)_legacy_maxIOCompletionThreads);
+            }
+
+            _separated.counts.NumThreadsGoal = _minThreads;
+
+#if TARGET_WINDOWS
+            _ioPort = CreateIOCompletionPort();
+#endif
         }
+
+        private static bool HasForcedMinThreads =>
+            ForcedMinWorkerThreads > 0 && (ForcedMaxWorkerThreads <= 0 || ForcedMinWorkerThreads <= ForcedMaxWorkerThreads);
+        private static bool HasForcedMaxThreads =>
+            ForcedMaxWorkerThreads > 0 && (ForcedMinWorkerThreads <= 0 || ForcedMinWorkerThreads <= ForcedMaxWorkerThreads);
 
         public bool SetMinThreads(int workerThreads, int ioCompletionThreads)
         {
@@ -105,52 +146,84 @@ namespace System.Threading
                 return false;
             }
 
-            _maxMinThreadLock.Acquire();
+            bool addWorker = false;
+            bool wakeGateThread = false;
+
+            _threadAdjustmentLock.Acquire();
             try
             {
-                if (workerThreads > _maxThreads || !ThreadPool.CanSetMinIOCompletionThreads(ioCompletionThreads))
+                if (workerThreads > _maxThreads)
                 {
                     return false;
                 }
 
-                ThreadPool.SetMinIOCompletionThreads(ioCompletionThreads);
+                if (ioCompletionThreads > _legacy_maxIOCompletionThreads)
+                {
+                    return false;
+                }
 
-                if (s_forcedMinWorkerThreads != 0)
+                if (HasForcedMinThreads && workerThreads != ForcedMinWorkerThreads)
+                {
+                    return false;
+                }
+
+                _legacy_minIOCompletionThreads = (short)Math.Max(1, ioCompletionThreads);
+
+                short newMinThreads = (short)Math.Max(1, workerThreads);
+                if (newMinThreads == _minThreads)
                 {
                     return true;
                 }
 
-                short newMinThreads = (short)Math.Max(1, Math.Min(workerThreads, MaxPossibleThreadCount));
                 _minThreads = newMinThreads;
-
-                ThreadCounts counts = _separated.counts.VolatileRead();
-                while (counts.NumThreadsGoal < newMinThreads)
+                if (_numBlockedThreads > 0)
                 {
-                    ThreadCounts newCounts = counts;
-                    newCounts.NumThreadsGoal = newMinThreads;
-
-                    ThreadCounts oldCounts = _separated.counts.InterlockedCompareExchange(newCounts, counts);
-                    if (oldCounts == counts)
+                    // Blocking adjustment will adjust the goal according to its heuristics
+                    if (_pendingBlockingAdjustment != PendingBlockingAdjustment.Immediately)
                     {
-                        if (_separated.numRequestedWorkers > 0)
-                        {
-                            WorkerThread.MaybeAddWorkingWorker(this);
-                        }
-                        break;
+                        _pendingBlockingAdjustment = PendingBlockingAdjustment.Immediately;
+                        wakeGateThread = true;
                     }
-
-                    counts = oldCounts;
+                }
+                else if (_separated.counts.NumThreadsGoal < newMinThreads)
+                {
+                    _separated.counts.InterlockedSetNumThreadsGoal(newMinThreads);
+                    if (_separated.numRequestedWorkers > 0)
+                    {
+                        addWorker = true;
+                    }
                 }
 
-                return true;
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                {
+                    NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
+                        (ushort)_minThreads,
+                        (ushort)_maxThreads,
+                        (ushort)_legacy_minIOCompletionThreads,
+                        (ushort)_legacy_maxIOCompletionThreads);
+                }
             }
             finally
             {
-                _maxMinThreadLock.Release();
+                _threadAdjustmentLock.Release();
             }
+
+            if (addWorker)
+            {
+                WorkerThread.MaybeAddWorkingWorker(this);
+            }
+            else if (wakeGateThread)
+            {
+                GateThread.Wake(this);
+            }
+            return true;
         }
 
-        public int GetMinThreads() => Volatile.Read(ref _minThreads);
+        public void GetMinThreads(out int workerThreads, out int ioCompletionThreads)
+        {
+            workerThreads = Volatile.Read(ref _minThreads);
+            ioCompletionThreads = _legacy_minIOCompletionThreads;
+        }
 
         public bool SetMaxThreads(int workerThreads, int ioCompletionThreads)
         {
@@ -159,58 +232,65 @@ namespace System.Threading
                 return false;
             }
 
-            _maxMinThreadLock.Acquire();
+            _threadAdjustmentLock.Acquire();
             try
             {
-                if (workerThreads < _minThreads || !ThreadPool.CanSetMaxIOCompletionThreads(ioCompletionThreads))
+                if (workerThreads < _minThreads)
                 {
                     return false;
                 }
 
-                ThreadPool.SetMaxIOCompletionThreads(ioCompletionThreads);
+                if (ioCompletionThreads < _legacy_minIOCompletionThreads)
+                {
+                    return false;
+                }
 
-                if (s_forcedMaxWorkerThreads != 0)
+                if (HasForcedMaxThreads && workerThreads != ForcedMaxWorkerThreads)
+                {
+                    return false;
+                }
+
+                _legacy_maxIOCompletionThreads = (short)Math.Min(ioCompletionThreads, MaxPossibleThreadCount);
+
+                short newMaxThreads = (short)Math.Min(workerThreads, MaxPossibleThreadCount);
+                if (newMaxThreads == _maxThreads)
                 {
                     return true;
                 }
 
-                short newMaxThreads = (short)Math.Min(workerThreads, MaxPossibleThreadCount);
                 _maxThreads = newMaxThreads;
-
-                ThreadCounts counts = _separated.counts.VolatileRead();
-                while (counts.NumThreadsGoal > newMaxThreads)
+                if (_separated.counts.NumThreadsGoal > newMaxThreads)
                 {
-                    ThreadCounts newCounts = counts;
-                    newCounts.NumThreadsGoal = newMaxThreads;
-
-                    ThreadCounts oldCounts = _separated.counts.InterlockedCompareExchange(newCounts, counts);
-                    if (oldCounts == counts)
-                    {
-                        break;
-                    }
-
-                    counts = oldCounts;
+                    _separated.counts.InterlockedSetNumThreadsGoal(newMaxThreads);
                 }
 
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                {
+                    NativeRuntimeEventSource.Log.ThreadPoolMinMaxThreads(
+                        (ushort)_minThreads,
+                        (ushort)_maxThreads,
+                        (ushort)_legacy_minIOCompletionThreads,
+                        (ushort)_legacy_maxIOCompletionThreads);
+                }
                 return true;
             }
             finally
             {
-                _maxMinThreadLock.Release();
+                _threadAdjustmentLock.Release();
             }
         }
 
-        public int GetMaxThreads() => Volatile.Read(ref _maxThreads);
+        public void GetMaxThreads(out int workerThreads, out int ioCompletionThreads)
+        {
+            workerThreads = Volatile.Read(ref _maxThreads);
+            ioCompletionThreads = _legacy_maxIOCompletionThreads;
+        }
 
-        public int GetAvailableThreads()
+        public void GetAvailableThreads(out int workerThreads, out int ioCompletionThreads)
         {
             ThreadCounts counts = _separated.counts.VolatileRead();
-            int count = _maxThreads - counts.NumProcessingWork;
-            if (count < 0)
-            {
-                return 0;
-            }
-            return count;
+            workerThreads = Math.Max(0, _maxThreads - counts.NumProcessingWork);
+            ioCompletionThreads = _legacy_maxIOCompletionThreads;
         }
 
         public int ThreadCount => _separated.counts.VolatileRead().NumExistingThreads;
@@ -232,7 +312,7 @@ namespace System.Threading
         private void NotifyWorkItemProgress(object threadLocalCompletionCountObject, int currentTimeMs)
         {
             ThreadInt64PersistentCounter.Increment(threadLocalCompletionCountObject);
-            Volatile.Write(ref _separated.lastDequeueTime, Environment.TickCount);
+            _separated.lastDequeueTime = currentTimeMs;
 
             if (ShouldAdjustMaxWorkersActive(currentTimeMs))
             {
@@ -257,20 +337,26 @@ namespace System.Threading
         //
         private void AdjustMaxWorkersActive()
         {
-            LowLevelLock hillClimbingThreadAdjustmentLock = _hillClimbingThreadAdjustmentLock;
-            if (!hillClimbingThreadAdjustmentLock.TryAcquire())
+            LowLevelLock threadAdjustmentLock = _threadAdjustmentLock;
+            if (!threadAdjustmentLock.TryAcquire())
             {
                 // The lock is held by someone else, they will take care of this for us
                 return;
             }
 
+            bool addWorker = false;
             try
             {
-                long startTime = _currentSampleStartTime;
-                long endTime = Stopwatch.GetTimestamp();
-                long freq = Stopwatch.Frequency;
+                // Repeated checks from ShouldAdjustMaxWorkersActive() inside the lock
+                ThreadCounts counts = _separated.counts;
+                if (counts.NumProcessingWork > counts.NumThreadsGoal ||
+                    _pendingBlockingAdjustment != PendingBlockingAdjustment.None)
+                {
+                    return;
+                }
 
-                double elapsedSeconds = (double)(endTime - startTime) / freq;
+                long endTime = Stopwatch.GetTimestamp();
+                double elapsedSeconds = Stopwatch.GetElapsedTime(_currentSampleStartTime, endTime).TotalSeconds;
 
                 if (elapsedSeconds * 1000 >= _threadAdjustmentIntervalMs / 2)
                 {
@@ -278,39 +364,24 @@ namespace System.Threading
                     int totalNumCompletions = (int)_completionCounter.Count;
                     int numCompletions = totalNumCompletions - _separated.priorCompletionCount;
 
-                    ThreadCounts currentCounts = _separated.counts.VolatileRead();
-                    int newMax;
-                    (newMax, _threadAdjustmentIntervalMs) = HillClimbing.ThreadPoolHillClimber.Update(currentCounts.NumThreadsGoal, elapsedSeconds, numCompletions);
-
-                    while (newMax != currentCounts.NumThreadsGoal)
+                    short oldNumThreadsGoal = counts.NumThreadsGoal;
+                    int newNumThreadsGoal;
+                    (newNumThreadsGoal, _threadAdjustmentIntervalMs) =
+                        HillClimbing.ThreadPoolHillClimber.Update(oldNumThreadsGoal, elapsedSeconds, numCompletions);
+                    if (oldNumThreadsGoal != (short)newNumThreadsGoal)
                     {
-                        ThreadCounts newCounts = currentCounts;
-                        newCounts.NumThreadsGoal = (short)newMax;
+                        _separated.counts.InterlockedSetNumThreadsGoal((short)newNumThreadsGoal);
 
-                        ThreadCounts oldCounts = _separated.counts.InterlockedCompareExchange(newCounts, currentCounts);
-                        if (oldCounts == currentCounts)
+                        //
+                        // If we're increasing the goal, inject a thread.  If that thread finds work, it will inject
+                        // another thread, etc., until nobody finds work or we reach the new goal.
+                        //
+                        // If we're reducing the goal, whichever threads notice this first will sleep and timeout themselves.
+                        //
+                        if (newNumThreadsGoal > oldNumThreadsGoal)
                         {
-                            //
-                            // If we're increasing the max, inject a thread.  If that thread finds work, it will inject
-                            // another thread, etc., until nobody finds work or we reach the new maximum.
-                            //
-                            // If we're reducing the max, whichever threads notice this first will sleep and timeout themselves.
-                            //
-                            if (newMax > oldCounts.NumThreadsGoal)
-                            {
-                                WorkerThread.MaybeAddWorkingWorker(this);
-                            }
-                            break;
+                            addWorker = true;
                         }
-
-                        if (oldCounts.NumThreadsGoal > currentCounts.NumThreadsGoal && oldCounts.NumThreadsGoal >= newMax)
-                        {
-                            // someone (probably the gate thread) increased the thread count more than
-                            // we are about to do.  Don't interfere.
-                            break;
-                        }
-
-                        currentCounts = oldCounts;
                     }
 
                     _separated.priorCompletionCount = totalNumCompletions;
@@ -321,29 +392,50 @@ namespace System.Threading
             }
             finally
             {
-                hillClimbingThreadAdjustmentLock.Release();
+                threadAdjustmentLock.Release();
+            }
+
+            if (addWorker)
+            {
+                WorkerThread.MaybeAddWorkingWorker(this);
             }
         }
 
         private bool ShouldAdjustMaxWorkersActive(int currentTimeMs)
         {
-            // We need to subtract by prior time because Environment.TickCount can wrap around, making a comparison of absolute times unreliable.
-            int priorTime = Volatile.Read(ref _separated.priorCompletedWorkRequestsTime);
-            int requiredInterval = _separated.nextCompletedWorkRequestsTime - priorTime;
-            int elapsedInterval = currentTimeMs - priorTime;
-            if (elapsedInterval >= requiredInterval)
+            if (HillClimbing.IsDisabled)
             {
-                // Avoid trying to adjust the thread count goal if there are already more threads than the thread count goal.
-                // In that situation, hill climbing must have previously decided to decrease the thread count goal, so let's
-                // wait until the system responds to that change before calling into hill climbing again. This condition should
-                // be the opposite of the condition in WorkerThread.ShouldStopProcessingWorkNow that causes
-                // threads processing work to stop in response to a decreased thread count goal. The logic here is a bit
-                // different from the original CoreCLR code from which this implementation was ported because in this
-                // implementation there are no retired threads, so only the count of threads processing work is considered.
-                ThreadCounts counts = _separated.counts.VolatileRead();
-                return counts.NumProcessingWork <= counts.NumThreadsGoal && !HillClimbing.IsDisabled;
+                return false;
             }
-            return false;
+
+            // We need to subtract by prior time because Environment.TickCount can wrap around, making a comparison of absolute
+            // times unreliable. Intervals are unsigned to avoid wrapping around on the subtract after enough time elapses, and
+            // this also prevents the initial elapsed interval from being negative due to the prior and next times being
+            // initialized to zero.
+            int priorTime = Volatile.Read(ref _separated.priorCompletedWorkRequestsTime);
+            uint requiredInterval = (uint)(_separated.nextCompletedWorkRequestsTime - priorTime);
+            uint elapsedInterval = (uint)(currentTimeMs - priorTime);
+            if (elapsedInterval < requiredInterval)
+            {
+                return false;
+            }
+
+            // Avoid trying to adjust the thread count goal if there are already more threads than the thread count goal.
+            // In that situation, hill climbing must have previously decided to decrease the thread count goal, so let's
+            // wait until the system responds to that change before calling into hill climbing again. This condition should
+            // be the opposite of the condition in WorkerThread.ShouldStopProcessingWorkNow that causes
+            // threads processing work to stop in response to a decreased thread count goal. The logic here is a bit
+            // different from the original CoreCLR code from which this implementation was ported because in this
+            // implementation there are no retired threads, so only the count of threads processing work is considered.
+            ThreadCounts counts = _separated.counts;
+            if (counts.NumProcessingWork > counts.NumThreadsGoal)
+            {
+                return false;
+            }
+
+            // Skip hill climbing when there is a pending blocking adjustment. Hill climbing may otherwise bypass the
+            // blocking adjustment heuristics and increase the thread count too quickly.
+            return _pendingBlockingAdjustment == PendingBlockingAdjustment.None;
         }
 
         internal void RequestWorker()
@@ -353,6 +445,17 @@ namespace System.Threading
             Interlocked.Increment(ref _separated.numRequestedWorkers);
             WorkerThread.MaybeAddWorkingWorker(this);
             GateThread.EnsureRunning(this);
+        }
+
+        private bool OnGen2GCCallback()
+        {
+            // Gen 2 GCs may be very infrequent in some cases. If it becomes an issue, consider updating the memory usage more
+            // frequently. The memory usage is only used for fallback purposes in blocking adjustment, so an artificially higher
+            // memory usage may cause blocking adjustment to fall back to slower adjustments sooner than necessary.
+            GCMemoryInfo gcMemoryInfo = GC.GetGCMemoryInfo();
+            _memoryLimitBytes = gcMemoryInfo.HighMemoryLoadThresholdBytes;
+            _memoryUsageBytes = Math.Min(gcMemoryInfo.MemoryLoadBytes, gcMemoryInfo.HighMemoryLoadThresholdBytes);
+            return true; // continue receiving gen 2 GC callbacks
         }
     }
 }

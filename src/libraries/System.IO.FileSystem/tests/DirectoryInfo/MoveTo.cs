@@ -24,7 +24,6 @@ namespace System.IO.Tests
         #region UniversalTests
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40536", TestPlatforms.Browser)]
         public void DirectoryPathUpdatesOnMove()
         {
             //NOTE: MoveTo adds a trailing separator character to the FullName of a DirectoryInfo

@@ -102,6 +102,12 @@ internal class IOServices
 
     public static string GetPath(string rootPath, int characterCount)
     {
+        if (rootPath.Length > characterCount)
+        {
+            // don't return immediately as the path might be ending with directory separator now
+            rootPath = rootPath.Substring(0, characterCount);
+        }
+
         rootPath = rootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
         StringBuilder path = new StringBuilder(characterCount);
@@ -109,7 +115,7 @@ internal class IOServices
 
         while (path.Length < characterCount)
         {
-            // Add directory seperator after each dir but not at the end of the path
+            // Add directory separator after each dir but not at the end of the path
             path.Append(Path.DirectorySeparatorChar);
 
             // Continue adding unique path segments until the character count is hit
@@ -137,7 +143,7 @@ internal class IOServices
             }
         }
 
-        Assert.Equal(path.Length, characterCount);
+        Assert.Equal(characterCount, path.Length);
 
         return path.ToString();
     }
@@ -244,7 +250,7 @@ internal class IOServices
         long userBytes;
         if (!DllImports.GetDiskFreeSpaceEx(drive, out userBytes, out ignored, out ignored))
         {
-            throw new IOException("DriveName: " + drive + " ErrorCode:" + Marshal.GetLastWin32Error());
+            throw new IOException("DriveName: " + drive + " ErrorCode:" + Marshal.GetLastPInvokeError());
         }
 
         return userBytes;
@@ -257,7 +263,7 @@ internal class IOServices
         long ignored;
         if (!DllImports.GetDiskFreeSpaceEx(drive, out ignored, out ignored, out ignored))
         {
-            return Marshal.GetLastWin32Error() != ERROR_NOT_READY;
+            return Marshal.GetLastPInvokeError() != ERROR_NOT_READY;
         }
 
         return true;

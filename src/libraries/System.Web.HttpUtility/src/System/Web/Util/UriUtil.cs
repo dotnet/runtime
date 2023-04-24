@@ -7,15 +7,13 @@ namespace System.Web.Util
 {
     internal static class UriUtil
     {
-        private static readonly char[] s_queryFragmentSeparators = { '?', '#' };
-
         // Just extracts the query string and fragment from the input path by splitting on the separator characters.
         // Doesn't perform any validation as to whether the input represents a valid URL.
         // Concatenating the pieces back together will form the original input string.
         private static void ExtractQueryAndFragment(string input, out string path, out string? queryAndFragment)
         {
-            int queryFragmentSeparatorPos = input.IndexOfAny(s_queryFragmentSeparators);
-            if (queryFragmentSeparatorPos != -1)
+            int queryFragmentSeparatorPos = input.AsSpan().IndexOfAny('?', '#'); // query fragment separators
+            if (queryFragmentSeparatorPos >= 0)
             {
                 path = input.Substring(0, queryFragmentSeparatorPos);
                 queryAndFragment = input.Substring(queryFragmentSeparatorPos);

@@ -35,9 +35,9 @@ function Find-Os()
     {
         switch -Wildcard ($(uname -s))
         {
-            "Linux*" { return "Linux" }
-            "Darwin*" { return "MacOS" }
-            "*" { return "Unix" }
+            "Linux*" { return "linux" }
+            "Darwin*" { return "osx" }
+            "*" { return "unix" }
         }
     }
 }

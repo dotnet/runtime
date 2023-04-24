@@ -83,10 +83,10 @@ namespace System.Xml
     public enum ValidationType
     {
         None = 0,
-        [System.ObsoleteAttribute("Validation type should be specified as DTD or Schema.")]
+        [System.ObsoleteAttribute("ValidationType.Auto has been deprecated. Use DTD or Schema instead.")]
         Auto = 1,
         DTD = 2,
-        [System.ObsoleteAttribute("XDR Validation through XmlValidatingReader is obsoleted")]
+        [System.ObsoleteAttribute("XDR Validation through XmlValidatingReader has been deprecated and is not supported.")]
         XDR = 3,
         Schema = 4,
     }
@@ -214,14 +214,14 @@ namespace System.Xml
         public static bool ToBoolean(string s) { throw null; }
         public static byte ToByte(string s) { throw null; }
         public static char ToChar(string s) { throw null; }
-        [System.ObsoleteAttribute("Use XmlConvert.ToDateTime() that takes in XmlDateTimeSerializationMode")]
+        [System.ObsoleteAttribute("Use XmlConvert.ToDateTime() that accepts an XmlDateTimeSerializationMode instead.")]
         public static System.DateTime ToDateTime(string s) { throw null; }
-        public static System.DateTime ToDateTime(string s, string format) { throw null; }
-        public static System.DateTime ToDateTime(string s, string[] formats) { throw null; }
+        public static System.DateTime ToDateTime(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")] string format) { throw null; }
+        public static System.DateTime ToDateTime(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")] string[] formats) { throw null; }
         public static System.DateTime ToDateTime(string s, System.Xml.XmlDateTimeSerializationMode dateTimeOption) { throw null; }
         public static System.DateTimeOffset ToDateTimeOffset(string s) { throw null; }
-        public static System.DateTimeOffset ToDateTimeOffset(string s, string format) { throw null; }
-        public static System.DateTimeOffset ToDateTimeOffset(string s, string[] formats) { throw null; }
+        public static System.DateTimeOffset ToDateTimeOffset(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")] string format) { throw null; }
+        public static System.DateTimeOffset ToDateTimeOffset(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")] string[] formats) { throw null; }
         public static decimal ToDecimal(string s) { throw null; }
         public static double ToDouble(string s) { throw null; }
         public static System.Guid ToGuid(string s) { throw null; }
@@ -234,12 +234,12 @@ namespace System.Xml
         public static string ToString(bool value) { throw null; }
         public static string ToString(byte value) { throw null; }
         public static string ToString(char value) { throw null; }
-        [System.ObsoleteAttribute("Use XmlConvert.ToString() that takes in XmlDateTimeSerializationMode")]
+        [System.ObsoleteAttribute("Use XmlConvert.ToString() that accepts an XmlDateTimeSerializationMode instead.")]
         public static string ToString(System.DateTime value) { throw null; }
-        public static string ToString(System.DateTime value, string format) { throw null; }
+        public static string ToString(System.DateTime value, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")] string format) { throw null; }
         public static string ToString(System.DateTime value, System.Xml.XmlDateTimeSerializationMode dateTimeOption) { throw null; }
         public static string ToString(System.DateTimeOffset value) { throw null; }
-        public static string ToString(System.DateTimeOffset value, string format) { throw null; }
+        public static string ToString(System.DateTimeOffset value, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")] string format) { throw null; }
         public static string ToString(decimal value) { throw null; }
         public static string ToString(double value) { throw null; }
         public static string ToString(System.Guid value) { throw null; }
@@ -343,7 +343,7 @@ namespace System.Xml
         public virtual System.Xml.XmlNode CreateNode(string nodeTypeString, string name, string? namespaceURI) { throw null; }
         public virtual System.Xml.XmlNode CreateNode(System.Xml.XmlNodeType type, string name, string? namespaceURI) { throw null; }
         public virtual System.Xml.XmlNode CreateNode(System.Xml.XmlNodeType type, string? prefix, string name, string? namespaceURI) { throw null; }
-        public virtual System.Xml.XmlProcessingInstruction CreateProcessingInstruction(string target, string data) { throw null; }
+        public virtual System.Xml.XmlProcessingInstruction CreateProcessingInstruction(string target, string? data) { throw null; }
         public virtual System.Xml.XmlSignificantWhitespace CreateSignificantWhitespace(string? text) { throw null; }
         public virtual System.Xml.XmlText CreateTextNode(string? text) { throw null; }
         public virtual System.Xml.XmlWhitespace CreateWhitespace(string? text) { throw null; }
@@ -356,7 +356,7 @@ namespace System.Xml
         public virtual void Load(System.IO.TextReader txtReader) { }
         public virtual void Load(string filename) { }
         public virtual void Load(System.Xml.XmlReader reader) { }
-        public virtual void LoadXml(string xml) { }
+        public virtual void LoadXml([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Xml")] string xml) { }
         public virtual System.Xml.XmlNode? ReadNode(System.Xml.XmlReader reader) { throw null; }
         public virtual void Save(System.IO.Stream outStream) { }
         public virtual void Save(System.IO.TextWriter writer) { }
@@ -398,7 +398,7 @@ namespace System.Xml
     }
     public partial class XmlElement : System.Xml.XmlLinkedNode
     {
-        protected internal XmlElement(string prefix, string localName, string? namespaceURI, System.Xml.XmlDocument doc) { }
+        protected internal XmlElement(string? prefix, string localName, string? namespaceURI, System.Xml.XmlDocument doc) { }
         public override System.Xml.XmlAttributeCollection Attributes { get { throw null; } }
         public virtual bool HasAttributes { get { throw null; } }
         public override string InnerText { get { throw null; } set { } }
@@ -471,6 +471,8 @@ namespace System.Xml
     public partial class XmlException : System.SystemException
     {
         public XmlException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected XmlException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public XmlException(string? message) { }
         public XmlException(string? message, System.Exception? innerException) { }
@@ -479,6 +481,8 @@ namespace System.Xml
         public int LinePosition { get { throw null; } }
         public override string Message { get { throw null; } }
         public string? SourceUri { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class XmlImplementation
@@ -511,15 +515,15 @@ namespace System.Xml
         public XmlNamespaceManager(System.Xml.XmlNameTable nameTable) { }
         public virtual string DefaultNamespace { get { throw null; } }
         public virtual System.Xml.XmlNameTable? NameTable { get { throw null; } }
-        public virtual void AddNamespace(string prefix, string uri) { }
+        public virtual void AddNamespace(string prefix, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri) { }
         public virtual System.Collections.IEnumerator GetEnumerator() { throw null; }
         public virtual System.Collections.Generic.IDictionary<string, string> GetNamespacesInScope(System.Xml.XmlNamespaceScope scope) { throw null; }
         public virtual bool HasNamespace(string prefix) { throw null; }
         public virtual string? LookupNamespace(string prefix) { throw null; }
-        public virtual string? LookupPrefix(string uri) { throw null; }
+        public virtual string? LookupPrefix([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri) { throw null; }
         public virtual bool PopScope() { throw null; }
         public virtual void PushScope() { }
-        public virtual void RemoveNamespace(string prefix, string uri) { }
+        public virtual void RemoveNamespace(string prefix, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri) { }
     }
     public enum XmlNamespaceScope
     {
@@ -738,13 +742,15 @@ namespace System.Xml
     }
     public partial class XmlProcessingInstruction : System.Xml.XmlLinkedNode
     {
-        protected internal XmlProcessingInstruction(string target, string data, System.Xml.XmlDocument doc) { }
+        protected internal XmlProcessingInstruction(string target, string? data, System.Xml.XmlDocument doc) { }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Data { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string InnerText { get { throw null; } set { } }
         public override string LocalName { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
-        public string? Target { get { throw null; } }
+        public string Target { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public override string Value { get { throw null; } set { } }
         public override System.Xml.XmlNode CloneNode(bool deep) { throw null; }
@@ -765,7 +771,7 @@ namespace System.Xml
         public static bool operator ==(System.Xml.XmlQualifiedName? a, System.Xml.XmlQualifiedName? b) { throw null; }
         public static bool operator !=(System.Xml.XmlQualifiedName? a, System.Xml.XmlQualifiedName? b) { throw null; }
         public override string ToString() { throw null; }
-        public static string ToString(string name, string ns) { throw null; }
+        public static string ToString(string name, string? ns) { throw null; }
     }
     [System.Diagnostics.DebuggerDisplayAttribute("{debuggerDisplayProxy}")]
     [System.Diagnostics.DebuggerDisplayAttribute("{debuggerDisplayProxy}")]
@@ -934,7 +940,7 @@ namespace System.Xml
         public long MaxCharactersFromEntities { get { throw null; } set { } }
         public long MaxCharactersInDocument { get { throw null; } set { } }
         public System.Xml.XmlNameTable? NameTable { get { throw null; } set { } }
-        [System.ObsoleteAttribute("Use XmlReaderSettings.DtdProcessing property instead.")]
+        [System.ObsoleteAttribute("XmlReaderSettings.ProhibitDtd has been deprecated. Use DtdProcessing instead.")]
         public bool ProhibitDtd { get { throw null; } set { } }
         public System.Xml.Schema.XmlSchemaSet Schemas { get { throw null; } set { } }
         public System.Xml.Schema.XmlSchemaValidationFlags ValidationFlags { get { throw null; } set { } }
@@ -948,11 +954,13 @@ namespace System.Xml
     {
         protected XmlResolver() { }
         public virtual System.Net.ICredentials Credentials { set { } }
+        public static System.Xml.XmlResolver ThrowingResolver { get { throw null; } }
         public abstract object? GetEntity(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn);
         public virtual System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }
         public virtual System.Uri ResolveUri(System.Uri? baseUri, string? relativeUri) { throw null; }
         public virtual bool SupportsType(System.Uri absoluteUri, System.Type? type) { throw null; }
     }
+    [System.ObsoleteAttribute("XmlSecureResolver is obsolete. Use XmlResolver.ThrowingResolver instead when attempting to forbid XML external entity resolution.", DiagnosticId = "SYSLIB0047", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class XmlSecureResolver : System.Xml.XmlResolver
     {
         public XmlSecureResolver(System.Xml.XmlResolver resolver, string? securityUrl) { }
@@ -1003,13 +1011,13 @@ namespace System.Xml
         public XmlTextReader(System.IO.Stream xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext? context) { }
         public XmlTextReader(System.IO.TextReader input) { }
         public XmlTextReader(System.IO.TextReader input, System.Xml.XmlNameTable nt) { }
-        public XmlTextReader(string url) { }
-        public XmlTextReader(string url, System.IO.Stream input) { }
-        public XmlTextReader(string url, System.IO.Stream input, System.Xml.XmlNameTable nt) { }
-        public XmlTextReader(string url, System.IO.TextReader input) { }
-        public XmlTextReader(string url, System.IO.TextReader input, System.Xml.XmlNameTable nt) { }
-        public XmlTextReader(string url, System.Xml.XmlNameTable nt) { }
-        public XmlTextReader(string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext? context) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url, System.IO.Stream input) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url, System.IO.Stream input, System.Xml.XmlNameTable nt) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url, System.IO.TextReader input) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url, System.IO.TextReader input, System.Xml.XmlNameTable nt) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url, System.Xml.XmlNameTable nt) { }
+        public XmlTextReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Xml")] string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext? context) { }
         protected XmlTextReader(System.Xml.XmlNameTable nt) { }
         public override int AttributeCount { get { throw null; } }
         public override string BaseURI { get { throw null; } }
@@ -1034,7 +1042,7 @@ namespace System.Xml
         public override System.Xml.XmlNodeType NodeType { get { throw null; } }
         public bool Normalization { get { throw null; } set { } }
         public override string Prefix { get { throw null; } }
-        [System.ObsoleteAttribute("Use DtdProcessing property instead.")]
+        [System.ObsoleteAttribute("XmlTextReader.ProhibitDtd has been deprecated. Use DtdProcessing instead.")]
         public bool ProhibitDtd { get { throw null; } set { } }
         public override char QuoteChar { get { throw null; } }
         public override System.Xml.ReadState ReadState { get { throw null; } }
@@ -1146,11 +1154,11 @@ namespace System.Xml
         public override System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string? role, System.Type? ofObjectToReturn) { throw null; }
         public override System.Uri ResolveUri(System.Uri? baseUri, string? relativeUri) { throw null; }
     }
-    [System.ObsoleteAttribute("Use XmlReader created by XmlReader.Create() method using appropriate XmlReaderSettings instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+    [System.ObsoleteAttribute("XmlValidatingReader has been deprecated. Use XmlReader created by XmlReader.Create() method using appropriate XmlReaderSettings instead.")]
     public partial class XmlValidatingReader : System.Xml.XmlReader, System.Xml.IXmlLineInfo, System.Xml.IXmlNamespaceResolver
     {
         public XmlValidatingReader(System.IO.Stream xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
-        public XmlValidatingReader(string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
+        public XmlValidatingReader([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Xml")] string xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
         public XmlValidatingReader(System.Xml.XmlReader reader) { }
         public override int AttributeCount { get { throw null; } }
         public override string BaseURI { get { throw null; } }
@@ -1472,9 +1480,9 @@ namespace System.Xml.Schema
         public System.Xml.XmlAttribute[]? UnhandledAttributes { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("version", DataType="token")]
         public string? Version { get { throw null; } set { } }
-        [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("XmlSchema.Compile has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation.")]
         public void Compile(System.Xml.Schema.ValidationEventHandler? validationEventHandler) { }
-        [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("XmlSchema.Compile has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation.")]
         public void Compile(System.Xml.Schema.ValidationEventHandler? validationEventHandler, System.Xml.XmlResolver? resolver) { }
         public static System.Xml.Schema.XmlSchema? Read(System.IO.Stream stream, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
         public static System.Xml.Schema.XmlSchema? Read(System.IO.TextReader reader, System.Xml.Schema.ValidationEventHandler? validationEventHandler) { throw null; }
@@ -1551,7 +1559,7 @@ namespace System.Xml.Schema
         public XmlSchemaAttribute() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public System.Xml.Schema.XmlSchemaSimpleType? AttributeSchemaType { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated. Please use AttributeSchemaType property that returns a strongly typed attribute type. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("XmlSchemaAttribute.AttributeType has been deprecated. Use the AttributeSchemaType property that returns a strongly typed attribute type instead.")]
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public object? AttributeType { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(null)]
@@ -1609,7 +1617,7 @@ namespace System.Xml.Schema
         [System.Xml.Serialization.XmlElementAttribute("sequence", typeof(System.Xml.Schema.XmlSchemaSequence))]
         public override System.Xml.Schema.XmlSchemaObjectCollection Items { get { throw null; } }
     }
-    [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
+    [System.ObsoleteAttribute("XmlSchemaCollection has been deprecated. Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation instead.")]
     public sealed partial class XmlSchemaCollection : System.Collections.ICollection, System.Collections.IEnumerable
     {
         public XmlSchemaCollection() { }
@@ -1621,7 +1629,7 @@ namespace System.Xml.Schema
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         public event System.Xml.Schema.ValidationEventHandler ValidationEventHandler { add { } remove { } }
-        public System.Xml.Schema.XmlSchema? Add(string? ns, string uri) { throw null; }
+        public System.Xml.Schema.XmlSchema? Add(string? ns, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri) { throw null; }
         public System.Xml.Schema.XmlSchema? Add(string? ns, System.Xml.XmlReader reader) { throw null; }
         public System.Xml.Schema.XmlSchema? Add(string? ns, System.Xml.XmlReader reader, System.Xml.XmlResolver? resolver) { throw null; }
         public System.Xml.Schema.XmlSchema? Add(System.Xml.Schema.XmlSchema schema) { throw null; }
@@ -1820,7 +1828,7 @@ namespace System.Xml.Schema
         public string? DefaultValue { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public System.Xml.Schema.XmlSchemaType? ElementSchemaType { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated. Please use ElementSchemaType property that returns a strongly typed element type. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("XmlSchemaElement.ElementType has been deprecated. Use the ElementSchemaType property that returns a strongly typed element type instead.")]
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public object? ElementType { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(System.Xml.Schema.XmlSchemaDerivationMethod.None)]
@@ -1865,6 +1873,8 @@ namespace System.Xml.Schema
     public partial class XmlSchemaException : System.SystemException
     {
         public XmlSchemaException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected XmlSchemaException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public XmlSchemaException(string? message) { }
         public XmlSchemaException(string? message, System.Exception? innerException) { }
@@ -1874,6 +1884,8 @@ namespace System.Xml.Schema
         public override string Message { get { throw null; } }
         public System.Xml.Schema.XmlSchemaObject? SourceSchemaObject { get { throw null; } }
         public string? SourceUri { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public abstract partial class XmlSchemaExternal : System.Xml.Schema.XmlSchemaObject
@@ -1978,10 +1990,14 @@ namespace System.Xml.Schema
     public partial class XmlSchemaInferenceException : System.Xml.Schema.XmlSchemaException
     {
         public XmlSchemaInferenceException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected XmlSchemaInferenceException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public XmlSchemaInferenceException(string message) { }
         public XmlSchemaInferenceException(string message, System.Exception? innerException) { }
         public XmlSchemaInferenceException(string message, System.Exception? innerException, int lineNumber, int linePosition) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class XmlSchemaInfo : System.Xml.Schema.IXmlSchemaInfo
@@ -2272,7 +2288,7 @@ namespace System.Xml.Schema
     public partial class XmlSchemaType : System.Xml.Schema.XmlSchemaAnnotated
     {
         public XmlSchemaType() { }
-        [System.ObsoleteAttribute("This property has been deprecated. Please use BaseXmlSchemaType property that returns a strongly typed base schema type. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("XmlSchemaType.BaseSchemaType has been deprecated. Use the BaseXmlSchemaType property that returns a strongly typed base schema type instead.")]
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public object? BaseSchemaType { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
@@ -2318,11 +2334,15 @@ namespace System.Xml.Schema
     public partial class XmlSchemaValidationException : System.Xml.Schema.XmlSchemaException
     {
         public XmlSchemaValidationException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected XmlSchemaValidationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public XmlSchemaValidationException(string? message) { }
         public XmlSchemaValidationException(string? message, System.Exception? innerException) { }
         public XmlSchemaValidationException(string? message, System.Exception? innerException, int lineNumber, int linePosition) { }
         public object? SourceObject { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected internal void SetSourceObject(object? sourceObject) { }
     }
@@ -2649,12 +2669,12 @@ namespace System.Xml.XPath
         public virtual void AppendChild(string newChild) { }
         public virtual void AppendChild(System.Xml.XmlReader newChild) { }
         public virtual void AppendChild(System.Xml.XPath.XPathNavigator newChild) { }
-        public virtual void AppendChildElement(string prefix, string localName, string namespaceURI, string value) { }
+        public virtual void AppendChildElement(string? prefix, string localName, string? namespaceURI, string? value) { }
         public virtual bool CheckValidity(System.Xml.Schema.XmlSchemaSet schemas, System.Xml.Schema.ValidationEventHandler validationEventHandler) { throw null; }
         public abstract System.Xml.XPath.XPathNavigator Clone();
         public virtual System.Xml.XmlNodeOrder ComparePosition(System.Xml.XPath.XPathNavigator? nav) { throw null; }
         public virtual System.Xml.XPath.XPathExpression Compile(string xpath) { throw null; }
-        public virtual void CreateAttribute(string prefix, string localName, string namespaceURI, string value) { }
+        public virtual void CreateAttribute(string? prefix, string localName, string? namespaceURI, string? value) { }
         public virtual System.Xml.XmlWriter CreateAttributes() { throw null; }
         public virtual System.Xml.XPath.XPathNavigator CreateNavigator() { throw null; }
         public virtual void DeleteRange(System.Xml.XPath.XPathNavigator lastSiblingToDelete) { }
@@ -2674,8 +2694,8 @@ namespace System.Xml.XPath
         public virtual void InsertBefore(string newSibling) { }
         public virtual void InsertBefore(System.Xml.XmlReader newSibling) { }
         public virtual void InsertBefore(System.Xml.XPath.XPathNavigator newSibling) { }
-        public virtual void InsertElementAfter(string prefix, string localName, string namespaceURI, string value) { }
-        public virtual void InsertElementBefore(string prefix, string localName, string namespaceURI, string value) { }
+        public virtual void InsertElementAfter(string? prefix, string localName, string? namespaceURI, string? value) { }
+        public virtual void InsertElementBefore(string? prefix, string localName, string? namespaceURI, string? value) { }
         public virtual bool IsDescendant([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Xml.XPath.XPathNavigator? nav) { throw null; }
         public abstract bool IsSamePosition(System.Xml.XPath.XPathNavigator other);
         public virtual string? LookupNamespace(string prefix) { throw null; }
@@ -2710,7 +2730,7 @@ namespace System.Xml.XPath
         public virtual void PrependChild(string newChild) { }
         public virtual void PrependChild(System.Xml.XmlReader newChild) { }
         public virtual void PrependChild(System.Xml.XPath.XPathNavigator newChild) { }
-        public virtual void PrependChildElement(string prefix, string localName, string namespaceURI, string value) { }
+        public virtual void PrependChildElement(string? prefix, string localName, string? namespaceURI, string? value) { }
         public virtual System.Xml.XmlReader ReadSubtree() { throw null; }
         public virtual System.Xml.XmlWriter ReplaceRange(System.Xml.XPath.XPathNavigator lastSiblingToReplace) { throw null; }
         public virtual void ReplaceSelf(string newNode) { }
@@ -2788,6 +2808,7 @@ namespace System.Xml.Xsl
         System.Xml.XPath.XPathResultType VariableType { get; }
         object Evaluate(System.Xml.Xsl.XsltContext xsltContext);
     }
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XslCompiledTransform requires dynamic code because it generates IL at runtime.")]
     public sealed partial class XslCompiledTransform
     {
         public XslCompiledTransform() { }
@@ -2837,9 +2858,13 @@ namespace System.Xml.Xsl
     {
         public XsltCompileException() { }
         public XsltCompileException(System.Exception inner, string sourceUri, int lineNumber, int linePosition) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected XsltCompileException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public XsltCompileException(string message) { }
         public XsltCompileException(string message, System.Exception innerException) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public abstract partial class XsltContext : System.Xml.XmlNamespaceManager
@@ -2855,6 +2880,8 @@ namespace System.Xml.Xsl
     public partial class XsltException : System.SystemException
     {
         public XsltException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected XsltException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public XsltException(string message) { }
         public XsltException(string message, System.Exception? innerException) { }
@@ -2862,6 +2889,8 @@ namespace System.Xml.Xsl
         public virtual int LinePosition { get { throw null; } }
         public override string Message { get { throw null; } }
         public virtual string? SourceUri { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public abstract partial class XsltMessageEncounteredEventArgs : System.EventArgs
@@ -2874,8 +2903,8 @@ namespace System.Xml.Xsl
     {
         public XslTransform() { }
         public System.Xml.XmlResolver? XmlResolver { set { } }
-        public void Load(string url) { }
-        public void Load(string url, System.Xml.XmlResolver? resolver) { }
+        public void Load([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url) { }
+        public void Load([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string url, System.Xml.XmlResolver? resolver) { }
         public void Load(System.Xml.XmlReader stylesheet) { }
         public void Load(System.Xml.XmlReader stylesheet, System.Xml.XmlResolver? resolver) { }
         public void Load(System.Xml.XPath.IXPathNavigable stylesheet) { }

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
@@ -11,6 +10,6 @@
     <Compile Include="throwisfirstinstruction.il" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Common\common.csproj" />
+    <ProjectReference Include="..\..\..\common\eh_common.csproj" />
   </ItemGroup>
 </Project>

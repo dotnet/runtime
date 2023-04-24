@@ -23,13 +23,14 @@ nativeStringResourceTable_mscorrc
 #PAL_CatchHardwareExceptionHolderEnter
 #PAL_CatchHardwareExceptionHolderExit
 #PAL_bsearch
+#PAL_CopyModuleData
 #PAL_errno
 #PAL_fflush
 #PAL__flushall
 #PAL_free
-#PAL_fwprintf
 #PAL_GetLogicalCpuCountFromOS
-#PAL_GetNumaProcessorNode
+#PAL_GetTotalCpuCount
+#PAL_GetUnwindInfoSize
 #PAL_get_stdout
 #PAL_get_stderr
 #PAL_GetApplicationGroupId
@@ -48,10 +49,8 @@ nativeStringResourceTable_mscorrc
 #PAL_ReadProcessMemory
 #PAL_ProbeMemory
 #PAL_Random
-#PAL_memcpy
 #PAL_malloc
 #PAL_realloc
-#PAL_printf
 #PAL_qsort
 #PAL_fprintf
 #PAL__wcstoui64
@@ -63,7 +62,6 @@ nativeStringResourceTable_mscorrc
 #PAL_wcsrchr
 #PAL_wcscmp
 #PAL_wcschr
-#PAL_wcscspn
 #PAL_wcscat
 #PAL_wcsstr
 #PAL__open
@@ -73,12 +71,9 @@ nativeStringResourceTable_mscorrc
 #_wcsicmp
 #_stricmp
 #sprintf_s
-#swprintf_s
 #vsprintf_s
 #_snprintf_s
-#_snwprintf_s
 #_vsnprintf_s
-#_vsnwprintf_s
 #_itow_s
 #_i64tow_s
 #memcpy_s
@@ -98,7 +93,6 @@ nativeStringResourceTable_mscorrc
 #CloseHandle
 #DebugBreak
 #DeleteCriticalSection
-#DeleteFileW
 #DuplicateHandle
 #EnterCriticalSection
 #FindClose
@@ -111,7 +105,6 @@ nativeStringResourceTable_mscorrc
 #FreeLibrary
 #FileTimeToSystemTime
 #GetACP
-#GetCurrentDirectoryW
 #GetCurrentProcess
 #GetCurrentProcessId
 #GetCurrentThreadId
@@ -124,7 +117,6 @@ nativeStringResourceTable_mscorrc
 #GetFullPathNameW
 #GetLastError
 #GetModuleFileNameW
-#GetNumaHighestNodeNumber
 #GetProcAddress
 #GetStdHandle
 #GetSystemInfo
@@ -138,10 +130,8 @@ nativeStringResourceTable_mscorrc
 #LoadLibraryA
 #LoadLibraryW
 #LoadLibraryExW
-#LocalAlloc
-#LocalFree
 #MapViewOfFile
-#MoveFileExW
+#MapViewOfFileEx
 #MultiByteToWideChar
 #OpenProcess
 #OutputDebugStringW
@@ -165,11 +155,8 @@ nativeStringResourceTable_mscorrc
 #Sleep
 #SleepEx
 #SwitchToThread
-#SysAllocStringLen
-#SysFreeString
 #TerminateProcess
 #VirtualAlloc
-#VirtualAllocExNuma
 #VirtualFree
 #VirtualProtect
 #VirtualQuery

@@ -40,7 +40,7 @@ namespace System.Reflection.Emit
         private int m_length;
         private byte[] m_ILStream;
 
-        private int[]? m_labelList;
+        private __LabelInfo[]? m_labelList;
         private int m_labelCount;
 
         private __FixupData[]? m_fixupData;
@@ -56,16 +56,18 @@ namespace System.Reflection.Emit
         private __ExceptionInfo[]? m_currExcStack;         // This is the stack of exceptions which we're currently in.
 
         internal ScopeTree m_ScopeTree;            // this variable tracks all debugging scope information
-        internal LineNumberInfo m_LineNumberInfo;       // this variable tracks all line number information
 
         internal MethodInfo m_methodBuilder;
         internal int m_localCount;
         internal SignatureHelper m_localSignature;
 
-        private int m_maxStackSize;     // Maximum stack size not counting the exceptions.
+        private int m_curDepth; // Current stack depth, with -1 meaning unknown.
+        private int m_targetDepth; // Stack depth at a target of the previous instruction (when it is branching).
+        private int m_maxDepth; // Running max of the stack depth.
 
-        private int m_maxMidStack;      // Maximum stack size for a given basic block.
-        private int m_maxMidStackCur;   // Running count of the maximum stack size for the current basic block.
+        // Adjustment to add to m_maxDepth for incorrect/invalid IL. For example, when branch instructions
+        // with different stack depths target the same label.
+        private long m_depthAdjustment;
 
         internal int CurrExcStackCount => m_currExcStackCount;
 
@@ -89,11 +91,10 @@ namespace System.Reflection.Emit
 
             // initialize the scope tree
             m_ScopeTree = new ScopeTree();
-            m_LineNumberInfo = new LineNumberInfo();
             m_methodBuilder = methodBuilder;
 
             // initialize local signature
-            MethodBuilder? mb = m_methodBuilder as MethodBuilder;
+            RuntimeMethodBuilder? mb = m_methodBuilder as RuntimeMethodBuilder;
             m_localSignature = SignatureHelper.GetLocalVarSigHelper(mb?.GetTypeBuilder().Module);
         }
 
@@ -103,9 +104,13 @@ namespace System.Reflection.Emit
         internal virtual void RecordTokenFixup()
         {
             if (m_RelocFixupList == null)
+            {
                 m_RelocFixupList = new int[DefaultFixupArraySize];
+            }
             else if (m_RelocFixupList.Length <= m_RelocFixupCount)
+            {
                 m_RelocFixupList = EnlargeArray(m_RelocFixupList);
+            }
 
             m_RelocFixupList[m_RelocFixupCount++] = m_length;
         }
@@ -133,33 +138,37 @@ namespace System.Reflection.Emit
             // requirements for the function.  stackchange specifies the amount
             // by which the stacksize needs to be updated.
 
-            // Special case for the Return.  Returns pops 1 if there is a
-            // non-void return value.
-
-            // Update the running stacksize.  m_maxMidStack specifies the maximum
-            // amount of stack required for the current basic block irrespective of
-            // where you enter the block.
-            m_maxMidStackCur += stackchange;
-            if (m_maxMidStackCur > m_maxMidStack)
-                m_maxMidStack = m_maxMidStackCur;
-            else if (m_maxMidStackCur < 0)
-                m_maxMidStackCur = 0;
-
-            // If the current instruction signifies end of a basic, which basically
-            // means an unconditional branch, add m_maxMidStack to m_maxStackSize.
-            // m_maxStackSize will eventually be the sum of the stack requirements for
-            // each basic block.
-            if (opcode.EndsUncondJmpBlk())
+            if (m_curDepth < 0)
             {
-                m_maxStackSize += m_maxMidStack;
-                m_maxMidStack = 0;
-                m_maxMidStackCur = 0;
+                // Current depth is "unknown". We get here when:
+                // * this is unreachable code.
+                // * the client uses explicit numeric offsets rather than Labels.
+                m_curDepth = 0;
             }
+
+            m_curDepth += stackchange;
+            if (m_curDepth < 0)
+            {
+                // Stack underflow. Assume our previous depth computation was flawed.
+                m_depthAdjustment -= m_curDepth;
+                m_curDepth = 0;
+            }
+            else if (m_maxDepth < m_curDepth)
+                m_maxDepth = m_curDepth;
+            Debug.Assert(m_depthAdjustment >= 0);
+            Debug.Assert(m_curDepth >= 0);
+
+            // Record the stack depth at a "target" of this instruction.
+            m_targetDepth = m_curDepth;
+
+            // If the current instruction can't fall through, set the depth to unknown.
+            if (opcode.EndsUncondJmpBlk())
+                m_curDepth = -1;
         }
 
         private int GetMethodToken(MethodBase method, Type[]? optionalParameterTypes, bool useMethodDef)
         {
-            return ((ModuleBuilder)m_methodBuilder.Module).GetMethodTokenInternal(method, optionalParameterTypes, useMethodDef);
+            return ((RuntimeModuleBuilder)m_methodBuilder.Module).GetMethodTokenInternal(method, optionalParameterTypes, useMethodDef);
         }
 
         internal SignatureHelper GetMemberRefSignature(
@@ -179,7 +188,7 @@ namespace System.Reflection.Emit
         private SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
             Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, Type[]? optionalParameterTypes, int cGenericParameters)
         {
-            return ((ModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, cGenericParameters);
+            return ((RuntimeModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, cGenericParameters);
         }
 
         internal byte[]? BakeByteArray()
@@ -282,10 +291,11 @@ namespace System.Reflection.Emit
             if (index < 0 || index >= m_labelCount || m_labelList is null)
                 throw new ArgumentException(SR.Argument_BadLabel);
 
-            if (m_labelList[index] < 0)
+            int pos = m_labelList[index].m_pos;
+            if (pos < 0)
                 throw new ArgumentException(SR.Argument_BadLabelContent);
 
-            return m_labelList[index];
+            return pos;
         }
 
         private void AddFixup(Label lbl, int pos, int instSize)
@@ -308,11 +318,30 @@ namespace System.Reflection.Emit
                 m_fixupLabel = lbl,
                 m_fixupInstSize = instSize
             };
+
+            int labelIndex = lbl.GetLabelValue();
+            if (labelIndex < 0 || labelIndex >= m_labelCount || m_labelList is null)
+                throw new ArgumentException(SR.Argument_BadLabel);
+
+            int depth = m_labelList[labelIndex].m_depth;
+            int targetDepth = m_targetDepth;
+            Debug.Assert(depth >= -1);
+            Debug.Assert(targetDepth >= -1);
+            if (depth < targetDepth)
+            {
+                // Either unknown depth for this label or this branch location has a larger depth than previously recorded.
+                // In the latter case, the IL is (likely) invalid, but we just compensate for it.
+                if (depth >= 0)
+                    m_depthAdjustment += targetDepth - depth;
+                m_labelList[labelIndex].m_depth = targetDepth;
+            }
         }
 
         internal int GetMaxStackSize()
         {
-            return m_maxStackSize;
+            // Limit the computed max stack to 2^16 - 1, since the value is mod`ed by 2^16 by other code.
+            Debug.Assert(m_depthAdjustment >= 0);
+            return (int)Math.Min(ushort.MaxValue, m_maxDepth + m_depthAdjustment);
         }
 
         private static void SortExceptions(__ExceptionInfo[] exceptions)
@@ -478,8 +507,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, MethodInfo meth)
         {
-            if (meth == null)
-                throw new ArgumentNullException(nameof(meth));
+            ArgumentNullException.ThrowIfNull(meth);
 
             if (opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj))
             {
@@ -542,7 +570,7 @@ namespace System.Reflection.Emit
             UpdateStackSize(OpCodes.Calli, stackchange);
 
             RecordTokenFixup();
-            PutInteger4(modBuilder.GetSignatureToken(sig));
+            PutInteger4(modBuilder.GetSignatureMetadataToken(sig));
         }
 
         public virtual void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
@@ -585,13 +613,12 @@ namespace System.Reflection.Emit
             EnsureCapacity(7);
             Emit(OpCodes.Calli);
             RecordTokenFixup();
-            PutInteger4(modBuilder.GetSignatureToken(sig));
+            PutInteger4(modBuilder.GetSignatureMetadataToken(sig));
         }
 
         public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
-            if (methodInfo == null)
-                throw new ArgumentNullException(nameof(methodInfo));
+            ArgumentNullException.ThrowIfNull(methodInfo);
 
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
                 throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
@@ -625,12 +652,11 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, SignatureHelper signature)
         {
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
+            ArgumentNullException.ThrowIfNull(signature);
 
             int stackchange = 0;
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            int sig = modBuilder.GetSignatureToken(signature);
+            int sig = modBuilder.GetSignatureMetadataToken(signature);
 
             int tempVal = sig;
 
@@ -659,8 +685,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, ConstructorInfo con)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
+            ArgumentNullException.ThrowIfNull(con);
 
             int stackchange = 0;
 
@@ -704,19 +729,9 @@ namespace System.Reflection.Emit
             // by cls.  The location of cls is recorded so that the token can be
             // patched if necessary when persisting the module to a PE.
 
-            int tempVal;
-            ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            if (opcode == OpCodes.Ldtoken && cls != null && cls.IsGenericTypeDefinition)
-            {
-                // This gets the token for the generic type definition if cls is one.
-                tempVal = modBuilder.GetTypeToken(cls);
-            }
-            else
-            {
-                // This gets the token for the generic type instantiated on the formal parameters
-                // if cls is a generic type definition.
-                tempVal = modBuilder.GetTypeTokenInternal(cls!);
-            }
+            RuntimeModuleBuilder modBuilder = (RuntimeModuleBuilder)m_methodBuilder.Module;
+            bool getGenericDefinition = (opcode == OpCodes.Ldtoken && cls != null && cls.IsGenericTypeDefinition);
+            int tempVal = modBuilder.GetTypeTokenInternal(cls!, getGenericDefinition);
 
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -776,13 +791,12 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, Label[] labels)
         {
-            if (labels == null)
-                throw new ArgumentNullException(nameof(labels));
+            ArgumentNullException.ThrowIfNull(labels);
 
             // Emitting a switch table
 
             int i;
-            int remaining;                  // number of bytes remaining for this switch instruction to be substracted
+            int remaining;                  // number of bytes remaining for this switch instruction to be subtracted
             // for computing the offset
 
             int count = labels.Length;
@@ -800,7 +814,7 @@ namespace System.Reflection.Emit
         public virtual void Emit(OpCode opcode, FieldInfo field)
         {
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            int tempVal = modBuilder.GetFieldToken(field);
+            int tempVal = modBuilder.GetFieldMetadataToken(field);
             EnsureCapacity(7);
             InternalEmit(opcode);
             RecordTokenFixup();
@@ -814,7 +828,7 @@ namespace System.Reflection.Emit
             // fixups if the module is persisted to a PE.
 
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            int tempVal = modBuilder.GetStringConstant(str);
+            int tempVal = modBuilder.GetStringMetadataToken(str);
             EnsureCapacity(7);
             InternalEmit(opcode);
             PutInteger4(tempVal);
@@ -822,12 +836,9 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, LocalBuilder local)
         {
-            // Puts the opcode onto the IL stream followed by the information for local variable local.
+            ArgumentNullException.ThrowIfNull(local);
 
-            if (local == null)
-            {
-                throw new ArgumentNullException(nameof(local));
-            }
+            // Puts the opcode onto the IL stream followed by the information for local variable local.
             int tempVal = local.GetLocalIndex();
             if (local.GetMethodBuilder() != m_methodBuilder)
             {
@@ -936,7 +947,7 @@ namespace System.Reflection.Emit
                 m_currExcStack = EnlargeArray(m_currExcStack);
             }
 
-            Label endLabel = DefineLabel();
+            Label endLabel = DefineLabel(0);
             __ExceptionInfo exceptionInfo = new __ExceptionInfo(m_length, endLabel);
 
             // add the exception to the tracking list
@@ -944,6 +955,10 @@ namespace System.Reflection.Emit
 
             // Make this exception the current active exception
             m_currExcStack[m_currExcStackCount++] = exceptionInfo;
+
+            // Stack depth for "try" starts at zero.
+            m_curDepth = 0;
+
             return endLabel;
         }
 
@@ -979,7 +994,7 @@ namespace System.Reflection.Emit
             // Check if we've already set this label.
             // The only reason why we might have set this is if we have a finally block.
 
-            Label label = m_labelList![endLabel.GetLabelValue()] != -1
+            Label label = m_labelList![endLabel.GetLabelValue()].m_pos != -1
                 ? current.m_finallyEndLabel
                 : endLabel;
 
@@ -1000,9 +1015,12 @@ namespace System.Reflection.Emit
             Emit(OpCodes.Leave, current.GetEndLabel());
 
             current.MarkFilterAddr(m_length);
+
+            // Stack depth for "filter" starts at one.
+            m_curDepth = 1;
         }
 
-        public virtual void BeginCatchBlock(Type exceptionType)
+        public virtual void BeginCatchBlock(Type? exceptionType)
         {
             // Begins a catch block.  Emits a branch instruction to the end of the current exception block.
 
@@ -1024,15 +1042,15 @@ namespace System.Reflection.Emit
             else
             {
                 // execute this branch if previous clause is Catch or Fault
-                if (exceptionType == null)
-                {
-                    throw new ArgumentNullException(nameof(exceptionType));
-                }
+                ArgumentNullException.ThrowIfNull(exceptionType);
 
                 Emit(OpCodes.Leave, current.GetEndLabel());
             }
 
             current.MarkCatchAddr(m_length, exceptionType);
+
+            // Stack depth for "catch" starts at one.
+            m_curDepth = 1;
         }
 
         public virtual void BeginFaultBlock()
@@ -1047,6 +1065,9 @@ namespace System.Reflection.Emit
             Emit(OpCodes.Leave, current.GetEndLabel());
 
             current.MarkFaultAddr(m_length);
+
+            // Stack depth for "fault" starts at zero.
+            m_curDepth = 0;
         }
 
         public virtual void BeginFinallyBlock()
@@ -1061,14 +1082,14 @@ namespace System.Reflection.Emit
             int catchEndAddr = 0;
             if (state != __ExceptionInfo.State_Try)
             {
-                // generate leave for any preceeding catch clause
+                // generate leave for any preceding catch clause
                 Emit(OpCodes.Leave, endLabel);
                 catchEndAddr = m_length;
             }
 
             MarkLabel(endLabel);
 
-            Label finallyEndLabel = DefineLabel();
+            Label finallyEndLabel = DefineLabel(0);
             current.SetFinallyEndLabel(finallyEndLabel);
 
             // generate leave for try clause
@@ -1076,6 +1097,9 @@ namespace System.Reflection.Emit
             if (catchEndAddr == 0)
                 catchEndAddr = m_length;
             current.MarkFinallyAddr(m_length, catchEndAddr);
+
+            // Stack depth for "finally" starts at zero.
+            m_curDepth = 0;
         }
 
         #endregion
@@ -1083,18 +1107,26 @@ namespace System.Reflection.Emit
         #region Labels
         public virtual Label DefineLabel()
         {
+            // We don't know the stack depth at the label yet, so set it to -1.
+            return DefineLabel(-1);
+        }
+
+        private Label DefineLabel(int depth)
+        {
             // Declares a new Label.  This is just a token and does not yet represent any particular location
             // within the stream.  In order to set the position of the label within the stream, you must call
             // Mark Label.
+            Debug.Assert(depth >= -1);
 
-            // Delay init the lable array in case we dont use it
-            m_labelList ??= new int[DefaultLabelArraySize];
+            // Delay init the label array in case we dont use it
+            m_labelList ??= new __LabelInfo[DefaultLabelArraySize];
 
             if (m_labelCount >= m_labelList.Length)
             {
                 m_labelList = EnlargeArray(m_labelList);
             }
-            m_labelList[m_labelCount] = -1;
+            m_labelList[m_labelCount].m_pos = -1;
+            m_labelList[m_labelCount].m_depth = depth;
             return new Label(m_labelCount++);
         }
 
@@ -1111,12 +1143,39 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_InvalidLabel);
             }
 
-            if (m_labelList[labelIndex] != -1)
+            if (m_labelList[labelIndex].m_pos != -1)
             {
                 throw new ArgumentException(SR.Argument_RedefinedLabel);
             }
 
-            m_labelList[labelIndex] = m_length;
+            m_labelList[labelIndex].m_pos = m_length;
+
+            int depth = m_labelList[labelIndex].m_depth;
+            if (depth < 0)
+            {
+                // Unknown depth for this label, indicating that it hasn't been used yet.
+                // If m_curDepth is unknown, we're in the Backward branch constraint case. See ECMA-335 III.1.7.5.
+                // The m_depthAdjustment field will compensate for violations of this constraint, as we
+                // discover them. That is, here we assume a depth of zero. If a (later) branch to this label
+                // has a positive stack depth, we'll record that as the new depth and add the delta into
+                // m_depthAdjustment.
+                if (m_curDepth < 0)
+                    m_curDepth = 0;
+                m_labelList[labelIndex].m_depth = m_curDepth;
+            }
+            else if (depth < m_curDepth)
+            {
+                // A branch location with smaller stack targets this label. In this case, the IL is
+                // invalid, but we just compensate for it.
+                m_depthAdjustment += m_curDepth - depth;
+                m_labelList[labelIndex].m_depth = m_curDepth;
+            }
+            else if (depth > m_curDepth)
+            {
+                // Either the current depth is unknown, or a branch location with larger stack targets
+                // this label, so the IL is invalid. In either case, just adjust the current depth.
+                m_curDepth = depth;
+            }
         }
 
         #endregion
@@ -1126,19 +1185,16 @@ namespace System.Reflection.Emit
         {
             // Emits the il to throw an exception
 
-            if (excType == null)
-            {
-                throw new ArgumentNullException(nameof(excType));
-            }
+            ArgumentNullException.ThrowIfNull(excType);
 
             if (!excType.IsSubclassOf(typeof(Exception)) && excType != typeof(Exception))
             {
-                throw new ArgumentException(SR.Argument_NotExceptionType);
+                throw new ArgumentException(SR.Argument_NotExceptionType, nameof(excType));
             }
             ConstructorInfo? con = excType.GetConstructor(Type.EmptyTypes);
             if (con == null)
             {
-                throw new ArgumentException(SR.Argument_MissingDefaultConstructor);
+                throw new ArgumentException(SR.Arg_NoDefCTorWithoutTypeName, nameof(excType));
             }
             Emit(OpCodes.Newobj, con);
             Emit(OpCodes.Throw);
@@ -1192,15 +1248,12 @@ namespace System.Reflection.Emit
 
         public virtual void EmitWriteLine(FieldInfo fld)
         {
+            ArgumentNullException.ThrowIfNull(fld);
+
             // Emits the IL necessary to call WriteLine with fld.  It is
             // an error to call EmitWriteLine with a fld which is not of
             // one of the types for which Console.WriteLine implements overloads. (e.g.
             // we do *not* call ToString on the fields.
-
-            if (fld == null)
-            {
-                throw new ArgumentNullException(nameof(fld));
-            }
 
             Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
             MethodInfo prop = consoleType.GetMethod("get_Out")!;
@@ -1212,7 +1265,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                Emit(OpCodes.Ldarg, (short)0); // Load the this ref.
+                Emit(OpCodes.Ldarg_0); // Load the this ref.
                 Emit(OpCodes.Ldfld, fld);
             }
             Type[] parameterTypes = new Type[1];
@@ -1244,8 +1297,7 @@ namespace System.Reflection.Emit
             // Declare a local of type "local". The current active lexical scope
             // will be the scope that local will live.
 
-            MethodBuilder? methodBuilder = m_methodBuilder as MethodBuilder;
-            if (methodBuilder == null)
+            if (m_methodBuilder is not RuntimeMethodBuilder methodBuilder)
                 throw new NotSupportedException();
 
             if (methodBuilder.IsTypeCreated())
@@ -1254,10 +1306,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_TypeHasBeenCreated);
             }
 
-            if (localType == null)
-            {
-                throw new ArgumentNullException(nameof(localType));
-            }
+            ArgumentNullException.ThrowIfNull(localType);
 
             if (methodBuilder.m_bIsBaked)
             {
@@ -1275,14 +1324,9 @@ namespace System.Reflection.Emit
             // Specifying the namespace to be used in evaluating locals and watches
             // for the current active lexical scope.
 
-            if (usingNamespace == null)
-                throw new ArgumentNullException(nameof(usingNamespace));
+            ArgumentException.ThrowIfNullOrEmpty(usingNamespace);
 
-            if (usingNamespace.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(usingNamespace));
-
-            MethodBuilder? methodBuilder = m_methodBuilder as MethodBuilder;
-            if (methodBuilder == null)
+            if (m_methodBuilder is not RuntimeMethodBuilder methodBuilder)
                 throw new NotSupportedException();
 
             int index = methodBuilder.GetILGenerator().m_ScopeTree.GetCurrentActiveScopeIndex();
@@ -1294,20 +1338,6 @@ namespace System.Reflection.Emit
             {
                 m_ScopeTree.AddUsingNamespaceToCurrentScope(usingNamespace);
             }
-        }
-
-        public virtual void MarkSequencePoint(
-            ISymbolDocumentWriter document,
-            int startLine,       // line number is 1 based
-            int startColumn,     // column is 0 based
-            int endLine,         // line number is 1 based
-            int endColumn)       // column is 0 based
-        {
-            if (startLine == 0 || startLine < 0 || endLine == 0 || endLine < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startLine));
-            }
-            m_LineNumberInfo.AddLineNumberInfo(document, m_length, startLine, startColumn, endLine, endColumn);
         }
 
         public virtual void BeginScope()
@@ -1325,6 +1355,12 @@ namespace System.Reflection.Emit
         #endregion
 
         #endregion
+    }
+
+    internal struct __LabelInfo
+    {
+        internal int m_pos; // Position in the il stream, with -1 meaning unknown.
+        internal int m_depth; // Stack depth, with -1 meaning unknown.
     }
 
     internal struct __FixupData
@@ -1681,25 +1717,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal void EmitScopeTree(ISymbolWriter symWriter)
-        {
-            for (int i = 0; i < m_iCount; i++)
-            {
-                if (m_ScopeActions[i] == ScopeAction.Open)
-                {
-                    symWriter.OpenScope(m_iOffsets[i]);
-                }
-                else
-                {
-                    symWriter.CloseScope(m_iOffsets[i]);
-                }
-                if (m_localSymInfos[i] is LocalSymInfo lsi)
-                {
-                    lsi.EmitLocalSymInfo(symWriter);
-                }
-            }
-        }
-
         internal int[] m_iOffsets = null!;                 // array of offsets
         internal ScopeAction[] m_ScopeActions = null!;             // array of scope actions
         internal int m_iCount;                   // how many entries in the arrays are occupied
@@ -1707,195 +1724,4 @@ namespace System.Reflection.Emit
         internal const int InitialSize = 16;
         internal LocalSymInfo?[] m_localSymInfos = null!;            // keep track debugging local information
     }
-
-    /// <summary>
-    /// This class tracks the line number info
-    /// </summary>
-    internal sealed class LineNumberInfo
-    {
-        internal LineNumberInfo()
-        {
-            // initialize data variables
-            m_DocumentCount = 0;
-            m_iLastFound = 0;
-        }
-
-        internal void AddLineNumberInfo(
-            ISymbolDocumentWriter document,
-            int iOffset,
-            int iStartLine,
-            int iStartColumn,
-            int iEndLine,
-            int iEndColumn)
-        {
-            // make sure that arrays are large enough to hold addition info
-            int i = FindDocument(document);
-
-            Debug.Assert(i < m_DocumentCount, "Bad document look up!");
-            m_Documents[i].AddLineNumberInfo(document, iOffset, iStartLine, iStartColumn, iEndLine, iEndColumn);
-        }
-
-        // Find a REDocument representing document. If we cannot find one, we will add a new entry into
-        // the REDocument array.
-        private int FindDocument(ISymbolDocumentWriter document)
-        {
-            // This is an optimization. The chance that the previous line is coming from the same
-            // document is very high.
-            if (m_iLastFound < m_DocumentCount && m_Documents[m_iLastFound].m_document == document)
-                return m_iLastFound;
-
-            for (int i = 0; i < m_DocumentCount; i++)
-            {
-                if (m_Documents[i].m_document == document)
-                {
-                    m_iLastFound = i;
-                    return m_iLastFound;
-                }
-            }
-
-            // cannot find an existing document so add one to the array
-            EnsureCapacity();
-            m_iLastFound = m_DocumentCount;
-            m_Documents[m_iLastFound] = new REDocument(document);
-            checked { m_DocumentCount++; }
-            return m_iLastFound;
-        }
-
-        /// <summary>
-        /// Helper to ensure arrays are large enough
-        /// </summary>
-        private void EnsureCapacity()
-        {
-            if (m_DocumentCount == 0)
-            {
-                // First time. Allocate the arrays.
-                m_Documents = new REDocument[InitialSize];
-            }
-            else if (m_DocumentCount == m_Documents.Length)
-            {
-                // the arrays are full. Enlarge the arrays
-                REDocument[] temp = new REDocument[m_DocumentCount * 2];
-                Array.Copy(m_Documents, temp, m_DocumentCount);
-                m_Documents = temp;
-            }
-        }
-
-        internal void EmitLineNumberInfo(ISymbolWriter symWriter)
-        {
-            for (int i = 0; i < m_DocumentCount; i++)
-                m_Documents[i].EmitLineNumberInfo(symWriter);
-        }
-
-        private int m_DocumentCount;         // how many documents that we have right now
-        private REDocument[] m_Documents = null!;             // array of documents
-        private const int InitialSize = 16;
-        private int m_iLastFound;
-    }
-
-    /// <summary>
-    /// This class tracks the line number info
-    /// </summary>
-    internal sealed class REDocument
-    {
-        internal REDocument(ISymbolDocumentWriter document)
-        {
-            // initialize data variables
-            m_iLineNumberCount = 0;
-            m_document = document;
-        }
-
-        internal void AddLineNumberInfo(
-            ISymbolDocumentWriter? document,
-            int iOffset,
-            int iStartLine,
-            int iStartColumn,
-            int iEndLine,
-            int iEndColumn)
-        {
-            Debug.Assert(document == m_document, "Bad document look up!");
-
-            // make sure that arrays are large enough to hold addition info
-            EnsureCapacity();
-
-            m_iOffsets[m_iLineNumberCount] = iOffset;
-            m_iLines[m_iLineNumberCount] = iStartLine;
-            m_iColumns[m_iLineNumberCount] = iStartColumn;
-            m_iEndLines[m_iLineNumberCount] = iEndLine;
-            m_iEndColumns[m_iLineNumberCount] = iEndColumn;
-            checked { m_iLineNumberCount++; }
-        }
-
-        /// <summary>
-        /// Helper to ensure arrays are large enough
-        /// </summary>
-        private void EnsureCapacity()
-        {
-            if (m_iLineNumberCount == 0)
-            {
-                // First time. Allocate the arrays.
-                m_iOffsets = new int[InitialSize];
-                m_iLines = new int[InitialSize];
-                m_iColumns = new int[InitialSize];
-                m_iEndLines = new int[InitialSize];
-                m_iEndColumns = new int[InitialSize];
-            }
-            else if (m_iLineNumberCount == m_iOffsets.Length)
-            {
-                // the arrays are full. Enlarge the arrays
-                // It would probably be simpler to just use Lists here
-                int newSize = checked(m_iLineNumberCount * 2);
-                int[] temp = new int[newSize];
-                Array.Copy(m_iOffsets, temp, m_iLineNumberCount);
-                m_iOffsets = temp;
-
-                temp = new int[newSize];
-                Array.Copy(m_iLines, temp, m_iLineNumberCount);
-                m_iLines = temp;
-
-                temp = new int[newSize];
-                Array.Copy(m_iColumns, temp, m_iLineNumberCount);
-                m_iColumns = temp;
-
-                temp = new int[newSize];
-                Array.Copy(m_iEndLines, temp, m_iLineNumberCount);
-                m_iEndLines = temp;
-
-                temp = new int[newSize];
-                Array.Copy(m_iEndColumns, temp, m_iLineNumberCount);
-                m_iEndColumns = temp;
-            }
-        }
-
-        internal void EmitLineNumberInfo(ISymbolWriter symWriter)
-        {
-            if (m_iLineNumberCount == 0)
-                return;
-            // reduce the array size to be exact
-            int[] iOffsetsTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iOffsets, iOffsetsTemp, m_iLineNumberCount);
-
-            int[] iLinesTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iLines, iLinesTemp, m_iLineNumberCount);
-
-            int[] iColumnsTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iColumns, iColumnsTemp, m_iLineNumberCount);
-
-            int[] iEndLinesTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iEndLines, iEndLinesTemp, m_iLineNumberCount);
-
-            int[] iEndColumnsTemp = new int[m_iLineNumberCount];
-            Array.Copy(m_iEndColumns, iEndColumnsTemp, m_iLineNumberCount);
-
-            symWriter.DefineSequencePoints(m_document, iOffsetsTemp, iLinesTemp, iColumnsTemp, iEndLinesTemp, iEndColumnsTemp);
-        }
-
-        private int[] m_iOffsets = null!;                 // array of offsets
-        private int[] m_iLines = null!;                   // array of offsets
-        private int[] m_iColumns = null!;                 // array of offsets
-        private int[] m_iEndLines = null!;                // array of offsets
-        private int[] m_iEndColumns = null!;              // array of offsets
-        internal ISymbolDocumentWriter m_document;       // The ISymbolDocumentWriter that this REDocument is tracking.
-        private int m_iLineNumberCount;         // how many entries in the arrays are occupied
-        private const int InitialSize = 16;
-    }       // end of REDocument
 }

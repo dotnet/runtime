@@ -2,37 +2,38 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 class Gen<T> 
 {
 	public static void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread27.Eval(typeof(U)!=null);
+		Interlocked.Increment(ref Test_thread27.Xcounter);
 	}
 	public static void ThreadPoolTest<U>()
 	{
-		Thread[] threads = new Thread[Test.nThreads];
+		Thread[] threads = new Thread[Test_thread27.nThreads];
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread27.nThreads; i++)
 		{	
 			threads[i]  = new Thread(new ThreadStart(Gen<T>.Target<U>));
 			threads[i].Start();
 		}
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread27.nThreads; i++)
 		{	
 			threads[i].Join();
 		}
 		
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread27.Eval(Test_thread27.Xcounter==Test_thread27.nThreads);
+		Test_thread27.Xcounter = 0;
 	}
 }
 
 
-public class Test
+public class Test_thread27
 {
 	public static int nThreads =50;
 	public static int counter = 0;
@@ -49,7 +50,8 @@ public class Test
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Gen<int>.ThreadPoolTest<object>();
 		Gen<double>.ThreadPoolTest<string>();

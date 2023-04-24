@@ -3,24 +3,24 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 class MultipleAssembliesWithSamePInvokeTest
 {
     [DllImport(@"MAWSPINative", CallingConvention = CallingConvention.StdCall)]
     private static extern int GetInt();
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         try{
-            Assert.AreEqual(24, GetInt(), "MultipleAssembliesWithSamePInvoke.GetInt() failed.");
-            Assert.AreEqual(24, ManagedDll1.Class1.GetInt(), "ManagedDll.Class1.GetInt() failed.");
-            Assert.AreEqual(24, ManagedDll2.Class2.GetInt(), "ManagedDll.Class2.GetInt() failed.");
-            
+            Assert.Equal(24, GetInt());
+            Assert.Equal(24, ManagedDll1.Class1.GetInt());
+            Assert.Equal(24, ManagedDll2.Class2.GetInt());
+
             return 100;
         } catch (Exception e){
-            Console.WriteLine($"Test Failure: {e}"); 
-            return 101; 
-        }      
+            Console.WriteLine($"Test Failure: {e}");
+            return 101;
+        }
     }
 }

@@ -34,6 +34,7 @@
 //
 
 #if MONO_FEATURE_SRE
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
@@ -218,15 +219,12 @@ namespace System.Reflection.Emit
         private int num_fixups;
         internal Module module;
         private int cur_block;
-        private Stack? open_blocks;
+        private Int32Stack? open_blocks;
         private ITokenGenerator token_gen;
 
         private const int defaultFixupSize = 4;
         private const int defaultLabelsSize = 4;
         private const int defaultExceptionStackSize = 2;
-
-        private List<SequencePointList>? sequencePointLists;
-        private SequencePointList? currentSequence;
 
         [DynamicDependency(nameof(token_fixups))]  // Automatically keeps all previous fields too due to StructLayout
         internal ILGenerator(Module m, ITokenGenerator token_gen, int size)
@@ -237,6 +235,9 @@ namespace System.Reflection.Emit
             module = m;
             this.token_gen = token_gen;
         }
+
+        [MemberNotNullWhen(true, nameof(open_blocks))]
+        private bool InExceptionBlock => open_blocks != null && open_blocks.Count > 0;
 
         private void make_room(int nbytes)
         {
@@ -249,10 +250,8 @@ namespace System.Reflection.Emit
 
         private void emit_int(int val)
         {
-            code[code_len++] = (byte)(val & 0xFF);
-            code[code_len++] = (byte)((val >> 8) & 0xFF);
-            code[code_len++] = (byte)((val >> 16) & 0xFF);
-            code[code_len++] = (byte)((val >> 24) & 0xFF);
+            BinaryPrimitives.WriteInt32LittleEndian(code.AsSpan(code_len), val);
+            code_len += 4;
         }
 
         /* change to pass by ref to avoid copy */
@@ -344,18 +343,16 @@ namespace System.Reflection.Emit
             }
         }
 
-        public virtual void BeginCatchBlock(Type exceptionType)
+        public virtual void BeginCatchBlock(Type? exceptionType)
         {
-            open_blocks ??= new Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
-                throw new NotSupportedException("Not in an exception block");
+            if (!InExceptionBlock)
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             if (exceptionType != null && exceptionType.IsUserType)
-                throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
+                throw new NotSupportedException(SR.PlatformNotSupported_UserDefinedSubclassesOfType);
             if (ex_handlers![cur_block].LastClauseType() == ILExceptionBlock.FILTER_START)
             {
                 if (exceptionType != null)
-                    throw new ArgumentException("Do not supply an exception type for filter clause");
+                    throw new ArgumentException(SR.Argument_ShouldNotSpecifyExceptionType);
                 Emit(OpCodes.Endfilter);
                 ex_handlers[cur_block].PatchFilterClause(code_len);
             }
@@ -374,11 +371,8 @@ namespace System.Reflection.Emit
 
         public virtual void BeginExceptFilterBlock()
         {
-            if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
-                throw new NotSupportedException("Not in an exception block");
+            if (!InExceptionBlock)
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
             InternalEndClause();
 
             ex_handlers![cur_block].AddFilter(code_len);
@@ -387,8 +381,7 @@ namespace System.Reflection.Emit
         public virtual Label BeginExceptionBlock()
         {
             //System.Console.WriteLine ("Begin Block");
-            if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
+            Int32Stack open_blocks = this.open_blocks ??= new Int32Stack(defaultExceptionStackSize);
 
             if (ex_handlers != null)
             {
@@ -409,11 +402,8 @@ namespace System.Reflection.Emit
 
         public virtual void BeginFaultBlock()
         {
-            if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
-                throw new NotSupportedException("Not in an exception block");
+            if (!InExceptionBlock)
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
 
             if (ex_handlers![cur_block].LastClauseType() == ILExceptionBlock.FILTER_START)
             {
@@ -428,11 +418,8 @@ namespace System.Reflection.Emit
 
         public virtual void BeginFinallyBlock()
         {
-            if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
-                throw new NotSupportedException("Not in an exception block");
+            if (!InExceptionBlock)
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
 
             InternalEndClause();
 
@@ -457,10 +444,9 @@ namespace System.Reflection.Emit
 
         public virtual LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
-            if (localType == null)
-                throw new ArgumentNullException(nameof(localType));
+            ArgumentNullException.ThrowIfNull(localType);
             if (localType.IsUserType)
-                throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
+                throw new NotSupportedException(SR.PlatformNotSupported_UserDefinedSubclassesOfType);
             LocalBuilder res = new LocalBuilder(localType, this);
             res.is_pinned = pinned;
 
@@ -483,7 +469,9 @@ namespace System.Reflection.Emit
         public virtual Label DefineLabel()
         {
             if (labels == null)
+            {
                 labels = new LabelData[defaultLabelsSize];
+            }
             else if (num_labels >= labels.Length)
             {
                 LabelData[] t = new LabelData[labels.Length * 2];
@@ -509,7 +497,6 @@ namespace System.Reflection.Emit
             code[code_len++] = arg;
         }
 
-        [ComVisible(true)]
         public virtual void Emit(OpCode opcode, ConstructorInfo con)
         {
             int token = token_gen.GetToken(con, true);
@@ -523,25 +510,10 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, double arg)
         {
-            byte[] s = BitConverter.GetBytes(arg);
             make_room(10);
             ll_emit(opcode);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Copy(s, 0, code, code_len, 8);
-                code_len += 8;
-            }
-            else
-            {
-                code[code_len++] = s[7];
-                code[code_len++] = s[6];
-                code[code_len++] = s[5];
-                code[code_len++] = s[4];
-                code[code_len++] = s[3];
-                code[code_len++] = s[2];
-                code[code_len++] = s[1];
-                code[code_len++] = s[0];
-            }
+            BinaryPrimitives.WriteDoubleLittleEndian(code.AsSpan(code_len), arg);
+            code_len += 8;
         }
 
         public virtual void Emit(OpCode opcode, FieldInfo field)
@@ -556,8 +528,8 @@ namespace System.Reflection.Emit
         {
             make_room(4);
             ll_emit(opcode);
-            code[code_len++] = (byte)(arg & 0xFF);
-            code[code_len++] = (byte)((arg >> 8) & 0xFF);
+            BinaryPrimitives.WriteInt16LittleEndian(code.AsSpan(code_len), arg);
+            code_len += 2;
         }
 
         public virtual void Emit(OpCode opcode, int arg)
@@ -571,14 +543,8 @@ namespace System.Reflection.Emit
         {
             make_room(10);
             ll_emit(opcode);
-            code[code_len++] = (byte)(arg & 0xFF);
-            code[code_len++] = (byte)((arg >> 8) & 0xFF);
-            code[code_len++] = (byte)((arg >> 16) & 0xFF);
-            code[code_len++] = (byte)((arg >> 24) & 0xFF);
-            code[code_len++] = (byte)((arg >> 32) & 0xFF);
-            code[code_len++] = (byte)((arg >> 40) & 0xFF);
-            code[code_len++] = (byte)((arg >> 48) & 0xFF);
-            code[code_len++] = (byte)((arg >> 56) & 0xFF);
+            BinaryPrimitives.WriteInt64LittleEndian(code.AsSpan(code_len), arg);
+            code_len += 8;
         }
 
         public virtual void Emit(OpCode opcode, Label label)
@@ -590,7 +556,9 @@ namespace System.Reflection.Emit
                 labels[label.m_label].maxStack = cur_stack;
 
             if (fixups == null)
+            {
                 fixups = new LabelFixup[defaultFixupSize];
+            }
             else if (num_fixups >= fixups.Length)
             {
                 LabelFixup[] newf = new LabelFixup[fixups.Length * 2];
@@ -607,8 +575,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, Label[] labels)
         {
-            if (labels == null)
-                throw new ArgumentNullException(nameof(labels));
+            ArgumentNullException.ThrowIfNull(labels);
 
             /* opcode needs to be switch. */
             int count = labels.Length;
@@ -621,7 +588,9 @@ namespace System.Reflection.Emit
 
             emit_int(count);
             if (fixups == null)
+            {
                 fixups = new LabelFixup[defaultFixupSize + count];
+            }
             else if (num_fixups + count >= fixups.Length)
             {
                 LabelFixup[] newf = new LabelFixup[count + fixups.Length * 2];
@@ -655,8 +624,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, LocalBuilder local)
         {
-            if (local == null)
-                throw new ArgumentNullException(nameof(local));
+            ArgumentNullException.ThrowIfNull(local);
             if (local.ilgen != this)
                 throw new ArgumentException(SR.Argument_UnmatchedMethodForLocal, nameof(local));
 
@@ -747,17 +715,15 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, MethodInfo meth)
         {
-            if (meth == null)
-                throw new ArgumentNullException(nameof(meth));
+            ArgumentNullException.ThrowIfNull(meth);
 
             // For compatibility with MS
             if ((meth is DynamicMethod) && ((opcode == OpCodes.Ldftn) || (opcode == OpCodes.Ldvirtftn) || (opcode == OpCodes.Ldtoken)))
-                throw new ArgumentException("Ldtoken, Ldftn and Ldvirtftn OpCodes cannot target DynamicMethods.");
+                throw new ArgumentException(SR.Argument_InvalidOpCodeOnDynamicMethod);
 
             int token = token_gen.GetToken(meth, true);
             make_room(6);
             ll_emit(opcode);
-            Type? declaringType = meth.DeclaringType;
             emit_int(token);
             if (meth.ReturnType != typeof(void))
                 cur_stack++;
@@ -796,21 +762,10 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, float arg)
         {
-            byte[] s = BitConverter.GetBytes(arg);
             make_room(6);
             ll_emit(opcode);
-            if (BitConverter.IsLittleEndian)
-            {
-                Array.Copy(s, 0, code, code_len, 4);
-                code_len += 4;
-            }
-            else
-            {
-                code[code_len++] = s[3];
-                code[code_len++] = s[2];
-                code[code_len++] = s[1];
-                code[code_len++] = s[0];
-            }
+            BinaryPrimitives.WriteSingleLittleEndian(code.AsSpan(code_len), arg);
+            code_len += 4;
         }
 
         public virtual void Emit(OpCode opcode, string str)
@@ -823,9 +778,6 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, Type cls)
         {
-            if (cls != null && cls.IsByRef)
-                throw new ArgumentException("Cannot get TypeToken for a ByRef type.");
-
             make_room(6);
             ll_emit(opcode);
             int token = token_gen.GetToken(cls!, opcode != OpCodes.Ldtoken);
@@ -835,18 +787,17 @@ namespace System.Reflection.Emit
         // FIXME: vararg methods are not supported
         public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
-            if (methodInfo == null)
-                throw new ArgumentNullException(nameof(methodInfo));
+            ArgumentNullException.ThrowIfNull(methodInfo);
             short value = opcode.Value;
             if (!(value == OpCodes.Call.Value || value == OpCodes.Callvirt.Value))
-                throw new NotSupportedException("Only Call and CallVirt are allowed");
+                throw new NotSupportedException(SR.Argument_NotMethodCallOpcode);
             if ((methodInfo.CallingConvention & CallingConventions.VarArgs) == 0)
                 optionalParameterTypes = null;
             if (optionalParameterTypes != null)
             {
                 if ((methodInfo.CallingConvention & CallingConventions.VarArgs) == 0)
                 {
-                    throw new InvalidOperationException("Method is not VarArgs method and optional types were passed");
+                    throw new InvalidOperationException(SR.InvalidOperation_NotAVarArgCallingConvention);
                 }
 
                 int token = token_gen.GetToken(methodInfo, optionalParameterTypes);
@@ -877,8 +828,7 @@ namespace System.Reflection.Emit
 
         public virtual void EmitWriteLine(FieldInfo fld)
         {
-            if (fld == null)
-                throw new ArgumentNullException(nameof(fld));
+            ArgumentNullException.ThrowIfNull(fld);
 
             // The MS implementation does not check for valuetypes here but it
             // should. Also, it should check that if the field is not static,
@@ -896,10 +846,9 @@ namespace System.Reflection.Emit
 
         public virtual void EmitWriteLine(LocalBuilder localBuilder)
         {
-            if (localBuilder == null)
-                throw new ArgumentNullException(nameof(localBuilder));
+            ArgumentNullException.ThrowIfNull(localBuilder);
             if (localBuilder.LocalType is TypeBuilder)
-                throw new ArgumentException("Output streams do not support TypeBuilders.");
+                throw new NotSupportedException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             // The MS implementation does not check for valuetypes here but it
             // should.
             Emit(OpCodes.Ldloc, localBuilder);
@@ -916,21 +865,18 @@ namespace System.Reflection.Emit
 
         public virtual void EndExceptionBlock()
         {
-            if (open_blocks == null)
-                open_blocks = new Stack(defaultExceptionStackSize);
-
-            if (open_blocks.Count <= 0)
-                throw new NotSupportedException("Not in an exception block");
+            if (!InExceptionBlock)
+                throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
 
             if (ex_handlers![cur_block].LastClauseType() == ILExceptionBlock.FILTER_START)
-                throw new InvalidOperationException("Incorrect code generation for exception block.");
+                throw new InvalidOperationException(SR.Argument_BadExceptionCodeGen);
 
             InternalEndClause();
             MarkLabel(ex_handlers[cur_block].end);
             ex_handlers[cur_block].End(code_len);
             open_blocks.Pop();
             if (open_blocks.Count > 0)
-                cur_block = (int)open_blocks.Peek()!;
+                cur_block = open_blocks.Peek()!;
         }
 
         public virtual void EndScope()
@@ -939,69 +885,23 @@ namespace System.Reflection.Emit
         public virtual void MarkLabel(Label loc)
         {
             if (loc.m_label < 0 || loc.m_label >= num_labels)
-                throw new System.ArgumentException("The label is not valid");
+                throw new System.ArgumentException(SR.Argument_InvalidLabel);
             if (labels![loc.m_label].addr >= 0)
-                throw new System.ArgumentException("The label was already defined");
+                throw new System.ArgumentException(SR.Argument_RedefinedLabel);
             labels[loc.m_label].addr = code_len;
             if (labels[loc.m_label].maxStack > cur_stack)
                 cur_stack = labels[loc.m_label].maxStack;
         }
 
-        public virtual void MarkSequencePoint(ISymbolDocumentWriter document, int startLine,
-                               int startColumn, int endLine, int endColumn)
-        {
-            if (currentSequence == null || currentSequence.Document != document)
-            {
-                if (sequencePointLists == null)
-                    sequencePointLists = new List<SequencePointList>();
-                currentSequence = new SequencePointList(document);
-                sequencePointLists.Add(currentSequence);
-            }
-
-            currentSequence.AddSequencePoint(code_len, startLine, startColumn, endLine, endColumn);
-        }
-
-        /*
-                internal void GenerateDebugInfo (ISymbolWriter symbolWriter)
-                {
-                    if (sequencePointLists != null) {
-                        SequencePointList first = (SequencePointList) sequencePointLists [0];
-                        SequencePointList last = (SequencePointList) sequencePointLists [sequencePointLists.Count - 1];
-                        symbolWriter.SetMethodSourceRange (first.Document, first.StartLine, first.StartColumn, last.Document, last.EndLine, last.EndColumn);
-
-                        foreach (SequencePointList list in sequencePointLists)
-                            symbolWriter.DefineSequencePoints (list.Document, list.GetOffsets(), list.GetLines(), list.GetColumns(), list.GetEndLines(), list.GetEndColumns());
-
-                        if (locals != null) {
-                            foreach (LocalBuilder local in locals) {
-                                if (local.Name != null && local.Name.Length > 0) {
-                                    SignatureHelper sighelper = SignatureHelper.GetLocalVarSigHelper (module as ModuleBuilder);
-                                    sighelper.AddArgument (local.LocalType);
-                                    byte[] signature = sighelper.GetSignature ();
-                                    symbolWriter.DefineLocalVariable (local.Name, FieldAttributes.Public, signature, SymAddressKind.ILOffset, local.position, 0, 0, local.StartOffset, local.EndOffset);
-                                }
-                            }
-                        }
-                        sequencePointLists = null;
-                    }
-                }
-        */
-
-        internal bool HasDebugInfo
-        {
-            get { return sequencePointLists != null; }
-        }
-
         public virtual void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type excType)
         {
-            if (excType == null)
-                throw new ArgumentNullException(nameof(excType));
+            ArgumentNullException.ThrowIfNull(excType);
             if (!((excType == typeof(Exception)) ||
                    excType.IsSubclassOf(typeof(Exception))))
-                throw new ArgumentException("Type should be an exception type", nameof(excType));
+                throw new ArgumentException(SR.Argument_NotExceptionType, nameof(excType));
             ConstructorInfo? ctor = excType.GetConstructor(Type.EmptyTypes);
             if (ctor == null)
-                throw new ArgumentException("Type should have a default constructor", nameof(excType));
+                throw new ArgumentException(SR.Arg_NoDefCTorWithoutTypeName, nameof(excType));
             Emit(OpCodes.Newobj, ctor);
             Emit(OpCodes.Throw);
         }
@@ -1017,7 +917,7 @@ namespace System.Reflection.Emit
             for (int i = 0; i < num_fixups; ++i)
             {
                 if (labels![fixups![i].label_idx].addr < 0)
-                    throw new ArgumentException(string.Format("Label #{0} is not marked in method `{1}'", fixups[i].label_idx + 1, mb.Name));
+                    throw new ArgumentException(SR.Format(SR.Argument_LabelUnmarked, fixups[i].label_idx + 1, mb.Name));
                 // Diff is the offset from the end of the jump instruction to the address of the label
                 int diff = labels[fixups[i].label_idx].addr - (fixups[i].pos + fixups[i].offset);
                 if (fixups[i].offset == 1)
@@ -1047,115 +947,15 @@ namespace System.Reflection.Emit
         internal unsafe void SetCode(byte* code, int code_size, int max_stack)
         {
             // Make a copy to avoid possible security problems
-            this.code = new byte[code_size];
-            for (int i = 0; i < code_size; ++i)
-                this.code[i] = code[i];
+            this.code = new ReadOnlySpan<byte>(code, code_size).ToArray();
             this.code_len = code_size;
             this.max_stack = max_stack;
             this.cur_stack = 0;
         }
 
-        internal ITokenGenerator TokenGenerator
-        {
-            get
-            {
-                return token_gen;
-            }
-        }
+        internal ITokenGenerator TokenGenerator => token_gen;
 
-        public virtual int ILOffset
-        {
-            get { return code_len; }
-        }
-    }
-
-    internal sealed class SequencePointList
-    {
-        private ISymbolDocumentWriter doc;
-        private SequencePoint[]? points;
-        private int count;
-        private const int arrayGrow = 10;
-
-        public SequencePointList(ISymbolDocumentWriter doc)
-        {
-            this.doc = doc;
-        }
-
-        public ISymbolDocumentWriter Document
-        {
-            get { return doc; }
-        }
-
-        public int[] GetOffsets()
-        {
-            int[] data = new int[count];
-            for (int n = 0; n < count; n++) data[n] = points![n].Offset;
-            return data;
-        }
-        public int[] GetLines()
-        {
-            int[] data = new int[count];
-            for (int n = 0; n < count; n++) data[n] = points![n].Line;
-            return data;
-        }
-        public int[] GetColumns()
-        {
-            int[] data = new int[count];
-            for (int n = 0; n < count; n++) data[n] = points![n].Col;
-            return data;
-        }
-        public int[] GetEndLines()
-        {
-            int[] data = new int[count];
-            for (int n = 0; n < count; n++) data[n] = points![n].EndLine;
-            return data;
-        }
-        public int[] GetEndColumns()
-        {
-            int[] data = new int[count];
-            for (int n = 0; n < count; n++) data[n] = points![n].EndCol;
-            return data;
-        }
-        public int StartLine
-        {
-            get { return points![0].Line; }
-        }
-        public int EndLine
-        {
-            get { return points![count - 1].Line; }
-        }
-        public int StartColumn
-        {
-            get { return points![0].Col; }
-        }
-        public int EndColumn
-        {
-            get { return points![count - 1].Col; }
-        }
-
-        public void AddSequencePoint(int offset, int line, int col, int endLine, int endCol)
-        {
-            SequencePoint s = default;
-            s.Offset = offset;
-            s.Line = line;
-            s.Col = col;
-            s.EndLine = endLine;
-            s.EndCol = endCol;
-
-            if (points == null)
-            {
-                points = new SequencePoint[arrayGrow];
-            }
-            else if (count >= points.Length)
-            {
-                SequencePoint[] temp = new SequencePoint[count + arrayGrow];
-                Array.Copy(points, temp, points.Length);
-                points = temp;
-            }
-
-            points[count] = s;
-            count++;
-        }
+        public virtual int ILOffset => code_len;
     }
 
     internal struct SequencePoint
@@ -1167,70 +967,33 @@ namespace System.Reflection.Emit
         public int EndCol;
     }
 
-    internal sealed class Stack
+    internal sealed class Int32Stack : List<int>
     {
-        private object?[] _array;
-        private int _size;
-        private int _version;
-
-        private const int _defaultCapacity = 10;
-
-        public Stack()
+        public Int32Stack(int initialCapacity) : base(initialCapacity)
         {
-            _array = new object[_defaultCapacity];
-            _size = 0;
-            _version = 0;
         }
 
-        public Stack(int initialCapacity)
+        public int Peek()
         {
-            if (initialCapacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(initialCapacity), SR.ArgumentOutOfRange_NeedNonNegNum);
-
-            if (initialCapacity < _defaultCapacity)
-                initialCapacity = _defaultCapacity;
-            _array = new object[initialCapacity];
-            _size = 0;
-            _version = 0;
-        }
-
-        public int Count
-        {
-            get
-            {
-                return _size;
-            }
-        }
-
-        public object? Peek()
-        {
-            if (_size == 0)
+            if (Count == 0)
                 throw new InvalidOperationException();
 
-            return _array[_size - 1];
+            return this[Count - 1];
         }
 
-        public object? Pop()
+        public int Pop()
         {
-            if (_size == 0)
+            if (Count == 0)
                 throw new InvalidOperationException();
 
-            _version++;
-            object? obj = _array[--_size];
-            _array[_size] = null;
-            return obj;
+            int value = this[Count - 1];
+            RemoveAt(Count - 1);
+            return value;
         }
 
-        public void Push(object obj)
+        public void Push(int value)
         {
-            if (_size == _array.Length)
-            {
-                object[] newArray = new object[2 * _array.Length];
-                Array.Copy(_array, 0, newArray, 0, _size);
-                _array = newArray;
-            }
-            _array[_size++] = obj;
-            _version++;
+            Add(value);
         }
     }
 }

@@ -30,6 +30,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a stack trace from the current location.
         /// </summary>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public StackTrace()
         {
             InitializeForCurrentThread(METHODS_TO_SKIP, false);
@@ -38,6 +39,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a stack trace from the current location.
         /// </summary>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public StackTrace(bool fNeedFileInfo)
         {
             InitializeForCurrentThread(METHODS_TO_SKIP, fNeedFileInfo);
@@ -47,11 +49,10 @@ namespace System.Diagnostics
         /// Constructs a stack trace from the current location, in a caller's
         /// frame
         /// </summary>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public StackTrace(int skipFrames)
         {
-            if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException(nameof(skipFrames),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(skipFrames);
 
             InitializeForCurrentThread(skipFrames + METHODS_TO_SKIP, false);
         }
@@ -60,11 +61,10 @@ namespace System.Diagnostics
         /// Constructs a stack trace from the current location, in a caller's
         /// frame
         /// </summary>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public StackTrace(int skipFrames, bool fNeedFileInfo)
         {
-            if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException(nameof(skipFrames),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(skipFrames);
 
             InitializeForCurrentThread(skipFrames + METHODS_TO_SKIP, fNeedFileInfo);
         }
@@ -74,8 +74,7 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
+            ArgumentNullException.ThrowIfNull(e);
 
             InitializeForException(e, METHODS_TO_SKIP, false);
         }
@@ -85,8 +84,7 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e, bool fNeedFileInfo)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
+            ArgumentNullException.ThrowIfNull(e);
 
             InitializeForException(e, METHODS_TO_SKIP, fNeedFileInfo);
         }
@@ -97,12 +95,9 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e, int skipFrames)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
+            ArgumentNullException.ThrowIfNull(e);
 
-            if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException(nameof(skipFrames),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(skipFrames);
 
             InitializeForException(e, skipFrames + METHODS_TO_SKIP, false);
         }
@@ -113,12 +108,9 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e, int skipFrames, bool fNeedFileInfo)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
+            ArgumentNullException.ThrowIfNull(e);
 
-            if (skipFrames < 0)
-                throw new ArgumentOutOfRangeException(nameof(skipFrames),
-                    SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(skipFrames);
 
             InitializeForException(e, skipFrames + METHODS_TO_SKIP, fNeedFileInfo);
         }
@@ -187,7 +179,6 @@ namespace System.Diagnostics
             TrailingNewLine,        // include a trailing new line character
         }
 
-#if !CORERT
         /// <summary>
         /// Builds a readable representation of the stack trace, specifying
         /// the format for backwards compatibility.
@@ -199,6 +190,9 @@ namespace System.Diagnostics
             return sb.ToString();
         }
 
+#if !NATIVEAOT
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "ToString is best effort when it comes to available information.")]
         internal void ToString(TraceFormat traceFormat, StringBuilder sb)
         {
             // Passing a default string for "at" in case SR.UsingResourceKeys() is true
@@ -221,7 +215,7 @@ namespace System.Diagnostics
                     else
                         sb.AppendLine();
 
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "   {0} ", word_At);
+                    sb.Append("   ").Append(word_At).Append(' ');
 
                     bool isAsync = false;
                     Type? declaringType = mb.DeclaringType;
@@ -297,8 +291,12 @@ namespace System.Diagnostics
                             if (pi[j].ParameterType != null)
                                 typeName = pi[j].ParameterType.Name;
                             sb.Append(typeName);
-                            sb.Append(' ');
-                            sb.Append(pi[j].Name);
+                            string? parameterName = pi[j].Name;
+                            if (parameterName != null)
+                            {
+                                sb.Append(' ');
+                                sb.Append(parameterName);
+                            }
                         }
                         sb.Append(')');
                     }
@@ -351,7 +349,7 @@ namespace System.Diagnostics
             if (traceFormat == TraceFormat.TrailingNewLine)
                 sb.AppendLine();
         }
-#endif // !CORERT
+#endif // !NATIVEAOT
 
         private static bool ShowInStackTrace(MethodBase mb)
         {
@@ -420,7 +418,7 @@ namespace System.Diagnostics
 
             foreach (MethodInfo candidateMethod in methods)
             {
-                IEnumerable<StateMachineAttribute>? attributes = candidateMethod.GetCustomAttributes<StateMachineAttribute>(inherit: false);
+                StateMachineAttribute[]? attributes = (StateMachineAttribute[])Attribute.GetCustomAttributes(candidateMethod, typeof(StateMachineAttribute), inherit: false);
                 if (attributes == null)
                 {
                     continue;

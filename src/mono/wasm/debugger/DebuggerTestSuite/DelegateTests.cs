@@ -7,18 +7,21 @@ using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
 
-    public class DelegateTests : DebuggerTestBase
+    public class DelegateTests : DebuggerTests
     {
+        public DelegateTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
 
-        [Theory]
-        [InlineData(0, 53, 8, "DelegatesTest", false)]
-        [InlineData(0, 53, 8, "DelegatesTest", true)]
-        [InlineData(2, 99, 8, "InnerMethod2", false)]
-        [InlineData(2, 99, 8, "InnerMethod2", true)]
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(0, 53, 8, "Math.DelegatesTest", false)]
+        [InlineData(0, 53, 8, "Math.DelegatesTest", true)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", false)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", true)]
         public async Task InspectLocalsWithDelegatesAtBreakpointSite(int frame, int line, int col, string method_name, bool use_cfo) =>
             await CheckInspectLocalsAtBreakpointSite(
                 "dotnet://debugger-test.dll/debugger-test.cs", line, col, method_name,
@@ -32,19 +35,19 @@ namespace DebuggerTests
                    {
                        fn_func = TDelegate("System.Func<Math, bool>", "bool <DelegatesTest>|(Math)"),
                        fn_func_null = TObject("System.Func<Math, bool>", is_null: true),
-                       fn_func_arr = TArray("System.Func<Math, bool>[]", 1),
+                       fn_func_arr = TArray("System.Func<Math, bool>[]", "System.Func<Math, bool>[1]"),
                        fn_del = TDelegate("Math.IsMathNull", "bool IsMathNullDelegateTarget (Math)"),
                        fn_del_null = TObject("Math.IsMathNull", is_null: true),
-                       fn_del_arr = TArray("Math.IsMathNull[]", 1),
+                       fn_del_arr = TArray("Math.IsMathNull[]", "Math.IsMathNull[1]"),
 
                        // Unused locals
                        fn_func_unused = TDelegate("System.Func<Math, bool>", "bool <DelegatesTest>|(Math)"),
                        fn_func_null_unused = TObject("System.Func<Math, bool>", is_null: true),
-                       fn_func_arr_unused = TArray("System.Func<Math, bool>[]", 1),
+                       fn_func_arr_unused = TArray("System.Func<Math, bool>[]", "System.Func<Math, bool>[1]"),
 
                        fn_del_unused = TDelegate("Math.IsMathNull", "bool IsMathNullDelegateTarget (Math)"),
                        fn_del_null_unused = TObject("Math.IsMathNull", is_null: true),
-                       fn_del_arr_unused = TArray("Math.IsMathNull[]", 1),
+                       fn_del_arr_unused = TArray("Math.IsMathNull[]", "Math.IsMathNull[1]"),
 
                        res = TBool(false),
                        m_obj = TObject("Math")
@@ -80,11 +83,11 @@ namespace DebuggerTests
                }
             );
 
-        [Theory]
-        [InlineData(0, 202, 8, "DelegatesSignatureTest", false)]
-        [InlineData(0, 202, 8, "DelegatesSignatureTest", true)]
-        [InlineData(2, 99, 8, "InnerMethod2", false)]
-        [InlineData(2, 99, 8, "InnerMethod2", true)]
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(0, 202, 8, "Math.DelegatesSignatureTest", false)]
+        [InlineData(0, 202, 8, "Math.DelegatesSignatureTest", true)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", false)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", true)]
         public async Task InspectDelegateSignaturesWithFunc(int frame, int line, int col, string bp_method, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs",
             line, col,
@@ -105,7 +108,7 @@ namespace DebuggerTests
 
                    fn_func_null = TObject("System.Func<Math, Math.GenericStruct<Math.GenericStruct<int[]>>, Math.GenericStruct<bool[]>>", is_null: true),
                    fn_func_only_ret = TDelegate("System.Func<bool>", "bool <DelegatesSignatureTest>|()"),
-                   fn_func_arr = TArray("System.Func<Math, Math.GenericStruct<Math.GenericStruct<int[]>>, Math.GenericStruct<bool[]>>[]", 1),
+                   fn_func_arr = TArray("System.Func<Math, Math.GenericStruct<Math.GenericStruct<int[]>>, Math.GenericStruct<bool[]>>[]", "System.Func<Math, Math.GenericStruct<Math.GenericStruct<int[]>>, Math.GenericStruct<bool[]>>[1]"),
 
                    fn_del = TDelegate("Math.DelegateForSignatureTest",
                            "Math.GenericStruct<bool[]> DelegateTargetForSignatureTest (Math,Math.GenericStruct<Math.GenericStruct<int[]>>)"),
@@ -114,16 +117,16 @@ namespace DebuggerTests
                            "Math.GenericStruct<bool[]> <DelegatesSignatureTest>|(Math,Math.GenericStruct<Math.GenericStruct<int[]>>)"),
 
                    fn_del_null = TObject("Math.DelegateForSignatureTest", is_null: true),
-                   fn_del_arr = TArray("Math.DelegateForSignatureTest[]", 2),
+                   fn_del_arr = TArray("Math.DelegateForSignatureTest[]", "Math.DelegateForSignatureTest[2]"),
                    m_obj = TObject("Math"),
                    gs_gs = TValueType("Math.GenericStruct<Math.GenericStruct<int[]>>"),
                    fn_void_del = TDelegate("Math.DelegateWithVoidReturn",
                            "void DelegateTargetWithVoidReturn (Math.GenericStruct<int[]>)"),
 
-                   fn_void_del_arr = TArray("Math.DelegateWithVoidReturn[]", 1),
+                   fn_void_del_arr = TArray("Math.DelegateWithVoidReturn[]", "Math.DelegateWithVoidReturn[1]"),
                    fn_void_del_null = TObject("Math.DelegateWithVoidReturn", is_null: true),
                    gs = TValueType("Math.GenericStruct<int[]>"),
-                   rets = TArray("Math.GenericStruct<bool[]>[]", 6)
+                   rets = TArray("Math.GenericStruct<bool[]>[]", "Math.GenericStruct<bool[]>[6]")
                }, "locals");
 
                await CompareObjectPropertiesFor(locals, "fn_func_arr", new[]
@@ -151,11 +154,11 @@ namespace DebuggerTests
                }, "locals#fn_void_del_arr");
            });
 
-        [Theory]
-        [InlineData(0, 224, 8, "ActionTSignatureTest", false)]
-        [InlineData(0, 224, 8, "ActionTSignatureTest", true)]
-        [InlineData(2, 99, 8, "InnerMethod2", false)]
-        [InlineData(2, 99, 8, "InnerMethod2", true)]
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(0, 224, 8, "Math.ActionTSignatureTest", false)]
+        [InlineData(0, 224, 8, "Math.ActionTSignatureTest", true)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", false)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", true)]
         public async Task ActionTSignatureTest(int frame, int line, int col, string bp_method, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs", line, col,
             bp_method,
@@ -176,7 +179,7 @@ namespace DebuggerTests
 
                    fn_action_null = TObject("System.Action<Math.GenericStruct<int[]>>", is_null: true),
 
-                   fn_action_arr = TArray("System.Action<Math.GenericStruct<int[]>>[]", 3),
+                   fn_action_arr = TArray("System.Action<Math.GenericStruct<int[]>>[]", "System.Action<Math.GenericStruct<int[]>>[3]"),
 
                    gs = TValueType("Math.GenericStruct<int[]>"),
                }, "locals");
@@ -193,11 +196,11 @@ namespace DebuggerTests
                }, "locals#fn_action_arr");
            });
 
-        [Theory]
-        [InlineData(0, 242, 8, "NestedDelegatesTest", false)]
-        [InlineData(0, 242, 8, "NestedDelegatesTest", true)]
-        [InlineData(2, 99, 8, "InnerMethod2", false)]
-        [InlineData(2, 99, 8, "InnerMethod2", true)]
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(0, 242, 8, "Math.NestedDelegatesTest", false)]
+        [InlineData(0, 242, 8, "Math.NestedDelegatesTest", true)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", false)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", true)]
         public async Task NestedDelegatesTest(int frame, int line, int col, string bp_method, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs", line, col,
             bp_method,
@@ -212,8 +215,8 @@ namespace DebuggerTests
                    fn_func = TDelegate("System.Func<System.Func<int, bool>, bool>",
                            "bool <NestedDelegatesTest>|(Func<int, bool>)"),
                    fn_func_null = TObject("System.Func<System.Func<int, bool>, bool>", is_null: true),
-                   fn_func_arr = TArray("System.Func<System.Func<int, bool>, bool>[]", 1),
-                   fn_del_arr = TArray("System.Func<System.Func<int, bool>, bool>[]", 1),
+                   fn_func_arr = TArray("System.Func<System.Func<int, bool>, bool>[]", "System.Func<System.Func<int, bool>, bool>[1]"),
+                   fn_del_arr = TArray("System.Func<System.Func<int, bool>, bool>[]", "System.Func<System.Func<int, bool>, bool>[1]"),
 
                    m_obj = TObject("Math"),
                    fn_del_null = TObject("System.Func<System.Func<int, bool>, bool>", is_null: true),
@@ -236,11 +239,11 @@ namespace DebuggerTests
                }, "locals#fn_del_arr");
            });
 
-        [Theory]
-        [InlineData(0, 262, 8, "MethodWithDelegateArgs", false)]
-        [InlineData(0, 262, 8, "MethodWithDelegateArgs", true)]
-        [InlineData(2, 99, 8, "InnerMethod2", false)]
-        [InlineData(2, 99, 8, "InnerMethod2", true)]
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(0, 262, 8, "Math.MethodWithDelegateArgs", false)]
+        [InlineData(0, 262, 8, "Math.MethodWithDelegateArgs", true)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", false)]
+        [InlineData(2, 99, 8, "Math.InnerMethod2", true)]
         public async Task DelegatesAsMethodArgsTest(int frame, int line, int col, string bp_method, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs", line, col,
             bp_method,
@@ -253,7 +256,7 @@ namespace DebuggerTests
                await CheckProps(locals, new
                {
                    @this = TObject("Math"),
-                   dst_arr = TArray("Math.DelegateForSignatureTest[]", 2),
+                   dst_arr = TArray("Math.DelegateForSignatureTest[]", "Math.DelegateForSignatureTest[2]"),
                    fn_func = TDelegate("System.Func<char[], bool>",
                            "bool <DelegatesAsMethodArgsTest>|(char[])"),
                    fn_action = TDelegate("System.Action<Math.GenericStruct<int>[]>",
@@ -269,12 +272,12 @@ namespace DebuggerTests
                }, "locals#dst_arr");
            });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task MethodWithDelegatesAsyncTest(bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             "dotnet://debugger-test.dll/debugger-test.cs", 281, 8,
-            "MoveNext", //"DelegatesAsMethodArgsTestAsync"
+            "Math.MethodWithDelegatesAsync",
             "window.setTimeout (function () { invoke_static_method_async ('[debugger-test] Math:MethodWithDelegatesAsyncTest'); }, 1)",
             use_cfo: use_cfo,
             wait_for_event_fn: async (pause_location) =>
@@ -284,7 +287,7 @@ namespace DebuggerTests
                await CheckProps(locals, new
                {
                    @this = TObject("Math"),
-                   _dst_arr = TArray("Math.DelegateForSignatureTest[]", 2),
+                   _dst_arr = TArray("Math.DelegateForSignatureTest[]", "Math.DelegateForSignatureTest[2]"),
                    _fn_func = TDelegate("System.Func<char[], bool>",
                            "bool <MethodWithDelegatesAsync>|(char[])"),
                    _fn_action = TDelegate("System.Action<Math.GenericStruct<int>[]>",

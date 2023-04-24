@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-.assembly ILGEN_0xb8816d7d {}
+.assembly 'cpblkInt32' {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
 
-.class ILGEN_0xb8816d7d {
+.class public ILGEN_0xb8816d7d {
 
 //BEGIN STATIC FIELDS
 .field static native int[] field_0x0
@@ -162,7 +163,10 @@ End_Orphan_b_12:
 
  ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	13
 ldc.r4 float32(0x177ad9a4) 

@@ -35,10 +35,7 @@ namespace Microsoft.Win32
         /// </summary>
         private static RegistryKey GetBaseKeyFromKeyName(string keyName, out string subKeyName)
         {
-            if (keyName == null)
-            {
-                throw new ArgumentNullException(nameof(keyName));
-            }
+            ArgumentNullException.ThrowIfNull(keyName);
 
             int i = keyName.IndexOf('\\');
             int length = i != -1 ? i : keyName.Length;
@@ -59,12 +56,12 @@ namespace Microsoft.Win32
             {
                 subKeyName = (i == -1 || i == keyName.Length) ?
                     string.Empty :
-                    keyName.Substring(i + 1, keyName.Length - i - 1);
+                    keyName.Substring(i + 1);
 
                 return baseKey;
             }
 
-            throw new ArgumentException(SR.Format(SR.Arg_RegInvalidKeyName, nameof(keyName)), nameof(keyName));
+            throw new ArgumentException(SR.Arg_RegInvalidKeyName, nameof(keyName));
         }
 
         public static object? GetValue(string keyName, string? valueName, object? defaultValue)

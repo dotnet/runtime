@@ -17,12 +17,7 @@ struct AsmManFile
     BinStr* pHash;
     BOOL    m_fNew;
     CustomDescrList m_CustomDescrList;
-    AsmManFile()
-    {
-        szName = NULL;
-        pHash = NULL;
-        m_fNew = TRUE;
-    }
+    AsmManFile() = default;
     ~AsmManFile()
     {
         if(szName)  delete szName;
@@ -56,28 +51,16 @@ struct AsmManAssembly
 	USHORT	usVerMinor;
 	USHORT	usBuild;
 	USHORT	usRevision;
-    AsmManAssembly()
+    AsmManAssembly() = default;
+    ~AsmManAssembly()
     {
-    /*
-        usVerMajor = usVerMinor = usBuild = usRevision = 0xFFFF;
-        szName = szAlias = NULL;
-        dwAlias = dwAttr = 0;
-        tkTok = 0;
-        pPublicKey = pPublicKeyToken =pHashBlob = pLocale = NULL;
-        ulHashAlgorithm = 0;
-        m_fNew = TRUE;
-        isAutodetect = isRef = FALSE;
-    */
+        if(szAlias && (szAlias != szName)) delete [] szAlias;
+        if(szName) delete [] szName;
+        if(pPublicKey) delete pPublicKey;
+        if(pPublicKeyToken) delete pPublicKeyToken;
+        if(pHashBlob) delete pHashBlob;
+        if(pLocale) delete pLocale;
     }
-	~AsmManAssembly()
-	{
-		if(szAlias && (szAlias != szName)) delete [] szAlias;
-		if(szName) delete [] szName;
-		if(pPublicKey) delete pPublicKey;
-		if(pPublicKeyToken) delete pPublicKeyToken;
-		if(pHashBlob) delete pHashBlob;
-		if(pLocale) delete pLocale;
-	}
     int ComparedTo(AsmManAssembly* pX){ return strcmp(szAlias,pX->szAlias); }
 };
 //typedef SORTEDARRAY<AsmManAssembly> AsmManAssemblyList;
@@ -95,12 +78,7 @@ struct AsmManComType
     mdToken tkClass;
     BOOL    m_fNew;
     CustomDescrList m_CustomDescrList;
-    AsmManComType()
-    {
-        szName = szFileName = szAsmRefName = szComTypeName = NULL;
-        m_fNew = TRUE;
-        tkImpl = 0;
-    };
+    AsmManComType() = default;
     ~AsmManComType()
     {
         if(szName) delete szName;
@@ -123,7 +101,7 @@ struct AsmManRes
     BOOL    m_fNew;
 	CustomDescrList m_CustomDescrList;
 	char*	szAsmRefName;
-	AsmManRes() { szName = szAlias = szAsmRefName = szFileName = NULL; ulOffset = 0; tkTok = 0; dwAttr = 0; m_fNew = TRUE; };
+	AsmManRes() = default;
 	~AsmManRes()
 	{
         if(szAlias && (szAlias != szName)) delete szAlias;
@@ -193,12 +171,12 @@ class AsmMan
     ErrorReporter*      report;
     void*               m_pAssembler;
 
-    AsmManFile*         GetFileByName(__in __nullterminated char* szFileName);
-    AsmManAssembly*     GetAsmRefByName(__in __nullterminated const char* szAsmRefName);
-    AsmManComType*      GetComTypeByName(__in_opt __nullterminated char* szComTypeName,
-                                         __in_opt __nullterminated char* szComEnclosingTypeName = NULL);
-    mdToken             GetComTypeTokByName(__in_opt __nullterminated char* szComTypeName,
-                                            __in_opt __nullterminated char* szComEnclosingTypeName = NULL);
+    AsmManFile*         GetFileByName(_In_ __nullterminated char* szFileName);
+    AsmManAssembly*     GetAsmRefByName(_In_ __nullterminated const char* szAsmRefName);
+    AsmManComType*      GetComTypeByName(_In_opt_z_ char* szComTypeName,
+                                         _In_opt_z_ char* szComEnclosingTypeName = NULL);
+    mdToken             GetComTypeTokByName(_In_opt_z_ char* szComTypeName,
+                                            _In_opt_z_ char* szComEnclosingTypeName = NULL);
 
     IMetaDataEmit*          m_pEmitter;
 
@@ -231,7 +209,7 @@ public:
 	~AsmMan()
 	{
 		if(m_pAssembly) delete m_pAssembly;
-		if(m_szScopeName) delete m_szScopeName;
+		if(m_szScopeName) delete[] m_szScopeName;
 		if(m_pGUID) delete m_pGUID;
 	};
 	void	SetErrorReporter(ErrorReporter* rpt) { report = rpt; };
@@ -241,11 +219,11 @@ public:
 
     void    SetModuleName(__inout_opt __nullterminated char* szName);
 
-    void    AddFile(__in __nullterminated char* szName, DWORD dwAttr, BinStr* pHashBlob);
+    void    AddFile(_In_ __nullterminated char* szName, DWORD dwAttr, BinStr* pHashBlob);
     void    EmitFiles();
 	void	EmitDebuggableAttribute(mdToken tkOwner);
 
-	void	StartAssembly(__in __nullterminated char* szName, __in_opt __nullterminated char* szAlias, DWORD dwAttr, BOOL isRef);
+	void	StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ char* szAlias, DWORD dwAttr, BOOL isRef);
 	void	EndAssembly();
     void    EmitAssemblyRefs();
     void    EmitAssembly();
@@ -257,27 +235,27 @@ public:
 	void	SetAssemblyHashBlob(BinStr* pHashBlob);
     void    SetAssemblyAutodetect();
 
-    void    StartComType(__in __nullterminated char* szName, DWORD dwAttr);
+    void    StartComType(_In_ __nullterminated char* szName, DWORD dwAttr);
     void    EndComType();
-    void    SetComTypeFile(__in __nullterminated char* szFileName);
-    void    SetComTypeAsmRef(__in __nullterminated char* szAsmRefName);
-    void    SetComTypeComType(__in __nullterminated char* szComTypeName);
+    void    SetComTypeFile(_In_ __nullterminated char* szFileName);
+    void    SetComTypeAsmRef(_In_ __nullterminated char* szAsmRefName);
+    void    SetComTypeComType(_In_ __nullterminated char* szComTypeName);
     BOOL    SetComTypeImplementationTok(mdToken tk);
     BOOL    SetComTypeClassTok(mdToken tkClass);
 
-    void    StartManifestRes(__in __nullterminated char* szName, __in __nullterminated char* szAlias, DWORD dwAttr);
+    void    StartManifestRes(_In_ __nullterminated char* szName, _In_ __nullterminated char* szAlias, DWORD dwAttr);
     void    EndManifestRes();
-    void    SetManifestResFile(__in __nullterminated char* szFileName, ULONG ulOffset);
-    void    SetManifestResAsmRef(__in __nullterminated char* szAsmRefName);
+    void    SetManifestResFile(_In_ __nullterminated char* szFileName, ULONG ulOffset);
+    void    SetManifestResAsmRef(_In_ __nullterminated char* szAsmRefName);
 
-    AsmManAssembly*     GetAsmRefByAsmName(__in __nullterminated const char* szAsmName);
+    AsmManAssembly*     GetAsmRefByAsmName(_In_ __nullterminated const char* szAsmName);
 
-    mdToken             GetFileTokByName(__in __nullterminated char* szFileName);
-    mdToken             GetAsmRefTokByName(__in __nullterminated const char* szAsmRefName);
-    mdToken             GetAsmTokByName(__in __nullterminated const char* szAsmName)
+    mdToken             GetFileTokByName(_In_ __nullterminated char* szFileName);
+    mdToken             GetAsmRefTokByName(_In_ __nullterminated const char* szAsmRefName);
+    mdToken             GetAsmTokByName(_In_ __nullterminated const char* szAsmName)
         { return (m_pAssembly && (strcmp(m_pAssembly->szName,szAsmName)==0)) ? m_pAssembly->tkTok : 0; };
 
-    mdToken GetModuleRefTokByName(__in __nullterminated char* szName)
+    mdToken GetModuleRefTokByName(_In_ __nullterminated char* szName)
     {
         if(szName && *szName)
         {

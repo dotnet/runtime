@@ -106,7 +106,7 @@ bool Compiler::optUnmarkCSE(GenTree* tree)
     }
 
     // make sure it's been initialized
-    noway_assert(optCSEweight <= BB_MAX_WEIGHT);
+    noway_assert(optCSEweight >= 0);
 
     // Is this a CSE use?
     if (IS_CSE_USE(tree->gtCSEnum))
@@ -143,7 +143,7 @@ bool Compiler::optUnmarkCSE(GenTree* tree)
             }
         }
 
-        // 2. Unmark the CSE infomation in the node
+        // 2. Unmark the CSE information in the node
 
         tree->gtCSEnum = NO_CSE;
         return true;
@@ -163,20 +163,6 @@ Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTree** pTree, fgWalkData* 
     Compiler*        comp      = walkData->compiler;
     optCSE_MaskData* pUserData = (optCSE_MaskData*)(walkData->pCallbackData);
 
-    if (IS_CSE_INDEX(tree->gtCSEnum))
-    {
-        unsigned cseIndex = GET_CSE_INDEX(tree->gtCSEnum);
-        unsigned cseBit   = genCSEnum2bit(cseIndex);
-        if (IS_CSE_DEF(tree->gtCSEnum))
-        {
-            BitVecOps::AddElemD(comp->cseMaskTraits, pUserData->CSE_defMask, cseBit);
-        }
-        else
-        {
-            BitVecOps::AddElemD(comp->cseMaskTraits, pUserData->CSE_useMask, cseBit);
-        }
-    }
-
     return WALK_CONTINUE;
 }
 
@@ -185,9 +171,45 @@ Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTree** pTree, fgWalkData* 
 //
 void Compiler::optCSE_GetMaskData(GenTree* tree, optCSE_MaskData* pMaskData)
 {
+    class MaskDataWalker : public GenTreeVisitor<MaskDataWalker>
+    {
+        optCSE_MaskData* m_maskData;
+
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        MaskDataWalker(Compiler* comp, optCSE_MaskData* maskData) : GenTreeVisitor(comp), m_maskData(maskData)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* tree = *use;
+            if (IS_CSE_INDEX(tree->gtCSEnum))
+            {
+                unsigned cseIndex = GET_CSE_INDEX(tree->gtCSEnum);
+                // Note that we DO NOT use getCSEAvailBit() here, for the CSE_defMask/CSE_useMask
+                unsigned cseBit = genCSEnum2bit(cseIndex);
+                if (IS_CSE_DEF(tree->gtCSEnum))
+                {
+                    BitVecOps::AddElemD(m_compiler->cseMaskTraits, m_maskData->CSE_defMask, cseBit);
+                }
+                else
+                {
+                    BitVecOps::AddElemD(m_compiler->cseMaskTraits, m_maskData->CSE_useMask, cseBit);
+                }
+            }
+            return fgWalkResult::WALK_CONTINUE;
+        }
+    };
+
     pMaskData->CSE_defMask = BitVecOps::MakeEmpty(cseMaskTraits);
     pMaskData->CSE_useMask = BitVecOps::MakeEmpty(cseMaskTraits);
-    fgWalkTreePre(&tree, optCSE_MaskHelper, (void*)pMaskData);
+    MaskDataWalker walker(this, pMaskData);
+    walker.WalkTree(&tree, nullptr);
 }
 
 //------------------------------------------------------------------------
@@ -239,27 +261,6 @@ bool Compiler::optCSE_canSwap(GenTree* op1, GenTree* op2)
     }
 
     return canSwap;
-}
-
-//------------------------------------------------------------------------
-// optCSE_canSwap: Determine if the execution order of a node's operands can be swapped.
-//
-// Arguments:
-//    tree - The node of interest
-//
-// Return Value:
-//    Return true iff it safe to swap the execution order of the operands of 'tree',
-//    considering only the locations of the CSE defs and uses.
-//
-bool Compiler::optCSE_canSwap(GenTree* tree)
-{
-    // We must have a binary treenode with non-null op1 and op2
-    assert((tree->OperKind() & GTK_SMPOP) != 0);
-
-    GenTree* op1 = tree->AsOp()->gtOp1;
-    GenTree* op2 = tree->gtGetOp2();
-
-    return optCSE_canSwap(op1, op2);
 }
 
 /*****************************************************************************
@@ -405,13 +406,13 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     bool     isSharedConst        = false;
     int      configValue          = JitConfig.JitConstCSE();
 
-#if defined(TARGET_ARM64)
-    // ARM64 - allow to combine with nearby offsets, when config is not 2 or 4
-    if ((configValue != CONST_CSE_ENABLE_ARM64_NO_SHARING) && (configValue != CONST_CSE_ENABLE_ALL_NO_SHARING))
+#if defined(TARGET_ARMARCH)
+    // ARMARCH - allow to combine with nearby offsets, when config is not 2 or 4
+    if ((configValue != CONST_CSE_ENABLE_ARM_NO_SHARING) && (configValue != CONST_CSE_ENABLE_ALL_NO_SHARING))
     {
         enableSharedConstCSE = true;
     }
-#endif // TARGET_ARM64
+#endif // TARGET_ARMARCH
 
     // All Platforms - also allow to combine with nearby offsets, when config is 3
     if (configValue == CONST_CSE_ENABLE_ALL)
@@ -424,16 +425,16 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     ValueNum vnLibNorm = vnStore->VNNormalValue(vnLib);
 
     // We use the normal value number because we want the CSE candidate to
-    // represent all expressions that produce the same normal value number
+    // represent all expressions that produce the same normal value number.
     // We will handle the case where we have different exception sets when
     // promoting the candidates.
     //
     // We do this because a GT_IND will usually have a NullPtrExc entry in its
     // exc set, but we may have cleared the GTF_EXCEPT flag and if so, it won't
-    // have an NullPtrExc, or we may have assigned the value of an  GT_IND
+    // have an NullPtrExc, or we may have assigned the value of an GT_IND
     // into a LCL_VAR and then read it back later.
     //
-    // When we are promoting the CSE candidates we insure that any CSE
+    // When we are promoting the CSE candidates we ensure that any CSE
     // uses that we promote have an exc set that is the same as the CSE defs
     // or have an empty set.  And that all of the CSE defs produced the required
     // set of exceptions for the CSE uses.
@@ -455,7 +456,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         // If the value number for op2 and tree are different, then some new
         // exceptions were produced by op1. For that case we will NOT use the
         // normal value. This allows us to CSE commas with an op1 that is
-        // an ARR_BOUNDS_CHECK.
+        // an BOUNDS_CHECK.
         //
         if (vnOp2Lib != vnLib)
         {
@@ -477,8 +478,9 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         assert(vnStore->IsVNConstant(vnLibNorm));
 
         // We don't share small offset constants when they require a reloc
+        // Also, we don't share non-null const gc handles
         //
-        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this))
+        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this) && ((tree->IsIntegralConst(0)) || !varTypeIsGC(tree)))
         {
             // Here we make constants that have the same upper bits use the same key
             //
@@ -502,7 +504,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         key = vnLibNorm;
     }
 
-    // Make sure that the result of Is_Shared_Const_CSE(key) matches isSharedConst
+    // Make sure that the result of Is_Shared_Const_CSE(key) matches isSharedConst.
     // Note that when isSharedConst is true then we require that the TARGET_SIGN_BIT is set in the key
     // and otherwise we require that we never create a ValueNumber with the TARGET_SIGN_BIT set.
     //
@@ -543,23 +545,10 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
                 /* Start the list with the first CSE candidate recorded */
 
-                hashDsc->csdTreeList  = newElem;
-                hashDsc->csdTreeLast  = newElem;
-                hashDsc->csdStructHnd = NO_CLASS_HANDLE;
+                hashDsc->csdTreeList = newElem;
+                hashDsc->csdTreeLast = newElem;
 
-                hashDsc->csdIsSharedConst     = isSharedConst;
-                hashDsc->csdStructHndMismatch = false;
-
-                if (varTypeIsStruct(tree->gtType))
-                {
-                    // When we have a GT_IND node with a SIMD type then we don't have a reliable
-                    // struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
-                    //
-                    if ((hashDsc->csdTree->OperGet() != GT_IND) || !varTypeIsSIMD(tree))
-                    {
-                        hashDsc->csdStructHnd = gtGetStructHandleIfPresent(hashDsc->csdTree);
-                    }
-                }
+                hashDsc->csdIsSharedConst = isSharedConst;
             }
 
             noway_assert(hashDsc->csdTreeList);
@@ -575,38 +564,6 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
             hashDsc->csdTreeLast->tslNext = newElem;
             hashDsc->csdTreeLast          = newElem;
-
-            if (varTypeIsStruct(newElem->tslTree->gtType))
-            {
-                // When we have a GT_IND node with a SIMD type then we don't have a reliable
-                // struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
-                //
-                if ((newElem->tslTree->OperGet() != GT_IND) || !varTypeIsSIMD(newElem->tslTree))
-                {
-                    CORINFO_CLASS_HANDLE newElemStructHnd = gtGetStructHandleIfPresent(newElem->tslTree);
-                    if (newElemStructHnd != NO_CLASS_HANDLE)
-                    {
-                        if (hashDsc->csdStructHnd == NO_CLASS_HANDLE)
-                        {
-                            // The previous node(s) were GT_IND's and didn't carry the struct handle info
-                            // The current node does have the struct handle info, so record it now
-                            //
-                            hashDsc->csdStructHnd = newElemStructHnd;
-                        }
-                        else if (newElemStructHnd != hashDsc->csdStructHnd)
-                        {
-                            hashDsc->csdStructHndMismatch = true;
-#ifdef DEBUG
-                            if (verbose)
-                            {
-                                printf("Abandoned - CSE candidate has mismatching struct handles!\n");
-                                printTreeID(newElem->tslTree);
-                            }
-#endif // DEBUG
-                        }
-                    }
-                }
-            }
 
             optDoCSE = true; // Found a duplicate CSE tree
 
@@ -654,6 +611,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                     }
                 }
 
+                hval                           = optCSEKeyToHashIndex(key, newOptCSEhashSize);
                 optCSEhash                     = newOptCSEhash;
                 optCSEhashSize                 = newOptCSEhashSize;
                 optCSEhashMaxCountBeforeResize = optCSEhashMaxCountBeforeResize * s_optCSEhashGrowthFactor;
@@ -709,7 +667,6 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         C_ASSERT((signed char)MAX_CSE_CNT == MAX_CSE_CNT);
 
         unsigned CSEindex = ++optCSECandidateCount;
-        // EXPSET_TP  CSEmask  = genCSEnum2bit(CSEindex);
 
         /* Record the new CSE index in the hashDsc */
         hashDsc->csdIndex = CSEindex;
@@ -726,7 +683,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nCSE candidate #%02u, key=", CSEindex);
+            printf("\nCandidate " FMT_CSE ", key=", CSEindex);
             if (!Compiler::Is_Shared_Const_CSE(key))
             {
                 vnPrint((unsigned)key, 0);
@@ -746,16 +703,14 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
     }
 }
 
-/*****************************************************************************
- *
- *  Locate CSE candidates and assign indices to them
- *  return 0 if no CSE candidates were found
- */
-
-unsigned Compiler::optValnumCSE_Locate()
+//------------------------------------------------------------------------
+// optValnumCSE_Locate: Locate CSE candidates and assign them indices.
+//
+// Returns:
+//    true if there are any CSE candidates, false otherwise
+//
+bool Compiler::optValnumCSE_Locate()
 {
-    // Locate CSE candidates and assign them indices
-
     bool enableConstCSE = true;
 
     int configValue = JitConfig.JitConstCSE();
@@ -779,24 +734,24 @@ unsigned Compiler::optValnumCSE_Locate()
     }
 #endif
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         /* Make the block publicly available */
 
         compCurBB = block;
 
-        /* Ensure that the BBF_VISITED and BBF_MARKED flag are clear */
-        /* Everyone who uses these flags are required to clear afterwards */
-        noway_assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
+        // Ensure that the BBF_MARKED flag is clear.
+        // Everyone who uses this flag is required to clear it afterwards.
+        noway_assert((block->bbFlags & BBF_MARKED) == 0);
 
         /* Walk the statement trees in this basic block */
-        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             const bool isReturn = stmt->GetRootNode()->OperIs(GT_RETURN);
 
             /* We walk the tree in the forwards direction (bottom up) */
             bool stmtHasArrLenCandidate = false;
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (tree->OperIsCompare() && stmtHasArrLenCandidate)
                 {
@@ -807,10 +762,12 @@ unsigned Compiler::optValnumCSE_Locate()
                 }
 
                 // Don't allow CSE of constants if it is disabled
-                //
                 if (tree->IsIntegralConst())
                 {
-                    if (!enableConstCSE)
+                    if (!enableConstCSE &&
+                        // Unconditionally allow these constant handles to be CSE'd
+                        !tree->IsIconHandle(GTF_ICON_STATIC_HDL) && !tree->IsIconHandle(GTF_ICON_CLASS_HDL) &&
+                        !tree->IsIconHandle(GTF_ICON_STR_HDL) && !tree->IsIconHandle(GTF_ICON_OBJ_HDL))
                     {
                         continue;
                     }
@@ -830,7 +787,8 @@ unsigned Compiler::optValnumCSE_Locate()
                     continue;
                 }
 
-                if (ValueNumStore::isReservedVN(tree->GetVN(VNK_Liberal)))
+                ValueNum valueVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
+                if (ValueNumStore::isReservedVN(valueVN) && (valueVN != ValueNumStore::VNForNull()))
                 {
                     continue;
                 }
@@ -859,7 +817,7 @@ unsigned Compiler::optValnumCSE_Locate()
                     noway_assert(((unsigned)tree->gtCSEnum) == CSEindex);
                 }
 
-                if (IS_CSE_INDEX(CSEindex) && (tree->OperGet() == GT_ARR_LENGTH))
+                if (IS_CSE_INDEX(CSEindex) && tree->OperIsArrLength())
                 {
                     stmtHasArrLenCandidate = true;
                 }
@@ -871,14 +829,14 @@ unsigned Compiler::optValnumCSE_Locate()
 
     if (!optDoCSE)
     {
-        return 0;
+        return false;
     }
 
     /* We're finished building the expression lookup table */
 
     optCSEstop();
 
-    return 1;
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -890,7 +848,7 @@ unsigned Compiler::optValnumCSE_Locate()
 //
 // Arguments:
 //    compare - The compare node to check
-
+//
 void Compiler::optCseUpdateCheckedBoundMap(GenTree* compare)
 {
     assert(compare->OperIsCompare());
@@ -986,7 +944,7 @@ void Compiler::optValnumCSE_InitDataFlow()
     // BitVec trait information for computing CSE availability using the CSE_DataFlow algorithm.
     // Two bits are allocated per CSE candidate to compute CSE availability
     // plus an extra bit to handle the initial unvisited case.
-    // (See CSE_DataFlow::EndMerge for an explaination of why this is necessary)
+    // (See CSE_DataFlow::EndMerge for an explanation of why this is necessary)
     //
     // The two bits per CSE candidate have the following meanings:
     //     11 - The CSE is available, and is also available when considering calls as killing availability.
@@ -999,9 +957,9 @@ void Compiler::optValnumCSE_InitDataFlow()
     // Init traits and cseCallKillsMask bitvectors.
     cseLivenessTraits = new (getAllocator(CMK_CSE)) BitVecTraits(bitCount, this);
     cseCallKillsMask  = BitVecOps::MakeEmpty(cseLivenessTraits);
-    for (unsigned inx = 0; inx < optCSECandidateCount; inx++)
+    for (unsigned inx = 1; inx <= optCSECandidateCount; inx++)
     {
-        unsigned cseAvailBit = inx * 2;
+        unsigned cseAvailBit = getCSEAvailBit(inx);
 
         // a one preserves availability and a zero kills the availability
         // we generate this kind of bit pattern:  101010101010
@@ -1009,7 +967,7 @@ void Compiler::optValnumCSE_InitDataFlow()
         BitVecOps::AddElemD(cseLivenessTraits, cseCallKillsMask, cseAvailBit);
     }
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         /* Initialize the blocks's bbCseIn set */
 
@@ -1047,7 +1005,7 @@ void Compiler::optValnumCSE_InitDataFlow()
         block->bbCseGen = BitVecOps::MakeEmpty(cseLivenessTraits);
     }
 
-    // We walk the set of CSE candidates and set the bit corresponsing to the CSEindex
+    // We walk the set of CSE candidates and set the bit corresponding to the CSEindex
     // in the block's bbCseGen bitset
     //
     for (unsigned inx = 0; inx < optCSECandidateCount; inx++)
@@ -1060,16 +1018,16 @@ void Compiler::optValnumCSE_InitDataFlow()
         while (lst != nullptr)
         {
             BasicBlock* block                = lst->tslBlock;
-            unsigned    CseAvailBit          = genCSEnum2bit(CSEindex) * 2;
-            unsigned    cseAvailCrossCallBit = CseAvailBit + 1;
+            unsigned    cseAvailBit          = getCSEAvailBit(CSEindex);
+            unsigned    cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEindex);
 
-            // This CSE is generated in 'block', we always set the CseAvailBit
+            // This CSE is generated in 'block', we always set the cseAvailBit
             // If this block does not contain a call, we also set cseAvailCrossCallBit
             //
             // If we have a call in this block then in the loop below we walk the trees
             // backwards to find any CSEs that are generated after the last call in the block.
             //
-            BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, CseAvailBit);
+            BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, cseAvailBit);
             if ((block->bbFlags & BBF_HAS_CALL) == 0)
             {
                 BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, cseAvailCrossCallBit);
@@ -1078,7 +1036,7 @@ void Compiler::optValnumCSE_InitDataFlow()
         }
     }
 
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // If the block doesn't contains a call then skip it...
         //
@@ -1113,7 +1071,7 @@ void Compiler::optValnumCSE_InitDataFlow()
                 if (IS_CSE_INDEX(tree->gtCSEnum))
                 {
                     unsigned CSEnum               = GET_CSE_INDEX(tree->gtCSEnum);
-                    unsigned cseAvailCrossCallBit = (genCSEnum2bit(CSEnum) * 2) + 1;
+                    unsigned cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEnum);
                     BitVecOps::AddElemD(cseLivenessTraits, block->bbCseGen, cseAvailCrossCallBit);
                 }
                 if (tree->OperGet() == GT_CALL)
@@ -1140,17 +1098,18 @@ void Compiler::optValnumCSE_InitDataFlow()
     if (verbose)
     {
         bool headerPrinted = false;
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
-            if (block->bbCseGen != nullptr)
+            if (!BitVecOps::IsEmpty(cseLivenessTraits, block->bbCseGen))
             {
                 if (!headerPrinted)
                 {
                     printf("\nBlocks that generate CSE def/uses\n");
                     headerPrinted = true;
                 }
-                printf(FMT_BB, block->bbNum);
-                printf(" cseGen = %s\n", genES2str(cseLivenessTraits, block->bbCseGen));
+                printf(FMT_BB " cseGen = ", block->bbNum);
+                optPrintCSEDataFlowSet(block->bbCseGen);
+                printf("\n");
             }
         }
     }
@@ -1184,6 +1143,7 @@ public:
         //
         BitVecOps::Assign(m_comp->cseLivenessTraits, m_preMergeOut, block->bbCseOut);
 
+#if 0
 #ifdef DEBUG
         if (m_comp->verbose)
         {
@@ -1191,11 +1151,13 @@ public:
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
 #endif // DEBUG
+#endif // 0
     }
 
     // Merge: perform the merging of each of the predecessor's liveness values (since this is a forward analysis)
     void Merge(BasicBlock* block, BasicBlock* predBlock, unsigned dupCount)
     {
+#if 0
 #ifdef DEBUG
         if (m_comp->verbose)
         {
@@ -1204,15 +1166,18 @@ public:
             printf("  :: cseOut    = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseOut));
         }
 #endif // DEBUG
+#endif // 0
 
         BitVecOps::IntersectionD(m_comp->cseLivenessTraits, block->bbCseIn, predBlock->bbCseOut);
 
+#if 0
 #ifdef DEBUG
         if (m_comp->verbose)
         {
             printf("  => cseIn     = %s\n", genES2str(m_comp->cseLivenessTraits, block->bbCseIn));
         }
 #endif // DEBUG
+#endif // 0
     }
 
     //------------------------------------------------------------------------
@@ -1232,7 +1197,7 @@ public:
     }
 
     // At the end of the merge store results of the dataflow equations, in a postmerge state.
-    // We also handle the case where calls conditionally kill CSE availabilty.
+    // We also handle the case where calls conditionally kill CSE availability.
     //
     bool EndMerge(BasicBlock* block)
     {
@@ -1265,13 +1230,14 @@ public:
         // If it is 'true' then the initial value of m_preMergeOut was different than the final value that
         // we computed for bbCseOut.  When it is true we will visit every the successor of 'block'
         //
-        // This is also why we need to allocate an extra bit in our cseLivenessTrair BitVecs.
-        // We always need to visit our successor blocks once, thus we require that that the first time
-        // that we visit a block we have a bit set in m_preMergeOut that won't be set when we compute
+        // This is also why we need to allocate an extra bit in our cseLivenessTraits BitVecs.
+        // We always need to visit our successor blocks once, thus we require that the first time
+        // we visit a block we have a bit set in m_preMergeOut that won't be set when we compute
         // the new value of bbCseOut.
         //
         bool notDone = !BitVecOps::Equal(m_comp->cseLivenessTraits, block->bbCseOut, m_preMergeOut);
 
+#if 0
 #ifdef DEBUG
         if (m_comp->verbose)
         {
@@ -1288,6 +1254,7 @@ public:
                    notDone ? "true" : "false");
         }
 #endif // DEBUG
+#endif // 0
 
         return notDone;
     }
@@ -1328,12 +1295,14 @@ void Compiler::optValnumCSE_DataFlow()
     {
         printf("\nAfter performing DataFlow for ValnumCSE's\n");
 
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
-            printf(FMT_BB, block->bbNum);
-            printf(" cseIn  = %s,", genES2str(cseLivenessTraits, block->bbCseIn));
-            printf(" cseGen = %s,", genES2str(cseLivenessTraits, block->bbCseGen));
-            printf(" cseOut = %s", genES2str(cseLivenessTraits, block->bbCseOut));
+            printf(FMT_BB "\n in: ", block->bbNum);
+            optPrintCSEDataFlowSet(block->bbCseIn);
+            printf("\ngen: ");
+            optPrintCSEDataFlowSet(block->bbCseGen);
+            printf("\nout: ");
+            optPrintCSEDataFlowSet(block->bbCseOut);
             printf("\n");
         }
 
@@ -1343,21 +1312,21 @@ void Compiler::optValnumCSE_DataFlow()
 }
 
 //---------------------------------------------------------------------------
-// optValnumCSE_Availablity:
+// optValnumCSE_Availability:
 //
 //     Using the information computed by CSE_DataFlow determine for each
 //     CSE whether the CSE is a definition (if the CSE was not available)
-//     or if the CSE is a use (if the CSE was previously made available)
-//     The implementation iterates of all blocks setting 'available_cses'
+//     or if the CSE is a use (if the CSE was previously made available).
+//     The implementation iterates over all blocks setting 'available_cses'
 //     to the CSEs that are available at input to the block.
 //     When a CSE expression is encountered it is classified as either
 //     as a definition (if the CSE is not in the 'available_cses' set) or
-//     as a use (if the CSE is  in the 'available_cses' set).  If the CSE
+//     as a use (if the CSE is in the 'available_cses' set).  If the CSE
 //     is a definition then it is added to the 'available_cses' set.
 //
 //     This algorithm uncovers the defs and uses gradually and as it does
 //     so it also builds the exception set that all defs make: 'defExcSetCurrent'
-//     and the exception set that the uses we have seen depend upon: 'defExcSetPromise'
+//     and the exception set that the uses we have seen depend upon: 'defExcSetPromise'.
 //
 //     Typically expressions with the same normal ValueNum generate exactly the
 //     same exception sets. There are two way that we can get different exception
@@ -1371,13 +1340,12 @@ void Compiler::optValnumCSE_DataFlow()
 //     2. We stored an expression into a LclVar or into Memory and read it later
 //        e.g. t = p.a;
 //             e1 = (t + q.b)    :: e1 has one NullPtrExc and e2 has two.
-//             e2 = (p.a + q.b)     but both compute the same normal value//
+//             e2 = (p.a + q.b)     but both compute the same normal value
 //        e.g. m.a = p.a;
 //             e1 = (m.a + q.b)  :: e1 and e2 have different exception sets.
 //             e2 = (p.a + q.b)     but both compute the same normal value
 //
-//
-void Compiler::optValnumCSE_Availablity()
+void Compiler::optValnumCSE_Availability()
 {
 #ifdef DEBUG
     if (verbose)
@@ -1387,7 +1355,7 @@ void Compiler::optValnumCSE_Availablity()
 #endif
     EXPSET_TP available_cses = BitVecOps::MakeEmpty(cseLivenessTraits);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         // Make the block publicly available
 
@@ -1399,24 +1367,24 @@ void Compiler::optValnumCSE_Availablity()
 
         // Walk the statement trees in this basic block
 
-        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             // We walk the tree in the forwards direction (bottom up)
 
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 bool isUse = false;
                 bool isDef = false;
 
                 if (IS_CSE_INDEX(tree->gtCSEnum))
                 {
-                    unsigned             CSEnum               = GET_CSE_INDEX(tree->gtCSEnum);
-                    unsigned             CseAvailBit          = genCSEnum2bit(CSEnum) * 2;
-                    unsigned             cseAvailCrossCallBit = CseAvailBit + 1;
-                    CSEdsc*              desc                 = optCSEfindDsc(CSEnum);
-                    BasicBlock::weight_t stmw                 = block->getBBWeight(this);
+                    unsigned CSEnum               = GET_CSE_INDEX(tree->gtCSEnum);
+                    unsigned cseAvailBit          = getCSEAvailBit(CSEnum);
+                    unsigned cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEnum);
+                    CSEdsc*  desc                 = optCSEfindDsc(CSEnum);
+                    weight_t stmw                 = block->getBBWeight(this);
 
-                    isUse = BitVecOps::IsMember(cseLivenessTraits, available_cses, CseAvailBit);
+                    isUse = BitVecOps::IsMember(cseLivenessTraits, available_cses, cseAvailBit);
                     isDef = !isUse; // If is isn't a CSE use, it is a CSE def
 
                     // Is this a "use", that we haven't yet marked as live across a call
@@ -1446,7 +1414,7 @@ void Compiler::optValnumCSE_Availablity()
                         printf(FMT_BB " ", block->bbNum);
                         printTreeID(tree);
 
-                        printf(" %s of CSE #%02u [weight=%s]%s\n", isUse ? "Use" : "Def", CSEnum, refCntWtd2str(stmw),
+                        printf(" %s of " FMT_CSE " [weight=%s]%s\n", isUse ? "Use" : "Def", CSEnum, refCntWtd2str(stmw),
                                madeLiveAcrossCall ? " *** Now Live Across Call ***" : "");
                     }
 #endif // DEBUG
@@ -1477,7 +1445,7 @@ void Compiler::optValnumCSE_Availablity()
                         // Is defExcSetCurrent still set to the uninit marker value of VNForNull() ?
                         if (desc->defExcSetCurrent == vnStore->VNForNull())
                         {
-                            // This is the first time visited, so record this defs exeception set
+                            // This is the first time visited, so record this defs exception set
                             desc->defExcSetCurrent = theLiberalExcSet;
                         }
 
@@ -1485,7 +1453,7 @@ void Compiler::optValnumCSE_Availablity()
                         //
                         if (desc->defExcSetPromise != vnStore->VNForEmptyExcSet())
                         {
-                            // The exeception set held in desc->defExcSetPromise must be a subset of theLiberalExcSet
+                            // The exception set held in desc->defExcSetPromise must be a subset of theLiberalExcSet
                             //
                             if (vnStore->VNExcIsSubset(theLiberalExcSet, desc->defExcSetPromise))
                             {
@@ -1589,7 +1557,7 @@ void Compiler::optValnumCSE_Availablity()
                         tree->gtCSEnum = TO_CSE_DEF(tree->gtCSEnum);
 
                         // This CSE becomes available after this def
-                        BitVecOps::AddElemD(cseLivenessTraits, available_cses, CseAvailBit);
+                        BitVecOps::AddElemD(cseLivenessTraits, available_cses, cseAvailBit);
                         BitVecOps::AddElemD(cseLivenessTraits, available_cses, cseAvailCrossCallBit);
                     }
                     else // We are visiting a CSE use
@@ -1636,7 +1604,7 @@ void Compiler::optValnumCSE_Availablity()
                             if (!vnStore->VNExcIsSubset(desc->defExcSetPromise, theLiberalExcSet))
                             {
                                 // We can't safely make this into a CSE use, because this
-                                // CSE use has an exeception set item that is not promised
+                                // CSE use has an exception set item that is not promised
                                 // by all of our CSE defs.
                                 //
                                 // We will omit this CSE use from the graph and proceed,
@@ -1658,9 +1626,9 @@ void Compiler::optValnumCSE_Availablity()
                     }
                 }
 
-                // In order to determine if a CSE is live across a call, we model availablity using two bits and
+                // In order to determine if a CSE is live across a call, we model availability using two bits and
                 // kill all of the cseAvailCrossCallBit for each CSE whenever we see a GT_CALL (unless the call
-                // generates A cse)
+                // generates a CSE).
                 //
                 if (tree->OperGet() == GT_CALL)
                 {
@@ -1690,7 +1658,7 @@ void Compiler::optValnumCSE_Availablity()
                                 // available_cses
                                 //
                                 unsigned CSEnum               = GET_CSE_INDEX(tree->gtCSEnum);
-                                unsigned cseAvailCrossCallBit = (genCSEnum2bit(CSEnum) * 2) + 1;
+                                unsigned cseAvailCrossCallBit = getCSEAvailCrossCallBit(CSEnum);
 
                                 BitVecOps::AddElemD(cseLivenessTraits, available_cses, cseAvailCrossCallBit);
                             }
@@ -1711,11 +1679,12 @@ class CSE_Heuristic
     Compiler* m_pCompiler;
     unsigned  m_addCSEcount;
 
-    BasicBlock::weight_t   aggressiveRefCnt;
-    BasicBlock::weight_t   moderateRefCnt;
+    weight_t               aggressiveRefCnt;
+    weight_t               moderateRefCnt;
     unsigned               enregCount; // count of the number of predicted enregistered variables
     bool                   largeFrame;
     bool                   hugeFrame;
+    bool                   madeChanges;
     Compiler::codeOptimize codeOptKind;
     Compiler::CSEdsc**     sortTab;
     size_t                 sortSiz;
@@ -1735,11 +1704,14 @@ public:
         return codeOptKind;
     }
 
-    // Perform the Initialization step for our CSE Heuristics
-    // determine the various cut off values to use for
-    // the aggressive, moderate and conservative CSE promotions
-    // count the number of enregisterable variables
-    // determine if the method has a large or huge stack frame.
+    bool MadeChanges() const
+    {
+        return madeChanges;
+    }
+
+    // Perform the Initialization step for our CSE Heuristics. Determine the various cut off values to use for
+    // the aggressive, moderate and conservative CSE promotions. Count the number of enregisterable variables.
+    // Determine if the method has a large or huge stack frame.
     //
     void Initialize()
     {
@@ -1788,7 +1760,7 @@ public:
             bool onStack = (regAvailEstimate == 0); // true when it is likely that this LclVar will have a stack home
 
             // Some LclVars always have stack homes
-            if ((varDsc->lvDoNotEnregister) || (varDsc->lvType == TYP_LCLBLK))
+            if (varDsc->lvDoNotEnregister)
             {
                 onStack = true;
             }
@@ -1829,16 +1801,17 @@ public:
                     }
                 }
             }
+
 #ifdef TARGET_XARCH
             if (frameSize > 0x080)
             {
                 // We likely have a large stack frame.
                 //
-                // On XARCH stack frame displacements can either use a 1-byte or a 4-byte displacement
-                // with a large franme we will need to use some 4-byte displacements.
+                // On XARCH stack frame displacements can either use a 1-byte or a 4-byte displacement.
+                // With a large frame we will need to use some 4-byte displacements.
                 //
                 largeFrame = true;
-                break; // early out,  we don't need to keep increasing frameSize
+                break; // early out, we don't need to keep increasing frameSize
             }
 #elif defined(TARGET_ARM)
             if (frameSize > 0x0400)
@@ -1846,14 +1819,14 @@ public:
                 // We likely have a large stack frame.
                 //
                 // Thus we might need to use large displacements when loading or storing
-                // to CSE LclVars that are not enregistered
+                // to CSE LclVars that are not enregistered.
                 // On ARM32 this means using rsGetRsvdReg() to hold the large displacement
                 largeFrame = true;
             }
             if (frameSize > 0x10000)
             {
                 hugeFrame = true;
-                break; // early out,  we don't need to keep increasing frameSize
+                break; // early out, we don't need to keep increasing frameSize
             }
 #elif defined(TARGET_ARM64)
             if (frameSize > 0x1000)
@@ -1861,22 +1834,31 @@ public:
                 // We likely have a large stack frame.
                 //
                 // Thus we might need to use large displacements when loading or storing
-                // to CSE LclVars that are not enregistered
-                // On ARM64 this means using rsGetRsvdReg() to hold the large displacement
+                // to CSE LclVars that are not enregistered.
+                // On ARM64 this means using rsGetRsvdReg() or R21 to hold the large displacement
                 //
                 largeFrame = true;
-                break; // early out,  we don't need to keep increasing frameSize
+                break; // early out, we don't need to keep increasing frameSize
+            }
+#elif defined(TARGET_LOONGARCH64)
+            if (frameSize > 0x7ff)
+            {
+                // We likely have a large stack frame.
+                //
+                // Thus we might need to use large displacements when loading or storing
+                // to CSE LclVars that are not enregistered.
+                // On LoongArch64 this means using rsGetRsvdReg() to hold the large displacement.
+                //
+                largeFrame = true;
+                break; // early out, we don't need to keep increasing frameSize
             }
 #endif
         }
 
-        // Iterate over the sorted list of tracked local variables
-        // these are the register candidates for LSRA
-        // We normally vist the LclVar in order of their weighted ref counts
-        // and our hueristic assumes that the highest weighted ref count
-        // LclVars will be enregistered and that the lowest weighted ref count
-        // are likely be allocated in the stack frame.
-        // The value of enregCount is incremented when we visit a LclVar
+        // Iterate over the sorted list of tracked local variables. These are the register candidates for LSRA.
+        // We normally visit the LclVars in order of their weighted ref counts and our heuristic assumes that the
+        // highest weighted ref count LclVars will be enregistered and that the lowest weighted ref count
+        // are likely be allocated in the stack frame. The value of enregCount is incremented when we visit a LclVar
         // that can be enregistered.
         //
         for (unsigned trackedIndex = 0; trackedIndex < m_pCompiler->lvaTrackedCount; trackedIndex++)
@@ -1891,14 +1873,14 @@ public:
             }
 
             // Some LclVars always have stack homes
-            if ((varDsc->lvDoNotEnregister) || (varDsc->lvType == TYP_LCLBLK))
+            if (varDsc->lvDoNotEnregister)
             {
                 continue;
             }
 
-            // The enregCount only tracks the uses of integer registers
+            // enregCount only tracks the uses of integer registers.
             //
-            // We could track floating point register usage seperately
+            // We could track floating point register usage separately
             // but it isn't worth the additional complexity as floating point CSEs
             // are rare and we typically have plenty of floating point register available.
             //
@@ -1923,7 +1905,7 @@ public:
             const unsigned aggressiveEnregNum = (CNT_CALLEE_ENREG * 3 / 2);
             const unsigned moderateEnregNum   = ((CNT_CALLEE_ENREG * 3) + (CNT_CALLEE_TRASH * 2));
             //
-            // On Windows x64 this yeilds:
+            // On Windows x64 this yields:
             // aggressiveEnregNum == 12 and moderateEnregNum == 38
             // Thus we will typically set the cutoff values for
             //   aggressiveRefCnt based upon the weight of T13 (the 13th tracked LclVar)
@@ -2008,9 +1990,9 @@ public:
                 Compiler::CSEdsc* dsc  = sortTab[cnt];
                 GenTree*          expr = dsc->csdTree;
 
-                BasicBlock::weight_t def;
-                BasicBlock::weight_t use;
-                unsigned             cost;
+                weight_t def;
+                weight_t use;
+                unsigned cost;
 
                 if (CodeOptKind() == Compiler::SMALL_CODE)
                 {
@@ -2027,14 +2009,14 @@ public:
 
                 if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
                 {
-                    printf("CSE #%02u, {$%-3x, $%-3x} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ",
+                    printf(FMT_CSE ", {$%-3x, $%-3x} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ",
                            dsc->csdIndex, dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
                            dsc->csdLiveAcrossCall ? ", call" : "      ");
                 }
                 else
                 {
                     size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                    printf("CSE #%02u, {K_%p} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
+                    printf(FMT_CSE ", {K_%p} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
                            dspPtr(kVal), dsc->csdUseCount, def, use, cost,
                            dsc->csdLiveAcrossCall ? ", call" : "      ");
                 }
@@ -2057,11 +2039,11 @@ public:
         CSE_Heuristic*    m_context;
         Compiler::CSEdsc* m_CseDsc;
 
-        unsigned             m_cseIndex;
-        BasicBlock::weight_t m_defCount;
-        BasicBlock::weight_t m_useCount;
-        unsigned             m_Cost;
-        unsigned             m_Size;
+        unsigned m_cseIndex;
+        weight_t m_defCount;
+        weight_t m_useCount;
+        unsigned m_Cost;
+        unsigned m_Size;
 
         // When this Candidate is successfully promoted to a CSE we record
         // the following information about what category was used when promoting it.
@@ -2111,11 +2093,11 @@ public:
         {
             return m_cseIndex;
         }
-        BasicBlock::weight_t DefCount()
+        weight_t DefCount()
         {
             return m_defCount;
         }
-        BasicBlock::weight_t UseCount()
+        weight_t UseCount()
         {
             return m_useCount;
         }
@@ -2205,8 +2187,8 @@ public:
     //------------------------------------------------------------------------
     // optConfigBiasedCSE:
     //     Stress mode to shuffle the decision to CSE or not using environment
-    //     variable COMPlus_JitStressBiasedCSE (= 0 to 100%). When the bias value
-    //     is not specified but COMPlus_JitStress is ON, generate a random bias.
+    //     variable DOTNET_JitStressBiasedCSE (= 0 to 100%). When the bias value
+    //     is not specified but DOTNET_JitStress is ON, generate a random bias.
     //
     // Return Value:
     //      0 -- This method is indifferent about this CSE (no bias specified and no stress)
@@ -2217,13 +2199,13 @@ public:
     //     A debug stress only method that returns "1" with probability (P)
     //     defined by:
     //
-    //         P = (COMPlus_JitStressBiasedCSE / 100) (or)
-    //         P = (random(100) / 100) when COMPlus_JitStress is specified and
-    //                                 COMPlus_JitStressBiasedCSE is unspecified.
+    //         P = (DOTNET_JitStressBiasedCSE / 100) (or)
+    //         P = (random(100) / 100) when DOTNET_JitStress is specified and
+    //                                 DOTNET_JitStressBiasedCSE is unspecified.
     //
     //     When specified, the bias is reinterpreted as a decimal number between 0
     //     to 100.
-    //     When bias is not specified, a bias is randomly generated if COMPlus_JitStress
+    //     When bias is not specified, a bias is randomly generated if DOTNET_JitStress
     //     is non-zero.
     //
     //     Callers are supposed to call this method for each CSE promotion decision
@@ -2308,8 +2290,8 @@ public:
 
             (def + use) * cost
 
-            If we introduce a CSE temp are each definition and
-            replace the use with a CSE temp then our cost is:
+            If we introduce a CSE temp at each definition and
+            replace each use with a CSE temp then our cost is:
 
             (def * (cost + cse-def-cost)) + (use * cse-use-cost)
 
@@ -2323,7 +2305,7 @@ public:
             If we are unable to enregister the CSE then the cse-use-cost is IND_COST
             and the cse-def-cost is also IND_COST.
 
-            If we want to be conservative we use IND_COST as the the value
+            If we want to be conservative we use IND_COST as the value
             for both cse-def-cost and cse-use-cost and then we never introduce
             a CSE that could pessimize the execution time of the method.
 
@@ -2333,7 +2315,7 @@ public:
             If we want to be aggressive we use 1 as the values for both
             cse-def-cost and cse-use-cost.
 
-            If we believe that the CSE very valuable in terms of weighted ref counts
+            If we believe that the CSE is very valuable in terms of weighted ref counts
             such that it would always be enregistered by the register allocator we choose
             the aggressive use def costs.
 
@@ -2341,36 +2323,29 @@ public:
             such that it could be likely be enregistered by the register allocator we choose
             the moderate use def costs.
 
-            otherwise we choose the conservative use def costs.
+            Otherwise we choose the conservative use def costs.
 
         */
 
         unsigned cse_def_cost;
         unsigned cse_use_cost;
 
-        BasicBlock::weight_t no_cse_cost    = 0;
-        BasicBlock::weight_t yes_cse_cost   = 0;
-        unsigned             extra_yes_cost = 0;
-        unsigned             extra_no_cost  = 0;
+        weight_t no_cse_cost    = 0;
+        weight_t yes_cse_cost   = 0;
+        unsigned extra_yes_cost = 0;
+        unsigned extra_no_cost  = 0;
 
         // The 'cseRefCnt' is the RefCnt that we will have if we promote this CSE into a new LclVar
         // Each CSE Def will contain two Refs and each CSE Use will have one Ref of this new LclVar
-        BasicBlock::weight_t cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
+        weight_t cseRefCnt = (candidate->DefCount() * 2) + candidate->UseCount();
 
         bool     canEnregister = true;
         unsigned slotCount     = 1;
-        if (candidate->Expr()->TypeGet() == TYP_STRUCT)
+        if (candidate->Expr()->TypeIs(TYP_STRUCT))
         {
             // This is a non-enregisterable struct.
-            canEnregister                  = false;
-            CORINFO_CLASS_HANDLE structHnd = m_pCompiler->gtGetStructHandleIfPresent(candidate->Expr());
-            if (structHnd == NO_CLASS_HANDLE)
-            {
-                JITDUMP("Can't determine the struct size, so we can't consider it for CSE promotion\n");
-                return false; //  Do not make this a CSE
-            }
-
-            unsigned size = m_pCompiler->info.compCompHnd->getClassSize(structHnd);
+            canEnregister = false;
+            unsigned size = candidate->Expr()->GetLayout(m_pCompiler)->GetSize();
             // Note that the slotCount is used to estimate the reference cost, but it may overestimate this
             // because it doesn't take into account that we might use a vector register for struct copies.
             slotCount = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
@@ -2575,7 +2550,7 @@ public:
                 }
 
                 // If we have maxed out lvaTrackedCount then this CSE may end up as an untracked variable
-                if (m_pCompiler->lvaTrackedCount == lclMAX_TRACKED)
+                if (m_pCompiler->lvaTrackedCount == (unsigned)JitConfig.JitMaxLocalsToTrack())
                 {
                     cse_def_cost += 1;
                     cse_use_cost += 1;
@@ -2589,14 +2564,24 @@ public:
             cse_use_cost *= slotCount;
         }
 
-        // If this CSE is live across a call then we may need to spill an additional caller save register
+        // If this CSE is live across a call then we may have additional costs
         //
         if (candidate->LiveAcrossCall())
         {
+            // If we have a floating-point CSE that is both live across a call and there
+            // are no callee-saved FP registers available, the RA will have to spill at
+            // the def site and reload at the (first) use site, if the variable is a register
+            // candidate. Account for that.
+            if (varTypeIsFloating(candidate->Expr()) && (CNT_CALLEE_SAVED_FLOAT == 0) && !candidate->IsConservative())
+            {
+                cse_def_cost += 1;
+                cse_use_cost += 1;
+            }
+
             // If we don't have a lot of variables to enregister or we have a floating point type
             // then we will likely need to spill an additional caller save register.
             //
-            if ((enregCount < (CNT_CALLEE_ENREG * 3 / 2)) || varTypeIsFloating(candidate->Expr()->TypeGet()))
+            if ((enregCount < (CNT_CALLEE_ENREG * 3 / 2)) || varTypeIsFloating(candidate->Expr()))
             {
                 // Extra cost in case we have to spill/restore a caller saved register
                 extra_yes_cost = BB_UNITY_WEIGHT_UNSIGNED;
@@ -2618,9 +2603,10 @@ public:
                 //
                 int spillSimdRegInProlog = 1;
 
-                // If we have a SIMD32 that is live across a call we have even higher spill costs
+#if defined(TARGET_XARCH)
+                // If we have a SIMD32/64 that is live across a call we have even higher spill costs
                 //
-                if (candidate->Expr()->TypeGet() == TYP_SIMD32)
+                if (candidate->Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
                 {
                     // Additionally for a simd32 CSE candidate we assume that and second spilled/restore will be needed.
                     // (to hold the upper half of the simd32 register that isn't preserved across the call)
@@ -2632,6 +2618,7 @@ public:
                     //
                     cse_use_cost += 2;
                 }
+#endif // TARGET_XARCH
 
                 extra_yes_cost = (BB_UNITY_WEIGHT_UNSIGNED * spillSimdRegInProlog) * 3;
             }
@@ -2729,14 +2716,14 @@ public:
     // It will also put cse0 into SSA if there is just one def.
     void PerformCSE(CSE_Candidate* successfulCandidate)
     {
-        BasicBlock::weight_t cseRefCnt = (successfulCandidate->DefCount() * 2) + successfulCandidate->UseCount();
+        weight_t cseRefCnt = (successfulCandidate->DefCount() * 2) + successfulCandidate->UseCount();
 
         if (successfulCandidate->LiveAcrossCall() != 0)
         {
             // As we introduce new LclVars for these CSE we slightly
             // increase the cutoffs for aggressive and moderate CSE's
             //
-            BasicBlock::weight_t incr = BB_UNITY_WEIGHT;
+            weight_t incr = BB_UNITY_WEIGHT;
 
             if (cseRefCnt > aggressiveRefCnt)
             {
@@ -2777,24 +2764,14 @@ public:
         // we will create a  long lifetime temp for the new CSE LclVar
         unsigned  cseLclVarNum = m_pCompiler->lvaGrabTemp(false DEBUGARG(grabTempMessage));
         var_types cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
-        if (varTypeIsStruct(cseLclVarTyp))
+
+        LclVarDsc* lclDsc = m_pCompiler->lvaGetDesc(cseLclVarNum);
+        if (cseLclVarTyp == TYP_STRUCT)
         {
-            // Retrieve the struct handle that we recorded while bulding the list of CSE candidates.
-            // If all occurrences were in GT_IND nodes it could still be NO_CLASS_HANDLE
-            //
-            CORINFO_CLASS_HANDLE structHnd = successfulCandidate->CseDsc()->csdStructHnd;
-            if (structHnd == NO_CLASS_HANDLE)
-            {
-                assert(varTypeIsSIMD(cseLclVarTyp));
-                // We are not setting it for `SIMD* indir` during the first path
-                // because it is not precise, see `optValnumCSE_Index`.
-                structHnd = m_pCompiler->gtGetStructHandle(successfulCandidate->CseDsc()->csdTree);
-            }
-            assert(structHnd != NO_CLASS_HANDLE);
-            m_pCompiler->lvaSetStruct(cseLclVarNum, structHnd, false);
+            m_pCompiler->lvaSetStruct(cseLclVarNum, successfulCandidate->Expr()->GetLayout(m_pCompiler), false);
         }
-        m_pCompiler->lvaTable[cseLclVarNum].lvType  = cseLclVarTyp;
-        m_pCompiler->lvaTable[cseLclVarNum].lvIsCSE = true;
+        lclDsc->lvType  = cseLclVarTyp;
+        lclDsc->lvIsCSE = true;
 
         // Record that we created a new LclVar for use as a CSE temp
         m_addCSEcount++;
@@ -2810,17 +2787,19 @@ public:
 
         // If there's just a single def for the CSE, we'll put this
         // CSE into SSA form on the fly. We won't need any PHIs.
-        unsigned cseSsaNum = SsaConfig::RESERVED_SSA_NUM;
+        unsigned      cseSsaNum = SsaConfig::RESERVED_SSA_NUM;
+        LclSsaVarDsc* ssaVarDsc = nullptr;
 
         if (dsc->csdDefCount == 1)
         {
-            JITDUMP("CSE #%02u is single-def, so associated CSE temp V%02u will be in SSA\n", dsc->csdIndex,
+            JITDUMP(FMT_CSE " is single-def, so associated CSE temp V%02u will be in SSA\n", dsc->csdIndex,
                     cseLclVarNum);
-            m_pCompiler->lvaTable[cseLclVarNum].lvInSsa = true;
+            lclDsc->lvInSsa = true;
 
             // Allocate the ssa num
             CompAllocator allocator = m_pCompiler->getAllocator(CMK_SSA);
-            cseSsaNum               = m_pCompiler->lvaTable[cseLclVarNum].lvPerSsaData.AllocSsaNum(allocator);
+            cseSsaNum               = lclDsc->lvPerSsaData.AllocSsaNum(allocator);
+            ssaVarDsc               = lclDsc->GetPerSsaData(cseSsaNum);
         }
 
         // Verify that all of the ValueNumbers in this list are correct as
@@ -2883,25 +2862,25 @@ public:
                     }
                 }
 
-                BasicBlock*          blk       = lst->tslBlock;
-                BasicBlock::weight_t curWeight = blk->getBBWeight(m_pCompiler);
+                BasicBlock* blk       = lst->tslBlock;
+                weight_t    curWeight = blk->getBBWeight(m_pCompiler);
 
                 if (setRefCnt)
                 {
-                    m_pCompiler->lvaTable[cseLclVarNum].setLvRefCnt(1);
-                    m_pCompiler->lvaTable[cseLclVarNum].setLvRefCntWtd(curWeight);
+                    lclDsc->setLvRefCnt(1);
+                    lclDsc->setLvRefCntWtd(curWeight);
                     setRefCnt = false;
                 }
                 else
                 {
-                    m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(curWeight, m_pCompiler);
+                    lclDsc->incRefCnts(curWeight, m_pCompiler);
                 }
 
                 // A CSE Def references the LclVar twice
                 //
                 if (isDef)
                 {
-                    m_pCompiler->lvaTable[cseLclVarNum].incRefCnts(curWeight, m_pCompiler);
+                    lclDsc->incRefCnts(curWeight, m_pCompiler);
                 }
             }
             lst = lst->tslNext;
@@ -2931,7 +2910,7 @@ public:
                         if (IS_CSE_INDEX(lst->tslTree->gtCSEnum))
                         {
                             ValueNum currVN = m_pCompiler->vnStore->VNLiberalNormalValue(lst->tslTree->gtVNPair);
-                            printf("0x%x(%s " FMT_VN ") ", lst->tslTree,
+                            printf("[%06d](%s " FMT_VN ") ", m_pCompiler->dspTreeID(lst->tslTree),
                                    IS_CSE_USE(lst->tslTree->gtCSEnum) ? "use" : "def", currVN);
                         }
                         lst = lst->tslNext;
@@ -2949,14 +2928,14 @@ public:
         do
         {
             /* Process the next node in the list */
-            GenTree*    exp  = lst->tslTree;
-            Statement*  stmt = lst->tslStmt;
-            BasicBlock* blk  = lst->tslBlock;
+            GenTree* const    exp  = lst->tslTree;
+            Statement* const  stmt = lst->tslStmt;
+            BasicBlock* const blk  = lst->tslBlock;
 
             /* Advance to the next node in the list */
             lst = lst->tslNext;
 
-            // We may have cleared this CSE in optValuenumCSE_Availablity
+            // We may have cleared this CSE in optValuenumCSE_Availability
             // due to different exception sets.
             //
             // Ignore this node if the gtCSEnum value has been cleared
@@ -2982,12 +2961,8 @@ public:
             // This will contain the replacement tree for exp
             // It will either be the CSE def or CSE ref
             //
-            GenTree*      cse = nullptr;
-            bool          isDef;
-            FieldSeqNode* fldSeq               = nullptr;
-            bool          commaOnly            = true;
-            GenTree*      effectiveExp         = exp->gtEffectiveVal(commaOnly);
-            const bool    hasZeroMapAnnotation = m_pCompiler->GetZeroOffsetFieldMap()->Lookup(effectiveExp, &fldSeq);
+            GenTree* cse = nullptr;
+            bool     isDef;
 
             if (IS_CSE_USE(exp->gtCSEnum))
             {
@@ -2996,7 +2971,7 @@ public:
 #ifdef DEBUG
                 if (m_pCompiler->verbose)
                 {
-                    printf("\nWorking on the replacement of the CSE #%02u use at ", exp->gtCSEnum);
+                    printf("\nWorking on the replacement of the " FMT_CSE " use at ", exp->gtCSEnum);
                     Compiler::printTreeID(exp);
                     printf(" in " FMT_BB "\n", blk->bbNum);
                 }
@@ -3012,6 +2987,12 @@ public:
 
                 // Assign the ssa num for the lclvar use. Note it may be the reserved num.
                 cseLclVar->AsLclVarCommon()->SetSsaNum(cseSsaNum);
+
+                // If this local is in ssa, notify ssa there's a new use.
+                if (ssaVarDsc != nullptr)
+                {
+                    ssaVarDsc->AddUse(blk);
+                }
 
                 cse = cseLclVar;
                 if (isSharedConst)
@@ -3164,13 +3145,11 @@ public:
 #ifdef DEBUG
                 if (m_pCompiler->verbose)
                 {
-                    printf("\nCSE #%02u def at ", GET_CSE_INDEX(exp->gtCSEnum));
+                    printf("\n" FMT_CSE " def at ", GET_CSE_INDEX(exp->gtCSEnum));
                     Compiler::printTreeID(exp);
                     printf(" replaced in " FMT_BB " with def of V%02u\n", blk->bbNum, cseLclVarNum);
                 }
 #endif // DEBUG
-
-                exp->gtCSEnum = NO_CSE; // clear the gtCSEnum field
 
                 GenTree* val = exp;
                 if (isSharedConst)
@@ -3201,19 +3180,25 @@ public:
                     noway_assert(asg->AsOp()->gtOp2 == val);
                 }
 
-                // assign the proper Value Numbers
-                asg->gtVNPair.SetBoth(ValueNumStore::VNForVoid()); // The GT_ASG node itself is $VN.Void
-                asg->AsOp()->gtOp1->gtVNPair = val->gtVNPair;      // The dest op is the same as 'val'
+                // Assign the proper Value Numbers.
+                asg->gtVNPair                = ValueNumStore::VNPForVoid(); // The GT_ASG node itself is $VN.Void.
+                asg->AsOp()->gtOp1->gtVNPair = ValueNumStore::VNPForVoid(); // As is the LHS.
 
                 noway_assert(asg->AsOp()->gtOp1->gtOper == GT_LCL_VAR);
 
                 // Backpatch the SSA def, if we're putting this CSE temp into ssa.
                 asg->AsOp()->gtOp1->AsLclVar()->SetSsaNum(cseSsaNum);
 
+                // Move the information about the CSE def to the assignment; it
+                // now indicates a completed CSE def instead of just a
+                // candidate. optCSE_canSwap uses this information to reason
+                // about evaluation order in between substitutions of CSE
+                // defs/uses.
+                asg->gtCSEnum = exp->gtCSEnum;
+                exp->gtCSEnum = NO_CSE;
+
                 if (cseSsaNum != SsaConfig::RESERVED_SSA_NUM)
                 {
-                    LclSsaVarDsc* ssaVarDsc = m_pCompiler->lvaTable[cseLclVarNum].GetPerSsaData(cseSsaNum);
-
                     // These should not have been set yet, since this is the first and
                     // only def for this CSE.
                     assert(ssaVarDsc->GetBlock() == nullptr);
@@ -3231,6 +3216,12 @@ public:
                 // Assign the ssa num for the lclvar use. Note it may be the reserved num.
                 cseLclVar->AsLclVarCommon()->SetSsaNum(cseSsaNum);
 
+                // If this local is in ssa, notify ssa there's a new use.
+                if (ssaVarDsc != nullptr)
+                {
+                    ssaVarDsc->AddUse(blk);
+                }
+
                 GenTree* cseUse = cseLclVar;
                 if (isSharedConst)
                 {
@@ -3244,7 +3235,7 @@ public:
                         cseUse->SetDoNotCSE();
                     }
                 }
-                cseUse->gtVNPair = val->gtVNPair; // The 'cseUse' is equal to 'val'
+                cseUse->gtVNPair = exp->gtVNPair; // The 'cseUse' is equal to the original expression.
 
                 /* Create a comma node for the CSE assignment */
                 cse           = m_pCompiler->gtNewOperNode(GT_COMMA, expTyp, origAsg, cseUse);
@@ -3253,7 +3244,7 @@ public:
                                                   // cannot add any new exceptions
             }
 
-            cse->CopyReg(exp);  // The cse inheirits any reg num property from the orginal exp node
+            cse->CopyReg(exp);  // The cse inheirits any reg num property from the original exp node
             exp->ClearRegNum(); // The exp node (for a CSE def) no longer has a register requirement
 
             // Walk the statement 'stmt' and find the pointer
@@ -3285,12 +3276,6 @@ public:
             //
             *link = cse;
 
-            // If it has a zero-offset field seq, copy annotation.
-            if (hasZeroMapAnnotation)
-            {
-                m_pCompiler->fgAddFieldSeqForZeroOffset(cse, fldSeq);
-            }
-
             assert(m_pCompiler->fgRemoveRestOfBlock == false);
 
             /* re-morph the statement */
@@ -3314,13 +3299,7 @@ public:
 
             if (dsc->defExcSetPromise == ValueNumStore::NoVN)
             {
-                JITDUMP("Abandoned CSE #%02u because we had defs with different Exc sets\n", candidate.CseIndex());
-                continue;
-            }
-
-            if (dsc->csdStructHndMismatch)
-            {
-                JITDUMP("Abandoned CSE #%02u because we had mismatching struct handles\n", candidate.CseIndex());
+                JITDUMP("Abandoned " FMT_CSE " because we had defs with different Exc sets\n", candidate.CseIndex());
                 continue;
             }
 
@@ -3328,7 +3307,7 @@ public:
 
             if (candidate.UseCount() == 0)
             {
-                JITDUMP("Skipped CSE #%02u because use count is 0\n", candidate.CseIndex());
+                JITDUMP("Skipped " FMT_CSE " because use count is 0\n", candidate.CseIndex());
                 continue;
             }
 
@@ -3337,14 +3316,14 @@ public:
             {
                 if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
                 {
-                    printf("\nConsidering CSE #%02u {$%-3x, $%-3x} [def=%3f, use=%3f, cost=%3u%s]\n",
+                    printf("\nConsidering " FMT_CSE " {$%-3x, $%-3x} [def=%3f, use=%3f, cost=%3u%s]\n",
                            candidate.CseIndex(), dsc->csdHashKey, dsc->defExcSetPromise, candidate.DefCount(),
                            candidate.UseCount(), candidate.Cost(), dsc->csdLiveAcrossCall ? ", call" : "      ");
                 }
                 else
                 {
                     size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                    printf("\nConsidering CSE #%02u {K_%p} [def=%3f, use=%3f, cost=%3u%s]\n", candidate.CseIndex(),
+                    printf("\nConsidering " FMT_CSE " {K_%p} [def=%3f, use=%3f, cost=%3u%s]\n", candidate.CseIndex(),
                            dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
                            dsc->csdLiveAcrossCall ? ", call" : "      ");
                 }
@@ -3384,6 +3363,7 @@ public:
             if (doCSE)
             {
                 PerformCSE(&candidate);
+                madeChanges = true;
             }
         }
     }
@@ -3396,12 +3376,14 @@ public:
     }
 };
 
-/*****************************************************************************
- *
- *  Routine for performing the Value Number based CSE using our heuristics
- */
-
-void Compiler::optValnumCSE_Heuristic()
+//------------------------------------------------------------------------
+// optValnumCSE_Heuristic: Perform common sub-expression elimination
+//    based on profitabiliy heuristic
+//
+// Returns:
+//    true if changes were made
+//
+bool Compiler::optValnumCSE_Heuristic()
 {
 #ifdef DEBUG
     if (verbose)
@@ -3418,49 +3400,44 @@ void Compiler::optValnumCSE_Heuristic()
     cse_heuristic.SortCandidates();
     cse_heuristic.ConsiderCandidates();
     cse_heuristic.Cleanup();
+
+    return cse_heuristic.MadeChanges();
 }
 
-/*****************************************************************************
- *
- *  Perform common sub-expression elimination.
- */
-
-void Compiler::optOptimizeValnumCSEs()
+//------------------------------------------------------------------------
+// optOptimizeValnumCSEs: Perform common sub-expression elimination
+//
+// Returns:
+//    Suitable phase status
+//
+PhaseStatus Compiler::optOptimizeValnumCSEs()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\n*************** In optOptimizeValnumCSEs()\n");
-    }
 
+#ifdef DEBUG
     if (optConfigDisableCSE())
     {
-        return; // Disabled by JitNoCSE
+        JITDUMP("Disabled by JitNoCSE\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 #endif
 
     optValnumCSE_phase = true;
-
-    /* Initialize the expression tracking logic */
+    optCSEweight       = -1.0f;
+    bool madeChanges   = false;
 
     optValnumCSE_Init();
 
-    /* Locate interesting expressions and assign indices to them */
-
-    if (optValnumCSE_Locate() > 0)
+    if (optValnumCSE_Locate())
     {
-        optCSECandidateTotal += optCSECandidateCount;
-
         optValnumCSE_InitDataFlow();
-
         optValnumCSE_DataFlow();
-
-        optValnumCSE_Availablity();
-
-        optValnumCSE_Heuristic();
+        optValnumCSE_Availability();
+        madeChanges = optValnumCSE_Heuristic();
     }
 
     optValnumCSE_phase = false;
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 /*****************************************************************************
@@ -3485,13 +3462,6 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         return false;
     }
 
-    // If this is a struct type (including SIMD*), we can only consider it for CSE-ing
-    // if we can get its handle, so that we can create a temp.
-    if (varTypeIsStruct(type) && (gtGetStructHandleIfPresent(tree) == NO_CLASS_HANDLE))
-    {
-        return false;
-    }
-
     unsigned cost;
     if (compCodeOpt() == SMALL_CODE)
     {
@@ -3510,8 +3480,10 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
 #if !CSE_CONSTS
     /* Don't bother with constants */
-    if (tree->OperKind() & GTK_CONST)
+    if (tree->OperIsConst())
+    {
         return false;
+    }
 #endif
 
     /* Check for some special cases */
@@ -3571,12 +3543,13 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_CNS_INT:
         case GT_CNS_DBL:
         case GT_CNS_STR:
+        case GT_CNS_VEC:
             return true; // We reach here only when CSE_CONSTS is enabled
 
         case GT_ARR_ELEM:
         case GT_ARR_LENGTH:
-        case GT_CLS_VAR:
-        case GT_LCL_FLD:
+        case GT_MDARR_LENGTH:
+        case GT_MDARR_LOWER_BOUND:
             return true;
 
         case GT_LCL_VAR:
@@ -3587,6 +3560,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_CAST:
+        case GT_BITCAST:
             return true; // CSE these Unary Operators
 
         case GT_SUB:
@@ -3620,18 +3594,12 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_GT:
             return true; // Allow the CSE of Comparison operators
 
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            return true; // allow SIMD intrinsics to be CSE-ed
-
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
         {
             GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
             assert(hwIntrinsicNode != nullptr);
-            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(hwIntrinsicNode->gtHWIntrinsicId);
+            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(hwIntrinsicNode->GetHWIntrinsicId());
 
             switch (category)
             {
@@ -3678,8 +3646,10 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_INTRINSIC:
             return true; // allow Intrinsics to be CSE-ed
 
-        case GT_OBJ:
-            return varTypeIsEnregisterable(type); // Allow enregisterable GT_OBJ's to be CSE-ed. (i.e. SIMD types)
+        case GT_BLK:
+        case GT_LCL_FLD:
+            // TODO-1stClassStructs: support CSE for enregisterable TYP_STRUCTs.
+            return varTypeIsEnregisterable(type);
 
         case GT_COMMA:
             return true; // Allow GT_COMMA nodes to be CSE-ed.
@@ -3707,7 +3677,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 //
 bool Compiler::optConfigDisableCSE()
 {
-    // Next check if COMPlus_JitNoCSE is set and applies to this method
+    // Next check if DOTNET_JitNoCSE is set and applies to this method
     //
     unsigned jitNoCSE = JitConfig.JitNoCSE();
 
@@ -3807,21 +3777,18 @@ bool Compiler::optConfigDisableCSE2()
 
 void Compiler::optOptimizeCSEs()
 {
-#ifdef DEBUG
-    if (verbose)
+    if (optCSEstart != BAD_VAR_NUM)
     {
-        printf("\n*************** In optOptimizeCSEs()\n");
-        printf("Blocks/Trees at start of optOptimizeCSE phase\n");
-        fgDispBasicBlocks(true);
+        // CSE being run multiple times so we may need to clean up old
+        // information.
+        optCleanupCSEs();
     }
-#endif // DEBUG
 
     optCSECandidateCount = 0;
     optCSEstart          = lvaCount;
 
     INDEBUG(optEnsureClearCSEInfo());
     optOptimizeValnumCSEs();
-    EndPhase(PHASE_OPTIMIZE_VALNUM_CSES);
 }
 
 /*****************************************************************************
@@ -3831,14 +3798,14 @@ void Compiler::optOptimizeCSEs()
 
 void Compiler::optCleanupCSEs()
 {
-    // We must clear the BBF_VISITED and BBF_MARKED flags.
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    // We must clear the BBF_MARKED flag.
+    for (BasicBlock* const block : Blocks())
     {
-        // And clear all the "visited" bits on the block.
-        block->bbFlags &= ~(BBF_VISITED | BBF_MARKED);
+        // And clear the "marked" flag on the block.
+        block->bbFlags &= ~BBF_MARKED;
 
         // Walk the statement trees in this basic block.
-        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             // We must clear the gtCSEnum field.
             for (GenTree* tree = stmt->GetRootNode(); tree; tree = tree->gtPrev)
@@ -3859,18 +3826,50 @@ void Compiler::optCleanupCSEs()
 
 void Compiler::optEnsureClearCSEInfo()
 {
-    for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        assert((block->bbFlags & (BBF_VISITED | BBF_MARKED)) == 0);
+        assert((block->bbFlags & BBF_MARKED) == 0);
 
-        // Initialize 'stmt' to the first non-Phi statement
-        // Walk the statement trees in this basic block
-        for (Statement* stmt : StatementList(block->FirstNonPhiDef()))
+        for (Statement* const stmt : block->NonPhiStatements())
         {
             for (GenTree* tree = stmt->GetRootNode(); tree; tree = tree->gtPrev)
             {
                 assert(tree->gtCSEnum == NO_CSE);
             }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// optPrintCSEDataFlowSet: Print out one of the CSE dataflow sets bbCseGen, bbCseIn, bbCseOut,
+// interpreting the bits in a more useful way for the dump.
+//
+// Arguments:
+//    cseDataFlowSet - One of the dataflow sets to display
+//    includeBits    - Display the actual bits of the set as well
+//
+void Compiler::optPrintCSEDataFlowSet(EXPSET_VALARG_TP cseDataFlowSet, bool includeBits /* = true */)
+{
+    if (includeBits)
+    {
+        printf("%s ", genES2str(cseLivenessTraits, cseDataFlowSet));
+    }
+
+    bool first = true;
+    for (unsigned cseIndex = 1; cseIndex <= optCSECandidateCount; cseIndex++)
+    {
+        unsigned cseAvailBit          = getCSEAvailBit(cseIndex);
+        unsigned cseAvailCrossCallBit = getCSEAvailCrossCallBit(cseIndex);
+
+        if (BitVecOps::IsMember(cseLivenessTraits, cseDataFlowSet, cseAvailBit))
+        {
+            if (!first)
+            {
+                printf(", ");
+            }
+            const bool isAvailCrossCall = BitVecOps::IsMember(cseLivenessTraits, cseDataFlowSet, cseAvailCrossCallBit);
+            printf(FMT_CSE "%s", cseIndex, isAvailCrossCall ? ".c" : "");
+            first = false;
         }
     }
 }

@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
-    <DebugType />
+    <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>

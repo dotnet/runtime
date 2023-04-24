@@ -7,6 +7,7 @@
 //
 
 .assembly extern System.Runtime { }
+.assembly extern xunit.core {}
 
 .assembly nonvirtualcall { }
 
@@ -55,6 +56,9 @@
 
 .method public hidebysig static int32 Main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
 
   ldstr "DefaultImplementationsOfInterfaces"

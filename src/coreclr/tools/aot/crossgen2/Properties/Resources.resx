@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -132,6 +132,9 @@
   <data name="EmittingPEFile" xml:space="preserve">
     <value>Emitting R2R PE file: {0}</value>
   </data>
+  <data name="MovingPEFile" xml:space="preserve">
+    <value>Moving R2R PE file: {0} to {1}</value>
+  </data>
   <data name="EnableOptimizationsOption" xml:space="preserve">
     <value>Enable optimizations</value>
   </data>
@@ -141,6 +144,9 @@
   <data name="HelpOption" xml:space="preserve">
     <value>Display this usage message</value>
   </data>
+  <data name="VersionOption" xml:space="preserve">
+    <value>Display the Crossgen2 compiler version used</value>
+  </data>
   <data name="InputBubbleOption" xml:space="preserve">
     <value>True when the entire input forms a version bubble (default = per-assembly bubble)</value>
   </data>
@@ -148,13 +154,19 @@
     <value>Method layout must be either DefaultSort or MethodOrder.</value>
   </data>
   <data name="InvalidMethodLayout" xml:space="preserve">
-    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, HotWarmCold, or CallFrequency.</value>
+    <value>Method layout must be either DefaultSort, ExclusiveWeight, HotCold, HotWarmCold, CallFrequency, PettisHansen, or Random.</value>
   </data>
   <data name="CompileNoMethodsOption" xml:space="preserve">
     <value>True to skip compiling methods into the R2R image (default = false)</value>
   </data>
   <data name="CompositeBuildMode" xml:space="preserve">
     <value>Emit a composite R2R image comprising a number of input assemblies</value>
+  </data>
+  <data name="CompositeKeyFile" xml:space="preserve">
+    <value>KeyFile(.snk) for specifying a Public Key for the composite image created</value>
+  </data>
+  <data name="ErrorCompositeKeyFileNotPublicKey" xml:space="preserve">
+    <value>--CompositeKeyFile does not specify a valid public key</value>
   </data>
   <data name="InputFilesToCompile" xml:space="preserve">
     <value>Input file(s) to compile</value>
@@ -163,10 +175,7 @@
     <value>Instruction set(s) to use for compilation</value>
   </data>
   <data name="InstructionSetMustNotBe" xml:space="preserve">
-    <value>Instruction set must not be '{0}' for this architecture and operating system</value>
-  </data>
-  <data name="InstructionSetWithoutInputBubble" xml:space="preserve">
-    <value>Instruction set(s) specified without also specifying input-bubble</value>
+    <value>Instruction set '{0}' is not valid for this architecture and operating system</value>
   </data>
   <data name="InstructionSetInvalidImplication" xml:space="preserve">
     <value>Instruction set '{0}' implies support for instruction set '{1}'</value>
@@ -189,6 +198,9 @@
   <data name="MissingOutputFile" xml:space="preserve">
     <value>Output filename must be specified (--out &lt;file&gt;)</value>
   </data>
+  <data name="MissingOutNearInput" xml:space="preserve">
+    <value>Single file compilation mode requires --out-near-input option</value>
+  </data>
   <data name="InputWasNotLoadable" xml:space="preserve">
     <value>No input files are loadable</value>
   </data>
@@ -200,6 +212,9 @@
   </data>
   <data name="OptimizeSpeedOption" xml:space="preserve">
     <value>Enable optimizations, favor code speed</value>
+  </data>
+  <data name="OutNearInputOption" xml:space="preserve">
+    <value>Create output files near input files with ni.dll suffix</value>
   </data>
   <data name="OutputFilePath" xml:space="preserve">
     <value>Output file path</value>
@@ -216,6 +231,9 @@
   <data name="ReferenceFiles" xml:space="preserve">
     <value>Reference file(s) for compilation</value>
   </data>
+  <data name="InputBubbleReferenceFiles" xml:space="preserve">
+    <value>Input bubble reference file(s) to be added to bubble (any use of this option is unsupported!) </value>
+  </data>
   <data name="ResilientOption" xml:space="preserve">
     <value>Disable behavior where unexpected compilation failures cause overall compilation failure</value>
   </data>
@@ -227,6 +245,9 @@
   </data>
   <data name="PrintReproInstructionsOption" xml:space="preserve">
     <value>When compiling each method, print out the set of arguments needed to compile that method only</value>
+  </data>
+  <data name="SingleFileCompilationOption" xml:space="preserve">
+    <value>Compile each of the input files separately</value>
   </data>
   <data name="SingleMethodGenericArgs" xml:space="preserve">
     <value>Single method compilation: generic arguments to the method</value>
@@ -254,9 +275,6 @@
   </data>
   <data name="TargetOSUnsupported" xml:space="preserve">
     <value>Target OS is not supported</value>
-  </data>
-  <data name="TuningImageOption" xml:space="preserve">
-    <value>Generate IBC tuning image</value>
   </data>
   <data name="TypeAndMethodNameNeeded" xml:space="preserve">
     <value>Both method name and type name are required parameters for single method mode</value>
@@ -303,8 +321,14 @@
   <data name="ManagedCppNotSupported" xml:space="preserve">
     <value>Error: managed C++ is not supported: '{0}'</value>
   </data>
+  <data name="IgnoringCompositeImage" xml:space="preserve">
+    <value>Ignoring composite native image: '{0}'</value>
+  </data>
   <data name="VerifyTypeAndFieldLayoutOption" xml:space="preserve">
     <value>Verify that struct type layout and field offsets match between compile time and runtime. Use only for diagnostic purposes.</value>
+  </data>
+  <data name="HotColdSplittingOption" xml:space="preserve">
+    <value>Turn on hot cold splitting optimization.</value>
   </data>
   <data name="MapCsvFileOption" xml:space="preserve">
     <value>Generate a CSV formatted map file</value>
@@ -329,5 +353,50 @@
   </data>
   <data name="PerfMapFilePathOption" xml:space="preserve">
     <value>Explicit specification of the PerfMap file path</value>
+  </data>
+  <data name="PerfMapFormatVersionOption" xml:space="preserve">
+    <value>Explicitly request a particular PerfMap format version</value>
+  </data>
+  <data name="OptionPassingHelp" xml:space="preserve">
+    <value>Options may be passed on the command line, or via response file. On the command line switch values may be specified by passing the option followed by a space followed by the value of the option, or by specifying a : between option and switch value. A response file is specified by passing the @ symbol before the response file name. In a response file all options must be specified on their own lines, and only the : syntax for switches is supported.</value>
+  </data>
+  <data name="DashDashHelp" xml:space="preserve">
+    <value>Use the '--' option to disambiguate between input files that have begin with -- and options. After a '--' option, all arguments are considered to be input files. If no input files begin with '--' then this option is not necessary.</value>
+  </data>
+  <data name="SwitchWithDefaultHelp" xml:space="preserve">
+    <value>Valid switches for {0} are: '{1}'. The default value is '{2}'.</value>
+  </data>
+  <data name="InstructionSetHelp" xml:space="preserve">
+    <value>The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx2,bmi,lzcnt'</value>
+  </data>
+  <data name="MakeReproPathHelp" xml:space="preserve">
+    <value>Make a repro zip file in the specified path. This is used for sending error reports to the .NET team.</value>
+  </data>
+  <data name="UnsupportedInputFileExtension" xml:space="preserve">
+    <value>Input file with '{0}' extension not supported</value>
+  </data>
+  <data name="ImageBase" xml:space="preserve">
+    <value>Hexadecimal value to set target PE-file ImageBase field</value>
+  </data>
+  <data name="CrossModuleInlining" xml:space="preserve">
+    <value>Allow inclusion of code from the specified module into the module being compiled. In addition to specifying an assembly by name, the special value of "*" is recognized as indicating that code from all modules may be included. Any module specified in this way MUST be loadable from the first moment the R2R module is loaded, as loads of these modules may be triggered unpredictably.</value>
+  </data>
+  <data name="AsyncModuleOptimization" xml:space="preserve">
+    <value>Attempt to compile as much async infrastructure as possible for async methods. Defaults to enabled. To disable, specify false to this flag explicitly.</value>
+  </data>
+  <data name="NonLocalGenericsModule" xml:space="preserve">
+    <value>Specify the module which is permitted to contain generics defined or instantiated in any other module. Specify "*" to indicate that any module may hold arbitrary generics.</value>
+  </data>
+  <data name="ErrorNonLocalGenericsModule" xml:space="preserve">
+    <value>"{0}" was specified to the --non-local-generics-module switch, but was not in the set of modules associated with the compile</value>
+  </data>
+  <data name="CpuFamilies" xml:space="preserve">
+    <value>The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:</value>
+  </data>
+  <data name="SupportIbc" xml:space="preserve">
+    <value>Enable processing of Ibc data embedded in the input assembly.</value>
+  </data>
+  <data name="Crossgen2BannerText" xml:space="preserve">
+    <value>.NET Crossgen2 Compiler</value>
   </data>
 </root>

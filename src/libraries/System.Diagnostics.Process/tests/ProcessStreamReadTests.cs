@@ -14,7 +14,6 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class ProcessStreamReadTests : ProcessTestBase
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -83,7 +82,7 @@ namespace System.Diagnostics.Tests
             p.WaitForExit(); // This ensures async event handlers are finished processing.
 
             const string Expected = RemotelyInvokable.TestConsoleApp + " started error stream" + RemotelyInvokable.TestConsoleApp + " closed error stream";
-            Assert.Equal(Expected, sb.ToString());
+            AssertExtensions.Equal(Expected, sb.ToString());
             Assert.Equal(invokeRequired ? 3 : 0, invokeCalled);
         }
 

@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DynamicILInfoTests.cs" />

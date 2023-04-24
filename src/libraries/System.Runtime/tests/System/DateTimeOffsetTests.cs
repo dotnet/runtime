@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using Xunit;
 
@@ -14,34 +15,34 @@ namespace System.Tests
         [Fact]
         public static void MaxValue()
         {
-            VerifyDateTimeOffset(DateTimeOffset.MaxValue, 9999, 12, 31, 23, 59, 59, 999, TimeSpan.Zero);
+            VerifyDateTimeOffset(DateTimeOffset.MaxValue, 9999, 12, 31, 23, 59, 59, 999, 999, TimeSpan.Zero, 900);
         }
 
         [Fact]
         public static void MinValue()
         {
-            VerifyDateTimeOffset(DateTimeOffset.MinValue, 1, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
+            VerifyDateTimeOffset(DateTimeOffset.MinValue, 1, 1, 1, 0, 0, 0, 0, 0, TimeSpan.Zero);
         }
 
         [Fact]
         public static void Ctor_Empty()
         {
-            VerifyDateTimeOffset(new DateTimeOffset(), 1, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
-            VerifyDateTimeOffset(default(DateTimeOffset), 1, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
+            VerifyDateTimeOffset(new DateTimeOffset(), 1, 1, 1, 0, 0, 0, 0, 0, TimeSpan.Zero);
+            VerifyDateTimeOffset(default(DateTimeOffset), 1, 1, 1, 0, 0, 0, 0, 0, TimeSpan.Zero);
         }
 
         [Fact]
         public static void Ctor_DateTime()
         {
             var dateTimeOffset = new DateTimeOffset(new DateTime(2012, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc));
-            VerifyDateTimeOffset(dateTimeOffset, 2012, 6, 11, 0, 0, 0, 0, TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, 2012, 6, 11, 0, 0, 0, 0, 0, TimeSpan.Zero);
 
-            dateTimeOffset = new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 4, DateTimeKind.Local));
-            VerifyDateTimeOffset(dateTimeOffset, 1986, 8, 15, 10, 20, 5, 4, null);
+            dateTimeOffset = new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 4, 3, DateTimeKind.Local));
+            VerifyDateTimeOffset(dateTimeOffset, 1986, 8, 15, 10, 20, 5, 4, 3, null);
 
             DateTimeOffset today = new DateTimeOffset(DateTime.Today);
             DateTimeOffset now = DateTimeOffset.Now.Date;
-            VerifyDateTimeOffset(today, now.Year, now.Month, now.Day, 0, 0, 0, 0, now.Offset);
+            VerifyDateTimeOffset(today, now.Year, now.Month, now.Day, 0, 0, 0, 0, 0, now.Offset);
 
             today = new DateTimeOffset(new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, DateTimeKind.Utc));
             Assert.Equal(TimeSpan.Zero, today.Offset);
@@ -60,6 +61,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(new DateTime(min.Year, min.Month, min.Day, min.Hour, min.Minute - 1, min.Second, min.Millisecond, DateTimeKind.Utc)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(new DateTime(min.Year, min.Month, min.Day, min.Hour, min.Minute, min.Second - 1, min.Millisecond, DateTimeKind.Utc)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTimeOffset(new DateTime(min.Year, min.Month, min.Day, min.Hour, min.Minute, min.Second, min.Millisecond - 1, DateTimeKind.Utc)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("microsecond", () => new DateTimeOffset(new DateTime(min.Year, min.Month, min.Day, min.Hour, min.Minute, min.Second, min.Millisecond, min.Microsecond - 1, DateTimeKind.Utc)));
 
             // DateTime > DateTimeOffset.MaxValue
             DateTimeOffset max = DateTimeOffset.MaxValue;
@@ -70,19 +72,37 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute + 1, max.Second, max.Millisecond, DateTimeKind.Utc)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second + 1, max.Millisecond, DateTimeKind.Utc)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second, max.Millisecond + 1, DateTimeKind.Utc)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("microsecond", () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second, max.Millisecond, max.Microsecond + 1, DateTimeKind.Utc)));
+        }
+
+        [Fact]
+        public static void Ctor_DateOnly_TimeOnly_TimeSpan()
+        {
+            var dateTimeOffset = new DateTimeOffset(DateOnly.MinValue, TimeOnly.MinValue, TimeSpan.FromHours(-14));
+            VerifyDateTimeOffset(dateTimeOffset, 1, 1, 1, 0, 0, 0, 0, 0, TimeSpan.FromHours(-14));
+            
+            dateTimeOffset = new DateTimeOffset(DateOnly.MaxValue, TimeOnly.MaxValue, TimeSpan.FromHours(14));
+            VerifyDateTimeOffset(dateTimeOffset, 9999, 12, 31, 23, 59, 59, 999, 999, TimeSpan.FromHours(14), 900);
+
+            dateTimeOffset = new DateTimeOffset(new DateOnly(2012, 12, 31), new TimeOnly(13, 50, 10), TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, 2012, 12, 31, 13, 50, 10, 0, 0, TimeSpan.Zero);
+
+            DateTimeOffset now = DateTimeOffset.Now;
+            DateTimeOffset constructed = new DateTimeOffset(DateOnly.FromDateTime(now.DateTime), TimeOnly.FromDateTime(now.DateTime), now.Offset);
+            Assert.Equal(now, constructed);
         }
 
         [Fact]
         public static void Ctor_DateTime_TimeSpan()
         {
             var dateTimeOffset = new DateTimeOffset(DateTime.MinValue, TimeSpan.FromHours(-14));
-            VerifyDateTimeOffset(dateTimeOffset, 1, 1, 1, 0, 0, 0, 0, TimeSpan.FromHours(-14));
+            VerifyDateTimeOffset(dateTimeOffset, 1, 1, 1, 0, 0, 0, 0, 0, TimeSpan.FromHours(-14));
 
             dateTimeOffset = new DateTimeOffset(DateTime.MaxValue, TimeSpan.FromHours(14));
-            VerifyDateTimeOffset(dateTimeOffset, 9999, 12, 31, 23, 59, 59, 999, TimeSpan.FromHours(14));
+            VerifyDateTimeOffset(dateTimeOffset, 9999, 12, 31, 23, 59, 59, 999, 999, TimeSpan.FromHours(14), 900);
 
             dateTimeOffset = new DateTimeOffset(new DateTime(2012, 12, 31, 13, 50, 10), TimeSpan.Zero);
-            VerifyDateTimeOffset(dateTimeOffset, 2012, 12, 31, 13, 50, 10, 0, TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, 2012, 12, 31, 13, 50, 10, 0, 0, TimeSpan.Zero);
         }
 
         [Fact]
@@ -97,6 +117,8 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(DateTime.UtcNow, new TimeSpan(0, 0, -3))); // TimeSpan is not whole minutes
             AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(DateTime.UtcNow, new TimeSpan(0, 0, 0, 0, 3))); // TimeSpan is not whole minutes
             AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(DateTime.UtcNow, new TimeSpan(0, 0, 0, 0, -3))); // TimeSpan is not whole minutes
+            AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(DateTime.UtcNow, new TimeSpan(0, 0, 0, 0, 0, 3))); // TimeSpan is not whole minutes
+            AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(DateTime.UtcNow, new TimeSpan(0, 0, 0, 0, -3))); // TimeSpan is not whole minutes
 
             // DateTime < DateTimeOffset.MinValue
             DateTimeOffset min = DateTimeOffset.MinValue;
@@ -107,6 +129,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(new DateTime(min.Year, min.Month, min.Day, min.Hour, min.Minute - 1, min.Second, min.Millisecond, DateTimeKind.Utc), TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(new DateTime(min.Year, min.Month, min.Day, min.Hour, min.Minute, min.Second - 1, min.Millisecond, DateTimeKind.Utc), TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTimeOffset(new DateTime(min.Year, min.Month, min.Day, min.Hour, min.Minute, min.Second, min.Millisecond - 1, DateTimeKind.Utc), TimeSpan.Zero));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("microsecond", () => new DateTimeOffset(new DateTime(min.Year, min.Month, min.Day, min.Hour, min.Minute, min.Second, min.Millisecond, min.Microsecond - 1, DateTimeKind.Utc), TimeSpan.Zero));
 
             // DateTime > DateTimeOffset.MaxValue
             DateTimeOffset max = DateTimeOffset.MaxValue;
@@ -117,6 +140,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute + 1, max.Second, max.Millisecond, DateTimeKind.Utc), TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second + 1, max.Millisecond, DateTimeKind.Utc), TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second, max.Millisecond + 1, DateTimeKind.Utc), TimeSpan.Zero));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("microsecond", () => new DateTimeOffset(new DateTime(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second, max.Millisecond, max.Microsecond + 1, DateTimeKind.Utc), TimeSpan.Zero));
 
             // Invalid offset
             AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(DateTime.Now, TimeSpan.FromTicks(1)));
@@ -128,7 +152,7 @@ namespace System.Tests
         {
             var expected = new DateTime(1, 2, 3, 4, 5, 6, 7);
             var dateTimeOffset = new DateTimeOffset(expected.Ticks, TimeSpan.Zero);
-            VerifyDateTimeOffset(dateTimeOffset, dateTimeOffset.Year, dateTimeOffset.Month, dateTimeOffset.Day, dateTimeOffset.Hour, dateTimeOffset.Minute, dateTimeOffset.Second, dateTimeOffset.Millisecond, TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, dateTimeOffset.Year, dateTimeOffset.Month, dateTimeOffset.Day, dateTimeOffset.Hour, dateTimeOffset.Minute, dateTimeOffset.Second, dateTimeOffset.Millisecond, dateTimeOffset.Microsecond, TimeSpan.Zero);
         }
 
         [Fact]
@@ -138,6 +162,8 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(0, new TimeSpan(0, 0, -3))); // TimeSpan is not whole minutes
             AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(0, new TimeSpan(0, 0, 0, 0, 3))); // TimeSpan is not whole minutes
             AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(0, new TimeSpan(0, 0, 0, 0, -3))); // TimeSpan is not whole minutes
+            AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(0, new TimeSpan(0, 0, 0, 0, 0, 3))); // TimeSpan is not whole minutes
+            AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(0, new TimeSpan(0, 0, 0, 0, 0, -3))); // TimeSpan is not whole minutes
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => new DateTimeOffset(0, TimeSpan.FromHours(-15))); // TimeZone.Offset > 14
             AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => new DateTimeOffset(0, TimeSpan.FromHours(15))); // TimeZone.Offset < -14
@@ -147,10 +173,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void Ctor_Int_Int_Int_Int_Int_Int_Int_Int_TimeSpan()
+        {
+            var dateTimeOffset = new DateTimeOffset(1973, 10, 6, 14, 30, 0, 500, 400, TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, 1973, 10, 6, 14, 30, 0, 500, 400, TimeSpan.Zero);
+        }
+
+        [Fact]
         public static void Ctor_Int_Int_Int_Int_Int_Int_Int_TimeSpan()
         {
             var dateTimeOffset = new DateTimeOffset(1973, 10, 6, 14, 30, 0, 500, TimeSpan.Zero);
-            VerifyDateTimeOffset(dateTimeOffset, 1973, 10, 6, 14, 30, 0, 500, TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, 1973, 10, 6, 14, 30, 0, 500, 0, TimeSpan.Zero);
         }
 
         [Fact]
@@ -186,6 +219,9 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, -1, TimeSpan.Zero)); // Millisecond < 0
             AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, 1000, TimeSpan.Zero)); // Millisecond > 999
 
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("microsecond", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, 0, -1, TimeSpan.Zero)); // Microsecond < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("microsecond", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, 0, 1000, TimeSpan.Zero)); // Microsecond > 999
+
             // DateTime < DateTimeOffset.MinValue
             DateTimeOffset min = DateTimeOffset.MinValue;
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(min.Year - 1, min.Month, min.Day, min.Hour, min.Minute, min.Second, min.Millisecond, TimeSpan.Zero));
@@ -195,6 +231,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(min.Year, min.Month, min.Day, min.Hour, min.Minute - 1, min.Second, min.Millisecond, TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(min.Year, min.Month, min.Day, min.Hour, min.Minute, min.Second - 1, min.Millisecond, TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTimeOffset(min.Year, min.Month, min.Day, min.Hour, min.Minute, min.Second, min.Millisecond - 1, TimeSpan.Zero));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("microsecond", () => new DateTimeOffset(min.Year, min.Month, min.Day, min.Hour, min.Minute, min.Second, min.Millisecond, min.Microsecond - 1, TimeSpan.Zero));
 
             // DateTime > DateTimeOffset.MaxValue
             DateTimeOffset max = DateTimeOffset.MaxValue;
@@ -205,13 +242,14 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(max.Year, max.Month, max.Day, max.Hour, max.Minute + 1, max.Second, max.Millisecond, TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second + 1, max.Millisecond, TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTimeOffset(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second, max.Millisecond + 1, TimeSpan.Zero));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("microsecond", () => new DateTimeOffset(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second, max.Millisecond, max.Microsecond + 1, TimeSpan.Zero));
         }
 
         [Fact]
         public static void Ctor_Int_Int_Int_Int_Int_Int_TimeSpan()
         {
             var dateTimeOffset = new DateTimeOffset(1973, 10, 6, 14, 30, 0, TimeSpan.Zero);
-            VerifyDateTimeOffset(dateTimeOffset, 1973, 10, 6, 14, 30, 0, 0, TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, 1973, 10, 6, 14, 30, 0, 0, 0, TimeSpan.Zero);
         }
 
         [Fact]
@@ -221,6 +259,8 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, new TimeSpan(0, 0, -3))); // TimeSpan is not whole minutes
             AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, new TimeSpan(0, 0, 0, 0, 3))); // TimeSpan is not whole minutes
             AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, new TimeSpan(0, 0, 0, 0, -3))); // TimeSpan is not whole minutes
+            AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, new TimeSpan(0, 0, 0, 0, 0, 3))); // TimeSpan is not whole minutes
+            AssertExtensions.Throws<ArgumentException>("offset", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, new TimeSpan(0, 0, 0, 0, 0, -3))); // TimeSpan is not whole minutes
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, TimeSpan.FromHours(-15))); // TimeZone.Offset > 14
             AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => new DateTimeOffset(1, 1, 1, 1, 1, 1, TimeSpan.FromHours(15))); // TimeZone.Offset < -14
@@ -263,12 +303,30 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTimeOffset(max.Year, max.Month, max.Day, max.Hour, max.Minute, max.Second + 1, TimeSpan.Zero));
         }
 
+        [Theory]
+        [InlineData(2022, 12, 31, 23, 59, 59)]
+        [InlineData(2000, 1, 1, 12, 34, 59)]
+        [InlineData(2005, 2, 3, 4, 4, 1)]
+        public static void Deconstruct_DateOnly_TimeOnly_TimeSpan(int year, int month, int day, int hour, int minute, int second)
+        {
+            var date = new DateOnly(year, month, day);
+            var time = new TimeOnly(hour, minute, second);
+
+            var offset = TimeSpan.FromHours(10);
+            var dateTimeOffset = new DateTimeOffset(date, time, offset);
+            var (obtainedDate, obtainedTime, obtainedOffset) = dateTimeOffset;
+            
+            Assert.Equal(date, obtainedDate);
+            Assert.Equal(time, obtainedTime);
+            Assert.Equal(offset, obtainedOffset);
+        }
+
         [Fact]
         public static void ImplicitCast_DateTime()
         {
             DateTime dateTime = new DateTime(2012, 6, 11, 0, 0, 0, 0, DateTimeKind.Utc);
             DateTimeOffset dateTimeOffset = dateTime;
-            VerifyDateTimeOffset(dateTimeOffset, 2012, 6, 11, 0, 0, 0, 0, TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, 2012, 6, 11, 0, 0, 0, 0, 0, TimeSpan.Zero);
         }
 
         [Fact]
@@ -490,6 +548,27 @@ namespace System.Tests
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MaxValue.AddMilliseconds(1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MinValue.AddMilliseconds(-1));
+        }
+
+        public static IEnumerable<object[]> AddMicroseconds_TestData()
+        {
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, 70, DateTimeKind.Utc)), 10, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, 80, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, 70, DateTimeKind.Utc)), 0, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, 70, DateTimeKind.Utc)) };
+            yield return new object[] { new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, 70, DateTimeKind.Utc)), -10, new DateTimeOffset(new DateTime(1986, 8, 15, 10, 20, 5, 70, 60, DateTimeKind.Utc)) };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddMicroseconds_TestData))]
+        public static void AddMicroseconds(DateTimeOffset dateTimeOffset, double microseconds, DateTimeOffset expected)
+        {
+            Assert.Equal(expected, dateTimeOffset.AddMicroseconds(microseconds));
+        }
+
+        [Fact]
+        public static void AddMicroseconds_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MaxValue.AddMicroseconds(1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTimeOffset.MinValue.AddMicroseconds(-1));
         }
 
         public static IEnumerable<object[]> AddTicks_TestData()
@@ -1095,7 +1174,7 @@ namespace System.Tests
             Assert.Equal(default(DateTimeOffset), dateTimeOffset);
         }
 
-        private static void VerifyDateTimeOffset(DateTimeOffset dateTimeOffset, int year, int month, int day, int hour, int minute, int second, int millisecond, TimeSpan? offset)
+        private static void VerifyDateTimeOffset(DateTimeOffset dateTimeOffset, int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, TimeSpan? offset, int nanosecond = 0)
         {
             Assert.Equal(year, dateTimeOffset.Year);
             Assert.Equal(month, dateTimeOffset.Month);
@@ -1104,6 +1183,8 @@ namespace System.Tests
             Assert.Equal(minute, dateTimeOffset.Minute);
             Assert.Equal(second, dateTimeOffset.Second);
             Assert.Equal(millisecond, dateTimeOffset.Millisecond);
+            Assert.Equal(microsecond, dateTimeOffset.Microsecond);
+            Assert.Equal(nanosecond, dateTimeOffset.Nanosecond);
 
             if (offset.HasValue)
             {
@@ -1157,7 +1238,15 @@ namespace System.Tests
         public static void Ctor_Calendar_TimeSpan()
         {
             var dateTimeOffset = new DateTimeOffset(1, 1, 1, 0, 0, 0, 0, new GregorianCalendar(),TimeSpan.Zero);
-            VerifyDateTimeOffset(dateTimeOffset, 1, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, 1, 1, 1, 0, 0, 0, 0, 0, TimeSpan.Zero);
+        }
+
+
+        [Fact]
+        public static void Ctor_Calendar_TimeSpan_Microseconds()
+        {
+            var dateTimeOffset = new DateTimeOffset(1, 1, 1, 0, 0, 0, 0, 123, new GregorianCalendar(), TimeSpan.Zero);
+            VerifyDateTimeOffset(dateTimeOffset, 1, 1, 1, 0, 0, 0, 0, 123, TimeSpan.Zero);
         }
 
         public static IEnumerable<object[]> ToString_MatchesExpected_MemberData()
@@ -1255,6 +1344,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60562", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void ToString_MatchesExpected(DateTimeOffset dateTimeOffset, string format, IFormatProvider provider, string expected)
         {
             if (provider == null)
@@ -1327,48 +1417,113 @@ namespace System.Tests
             Assert.Equal(expectedString, actual.ToString("u"));
         }
 
+        [Theory]
+        [InlineData(5)]
+        [InlineData(-5)]
+        [InlineData(0)]
+        [InlineData(14 * 60)]  // max offset
+        [InlineData(-14 * 60)] // min offset
+        public static void TotalNumberOfMinutesTest(int minutesCount)
+        {
+            DateTimeOffset dto = new DateTimeOffset(new DateTime(2022, 11, 12), TimeSpan.FromMinutes(minutesCount));
+            Assert.Equal(minutesCount, dto.TotalOffsetMinutes);
+            Assert.Equal(minutesCount, dto.Offset.TotalMinutes);
+        }
+
+        [Fact]
+        public static void TotalNumberOfMinutesNowTest()
+        {
+            DateTimeOffset dto = DateTimeOffset.UtcNow;
+            Assert.Equal(0, dto.TotalOffsetMinutes);
+
+            dto = DateTimeOffset.Now;
+            Assert.Equal(dto.Offset.TotalMinutes, dto.TotalOffsetMinutes);
+        }
+
         [Fact]
         public static void TryFormat_ToString_EqualResults()
         {
-            DateTimeOffset expected = DateTimeOffset.MaxValue;
-            string expectedString = expected.ToString();
+            // UTF16
+            {
+                DateTimeOffset expected = DateTimeOffset.MaxValue;
+                string expectedString = expected.ToString();
 
-            // Just the right amount of space, succeeds
-            Span<char> actual = new char[expectedString.Length];
-            Assert.True(expected.TryFormat(actual, out int charsWritten));
-            Assert.Equal(expectedString.Length, charsWritten);
-            Assert.Equal<char>(expectedString.ToCharArray(), actual.ToArray());
+                // Just the right amount of space, succeeds
+                Span<char> actual = new char[expectedString.Length];
+                Assert.True(expected.TryFormat(actual, out int charsWritten));
+                Assert.Equal(expectedString.Length, charsWritten);
+                Assert.Equal<char>(expectedString.ToCharArray(), actual.ToArray());
 
-            // Too little space, fails
-            actual = new char[expectedString.Length - 1];
-            Assert.False(expected.TryFormat(actual, out charsWritten));
-            Assert.Equal(0, charsWritten);
+                // Too little space, fails
+                actual = new char[expectedString.Length - 1];
+                Assert.False(expected.TryFormat(actual, out charsWritten));
+                Assert.Equal(0, charsWritten);
 
-            // More than enough space, succeeds
-            actual = new char[expectedString.Length + 1];
-            Assert.True(expected.TryFormat(actual, out charsWritten));
-            Assert.Equal(expectedString.Length, charsWritten);
-            Assert.Equal<char>(expectedString.ToCharArray(), actual.Slice(0, expectedString.Length).ToArray());
-            Assert.Equal(0, actual[actual.Length - 1]);
+                // More than enough space, succeeds
+                actual = new char[expectedString.Length + 1];
+                Assert.True(expected.TryFormat(actual, out charsWritten));
+                Assert.Equal(expectedString.Length, charsWritten);
+                Assert.Equal<char>(expectedString.ToCharArray(), actual.Slice(0, expectedString.Length).ToArray());
+                Assert.Equal(0, actual[actual.Length - 1]);
+            }
+
+            // UTF8
+            {
+                DateTimeOffset expected = DateTimeOffset.MaxValue;
+                string expectedString = expected.ToString();
+
+                // Just the right amount of space, succeeds
+                Span<byte> actual = new byte[expectedString.Length];
+                Assert.True(expected.TryFormat(actual, out int bytesWritten, default, null));
+                Assert.Equal(expectedString.Length, bytesWritten);
+                Assert.Equal(expectedString, Encoding.UTF8.GetString(actual));
+
+                // Too little space, fails
+                actual = new byte[expectedString.Length - 1];
+                Assert.False(expected.TryFormat(actual, out bytesWritten, default, null));
+                Assert.Equal(0, bytesWritten);
+
+                // More than enough space, succeeds
+                actual = new byte[expectedString.Length + 1];
+                Assert.True(expected.TryFormat(actual, out bytesWritten, default, null));
+                Assert.Equal(expectedString.Length, bytesWritten);
+                Assert.Equal(expectedString, Encoding.UTF8.GetString(actual.Slice(0, expectedString.Length)));
+                Assert.Equal(0, actual[actual.Length - 1]);
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60562", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void TryFormat_MatchesExpected(DateTimeOffset dateTimeOffset, string format, IFormatProvider provider, string expected)
         {
-            var destination = new char[expected.Length];
+            // UTF16
+            {
+                var destination = new char[expected.Length];
 
-            Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+                Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
 
-            Assert.True(dateTimeOffset.TryFormat(destination, out int charsWritten, format, provider));
-            Assert.Equal(destination.Length, charsWritten);
-            Assert.Equal(expected, new string(destination));
+                Assert.True(dateTimeOffset.TryFormat(destination, out int charsWritten, format, provider));
+                Assert.Equal(destination.Length, charsWritten);
+                Assert.Equal(expected, new string(destination));
+            }
+
+            // UTF8
+            {
+                var destination = new byte[expected.Length];
+
+                Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+
+                Assert.True(dateTimeOffset.TryFormat(destination, out int bytesWritten, format, provider));
+                Assert.Equal(destination.Length, bytesWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(destination));
+            }
         }
 
         [Fact]
         public static void UnixEpoch()
         {
-            VerifyDateTimeOffset(DateTimeOffset.UnixEpoch, 1970, 1, 1, 0, 0, 0, 0, TimeSpan.Zero);
+            VerifyDateTimeOffset(DateTimeOffset.UnixEpoch, 1970, 1, 1, 0, 0, 0, 0, 0, TimeSpan.Zero);
         }
     }
 }

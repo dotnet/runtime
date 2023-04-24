@@ -21,7 +21,7 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationElementExtension(XmlReader xmlReader)
         {
-            if (xmlReader == null)
+            if (xmlReader is null)
             {
                 throw new ArgumentNullException(nameof(xmlReader));
             }
@@ -57,19 +57,17 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
-            if (dataContractExtension == null)
+            if (dataContractExtension is null)
             {
                 throw new ArgumentNullException(nameof(dataContractExtension));
             }
+
             if (outerName == string.Empty)
             {
                 throw new ArgumentException(SR.OuterNameOfElementExtensionEmpty, nameof(outerName));
             }
 
-            if (dataContractSerializer == null)
-            {
-                dataContractSerializer = new DataContractSerializer(dataContractExtension.GetType());
-            }
+            dataContractSerializer ??= new DataContractSerializer(dataContractExtension.GetType());
             _outerName = outerName;
             _outerNamespace = outerNamespace;
             _extensionData = dataContractExtension;
@@ -78,15 +76,12 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationElementExtension(object xmlSerializerExtension, XmlSerializer serializer)
         {
-            if (xmlSerializerExtension == null)
+            if (xmlSerializerExtension is null)
             {
                 throw new ArgumentNullException(nameof(xmlSerializerExtension));
             }
 
-            if (serializer == null)
-            {
-                serializer = new XmlSerializer(xmlSerializerExtension.GetType());
-            }
+            serializer ??= new XmlSerializer(xmlSerializerExtension.GetType());
             _extensionData = xmlSerializerExtension;
             _extensionDataWriter = new ExtensionDataWriter(_extensionData, serializer);
         }
@@ -129,7 +124,7 @@ namespace System.ServiceModel.Syndication
 
         public TExtension GetObject<TExtension>(XmlObjectSerializer serializer)
         {
-            if (serializer == null)
+            if (serializer is null)
             {
                 throw new ArgumentNullException(nameof(serializer));
             }
@@ -146,7 +141,7 @@ namespace System.ServiceModel.Syndication
 
         public TExtension GetObject<TExtension>(XmlSerializer serializer)
         {
-            if (serializer == null)
+            if (serializer is null)
             {
                 throw new ArgumentNullException(nameof(serializer));
             }
@@ -164,7 +159,7 @@ namespace System.ServiceModel.Syndication
         public XmlReader GetReader()
         {
             EnsureBuffer();
-            XmlReader reader = _buffer.GetReader(0);
+            XmlDictionaryReader reader = _buffer.GetReader(0);
             int index = 0;
             reader.ReadStartElement(Rss20Constants.ExtensionWrapperTag);
             while (reader.IsStartElement())
@@ -181,7 +176,7 @@ namespace System.ServiceModel.Syndication
 
         public void WriteTo(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }

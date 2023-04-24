@@ -40,7 +40,7 @@ namespace System.Data.OleDb
             {
                 hr = idbProperties.GetPropertyInfo(propIDSetCount, propIDSet, out this.setCount, out base.handle, out this.descBuffer);
             }
-            if ((0 <= hr) && (ADP.PtrZero != handle))
+            if ((0 <= hr) && (IntPtr.Zero != handle))
             {
                 SafeNativeMethods.Wrapper.ClearErrorInfo();
             }
@@ -63,7 +63,7 @@ namespace System.Data.OleDb
             try
             {
                 DangerousAddRef(ref mustRelease);
-                if (ADP.PtrZero != this.handle)
+                if (IntPtr.Zero != this.handle)
                 {
                     propertyLookup = new Dictionary<string, OleDbPropertyInfo>(StringComparer.OrdinalIgnoreCase);
 
@@ -120,24 +120,24 @@ namespace System.Data.OleDb
                     IntPtr infoPtr = Marshal.ReadIntPtr(ptr, offset);
                     if (IntPtr.Zero != infoPtr)
                     {
-                        int infoCount = Marshal.ReadInt32(ptr, offset + ADP.PtrSize);
+                        int infoCount = Marshal.ReadInt32(ptr, offset + IntPtr.Size);
 
                         for (int k = 0; k < infoCount; ++k)
                         {
                             IntPtr valuePtr = ADP.IntPtrOffset(infoPtr, (k * ODB.SizeOf_tagDBPROPINFO) + ODB.OffsetOf_tagDBPROPINFO_Value);
-                            SafeNativeMethods.VariantClear(valuePtr);
+                            Interop.OleAut32.VariantClear(valuePtr);
                         }
-                        SafeNativeMethods.CoTaskMemFree(infoPtr); // was allocated by provider
+                        Interop.Ole32.CoTaskMemFree(infoPtr); // was allocated by provider
                     }
                 }
-                SafeNativeMethods.CoTaskMemFree(ptr);
+                Interop.Ole32.CoTaskMemFree(ptr);
             }
 
             ptr = this.descBuffer;
             this.descBuffer = IntPtr.Zero;
             if (IntPtr.Zero != ptr)
             {
-                SafeNativeMethods.CoTaskMemFree(ptr);
+                Interop.Ole32.CoTaskMemFree(ptr);
             }
             return true;
         }

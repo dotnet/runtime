@@ -52,8 +52,8 @@ public class Test
     static bool TestAllocInNoGCRegion(int sizeMB, int sizeMBLOH, bool disallowFullBlockingGC)
     {
         bool isCurrentTestPassed = false;
-        Console.WriteLine("=====allocating {0}mb {1} full blocking GC first=====", 
-            sizeMB, (disallowFullBlockingGC ? "disallowing" : "allowing"));
+        Console.WriteLine("=====allocating {0}mb/{1}mb {2} full blocking GC first=====", 
+            sizeMB, sizeMBLOH, (disallowFullBlockingGC ? "disallowing" : "allowing"));
             
         DoAlloc();
 
@@ -131,7 +131,7 @@ public class Test
         return isCurrentTestPassed;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         arrByteArrayLen = 5000;
         arrByteArray = new byte[arrByteArrayLen][];

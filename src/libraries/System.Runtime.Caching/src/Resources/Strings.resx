@@ -116,9 +116,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Config_unable_to_get_section" xml:space="preserve">
-    <value>Unable to retrieve configuration section '{0}'.</value>
-  </data>
   <data name="TimeSpan_invalid_format" xml:space="preserve">
     <value>Invalid configuration: {0}="{1}".  The {0} value must be a time interval that can be parsed by System.TimeSpan.Parse.</value>
   </data>

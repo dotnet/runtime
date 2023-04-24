@@ -17,7 +17,6 @@ using System.Xml;
 using System.Xml.Serialization.Configuration;
 using System.Security;
 using System.Text.RegularExpressions;
-using System.Xml.Extensions;
 
 namespace System.Xml.Serialization
 {
@@ -53,9 +52,11 @@ namespace System.Xml.Serialization
             return type.Name == "Nullable`1";
         }
 
+        [Conditional("DEBUG")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "Debug only code, we don't ship debug binaries.")]
         internal static void AssertHasInterface(Type type, Type iType)
         {
-#if DEBUG
             Debug.Assert(iType.IsInterface);
             foreach (Type iFace in type.GetInterfaces())
             {
@@ -63,7 +64,6 @@ namespace System.Xml.Serialization
                     return;
             }
             Debug.Fail("Interface not found");
-#endif
         }
 
         internal void BeginMethod(Type returnType, string methodName, Type[] argTypes, string[] argNames, MethodAttributes methodAttributes)
@@ -108,7 +108,7 @@ namespace System.Xml.Serialization
             MarkLabel(_methodEndLabel);
             Ret();
 
-            MethodBuilder? retVal = null;
+            MethodBuilder? retVal;
             retVal = _methodBuilder;
             _methodBuilder = null;
             _ilGen = null;
@@ -140,15 +140,7 @@ namespace System.Xml.Serialization
 
         internal LocalBuilder? retLocal;
         internal Label retLabel;
-        internal LocalBuilder ReturnLocal
-        {
-            get
-            {
-                if (retLocal == null)
-                    retLocal = DeclareLocal(_methodBuilder!.ReturnType, "_ret");
-                return retLocal;
-            }
-        }
+        internal LocalBuilder ReturnLocal => retLocal ??= DeclareLocal(_methodBuilder!.ReturnType, "_ret");
         internal Label ReturnLabel
         {
             get { return retLabel; }
@@ -160,13 +152,13 @@ namespace System.Xml.Serialization
             LocalBuilder? localTmp;
             if (!_tmpLocals.TryGetValue(type, out localTmp))
             {
-                localTmp = DeclareLocal(type, "_tmp" + _tmpLocals.Count);
+                localTmp = DeclareLocal(type, $"_tmp{_tmpLocals.Count}");
                 _tmpLocals.Add(type, localTmp);
             }
             return localTmp;
         }
 
-        internal Type GetVariableType(object var)
+        internal static Type GetVariableType(object var)
         {
             if (var is ArgBuilder)
                 return ((ArgBuilder)var).ArgType;
@@ -311,6 +303,11 @@ namespace System.Xml.Serialization
                           CodeGenerator.InstanceBindingFlags,
                           Type.EmptyTypes
                           )!;
+                    // ICollection is not a value type, and ICollection::get_Count is a virtual method. So Call() here
+                    // will do a 'callvirt'. If we are working with a value type, box it before calling.
+                    Debug.Assert(ICollection_get_Count.IsVirtual && !ICollection_get_Count.DeclaringType!.IsValueType);
+                    if (varType.IsValueType)
+                        Box(varType);
                     Call(ICollection_get_Count);
                 }
                 Blt(forState.BeginLabel);
@@ -338,7 +335,7 @@ namespace System.Xml.Serialization
             OpCodes.Blt,
         };
 
-        private OpCode GetBranchCode(Cmp cmp)
+        private static OpCode GetBranchCode(Cmp cmp)
         {
             return s_branchCodes[(int)cmp];
         }
@@ -430,6 +427,15 @@ namespace System.Xml.Serialization
         {
             Load(len);
             _ilGen!.Emit(OpCodes.Newarr, elementType);
+        }
+
+        internal void StackallocSpan(Type elementType, int len)
+        {
+            Ldc(len);
+            _ilGen!.Emit(OpCodes.Conv_U);
+            _ilGen!.Emit(OpCodes.Localloc);
+            Ldc(len);
+            _ilGen!.Emit(OpCodes.Newobj, typeof(Span<>).MakeGenericType(elementType).GetConstructor(new Type[] { typeof(void*), typeof(int) })!);
         }
 
         internal void LoadArrayElement(object obj, object arrayIndex)
@@ -527,10 +533,9 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal Type LoadMember(MemberInfo memberInfo)
         {
-            Type? memberType = null;
-            if (memberInfo is FieldInfo)
+            Type? memberType;
+            if (memberInfo is FieldInfo fieldInfo)
             {
-                FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 memberType = fieldInfo.FieldType;
                 if (fieldInfo.IsStatic)
                 {
@@ -548,12 +553,7 @@ namespace System.Xml.Serialization
                 memberType = property.PropertyType;
                 if (property != null)
                 {
-                    MethodInfo? getMethod = property.GetMethod;
-
-                    if (getMethod == null)
-                    {
-                        getMethod = GetPropertyMethodFromBaseType(property, true);
-                    }
+                    MethodInfo? getMethod = property.GetMethod ?? GetPropertyMethodFromBaseType(property, true);
 
                     System.Diagnostics.Debug.Assert(getMethod != null);
                     Call(getMethod);
@@ -566,10 +566,9 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal Type LoadMemberAddress(MemberInfo memberInfo)
         {
-            Type? memberType = null;
-            if (memberInfo is FieldInfo)
+            Type? memberType;
+            if (memberInfo is FieldInfo fieldInfo)
             {
-                FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 memberType = fieldInfo.FieldType;
                 if (fieldInfo.IsStatic)
                 {
@@ -587,12 +586,7 @@ namespace System.Xml.Serialization
                 memberType = property.PropertyType;
                 if (property != null)
                 {
-                    MethodInfo? getMethod = property.GetMethod;
-
-                    if (getMethod == null)
-                    {
-                        getMethod = GetPropertyMethodFromBaseType(property, true);
-                    }
+                    MethodInfo? getMethod = property.GetMethod ?? GetPropertyMethodFromBaseType(property, true);
 
                     System.Diagnostics.Debug.Assert(getMethod != null);
                     Call(getMethod);
@@ -609,9 +603,8 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls GetPropertyMethodFromBaseType")]
         internal void StoreMember(MemberInfo memberInfo)
         {
-            if (memberInfo is FieldInfo)
+            if (memberInfo is FieldInfo fieldInfo)
             {
-                FieldInfo fieldInfo = (FieldInfo)memberInfo;
                 if (fieldInfo.IsStatic)
                 {
                     _ilGen!.Emit(OpCodes.Stsfld, fieldInfo);
@@ -627,12 +620,7 @@ namespace System.Xml.Serialization
                 PropertyInfo property = (PropertyInfo)memberInfo;
                 if (property != null)
                 {
-                    MethodInfo? setMethod = property.SetMethod;
-
-                    if (setMethod == null)
-                    {
-                        setMethod = GetPropertyMethodFromBaseType(property, false);
-                    }
+                    MethodInfo? setMethod = property.SetMethod ?? GetPropertyMethodFromBaseType(property, false);
 
                     System.Diagnostics.Debug.Assert(setMethod != null);
                     Call(setMethod);
@@ -711,14 +699,14 @@ namespace System.Xml.Serialization
         };
 
 
-        private OpCode GetLdindOpCode(TypeCode typeCode)
+        private static OpCode GetLdindOpCode(TypeCode typeCode)
         {
             return s_ldindOpCodes[(int)typeCode];
         }
 
         internal void Ldobj(Type type)
         {
-            OpCode opCode = GetLdindOpCode(type.GetTypeCode());
+            OpCode opCode = GetLdindOpCode(Type.GetTypeCode(type));
             if (!opCode.Equals(OpCodes.Nop))
             {
                 _ilGen!.Emit(opCode);
@@ -727,6 +715,16 @@ namespace System.Xml.Serialization
             {
                 _ilGen!.Emit(OpCodes.Ldobj, type);
             }
+        }
+
+        internal void LdindU1()
+        {
+            _ilGen!.Emit(OpCodes.Ldind_U1);
+        }
+
+        internal void StindI1()
+        {
+            _ilGen!.Emit(OpCodes.Stind_I1);
         }
 
         internal void Stobj(Type type)
@@ -780,7 +778,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                switch (valueType.GetTypeCode())
+                switch (Type.GetTypeCode(valueType))
                 {
                     case TypeCode.Boolean:
                         Ldc((bool)o);
@@ -850,6 +848,19 @@ namespace System.Xml.Serialization
                             )!;
                             Ldc(((TimeSpan)o).Ticks); // ticks
                             New(TimeSpan_ctor);
+                            break;
+                        }
+                        else if (valueType == typeof(DateTimeOffset))
+                        {
+                            ConstructorInfo DateTimeOffset_ctor = typeof(DateTimeOffset).GetConstructor(
+                            CodeGenerator.InstanceBindingFlags,
+                            null,
+                            new Type[] { typeof(long), typeof(TimeSpan) },
+                            null
+                            )!;
+                            Ldc(((DateTimeOffset)o).Ticks); // ticks
+                            Ldc(((DateTimeOffset)o).Offset); // offset
+                            New(DateTimeOffset_ctor);
                             break;
                         }
                         else
@@ -922,7 +933,7 @@ namespace System.Xml.Serialization
 
         internal void Stloc(Type type, string name)
         {
-            LocalBuilder? local = null;
+            LocalBuilder? local;
             if (!_currentScope!.TryGetValue(name, out local))
             {
                 local = DeclareLocal(type, name);
@@ -1010,7 +1021,7 @@ namespace System.Xml.Serialization
             OpCodes.Ldelem_Ref, //String = 18,
         };
 
-        private OpCode GetLdelemOpCode(TypeCode typeCode)
+        private static OpCode GetLdelemOpCode(TypeCode typeCode)
         {
             return s_ldelemOpCodes[(int)typeCode];
         }
@@ -1023,7 +1034,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                OpCode opCode = GetLdelemOpCode(arrayElementType.GetTypeCode());
+                OpCode opCode = GetLdelemOpCode(Type.GetTypeCode(arrayElementType));
                 Debug.Assert(!opCode.Equals(OpCodes.Nop));
                 if (opCode.Equals(OpCodes.Nop))
                     throw new InvalidOperationException(SR.Format(SR.ArrayTypeIsNotSupported, arrayElementType.AssemblyQualifiedName));
@@ -1058,7 +1069,7 @@ namespace System.Xml.Serialization
             OpCodes.Stelem_Ref, //String = 18,
         };
 
-        private OpCode GetStelemOpCode(TypeCode typeCode)
+        private static OpCode GetStelemOpCode(TypeCode typeCode)
         {
             return s_stelemOpCodes[(int)typeCode];
         }
@@ -1069,7 +1080,7 @@ namespace System.Xml.Serialization
                 Stelem(Enum.GetUnderlyingType(arrayElementType));
             else
             {
-                OpCode opCode = GetStelemOpCode(arrayElementType.GetTypeCode());
+                OpCode opCode = GetStelemOpCode(Type.GetTypeCode(arrayElementType));
                 if (opCode.Equals(OpCodes.Nop))
                     throw new InvalidOperationException(SR.Format(SR.ArrayTypeIsNotSupported, arrayElementType.AssemblyQualifiedName));
                 _ilGen!.Emit(opCode);
@@ -1170,7 +1181,7 @@ namespace System.Xml.Serialization
             OpCodes.Nop, //String = 18,
         };
 
-        private OpCode GetConvOpCode(TypeCode typeCode)
+        private static OpCode GetConvOpCode(TypeCode typeCode)
         {
             return s_convOpCodes[(int)typeCode];
         }
@@ -1183,7 +1194,7 @@ namespace System.Xml.Serialization
             {
                 if (source.IsValueType)
                 {
-                    OpCode opCode = GetConvOpCode(target.GetTypeCode());
+                    OpCode opCode = GetConvOpCode(Type.GetTypeCode(target));
                     if (opCode.Equals(OpCodes.Nop))
                     {
                         throw new CodeGeneratorConversionException(source, target, isAddress, "NoConversionPossibleTo");
@@ -1256,7 +1267,7 @@ namespace System.Xml.Serialization
             Type[] interfaces)
         {
             // parent is nullable if no base class
-            return moduleBuilder.DefineType(TempAssembly.GeneratedAssemblyNamespace + "." + name,
+            return moduleBuilder.DefineType($"{TempAssembly.GeneratedAssemblyNamespace}.{name}",
                 attributes, parent, interfaces);
         }
 
@@ -1596,9 +1607,9 @@ namespace System.Xml.Serialization
             this.ParameterTypes = parameterTypes;
         }
 
+        [Conditional("DEBUG")]
         public void Validate(Type? returnType, Type[] parameterTypes, MethodAttributes attributes)
         {
-#if DEBUG
             Debug.Assert(this.MethodBuilder.ReturnType == returnType);
             Debug.Assert(this.MethodBuilder.Attributes == attributes);
             Debug.Assert(this.ParameterTypes.Length == parameterTypes.Length);
@@ -1606,7 +1617,6 @@ namespace System.Xml.Serialization
             {
                 Debug.Assert(this.ParameterTypes[i] == parameterTypes[i]);
             }
-#endif
         }
     }
 

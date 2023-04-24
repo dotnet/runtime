@@ -12,25 +12,22 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         [Fact]
         public void DoubleDisposeWorks()
         {
-            var engine = new FakeEngine();
-            var serviceProviderEngineScope = new ServiceProviderEngineScope(engine);
+            var provider = new ServiceProvider(new ServiceCollection(), ServiceProviderOptions.Default);
+            var serviceProviderEngineScope = new ServiceProviderEngineScope(provider, isRootScope: true);
             serviceProviderEngineScope.ResolvedServices.Add(new ServiceCacheKey(typeof(IFakeService), 0), null);
             serviceProviderEngineScope.Dispose();
             serviceProviderEngineScope.Dispose();
         }
 
-        private class FakeEngine : ServiceProviderEngine
+        [Fact]
+        public void RootEngineScopeDisposeTest()
         {
-            public FakeEngine() :
-                base(Array.Empty<ServiceDescriptor>())
-            {
-            }
+            var services = new ServiceCollection();
+            ServiceProvider sp = services.BuildServiceProvider();
+            var s = sp.GetRequiredService<IServiceProvider>();
+            ((IDisposable)s).Dispose();
 
-            protected override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
-            {
-                return scope => null;
-            }
-
+            Assert.Throws<ObjectDisposedException>(() => sp.GetRequiredService<IServiceProvider>());
         }
     }
 }

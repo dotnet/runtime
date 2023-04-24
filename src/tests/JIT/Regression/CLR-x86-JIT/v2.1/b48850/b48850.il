@@ -3,16 +3,21 @@
 
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
 
-.assembly Test {}
+.assembly 'b48850' {}
  
+.class public auto ansi Test_b48850 extends [mscorlib] System.Object {
 .method public static int32 Main()
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
     .maxstack  3
     .locals init (int32 V_0)
@@ -45,6 +50,7 @@ Return:
                                                                 object)
   IL_003f:  ldloc.0
   IL_0040:  ret
+}
 }
 
 .class public value BigStructtestCase

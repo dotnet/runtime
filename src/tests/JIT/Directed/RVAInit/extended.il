@@ -10,20 +10,20 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern mscorlib
 {
 }
 .assembly extended
 {
 }
-.module extended.exe
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 ) 
 
 .file alignment 512
 
 .namespace JitTest
 {
-  .class private auto ansi beforefieldinit Test
+  .class public auto ansi beforefieldinit Test
          extends [mscorlib]System.Object
   {
      .field private static unsigned int8 buffer at D_1
@@ -119,9 +119,11 @@
       IL_0024:  ret
     } 
 
-    .method private hidebysig static int32
-            Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  2
       .locals (int32 V_0)

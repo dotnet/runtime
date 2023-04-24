@@ -23,7 +23,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.AddingNewEventArgs'/> class,
         /// with the specified object defined as the default new object.
         /// </summary>
-        public AddingNewEventArgs(object newObject)
+        public AddingNewEventArgs(object? newObject)
         {
             NewObject = newObject;
         }
@@ -31,6 +31,6 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets or sets the new object that will be added to the list.
         /// </summary>
-        public object NewObject { get; set; }
+        public object? NewObject { get; set; }
     }
 }

@@ -90,10 +90,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(atsOuter == null || atsOuter.OwningAggregate == agg.Parent, "");
 
-            if (typeArgs == null)
-            {
-                typeArgs = TypeArray.Empty;
-            }
+            typeArgs ??= TypeArray.Empty;
 
             Debug.Assert(agg.GetTypeVars().Count == typeArgs.Count);
             AggregateType pAggregate = TypeTable.LookupAggregate(agg, atsOuter, typeArgs);

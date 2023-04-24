@@ -16,7 +16,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void NothingWrittenToStreamUnlessFlushed()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream);
 
@@ -26,12 +26,14 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(0, stream.Length);
 
             writer.Complete();
+
+
         }
 
         [Fact]
         public void DataFlushedOnComplete()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
 
@@ -42,6 +44,7 @@ namespace System.IO.Pipelines.Tests
 
             writer.Complete();
 
+            Assert.Equal(0, writer.UnflushedBytes);
             Assert.Equal(bytes.Length, stream.Length);
             Assert.Equal("Hello World", Encoding.ASCII.GetString(stream.ToArray()));
         }
@@ -49,7 +52,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task DataFlushedOnCompleteAsync()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
 
@@ -62,12 +65,13 @@ namespace System.IO.Pipelines.Tests
 
             Assert.Equal(bytes.Length, stream.Length);
             Assert.Equal("Hello World", Encoding.ASCII.GetString(stream.ToArray()));
+            Assert.Equal(0, writer.UnflushedBytes);
         }
 
         [Fact]
         public void DataNotFlushedOnCompleteWithException()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
 
@@ -84,7 +88,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task DataNotFlushedOnCompleteAsyncWithException()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
 
@@ -101,7 +105,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CompleteAsyncDoesNotThrowObjectDisposedException()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
 
@@ -120,7 +124,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task DataWrittenOnFlushAsync()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream);
 
@@ -132,6 +136,8 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal("Hello World", Encoding.ASCII.GetString(stream.ToArray()));
 
             writer.Complete();
+
+            Assert.Equal(0, writer.UnflushedBytes);
         }
 
         [Fact]
@@ -143,12 +149,13 @@ namespace System.IO.Pipelines.Tests
 
             Assert.False(stream.FlushAsyncCalled);
             writer.Complete();
+            Assert.Equal(0, writer.UnflushedBytes);
         }
 
         [Fact]
         public async Task WritesUsingGetSpanWorks()
         {
-            var bytes = Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwzyz");
+            byte[] bytes = "abcdefghijklmnopqrstuvwzyz"u8.ToArray();
             var stream = new MemoryStream();
             var options = new StreamPipeWriterOptions(new HeapBufferPool(), minimumBufferSize: 1);
             PipeWriter writer = PipeWriter.Create(stream, options);
@@ -162,12 +169,13 @@ namespace System.IO.Pipelines.Tests
             await writer.FlushAsync();
             Assert.Equal(bytes, stream.ToArray());
             writer.Complete();
+            Assert.Equal(0, writer.UnflushedBytes);
         }
 
         [Fact]
         public async Task WritesUsingGetMemoryWorks()
         {
-            var bytes = Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwzyz");
+            byte[] bytes = "abcdefghijklmnopqrstuvwzyz"u8.ToArray();
             var stream = new MemoryStream();
             var options = new StreamPipeWriterOptions(new HeapBufferPool(), minimumBufferSize: 1);
             PipeWriter writer = PipeWriter.Create(stream, options);
@@ -181,6 +189,7 @@ namespace System.IO.Pipelines.Tests
             await writer.FlushAsync();
             Assert.Equal(bytes, stream.ToArray());
             writer.Complete();
+            Assert.Equal(0, writer.UnflushedBytes);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -225,10 +234,10 @@ namespace System.IO.Pipelines.Tests
 
             var data = new List<byte[]>
             {
-                Encoding.ASCII.GetBytes("Hello"),
-                Encoding.ASCII.GetBytes("World"),
-                Encoding.ASCII.GetBytes("This"),
-                Encoding.ASCII.GetBytes("Works"),
+                "Hello"u8.ToArray(),
+                "World"u8.ToArray(),
+                "This"u8.ToArray(),
+                "Works"u8.ToArray(),
             }.
             ToArray();
 
@@ -397,6 +406,7 @@ namespace System.IO.Pipelines.Tests
                 Assert.Equal(1, pool.DisposedBlocks);
 
                 writer.Complete();
+                Assert.Equal(0, writer.UnflushedBytes);
                 Assert.Equal(0, pool.CurrentlyRentedBlocks);
                 Assert.Equal(3, pool.DisposedBlocks);
             }
@@ -428,7 +438,7 @@ namespace System.IO.Pipelines.Tests
         {
             using (var pool = new DisposeTrackingBufferPool())
             {
-                byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+                byte[] bytes = "Hello World"u8.ToArray();
                 var stream = new MemoryStream();
                 var options = new StreamPipeWriterOptions(pool);
                 PipeWriter writer = PipeWriter.Create(stream, options);
@@ -441,17 +451,40 @@ namespace System.IO.Pipelines.Tests
                 Assert.Equal(0, stream.Length);
 
                 writer.Complete();
+                Assert.Equal(0, writer.UnflushedBytes);
                 Assert.Equal(0, pool.CurrentlyRentedBlocks);
                 Assert.Equal(1, pool.DisposedBlocks);
             }
         }
 
         [Fact]
+        public void CompleteAlwaysCallsDispose()
+        {
+            var stream = new CountsDisposesStream();
+            PipeWriter writer = PipeWriter.Create(stream);
+            writer.Complete();
+
+            Assert.True(stream.DisposeCalled);
+        }
+
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
+        [Fact]
+        public async Task CompleteAsyncAlwaysCallsDisposeAsync()
+        {
+            var stream = new CountsDisposesStream();
+            PipeWriter writer = PipeWriter.Create(stream);
+            await writer.CompleteAsync();
+
+            Assert.True(stream.DisposeAsyncCalled);
+        }
+#endif
+
+        [Fact]
         public void GetMemorySameAsTheMaxPoolSizeUsesThePool()
         {
             using (var pool = new DisposeTrackingBufferPool())
             {
-                byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+                byte[] bytes = "Hello World"u8.ToArray();
                 var stream = new MemoryStream();
                 var options = new StreamPipeWriterOptions(pool);
                 PipeWriter writer = PipeWriter.Create(stream, options);
@@ -462,7 +495,7 @@ namespace System.IO.Pipelines.Tests
                 Assert.Equal(0, pool.DisposedBlocks);
 
                 writer.Complete();
-
+                Assert.Equal(0, writer.UnflushedBytes);
                 Assert.Equal(0, pool.CurrentlyRentedBlocks);
                 Assert.Equal(1, pool.DisposedBlocks);
             }
@@ -482,7 +515,7 @@ namespace System.IO.Pipelines.Tests
                 Assert.Equal(0, pool.DisposedBlocks);
 
                 writer.Complete();
-
+                Assert.Equal(0, writer.UnflushedBytes);
                 Assert.Equal(0, pool.CurrentlyRentedBlocks);
                 Assert.Equal(0, pool.DisposedBlocks);
             }
@@ -592,6 +625,25 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(async () => await writer.WriteAsync(new byte[1]));
         }
 
+        [Fact]
+        public void UnflushedBytesWorks()
+        {
+            byte[] bytes = "Hello World"u8.ToArray();
+            var stream = new MemoryStream();
+            PipeWriter writer = PipeWriter.Create(stream);
+
+            Assert.True(writer.CanGetUnflushedBytes);
+
+            bytes.AsSpan().CopyTo(writer.GetSpan(bytes.Length));
+            writer.Advance(bytes.Length);
+
+            Assert.Equal(bytes.Length, writer.UnflushedBytes);
+
+            writer.Complete();
+
+            Assert.Equal(0, writer.UnflushedBytes);
+        }
+
         private class ThrowsOperationCanceledExceptionStream : WriteOnlyStream
         {
             public override void Write(byte[] buffer, int offset, int count)
@@ -613,6 +665,25 @@ namespace System.IO.Pipelines.Tests
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 throw new OperationCanceledException();
+            }
+#endif
+        }
+
+        private class CountsDisposesStream : ThrowsOperationCanceledExceptionStream
+        {
+            public bool DisposeCalled { get; set; }
+            public bool DisposeAsyncCalled { get; set; }
+
+            protected override void Dispose(bool disposing)
+            {
+                DisposeCalled = true;
+            }
+
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
+            public override ValueTask DisposeAsync()
+            {
+                DisposeAsyncCalled = true;
+                return default;
             }
 #endif
         }

@@ -6,7 +6,7 @@ Param(
   [string][Alias('f')]$framework,
   [string]$vs,
   [string][Alias('v')]$verbosity = "minimal",
-  [ValidateSet("windows","Linux","OSX","Android","Browser")][string]$os,
+  [ValidateSet("windows","linux","osx","android","browser","wasi")][string]$os,
   [switch]$allconfigurations,
   [switch]$coverage,
   [string]$testscope,
@@ -16,6 +16,7 @@ Param(
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
   [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
+  [ValidateSet("Debug","Release","Checked")][string][Alias('hc')]$hostConfiguration,
   [switch]$ninja,
   [switch]$msbuild,
   [string]$cmakeargs,
@@ -35,9 +36,11 @@ function Get-Help() {
   Write-Host "                                 Pass a comma-separated list to build for multiple configurations."
   Write-Host "                                 [Default: Debug]"
   Write-Host "  -help (-h)                     Print help and exit."
+  Write-Host "  -hostConfiguration (-hc)       Host build configuration: Debug, Release or Checked."
+  Write-Host "                                 [Default: Debug]"
   Write-Host "  -librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   Write-Host "                                 [Default: Debug]"
-  Write-Host "  -os                            Target operating system: windows, Linux, OSX, Android or Browser."
+  Write-Host "  -os                            Target operating system: windows, linux, osx, android, wasi or browser."
   Write-Host "                                 [Default: Your machine's OS.]"
   Write-Host "  -runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   Write-Host "                                 Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -66,14 +69,14 @@ function Get-Help() {
   Write-Host "  -restore                Restore dependencies."
   Write-Host "  -sign                   Sign build outputs."
   Write-Host "  -test (-t)              Incrementally builds and runs tests."
-  Write-Host "                          Use in conjuction with -testnobuild to only run tests."
+  Write-Host "                          Use in conjunction with -testnobuild to only run tests."
   Write-Host ""
 
   Write-Host "Libraries settings:"
   Write-Host "  -allconfigurations      Build packages for all build configurations."
   Write-Host "  -coverage               Collect code coverage when testing."
-  Write-Host "  -framework (-f)         Build framework: net6.0 or net48."
-  Write-Host "                          [Default: net6.0]"
+  Write-Host "  -framework (-f)         Build framework: net8.0 or net48."
+  Write-Host "                          [Default: net8.0]"
   Write-Host "  -testnobuild            Skip building tests when invoking -test."
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all."
   Write-Host ""
@@ -126,18 +129,24 @@ if ($subset -eq 'help') {
   exit 0
 }
 
+# Lower-case the passed in OS string.
+if ($os) {
+  $os = $os.ToLowerInvariant()
+}
+
 if ($vs) {
+  $archToOpen = $arch[0]
+  $configToOpen = $configuration[0]
+  $repoRoot = Split-Path $PSScriptRoot -Parent
+  if ($runtimeConfiguration) {
+    $configToOpen = $runtimeConfiguration
+  }
+
   if ($vs -ieq "coreclr.sln") {
     # If someone passes in coreclr.sln (case-insensitive),
     # launch the generated CMake solution.
-    $archToOpen = $arch[0]
-    $configToOpen = $configuration[0]
-    if ($runtimeConfiguration) {
-      $configToOpen = $runtimeConfiguration
-    }
     $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\coreclr" | Join-Path -ChildPath "windows.$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "CoreCLR.sln"
     if (-Not (Test-Path $vs)) {
-      $repoRoot = Split-Path $PSScriptRoot -Parent
       Invoke-Expression "& `"$repoRoot/src/coreclr/build-runtime.cmd`" -configureonly -$archToOpen -$configToOpen -msbuild"
       if ($lastExitCode -ne 0) {
         Write-Error "Failed to generate the CoreCLR solution file."
@@ -148,12 +157,25 @@ if ($vs) {
       }
     }
   }
+  elseif ($vs -ieq "corehost.sln") {
+    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "artifacts\obj\" | Join-Path -ChildPath "win-$archToOpen.$((Get-Culture).TextInfo.ToTitleCase($configToOpen))" | Join-Path -ChildPath "corehost" | Join-Path -ChildPath "ide" | Join-Path -ChildPath "corehost.sln"
+    if (-Not (Test-Path $vs)) {
+      Invoke-Expression "& `"$repoRoot/eng/common/msbuild.ps1`" $repoRoot/src/native/corehost/corehost.proj /clp:nosummary /restore /p:Ninja=false /p:Configuration=$configToOpen /p:TargetArchitecture=$archToOpen /p:ConfigureOnly=true"
+      if ($lastExitCode -ne 0) {
+        Write-Error "Failed to generate the CoreHost solution file."
+        exit 1
+      }
+      if (-Not (Test-Path $vs)) {
+        Write-Error "Unable to find the CoreHost solution file at $vs."
+      }
+    }
+  }
   elseif (-Not (Test-Path $vs)) {
     $solution = $vs
 
     if ($runtimeFlavor -eq "Mono") {
       # Search for the solution in mono
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\mono\netcore" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\mono" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
     } else {
       # Search for the solution in coreclr
       $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
@@ -196,15 +218,15 @@ if ($vs) {
 
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
+  
+  # Disable .NET runtime signature validation errors which errors for local builds
+  $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
 
   if ($runtimeConfiguration)
   {
     # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
   }
-
-  # Restore the solution to workaround https://github.com/dotnet/runtime/issues/32205
-  Invoke-Expression "& dotnet restore $vs"
 
   # Launch Visual Studio with the locally defined environment variables
   ."$vs"
@@ -230,6 +252,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "runtimeConfiguration"   { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "runtimeFlavor"          { $arguments += " /p:RuntimeFlavor=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "librariesConfiguration" { $arguments += " /p:LibrariesConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
+    "hostConfiguration"      { $arguments += " /p:HostConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }
     "allconfigurations"      { $arguments += " /p:BuildAllConfigurations=true" }
@@ -247,9 +270,17 @@ foreach ($argument in $PSBoundParameters.Keys)
   }
 }
 
+if ($env:TreatWarningsAsErrors -eq 'false') {
+  $arguments += " -warnAsError 0"
+}
+
+# Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
+# The later changes are ignored when using the cache.
+$env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
+
 $failedBuilds = @()
 
-if ($os -eq "Browser") {
+if ($os -eq "browser") {
   # override default arch for Browser, we only support wasm
   $arch = "wasm"
 
@@ -259,12 +290,24 @@ if ($os -eq "Browser") {
   }
 }
 
+if ($os -eq "wasi") {
+  # override default arch for wasi, we only support wasm
+  $arch = "wasm"
+
+  if ($msbuild -eq $True) {
+    Write-Error "Using the -msbuild option isn't supported when building for WASI on Windows, we need ninja for WASI-SDK."
+    exit 1
+  }
+}
+
 foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
   foreach ($singleArch in $arch) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
-    if ($os -eq "Browser") {
+    if ($os -eq "browser") {
       $env:__DistroRid="browser-$singleArch"
+    } elseif ($os -eq "wasi") {
+      $env:__DistroRid="wasi-$singleArch"
     } else {
       $env:__DistroRid="win-$singleArch"
     }

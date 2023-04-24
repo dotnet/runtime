@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -14,7 +15,7 @@
   .field public int32 a
 } // end of class VT
 
-.class private auto ansi beforefieldinit ldfldunboxedvt
+.class public auto ansi beforefieldinit ldfldunboxedvt
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void f() cil managed
@@ -32,6 +33,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack 5
     .try

@@ -1014,6 +1014,7 @@ typedef enum
     CLRDATA_MODULE_DEFAULT          = 0x00000000,
     CLRDATA_MODULE_IS_DYNAMIC       = 0x00000001,
     CLRDATA_MODULE_IS_MEMORY_STREAM = 0x00000002,
+    CLRDATA_MODULE_IS_MAIN_MODULE   = 0x00000004,
 } CLRDataModuleFlag;
 
 typedef enum
@@ -2079,7 +2080,7 @@ interface IXCLRDataFrame : IUnknown
 
     /*
      * Return an argument by (0-based) index.
-     * The name parameter is filled in if name information is availble.
+     * The name parameter is filled in if name information is available.
      */
     HRESULT GetArgumentByIndex([in] ULONG32 index,
                                [out] IXCLRDataValue** arg,
@@ -2094,7 +2095,7 @@ interface IXCLRDataFrame : IUnknown
 
     /*
      * Return a local variable by (0-based) index.
-     * The name parameter is filled in if name information is availble.
+     * The name parameter is filled in if name information is available.
      */
     HRESULT GetLocalVariableByIndex([in] ULONG32 index,
                                     [out] IXCLRDataValue** localVariable,
@@ -2176,7 +2177,7 @@ typedef enum
 } CLRDataExceptionSameFlag;
 
 #pragma warning(push)
-#pragma warning(disable:28718)	/* suppress warning 28718 for inteface IXCLRDataExceptionState */
+#pragma warning(disable:28718)	/* suppress warning 28718 for interface IXCLRDataExceptionState */
 [
     object,
     local,

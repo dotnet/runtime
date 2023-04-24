@@ -8,9 +8,10 @@
 }
 
 
-.assembly Test1 {}
+.assembly 'b460385' {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
-.class FullProof {
+.class public FullProof {
 
 .method static int32 Test() {
 .maxstack 47
@@ -69,6 +70,9 @@ IL_47:   ret			//
 
   .method public static int32  Main()
 {.entrypoint
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .maxstack 3
 
 call int32 FullProof::Test()

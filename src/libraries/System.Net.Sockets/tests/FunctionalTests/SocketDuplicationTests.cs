@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Drawing.Drawing2D;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -32,9 +31,11 @@ namespace System.Net.Sockets.Tests
         {
             using Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
+#pragma warning disable 0618
             Assert.False(s.UseOnlyOverlappedIO);
             s.UseOnlyOverlappedIO = true;
             Assert.False(s.UseOnlyOverlappedIO);
+#pragma warning restore 0618
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]

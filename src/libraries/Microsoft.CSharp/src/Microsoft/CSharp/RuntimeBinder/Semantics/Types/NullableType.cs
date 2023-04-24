@@ -27,7 +27,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public override AggregateType GetAts() =>
-            _ats ?? (_ats = TypeManager.GetAggregate(TypeManager.GetNullable(), TypeArray.Allocate(UnderlyingType)));
+            _ats ??= TypeManager.GetAggregate(TypeManager.GetNullable(), TypeArray.Allocate(UnderlyingType));
 
         public override CType StripNubs() => UnderlyingType;
 

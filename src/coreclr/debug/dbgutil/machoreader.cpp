@@ -75,7 +75,7 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
 // MachO module 
 //--------------------------------------------------------------------
 
-MachOModule::MachOModule(MachOReader& reader, mach_vm_address_t baseAddress, mach_header_64* header, std::string* name) :
+MachOModule::MachOModule(MachOReader& reader, mach_vm_address_t baseAddress, std::string* name) :
     m_reader(reader),
     m_baseAddress(baseAddress),
     m_loadBias(0),
@@ -84,9 +84,6 @@ MachOModule::MachOModule(MachOReader& reader, mach_vm_address_t baseAddress, mac
     m_nlists(nullptr),
     m_strtabAddress(0)
 {
-    if (header != nullptr) {
-        m_header = *header;
-    }
     if (name != nullptr) {
         m_name = *name;
     }
@@ -126,19 +123,41 @@ MachOModule::TryLookupSymbol(const char* symbolName, uint64_t* symbolValue)
         _ASSERTE(m_nlists != nullptr);
         _ASSERTE(m_strtabAddress != 0);
 
-        for (int i = 0; i < m_dysymtabCommand->nextdefsym; i++)
+        // First, search just the "external" export symbols 
+        if (TryLookupSymbol(m_dysymtabCommand->iextdefsym, m_dysymtabCommand->nextdefsym, symbolName, symbolValue))
         {
-            std::string name = GetSymbolName(i);
-            // Skip the leading underscores to match Linux externs
-            if (name[0] == '_')
-            {
-                name.erase(0, 1);
-            }
-            if (strcmp(name.c_str(), symbolName) == 0)
-            {
-                *symbolValue = m_loadBias + m_nlists[i].n_value;
-                return true;
-            }
+            m_reader.Trace("SYM: Found '%s' in external symbols\n", symbolName);
+            return true;
+        }
+        m_reader.Trace("SYM: Missed '%s' in external symbols\n", symbolName);
+
+        // If not found in external symbols, search all of them
+        if (TryLookupSymbol(0, m_symtabCommand->nsyms, symbolName, symbolValue))
+        {
+            m_reader.Trace("SYM: Found '%s' in all symbols\n", symbolName);
+            return true;
+        }
+        m_reader.Trace("SYM: Missed '%s' in all symbols\n", symbolName);
+    }
+    *symbolValue = 0;
+    return false;
+}
+
+bool
+MachOModule::TryLookupSymbol(int start, int nsyms, const char* symbolName, uint64_t* symbolValue)
+{
+    for (int i = 0; i < nsyms; i++)
+    {
+        std::string name = GetSymbolName(start + i);
+
+        // Skip the leading underscores to match Linux externs
+        const char* currentName = name.length() > 0 && name[0] == '_' ? name.c_str() + 1 : name.c_str();
+
+        // Does this symbol match?
+        if (strcmp(currentName, symbolName) == 0)
+        {
+            *symbolValue = m_loadBias + m_nlists[start + i].n_value;
+            return true;
         }
     }
     *symbolValue = 0;
@@ -207,11 +226,10 @@ MachOModule::ReadLoadCommands()
                 m_segments.push_back(segment);
 
                 // Calculate the load bias for the module. This is the value to add to the vmaddr of a
-                // segment to get the actual address. 
+                // segment to get the actual address.
                 if (strcmp(segment->segname, SEG_TEXT) == 0)
                 {
                     m_loadBias = m_baseAddress - segment->vmaddr;
-                    m_reader.TraceVerbose("CMD: load bias %016llx\n", m_loadBias);
                 }
 
                 m_reader.TraceVerbose("CMD: vmaddr %016llx vmsize %016llx fileoff %016llx filesize %016llx nsects %d max %c%c%c init %c%c%c %02x %s\n",
@@ -245,6 +263,7 @@ MachOModule::ReadLoadCommands()
             // Get next load command
             command = (load_command*)((char*)command + command->cmdsize);
         }
+        m_reader.TraceVerbose("CMD: load bias %016llx\n", m_loadBias);
     }
 
     return true;
@@ -262,26 +281,30 @@ MachOModule::ReadSymbolTable()
         _ASSERTE(m_symtabCommand != nullptr);
         _ASSERTE(m_strtabAddress == 0);
 
-        m_reader.TraceVerbose("SYM: symoff %08x nsyms %d stroff %08x strsize %d iext %d next %d\n",
+        m_reader.TraceVerbose("SYM: symoff %08x nsyms %d stroff %08x strsize %d iext %d next %d iundef %d nundef %d extref %d nextref %d\n",
             m_symtabCommand->symoff,
             m_symtabCommand->nsyms,
             m_symtabCommand->stroff,
             m_symtabCommand->strsize,
             m_dysymtabCommand->iextdefsym,
-            m_dysymtabCommand->nextdefsym);
+            m_dysymtabCommand->nextdefsym,
+            m_dysymtabCommand->iundefsym,
+            m_dysymtabCommand->nundefsym,
+            m_dysymtabCommand->extrefsymoff,
+            m_dysymtabCommand->nextrefsyms);
 
-        // Read the external symbol part of symbol table. An array of "nlist" structs.
-        void* extSymbolTableAddress = (void*)(GetAddressFromFileOffset(m_symtabCommand->symoff) + (m_dysymtabCommand->iextdefsym * sizeof(nlist_64)));
-        size_t symtabSize = sizeof(nlist_64) * m_dysymtabCommand->nextdefsym;
+        // Read the entire symbol part of symbol table. An array of "nlist" structs.
+        void* symbolTableAddress = (void*)GetAddressFromFileOffset(m_symtabCommand->symoff);
+        size_t symtabSize = sizeof(nlist_64) * m_symtabCommand->nsyms;
         m_nlists = (nlist_64*)malloc(symtabSize);
         if (m_nlists == nullptr)
         {
-            m_reader.Trace("ERROR: Failed to allocate %zu byte external symbol table\n", symtabSize);
+            m_reader.Trace("ERROR: Failed to allocate %zu byte symtab\n", symtabSize);
             return false;
         }
-        if (!m_reader.ReadMemory(extSymbolTableAddress, m_nlists, symtabSize))
+        if (!m_reader.ReadMemory(symbolTableAddress, m_nlists, symtabSize))
         {
-            m_reader.Trace("ERROR: Failed to read external symtab at %p of %zu\n", extSymbolTableAddress, symtabSize);
+            m_reader.Trace("ERROR: Failed to read symtab at %p of %zu\n", symbolTableAddress, symtabSize);
             return false;
         }
 
@@ -337,43 +360,25 @@ MachOReader::MachOReader()
 }
 
 bool
-MachOReader::EnumerateModules(mach_vm_address_t address, mach_header_64* header)
+MachOReader::EnumerateModules(mach_vm_address_t dyldInfoAddress)
 {
-    _ASSERTE(header->magic == MH_MAGIC_64);
-    _ASSERTE(header->filetype == MH_DYLINKER);
-
-    MachOModule dylinker(*this, address, header);
-
-    // Search for symbol for the dyld image info cache
-    uint64_t dyldInfoAddress = 0;
-    if (!dylinker.TryLookupSymbol("dyld_all_image_infos", &dyldInfoAddress))
-    {
-        Trace("ERROR: Can not find the _dyld_all_image_infos symbol\n");
-        return false;
-    }
-
     // Read the all image info from the dylinker image
     dyld_all_image_infos dyldInfo;
-
     if (!ReadMemory((void*)dyldInfoAddress, &dyldInfo, sizeof(dyld_all_image_infos)))
     {
         Trace("ERROR: Failed to read dyld_all_image_infos at %p\n", (void*)dyldInfoAddress);
         return false;
     }
-    std::string dylinkerPath;
-    if (!ReadString(dyldInfo.dyldPath, dylinkerPath))
-    {
-        Trace("ERROR: Failed to read name at %p\n", dyldInfo.dyldPath);
-        return false;
-    }
-    dylinker.SetName(dylinkerPath);
-    Trace("MOD: %016llx %08x %s\n", dylinker.BaseAddress(), dylinker.Header().flags, dylinker.Name().c_str());
-    VisitModule(dylinker);
-
-    void* imageInfosAddress = (void*)dyldInfo.infoArray;
-    size_t imageInfosSize = dyldInfo.infoArrayCount * sizeof(dyld_image_info);
     Trace("MOD: infoArray %p infoArrayCount %d\n", dyldInfo.infoArray, dyldInfo.infoArrayCount);
 
+    // Create the dyld module info
+    if (!TryRegisterModule(dyldInfo.dyldImageLoadAddress, dyldInfo.dyldPath, true))
+    {
+        Trace("ERROR: Failed to read dyld header at %p\n", dyldInfo.dyldImageLoadAddress);
+        return false;
+    }
+    void* imageInfosAddress = (void*)dyldInfo.infoArray;
+    size_t imageInfosSize = dyldInfo.infoArrayCount * sizeof(dyld_image_info);
     ArrayHolder<dyld_image_info> imageInfos = new (std::nothrow) dyld_image_info[dyldInfo.infoArrayCount];
     if (imageInfos == nullptr)
     {
@@ -387,22 +392,38 @@ MachOReader::EnumerateModules(mach_vm_address_t address, mach_header_64* header)
     }
     for (int i = 0; i < dyldInfo.infoArrayCount; i++)
     {
-        mach_vm_address_t imageAddress = (mach_vm_address_t)imageInfos[i].imageLoadAddress;
-        const char* imageFilePathAddress = imageInfos[i].imageFilePath;
+        // Ignore any errors and continue to next module
+        TryRegisterModule(imageInfos[i].imageLoadAddress, imageInfos[i].imageFilePath, false);
+    }
+    return true;
+}
 
-        std::string imagePath;
-        if (!ReadString(imageFilePathAddress, imagePath))
+bool
+MachOReader::TryRegisterModule(const struct mach_header* imageAddress, const char* imageFilePathAddress, bool dylinker)
+{
+    std::string imagePath;
+    if (!ReadString(imageFilePathAddress, imagePath))
+    {
+        return false;
+    }
+    MachOModule module(*this, (mach_vm_address_t)imageAddress, &imagePath);
+    if (!module.ReadHeader())
+    {
+        return false;
+    }
+    Trace("MOD: %016llx %08x %s\n", imageAddress, module.Header().flags, imagePath.c_str());
+    VisitModule(module);
+    if (dylinker)
+    {
+        // Make sure the memory for the symbol and string tables are in the core dump for our
+        // dump readers which still use this symbol to enumerate modules.
+        uint64_t dyldInfoAddress = 0;
+        if (!module.TryLookupSymbol("dyld_all_image_infos", &dyldInfoAddress))
         {
-            Trace("ERROR: Failed to read image name at %p\n", imageFilePathAddress);
-            continue;
+            Trace("ERROR: Can not find the _dyld_all_image_infos symbol\n");
+            return false;
         }
-        MachOModule module(*this, imageAddress, nullptr, &imagePath);
-        if (!module.ReadHeader())
-        {
-            continue;
-        }
-        Trace("MOD: %016llx %08x %s\n", imageAddress, module.Header().flags, imagePath.c_str());
-        VisitModule(module);
+        Trace("MOD: dyldInfoAddress %016llx\n", dyldInfoAddress);
     }
     return true;
 }

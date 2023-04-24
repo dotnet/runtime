@@ -6,6 +6,8 @@
 //IndexOutOfRangeException
 
 using System;
+using Xunit;
+using System.Runtime.CompilerServices;
 
 internal struct VT
 {
@@ -17,10 +19,18 @@ internal class CL
     public String str;
 }
 
-internal class StrAccess1
+public class StrAccess1
 {
     public static String str1;
-    public static Random rand = new Random(12345);  //this version is deterministic
+    public const int DefaultSeed = 20010415;
+    public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+    {
+        string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+        string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+        _ => DefaultSeed
+    };
+
+    public static Random rand = new Random(Seed);
 
     private static int randomUnicodeLetterOrDigit()
     {
@@ -38,24 +48,33 @@ internal class StrAccess1
         return str;
     }
 
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
+    {
+        //construct random string with random length
+        int len = rand.Next(50);
+        return Run(randomUnicodeString(len));
+    }
+
+    // public static int Main(string[] args)
+    // {
+    //     if (args.Length != 0)
+    //     {
+    //         return Run(args[0]);
+    //     }
+    //     else
+    //     {
+    //         return TestEntryPoint();
+    //     }
+    // }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Run(string arg)
     {
         bool passed;
 
-        string teststr = "";
-        int len = 0;
-
-        if (args.Length != 0)
-        {
-            teststr = args[0];
-            len = teststr.Length;
-        }
-        else
-        {
-            //construct random string with random length
-            len = rand.Next(50);
-            teststr = randomUnicodeString(len);
-        }
+        string teststr = arg;
+        int len = arg.Length;
 
         Console.WriteLine("Test string is {0}", teststr);
 

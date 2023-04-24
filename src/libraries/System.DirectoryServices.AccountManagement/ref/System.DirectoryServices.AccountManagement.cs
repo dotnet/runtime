@@ -150,27 +150,40 @@ namespace System.DirectoryServices.AccountManagement
     }
     public partial class MultipleMatchesException : System.DirectoryServices.AccountManagement.PrincipalException
     {
-        public MultipleMatchesException() : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        protected MultipleMatchesException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public MultipleMatchesException(string message) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public MultipleMatchesException(string message, System.Exception innerException) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
+        public MultipleMatchesException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
+        protected MultipleMatchesException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public MultipleMatchesException(string message) { }
+        public MultipleMatchesException(string message, System.Exception innerException) { }
     }
     public partial class NoMatchingPrincipalException : System.DirectoryServices.AccountManagement.PrincipalException
     {
-        public NoMatchingPrincipalException() : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        protected NoMatchingPrincipalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public NoMatchingPrincipalException(string message) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public NoMatchingPrincipalException(string message, System.Exception innerException) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
+        public NoMatchingPrincipalException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
+        protected NoMatchingPrincipalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public NoMatchingPrincipalException(string message) { }
+        public NoMatchingPrincipalException(string message, System.Exception innerException) { }
     }
     public partial class PasswordException : System.DirectoryServices.AccountManagement.PrincipalException
     {
-        public PasswordException() : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        protected PasswordException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public PasswordException(string message) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public PasswordException(string message, System.Exception innerException) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
+        public PasswordException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
+        protected PasswordException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public PasswordException(string message) { }
+        public PasswordException(string message, System.Exception innerException) { }
     }
     public abstract partial class Principal : System.IDisposable
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected Principal() { }
         public System.DirectoryServices.AccountManagement.PrincipalContext Context { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
@@ -186,6 +199,7 @@ namespace System.DirectoryServices.AccountManagement
         public System.Security.Principal.SecurityIdentifier Sid { get { throw null; } }
         public string StructuralObjectClass { get { throw null; } }
         public string UserPrincipalName { get { throw null; } set { } }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected void CheckDisposedOrDeleted() { }
         public void Delete() { }
         public virtual void Dispose() { }
@@ -194,7 +208,9 @@ namespace System.DirectoryServices.AccountManagement
         protected void ExtensionSet(string attribute, object value) { }
         public static System.DirectoryServices.AccountManagement.Principal FindByIdentity(System.DirectoryServices.AccountManagement.PrincipalContext context, System.DirectoryServices.AccountManagement.IdentityType identityType, string identityValue) { throw null; }
         public static System.DirectoryServices.AccountManagement.Principal FindByIdentity(System.DirectoryServices.AccountManagement.PrincipalContext context, string identityValue) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected static System.DirectoryServices.AccountManagement.Principal FindByIdentityWithType(System.DirectoryServices.AccountManagement.PrincipalContext context, System.Type principalType, System.DirectoryServices.AccountManagement.IdentityType identityType, string identityValue) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected static System.DirectoryServices.AccountManagement.Principal FindByIdentityWithType(System.DirectoryServices.AccountManagement.PrincipalContext context, System.Type principalType, string identityValue) { throw null; }
         public System.DirectoryServices.AccountManagement.PrincipalSearchResult<System.DirectoryServices.AccountManagement.Principal> GetGroups() { throw null; }
         public System.DirectoryServices.AccountManagement.PrincipalSearchResult<System.DirectoryServices.AccountManagement.Principal> GetGroups(System.DirectoryServices.AccountManagement.PrincipalContext contextToQuery) { throw null; }
@@ -259,24 +275,41 @@ namespace System.DirectoryServices.AccountManagement
     }
     public abstract partial class PrincipalException : System.SystemException
     {
+        private protected PrincipalException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected PrincipalException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class PrincipalExistsException : System.DirectoryServices.AccountManagement.PrincipalException
     {
-        public PrincipalExistsException() : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        protected PrincipalExistsException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public PrincipalExistsException(string message) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public PrincipalExistsException(string message, System.Exception innerException) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
+        public PrincipalExistsException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
+        protected PrincipalExistsException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context){ }
+        public PrincipalExistsException(string message){ }
+        public PrincipalExistsException(string message, System.Exception innerException) { }
     }
     public partial class PrincipalOperationException : System.DirectoryServices.AccountManagement.PrincipalException
     {
-        public PrincipalOperationException() : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        protected PrincipalOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public PrincipalOperationException(string message) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public PrincipalOperationException(string message, System.Exception innerException) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public PrincipalOperationException(string message, System.Exception innerException, int errorCode) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public PrincipalOperationException(string message, int errorCode) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
+        public PrincipalOperationException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
+        protected PrincipalOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public PrincipalOperationException(string message) { }
+        public PrincipalOperationException(string message, System.Exception innerException) { }
+        public PrincipalOperationException(string message, System.Exception innerException, int errorCode) { }
+        public PrincipalOperationException(string message, int errorCode) { }
         public int ErrorCode { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class PrincipalSearcher : System.IDisposable
@@ -300,13 +333,21 @@ namespace System.DirectoryServices.AccountManagement
     }
     public partial class PrincipalServerDownException : System.DirectoryServices.AccountManagement.PrincipalException
     {
-        public PrincipalServerDownException() : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
+        public PrincipalServerDownException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected PrincipalServerDownException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public PrincipalServerDownException(string message) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public PrincipalServerDownException(string message, System.Exception innerException) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public PrincipalServerDownException(string message, System.Exception innerException, int errorCode) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public PrincipalServerDownException(string message, System.Exception innerException, int errorCode, string serverName) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
-        public PrincipalServerDownException(string message, int errorCode) : base (default(System.Runtime.Serialization.SerializationInfo), default(System.Runtime.Serialization.StreamingContext)) { }
+        public PrincipalServerDownException(string message) { }
+        public PrincipalServerDownException(string message, System.Exception innerException) { }
+        public PrincipalServerDownException(string message, System.Exception innerException, int errorCode) { }
+        public PrincipalServerDownException(string message, System.Exception innerException, int errorCode, string serverName) { }
+        public PrincipalServerDownException(string message, int errorCode) { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class PrincipalValueCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList

@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyModel
         public CompilationLibrary(string type,
             string name,
             string version,
-            string hash,
+            string? hash,
             IEnumerable<string> assemblies,
             IEnumerable<Dependency> dependencies,
             bool serviceable)
@@ -24,18 +24,16 @@ namespace Microsoft.Extensions.DependencyModel
         public CompilationLibrary(string type,
             string name,
             string version,
-            string hash,
+            string? hash,
             IEnumerable<string> assemblies,
             IEnumerable<Dependency> dependencies,
             bool serviceable,
-            string path,
-            string hashPath)
+            string? path,
+            string? hashPath)
             : base(type, name, version, hash, dependencies, serviceable, path, hashPath)
         {
-            if (assemblies == null)
-            {
-                throw new ArgumentNullException(nameof(assemblies));
-            }
+            ThrowHelper.ThrowIfNull(assemblies);
+
             Assemblies = assemblies.ToArray();
         }
 
@@ -73,7 +71,7 @@ namespace Microsoft.Extensions.DependencyModel
             return ResolveReferencePaths(DefaultResolver, assemblies);
         }
 
-        private IEnumerable<string> ResolveReferencePaths(ICompilationAssemblyResolver resolver, List<string> assemblies)
+        private List<string> ResolveReferencePaths(ICompilationAssemblyResolver resolver, List<string> assemblies)
         {
             if (!resolver.TryResolveAssemblyPaths(this, assemblies))
             {

@@ -81,7 +81,7 @@ namespace System.Text.Json
         private void WriteBase64Indented(ReadOnlySpan<byte> bytes)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             int encodingLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 

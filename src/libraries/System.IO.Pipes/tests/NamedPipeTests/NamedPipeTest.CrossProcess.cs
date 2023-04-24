@@ -11,10 +11,10 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public sealed class NamedPipeTest_CrossProcess
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public void InheritHandles_AvailableInChildProcess()
         {
             string pipeName = PipeStreamConformanceTests.GetUniquePipeName();
@@ -46,6 +46,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public void PingPong_Sync()
         {
             // Create names for two pipes
@@ -72,6 +73,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         public async Task PingPong_Async()
         {
             // Create names for two pipes

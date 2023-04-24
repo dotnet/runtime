@@ -6,11 +6,11 @@ import os
 import sys
 import argparse
 import clang.cindex
-import platform
 
 IOS_DEFINES = ["HOST_DARWIN", "TARGET_MACH", "MONO_CROSS_COMPILE", "USE_MONO_CTX", "_XOPEN_SOURCE"]
 ANDROID_DEFINES = ["HOST_ANDROID", "MONO_CROSS_COMPILE", "USE_MONO_CTX", "BIONIC_IOCTL_NO_SIGNEDNESS_OVERLOAD"]
 LINUX_DEFINES = ["HOST_LINUX", "MONO_CROSS_COMPILE", "USE_MONO_CTX"]
+WASI_DEFINES = ["_WASI_EMULATED_PROCESS_CLOCKS", "_WASI_EMULATED_SIGNAL", "_WASI_EMULATED_MMAN"]
 
 class Target:
 	def __init__(self, arch, platform, others):
@@ -58,8 +58,10 @@ class OffsetsTool:
 		parser = argparse.ArgumentParser ()
 		parser.add_argument ('--libclang', dest='libclang', help='path to shared library of libclang.{so,dylib}', required=True)
 		parser.add_argument ('--emscripten-sdk', dest='emscripten_path', help='path to emscripten sdk')
+		parser.add_argument ('--wasi-sdk', dest='wasi_path', help='path to wasi sdk')
 		parser.add_argument ('--outfile', dest='outfile', help='path to output file', required=True)
 		parser.add_argument ('--monodir', dest='mono_path', help='path to mono source tree', required=True)
+		parser.add_argument ('--nativedir', dest='native_path', help='path to src/native', required=True)
 		parser.add_argument ('--targetdir', dest='target_path', help='path to mono tree configured for target', required=True)
 		parser.add_argument ('--abi=', dest='abi', help='ABI triple to generate', required=True)
 		parser.add_argument ('--sysroot=', dest='sysroot', help='path to sysroot headers of target')
@@ -83,12 +85,15 @@ class OffsetsTool:
 		android_api_level = "-D__ANDROID_API=21"
 
 		if "wasm" in args.abi:
-			require_emscipten_path (args)
-			self.sys_includes = [args.emscripten_path + "/system/include", args.emscripten_path + "/system/include/libc", args.emscripten_path + "/system/lib/libc/musl/arch/emscripten"]
-			if platform.system() == "Windows":
-				self.sys_includes += [args.emscripten_path + "/system/lib/libc/musl/include", args.emscripten_path + "/system/lib/libc/musl/arch/generic"]
-			self.target = Target ("TARGET_WASM", None, [])
-			self.target_args += ["-target", args.abi]
+			if args.wasi_path != None:
+				self.sys_includes = [args.wasi_path + "/share/wasi-sysroot/include", args.wasi_path + "/lib/clang/14.0.4/include", args.mono_path + "/wasi/mono-include"]
+				self.target = Target ("TARGET_WASI", None, ["TARGET_WASM"] + WASI_DEFINES)
+				self.target_args += ["-target", args.abi]
+			else:
+				require_emscipten_path (args)
+				self.sys_includes = [args.emscripten_path + "/system/include", args.emscripten_path + "/system/include/libc", args.emscripten_path + "/system/lib/libc/musl/arch/emscripten", args.emscripten_path + "/system/lib/libc/musl/include", args.emscripten_path + "/system/lib/libc/musl/arch/generic"]
+				self.target = Target ("TARGET_WASM", None, [])
+				self.target_args += ["-target", args.abi]
 
 		# Linux
 		elif "arm-linux-gnueabihf" == args.abi:
@@ -155,6 +160,19 @@ class OffsetsTool:
 			self.target_args += ["-arch", "x86_64"]
 			self.target_args += ["-isysroot", args.sysroot]
 
+		# MacCatalyst
+		elif "x86_64-apple-maccatalyst" == args.abi:
+			require_sysroot (args)
+			self.target = Target ("TARGET_AMD64", "TARGET_MACCAT", IOS_DEFINES)
+			self.target_args += ["-target", "x86_64-apple-ios13.5-macabi"]
+			self.target_args += ["-isysroot", args.sysroot]
+
+		elif "aarch64-apple-maccatalyst" == args.abi:
+			require_sysroot (args)
+			self.target = Target ("TARGET_ARM64", "TARGET_MACCAT", IOS_DEFINES)
+			self.target_args += ["-target", "arm64-apple-ios14.2-macabi"]
+			self.target_args += ["-isysroot", args.sysroot]
+
 		# watchOS
 		elif "armv7k-apple-darwin" == args.abi:
 			require_sysroot (args)
@@ -211,10 +229,12 @@ class OffsetsTool:
 			args.mono_path,
 			args.mono_path + "/mono",
 			args.mono_path + "/mono/eglib",
+			args.native_path,
+			args.native_path + "/public",
 			args.target_path,
 			args.target_path + "/mono/eglib"
 			]
-		
+
 		self.basic_types = ["gint8", "gint16", "gint32", "gint64", "float", "double", "gpointer"]
 		self.runtime_type_names = [
 			"MonoObject",
@@ -241,6 +261,8 @@ class OffsetsTool:
 		]
 		self.jit_type_names = [
 			"MonoLMF",
+			"MonoLMFExt",
+			"MonoMethodILState",
 			"MonoMethodRuntimeGenericContext",
 			"MonoJitTlsData",
 			"MonoGSharedVtMethodRuntimeInfo",
@@ -249,7 +271,7 @@ class OffsetsTool:
 			"MonoDelegateTrampInfo",
 			"GSharedVtCallInfo",
 			"SeqPointInfo",
-			"DynCallArgs", 
+			"DynCallArgs",
 			"MonoLMFTramp",
 			"CallContext",
 			"MonoFtnDesc"
@@ -258,7 +280,7 @@ class OffsetsTool:
 			self.runtime_types [name] = TypeInfo (name, False)
 		for name in self.jit_type_names:
 			self.runtime_types [name] = TypeInfo (name, True)
-		
+
 		self.basic_type_size = {}
 		self.basic_type_align = {}
 
@@ -268,16 +290,16 @@ class OffsetsTool:
 		clang_args += self.target_args
 		clang_args += ['-std=gnu99', '-DMONO_GENERATING_OFFSETS']
 		for include in self.sys_includes:
-			clang_args.append ("-I")
+			clang_args.append ("-isystem")
 			clang_args.append (include)
 		for include in mono_includes:
 			clang_args.append ("-I")
 			clang_args.append (include)
 		for define in self.target.get_clang_args ():
 			clang_args.append ("-D" + define)
-		
+
 		clang.cindex.Config.set_library_file (args.libclang)
-		
+
 		for srcfile in srcfiles:
 			src = args.mono_path + "/" + srcfile
 			file_args = clang_args[:]
@@ -353,7 +375,7 @@ class OffsetsTool:
 			for field in type.fields:
 				f.write ("DECL_OFFSET2(%s,%s,%s)\n" % (type.name, field.name, field.offset))
 		f.write ("#endif //disable metadata check\n")
-		
+
 		f.write ("#ifndef DISABLE_JIT_OFFSETS\n")
 		f.write ("#define USED_CROSS_COMPILER_OFFSETS\n")
 		for type_name in self.jit_type_names:
@@ -364,7 +386,7 @@ class OffsetsTool:
 			for field in type.fields:
 				f.write ("DECL_OFFSET2(%s,%s,%s)\n" % (type.name, field.name, field.offset))
 		f.write ("#endif //disable jit check\n")
-					
+
 		f.write ("#endif //cross compiler checks\n")
 		f.write ("#endif //gc check\n")
 		if target.arch_define:

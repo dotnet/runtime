@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,6 +14,7 @@ namespace System.Reflection.Tests
     public static partial class CustomAttributeTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60579", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public static void CustomAttributeTest1()
         {
             Type t = typeof(AttributeHolder1);  // Intentionally not projected. We're reflecting on this (and Invoking it) to get the validation baseline data.
@@ -144,8 +146,12 @@ namespace System.Reflection.Tests
                 {
                     Assert.NotSame(cad1.ConstructorArguments, cad2.ConstructorArguments);
                 }
-                Assert.True(cad1.ConstructorArguments is ReadOnlyCollection<CustomAttributeTypedArgument>);
-                Assert.True(cad2.ConstructorArguments is ReadOnlyCollection<CustomAttributeTypedArgument>);
+                Assert.True(
+                    (cad1.ConstructorArguments is ReadOnlyCollection<CustomAttributeTypedArgument>) ||
+                    (cad1.ConstructorArguments is CustomAttributeTypedArgument[] cataArr1 && cataArr1.Length == 0));
+                Assert.True(
+                    (cad2.ConstructorArguments is ReadOnlyCollection<CustomAttributeTypedArgument>) ||
+                    (cad2.ConstructorArguments is CustomAttributeTypedArgument[] cataArr2 && cataArr2.Length == 0));
                 for (int j = 0; j < cad1.ConstructorArguments.Count; j++)
                 {
                     cad1.ConstructorArguments[j].ValidateEqualButFreshlyAllocated(cad2.ConstructorArguments[j]);
@@ -156,8 +162,12 @@ namespace System.Reflection.Tests
                 {
                     Assert.NotSame(cad1.NamedArguments, cad2.NamedArguments);
                 }
-                Assert.True(cad1.NamedArguments is ReadOnlyCollection<CustomAttributeNamedArgument>);
-                Assert.True(cad2.NamedArguments is ReadOnlyCollection<CustomAttributeNamedArgument>);
+                Assert.True(
+                    (cad1.NamedArguments is ReadOnlyCollection<CustomAttributeNamedArgument>) ||
+                    (cad1.NamedArguments is CustomAttributeNamedArgument[] canaArr1 && canaArr1.Length == 0));
+                Assert.True(
+                    (cad2.NamedArguments is ReadOnlyCollection<CustomAttributeNamedArgument>) ||
+                    (cad2.NamedArguments is CustomAttributeNamedArgument[] canaArr2 && canaArr2.Length == 0));
                 for (int j = 0; j < cad1.NamedArguments.Count; j++)
                 {
                     cad1.NamedArguments[j].TypedValue.ValidateEqualButFreshlyAllocated(cad2.NamedArguments[j].TypedValue);

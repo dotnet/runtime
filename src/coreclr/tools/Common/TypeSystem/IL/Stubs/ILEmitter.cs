@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 
-using Internal.IL;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -102,6 +101,7 @@ namespace Internal.IL.Stubs
 
         public void EmitLdArg(int index)
         {
+            Debug.Assert(index >= 0);
             if (index < 4)
             {
                 Emit((ILOpcode)(ILOpcode.ldarg_0 + index));
@@ -115,6 +115,7 @@ namespace Internal.IL.Stubs
 
         public void EmitLdArga(int index)
         {
+            Debug.Assert(index >= 0);
             if (index < 0x100)
             {
                 Emit(ILOpcode.ldarga_s);
@@ -519,7 +520,7 @@ namespace Internal.IL.Stubs
         internal int TryLength => _endTryStream.RelativeToAbsoluteOffset(_endTryOffset) - TryOffset;
         internal int HandlerOffset => _beginHandlerStream.RelativeToAbsoluteOffset(_beginHandlerOffset);
         internal int HandlerLength => _endHandlerStream.RelativeToAbsoluteOffset(_endHandlerOffset) - HandlerOffset;
-        
+
         internal bool IsDefined =>
             _beginTryStream != null && _endTryStream != null
             && _beginHandlerStream != null && _endHandlerStream != null;
@@ -540,7 +541,7 @@ namespace Internal.IL.Stubs
     {
         private readonly byte[] _ilBytes;
         private readonly LocalVariableDefinition[] _locals;
-        private readonly Object[] _tokens;
+        private readonly object[] _tokens;
         private readonly MethodDesc _method;
         private readonly ILExceptionRegion[] _exceptionRegions;
         private readonly MethodDebugInformation _debugInformation;
@@ -548,7 +549,7 @@ namespace Internal.IL.Stubs
         private const int MaxStackNotSet = -1;
         private int _maxStack;
 
-        public ILStubMethodIL(MethodDesc owningMethod, byte[] ilBytes, LocalVariableDefinition[] locals, Object[] tokens, ILExceptionRegion[] exceptionRegions = null, MethodDebugInformation debugInfo = null)
+        public ILStubMethodIL(MethodDesc owningMethod, byte[] ilBytes, LocalVariableDefinition[] locals, object[] tokens, ILExceptionRegion[] exceptionRegions = null, MethodDebugInformation debugInfo = null)
         {
             _ilBytes = ilBytes;
             _locals = locals;
@@ -556,12 +557,10 @@ namespace Internal.IL.Stubs
             _method = owningMethod;
             _maxStack = MaxStackNotSet;
 
-            if (exceptionRegions == null)
-                exceptionRegions = Array.Empty<ILExceptionRegion>();
+            exceptionRegions ??= Array.Empty<ILExceptionRegion>();
             _exceptionRegions = exceptionRegions;
 
-            if (debugInfo == null)
-                debugInfo = MethodDebugInformation.None;
+            debugInfo ??= MethodDebugInformation.None;
             _debugInformation = debugInfo;
         }
 
@@ -620,7 +619,7 @@ namespace Internal.IL.Stubs
         {
             return _locals;
         }
-        public override Object GetObject(int token, NotFoundBehavior notFoundBehavior)
+        public override object GetObject(int token, NotFoundBehavior notFoundBehavior)
         {
             return _tokens[(token & 0xFFFFFF) - 1];
         }
@@ -664,7 +663,7 @@ namespace Internal.IL.Stubs
     {
         private ArrayBuilder<ILCodeStream> _codeStreams;
         private ArrayBuilder<LocalVariableDefinition> _locals;
-        private ArrayBuilder<Object> _tokens;
+        private ArrayBuilder<object> _tokens;
         private ArrayBuilder<ILExceptionRegionBuilder> _finallyRegions;
 
         public ILEmitter()
@@ -678,7 +677,7 @@ namespace Internal.IL.Stubs
             return stream;
         }
 
-        private ILToken NewToken(Object value, int tokenType)
+        private ILToken NewToken(object value, int tokenType)
         {
             Debug.Assert(value != null);
             _tokens.Add(value);
@@ -800,7 +799,7 @@ namespace Internal.IL.Stubs
             return result;
         }
 
-        private class EmittedMethodDebugInformation : MethodDebugInformation
+        private sealed class EmittedMethodDebugInformation : MethodDebugInformation
         {
             private readonly ILSequencePoint[] _sequencePoints;
 

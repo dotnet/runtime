@@ -9,17 +9,17 @@ namespace System.Net.Http
 {
     internal static class WinHttpTraceHelper
     {
-        public static void TraceCallbackStatus(object thisOrContextObject, IntPtr handle, IntPtr context, uint status, [CallerMemberName] string memberName = null)
+        public static void TraceCallbackStatus(object? thisOrContextObject, IntPtr handle, IntPtr context, uint status, [CallerMemberName] string? memberName = null)
         {
             Debug.Assert(NetEventSource.Log.IsEnabled());
 
             NetEventSource.Info(
                 thisOrContextObject,
-                $"handle=0x{handle.ToString("X")}, context=0x{context.ToString("X")}, {GetStringFromInternetStatus(status)}",
+                $"handle=0x{handle:X}, context=0x{context:X}, {GetStringFromInternetStatus(status)}",
                 memberName);
         }
 
-        public static void TraceAsyncError(object thisOrContextObject, Interop.WinHttp.WINHTTP_ASYNC_RESULT asyncResult, [CallerMemberName] string memberName = null)
+        public static void TraceAsyncError(object thisOrContextObject, Interop.WinHttp.WINHTTP_ASYNC_RESULT asyncResult, [CallerMemberName] string? memberName = null)
         {
             Debug.Assert(NetEventSource.Log.IsEnabled());
 

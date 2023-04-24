@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly tail { }
-.class private auto ansi beforefieldinit AA
+.assembly 'tail_zeroinit' { }
+.class public auto ansi beforefieldinit AA
        extends [mscorlib]System.Object
 {
   .method private hidebysig static void  Callee1(int64& B) cil managed
@@ -63,9 +64,11 @@
     jmp  int64 AA::Callee2()
   } // end of method AA::Caller2
 
-  .method private hidebysig static int32 
-          Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       81 (0x51)
     .maxstack  2

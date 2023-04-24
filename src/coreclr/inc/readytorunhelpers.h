@@ -42,7 +42,6 @@ HELPER(READYTORUN_HELPER_Box_Nullable,              CORINFO_HELP_BOX_NULLABLE,  
 HELPER(READYTORUN_HELPER_Unbox,                     CORINFO_HELP_UNBOX,                             )
 HELPER(READYTORUN_HELPER_Unbox_Nullable,            CORINFO_HELP_UNBOX_NULLABLE,                    )
 HELPER(READYTORUN_HELPER_NewMultiDimArr,            CORINFO_HELP_NEW_MDARR,                         )
-HELPER(READYTORUN_HELPER_NewMultiDimArr_NonVarArg,  CORINFO_HELP_NEW_MDARR_NONVARARG,               )
 
 HELPER(READYTORUN_HELPER_NewObject,                 CORINFO_HELP_NEWFAST,                           )
 HELPER(READYTORUN_HELPER_NewArray,                  CORINFO_HELP_NEWARR_1_DIRECT,                   )
@@ -55,6 +54,7 @@ HELPER(READYTORUN_HELPER_GenericGcTlsBase,          CORINFO_HELP_GETGENERICS_GCT
 HELPER(READYTORUN_HELPER_GenericNonGcTlsBase,       CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE,)
 
 HELPER(READYTORUN_HELPER_VirtualFuncPtr,            CORINFO_HELP_VIRTUAL_FUNC_PTR,                  )
+HELPER(READYTORUN_HELPER_IsInstanceOfException,     CORINFO_HELP_ISINSTANCEOF_EXCEPTION,            )
 
 HELPER(READYTORUN_HELPER_LMul,                      CORINFO_HELP_LMUL,                              )
 HELPER(READYTORUN_HELPER_LMulOfv,                   CORINFO_HELP_LMUL_OVF,                          )

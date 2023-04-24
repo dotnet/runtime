@@ -1,13 +1,8 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; ==++==
-;
-
-;
-; ==--==
 ; ***********************************************************************
-; File: JitHelpers_Fast.asm, see jithelp.asm for history
+; File: JitHelpers_Fast.asm
 ;
 ; Notes: routinues which we believe to be on the hot path for managed
 ;        code in most scenarios.
@@ -25,6 +20,9 @@ EXTERN  g_ephemeral_high:QWORD
 EXTERN  g_lowest_address:QWORD
 EXTERN  g_highest_address:QWORD
 EXTERN  g_card_table:QWORD
+EXTERN  g_region_shr:BYTE
+EXTERN  g_region_use_bitwise_write_barrier:BYTE
+EXTERN  g_region_to_generation_table:QWORD
 
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 EXTERN g_card_bundle_table:QWORD
@@ -51,37 +49,6 @@ endif
 
 extern JIT_InternalThrow:proc
 
-; There is an even more optimized version of these helpers possible which takes
-; advantage of knowledge of which way the ephemeral heap is growing to only do 1/2
-; that check (this is more significant in the JIT_WriteBarrier case).
-;
-; Additionally we can look into providing helpers which will take the src/dest from
-; specific registers (like x86) which _could_ (??) make for easier register allocation
-; for the JIT64, however it might lead to having to have some nasty code that treats
-; these guys really special like... :(.
-;
-; Version that does the move, checks whether or not it's in the GC and whether or not
-; it needs to have it's card updated
-;
-; void JIT_CheckedWriteBarrier(Object** dst, Object* src)
-LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
-
-        ; When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
-        ; but if it isn't then it will just return.
-        ;
-        ; See if this is in GCHeap
-        cmp     rcx, [g_lowest_address]
-        jb      NotInHeap
-        cmp     rcx, [g_highest_address]
-        jnb     NotInHeap
-
-        jmp     JIT_WriteBarrier
-
-    NotInHeap:
-        ; See comment above about possible AV
-        mov     [rcx], rdx
-        ret
-LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
 
 ; Mark start of the code region that we patch at runtime
 LEAF_ENTRY JIT_PatchedCodeStart, _TEXT
@@ -99,7 +66,8 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
 
 ifdef _DEBUG
         ; In debug builds, this just contains jump to the debug version of the write barrier by default
-        jmp     JIT_WriteBarrier_Debug
+        mov     rax, JIT_WriteBarrier_Debug
+        jmp     rax
 endif
 
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -170,6 +138,31 @@ endif
     align 16
     Exit:
         REPRET
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
 else
         ; JIT_WriteBarrier_PostGrow64
 
@@ -239,7 +232,7 @@ LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
         ret
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
-; JIT_ByRefWriteBarrier has weird symantics, see usage in StubLinkerX86.cpp
+; JIT_ByRefWriteBarrier has weird semantics, see usage in StubLinkerX86.cpp
 ;
 ; Entry:
 ;   RDI - address of ref-field (assigned to)
@@ -286,7 +279,7 @@ ifdef WRITE_BARRIER_CHECK
         ; Check that our adjusted destination is somewhere in the shadow gc
         add     r10, [g_GCShadow]
         cmp     r10, [g_GCShadowEnd]
-        ja      NoShadow
+        jnb     NoShadow
 
         ; Write ref into real GC
         mov     [rdi], rcx
@@ -340,6 +333,60 @@ endif
         cmp     rcx, [g_ephemeral_high]
         jnb     Exit
 
+        ; do the following checks only if we are allowed to trash rax
+        ; otherwise we don't have enough registers
+ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+        mov     rax, rcx
+
+        mov     cl, [g_region_shr]
+        test    cl, cl
+        je      SkipCheck
+
+        ; check if the source is in gen 2 - then it's not an ephemeral pointer
+        shr     rax, cl
+        add     rax, [g_region_to_generation_table]
+        cmp     byte ptr [rax], 82h
+        je      Exit
+
+        ; check if the destination happens to be in gen 0
+        mov     rax, rdi
+        shr     rax, cl
+        add     rax, [g_region_to_generation_table]
+        cmp     byte ptr [rax], 0
+        je      Exit
+    SkipCheck:
+
+        cmp     [g_region_use_bitwise_write_barrier], 0
+        je      CheckCardTableByte
+
+        ; compute card table bit
+        mov     rcx, rdi
+        mov     al, 1
+        shr     rcx, 8
+        and     cl, 7
+        shl     al, cl
+
+        ; move current rdi value into rcx and then increment the pointers
+        mov     rcx, rdi
+        add     rsi, 8h
+        add     rdi, 8h
+
+        ; Check if we need to update the card table
+        ; Calc pCardByte
+        shr     rcx, 0Bh
+        add     rcx, [g_card_table]
+
+        ; Check if this card table bit is already set
+        test    byte ptr [rcx], al
+        je      SetCardTableBit
+        REPRET
+
+    SetCardTableBit:
+        lock or byte ptr [rcx], al
+        jmp     CheckCardBundle
+endif
+CheckCardTableByte:
+
         ; move current rdi value into rcx and then increment the pointers
         mov     rcx, rdi
         add     rsi, 8h
@@ -357,6 +404,9 @@ endif
 
     UpdateCardTable:
         mov     byte ptr [rcx], 0FFh
+
+    CheckCardBundle:
+
 ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         ; check if we need to update the card bundle table
         ; restore destination address from rdi - rdi has been incremented by 8 already
@@ -387,6 +437,51 @@ endif
         add     rsi, 8h
         ret
 LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
+
+Section segment para 'DATA'
+
+        align   16
+
+        public  JIT_WriteBarrier_Loc
+JIT_WriteBarrier_Loc:
+        dq 0
+
+LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
+        ; JIT_WriteBarrier(Object** dst, Object* src)
+        jmp     QWORD PTR [JIT_WriteBarrier_Loc]
+LEAF_END JIT_WriteBarrier_Callable, _TEXT
+
+; There is an even more optimized version of these helpers possible which takes
+; advantage of knowledge of which way the ephemeral heap is growing to only do 1/2
+; that check (this is more significant in the JIT_WriteBarrier case).
+;
+; Additionally we can look into providing helpers which will take the src/dest from
+; specific registers (like x86) which _could_ (??) make for easier register allocation
+; for the JIT64, however it might lead to having to have some nasty code that treats
+; these guys really special like... :(.
+;
+; Version that does the move, checks whether or not it's in the GC and whether or not
+; it needs to have it's card updated
+;
+; void JIT_CheckedWriteBarrier(Object** dst, Object* src)
+LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
+
+        ; When WRITE_BARRIER_CHECK is defined _NotInHeap will write the reference
+        ; but if it isn't then it will just return.
+        ;
+        ; See if this is in GCHeap
+        cmp     rcx, [g_lowest_address]
+        jb      NotInHeap
+        cmp     rcx, [g_highest_address]
+        jnb     NotInHeap
+
+        jmp     QWORD PTR [JIT_WriteBarrier_Loc]
+
+    NotInHeap:
+        ; See comment above about possible AV
+        mov     [rcx], rdx
+        ret
+LEAF_END_MARKED JIT_CheckedWriteBarrier, _TEXT
 
 ; The following helper will access ("probe") a word on each page of the stack
 ; starting with the page right beneath rsp down to the one pointed to by r11.
@@ -420,5 +515,18 @@ ProbeLoop:
         ret
 
 LEAF_END_MARKED JIT_StackProbe, _TEXT
+
+LEAF_ENTRY JIT_ValidateIndirectCall, _TEXT
+        ret
+LEAF_END JIT_ValidateIndirectCall, _TEXT
+
+LEAF_ENTRY JIT_DispatchIndirectCall, _TEXT
+ifdef _DEBUG
+        mov r10, 0CDCDCDCDCDCDCDCDh ; The real helper clobbers these registers, so clobber them too in the fake helper
+        mov r11, 0CDCDCDCDCDCDCDCDh
+endif
+        rexw jmp rax
+LEAF_END JIT_DispatchIndirectCall, _TEXT
+
 
         end

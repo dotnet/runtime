@@ -1,14 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <RootNamespace>System.Composition</RootNamespace>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
+    <IsTrimmable>false</IsTrimmable>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides some extension methods for the Managed Extensibility Framework.
+
+Commonly Used Types:
+System.Composition.CompositionContextExtensions
+System.Composition.Hosting.ContainerConfiguration</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Composition\CompositionContextExtensions.cs" />
     <Compile Include="System\Composition\Convention\AttributedModelProviderExtensions.cs" />
     <Compile Include="System\Composition\Debugging\ContainerConfigurationDebuggerProxy.cs" />
     <Compile Include="System\Composition\Debugging\DiscoveredPartDebuggerProxy.cs" />
     <Compile Include="System\Composition\Hosting\ContainerConfiguration.cs" />
+    <Compile Include="System\Composition\Hosting\InstanceExportDescriptorProvider.cs" />
+    <Compile Include="System\Composition\Hosting\SinglePartExportDescriptorProvider.cs" />
     <Compile Include="System\Composition\TypedParts\ActivationFeatures\ActivationFeature.cs" />
     <Compile Include="System\Composition\TypedParts\ActivationFeatures\DisposalFeature.cs" />
     <Compile Include="System\Composition\TypedParts\ActivationFeatures\LifetimeFeature.cs" />
@@ -28,6 +42,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
              Link="Common\System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Hosting\src\System.Composition.Hosting.csproj" />

@@ -196,8 +196,16 @@ namespace System.Threading.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.TryEnter(obj, -2));
             Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.TryEnter(obj, -2, ref lockTaken));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds(-2)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds(-2), ref lockTaken));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "timeout", () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds(-2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "timeout", () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds(-2), ref lockTaken));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "timeout",
+                () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "timeout",
+                () => Monitor.TryEnter(obj, TimeSpan.FromMilliseconds((double)int.MaxValue + 1), ref lockTaken));
 
             lockTaken = true;
             AssertExtensions.Throws<ArgumentException>("lockTaken", () => Monitor.TryEnter(obj, ref lockTaken));
@@ -397,7 +405,12 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentNullException>(() => Monitor.Wait(null, 1));
             Assert.Throws<ArgumentNullException>(() => Monitor.Wait(null, TimeSpan.Zero));
             Assert.Throws<ArgumentOutOfRangeException>(() => Monitor.Wait(obj, -2));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.Wait(obj, TimeSpan.FromMilliseconds(-2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "timeout",
+                () => Monitor.Wait(obj, TimeSpan.FromMilliseconds(-2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "timeout",
+                () => Monitor.Wait(obj, TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -442,6 +455,36 @@ namespace System.Threading.Tests
             long initialLockContentionCount = Monitor.LockContentionCount;
             Enter_HasToWait();
             Assert.True(Monitor.LockContentionCount - initialLockContentionCount >= 2);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void ObjectHeaderSyncBlockTransitionTryEnterRaceTest()
+        {
+            var threadStarted = new AutoResetEvent(false);
+            var startTest = new AutoResetEvent(false);
+            var obj = new object();
+            var t = ThreadTestHelpers.CreateGuardedThread(out _, () =>
+            {
+                threadStarted.Set();
+                startTest.CheckedWait();
+                Monitor.TryEnter(obj, 100); // likely to perform a full wait, which may involve some sort of transition
+            });
+            t.IsBackground = true;
+            t.Start();
+            threadStarted.CheckedWait();
+
+            lock (obj)
+            {
+                startTest.Set();
+                do
+                {
+                    for (int i = 0; i < 1000; i++)
+                    {
+                        Assert.True(Monitor.TryEnter(obj)); // this could race with the transition happening on the other thread
+                        Monitor.Exit(obj);
+                    }
+                } while (!t.Join(0));
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <PropertyGroup>
@@ -8,6 +9,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="life-annotated.il" />
+    <Compile Include="$(MSBuildProjectName).il" />
   </ItemGroup>
 </Project>

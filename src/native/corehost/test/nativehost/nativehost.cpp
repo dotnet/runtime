@@ -40,7 +40,7 @@ int main(const int argc, const pal::char_t *argv[])
         // args: ... [<explicit_load>] [<assembly_path>] [<dotnet_root>] [<hostfxr_to_load>]
         bool explicit_load = false;
         if (argc >= 3)
-            explicit_load = pal::strcmp(pal::to_lower(pal::string_t{argv[2]}).c_str(), _X("true")) == 0;
+            explicit_load = pal::strcmp(to_lower(argv[2]).c_str(), _X("true")) == 0;
 
         const pal::char_t *assembly_path = nullptr;
         if (argc >= 4 && pal::strcmp(argv[3], _X("nullptr")) != 0)
@@ -72,7 +72,7 @@ int main(const int argc, const pal::char_t *argv[])
             }
 
             nethost_path = get_directory(nethost_path);
-            nethost_path.append(MAKE_LIBNAME("nethost"));
+            nethost_path.append(LIB_FILE_NAME_X("nethost"));
 
             pal::dll_t nethost;
             if (!pal::load_library(&nethost_path, &nethost))
@@ -117,7 +117,7 @@ int main(const int argc, const pal::char_t *argv[])
         if (static_cast<StatusCode>(res) == StatusCode::Success)
         {
             std::cout << "get_hostfxr_path succeeded" << std::endl;
-            std::cout << "hostfxr_path: " << tostr(pal::to_lower(fxr_path)).data() << std::endl;
+            std::cout << "hostfxr_path: " << tostr(to_lower(fxr_path.c_str())).data() << std::endl;
             return EXIT_SUCCESS;
         }
         else
@@ -212,6 +212,108 @@ int main(const int argc, const pal::char_t *argv[])
             std::cerr << "Invalid scenario" << std::endl;
             return -1;
         }
+
+        std::cout << tostr(test_output.str()).data() << std::endl;
+        return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    else if (pal::strcmp(command, _X("component_load_assembly")) == 0)
+    {
+        // args: ... <hostfxr_path> <config_path> <assembly_path> <type_name> <method_name> [<assembly_path> <type_name> <method_name>...]
+        const int min_argc = 4;
+        if (argc < min_argc + 3)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::string_t hostfxr_path = argv[2];
+        const pal::char_t *config_path = argv[3];
+
+        int remaining_argc = argc - min_argc;
+        const pal::char_t **remaining_argv = nullptr;
+        if (argc > min_argc)
+            remaining_argv = &argv[min_argc];
+
+        pal::stringstream_t test_output;
+        bool success = false;
+
+        success = host_context_test::component_load_assembly(hostfxr_path, config_path, remaining_argc, remaining_argv, test_output);
+
+        std::cout << tostr(test_output.str()).data() << std::endl;
+        return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    else if (pal::strcmp(command, _X("app_load_assembly")) == 0)
+    {
+        // args: ... <hostfxr_path> <app_path> <assembly_path> <type_name> <method_name> [<assembly_path> <type_name> <method_name>...]
+        const int min_argc = 3;
+        if (argc < min_argc + 4)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::string_t hostfxr_path = argv[2];
+
+        int remaining_argc = argc - min_argc;
+        const pal::char_t **remaining_argv = nullptr;
+        if (argc > min_argc)
+            remaining_argv = &argv[min_argc];
+
+        pal::stringstream_t test_output;
+        bool success = false;
+
+        success = host_context_test::app_load_assembly(hostfxr_path, remaining_argc, remaining_argv, test_output);
+
+        std::cout << tostr(test_output.str()).data() << std::endl;
+        return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+        else if (pal::strcmp(command, _X("component_load_assembly_bytes")) == 0)
+    {
+        // args: ... <hostfxr_path> <config_path> <assembly_path> <symbols_path> <type_name> <method_name> [<assembly_path> <type_name> <method_name>...]
+        const int min_argc = 4;
+        if (argc < min_argc + 4)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::string_t hostfxr_path = argv[2];
+        const pal::char_t *config_path = argv[3];
+
+        int remaining_argc = argc - min_argc;
+        const pal::char_t **remaining_argv = nullptr;
+        if (argc > min_argc)
+            remaining_argv = &argv[min_argc];
+
+        pal::stringstream_t test_output;
+        bool success = false;
+
+        success = host_context_test::component_load_assembly_bytes(hostfxr_path, config_path, remaining_argc, remaining_argv, test_output);
+
+        std::cout << tostr(test_output.str()).data() << std::endl;
+        return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    else if (pal::strcmp(command, _X("app_load_assembly_bytes")) == 0)
+    {
+        // args: ... <hostfxr_path> <app_path> <assembly_path> <symbols_path> <type_name> <method_name> [<assembly_path> <type_name> <method_name>...]
+        const int min_argc = 3;
+        if (argc < min_argc + 5)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::string_t hostfxr_path = argv[2];
+
+        int remaining_argc = argc - min_argc;
+        const pal::char_t **remaining_argv = nullptr;
+        if (argc > min_argc)
+            remaining_argv = &argv[min_argc];
+
+        pal::stringstream_t test_output;
+        bool success = false;
+
+        success = host_context_test::app_load_assembly_bytes(hostfxr_path, remaining_argc, remaining_argv, test_output);
 
         std::cout << tostr(test_output.str()).data() << std::endl;
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
@@ -409,6 +511,37 @@ int main(const int argc, const pal::char_t *argv[])
         }
 
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    else if (pal::strcmp(command, _X("ijwhost")) == 0)
+    {
+        // args: ... <ijw_library_path> <entry_point>
+        if (argc < 4)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::string_t ijw_library_path = argv[2];
+        std::vector<char> entry_point_name = tostr(argv[3]);
+
+        pal::dll_t ijw_library;
+        if (!pal::load_library(&ijw_library_path, &ijw_library))
+        {
+            std::cout << "Failed to load library: " << tostr(ijw_library_path).data() << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        // Test is assuming __cdecl, no arguments, and void return for simplicity
+        typedef void(__cdecl *entry_point_fn)();
+        entry_point_fn entry_point = reinterpret_cast<entry_point_fn>(pal::get_symbol(ijw_library, entry_point_name.data()));
+        if (entry_point == nullptr)
+        {
+            std::cout << "Failed to find entry point: " << entry_point_name.data() << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        entry_point();
+        return EXIT_SUCCESS;
     }
 #endif
     else if (pal::strcmp(command, _X("get_native_search_directories")) == 0)

@@ -6,14 +6,14 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern common {}
-.assembly test {}
-
-.module test.exe
+.assembly 'test_552940' {}
 
 
-.class private auto ansi beforefieldinit Program
+
+.class public auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Test(int32 count) cil managed
@@ -74,9 +74,11 @@
     IL_0023:  ret
   } 
 
-  .method private hidebysig static int32 
-          Main(string[] args) cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
     .locals init (int32 V_0)

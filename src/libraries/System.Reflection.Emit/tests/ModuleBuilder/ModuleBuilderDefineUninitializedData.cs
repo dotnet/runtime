@@ -34,7 +34,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(Attributes_TestData))]
-        public void DefineUnitializedData(FieldAttributes attributes)
+        public void DefineUninitializedData(FieldAttributes attributes)
         {
             ModuleBuilder module = Helpers.DynamicModule();
             foreach (int size in new int[] { 1, 2, 0x003f0000 - 1 })
@@ -49,7 +49,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(Attributes_TestData))]
-        public void DefineUnitializedData_EmptyName_ThrowsArgumentException(FieldAttributes attributes)
+        public void DefineUninitializedData_EmptyName_ThrowsArgumentException(FieldAttributes attributes)
         {
             ModuleBuilder module = Helpers.DynamicModule();
             AssertExtensions.Throws<ArgumentException>("name", () => module.DefineUninitializedData("", 1, attributes));
@@ -57,7 +57,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(Attributes_TestData))]
-        public void DefineUnitializedData_InvalidSize_ThrowsArgumentException(FieldAttributes attributes)
+        public void DefineUninitializedData_InvalidSize_ThrowsArgumentException(FieldAttributes attributes)
         {
             ModuleBuilder module = Helpers.DynamicModule();
             foreach (int size in new int[] { -1, 0, 0x003f0000, 0x003f0000 + 1 })
@@ -68,7 +68,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(Attributes_TestData))]
-        public void DefineUnitializedData_NullName_ThrowsArgumentNullException(FieldAttributes attributes)
+        public void DefineUninitializedData_NullName_ThrowsArgumentNullException(FieldAttributes attributes)
         {
             ModuleBuilder module = Helpers.DynamicModule();
             AssertExtensions.Throws<ArgumentNullException>("name", () => module.DefineUninitializedData(null, 1, attributes));
@@ -76,7 +76,7 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(Attributes_TestData))]
-        public void DefineUninitalizedData_CreateGlobalFunctionsAlreadyCalled_ThrowsInvalidOperationException(FieldAttributes attributes)
+        public void DefineUninitializedData_CreateGlobalFunctionsAlreadyCalled_ThrowsInvalidOperationException(FieldAttributes attributes)
         {
             ModuleBuilder module = Helpers.DynamicModule();
             module.CreateGlobalFunctions();

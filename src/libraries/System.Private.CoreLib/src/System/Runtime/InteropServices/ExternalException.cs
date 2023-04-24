@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.Serialization;
 
@@ -46,6 +47,8 @@ namespace System.Runtime.InteropServices
             HResult = errorCode;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ExternalException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -56,9 +59,8 @@ namespace System.Runtime.InteropServices
         public override string ToString()
         {
             string message = Message;
-            string className = GetType().ToString();
 
-            string s = className + " (0x" + HResult.ToString("X8", CultureInfo.InvariantCulture) + ")";
+            string s = $"{GetType()} (0x{HResult:X8})";
 
             if (!string.IsNullOrEmpty(message))
             {

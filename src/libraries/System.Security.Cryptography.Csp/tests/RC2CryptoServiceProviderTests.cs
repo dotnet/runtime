@@ -68,9 +68,9 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Only Unix has _impl shim pattern
-        public static void TestShimOverloads_Unix()
+        public static void TestShimOverrides_Unix()
         {
-            ShimHelpers.VerifyAllBaseMembersOverloaded(typeof(RC2CryptoServiceProvider));
+            ShimHelpers.VerifyAllBaseMembersOverridden(typeof(RC2CryptoServiceProvider));
         }
     }
 }

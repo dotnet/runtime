@@ -11,11 +11,11 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetAsn1IntegerDerSize")]
-        private static extern int GetAsn1IntegerDerSize(SafeSharedAsn1IntegerHandle i);
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetAsn1IntegerDerSize")]
+        private static partial int GetAsn1IntegerDerSize(SafeSharedAsn1IntegerHandle i);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeAsn1Integer")]
-        private static extern int EncodeAsn1Integer(SafeSharedAsn1IntegerHandle i, byte[] buf);
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EncodeAsn1Integer")]
+        private static partial int EncodeAsn1Integer(SafeSharedAsn1IntegerHandle i, byte[] buf);
 
         internal static byte[] GetAsn1IntegerBytes(SafeSharedAsn1IntegerHandle asn1Integer)
         {
@@ -31,8 +31,8 @@ internal static partial class Interop
             // wrong endianness here), DER encode it, then use the DER reader to skip past the tag
             // and length.
             byte[] derEncoded = OpenSslEncode(
-                handle => GetAsn1IntegerDerSize(handle),
-                (handle, buf) => EncodeAsn1Integer(handle, buf),
+                GetAsn1IntegerDerSize,
+                EncodeAsn1Integer,
                 asn1Integer);
 
             try

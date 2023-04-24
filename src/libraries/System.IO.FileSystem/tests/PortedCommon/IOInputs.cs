@@ -8,8 +8,8 @@ using System.Linq;
 
 internal static class IOInputs
 {
-    public static bool SupportsSettingCreationTime => OperatingSystem.IsWindows();
-    public static bool SupportsGettingCreationTime => OperatingSystem.IsWindows() || OperatingSystem.IsMacOS();
+    public static bool SupportsSettingCreationTime => PlatformDetection.IsWindows || PlatformDetection.IsOSXLike;
+    public static bool SupportsGettingCreationTime => PlatformDetection.IsWindows || PlatformDetection.IsOSXLike;
 
     // Max path length (minus trailing \0). Unix values vary system to system; just using really long values here likely to be more than on the average system.
     public static readonly int MaxPath = OperatingSystem.IsWindows() ? 259 : 10000;
@@ -23,7 +23,7 @@ internal static class IOInputs
     // Windows specific, this is the maximum length that can be passed to APIs taking directory names, such as Directory.CreateDirectory & Directory.Move.
     // Does not include the trailing \0.
     // We now do the appropriate wrapping to allow creating longer directories. Like MaxPath, this is a legacy restriction.
-    public static readonly int MaxDirectory = 247;
+    public static readonly int MaxDirectory = OperatingSystem.IsWindows() ? 247 : 258;
 
     public const int MaxComponent = 255;
 
@@ -220,7 +220,10 @@ internal static class IOInputs
     }
 
     public static IEnumerable<string> GetReservedDeviceNames()
-    {   // See: https://docs.microsoft.com/en-us/windows/desktop/FileIO/naming-a-file
+    {   // See: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+        //
+        // Note - Recent versions of Win10 relax this restriction and allow reserved
+        // device names as filenames.
         yield return "CON";
         yield return "AUX";
         yield return "NUL";

@@ -10,6 +10,9 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
@@ -60,12 +63,16 @@ namespace System
             HResult = HResults.COR_E_ARGUMENT;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ArgumentException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             _paramName = info.GetString("ParamName");
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -97,5 +104,25 @@ namespace System
         }
 
         public virtual string? ParamName => _paramName;
+
+        /// <summary>Throws an exception if <paramref name="argument"/> is null or empty.</summary>
+        /// <param name="argument">The string argument to validate as non-null and non-empty.</param>
+        /// <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="argument"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="argument"/> is empty.</exception>
+        public static void ThrowIfNullOrEmpty([NotNull] string? argument, [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+        {
+            if (string.IsNullOrEmpty(argument))
+            {
+                ThrowNullOrEmptyException(argument, paramName);
+            }
+        }
+
+        [DoesNotReturn]
+        private static void ThrowNullOrEmptyException(string? argument, string? paramName)
+        {
+            ArgumentNullException.ThrowIfNull(argument, paramName);
+            throw new ArgumentException(SR.Argument_EmptyString, paramName);
+        }
     }
 }

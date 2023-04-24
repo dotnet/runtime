@@ -36,7 +36,7 @@ struct MinMaxTot
         minVal = maxVal = 0;
     }
 
-    void DisplayAndUpdate(FILE* logFile, __in_z const char *pName, MinMaxTot *pLastOne, int fullCount, int priorCount, timeUnit=usec);
+    void DisplayAndUpdate(FILE* logFile, _In_z_ const char *pName, MinMaxTot *pLastOne, int fullCount, int priorCount, timeUnit=usec);
 };
 
 // A note about timings.  We use QueryPerformanceCounter to measure all timings in units.  During
@@ -186,13 +186,17 @@ private:
     static SUSPEND_REASON    m_suspendReason;    // This contains the reason why the runtime is suspended
 
     static void SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason);
-    static void ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded);
+    static void ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceeded);
 public:
     // Initialize thread suspension support
     static void Initialize();
 
 private:
     static CLREvent * g_pGCSuspendEvent;
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    static void* g_returnAddressHijackTarget;
+#endif // TARGET_WINDOWS && TARGET_AMD64
 
     // This is true iff we're currently in the process of suspending threads.  Once the
     // threads have been suspended, this is false.  This is set via an instance of
@@ -235,7 +239,7 @@ public:
 public:
     //suspend all threads
     static void SuspendEE(SUSPEND_REASON reason);
-    static void RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded); //resume threads.
+    static void RestartEE(BOOL bFinishedGC, BOOL SuspendSucceeded); //resume threads.
 
     static void LockThreadStore(ThreadSuspend::SUSPEND_REASON reason);
     static void UnlockThreadStore(BOOL bThreadDestroyed = FALSE,
@@ -246,6 +250,13 @@ public:
         LIMITED_METHOD_CONTRACT;
         return g_pSuspensionThread;
     }
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    static void* GetReturnAddressHijackTarget()
+    {
+        return g_returnAddressHijackTarget;
+    }
+#endif // TARGET_WINDOWS && TARGET_AMD64
 
 private:
     static LONG m_DebugWillSyncCount;

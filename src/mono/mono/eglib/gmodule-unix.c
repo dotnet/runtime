@@ -50,7 +50,7 @@ g_module_open (const gchar *file, GModuleFlags flags)
 	int f = 0;
 	GModule *module;
 	void *handle;
-	
+
 	flags &= G_MODULE_BIND_MASK;
 	if ((flags & G_MODULE_BIND_LAZY) != 0)
 		f |= RTLD_LAZY;
@@ -60,10 +60,10 @@ g_module_open (const gchar *file, GModuleFlags flags)
 	handle = dlopen (file, f);
 	if (handle == NULL)
 		return NULL;
-	
+
 	module = g_new (GModule,1);
 	module->handle = handle;
-	
+
 	return module;
 }
 
@@ -167,7 +167,7 @@ g_module_open (const gchar *file, GModuleFlags flags)
 
 	if (file != NULL) {
 		gunichar2 *file16;
-		file16 = u8to16(file); 
+		file16 = u8to16(file);
 		module->main_module = FALSE;
 		module->handle = LoadLibrary (file16);
 		g_free(file16);
@@ -175,7 +175,7 @@ g_module_open (const gchar *file, GModuleFlags flags)
 			g_free (module);
 			return NULL;
 		}
-			
+
 	} else {
 		module->main_module = TRUE;
 		module->handle = GetModuleHandle (NULL);
@@ -257,7 +257,7 @@ g_module_error (void)
 	TCHAR* buf = NULL;
 	DWORD code = GetLastError ();
 
-	FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, 
+	FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL,
 		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 0, NULL);
 
 	ret = u16to8 (buf);
@@ -320,15 +320,15 @@ gchar *
 g_module_build_path (const gchar *directory, const gchar *module_name)
 {
 	const char *lib_prefix = "";
-	
+
 	if (module_name == NULL)
 		return NULL;
 
 	if (strncmp (module_name, "lib", 3) != 0)
 		lib_prefix = LIBPREFIX;
-	
+
 	if (directory && *directory)
 		return g_strdup_printf ("%s/%s%s" LIBSUFFIX, directory, lib_prefix, module_name);
-	return g_strdup_printf ("%s%s" LIBSUFFIX, lib_prefix, module_name); 
+	return g_strdup_printf ("%s%s" LIBSUFFIX, lib_prefix, module_name);
 }
 

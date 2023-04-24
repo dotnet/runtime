@@ -96,6 +96,37 @@ namespace System.ConfigurationTests
 
         }
 
+#nullable enable
+        public class SettingsWithNullableAttribute : ApplicationSettingsBase
+        {
+            [ApplicationScopedSetting]
+            public string StringProperty
+            {
+                get
+                {
+                    return (string)this[nameof(StringProperty)];
+                }
+                set
+                {
+                    this[nameof(StringProperty)] = value;
+                }
+            }
+
+            [UserScopedSetting]
+            public string? NullableStringProperty
+            {
+                get
+                {
+                    return (string)this[nameof(NullableStringProperty)];
+                }
+                set
+                {
+                    this[nameof(NullableStringProperty)] = value;
+                }
+            }
+        }
+#nullable disable
+
         private class PersistedSimpleSettings : SimpleSettings
         {
         }
@@ -213,7 +244,9 @@ namespace System.ConfigurationTests
         [ReadOnly(false)]
         [SettingsGroupName("TestGroup")]
         [SettingsProvider(typeof(TestProvider))]
+#pragma warning disable CS0618 // Type or member is obsolete
         [SettingsSerializeAs(SettingsSerializeAs.Binary)]
+#pragma warning restore CS0618 // Type or member is obsolete
         private class SettingsWithAttributes : ApplicationSettingsBase
         {
             [ApplicationScopedSetting]
@@ -243,7 +276,9 @@ namespace System.ConfigurationTests
             Assert.Equal(1, settings.Properties.Count);
             SettingsProperty property = settings.Properties["StringProperty"];
             Assert.Equal(typeof(TestProvider), property.Provider.GetType());
+#pragma warning disable CS0618 // Type or member is obsolete
             Assert.Equal(SettingsSerializeAs.Binary, property.SerializeAs);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         [Fact]
@@ -310,6 +345,28 @@ namespace System.ConfigurationTests
 
             Assert.Equal(newStringPropertyValue, settings.StringProperty);
             Assert.True(loadedFired);
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not fixed on NetFX")]
+        [Fact]
+        public void SettingsProperty_SettingsWithNullableAttributes_Ok()
+        {
+            SettingsWithNullableAttribute settings = new SettingsWithNullableAttribute();
+
+            Assert.Null(settings.NullableStringProperty);
+
+            string newValue = null;
+
+            settings.SettingChanging += (object sender, SettingChangingEventArgs e)
+                =>
+            {
+                newValue = (string)e.NewValue;
+            };
+
+            settings.NullableStringProperty = "test";
+
+            Assert.Equal("test", newValue);
+            Assert.Equal(newValue, settings.NullableStringProperty);
         }
     }
 }

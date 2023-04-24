@@ -20,12 +20,6 @@
 #include "metadata.h"
 #include "streamutil.h"
 
-#include "../hotdata/hotdataformat.h"
-
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#endif
-
 #ifdef _MSC_VER
 #pragma intrinsic(memcpy)
 #endif
@@ -264,7 +258,7 @@ const TblIndex g_TblIndex[TBL_COUNT] =
     {(ULONG) -1,        (ULONG) -1,     (ULONG) -1},        // PropertyPtr
     {(ULONG) -1,        (ULONG) -1,     mdtProperty},       // Property
     {(ULONG) -1,        (ULONG) -1,     (ULONG) -1},        // MethodSemantics
-    {(ULONG) -1,        (ULONG) -1,     (ULONG) -1},        // MethodImpl
+    {(ULONG) -1,        (ULONG) -1,     mdtMethodImpl},     // MethodImpl
     {(ULONG) -1,        (ULONG) -1,     mdtModuleRef},      // ModuleRef
     {(ULONG) -1,        (ULONG) -1,     mdtTypeSpec},       // TypeSpec
     {(ULONG) -1,        (ULONG) -1,     (ULONG) -1},        // ImplMap  <TODO>@FUTURE:  Check that these are the right entries here.</TODO>
@@ -280,7 +274,7 @@ const TblIndex g_TblIndex[TBL_COUNT] =
     {(ULONG) -1,        (ULONG) -1,     mdtFile},           // File <TODO>@FUTURE: Update with the right number.</TODO>
     {(ULONG) -1,        (ULONG) -1,     mdtExportedType},   // ExportedType <TODO>@FUTURE: Update with the right number.</TODO>
     {(ULONG) -1,        (ULONG) -1,     mdtManifestResource},// ManifestResource <TODO>@FUTURE: Update with the right number.</TODO>
-    {(ULONG) -1,        (ULONG) -1,     (ULONG) -1},        // NestedClass
+    {(ULONG) -1,        (ULONG) -1,     mdtNestedClass},    // NestedClass
     {(ULONG) -1,        (ULONG) -1,     mdtGenericParam},   // GenericParam
     {(ULONG) -1,        (ULONG) -1,     mdtMethodSpec},     // MethodSpec
     {(ULONG) -1,        (ULONG) -1,     mdtGenericParamConstraint},// GenericParamConstraint
@@ -315,16 +309,15 @@ ULONG CMiniMdRW::m_TruncatedEncTables[] =
 ULONG CMiniMdRW::GetTableForToken(      // Table index, or -1.
     mdToken     tkn)                    // Token to find.
 {
-    ULONG       ixTbl;                  // Loop control.
     ULONG       type = TypeFromToken(tkn);
 
     // Get the type -- if a string, no associated table.
     if (type >= mdtString)
         return (ULONG) -1;
     // Table number is same as high-byte of token.
-    ixTbl = type >> 24;
+    ULONG ixTbl = type >> 24;
     // Make sure.
-     _ASSERTE(g_TblIndex[ixTbl].m_Token == type);
+    _ASSERTE(ixTbl < TBL_COUNT);
 
     return ixTbl;
 } // CMiniMdRW::GetTableForToken
@@ -448,10 +441,10 @@ public:
         IfFailGo(PrepMapTokens());
 
         // We are going to sort tables. Invalidate the hash tables
-        if ( m_MiniMd.m_pLookUpHashs[m_ixTbl] != NULL )
+        if ( m_MiniMd.m_pLookUpHashes[m_ixTbl] != NULL )
         {
-            delete m_MiniMd.m_pLookUpHashs[m_ixTbl];
-            m_MiniMd.m_pLookUpHashs[m_ixTbl] = NULL;
+            delete m_MiniMd.m_pLookUpHashes[m_ixTbl];
+            m_MiniMd.m_pLookUpHashes[m_ixTbl] = NULL;
         }
 
         IfFailGo(SortRange(1, m_iCount));
@@ -535,7 +528,7 @@ private:
         int     iLast;
         int     nResult;
 
-        for (;;)
+        while (true)
         {
             // if less than two elements you're done.
             if (iLeft >= iRight)
@@ -732,11 +725,11 @@ CMiniMdRW::CMiniMdRW()
 
     ZeroMemory(&m_OptionValue, sizeof(OptionValue));
 
-    // initialize the embeded lookuptable struct.  Further initialization, after constructor.
+    // initialize the embedded lookuptable struct.  Further initialization, after constructor.
     for (ULONG ixTbl=0; ixTbl<TBL_COUNT; ++ixTbl)
     {
         m_pVS[ixTbl] = 0;
-        m_pLookUpHashs[ixTbl] = 0;
+        m_pLookUpHashes[ixTbl] = 0;
     }
 
     // Assume that we can sort tables as needed.
@@ -778,7 +771,7 @@ CMiniMdRW::CMiniMdRW()
 
 CMiniMdRW::~CMiniMdRW()
 {
-    // Un-initialize the embeded lookuptable struct
+    // Un-initialize the embedded lookuptable struct
     for (ULONG ixTbl=0; ixTbl<TBL_COUNT; ++ixTbl)
     {
         if (m_pVS[ixTbl])
@@ -786,8 +779,8 @@ CMiniMdRW::~CMiniMdRW()
             m_pVS[ixTbl]->Uninit();
             delete m_pVS[ixTbl];
         }
-        if ( m_pLookUpHashs[ixTbl] != NULL )
-            delete m_pLookUpHashs[ixTbl];
+        if ( m_pLookUpHashes[ixTbl] != NULL )
+            delete m_pLookUpHashes[ixTbl];
 
     }
     if (m_pFilterTable)
@@ -835,7 +828,7 @@ CMiniMdRW::CommonEnumCustomAttributeByName(
     HRESULT      hr = S_OK;
     HRESULT      hrRet = S_FALSE;       // Assume that we won't find any
     RID          ridStart, ridEnd;      // Loop start and endpoints.
-    CLookUpHash *pHashTable = m_pLookUpHashs[TBL_CustomAttribute];
+    CLookUpHash *pHashTable = m_pLookUpHashes[TBL_CustomAttribute];
 
     _ASSERTE(phEnum != NULL);
 
@@ -1362,7 +1355,7 @@ CMiniMdRW::InitPoolOnMem(
             }
             else
             {   // Creates new empty user string heap (with default empty !!!blob!!! entry)
-                // Note: backaward compatiblity: doesn't add default empty user string, but default empty
+                // Note: backaward compatibility: doesn't add default empty user string, but default empty
                 // blob entry
                 IfFailRet(m_UserStringHeap.InitializeEmpty(
                     0
@@ -1398,7 +1391,7 @@ CMiniMdRW::InitOnMem(
     BYTE    *pBuf = const_cast<BYTE*>(reinterpret_cast<const BYTE*>(pvBuf));
     int      i;
 
-    // post contruction initialize the embeded lookuptable struct
+    // post construction initialize the embedded lookuptable struct
     for (ULONG ixTbl = 0; ixTbl < m_TblCount; ++ixTbl)
     {
         if (m_TableDefs[ixTbl].m_iKey < m_TableDefs[ixTbl].m_cCols)
@@ -1813,7 +1806,7 @@ HRESULT CMiniMdRW::InitOnCustomDataSource(IMDCustomDataSource* pDataSource)
         m_Tables[i].Initialize(m_TableDefs[i].m_cbRec, tableRecordData, !fIsReadOnly);
 
         IfFailGo(pDataSource->GetTableSortable(i, &sortable));
-        m_bSortable[i] = sortable;
+        m_bSortable[i] = !!sortable ? 1 : 0;
     }
 
     // Set the limits so we will know when to grow the database.
@@ -1962,236 +1955,6 @@ ErrExit:
     return hr;
 } // CMiniMdRW::InitNew
 
-#ifdef FEATURE_PREJIT
-//*****************************************************************************
-// Helper function to determine the size of hot tables
-//*****************************************************************************
-static int ShiftCount(ULONG itemCount, ULONG hotItemCount)
-{
-    // figure out how many bits are needed to represent the highest rid
-    ULONG highestRid = itemCount;
-    int bitCount = 0;
-    while ((1UL<<bitCount) <= highestRid)
-        bitCount++;
-    int shiftCount = bitCount > 8 ? bitCount - 8 : 0;
-
-    // tune the shift count so that we don't need to search more than 4 hot entries on average.
-    while ((hotItemCount >> shiftCount) > 4)
-        shiftCount++;
-    if (shiftCount > 16)
-        shiftCount = 16;
-    return shiftCount;
-} // ShiftCount
-
-//*****************************************************************************
-// Helper function to qsort hot tokens
-//*****************************************************************************
-
-typedef struct _TokenIndexPair
-{
-    mdToken token;
-    WORD index;
-} TokenIndexPair;
-
-static WORD shiftCount;
-static int __cdecl TokenCmp(const void *a, const void *b)
-{
-    mdToken ta = ((const TokenIndexPair *)a)->token;
-    mdToken tb = ((const TokenIndexPair *)b)->token;
-    if (shiftCount > 0)
-    {
-        // shiftCount is the number of low order bits that are used to index
-        // into the first level table. The below swaps high and low order bits so
-        // the values with common low order bits end up together after the sort.
-        ta = (ta >> shiftCount) | ((ta & ((1<<shiftCount)-1)) << (32-shiftCount));
-        tb = (tb >> shiftCount) | ((tb & ((1<<shiftCount)-1)) << (32-shiftCount));
-    }
-    if (ta < tb)
-        return -1;
-    else if (ta > tb)
-        return 1;
-    else
-        return 0;
-}
-
-//*****************************************************************************
-// A wrapper for metadata's use of CorProfileData::GetHotTokens that recognizes tokens
-// flagged with ProfilingFlags_MetaDataSearch and reinterprets them into a corresponding
-// set of ProfilingFlags_MetaData tokens.
-//
-// If you are reading this because you are changing the implementation of one of the searches
-// in CMiniMdBase, it should be a mechanical process to copy the new search code below and
-// change the row accesses into setting values in the rowFlags array.
-//
-// Doing so allows us to fix the problem that incremental IBC is fundamentally not suited to
-// metadata searches.
-//
-// For instance, consider the following scenario:
-//    - You gather IBC data on a scenario that does a metadata binary search
-//    - The data comes from build X where the table is of size 100 and the target is in row 18
-//    - This means the intermediate values touched are rows 50, 25, and 12
-//    - You then apply this IBC data to build Y which has changed to include 20 new entries to start the table
-//    - Naively, incremental IBC would have remapped these tokens and predicted accesses at rows 70, 35, 32, and 38
-//    - But this is wrong!  And very bad for working set.  The search will actually touch 60, 30, and 45 on the way to 38
-//
-// The solution is to only store rows in IBC data that were touched intentionally, either as direct
-// accesses (with ProfilingFlags_MetaData) or as the result of searches (ProfilingFlags_MetaDataSearch).
-// We then expand these "search tokens" here into the set of accesses that would occur on the current
-// table as we do our various types of metadata search for them.
-//
-// Currently, we infer touches for the following types of access:
-//    - Direct access (getRow)
-//    - Binary search (CMiniMdBase::vSearchTable or CMiniMdBase::vSearchTableNotGreater)
-//    - Bounds of a multi-element span (CMiniMdBase::SearchTableForMultipleRows)
-//
-// In theory, we could have different flags for each type of search (e.g. binary, multiple-row, etc) and
-// avoid any over-reporting of intermediate tokens, but in practice the IBC flag bits are scarce and
-// measurements show a minimal (<1%) amount of over-reporting.
-//
-//*****************************************************************************
-
-enum HotTokenFlags
-{
-    HotTokenFlags_Cold = 0x0,
-    HotTokenFlags_ProfiledAccess = 0x1,
-    HotTokenFlags_IntermediateInBinarySearch = 0x2,
-    HotTokenFlags_BoundingMultipleRowSearch = 0x4
-};
-
-__checkReturn
-HRESULT
-CMiniMdRW::GetHotMetadataTokensSearchAware(
-    CorProfileData *pProfileData,
-    ULONG ixTbl,
-    ULONG *pResultCount,
-    mdToken *tokenBuffer,
-    ULONG maxCount)
-{
-    HRESULT     hr = S_OK;
-    ULONG       resultCount = 0;
-
-    ULONG metadataAccessFlag = 1<<ProfilingFlags_MetaData;
-    ULONG metadataSearchFlag = 1<<ProfilingFlags_MetaDataSearch;
-
-    // Query the profile data to determine the number of hot search tokens
-    ULONG numSearchTokens = pProfileData->GetHotTokens(ixTbl, metadataSearchFlag, metadataSearchFlag, NULL, 0);
-    ULONG cRecs = GetCountRecs(ixTbl);
-
-    if (numSearchTokens == 0 || cRecs == 0)
-    {
-        // If there are none, we can simply return the hot access tokens without doing any interesting work
-        resultCount = pProfileData->GetHotTokens(ixTbl, metadataAccessFlag, metadataAccessFlag, tokenBuffer, maxCount);
-    }
-    else
-    {
-        // But if there are hot search tokens, we need to infer what intermediate rows will be touched by our various types of metadata searching.
-        // To do so, retrieve all hot tokens and allocate temporary storage to use to mark which rows should be considered hot and for what reason
-        // (i.e. an array of HotTokenFlags, one per entry in the table, indexed by RID).
-        ULONG numAccessTokens = pProfileData->GetHotTokens(ixTbl, metadataAccessFlag, metadataAccessFlag, NULL, 0);
-
-        NewArrayHolder<mdToken> searchTokens = new (nothrow) mdToken[numSearchTokens];
-        IfNullGo(searchTokens);
-        NewArrayHolder<mdToken> accessTokens = new (nothrow) mdToken[numAccessTokens];
-        IfNullGo(accessTokens);
-        NewArrayHolder<BYTE> rowFlags = new (nothrow) BYTE[cRecs + 1];
-        IfNullGo(rowFlags);
-
-        pProfileData->GetHotTokens(ixTbl, metadataSearchFlag, metadataSearchFlag, searchTokens, numSearchTokens);
-        pProfileData->GetHotTokens(ixTbl, metadataAccessFlag, metadataAccessFlag, accessTokens, numAccessTokens);
-
-        // Initially, consider all rows cold
-        memset(rowFlags, HotTokenFlags_Cold, cRecs + 1);
-
-        // Category 1: Rows may have been touched directly (getRow)
-        // Simply mark the corresponding entry to each access token
-        for (ULONG i = 0; i < numAccessTokens; ++i)
-        {
-            RID rid = RidFromToken(accessTokens[i]);
-
-            if (rid <= cRecs)
-            {
-                rowFlags[rid] |= HotTokenFlags_ProfiledAccess;
-            }
-        }
-
-        // Category 2: Rows may have been intermediate touches in a binary search (CMiniMdBase::vSearchTable or CMiniMdBase::vSearchTableNotGreater)
-        // A search token may indicate where a binary search stopped, so for each of them compute and mark the intermediate set of rows that would have been touched
-        for (ULONG i = 0; i < numSearchTokens; ++i)
-        {
-            RID rid = RidFromToken(searchTokens[i]);
-
-            ULONG lo = 1;
-            ULONG hi = cRecs;
-
-            while (lo <= hi)
-            {
-                ULONG mid = (lo + hi) / 2;
-
-                if (mid <= cRecs)
-                {
-                    rowFlags[mid] |= HotTokenFlags_IntermediateInBinarySearch;
-                }
-
-                if (mid == rid)
-                {
-                    break;
-                }
-
-                if (mid < rid)
-                    lo = mid + 1;
-                else
-                    hi = mid - 1;
-            }
-        }
-
-        // Category 3: Rows may have been touched to find the bounds of a multiple element span (CMiniMdBase::SearchTableForMultipleRows)
-        // A search token will indicate where the search stopped, so mark the first row before and after each that was not itself touched
-        for (ULONG i = 0; i < numSearchTokens; ++i)
-        {
-            RID rid = RidFromToken(searchTokens[i]);
-
-            for (RID r = rid - 1; r >= 1 && r <= cRecs; --r)
-            {
-                if ((rowFlags[r] & HotTokenFlags_ProfiledAccess) == 0)
-                {
-                    rowFlags[r] |= HotTokenFlags_BoundingMultipleRowSearch;
-                    break;
-                }
-            }
-
-            for (RID r = rid + 1; r <= cRecs; ++r)
-            {
-                if ((rowFlags[r] & HotTokenFlags_ProfiledAccess) == 0)
-                {
-                    rowFlags[r] |= HotTokenFlags_BoundingMultipleRowSearch;
-                    break;
-                }
-            }
-        }
-
-        // Now walk back over our temporary storage, counting and possibly returning the computed hot tokens
-        resultCount = 0;
-        for (ULONG i = 1; i <= cRecs; ++i)
-        {
-            if (rowFlags[i] != HotTokenFlags_Cold)
-            {
-                if (tokenBuffer != NULL && resultCount < maxCount)
-                    tokenBuffer[resultCount] = TokenFromRid(i, ixTbl << 24);
-                resultCount++;
-            }
-        }
-    }
-
-    if (pResultCount)
-        *pResultCount = resultCount;
-
-    ErrExit:
-        return hr;
-} // CMiniMdRW::GetHotMetadataTokensSearchAware
-
-
-#endif //FEATURE_PREJIT
-
 //*****************************************************************************
 // Determine how big the tables would be when saved.
 //*****************************************************************************
@@ -2201,8 +1964,7 @@ CMiniMdRW::GetFullSaveSize(
     CorSaveSize               fSave,                // [IN] cssAccurate or cssQuick.
     UINT32                   *pcbSaveSize,          // [OUT] Put the size here.
     DWORD                    *pbSaveCompressed,     // [OUT] Will the saved data be fully compressed?
-    MetaDataReorderingOptions reorderingOptions,    // [IN] Metadata reordering options
-    CorProfileData           *pProfileData)         // [IN] Optional IBC profile data for working set optimization
+    MetaDataReorderingOptions reorderingOptions)    // [IN] Metadata reordering options
 {
     HRESULT     hr = S_OK;
     CMiniTableDef   sTempTable;         // Definition for a temporary table.
@@ -2214,9 +1976,6 @@ CMiniMdRW::GetFullSaveSize(
     int         i;                      // Loop control.
 
     _ASSERTE(m_bPreSaveDone);
-#ifndef FEATURE_PREJIT
-    _ASSERTE(pProfileData == NULL);
-#endif //!FEATURE_PREJIT
 
     // Determine if the stream is "fully compressed", ie no pointer tables.
     *pbSaveCompressed = true;
@@ -2260,14 +2019,9 @@ CMiniMdRW::GetFullSaveSize(
         Schema.m_heaps &= ~CMiniMdSchema::HEAP_GUID_4;
     }
 
-    cbTotal = 0;
-    // schema isn't saved for the hot metadata
-    if (pProfileData == NULL)
-    {
-        cbTotal = Schema.SaveTo(SchemaBuf);
-        if ( (cbAlign = Align4(cbTotal) - cbTotal) != 0)
-            cbTotal += cbAlign;
-    }
+    cbTotal = Schema.SaveTo(SchemaBuf);
+    if ( (cbAlign = Align4(cbTotal) - cbTotal) != 0)
+        cbTotal += cbAlign;
 
     // For each table...
     ULONG ixTbl;
@@ -2291,57 +2045,6 @@ CMiniMdRW::GetFullSaveSize(
 
             cbTable = sTempTable.m_cbRec * GetCountRecs(ixTbl);
 
-#ifdef FEATURE_PREJIT
-            if (pProfileData != NULL)
-            {
-                ULONG itemCount = GetCountRecs(ixTbl);
-
-                // determine number of rows touched in this table as indicated by IBC profile data
-                ULONG hotItemCount = 0;
-                IfFailGo(GetHotMetadataTokensSearchAware(pProfileData, ixTbl, &hotItemCount, NULL, 0));
-
-                // assume ManifestResource table is touched completely if touched at all or any hot metadata at all so far
-                // this is because it's searched linearly, and IBC data misses an unsuccessful search
-                // after module load
-                if (ixTbl == TBL_ManifestResource && (hotItemCount > 0 || cbTotal != 0))
-                    hotItemCount = itemCount;
-
-                // if the hot subset of the rows along with their side lookup tables will occupy more space
-                // than the full table, keep the full table to both save space and access time.
-                if (hotItemCount <= USHRT_MAX && itemCount <= USHRT_MAX && m_TableDefs[ixTbl].m_cbRec <= SHRT_MAX)
-                {
-                    ULONG estimatedSizeUsingSubsetCopy = hotItemCount * (sizeof(WORD) + sizeof(BYTE) + m_TableDefs[ixTbl].m_cbRec);
-                    ULONG estimatedSizeUsingFullCopy = itemCount * m_TableDefs[ixTbl].m_cbRec;
-
-                    if (estimatedSizeUsingSubsetCopy > estimatedSizeUsingFullCopy)
-                        hotItemCount = itemCount;
-                }
-
-                // first level table is array of WORD, so we can't handle more than 2**16 hot items
-                if (hotItemCount > USHRT_MAX)
-                    hotItemCount = 0;
-
-                cbTable = 0;
-                if (hotItemCount > 0)
-                {
-                    cbTotal = Align4(cbTotal);
-                    cbTable  = 5*sizeof(DWORD) + sizeof(WORD);            // header: count, 4 offsets, shift count
-                    shiftCount = ShiftCount(itemCount, hotItemCount);
-                    if (hotItemCount < itemCount)
-                    {
-                        cbTable += ((1<<shiftCount) + 1) * sizeof(WORD);  // 1st level table
-                        cbTable += hotItemCount*sizeof(BYTE);             // 2nd level table
-                        cbTable += hotItemCount*sizeof(WORD);             // Index mapping table
-                    }
-                    cbTable = Align4(cbTable);                            // align hot metadata on 4-byte boundary
-                    cbTable += sTempTable.m_cbRec * hotItemCount;         // size of hot metadata
-
-                    LOG((LOGMD, "CMiniMdRW::GetFullSaveSize: table %2d %5d items %3d hot items %2d shift count %4d total size\n", ixTbl, itemCount, hotItemCount, shiftCount, cbTable));
-                }
-                else
-                    LOG((LOGMD, "CMiniMdRW::GetFullSaveSize: table %2d %5d items\n", ixTbl, itemCount));
-            }
-#endif //FEATURE_PREJIT
             cbTotal += cbTable;
         }
     }
@@ -2351,28 +2054,9 @@ CMiniMdRW::GetFullSaveSize(
     if (cbAlign < 2)
         cbAlign += 4;
     cbTotal += cbAlign;
+    m_cbSaveSize = cbTotal;
 
-    if (pProfileData != NULL)
-    {
-#ifdef FEATURE_PREJIT
-        UINT32 cbHotHeapsSize = 0;
-
-        IfFailGo(GetHotPoolsSaveSize(&cbHotHeapsSize, reorderingOptions, pProfileData));
-        cbTotal += cbHotHeapsSize;
-
-        if (cbTotal <= 4)
-            cbTotal = 0;
-        else
-            cbTotal += sizeof(UINT32) + m_TblCount*sizeof(UINT32)
-                       + 2 * sizeof(UINT32);  // plus the size of hot metadata header
-#endif //FEATURE_PREJIT
-    }
-    else
-    {
-        m_cbSaveSize = cbTotal;
-    }
-
-    LOG((LOGMD, "CMiniMdRW::GetFullSaveSize: Total %ssize = %d\n", pProfileData ? "hot " : "", cbTotal));
+    LOG((LOGMD, "CMiniMdRW::GetFullSaveSize: Total size = %u\n", cbTotal));
 
     *pcbSaveSize = cbTotal;
 
@@ -2451,37 +2135,6 @@ CMiniMdRW::GetENCSaveSize(          // S_OK or error.
 } // CMiniMdRW::GetENCSaveSize
 
 
-#ifdef FEATURE_PREJIT
-
-//  Determine the size of the hot blob data
-//
-__checkReturn
-HRESULT
-CMiniMdRW::GetHotPoolsSaveSize(
-    UINT32                   *pcbSize,
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)
-{
-    HRESULT hr = S_OK;
-    UINT32 cbSavedDirSize = 0;
-    UINT32 cbSavedHeapsSize = 0;
-
-    StreamUtil::NullStream stream;
-    IfFailGo(SaveHotPoolsToStream(
-        &stream,
-        reorderingOptions,
-        pProfileData,
-        &cbSavedDirSize,
-        &cbSavedHeapsSize));
-    *pcbSize = cbSavedDirSize + cbSavedHeapsSize;
-
-ErrExit:
-    return hr;
-} // CMiniMdRW::GetHotPoolsSaveSize
-
-#endif //FEATURE_PREJIT
-
-
 //*****************************************************************************
 // Determine how big the tables would be when saved.
 //*****************************************************************************
@@ -2491,8 +2144,7 @@ CMiniMdRW::GetSaveSize(
     CorSaveSize               fSave,                // [IN] cssAccurate or cssQuick.
     UINT32                   *pcbSaveSize,          // [OUT] Put the size here.
     DWORD                    *pbSaveCompressed,     // [OUT] Will the saved data be fully compressed?
-    MetaDataReorderingOptions reorderingOptions,    // [IN] Optional metadata reordering options
-    CorProfileData           *pProfileData)         // [IN] Optional IBC profile data for working set optimization
+    MetaDataReorderingOptions reorderingOptions)    // [IN] Optional metadata reordering options
 {
     HRESULT hr;
 
@@ -2502,12 +2154,12 @@ CMiniMdRW::GetSaveSize(
     switch (m_OptionValue.m_UpdateMode & MDUpdateMask)
     {
     case MDUpdateFull:
-        hr = GetFullSaveSize(fSave, pcbSaveSize, pbSaveCompressed, reorderingOptions, pProfileData);
+        hr = GetFullSaveSize(fSave, pcbSaveSize, pbSaveCompressed, reorderingOptions);
         break;
     case MDUpdateIncremental:
     case MDUpdateExtension:
     case MDUpdateENC:
-        hr = GetFullSaveSize(fSave, pcbSaveSize, pbSaveCompressed, NoReordering, pProfileData);
+        hr = GetFullSaveSize(fSave, pcbSaveSize, pbSaveCompressed, NoReordering);
         // never save compressed if it is incremental compilation.
         *pbSaveCompressed = false;
         break;
@@ -2820,12 +2472,12 @@ CMiniMdRW::PreSaveFull()
             COMMA_INDEBUG_MD(TRUE)));
         INDEBUG_MD(newEvents.Debug_SetTableInfo("TBL_Event", TBL_Event));
 
-        MetaData::TableRW newPropertys;
-        IfFailGo(newPropertys.InitializeEmpty_WithRecordCount(
+        MetaData::TableRW newProperties;
+        IfFailGo(newProperties.InitializeEmpty_WithRecordCount(
             m_TableDefs[TBL_Property].m_cbRec,
             m_Schema.m_cRecs[TBL_Property]
             COMMA_INDEBUG_MD(TRUE)));
-        INDEBUG_MD(newPropertys.Debug_SetTableInfo("TBL_Property", TBL_Property));
+        INDEBUG_MD(newProperties.Debug_SetTableInfo("TBL_Property", TBL_Property));
 
         // If we have any indirect table for Field or Method and we are about to reorder these
         // tables, the MemberDef hash table will be invalid after the token movement. So invalidate
@@ -2955,7 +2607,7 @@ CMiniMdRW::PreSaveFull()
                 IfFailGo(m_Tables[TBL_Property].GetRecord(ridOld, &pOld));
                 RID ridNew;
                 BYTE * pNew;
-                IfFailGo(newPropertys.AddRecord(&pNew, (UINT32 *)&ridNew));
+                IfFailGo(newProperties.AddRecord(&pNew, (UINT32 *)&ridNew));
                 _ASSERTE(ridNew == ridPtr);
                 memcpy(pNew, pOld, m_TableDefs[TBL_Property].m_cbRec);
 
@@ -2991,7 +2643,7 @@ CMiniMdRW::PreSaveFull()
         {
             m_Tables[TBL_Property].Delete();
             IfFailGo(m_Tables[TBL_Property].InitializeFromTable(
-                &newPropertys,
+                &newProperties,
                 TRUE));     // fCopyData
         }
         if (HasIndirectTable(TBL_Event))
@@ -3153,7 +2805,7 @@ CMiniMdRW::PreSaveFull()
         SORTER(FieldMarshal, Parent);
         sortFieldMarshal.Sort();
 
-        // Always sort the MethodSematics
+        // Always sort the MethodSemantics
         _ASSERTE(!CanHaveCustomAttribute(TBL_MethodSemantics));
         SORTER(MethodSemantics, Association);
         sortMethodSemantics.Sort();
@@ -3209,7 +2861,7 @@ CMiniMdRW::PreSaveFull()
 
     m_bPreSaveDone = true;
 
-    // send the Ref->Def optmization notification to host
+    // send the Ref->Def optimization notification to host
     if (m_pHandler != NULL)
     {
         TOKENMAP * ptkmap = GetMemberRefToMemberDefMap();
@@ -3332,7 +2984,7 @@ CMiniMdRW::PreSaveEnc()
                 // If we found the token, don't keep the record.
                 if (pul != 0)
                 {
-                    LOG((LOGMD, "PreSave ENCLog skipping duplicate token %d", pFrom->GetToken()));
+                    LOG((LOGMD, "PreSave ENCLog skipping duplicate token 0x%x", pFrom->GetToken()));
                     continue;
                 }
                 // First time token was seen, so keep track of it.
@@ -3405,8 +3057,7 @@ ErrExit:
 __checkReturn
 HRESULT
 CMiniMdRW::PreSave(
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)
+    MetaDataReorderingOptions reorderingOptions)
 {
     HRESULT hr = S_OK;
 
@@ -3419,23 +3070,6 @@ CMiniMdRW::PreSave(
 
     if (m_bPreSaveDone)
         return hr;
-
-#ifdef FEATURE_PREJIT
-    // Reorganization should be done at ngen time only
-    if( reorderingOptions & ReArrangeStringPool )
-    {
-        EX_TRY
-        {
-            OrganizeStringPool(pProfileData);
-        }
-        EX_CATCH
-        {
-            hr = GET_EXCEPTION()->GetHR();
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-        IfFailRet(hr);
-    }
-#endif // FEATURE_PREJIT
 
     switch (m_OptionValue.m_UpdateMode & MDUpdateMask)
     {
@@ -3484,8 +3118,7 @@ __checkReturn
 HRESULT
 CMiniMdRW::SaveFullTablesToStream(
     IStream                  *pIStream,
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)
+    MetaDataReorderingOptions reorderingOptions)
 {
     HRESULT     hr;
     CMiniTableDef   sTempTable;         // Definition for a temporary table.
@@ -3495,10 +3128,6 @@ CMiniMdRW::SaveFullTablesToStream(
     UINT32      cbTable;                // Bytes in a table.
     UINT32      cbTotal;                // Bytes written.
     static const unsigned char zeros[8] = {0}; // For padding and alignment.
-
-#ifndef FEATURE_PREJIT
-    _ASSERTE(pProfileData == NULL);
-#endif //!FEATURE_PREJIT
 
     // Write the header.
     CMiniMdSchema Schema = m_Schema;
@@ -3531,15 +3160,11 @@ CMiniMdRW::SaveFullTablesToStream(
         Schema.m_heaps &= ~CMiniMdSchema::HEAP_BLOB_4;
     }
 
-    cbTotal = 0;
-    if (pProfileData == NULL)
-    {
-        cbTotal = Schema.SaveTo(SchemaBuf);
-        IfFailGo(pIStream->Write(SchemaBuf, cbTotal, 0));
-        if ( (cbAlign = Align4(cbTotal) - cbTotal) != 0)
-            IfFailGo(pIStream->Write(&hr, cbAlign, 0));
-        cbTotal += cbAlign;
-    }
+    cbTotal = Schema.SaveTo(SchemaBuf);
+    IfFailGo(pIStream->Write(SchemaBuf, cbTotal, 0));
+    if ( (cbAlign = Align4(cbTotal) - cbTotal) != 0)
+        IfFailGo(pIStream->Write(&hr, cbAlign, 0));
+    cbTotal += cbAlign;
 
     ULONG headerOffset[TBL_COUNT];
     _ASSERTE(m_TblCount <= TBL_COUNT);
@@ -3553,190 +3178,6 @@ CMiniMdRW::SaveFullTablesToStream(
         ULONG itemCount = GetCountRecs(ixTbl);
         if (itemCount)
         {
-#ifdef FEATURE_PREJIT
-            ULONG hotItemCount = 0;
-
-            NewArrayHolder<mdToken> hotItemList = NULL;
-            NewArrayHolder<TokenIndexPair> indexMapping = NULL;
-
-            // check if we were asked to generate the hot tables
-            if (pProfileData != NULL)
-            {
-                // obtain the number of tokens in this table whose metadata was touched
-                IfFailGo(GetHotMetadataTokensSearchAware(pProfileData, ixTbl, &hotItemCount, NULL, 0));
-
-                // assume ManifestResource table is touched completely if touched at all or any hot metadata at all so far
-                // this is because it's searched linearly, and IBC data misses an unsuccessful search
-                // after module load
-                if (ixTbl == TBL_ManifestResource && (hotItemCount > 0 || cbTotal != 0))
-                    hotItemCount = itemCount;
-
-                // if the hot subset of the rows along with their side lookup tables will occupy more space
-                // than the full table, keep the full table to save both space and access time.
-                if (hotItemCount <= USHRT_MAX && itemCount <= USHRT_MAX && m_TableDefs[ixTbl].m_cbRec <= SHRT_MAX)
-                {
-                    ULONG estimatedSizeUsingSubsetCopy = hotItemCount * (sizeof(WORD) + sizeof(BYTE) + m_TableDefs[ixTbl].m_cbRec);
-                    ULONG estimatedSizeUsingFullCopy = itemCount * m_TableDefs[ixTbl].m_cbRec;
-
-                    if (estimatedSizeUsingSubsetCopy > estimatedSizeUsingFullCopy)
-                        hotItemCount = itemCount;
-                }
-
-                // first level table is array of WORD, so we can't handle more than 2**16 hot items
-                if (hotItemCount > USHRT_MAX)
-                    hotItemCount = 0;
-
-                // only generate additional table if any hot items at all
-                if (hotItemCount > 0)
-                {
-                    if ( (cbAlign = Align4(cbTotal) - cbTotal) != 0)
-                        IfFailGo(pIStream->Write(&hr, cbAlign, 0));
-                    cbTotal += cbAlign;
-
-                    headerOffset[ixTbl] = cbTotal;
-
-                    // write first part of header: hot item count
-                    IfFailGo(pIStream->Write(&hotItemCount, sizeof(hotItemCount), 0));
-                    cbTotal += sizeof(hotItemCount);
-
-                    ULONG offset = 0;
-                    if (hotItemCount < itemCount)
-                    {
-                        // obtain the tokens whose metadata was touched
-                        hotItemList = new (nothrow) mdToken[hotItemCount];
-                        IfNullGo(hotItemList);
-                        IfFailGo(GetHotMetadataTokensSearchAware(pProfileData, ixTbl, NULL, hotItemList, hotItemCount));
-
-                        // construct an array of token-index pairs and save the original order of the tokens in pProfileData->GetHotTokens
-                        // we want to write hot rows in this order to preserve the ordering optimizations done by IbcMerge
-                        indexMapping = new (nothrow) TokenIndexPair[hotItemCount];
-                        IfNullGo(indexMapping);
-
-                        for (DWORD i = 0; i < hotItemCount; i++)
-                        {
-                            indexMapping[i].token = hotItemList[i];
-                            indexMapping[i].index = (WORD)i;
-                        }
-
-                        // figure out how big the first level table should be
-                        // and sort tokens accordingly
-                        shiftCount = ShiftCount(itemCount, hotItemCount);
-                        qsort(indexMapping, hotItemCount, sizeof(indexMapping[0]), TokenCmp);
-
-                        // each table has a header that consists of the hotItemCount, offsets to
-                        // the first and second level tables, an offset to the actual data, and the
-                        // shiftCount that determines the size of the first level table.
-                        // see class HotTableHeader in metamodelro.h
-
-                        // we have already written the hotItemCount above.
-
-                        // so now write the offset of the first level table (just after the header)
-                        offset = sizeof(hotItemCount) + 4*sizeof(offset) + sizeof(shiftCount);
-                        IfFailGo(pIStream->Write(&offset, sizeof(offset), 0));
-                        cbTotal += sizeof(offset);
-
-                        // figure out first level table size (1 extra entry at the end)
-                        ULONG firstLevelCount = (1<<shiftCount)+1;
-                        offset += firstLevelCount*sizeof(WORD);
-
-                        // write offset of second level table.
-                        IfFailGo(pIStream->Write(&offset, sizeof(offset), 0));
-                        cbTotal += sizeof(offset);
-
-                        // second level table has a byte-sized entry for each hot item
-                        offset += hotItemCount*sizeof(BYTE);
-
-                        // write offset of index mapping table.
-                        IfFailGo(pIStream->Write(&offset, sizeof(offset), 0));
-                        cbTotal += sizeof(offset);
-
-                        // index mapping table has a word-sized entry for each hot item
-                        offset += hotItemCount*sizeof(WORD);
-
-                        // actual data is just behind it, but 4-byte aligned
-                        offset = Align4(offset);
-
-                        // write offset of actual hot metadata
-                        IfFailGo(pIStream->Write(&offset, sizeof(offset), 0));
-                        cbTotal += sizeof(offset);
-
-                        // write shiftCount
-                        IfFailGo(pIStream->Write(&shiftCount, sizeof(shiftCount), 0));
-                        cbTotal += sizeof(shiftCount);
-
-                        // allocate tables
-                        NewArrayHolder<WORD> firstLevelTable = new (nothrow) WORD[firstLevelCount];
-                        IfNullGo(firstLevelTable);
-                        NewArrayHolder<BYTE> secondLevelTable = new (nothrow) BYTE[hotItemCount];
-                        IfNullGo(secondLevelTable);
-                        NewArrayHolder<WORD> indexMappingTable = new (nothrow) WORD[hotItemCount];
-                        IfNullGo(indexMappingTable);
-
-                        // fill out the tables
-                        ULONG nextFirstLevelIndex = 0;
-                        for (DWORD i = 0; i < hotItemCount; i++)
-                        {
-                            // second level table contains the high order bits for each hot rid
-                            secondLevelTable[i] = (BYTE)(RidFromToken(indexMapping[i].token) >> shiftCount);
-
-                            // the index into the first level table is the low order bits.
-                            ULONG firstLevelIndex = indexMapping[i].token & ((1<<shiftCount)-1);
-
-                            // first level indicates where to start searching in the second level table
-                            while (nextFirstLevelIndex <= firstLevelIndex)
-                                firstLevelTable[nextFirstLevelIndex++] = (WORD)i;
-
-                            // index mapping table converts the index of this hot rid in the second level table
-                            // to the index of the hot data in the cached rows
-                            indexMappingTable[i] = indexMapping[i].index;
-                        }
-                        // fill remaining entries
-                        while (nextFirstLevelIndex < firstLevelCount)
-                            firstLevelTable[nextFirstLevelIndex++] = (WORD)hotItemCount;
-
-                        // write first level table
-                        IfFailGo(pIStream->Write(firstLevelTable, sizeof(firstLevelTable[0])*firstLevelCount, 0));
-                        cbTotal += sizeof(firstLevelTable[0])*firstLevelCount;
-
-                        // write second level table
-                        IfFailGo(pIStream->Write(secondLevelTable, sizeof(secondLevelTable[0])*hotItemCount, 0));
-                        cbTotal += sizeof(secondLevelTable[0])*hotItemCount;
-
-                        // write index mapping table
-                        IfFailGo(pIStream->Write(indexMappingTable, sizeof(indexMappingTable[0])*hotItemCount, 0));
-                        cbTotal += sizeof(indexMappingTable[0])*hotItemCount;
-
-                        // NewArrayHolder for firstLevelTable and secondLevelTable going out of scope - no delete[] necessary
-                    }
-                    else
-                    {
-                        // in case the whole table is touched, omit the tables
-                        // we still have a full header though with zero offsets for these tables.
-                        IfFailGo(pIStream->Write(&offset, sizeof(offset), 0));
-                        cbTotal += sizeof(offset);
-                        IfFailGo(pIStream->Write(&offset, sizeof(offset), 0));
-                        cbTotal += sizeof(offset);
-                        IfFailGo(pIStream->Write(&offset, sizeof(offset), 0));
-                        cbTotal += sizeof(offset);
-
-                        // offset for actual data points immediately after the header
-                        offset += sizeof(hotItemCount) + 4*sizeof(offset) + sizeof(shiftCount);
-                        offset = Align4(offset);
-                        IfFailGo(pIStream->Write(&offset, sizeof(offset), 0));
-                        cbTotal += sizeof(offset);
-                        shiftCount = 0;
-
-                        // write shift count
-                        IfFailGo(pIStream->Write(&shiftCount, sizeof(shiftCount), 0));
-                        cbTotal += sizeof(shiftCount);
-                    }
-                    if ( (cbAlign = Align4(cbTotal) - cbTotal) != 0)
-                        IfFailGo(pIStream->Write(&hr, cbAlign, 0));
-                    cbTotal += cbAlign;
-                    _ASSERTE(cbTotal == headerOffset[ixTbl] + offset);
-                }
-            }
-#endif //FEATURE_PREJIT
 
             // Compress the records by allocating a new, temporary, table and
             //  copying the rows from the one to the new.
@@ -3781,22 +3222,6 @@ CMiniMdRW::SaveFullTablesToStream(
                         IfFailGo(PutCol(rTempCols[ixCol], pNew, ulVal));
                     }
                 }           // Persist the temp table to the stream.
-#ifdef FEATURE_PREJIT
-                if (pProfileData != NULL)
-                {
-                    // only write out the hot rows as indicated by profile data
-                    for (DWORD i = 0; i < hotItemCount; i++)
-                    {
-                        BYTE *pRow;
-                        IfFailGo(tempTable.GetRecord(
-                            hotItemList != NULL ? RidFromToken(hotItemList[i]) : i + 1,
-                            &pRow));
-                        IfFailGo(pIStream->Write(pRow, sTempTable.m_cbRec, 0));
-                    }
-                    cbTable = sTempTable.m_cbRec*hotItemCount;
-                }
-                else
-#endif //FEATURE_PREJIT
                 {
                     IfFailGo(tempTable.GetRecordsDataSize(&cbTable));
                     _ASSERTE(cbTable == sTempTable.m_cbRec * GetCountRecs(ixTbl));
@@ -3807,22 +3232,6 @@ CMiniMdRW::SaveFullTablesToStream(
             }
             else
             {   // Didn't grow, so just persist directly to stream.
-#ifdef FEATURE_PREJIT
-                if (pProfileData != NULL)
-                {
-                    // only write out the hot  rows as indicated by profile data
-                    for (DWORD i = 0; i < hotItemCount; i++)
-                    {
-                        BYTE *pRow;
-                        IfFailGo(m_Tables[ixTbl].GetRecord(
-                            hotItemList != NULL ? RidFromToken(hotItemList[i]) : i + 1,
-                            &pRow));
-                        IfFailGo(pIStream->Write(pRow, m_TableDefs[ixTbl].m_cbRec, 0));
-                    }
-                    cbTable = m_TableDefs[ixTbl].m_cbRec*hotItemCount;
-                }
-                else
-#endif //FEATURE_PREJIT
                 {
                     IfFailGo(m_Tables[ixTbl].GetRecordsDataSize(&cbTable));
                     _ASSERTE(cbTable == m_TableDefs[ixTbl].m_cbRec * GetCountRecs(ixTbl));
@@ -3841,630 +3250,11 @@ CMiniMdRW::SaveFullTablesToStream(
         cbAlign += 4;
     IfFailGo(pIStream->Write(zeros, cbAlign, 0));
     cbTotal += cbAlign;
-    _ASSERTE((m_cbSaveSize == 0) || (m_cbSaveSize == cbTotal) || (pProfileData != NULL));
-
-#ifdef FEATURE_PREJIT
-    if (pProfileData != NULL)
-    {
-        // #WritingHotMetaData write hot table directory (HotTableDirectory in MetaModelRO.h)
-
-        // first write magic
-        ULONG magic = 0x484f4e44;
-        IfFailGo(pIStream->Write(&magic, sizeof(magic), 0));
-
-        // compute offsets to table headers
-        for (ixTbl=0; ixTbl<m_TblCount; ++ixTbl)
-            if (headerOffset[ixTbl] != ~0u)
-            {
-                headerOffset[ixTbl] -= cbTotal;
-            }
-            else
-            {
-                headerOffset[ixTbl] = 0;
-            }
-
-        // write the offsets to the table headers
-        IfFailGo(pIStream->Write(headerOffset, sizeof(headerOffset), 0));
-        cbTotal += sizeof(magic) + sizeof(headerOffset);
-
-        UINT32 cbPoolDirSize = 0;
-        UINT32 cbSavedHeapsSize = 0;
-
-        IfFailGo(SaveHotPoolsToStream(
-            pIStream,
-            reorderingOptions,
-            pProfileData,
-            &cbPoolDirSize,
-            &cbSavedHeapsSize));
-
-        // write hot metadata (including pools) header
-        IfFailGo(StreamUtil::WriteToStream(pIStream, (DWORD)(cbSavedHeapsSize + cbPoolDirSize)));
-        IfFailGo(StreamUtil::WriteToStream(pIStream, (DWORD)cbPoolDirSize));
-    }
-#endif //FEATURE_PREJIT
+    _ASSERTE((m_cbSaveSize == 0) || (m_cbSaveSize == cbTotal));
 
 ErrExit:
     return hr;
 } // CMiniMdRW::SaveFullTablesToStream
-
-//*****************************************************************************
-// Check to see if it is safe to reorder the string pool
-// The existing implementation of metadata tables is such that string offsets in different tables
-// may have different sizes.
-// Since we are going to reorder the string pool, offsets of strings would change and that may
-// cause overflows if tables have string offsets with different sizes
-//*****************************************************************************
-BOOL CMiniMdRW::IsSafeToReorderStringPool()
-{
-#ifdef FEATURE_PREJIT
-    BYTE lastColumnSize=0;
-    ULONG ixTbl=0, ixCol=0;
-    for (ixTbl=0; ixTbl<m_TblCount; ixTbl++)
-    {
-        // for every column in this row
-        for (ixCol=0; ixCol<m_TableDefs[ixTbl].m_cCols; ixCol++)
-        {
-            // proceed only when the column type is iSTRING
-            if(m_TableDefs[ixTbl].m_pColDefs[ixCol].m_Type == iSTRING)
-            {
-                if(lastColumnSize == 0)
-                {
-                    lastColumnSize = m_TableDefs[ixTbl].m_pColDefs[ixCol].m_cbColumn;
-                }
-                else if(lastColumnSize != m_TableDefs[ixTbl].m_pColDefs[ixCol].m_cbColumn)
-                {
-                    return FALSE;
-                }
-            }
-        }
-    }
-    return TRUE;
-#else
-    return FALSE;
-#endif // FEATURE_PREJIT
-} // CMiniMdRW::IsSafeToReorderStringPool
-
-//*****************************************************************************
-// Function to mark hot strings in the marks array based on the token information
-// in profile data
-//*****************************************************************************
-VOID CMiniMdRW::MarkHotStrings(CorProfileData *pProfileData, BYTE * pMarks, ULONG poolSize)
-{
-#ifdef FEATURE_PREJIT
-    if(pProfileData != NULL)
-    {
-        ULONG hotItemCount = pProfileData->GetHotTokens( TBL_COUNT + MDPoolStrings, 1 << ProfilingFlags_MetaData, 1 << ProfilingFlags_MetaData, NULL, 0 );
-        if(hotItemCount > 0)
-        {
-            NewArrayHolder< ULONG > hotItemList = new ULONG[hotItemCount];
-
-            // get hot tokens
-            pProfileData->GetHotTokens( TBL_COUNT + MDPoolStrings, 1 << ProfilingFlags_MetaData, 1 << ProfilingFlags_MetaData, reinterpret_cast<mdToken *>(&hotItemList[0]), hotItemCount );
-
-            for ( ULONG i=0; i<hotItemCount; ++i )
-            {
-                // convert tokens to rids
-                ULONG ulStringOffset = RidFromToken(hotItemList[i]);
-
-                if (ulStringOffset >= poolSize)
-                    ThrowHR(E_UNEXPECTED);
-
-                pMarks[ulStringOffset] = ReorderData::ProfileData;
-            }
-        }
-    }
-#endif // FEATURE_PREJIT
-} // CMiniMdRW::MarkHotStrings
-
-//*******************************************************************************
-// Function to mark hot strings referenced by hot tables based on token information in profile data
-//*******************************************************************************
-VOID CMiniMdRW::MarkStringsInHotTables(CorProfileData *pProfileData, BYTE * pMarks, ULONG poolSize)
-{
-#ifdef FEATURE_PREJIT
-    ULONG ixTbl=0, ixCol=0;
-    ULONG hotItemCount=0;
-    RID hotRID=0;
-    BYTE *pHotRow=NULL;
-
-    if(pProfileData != NULL)
-    {
-        for (ixTbl=0; ixTbl<m_TblCount; ++ixTbl)
-        {
-            NewArrayHolder<mdToken> hotItemList = NULL;
-            // obtain the number of tokens in this table whose metadata was touched
-            hotItemCount = pProfileData->GetHotTokens(ixTbl, 1<<ProfilingFlags_MetaData, 1<<ProfilingFlags_MetaData, NULL, 0);
-
-            // obtain the tokens whose metadata was touched
-            if(hotItemCount > 0)
-            {
-                hotItemList = new mdToken[hotItemCount];
-                pProfileData->GetHotTokens(ixTbl, 1<<ProfilingFlags_MetaData, 1<<ProfilingFlags_MetaData, hotItemList, hotItemCount);
-            }
-
-            // for every column in this hot row
-            for (ixCol=0; ixCol<m_TableDefs[ixTbl].m_cCols; ++ixCol)
-            {
-                // add the string to the string pool only if it hasn't been added yet
-                if(m_TableDefs[ixTbl].m_pColDefs[ixCol].m_Type == iSTRING)
-                {
-                    // for every hot token in the list
-                    for(ULONG item=0; item<hotItemCount; item++)
-                    {
-                        // get the rid from the token
-                        hotRID = RidFromToken(hotItemList[item]);
-                        IfFailThrow(m_Tables[ixTbl].GetRecord(hotRID, &pHotRow));
-                       _ASSERTE(pHotRow != NULL);
-
-                        // get column for string; this will get me the current string offset
-                        ULONG ulStringOffset = GetCol(ixTbl, ixCol, pHotRow);
-
-                        if (ulStringOffset >= poolSize)
-                            ThrowHR(E_UNEXPECTED);
-
-                        pMarks[ulStringOffset] = ReorderData::ProfileData;
-                    }
-                }
-            }
-        }
-    }
-#endif // FEATURE_PREJIT
-} // CMiniMdRW::MarkStringsInHotTables
-
-//*****************************************************************************
-// Function to mark strings referenced by the different metadata tables
-//*****************************************************************************
-VOID CMiniMdRW::MarkStringsInTables(BYTE * pMarks, ULONG poolSize)
-{
-#ifdef FEATURE_PREJIT
-    for (ULONG ixTbl=0; ixTbl<m_TblCount; ixTbl++)
-    {
-        // for every row in the table
-        for (RID ridOld=1; ridOld<=m_Schema.m_cRecs[ixTbl]; ridOld++)
-        {
-            // lets assume we do not have any references to the stringpool
-            BOOL fHasStringData = FALSE;
-
-            // for every column in this row
-            for (ULONG ixCol=0; ixCol<m_TableDefs[ixTbl].m_cCols; ixCol++)
-            {
-                // proceed only when the column type is iSTRING
-                if(m_TableDefs[ixTbl].m_pColDefs[ixCol].m_Type == iSTRING)
-                {
-                    fHasStringData = TRUE;
-                    // get the current record
-                    BYTE *pOldRow;
-                    IfFailThrow(m_Tables[ixTbl].GetRecord(ridOld, &pOldRow));
-
-                    // get column for string; this will get me the current string offset
-                    ULONG ulStringOffset = GetCol(ixTbl, ixCol, pOldRow);
-
-                    // ignore empty strings, they are not moving anywhere
-                    if(ulStringOffset == 0)
-                        continue;
-
-                    if (ulStringOffset >= poolSize)
-                        ThrowHR(E_UNEXPECTED);
-
-                    BYTE ulBucketType=0;
-
-                    switch(ixTbl)
-                    {
-                        case TBL_Method:
-                            ulBucketType = IsMdPublic(GetCol(TBL_Method, MethodRec::COL_Flags, pOldRow))
-                                                                   ? ReorderData::PublicData
-                                                                   : ReorderData::NonPublicData;
-                            break;
-                        case TBL_Field:
-                            ulBucketType = IsFdPublic(GetCol(TBL_Field, FieldRec::COL_Flags, pOldRow))
-                                                                   ? ReorderData::PublicData
-                                                                   : ReorderData::NonPublicData;
-                            break;
-                        case TBL_TypeDef:
-                            ulBucketType = IsTdPublic(GetCol(TBL_TypeDef, TypeDefRec::COL_Flags, pOldRow))
-                                                                   ? ReorderData::PublicData
-                                                                   : ReorderData::NonPublicData;
-                            break;
-                        case TBL_ManifestResource:
-                            ulBucketType = IsMrPublic(GetCol(TBL_ManifestResource, ManifestResourceRec::COL_Flags, pOldRow))
-                                                                   ? ReorderData::PublicData
-                                                                   : ReorderData::NonPublicData;
-                            break;
-                        default:
-                            ulBucketType = ReorderData::OtherData;
-                            break;
-                    }
-
-                    if (pMarks[ulStringOffset] == ReorderData::Undefined || pMarks[ulStringOffset] > ulBucketType)
-                        pMarks[ulStringOffset] = ulBucketType;
-                }
-            }
-            if (!fHasStringData)
-                break;
-        }
-    }
-#endif // FEATURE_PREJIT
-} // CMiniMdRW::MarkStringsInTables
-
-// --------------------------------------------------------------------------------------
-//
-// Function to mark duplicate strings in the mark array. This step is basically to take care of
-// strings that have the same tail.
-// Throws on error.
-//
-VOID CMiniMdRW::MarkDuplicateStrings(BYTE * pMarks, ULONG poolSize)
-{
-#ifdef FEATURE_PREJIT
-    ULONG offset=1;
-    while (offset<poolSize)
-    {
-        if (pMarks[offset] == ReorderData::Undefined)
-        {
-            offset++;
-            continue;
-        }
-
-        LPCSTR pszString;
-        IfFailThrow(m_StringHeap.GetString(offset, &pszString));
-
-        ULONG start = offset;
-        ULONG end = offset + (ULONG)strlen(pszString);
-
-        BYTE tag = pMarks[offset];
-        offset++;
-
-        while (offset <= end)
-        {
-            if (pMarks[offset] != ReorderData::Undefined)
-            {
-                tag = min(pMarks[offset], tag);
-                pMarks[offset] = ReorderData::Duplicate;
-            }
-            offset++;
-        }
-        pMarks[start] = tag;
-    }
-#endif // FEATURE_PREJIT
-} // CMiniMdRW::MarkDuplicateStrings
-
-//*****************************************************************************
-// Function to update the tables with the modified string offsets
-//*****************************************************************************
-VOID CMiniMdRW::FixStringsInTables()
-{
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    for (ULONG ixTbl=0; ixTbl<m_TblCount; ixTbl++)
-    {
-        // for every row in the table
-        for (RID ridOld=1; ridOld<=m_Schema.m_cRecs[ixTbl]; ridOld++)
-        {
-            // lets assume we do not have any references to the stringpool
-            BOOL fHasStringData = FALSE;
-
-            // for every column in this row
-            for (ULONG ixCol=0; ixCol<m_TableDefs[ixTbl].m_cCols; ixCol++)
-            {
-                // proceed only when the column type is iSTRING
-                if(m_TableDefs[ixTbl].m_pColDefs[ixCol].m_Type == iSTRING)
-                {
-                    fHasStringData = TRUE;
-                    // get the current record
-                    BYTE *pOldRow;
-                    IfFailThrow(m_Tables[ixTbl].GetRecord(ridOld, &pOldRow));
-                   _ASSERTE(pOldRow != NULL);
-
-                    // get column for string; this will get me the current string offset
-                    UINT32 nOldStringOffset = GetCol(ixTbl, ixCol, pOldRow);
-
-                    // ignore empty strings, they are not moving anywhere
-                    if (nOldStringOffset == 0)
-                        continue;
-
-                    UINT32 nNewStringOffset;
-                    if (!m_StringPoolOffsetHash.Lookup(nOldStringOffset, &nNewStringOffset))
-                        ThrowHR(E_UNEXPECTED);
-
-                    IfFailThrow(PutCol(ixTbl, ixCol, pOldRow, nNewStringOffset));
-                }
-            }
-            if (!fHasStringData)
-                break;
-        }
-    }
-#endif // FEATURE_PREJIT
-} // CMiniMdRW::FixStringsInTables
-
-// --------------------------------------------------------------------------------------
-//
-// Function to fill the given string pool with strings from the existing string pool using the mark array.
-// Throws on error.
-//
-VOID
-CMiniMdRW::CreateReorderedStringPool(
-    MetaData::StringHeapRW *pStringHeap,
-    BYTE                   *pMarks,
-    ULONG                   cbHeapSize,
-    CorProfileData         *pProfileData)
-{
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    ULONG lastOldOffset = 0;
-    ULONG lastNewOffset = 0;
-
-    // special handling of profile data so as to maintain the same order
-    // as the hot tokens in the CorProfileData object
-    if (pProfileData != NULL)
-    {
-        ULONG hotItems = pProfileData->GetHotTokens(
-            TBL_COUNT + MDPoolStrings,
-            1 << ProfilingFlags_MetaData,
-            1 << ProfilingFlags_MetaData,
-            NULL,
-            0);
-        if ( hotItems )
-        {
-            NewArrayHolder< ULONG > hotItemArr = new ULONG[ hotItems ];
-            pProfileData->GetHotTokens(
-                TBL_COUNT + MDPoolStrings,
-                1 << ProfilingFlags_MetaData,
-                1 << ProfilingFlags_MetaData,
-                reinterpret_cast<mdToken *>(&hotItemArr[0]),
-                hotItems);
-
-            // convert tokens to rids
-            for ( ULONG i = 0; i < hotItems ; ++i )
-            {
-                UINT32 newOffset=0, start=0, end=0;
-                hotItemArr[i] = RidFromToken(hotItemArr[i]);
-
-                for (UINT32 offset = hotItemArr[i]; offset >= 1; offset--)
-                {
-                    if(pMarks[offset] == ReorderData::ProfileData)
-                    {
-                        LPCSTR szString;
-                        IfFailThrow(m_StringHeap.GetString(offset, &szString));
-                        IfFailThrow(pStringHeap->AddString(szString, &newOffset));
-                        start = offset;
-                        end = start + (UINT32)strlen(szString);
-                        break;
-                    }
-                }
-
-                for (UINT32 offset = start; offset <end; offset++)
-                {
-                    if(pMarks[offset] == ReorderData::ProfileData || pMarks[offset] == ReorderData::Duplicate)
-                    {
-                        m_StringPoolOffsetHash.Add(offset, newOffset);
-                    }
-                    newOffset++;
-                }
-            }
-        }
-    }
-
-    for (BYTE priority = ReorderData::ProfileData; priority <= ReorderData::NonPublicData; priority++)
-    {
-        for (UINT32 offset = 1; offset < cbHeapSize; offset++)
-        {
-            // Since MinReorderBucketType is 0 and MaxReorderBucketType is 255, checking an unsigned BYTE against that gives a "comparison
-            // is always true" warning. Logically, the assert is:
-            //     _ASSERTE(pMarks[offset] >= ReorderData::MinReorderBucketType && pMarks[offset] <= ReorderData::MaxReorderBucketType);
-            _ASSERTE(0 == ReorderData::MinReorderBucketType);
-            _ASSERTE(255 == ReorderData::MaxReorderBucketType);
-            _ASSERTE(sizeof(pMarks[0]) == 1);
-
-            if (pMarks[offset] == priority)
-            {
-                UINT32 newOffset;
-
-                if(!m_StringPoolOffsetHash.Lookup(offset, &newOffset))
-                {
-                    LPCSTR szString;
-                    IfFailThrow(m_StringHeap.GetString(offset, &szString));
-                    IfFailThrow(pStringHeap->AddString(szString, &newOffset));
-                    m_StringPoolOffsetHash.Add(offset, newOffset);
-
-                    lastOldOffset = offset;
-                    lastNewOffset = newOffset;
-                }
-            }
-            else
-            if (pMarks[offset] == ReorderData::Duplicate)
-            {
-                UINT32 newOffset;
-                if (lastNewOffset != 0 && !m_StringPoolOffsetHash.Lookup(offset, &newOffset))
-                    m_StringPoolOffsetHash.Add(offset, lastNewOffset + (offset - lastOldOffset));
-            }
-            else
-            if (pMarks[offset] != ReorderData::Undefined)
-            {
-                lastNewOffset = 0;
-            }
-        }
-    }
-#endif // FEATURE_PREJIT
-} // CMiniMdRW::CreateReorderedStringPool
-
-// --------------------------------------------------------------------------------------
-//
-// Function to reorganize the string pool based on IBC profile data (if available) and static analysis
-// Throws on error.
-//
-VOID CMiniMdRW::OrganizeStringPool(CorProfileData *pProfileData)
-{
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-    if(!IsSafeToReorderStringPool())
-    {
-        return;
-    }
-
-    UINT32 cbStringHeapSize = m_StringHeap.GetUnalignedSize();
-
-    NewArrayHolder<BYTE> stringMarks = new BYTE[cbStringHeapSize];
-    ZeroMemory(stringMarks, cbStringHeapSize);
-
-    // Each string will be assigned a value based on its hotness in the Mark*() functions
-    // This list will be later traversed to place the strings in the right order in the string pool and also
-    // to update the references in the metadata tables
-
-    // Mark all hot strings
-    MarkHotStrings(pProfileData, stringMarks, cbStringHeapSize);
-
-    // Mark all strings in hot rows
-    MarkStringsInHotTables(pProfileData, stringMarks, cbStringHeapSize);
-
-    // Mark all remaining strings
-    MarkStringsInTables(stringMarks, cbStringHeapSize);
-
-    // Mark duplicates for  interned strings
-    MarkDuplicateStrings(stringMarks, cbStringHeapSize);
-
-    // Initalize the temporary string heap
-    MetaData::StringHeapRW tempStringHeap;
-
-    IfFailThrow(tempStringHeap.InitializeEmpty(
-        cbStringHeapSize
-        COMMA_INDEBUG_MD(TRUE)));   // fIsReadWrite
-
-    // We will use this hash for fixing the string references in the profile data
-    m_StringPoolOffsetHash.Reallocate(cbStringHeapSize);
-
-    // Create the temporary string pool using the mark arrays
-    CreateReorderedStringPool(&tempStringHeap, stringMarks, cbStringHeapSize, pProfileData);
-
-    // Update the tables with string offsets into the temporary string pool
-    FixStringsInTables();
-
-    // Replace the existing string pool with the modified version
-    m_StringHeap.Delete();
-    IfFailThrow(m_StringHeap.InitializeFromStringHeap(
-        &tempStringHeap,
-        TRUE));             // fCopyData
-#endif // FEATURE_PREJIT
-} // CMiniMdRW::OrganizeStringPool
-
-#ifdef FEATURE_PREJIT
-
-// write hot data of the pools
-//
-__checkReturn
-HRESULT
-CMiniMdRW::SaveHotPoolsToStream(
-    IStream                  *pStream,
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData,
-    UINT32                   *pnPoolDirSize,
-    UINT32                   *pnHeapsSavedSize)
-{
-    HRESULT hr = S_OK;
-    UINT32  rgHeapSavedSize[MDPoolCount] = { 0, 0, 0, 0 };
-
-    // save pools in the order they are described in MDPools enum
-    //
-    // we skip the hot string pool when we reorganize the string pool
-    if (!(reorderingOptions & ReArrangeStringPool))
-    {
-        MetaData::HotHeapWriter stringHotHeapWriter(&m_StringHeap);
-        IfFailRet(SaveHotPoolToStream(
-            pStream,
-            pProfileData,
-            &stringHotHeapWriter,
-            &rgHeapSavedSize[MDPoolStrings]));
-    }
-
-    // Save guid heap hot data
-    MetaData::HotHeapWriter guidsHotHeapWriter(&m_GuidHeap);
-    IfFailRet(SaveHotPoolToStream(
-        pStream,
-        pProfileData,
-        &guidsHotHeapWriter,
-        &rgHeapSavedSize[MDPoolGuids]));
-
-    // Save blob heap hot data
-    MetaData::HotHeapWriter blobsHotHeapWriter(
-        &m_BlobHeap,
-        FALSE);         // fUserStringHeap
-    IfFailRet(SaveHotPoolToStream(
-        pStream,
-        pProfileData,
-        &blobsHotHeapWriter,
-        &rgHeapSavedSize[MDPoolBlobs]));
-
-    // Save user string heap hot data
-    MetaData::HotHeapWriter userStringsHotHeapWriter(
-        &m_UserStringHeap,
-        TRUE);              // fUserStringHeap
-    IfFailRet(SaveHotPoolToStream(
-        pStream,
-        pProfileData,
-        &userStringsHotHeapWriter,
-        &rgHeapSavedSize[MDPoolUSBlobs]));
-
-    // fix pool offsets, they need to point to the header of each saved pool
-    UINT32 nHeapEndOffset = 0;
-    for (int i = MDPoolCount; i-- > 0; )
-    {
-        if (rgHeapSavedSize[i] != 0)
-        {
-            UINT32 nHeapSavedSize = rgHeapSavedSize[i];
-            // Change size of the heap to the (negative) offset of its header
-            rgHeapSavedSize[i] = sizeof(struct MetaData::HotHeapHeader) + nHeapEndOffset;
-            nHeapEndOffset += nHeapSavedSize;
-        }
-    }
-    // Store size of all heaps
-    *pnHeapsSavedSize = nHeapEndOffset;
-
-    // save hot pool dirs
-    *pnPoolDirSize = 0;
-    for (int i = 0; i < MDPoolCount; i++)
-    {
-        if (rgHeapSavedSize[i] != 0)
-        {
-            IfFailRet(StreamUtil::WriteToStream(pStream, i, pnPoolDirSize));
-            IfFailRet(StreamUtil::WriteToStream(pStream, (ULONG)rgHeapSavedSize[i], pnPoolDirSize));
-        }
-    }
-
-    return S_OK;
-} // CMiniMdRW::SaveHotPoolsToStream
-
-// write hot data of specific blob
-//
-__checkReturn
-HRESULT
-CMiniMdRW::SaveHotPoolToStream(
-    IStream                 *pStream,
-    CorProfileData          *pProfileData,
-    MetaData::HotHeapWriter *pHotHeapWriter,
-    UINT32                  *pnSavedSize)
-{
-
-    _ASSERTE(pProfileData != NULL);
-
-    HRESULT hr = S_OK;
-    // #CallToGetHotTokens
-    // see code:CMiniMdRW.SaveFullTablesToStream#WritingHotMetaData for the main caller of this.
-    if (pProfileData->GetHotTokens(
-        pHotHeapWriter->GetTableIndex(),
-        1 << ProfilingFlags_MetaData,
-        1 << ProfilingFlags_MetaData,
-        NULL,
-        0) != 0)
-    {
-        IfFailRet(pHotHeapWriter->SaveToStream(
-            pStream,
-            pProfileData,
-            pnSavedSize));
-    }
-    else
-    {
-        *pnSavedSize = 0;
-    }
-
-    return S_OK;
-} // CMiniMdRW::SaveHotPoolToStream
-
-#endif //FEATURE_PREJIT
 
 //*****************************************************************************
 // Save the tables to the stream.
@@ -4579,8 +3369,7 @@ __checkReturn
 HRESULT
 CMiniMdRW::SaveTablesToStream(
     IStream                  *pIStream,              // The stream.
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)
+    MetaDataReorderingOptions reorderingOptions)
 {
     HRESULT hr;
 
@@ -4593,7 +3382,7 @@ CMiniMdRW::SaveTablesToStream(
     case MDUpdateIncremental:
     case MDUpdateExtension:
     case MDUpdateENC:
-        hr = SaveFullTablesToStream(pIStream, reorderingOptions, pProfileData);
+        hr = SaveFullTablesToStream(pIStream, reorderingOptions);
         break;
     case MDUpdateDelta:
         hr = SaveENCTablesToStream(pIStream);
@@ -5187,7 +3976,7 @@ __checkReturn
 HRESULT
 CMiniMdRW::Impl_GetStringW(
                              ULONG  ix,
-    __out_ecount (cchBuffer) LPWSTR szOut,
+    _Out_writes_ (cchBuffer) LPWSTR szOut,
                              ULONG  cchBuffer,
                              ULONG *pcchBuffer)
 {
@@ -5199,7 +3988,7 @@ CMiniMdRW::Impl_GetStringW(
 
     if (*szString == 0)
     {
-        // If emtpy string "", return pccBuffer 0
+        // If empty string "", return pccBuffer 0
         if ( szOut && cchBuffer )
             szOut[0] = W('\0');
         if ( pcchBuffer )
@@ -5305,7 +4094,7 @@ mdToken CMiniMdRW::GetToken(
     if (pColDef->m_Type <= iCodedTokenMax)
     {
         ULONG indexCodedToken = pColDef->m_Type - iCodedToken;
-        if (indexCodedToken < COUNTOF(g_CodedTokens))
+        if (indexCodedToken < ARRAY_SIZE(g_CodedTokens))
         {
             const CCodedTokenDef *pCdTkn = &g_CodedTokens[indexCodedToken];
             tkn = decodeToken(GetCol(ixTbl, ixCol, pvRecord), pCdTkn->m_pTokens, pCdTkn->m_cTokens);
@@ -5588,7 +4377,7 @@ CMiniMdRW::PutToken(    // S_OK or E_UNEXPECTED.
     if (ColDef.m_Type <= iCodedTokenMax)
     {
         ULONG indexCodedToken = ColDef.m_Type - iCodedToken;
-        if (indexCodedToken < COUNTOF(g_CodedTokens))
+        if (indexCodedToken < ARRAY_SIZE(g_CodedTokens))
         {
             const CCodedTokenDef *pCdTkn = &g_CodedTokens[indexCodedToken];
             cdTkn = encodeToken(RidFromToken(tk), TypeFromToken(tk), pCdTkn->m_pTokens, pCdTkn->m_cTokens);
@@ -5909,7 +4698,7 @@ ErrExit:
 
 //---------------------------------------------------------------------------------------
 //
-// The new paramter may not have been emitted in sequence order.  So
+// The new parameter may not have been emitted in sequence order.  So
 // check the current parameter and move it up in the indirect table until
 // we find the right home.
 //
@@ -6207,7 +4996,7 @@ CMiniMdRW::FindMethodSemanticsHelper(
     RID          index;
     MethodSemanticsRec *pMethodSemantics;
     HRESULT      hr = NOERROR;
-    CLookUpHash *pHashTable = m_pLookUpHashs[TBL_MethodSemantics];
+    CLookUpHash *pHashTable = m_pLookUpHashes[TBL_MethodSemantics];
 
     _ASSERTE(TypeFromToken(tkAssociate) != 0);
 
@@ -6272,7 +5061,7 @@ CMiniMdRW::FindAssociateHelper(
     RID         index;
     MethodSemanticsRec *pMethodSemantics;
     HRESULT     hr = NOERROR;
-    CLookUpHash *pHashTable = m_pLookUpHashs[TBL_MethodSemantics];
+    CLookUpHash *pHashTable = m_pLookUpHashes[TBL_MethodSemantics];
 
     _ASSERTE(TypeFromToken(tkAssociate) != 0);
 
@@ -6340,7 +5129,7 @@ CMiniMdRW::FindMethodImplHelper(
     RID         index;
     MethodImplRec *pMethodImpl;
     HRESULT     hr = NOERROR;
-    CLookUpHash *pHashTable = m_pLookUpHashs[TBL_MethodImpl];
+    CLookUpHash *pHashTable = m_pLookUpHashes[TBL_MethodImpl];
 
     _ASSERTE(TypeFromToken(td) == mdtTypeDef);
 
@@ -6403,12 +5192,12 @@ CMiniMdRW::FindGenericParamHelper(
     RID         ridStart, ridEnd;       // Start, end of range of tokens.
     RID         index;                  // A loop counter.
     GenericParamRec *pGenericParam;
-    CLookUpHash *pHashTable = m_pLookUpHashs[TBL_GenericParam];
+    CLookUpHash *pHashTable = m_pLookUpHashes[TBL_GenericParam];
 
     if (IsSorted(TBL_GenericParam))
     {
         mdToken tk;
-        tk = encodeToken(RidFromToken(tkOwner), TypeFromToken(tkOwner), mdtTypeOrMethodDef, lengthof(mdtTypeOrMethodDef));
+        tk = encodeToken(RidFromToken(tkOwner), TypeFromToken(tkOwner), mdtTypeOrMethodDef, ARRAY_SIZE(mdtTypeOrMethodDef));
         IfFailGo(SearchTableForMultipleRows(TBL_GenericParam,
                             _COLDEF(GenericParam,Owner),
                             tk,
@@ -6470,7 +5259,7 @@ CMiniMdRW::FindGenericParamConstraintHelper(
     RID         ridStart, ridEnd;       // Start, end of range of tokens.
     ULONG       index;                  // A loop counter.
     GenericParamConstraintRec *pConstraint;
-    CLookUpHash *pHashTable = m_pLookUpHashs[TBL_GenericParamConstraint];
+    CLookUpHash *pHashTable = m_pLookUpHashes[TBL_GenericParamConstraint];
     RID         ridParam = RidFromToken(tkParam);
     _ASSERTE(TypeFromToken(tkParam) == mdtGenericParam);
 
@@ -6637,13 +5426,13 @@ CMiniMdRW::GenericFindWithHash(     // Return code.
     // Partial check -- only one rid for table 0, so if type is 0, rid should be 1.
     _ASSERTE(TypeFromToken(tkTarget) != 0 || RidFromToken(tkTarget) == 1);
 
-    if (m_pLookUpHashs[ixTbl] == NULL)
+    if (m_pLookUpHashes[ixTbl] == NULL)
     {
         // Just ignore the returned error - the hash is either created or not
         (void)GenericBuildHashTable(ixTbl, ixCol);
     }
 
-    CLookUpHash * pHashTable = m_pLookUpHashs[ixTbl];
+    CLookUpHash * pHashTable = m_pLookUpHashes[ixTbl];
     if (pHashTable != NULL)
     {
         TOKENHASHENTRY *p;
@@ -6705,7 +5494,7 @@ CMiniMdRW::GenericBuildHashTable(
     TOKENHASHENTRY *pEntry;
 
     // If the hash table hasn't been built it, see if it should get faulted in.
-    if (m_pLookUpHashs[ixTbl] == NULL)
+    if (m_pLookUpHashes[ixTbl] == NULL)
     {
         ULONG ridEnd = GetCountRecs(ixTbl);
 
@@ -6739,7 +5528,7 @@ CMiniMdRW::GenericBuildHashTable(
             }
 
             if (InterlockedCompareExchangeT<CLookUpHash *>(
-                &m_pLookUpHashs[ixTbl],
+                &m_pLookUpHashes[ixTbl],
                 pHashTable,
                 NULL) == NULL)
             {   // We won the initializaion race
@@ -6762,7 +5551,7 @@ CMiniMdRW::GenericAddToHash(
     RID   rid)      // Token of new guy into the ixTbl.
 {
     HRESULT         hr = S_OK;
-    CLookUpHash    *pHashTable = m_pLookUpHashs[ixTbl];
+    CLookUpHash    *pHashTable = m_pLookUpHashes[ixTbl];
     void           *pRec;
     mdToken         tkHash;
     ULONG           iHash;
@@ -6903,7 +5692,7 @@ CMiniMdRW::LookUpTableByCol(
             ridEnd = ridBegin + 1;
 
             // Search back to start of group.
-            for (;;)
+            while (true)
             {
                 if (ridBegin <= 1)
                 {
@@ -6923,7 +5712,7 @@ CMiniMdRW::LookUpTableByCol(
             // If desired, search forward to end of group.
             if (pRidEnd != NULL)
             {
-                for (;;)
+                while (true)
                 {
                     if (ridEnd > GetCountRecs(ixTbl))
                     {
@@ -8397,7 +7186,7 @@ VirtualSort::SortRange(
     HRESULT hr;
     int     iLast;
 
-    for (;;)
+    while (true)
     {
         // if less than two elements you're done.
         if (iLeft >= iRight)

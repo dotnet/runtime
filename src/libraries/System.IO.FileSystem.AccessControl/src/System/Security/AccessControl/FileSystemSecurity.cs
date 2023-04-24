@@ -130,7 +130,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        internal void Persist(SafeFileHandle handle, string fullPath)
+        internal void Persist(SafeFileHandle handle, string _ /*fullPath*/)
         {
             WriteLock();
 
@@ -164,8 +164,7 @@ namespace System.Security.AccessControl
 
         public bool RemoveAccessRule(FileSystemAccessRule rule)
         {
-            if (rule == null)
-                throw new ArgumentNullException(nameof(rule));
+            ArgumentNullException.ThrowIfNull(rule);
 
             // If the rule to be removed matches what is there currently then
             // remove it unaltered. That is, don't mask off the Synchronize bit.
@@ -208,8 +207,7 @@ namespace System.Security.AccessControl
 
         public void RemoveAccessRuleSpecific(FileSystemAccessRule rule)
         {
-            if (rule == null)
-                throw new ArgumentNullException(nameof(rule));
+            ArgumentNullException.ThrowIfNull(rule);
 
             // If the rule to be removed matches what is there currently then
             // remove it unaltered. That is, don't mask off the Synchronize bit

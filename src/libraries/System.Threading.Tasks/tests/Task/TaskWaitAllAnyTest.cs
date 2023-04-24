@@ -351,7 +351,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
 
                 if (workType == WorkloadType.Exceptional)
                 {
-                    // verify whether exception has(not) been propogated
+                    // verify whether exception has(not) been propagated
                     expCaught = VerifyException((ex) =>
                     {
                         TPLTestException expectedExp = ex as TPLTestException;

@@ -133,7 +133,14 @@ namespace System.Configuration
 
                 if (collectionAttribute != null)
                 {
-                    if (collectionAttribute.AddItemName.IndexOf(',') == -1) AddElementName = collectionAttribute.AddItemName; // string.Contains(char) is .NetCore2.1+ specific
+#if NETCOREAPP
+                    if (!collectionAttribute.AddItemName.Contains(','))
+#else
+                    if (collectionAttribute.AddItemName.IndexOf(',') == -1)
+#endif
+                    {
+                      AddElementName = collectionAttribute.AddItemName;
+                    }
                     RemoveElementName = collectionAttribute.RemoveItemName;
                     ClearElementName = collectionAttribute.ClearItemsName;
                 }
@@ -253,7 +260,7 @@ namespace System.Configuration
             }
         }
 
-        private void ValidatePropertyName(string name)
+        private static void ValidatePropertyName(string name)
         {
             if (string.IsNullOrEmpty(name))
                 throw new ArgumentException(SR.String_null_or_empty, nameof(name));

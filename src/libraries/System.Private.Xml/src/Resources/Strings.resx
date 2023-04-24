@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -390,9 +390,6 @@
   <data name="Xml_NotEnoughSpaceForSurrogatePair" xml:space="preserve">
     <value>The buffer is not large enough to fit a surrogate pair. Please provide a buffer of size at least 2 characters.</value>
   </data>
-  <data name="Xml_EmptyUrl" xml:space="preserve">
-    <value>The URL cannot be empty.</value>
-  </data>
   <data name="Xml_UnexpectedNodeInSimpleContent" xml:space="preserve">
     <value>Unexpected node type {0}. {1} method can only be called on elements with simple or empty content.</value>
   </data>
@@ -426,7 +423,7 @@
   <data name="Xml_NoDTDPresent" xml:space="preserve">
     <value>No DTD found.</value>
   </data>
-  <data name="Xml_MultipleValidaitonTypes" xml:space="preserve">
+  <data name="Xml_MultipleValidationTypes" xml:space="preserve">
     <value>Unsupported combination of validation types.</value>
   </data>
   <data name="Xml_NoValidation" xml:space="preserve">
@@ -517,7 +514,7 @@
     <value>Object type is not supported.</value>
   </data>
   <data name="Xml_NullResolver" xml:space="preserve">
-    <value>Resolving of external URIs was prohibited.</value>
+    <value>Resolving of external URIs was prohibited. Attempted access to: {0}</value>
   </data>
   <data name="Xml_RelativeUriNotSupported" xml:space="preserve">
     <value>Relative URIs are not supported.</value>
@@ -629,9 +626,6 @@
   </data>
   <data name="Xml_InvalidPrefix" xml:space="preserve">
     <value>Prefixes beginning with "xml" (regardless of whether the characters are uppercase, lowercase, or some combination thereof) are reserved for use by XML.</value>
-  </data>
-  <data name="Xml_InvalidIndentation" xml:space="preserve">
-    <value>Indentation value must be greater than 0.</value>
   </data>
   <data name="Xml_NotInWriteState" xml:space="preserve">
     <value>NotInWriteState.</value>
@@ -2568,13 +2562,13 @@
   <data name="XmlChoiceIdentifierTypeEnum" xml:space="preserve">
     <value>Choice identifier '{0}' must be an enum.</value>
   </data>
-  <data name="XmlChoiceIdentiferMemberMissing" xml:space="preserve">
+  <data name="XmlChoiceIdentifierMemberMissing" xml:space="preserve">
     <value>Missing '{0}' member needed for serialization of choice '{1}'.</value>
   </data>
-  <data name="XmlChoiceIdentiferAmbiguous" xml:space="preserve">
+  <data name="XmlChoiceIdentifierAmbiguous" xml:space="preserve">
     <value>Ambiguous choice identifier. There are several members named '{0}'.</value>
   </data>
-  <data name="XmlChoiceIdentiferMissing" xml:space="preserve">
+  <data name="XmlChoiceIdentifierMissing" xml:space="preserve">
     <value>You need to add {0} to the '{1}' member.</value>
   </data>
   <data name="XmlChoiceMissingValue" xml:space="preserve">
@@ -2787,6 +2781,9 @@
   <data name="XmlNotSerializable" xml:space="preserve">
     <value>Type '{0}' is not serializable.</value>
   </data>
+  <data name="XmlTypeInBadLoadContext" xml:space="preserve">
+    <value>Type '{0}' is from an AssemblyLoadContext which is incompatible with that which contains this XmlSerializer.</value>
+  </data>
   <data name="XmlPregenInvalidXmlSerializerAssemblyAttribute" xml:space="preserve">
     <value>Invalid XmlSerializerAssemblyAttribute usage. Please use {0} property or {1} property.</value>
   </data>
@@ -2826,9 +2823,6 @@
   <data name="Arg_NeverValueType" xml:space="preserve">
     <value>Only TypeKind.Root can be set for typeof(object) which is never value type.</value>
   </data>
-  <data name="XmlInternalErrorReaderAdvance" xml:space="preserve">
-    <value>Internal error: deserialization failed to advance over underlying stream.</value>
-  </data>
   <data name="Enc_InvalidByteInEncoding" xml:space="preserve">
     <value>Invalid byte was found at index {0}.</value>
   </data>
@@ -2840,9 +2834,6 @@
   </data>
   <data name="Arg_IncompatibleParamType" xml:space="preserve">
     <value>Type is incompatible.</value>
-  </data>
-  <data name="Xml_SystemPathResolverCannotOpenUri" xml:space="preserve">
-    <value>Cannot open '{0}'. The Uri parameter must be a file system relative or absolute path.</value>
   </data>
   <data name="Xml_EndOfInnerExceptionStack" xml:space="preserve">
     <value>--- End of inner exception stack trace ---</value>
@@ -3123,9 +3114,6 @@
   <data name="Xslt_NonTemplateTunnel" xml:space="preserve">
     <value>Stylesheet or function parameter '{0}' cannot have attribute 'tunnel'.</value>
   </data>
-  <data name="Xslt_RequiredOnFunction" xml:space="preserve">
-    <value>The 'required' attribute must not be specified for parameter '{0}'. Function parameters are always mandatory. </value>
-  </data>
   <data name="Xslt_ExcludeDefault" xml:space="preserve">
     <value>Value '#default' is used within the 'exclude-result-prefixes' attribute and the parent element of this attribute has no default namespace.</value>
   </data>
@@ -3303,9 +3291,6 @@
   <data name="Xslt_ScriptInvalidPrefix" xml:space="preserve">
     <value>Cannot find the script or external object that implements prefix '{0}'.</value>
   </data>
-  <data name="Xslt_ScriptDub" xml:space="preserve">
-    <value>Namespace '{0}' has a duplicate implementation.</value>
-  </data>
   <data name="Xslt_ScriptEmpty" xml:space="preserve">
     <value>The 'msxsl:script' element cannot be empty.</value>
   </data>
@@ -3341,9 +3326,6 @@
   </data>
   <data name="ArrayTypeIsNotSupported" xml:space="preserve">
     <value>Array of type {0} is not supported.</value>
-  </data>
-  <data name="Xml_MissingSerializationCodeException" xml:space="preserve">
-    <value>Type '{0}' cannot be serialized by XmlSerializer, serialization code for the type is missing. Consult the SDK documentation for adding it as a root serialization type. https://go.microsoft.com/fwlink/?LinkId=613136</value>
   </data>
   <data name="Xslt_UpperCaseFirstNotSupported" xml:space="preserve">
     <value>Uppercase-First sorting option is not supported.</value>
@@ -3416,7 +3398,7 @@ building and deploying the assemblies with the application.
 Usage: dotnet {0} [--assembly &lt;assembly file path&gt;] [--type &lt;type name&gt;]</value>
   </data>
   <data name="HelpDevOptions" xml:space="preserve">
-    <value>  
+    <value>
   Developer options:</value>
   </data>
   <data name="HelpAssembly" xml:space="preserve">
@@ -3435,22 +3417,19 @@ Usage: dotnet {0} [--assembly &lt;assembly file path&gt;] [--type &lt;type name&
     <value>     {0}|{1}        Output directory name (default: target assembly location).</value>
   </data>
   <data name="HelpMiscOptions" xml:space="preserve">
-    <value>  
+    <value>
   Miscellaneous options:</value>
   </data>
   <data name="HelpHelp" xml:space="preserve">
     <value>     {0}|{1}       Show help.</value>
   </data>
-  <data name="MoreHelp" xml:space="preserve">
-    <value>If you would like more help, please type "sgen {0}".</value>
-  </data>
   <data name="GenerateSerializerNotFound" xml:space="preserve">
     <value>Method 'System.Xml.Serialization.XmlSerializer.GenerateSerializer' was not found. This is likely because you are using an older version of the framework. Please update to .NET Core v2.1 or later.</value>
   </data>
-  <data name="event_XmlSerializerExpired" xml:space="preserve">
-    <value>Pre-generated serializer '{0}' has expired. You need to re-generate serializer for '{1}'</value>
-  </data>
   <data name="CompilingScriptsNotSupported" xml:space="preserve">
     <value>Compiling JScript/CSharp scripts is not supported</value>
+  </data>
+  <data name="ImportInfo" xml:space="preserve">
+    <value>Importing {0} ({1}/{2})</value>
   </data>
 </root>

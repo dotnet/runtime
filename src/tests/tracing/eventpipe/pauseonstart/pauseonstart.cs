@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Tracing.Tests.Common;
 using System.Threading;

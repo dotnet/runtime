@@ -3,9 +3,11 @@
 //
 
 using System;
-class AA
+using Xunit;
+public class AA
 {
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool b = false;
         b = (b ? (object)b : (object)new AA()) ==

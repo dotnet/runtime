@@ -50,12 +50,12 @@ namespace System.IO.IsolatedStorage
         }
 
         [CLSCompliant(false)]
-        [Obsolete("IsolatedStorage.CurrentSize has been deprecated because it is not CLS Compliant.  To get the current size use IsolatedStorage.UsedSize")]
+        [Obsolete("IsolatedStorage.CurrentSize has been deprecated because it is not CLS Compliant. To get the current size use IsolatedStorage.UsedSize instead.")]
         public virtual ulong CurrentSize
         {
             get
             {
-                throw new InvalidOperationException(SR.Format(SR.IsolatedStorage_CurrentSizeUndefined, nameof(CurrentSize)));
+                throw new InvalidOperationException(SR.IsolatedStorage_CurrentSizeUndefined);
             }
         }
 
@@ -76,7 +76,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [CLSCompliant(false)]
-        [Obsolete("IsolatedStorage.MaximumSize has been deprecated because it is not CLS Compliant.  To get the maximum size use IsolatedStorage.Quota")]
+        [Obsolete("IsolatedStorage.MaximumSize has been deprecated because it is not CLS Compliant. To get the maximum size use IsolatedStorage.Quota instead.")]
         public virtual ulong MaximumSize
         {
             get
@@ -153,7 +153,7 @@ namespace System.IO.IsolatedStorage
                 if (Helper.IsDomain(scope))
                 {
                     _domainIdentity = identity;
-                    hash = $"{hash}{SeparatorExternal}{hash}";
+                    hash = string.Create(null, stackalloc char[128], $"{hash}{SeparatorExternal}{hash}");
                 }
 
                 _assemblyIdentity = identity;

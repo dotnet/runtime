@@ -1,12 +1,13 @@
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - template: /eng/common/templates/variables/pool-providers.yml
   - name: buildScriptFileName
     value: libraries
   - name: sourcesRoot
     value: $(Build.SourcesDirectory)/src/libraries
   - name: pipelinesPath
     value: /eng/pipelines/libraries
-  - name: isFullMatrix
+  - name: isRollingBuild
     value: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
   - name: includeWindowsOuterloop
     value: ${{ or(endsWith(variables['Build.DefinitionName'], 'windows'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}

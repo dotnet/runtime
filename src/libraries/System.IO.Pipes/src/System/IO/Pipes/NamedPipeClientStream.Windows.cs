@@ -20,7 +20,7 @@ namespace System.IO.Pipes
         // on the server end, but WaitForConnection will not return until we have returned.  Any data written to the
         // pipe by us after we have connected but before the server has called WaitForConnection will be available
         // to the server after it calls WaitForConnection.
-        private bool TryConnect(int timeout, CancellationToken cancellationToken)
+        private bool TryConnect(int timeout)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(_inheritability);
 
@@ -44,31 +44,34 @@ namespace System.IO.Pipes
                 access |= Interop.Kernel32.GenericOperations.GENERIC_WRITE;
             }
 
-            // Let's try to connect first
-            SafePipeHandle handle = Interop.Kernel32.CreateNamedPipeClient(_normalizedPipePath,
-                                        access,           // read and write access
-                                        0,                  // sharing: none
-                                        ref secAttrs,           // security attributes
-                                        FileMode.Open,      // open existing
-                                        _pipeFlags,         // impersonation flags
-                                        IntPtr.Zero);  // template file: null
+            SafePipeHandle handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, access);
 
             if (handle.IsInvalid)
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
-                if (errorCode != Interop.Errors.ERROR_PIPE_BUSY &&
-                    errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND)
+                handle.Dispose();
+
+                // CreateFileW: "If the CreateNamedPipe function was not successfully called on the server prior to this operation,
+                // a pipe will not exist and CreateFile will fail with ERROR_FILE_NOT_FOUND"
+                // WaitNamedPipeW: "If no instances of the specified named pipe exist,
+                // the WaitNamedPipe function returns immediately, regardless of the time-out value."
+                // We know that no instances exist, so we just quit without calling WaitNamedPipeW.
+                if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND)
+                {
+                    return false;
+                }
+
+                if (errorCode != Interop.Errors.ERROR_PIPE_BUSY)
                 {
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
 
                 if (!Interop.Kernel32.WaitNamedPipe(_normalizedPipePath, timeout))
                 {
-                    errorCode = Marshal.GetLastWin32Error();
+                    errorCode = Marshal.GetLastPInvokeError();
 
-                    // Server is not yet created or a timeout occurred before a pipe instance was available.
-                    if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND ||
+                    if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || // server has been closed
                         errorCode == Interop.Errors.ERROR_SEM_TIMEOUT)
                     {
                         return false;
@@ -77,22 +80,19 @@ namespace System.IO.Pipes
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                 }
 
-                // Pipe server should be free.  Let's try to connect to it.
-                handle = Interop.Kernel32.CreateNamedPipeClient(_normalizedPipePath,
-                                            access,           // read and write access
-                                            0,                  // sharing: none
-                                            ref secAttrs,           // security attributes
-                                            FileMode.Open,      // open existing
-                                            _pipeFlags,         // impersonation flags
-                                            IntPtr.Zero);  // template file: null
+                // Pipe server should be free. Let's try to connect to it.
+                handle = CreateNamedPipeClient(_normalizedPipePath, ref secAttrs, _pipeFlags, access);
 
                 if (handle.IsInvalid)
                 {
-                    errorCode = Marshal.GetLastWin32Error();
+                    errorCode = Marshal.GetLastPInvokeError();
 
-                    // Handle the possible race condition of someone else connecting to the server
-                    // between our calls to WaitNamedPipe & CreateFile.
-                    if (errorCode == Interop.Errors.ERROR_PIPE_BUSY)
+                    handle.Dispose();
+
+                    // WaitNamedPipe: "A subsequent CreateFile call to the pipe can fail,
+                    // because the instance was closed by the server or opened by another client."
+                    if (errorCode == Interop.Errors.ERROR_PIPE_BUSY || // opened by another client
+                        errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND) // server has been closed
                     {
                         return false;
                     }
@@ -106,6 +106,9 @@ namespace System.IO.Pipes
             State = PipeState.Connected;
             ValidateRemotePipeUser();
             return true;
+
+            static SafePipeHandle CreateNamedPipeClient(string? path, ref Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs, int pipeFlags, int access)
+                => Interop.Kernel32.CreateNamedPipeClient(path, access, FileShare.None, ref secAttrs, FileMode.Open, pipeFlags, hTemplateFile: IntPtr.Zero);
         }
 
         [SupportedOSPlatform("windows")]
@@ -123,7 +126,7 @@ namespace System.IO.Pipes
                 uint numInstances;
                 if (!Interop.Kernel32.GetNamedPipeHandleStateW(InternalHandle!, null, &numInstances, null, null, null, 0))
                 {
-                    throw WinIOError(Marshal.GetLastWin32Error());
+                    throw WinIOError(Marshal.GetLastPInvokeError());
                 }
 
                 return (int)numInstances;

@@ -63,38 +63,28 @@
 // For Windows and OSX, we will maintain the last highest RID-Platform we are known to support for them as the
 // degree of compat across their respective releases is usually high.
 //
-// We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Plaform.
-#if defined(_WIN32)
-#define LIB_PREFIX
-#define MAKE_LIBNAME(NAME) (_X(NAME) _X(".dll"))
-#define FALLBACK_HOST_RID _X("win10")
+// We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Platform.
+#if defined(TARGET_WINDOWS)
+#define LIB_PREFIX ""
+#define LIB_FILE_EXT ".dll"
 #elif defined(TARGET_OSX)
-#define LIB_PREFIX _X("lib")
-#define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".dylib"))
-#define FALLBACK_HOST_RID _X("osx.10.12")
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".dylib"
 #else
-#define LIB_PREFIX _X("lib")
-#define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".so"))
-#if defined(TARGET_FREEBSD)
-#define FALLBACK_HOST_RID _X("freebsd")
-#elif defined(TARGET_ILLUMOS)
-#define FALLBACK_HOST_RID _X("illumos")
-#elif defined(__sun)
-#define FALLBACK_HOST_RID _X("solaris")
-#else
-#define FALLBACK_HOST_RID _X("linux")
-#endif
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".so"
 #endif
 
-#define LIBCORECLR_FILENAME (LIB_PREFIX _X("coreclr"))
-#define LIBCORECLR_NAME MAKE_LIBNAME("coreclr")
+#define _STRINGIFY(s) _X(s)
+
+#define LIB_NAME(NAME) LIB_PREFIX NAME
+#define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT
+#define LIB_FILE_NAME_X(NAME) _STRINGIFY(LIB_FILE_NAME(NAME))
 
 #define CORELIB_NAME _X("System.Private.CoreLib.dll")
-
-#define LIBHOSTPOLICY_FILENAME (LIB_PREFIX _X("hostpolicy"))
-#define LIBHOSTPOLICY_NAME MAKE_LIBNAME("hostpolicy")
-
-#define LIBFXR_NAME MAKE_LIBNAME("hostfxr")
+#define LIBCORECLR_NAME LIB_FILE_NAME_X("coreclr")
+#define LIBFXR_NAME LIB_FILE_NAME_X("hostfxr")
+#define LIBHOSTPOLICY_NAME LIB_FILE_NAME_X("hostpolicy")
 
 #if !defined(PATH_MAX) && !defined(_WIN32)
 #define PATH_MAX    4096
@@ -104,13 +94,13 @@
 namespace pal
 {
 #if defined(_WIN32)
-    #ifdef EXPORT_SHARED_API
-        #define SHARED_API extern "C" __declspec(dllexport)
-    #else
-        #define SHARED_API extern "C"
-    #endif
+#ifdef EXPORT_SHARED_API
+#define SHARED_API extern "C" __declspec(dllexport)
+#else
+#define SHARED_API extern "C"
+#endif
 
-    #define STDMETHODCALLTYPE __stdcall
+#define STDMETHODCALLTYPE __stdcall
 
     typedef wchar_t char_t;
     typedef std::wstring string_t;
@@ -151,51 +141,55 @@ namespace pal
     inline int strcasecmp(const char_t* str1, const char_t* str2) { return ::_wcsicmp(str1, str2); }
     inline int strncmp(const char_t* str1, const char_t* str2, size_t len) { return ::wcsncmp(str1, str2, len); }
     inline int strncasecmp(const char_t* str1, const char_t* str2, size_t len) { return ::_wcsnicmp(str1, str2, len); }
-    inline int pathcmp(const pal::string_t &path1, const pal::string_t &path2) { return strcasecmp(path1.c_str(), path2.c_str()); }
+    inline int pathcmp(const pal::string_t& path1, const pal::string_t& path2) { return strcasecmp(path1.c_str(), path2.c_str()); }
     inline string_t to_string(int value) { return std::to_wstring(value); }
 
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
 
-#pragma warning(suppress : 4996)  // error C4996: '_wfopen': This function or variable may be unsafe.
-    inline FILE * file_open(const string_t& path, const char_t* mode) { return ::_wfopen(path.c_str(), mode); }
+    inline FILE* file_open(const string_t& path, const char_t* mode) { return ::_wfsopen(path.c_str(), mode, _SH_DENYNO); }
 
     inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfwprintf(f, format, vl); ::fputwc(_X('\n'), f); }
     inline void err_fputs(const char_t* message) { ::fputws(message, stderr); ::fputwc(_X('\n'), stderr); }
     inline void out_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stdout, format, vl); ::fputwc(_X('\n'), stdout); }
 
-    // This API is being used correctly and querying for needed size first.
-#pragma warning(suppress : 4996)  // error C4996: '_vsnwprintf': This function or variable may be unsafe.
-    inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf(buffer, count, format, vl); }
+    inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
+    inline int strlen_vprintf(const char_t* format, va_list vl) { return ::_vscwprintf(format, vl); }
 
-    // Suppressing warning since the 'safe' version requires an input buffer that is unnecessary for
-    // uses of this function.
-#pragma warning(suppress : 4996) //  error C4996: '_wcserror': This function or variable may be unsafe.
-    inline const char_t* strerror(int errnum){ return ::_wcserror(errnum); }
+    inline const string_t strerror(int errnum)
+    {
+        // Windows does not provide strerrorlen to get the actual error length.
+        // Use 1024 as the buffer size based on the buffer size used by glibc.
+        // _wcserror_s truncates (and null-terminates) if the buffer is too small
+        char_t buffer[1024];
+        ::_wcserror_s(buffer, sizeof(buffer) / sizeof(char_t), errnum);
+        return buffer;
+    }
 
+    size_t pal_utf8string(const string_t& str, char* out_buffer, size_t len);
     bool pal_utf8string(const string_t& str, std::vector<char>* out);
     bool pal_clrstring(const string_t& str, std::vector<char>* out);
     bool clr_palstring(const char* cstr, string_t* out);
 
     inline bool mkdir(const char_t* dir, int mode) { return CreateDirectoryW(dir, NULL) != 0; }
-    inline bool rmdir (const char_t* path) { return RemoveDirectoryW(path) != 0; }
+    inline bool rmdir(const char_t* path) { return RemoveDirectoryW(path) != 0; }
     inline int rename(const char_t* old_name, const char_t* new_name) { return ::_wrename(old_name, new_name); }
     inline int remove(const char_t* path) { return ::_wremove(path); }
     inline bool munmap(void* addr, size_t length) { return UnmapViewOfFile(addr) != 0; }
     inline int get_pid() { return GetCurrentProcessId(); }
     inline void sleep(uint32_t milliseconds) { Sleep(milliseconds); }
 #else
-    #ifdef EXPORT_SHARED_API
-        #define SHARED_API extern "C" __attribute__((__visibility__("default")))
-    #else
-        #define SHARED_API extern "C"
-    #endif
+#ifdef EXPORT_SHARED_API
+#define SHARED_API extern "C" __attribute__((__visibility__("default")))
+#else
+#define SHARED_API extern "C"
+#endif
 
-    #define __cdecl    /* nothing */
-    #define __stdcall  /* nothing */
-    #if !defined(TARGET_FREEBSD)
-        #define __fastcall /* nothing */
-    #endif
-    #define STDMETHODCALLTYPE __stdcall
+#define __cdecl    /* nothing */
+#define __stdcall  /* nothing */
+#if !defined(TARGET_FREEBSD)
+#define __fastcall /* nothing */
+#endif
+#define STDMETHODCALLTYPE __stdcall
 
     typedef char char_t;
     typedef std::string string_t;
@@ -219,13 +213,25 @@ namespace pal
     inline string_t to_string(int value) { return std::to_string(value); }
 
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
-    inline FILE * file_open(const string_t& path, const char_t* mode) { return fopen(path.c_str(), mode); }
+    inline FILE* file_open(const string_t& path, const char_t* mode) { return fopen(path.c_str(), mode); }
     inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfprintf(f, format, vl); ::fputc('\n', f); }
     inline void err_fputs(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
     inline void out_vprintf(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
     inline int str_vprintf(char_t* str, size_t size, const char_t* format, va_list vl) { return ::vsnprintf(str, size, format, vl); }
-    inline const char_t* strerror(int errnum) { return ::strerror(errnum); }
+    inline int strlen_vprintf(const char_t* format, va_list vl) { return ::vsnprintf(nullptr, 0, format, vl); }
 
+    inline const string_t strerror(int errnum) { return ::strerror(errnum); }
+
+    inline size_t pal_utf8string(const string_t& str, char* out_buffer, size_t buffer_len)
+    {
+        size_t len = str.size() + 1;
+        if (buffer_len < len)
+            return len;
+
+        ::strncpy(out_buffer, str.c_str(), str.size());
+        out_buffer[len - 1] = '\0';
+        return len;
+    }
     inline bool pal_utf8string(const string_t& str, std::vector<char>* out) { out->assign(str.begin(), str.end()); out->push_back('\0'); return true; }
     inline bool pal_clrstring(const string_t& str, std::vector<char>* out) { return pal_utf8string(str, out); }
     inline bool clr_palstring(const char* cstr, string_t* out) { out->assign(cstr); return true; }
@@ -237,7 +243,6 @@ namespace pal
     inline bool munmap(void* addr, size_t length) { return ::munmap(addr, length) == 0; }
     inline int get_pid() { return getpid(); }
     inline void sleep(uint32_t milliseconds) { usleep(milliseconds * 1000); }
-
 #endif
 
     inline int snwprintf(char_t* buffer, size_t count, const char_t* format, ...)
@@ -252,19 +257,11 @@ namespace pal
     string_t get_timestamp();
 
     bool getcwd(string_t* recv);
-    string_t to_lower(const string_t& in);
-
-
-    inline void file_flush(FILE *f) { std::fflush(f); }
-    inline void err_flush() { std::fflush(stderr); }
-    inline void out_flush() { std::fflush(stdout); }
 
     string_t get_current_os_rid_platform();
     inline string_t get_current_os_fallback_rid()
     {
-        string_t fallbackRid(FALLBACK_HOST_RID);
-
-        return fallbackRid;
+        return _STRINGIFY(FALLBACK_HOST_OS);
     }
 
     const void* mmap_read(const string_t& path, size_t* length = nullptr);
@@ -283,17 +280,39 @@ namespace pal
     bool get_own_module_path(string_t* recv);
     bool get_method_module_path(string_t* recv, void* method);
     bool get_module_path(dll_t mod, string_t* recv);
-    bool get_current_module(dll_t *mod);
+    bool get_current_module(dll_t* mod);
     bool getenv(const char_t* name, string_t* recv);
     bool get_default_servicing_directory(string_t* recv);
 
-    // Returns the globally registered install location (if any)
-    bool get_dotnet_self_registered_dir(string_t* recv);
-    // Returns name of the global registry location (for error messages)
-    bool get_dotnet_self_registered_config_location(string_t* recv);
+    enum class architecture
+    {
+        arm,
+        arm64,
+        armv6,
+        loongarch64,
+        ppc64le,
+        riscv64,
+        s390X,
+        x64,
+        x86,
 
-    // Returns the default install location for a given platform
+        __last // Sentinel value
+    };
+
+    // Returns the globally registered install location (if any) for the current architecture
+    bool get_dotnet_self_registered_dir(string_t* recv);
+
+    // Returns the globally registered install location (if any) for the specified architecture
+    bool get_dotnet_self_registered_dir_for_arch(architecture arch, string_t* recv);
+
+    // Returns name of the config location for global install registration (for example, registry key or file path)
+    string_t get_dotnet_self_registered_config_location(architecture arch);
+
+    // Returns the default install location for a given platform for the current architecture
     bool get_default_installation_dir(string_t* recv);
+
+    // Returns the default install location for a given platform for the specified architecture
+    bool get_default_installation_dir_for_arch(architecture arch, string_t* recv);
 
     // Returns the global locations to search for SDK/Frameworks - used when multi-level lookup is enabled
     bool get_global_dotnet_dirs(std::vector<string_t>* recv);
@@ -301,20 +320,19 @@ namespace pal
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
 
-    bool get_temp_directory(string_t& tmp_dir);
-
-    // Returns a platform-specific, user-private directory within get_temp_directory()
+    // Returns a platform-specific, user-private directory
     // that can be used for extracting out components of a single-file app.
     bool get_default_bundle_extraction_base_dir(string_t& extraction_dir);
 
     int xtoi(const char_t* input);
 
-    bool get_loaded_library(const char_t *library_name, const char *symbol_name, /*out*/ dll_t *dll, /*out*/ string_t *path);
+    bool get_loaded_library(const char_t* library_name, const char* symbol_name, /*out*/ dll_t* dll, /*out*/ string_t* path);
     bool load_library(const string_t* path, dll_t* dll);
     proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
 
     bool is_running_in_wow64();
+    bool is_emulating_x64();
 
     bool are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2);
 }

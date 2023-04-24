@@ -2,13 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
-    <PackageDescription>Provides cryptographic algorithm implementations and key management with Windows Cryptographic Next Generation API (CNG).
-
-Commonly Used Types:
-System.Security.Cryptography.RSACng
-System.Security.Cryptography.ECDsaCng
-System.Security.Cryptography.CngKey</PackageDescription>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
   </PropertyGroup>
 </Project>

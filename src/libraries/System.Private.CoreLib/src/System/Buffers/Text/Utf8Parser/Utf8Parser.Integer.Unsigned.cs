@@ -41,6 +41,7 @@ namespace System.Buffers.Text
             {
                 case 'g':
                 case 'd':
+                case 'r':
                     standardFormat = default;
                     goto FastPath;
 
@@ -92,6 +93,7 @@ namespace System.Buffers.Text
             {
                 case 'g':
                 case 'd':
+                case 'r':
                     standardFormat = default;
                     goto FastPath;
 
@@ -143,6 +145,7 @@ namespace System.Buffers.Text
             {
                 case 'g':
                 case 'd':
+                case 'r':
                     standardFormat = default;
                     goto FastPath;
 
@@ -194,6 +197,7 @@ namespace System.Buffers.Text
             {
                 case 'g':
                 case 'd':
+                case 'r':
                     standardFormat = default;
                     goto FastPath;
 

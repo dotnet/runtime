@@ -182,7 +182,7 @@ namespace System.Data
             }
             if (!_table.fInitInProgress && column != null && column.Computed)
             {
-                column.Expression = column.Expression;
+                column.CopyExpressionFrom(column);
             }
             OnCollectionChanged(new CollectionChangeEventArgs(CollectionChangeAction.Add, column));
         }
@@ -211,7 +211,8 @@ namespace System.Data
         /// Creates and adds a <see cref='System.Data.DataColumn'/>
         /// with the specified name, type, and compute expression to the columns collection.
         /// </summary>
-        public DataColumn Add(string? columnName, Type type, string expression)
+        [RequiresUnreferencedCode("Members might be trimmed for some data types or expressions.")]
+        public DataColumn Add(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type, string expression)
         {
             var column = new DataColumn(columnName, type, expression);
             Add(column);
@@ -223,7 +224,7 @@ namespace System.Data
         /// with the
         /// specified name and type to the columns collection.
         /// </summary>
-        public DataColumn Add(string? columnName, Type type)
+        public DataColumn Add(string? columnName, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type)
         {
             var column = new DataColumn(columnName, type);
             Add(column);
@@ -357,11 +358,6 @@ namespace System.Data
                 for (int record = 0; record < _table.RecordCapacity; record++)
                 {
                     column.InitializeRecord(record);
-                }
-
-                if (_table.DataSet != null)
-                {
-                    column.OnSetDataSet();
                 }
             }
             catch (Exception e) when (ADP.IsCatchableOrSecurityExceptionType(e))
@@ -565,7 +561,7 @@ namespace System.Data
             // while index events are suspended else the indexes won't be properly maintained.
             // However, all the above checks should catch those participating columns.
             // except when a column is in a DataView RowFilter or Sort clause
-            foreach (Index index in _table.LiveIndexes) { }
+            foreach (Index _ in _table.LiveIndexes) { }
 
             return true;
         }
@@ -722,10 +718,9 @@ namespace System.Data
         {
             int hashcode = _table.GetSpecialHashCode(name);
             int cachedI = -1;
-            DataColumn? column = null;
             for (int i = 0; i < Count; i++)
             {
-                column = (DataColumn)_list[i]!;
+                DataColumn column = (DataColumn)_list[i]!;
                 if ((hashcode == 0 || column._hashCode == 0 || column._hashCode == hashcode) &&
                    NamesEqual(column.ColumnName, name, false, _table.Locale) != 0)
                 {
@@ -756,10 +751,7 @@ namespace System.Data
 
                 foreach (DataColumn? column in _delayedAddRangeColumns)
                 {
-                    if (column != null)
-                    {
-                        column.FinishInitInProgress();
-                    }
+                    column?.FinishInitInProgress();
                 }
 
                 _delayedAddRangeColumns = null;
@@ -769,7 +761,7 @@ namespace System.Data
         /// <summary>
         /// Makes a default name with the given index.  e.g. Column1, Column2, ... Columni
         /// </summary>
-        private string MakeName(int index) => index == 1 ?
+        private static string MakeName(int index) => index == 1 ?
                 "Column1" :
                 "Column" + index.ToString(System.Globalization.CultureInfo.InvariantCulture);
 

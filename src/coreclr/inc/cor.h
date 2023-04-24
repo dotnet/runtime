@@ -1441,7 +1441,7 @@ DECLARE_INTERFACE_(IMetaDataDispenserEx, IMetaDataDispenser)
         LPCWSTR  szAssemblyName,            // [IN] required - this is the assembly you are requesting
         LPCWSTR  szName,                    // [OUT] buffer - to hold name
         ULONG    cchName,                   // [IN] the name buffer's size
-        ULONG    *pcName) PURE;             // [OUT] the number of characters returend in the buffer
+        ULONG    *pcName) PURE;             // [OUT] the number of characters returned in the buffer
 
     STDMETHOD(FindAssemblyModule)(          // S_OK or error
         LPCWSTR  szAppBase,                 // [IN] optional - can be NULL
@@ -1452,7 +1452,7 @@ DECLARE_INTERFACE_(IMetaDataDispenserEx, IMetaDataDispenser)
       _Out_writes_to_opt_(cchName, *pcName)
         LPWSTR   szName,                    // [OUT] buffer - to hold name
         ULONG    cchName,                   // [IN]  the name buffer's size
-        ULONG    *pcName) PURE;             // [OUT] the number of characters returend in the buffer
+        ULONG    *pcName) PURE;             // [OUT] the number of characters returned in the buffer
 
 };
 
@@ -1633,12 +1633,6 @@ DECLARE_INTERFACE_(IMetaDataInfo, IUnknown)
 //
 // Native Link method custom value definitions. This is for N-direct support.
 //
-
-#define COR_NATIVE_LINK_CUSTOM_VALUE        L"COMPLUS_NativeLink"
-#define COR_NATIVE_LINK_CUSTOM_VALUE_ANSI   "COMPLUS_NativeLink"
-
-// count of chars for COR_NATIVE_LINK_CUSTOM_VALUE(_ANSI)
-#define COR_NATIVE_LINK_CUSTOM_VALUE_CC     18
 
 #include <pshpack1.h>
 typedef struct
@@ -1948,7 +1942,7 @@ inline ULONG CorSigUncompressData(      // return number of bytes of that compre
     ULONG dwSizeOfData = 0;
 
     // We don't know how big the signature is, so we'll just say that it's big enough
-    if (FAILED(CorSigUncompressData(pData, 0xff, pDataOut, &dwSizeOfData)))
+    if (FAILED(CorSigUncompressData(pData, 0xff, reinterpret_cast<uint32_t *>(pDataOut), reinterpret_cast<uint32_t *>(&dwSizeOfData))))
     {
         *pDataOut = 0;
         return (ULONG)-1;
@@ -2217,7 +2211,7 @@ inline ULONG CorSigCompressSignedInt(   // return number of bytes that compresse
         *(pBytes + 3) = BYTE(iData & 0xff);
         return 4;
     }
-    // Out of compressable range
+    // Out of compressible range
     return (ULONG)-1;
 } // CorSigCompressSignedInt
 

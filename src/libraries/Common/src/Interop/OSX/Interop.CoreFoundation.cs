@@ -47,13 +47,13 @@ internal static partial class Interop
         /// <param name="encoding">The encoding type.</param>
         /// <param name="isExternalRepresentation">Whether or not a BOM is present.</param>
         /// <returns>A CFStringRef on success, otherwise a SafeCreateHandle(IntPtr.Zero).</returns>
-        [DllImport(Interop.Libraries.CoreFoundationLibrary)]
-        private static extern SafeCreateHandle CFStringCreateWithBytes(
+        [LibraryImport(Interop.Libraries.CoreFoundationLibrary)]
+        private static partial SafeCreateHandle CFStringCreateWithBytes(
             IntPtr alloc,
             IntPtr bytes,
             CFIndex numBytes,
             CFStringBuiltInEncodings encoding,
-            bool isExternalRepresentation);
+            [MarshalAs(UnmanagedType.Bool)] bool isExternalRepresentation);
 
         /// <summary>
         /// Creates a CFStringRef from a 8-bit String object. Follows the "Create Rule" where if you create it, you delete it.
@@ -63,8 +63,8 @@ internal static partial class Interop
         /// <param name="encoding">The encoding of the str variable. This should be UTF 8 for OS X</param>
         /// <returns>Returns a pointer to a CFString on success; otherwise, returns IntPtr.Zero</returns>
         /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
-        [DllImport(Interop.Libraries.CoreFoundationLibrary, CharSet = CharSet.Ansi)]
-        private static extern SafeCreateHandle CFStringCreateWithCString(
+        [LibraryImport(Interop.Libraries.CoreFoundationLibrary, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial SafeCreateHandle CFStringCreateWithCString(
             IntPtr allocator,
             string str,
             CFStringBuiltInEncodings encoding);
@@ -77,8 +77,8 @@ internal static partial class Interop
         /// <param name="encoding">The encoding of the str variable. This should be UTF 8 for OS X</param>
         /// <returns>Returns a pointer to a CFString on success; otherwise, returns IntPtr.Zero</returns>
         /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
-        [DllImport(Interop.Libraries.CoreFoundationLibrary, CharSet = CharSet.Ansi)]
-        private static extern SafeCreateHandle CFStringCreateWithCString(
+        [LibraryImport(Interop.Libraries.CoreFoundationLibrary, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial SafeCreateHandle CFStringCreateWithCString(
             IntPtr allocator,
             IntPtr str,
             CFStringBuiltInEncodings encoding);
@@ -130,11 +130,10 @@ internal static partial class Interop
         /// <param name="numValues">The number of values in the array</param>
         /// <param name="callbacks">Should be IntPtr.Zero</param>
         /// <returns>Returns a pointer to a CFArray on success; otherwise, returns IntPtr.Zero</returns>
-        [DllImport(Interop.Libraries.CoreFoundationLibrary)]
-        private static extern SafeCreateHandle CFArrayCreate(
+        [LibraryImport(Interop.Libraries.CoreFoundationLibrary)]
+        private static unsafe partial SafeCreateHandle CFArrayCreate(
             IntPtr allocator,
-            [MarshalAs(UnmanagedType.LPArray)]
-            IntPtr[] values,
+            IntPtr* values,
             UIntPtr numValues,
             IntPtr callbacks);
 
@@ -144,9 +143,25 @@ internal static partial class Interop
         /// <param name="values">The values to put in the array</param>
         /// <param name="numValues">The number of values in the array</param>
         /// <returns>Returns a valid SafeCreateHandle to a CFArray on success; otherwise, returns an invalid SafeCreateHandle</returns>
-        internal static SafeCreateHandle CFArrayCreate(IntPtr[] values, UIntPtr numValues)
+        internal static unsafe SafeCreateHandle CFArrayCreate(IntPtr[] values, UIntPtr numValues)
         {
-            return CFArrayCreate(IntPtr.Zero, values, numValues, IntPtr.Zero);
+            fixed (IntPtr* pValues = values)
+            {
+                return CFArrayCreate(IntPtr.Zero, pValues, (UIntPtr)values.Length, IntPtr.Zero);
+            }
+        }
+
+        /// <summary>
+        /// Creates a pointer to an unmanaged CFArray containing the input values. Follows the "Create Rule" where if you create it, you delete it.
+        /// </summary>
+        /// <param name="values">The values to put in the array</param>
+        /// <returns>Returns a valid SafeCreateHandle to a CFArray on success; otherwise, returns an invalid SafeCreateHandle</returns>
+        internal static unsafe SafeCreateHandle CFArrayCreate(Span<IntPtr> values)
+        {
+            fixed (IntPtr* pValues = &MemoryMarshal.GetReference(values))
+            {
+                return CFArrayCreate(IntPtr.Zero, pValues, (UIntPtr)values.Length, IntPtr.Zero);
+            }
         }
 
         /// <summary>
@@ -156,14 +171,14 @@ internal static partial class Interop
         /// </summary>
         /// <param name="ptr">The CFType object to retain. This value must not be NULL</param>
         /// <returns>The input value</returns>
-        [DllImport(Interop.Libraries.CoreFoundationLibrary)]
-        internal static extern IntPtr CFRetain(IntPtr ptr);
+        [LibraryImport(Interop.Libraries.CoreFoundationLibrary)]
+        internal static partial IntPtr CFRetain(IntPtr ptr);
 
         /// <summary>
         /// Decrements the reference count on the specified object and, if the ref count hits 0, cleans up the object.
         /// </summary>
         /// <param name="ptr">The pointer on which to decrement the reference count.</param>
-        [DllImport(Interop.Libraries.CoreFoundationLibrary)]
-        internal static extern void CFRelease(IntPtr ptr);
+        [LibraryImport(Interop.Libraries.CoreFoundationLibrary)]
+        internal static partial void CFRelease(IntPtr ptr);
     }
 }

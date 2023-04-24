@@ -14,133 +14,57 @@
 #ifndef __BINDER__BIND_RESULT_INL__
 #define __BINDER__BIND_RESULT_INL__
 
-#include "contextentry.hpp"
 #include "assembly.hpp"
 
 namespace BINDER_SPACE
 {
 BindResult::BindResult()
 {
-    m_dwResultFlags = ContextEntry::RESULT_FLAG_NONE;
-    m_pAssemblyName = NULL;
-    m_pIUnknownAssembly = NULL;
-}
-
-BindResult::~BindResult()
-{
-    SAFE_RELEASE(m_pAssemblyName);
+    m_isContextBound = false;
+    m_pAssembly = NULL;
 }
 
 AssemblyName *BindResult::GetAssemblyName(BOOL fAddRef /* = FALSE */)
 {
-    AssemblyName *pAssemblyName = m_pAssemblyName;
+    Assembly *pAssembly = m_pAssembly;
+    if (pAssembly == NULL)
+        return NULL;
 
-    if (fAddRef && (pAssemblyName != NULL))
-    {
-        pAssemblyName->AddRef();
-    }
-
-    return pAssemblyName;
+    return pAssembly->GetAssemblyName(fAddRef);
 }
 
-IUnknown *BindResult::GetAssembly(BOOL fAddRef /* = FALSE */)
+Assembly *BindResult::GetAssembly(BOOL fAddRef /* = FALSE */)
 {
-    IUnknown *pIUnknownAssembly = m_pIUnknownAssembly;
+    Assembly* pAssembly = m_pAssembly;
 
-    if (fAddRef && (pIUnknownAssembly != NULL))
+    if (fAddRef && (pAssembly != NULL))
     {
-        pIUnknownAssembly->AddRef();
+        pAssembly->AddRef();
     }
 
-    return pIUnknownAssembly;
-}
-
-Assembly *BindResult::GetAsAssembly(BOOL fAddRef /* = FALSE */)
-{
-    return static_cast<Assembly *>(GetAssembly(fAddRef));
-}
-
-BOOL BindResult::GetIsInGAC()
-{
-    return ((m_dwResultFlags & ContextEntry::RESULT_FLAG_IS_IN_GAC) != 0);
-}
-
-void BindResult::SetIsInGAC(BOOL fIsInGAC)
-{
-    if (fIsInGAC)
-    {
-        m_dwResultFlags |= ContextEntry::RESULT_FLAG_IS_IN_GAC;
-    }
-    else
-    {
-        m_dwResultFlags &= ~ContextEntry::RESULT_FLAG_IS_IN_GAC;
-    }
+    return pAssembly;
 }
 
 BOOL BindResult::GetIsContextBound()
 {
-    return ((m_dwResultFlags & ContextEntry::RESULT_FLAG_CONTEXT_BOUND) != 0);
+    return m_isContextBound;
 }
 
-void BindResult::SetIsContextBound(BOOL fIsContextBound)
-{
-    if (fIsContextBound)
-    {
-        m_dwResultFlags |= ContextEntry::RESULT_FLAG_CONTEXT_BOUND;
-    }
-    else
-    {
-        m_dwResultFlags &= ~ContextEntry::RESULT_FLAG_CONTEXT_BOUND;
-    }
-}
-
-BOOL BindResult::GetIsFirstRequest()
-{
-    return ((m_dwResultFlags & ContextEntry::RESULT_FLAG_FIRST_REQUEST) != 0);
-}
-
-void BindResult::SetIsFirstRequest(BOOL fIsFirstRequest)
-{
-    if (fIsFirstRequest)
-    {
-        m_dwResultFlags |= ContextEntry::RESULT_FLAG_FIRST_REQUEST;
-    }
-    else
-    {
-        m_dwResultFlags &= ~ContextEntry::RESULT_FLAG_FIRST_REQUEST;
-    }
-}
-
-void BindResult::SetResult(ContextEntry *pContextEntry, BOOL fIsContextBound /* = TRUE */)
-{
-    _ASSERTE(pContextEntry != NULL);
-
-    SetIsInGAC(pContextEntry->GetIsInGAC());
-    SetIsContextBound(fIsContextBound);
-    SAFE_RELEASE(m_pAssemblyName);
-    m_pAssemblyName = pContextEntry->GetAssemblyName(TRUE /* fAddRef */);
-    m_pIUnknownAssembly = pContextEntry->GetAssembly(TRUE /* fAddRef */);
-}
-
-void BindResult::SetResult(Assembly *pAssembly)
+void BindResult::SetResult(Assembly *pAssembly, bool isInContext)
 {
     _ASSERTE(pAssembly != NULL);
 
-    SetIsInGAC(pAssembly->GetIsInGAC());
-    SAFE_RELEASE(m_pAssemblyName);
-    m_pAssemblyName = pAssembly->GetAssemblyName(TRUE /* fAddRef */);
     pAssembly->AddRef();
-    m_pIUnknownAssembly = static_cast<IUnknown *>(pAssembly);
+    m_pAssembly = pAssembly;
+    m_isContextBound = isInContext;
 }
 
 void BindResult::SetResult(BindResult *pBindResult)
 {
     _ASSERTE(pBindResult != NULL);
 
-    m_dwResultFlags = pBindResult->m_dwResultFlags;
-    SAFE_RELEASE(m_pAssemblyName);
-    m_pAssemblyName = pBindResult->GetAssemblyName(TRUE /* fAddRef */);
-    m_pIUnknownAssembly = pBindResult->GetAssembly(TRUE /* fAddRef */);
+    m_isContextBound = pBindResult->m_isContextBound;
+    m_pAssembly = pBindResult->GetAssembly(TRUE /* fAddRef */);
 
     const AttemptResult *attempt = pBindResult->GetAttempt(true /*foundInContext*/);
     if (attempt != nullptr)
@@ -153,42 +77,31 @@ void BindResult::SetResult(BindResult *pBindResult)
 
 void BindResult::SetNoResult()
 {
-    m_pAssemblyName = NULL;
+    m_pAssembly = NULL;
 }
 
 BOOL BindResult::HaveResult()
 {
-    return (GetAssemblyName() != NULL);
+    return m_pAssembly != NULL;
 }
 
 void BindResult::Reset()
 {
-    SAFE_RELEASE(m_pAssemblyName);
-    m_pIUnknownAssembly = NULL;
-    m_dwResultFlags = ContextEntry::RESULT_FLAG_NONE;
+    m_pAssembly = NULL;
+    m_isContextBound = false;
     m_inContextAttempt.Reset();
     m_applicationAssembliesAttempt.Reset();
 }
 
-void BindResult::SetAttemptResult(HRESULT hr, ContextEntry *pContextEntry)
-{
-    Assembly *assembly = nullptr;
-    if (pContextEntry != nullptr)
-        assembly = static_cast<Assembly *>(pContextEntry->GetAssembly(TRUE /* fAddRef */));
-
-    m_inContextAttempt.Assembly = assembly;
-    m_inContextAttempt.HResult = hr;
-    m_inContextAttempt.Attempted = true;
-}
-
-void BindResult::SetAttemptResult(HRESULT hr, Assembly *pAssembly)
+void BindResult::SetAttemptResult(HRESULT hr, Assembly *pAssembly, bool isInContext)
 {
     if (pAssembly != nullptr)
         pAssembly->AddRef();
 
-    m_applicationAssembliesAttempt.Assembly = pAssembly;
-    m_applicationAssembliesAttempt.HResult = hr;
-    m_applicationAssembliesAttempt.Attempted = true;
+    BindResult::AttemptResult &result = isInContext ? m_inContextAttempt : m_applicationAssembliesAttempt;
+    result.Assembly = pAssembly;
+    result.HResult = hr;
+    result.Attempted = true;
 }
 
 const BindResult::AttemptResult* BindResult::GetAttempt(bool foundInContext) const

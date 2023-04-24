@@ -4,145 +4,153 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Tests;
-using System.Net.Quic.Implementations;
+using System.Net.Sockets;
 using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
-    public sealed class MockQuicStreamConformanceTests : QuicStreamConformanceTests
+    [Collection(nameof(DisableParallelization))]
+    [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
+    public sealed class QuicStreamConformanceTests : ConnectedStreamConformanceTests
     {
-        protected override QuicImplementationProvider Provider => QuicImplementationProviders.Mock;
-    }
+        protected override bool UsableAfterCanceledReads => false;
+        protected override bool BlocksOnZeroByteReads => true;
+        protected override bool CanTimeout => true;
 
-    [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
-    public sealed class MsQuicQuicStreamConformanceTests : QuicStreamConformanceTests
-    {
-        protected override QuicImplementationProvider Provider => QuicImplementationProviders.MsQuic;
+        public readonly X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+        public ITestOutputHelper _output;
 
-        // TODO: These are all hanging, likely due to Stream close behavior.
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task Read_Eof_Returns0(ReadWriteMode mode, bool dataAvailableFirst) => base.Read_Eof_Returns0(mode, dataAvailableFirst);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync) => base.CopyToAsync_AllDataCopied(byteCount, useAsync);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task CopyToAsync_AllDataCopied_Large(bool useAsync) => base.CopyToAsync_AllDataCopied_Large(useAsync);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task Dispose_ClosesStream(int disposeMode) => base.Dispose_ClosesStream(disposeMode);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task Write_DataReadFromDesiredOffset(ReadWriteMode mode) => base.Write_DataReadFromDesiredOffset(mode);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/756")]
-        public override Task Parallel_ReadWriteMultipleStreamsConcurrently() => base.Parallel_ReadWriteMultipleStreamsConcurrently();
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                ServerCertificate.Dispose();
+            }
+            base.Dispose(disposing);
+        }
 
-        // TODO: new additions, find out the actual reason for hanging
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadTimeout_Expires_Throws() => base.ReadTimeout_Expires_Throws();
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ConcurrentBidirectionalReadsWrites_Success() => base.ConcurrentBidirectionalReadsWrites_Success();
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ArgumentValidation_ThrowsExpectedException() => base.ArgumentValidation_ThrowsExpectedException();
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadWriteAsync_PrecanceledOperations_ThrowsCancellationException() => base.ReadWriteAsync_PrecanceledOperations_ThrowsCancellationException();
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task Read_DataStoredAtDesiredOffset(ReadWriteMode mode) => base.Read_DataStoredAtDesiredOffset(mode);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadAsync_CancelPendingRead_DoesntImpactSubsequentReads() => base.ReadAsync_CancelPendingRead_DoesntImpactSubsequentReads();
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task Disposed_ThrowsObjectDisposedException() => base.Disposed_ThrowsObjectDisposedException();
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task Timeout_Roundtrips() => base.Timeout_Roundtrips();
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ZeroByteWrite_OtherDataReceivedSuccessfully(ReadWriteMode mode) => base.ZeroByteWrite_OtherDataReceivedSuccessfully(mode);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadAsync_ContinuesOnCurrentTaskSchedulerIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext) => base.ReadAsync_ContinuesOnCurrentTaskSchedulerIfDesired(flowExecutionContext, continueOnCapturedContext);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ZeroByteRead_BlocksUntilDataAvailableOrNops(ReadWriteMode mode) => base.ZeroByteRead_BlocksUntilDataAvailableOrNops(mode);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadAsync_CancelPendingTask_ThrowsCancellationException() => base.ReadAsync_CancelPendingTask_ThrowsCancellationException();
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadAsync_ContinuesOnCurrentSynchronizationContextIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext) => base.ReadAsync_ContinuesOnCurrentSynchronizationContextIfDesired(flowExecutionContext, continueOnCapturedContext);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadWriteByte_Success() => base.ReadWriteByte_Success();
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadWrite_Success(ReadWriteMode mode, int writeSize, bool startWithFlush) => base.ReadWrite_Success(mode, writeSize, startWithFlush);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadWrite_Success_Large(ReadWriteMode mode, int writeSize, bool startWithFlush) => base.ReadWrite_Success_Large(mode, writeSize, startWithFlush);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task Flush_ValidOnWriteableStreamWithNoData_Success() => base.Flush_ValidOnWriteableStreamWithNoData_Success();
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadAsync_CancelPendingValueTask_ThrowsCancellationException() => base.ReadAsync_CancelPendingValueTask_ThrowsCancellationException();
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadAsync_DuringReadAsync_ThrowsIfUnsupported() => base.ReadAsync_DuringReadAsync_ThrowsIfUnsupported();
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task ReadWrite_CustomMemoryManager_Success(bool useAsync) => base.ReadWrite_CustomMemoryManager_Success(useAsync);
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49157")]
-        public override Task Flush_ValidOnReadableStream_Success() => base.Flush_ValidOnReadableStream_Success();
+        public bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
+        {
+            Assert.Equal(ServerCertificate.GetCertHash(), certificate?.GetCertHash());
+            return true;
+        }
 
-    }
-
-    public abstract class QuicStreamConformanceTests : ConnectedStreamConformanceTests
-    {
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
         {
             return new SslServerAuthenticationOptions()
             {
                 ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") },
-                // TODO: use a cert. MsQuic currently only allows certs that are trusted.
-                ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate()
+                ServerCertificate = ServerCertificate
             };
         }
-        
-        protected abstract QuicImplementationProvider Provider { get; }
+
+        public SslClientAuthenticationOptions GetSslClientAuthenticationOptions()
+        {
+            return new SslClientAuthenticationOptions()
+            {
+                ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") },
+                RemoteCertificateValidationCallback = RemoteCertificateValidationCallback
+            };
+        }
 
         protected override async Task<StreamPair> CreateConnectedStreamsAsync()
         {
-            QuicImplementationProvider provider = Provider;
-            var protocol = new SslApplicationProtocol("quictest");
+            var listener = await QuicListener.ListenAsync(new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") },
+                ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(new QuicServerConnectionOptions()
+                {
+                    DefaultStreamErrorCode = QuicTestBase.DefaultStreamErrorCodeServer,
+                    DefaultCloseErrorCode = QuicTestBase.DefaultCloseErrorCodeServer,
+                    ServerAuthenticationOptions = GetSslServerAuthenticationOptions()
+                })
+            });
 
-            var listener = new QuicListener(
-                provider,
-                new IPEndPoint(IPAddress.Loopback, 0),
-                GetSslServerAuthenticationOptions());
-            listener.Start();
-
+            byte[] buffer = new byte[1] { 42 };
             QuicConnection connection1 = null, connection2 = null;
             QuicStream stream1 = null, stream2 = null;
+            try
+            {
+                await WhenAllOrAnyFailed(
+                    Task.Run(async () =>
+                    {
+                        connection1 = await listener.AcceptConnectionAsync();
+                        stream1 = await connection1.AcceptInboundStreamAsync();
+                        Assert.Equal(1, await stream1.ReadAsync(buffer));
+                    }),
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            connection2 = await QuicConnection.ConnectAsync(new QuicClientConnectionOptions()
+                            {
+                                DefaultStreamErrorCode = QuicTestBase.DefaultStreamErrorCodeClient,
+                                DefaultCloseErrorCode = QuicTestBase.DefaultCloseErrorCodeClient,
+                                RemoteEndPoint = listener.LocalEndPoint,
+                                ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
+                            });
+                            stream2 = await connection2.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                            // OpenBidirectionalStream only allocates ID. We will force stream opening
+                            // by Writing there and receiving data on the other side.
+                            await stream2.WriteAsync(buffer);
+                        }
+                        catch (Exception ex)
+                        {
+                            _output?.WriteLine($"Failed to connect: {ex.Message}");
+                            throw;
+                        }
+                    }));
 
-            await WhenAllOrAnyFailed(
-                Task.Run(async () =>
+                // No need to keep the listener once we have connected connection and streams
+                await listener.DisposeAsync();
+
+                var result = new StreamPairWithOtherDisposables(stream1, stream2);
+                result.Disposables.Add(connection1);
+                result.Disposables.Add(connection2);
+
+                return result;
+            }
+            catch
+            {
+                if (stream1 is not null)
                 {
-                    connection1 = await listener.AcceptConnectionAsync();
-                    stream1 = await connection1.AcceptStreamAsync();
-                }),
-                Task.Run(async () =>
+                    await stream1.DisposeAsync();
+                }
+                if (stream2 is not null)
                 {
-                    connection2 = new QuicConnection(
-                        provider,
-                        listener.ListenEndPoint,
-                        new SslClientAuthenticationOptions() { ApplicationProtocols = new List<SslApplicationProtocol>() { protocol } });
-                    await connection2.ConnectAsync();
-                    stream2 = connection2.OpenBidirectionalStream();
-                }));
-
-            var result = new StreamPairWithOtherDisposables(stream1, stream2);
-            result.Disposables.Add(connection1);
-            result.Disposables.Add(connection2);
-            result.Disposables.Add(listener);
-
-            return result;
+                    await stream2.DisposeAsync();
+                }
+                if (connection1 is not null)
+                {
+                    await connection1.DisposeAsync();
+                }
+                if (connection2 is not null)
+                {
+                    await connection2.DisposeAsync();
+                }
+                throw;
+            }
         }
 
         private sealed class StreamPairWithOtherDisposables : StreamPair
         {
-            public readonly List<IDisposable> Disposables = new List<IDisposable>();
+            public readonly List<IAsyncDisposable> Disposables = new List<IAsyncDisposable>();
 
             public StreamPairWithOtherDisposables(Stream stream1, Stream stream2) : base(stream1, stream2) { }
 
             public override void Dispose()
             {
                 base.Dispose();
-                Disposables.ForEach(d => d.Dispose());
+                foreach (IAsyncDisposable disposable in Disposables)
+                {
+                    disposable.DisposeAsync().GetAwaiter().GetResult();
+                }
             }
         }
     }

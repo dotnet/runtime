@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
@@ -41,7 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return result;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is DistinguishedName other)
             {
@@ -153,10 +154,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private DirectoryEntry GetNewDirectoryEntry(string dn)
         {
-            if (_bindingPrefix == null)
-            {
-                _bindingPrefix = "LDAP://" + _context.GetServerName() + "/";
-            }
+            _bindingPrefix ??= "LDAP://" + _context.GetServerName() + "/";
 
             _pathCracker.Set(dn, NativeComInterfaces.ADS_SETTYPE_DN);
             string escapedDN = _pathCracker.Retrieve(NativeComInterfaces.ADS_FORMAT_X500_DN);

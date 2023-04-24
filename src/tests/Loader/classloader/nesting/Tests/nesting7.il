@@ -3,6 +3,7 @@
 
 
 .assembly extern System.Console { auto }
+.assembly extern xunit.core {}
 .assembly extern mscorlib { auto }
 
 // model revision #2
@@ -109,6 +110,9 @@
 
 .method public static int32 Main()
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .locals init (class [mscorlib]System.Exception V_0,
                 int32 V_1)

@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class MyDispose : IDisposable
 {
@@ -28,7 +29,7 @@ public class MyDispose : IDisposable
     }
 }
 
-public class Test
+public class Test_repro
 {
 
     // OUT:
@@ -283,9 +284,10 @@ public class Test
         return 0;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
-        Test t = new Test();
+        Test_repro t = new Test_repro();
         int retVal = 0;
 
         // using in switch statements

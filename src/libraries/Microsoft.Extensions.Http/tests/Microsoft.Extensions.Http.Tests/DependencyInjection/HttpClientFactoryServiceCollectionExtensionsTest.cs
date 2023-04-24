@@ -80,6 +80,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [Fact] // Verifies that AddHttpClient does not override any existing registration
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50873", TestPlatforms.Android)]
         public void AddHttpClient_DoesNotRegisterDefaultClientIfAlreadyRegistered()
         {
             // Arrange
@@ -735,7 +736,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example2.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AddHttpMessageHandler_WithName_NewHandlerIsSurroundedByLogging_ForHttpClient()
         {
             // Arrange
@@ -877,7 +878,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal("http://example.com/", client.HttpClient.BaseAddress.AbsoluteUri);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AddHttpMessageHandler_WithName_NewHandlerIsSurroundedByLogging_ForHttpMessageHandler()
         {
             var serviceCollection = new ServiceCollection();
@@ -957,9 +958,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 client.Service,
                 request.Properties[nameof(SingletonService)]);
 #else
-#nullable enable
             request.Options.TryGetValue(new HttpRequestOptionsKey<SingletonService>(nameof(SingletonService)), out SingletonService? optService);
-#nullable disable
+
             Assert.Same(
                 services.GetRequiredService<SingletonService>(),
                 optService);
@@ -1005,9 +1005,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     client.Service,
                     request.Properties[nameof(SingletonService)]);
 #else
-#nullable enable
                 request.Options.TryGetValue(new HttpRequestOptionsKey<SingletonService>(nameof(SingletonService)), out SingletonService? optService);
-#nullable disable
 
                 Assert.Same(
                     services.GetRequiredService<SingletonService>(),
@@ -1079,9 +1077,8 @@ namespace Microsoft.Extensions.DependencyInjection
                     client.Service,
                     request.Properties[nameof(ScopedService)]);
 #else
-#nullable enable
                 request.Options.TryGetValue(new HttpRequestOptionsKey<ScopedService>(nameof(ScopedService)), out ScopedService? optService);
-#nullable disable
+
                 Assert.NotSame(
                     scope.ServiceProvider.GetRequiredService<ScopedService>(),
                     optService);
@@ -1126,9 +1123,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 client.Service,
                 request.Properties[nameof(TransientService)]);
 #else
-#nullable enable
             request.Options.TryGetValue(new HttpRequestOptionsKey<TransientService>(nameof(TransientService)), out TransientService? optService);
-#nullable disable
+
             Assert.NotSame(
                 services.GetRequiredService<TransientService>(),
                 optService);
@@ -1170,9 +1166,8 @@ namespace Microsoft.Extensions.DependencyInjection
                     client.Service,
                     request.Properties[nameof(TransientService)]);
 #else
-#nullable enable
-            request.Options.TryGetValue(new HttpRequestOptionsKey<TransientService>(nameof(TransientService)), out TransientService? optService);
-#nullable disable
+                request.Options.TryGetValue(new HttpRequestOptionsKey<TransientService>(nameof(TransientService)), out TransientService? optService);
+
                 Assert.NotSame(
                     services.GetRequiredService<TransientService>(),
                     optService);
@@ -1184,7 +1179,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AddHttpClient_GetAwaiterAndResult_InSingleThreadedSynchronizationContext_ShouldNotHangs()
         {
             // Arrange
@@ -1228,7 +1223,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void SuppressScope_False_CreatesNewScope()
         {
             // Arrange
@@ -1256,7 +1251,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.NotSame(services, capturedServices);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void SuppressScope_False_InScope_CreatesNewScope()
         {
             // Arrange
@@ -1288,7 +1283,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void SuppressScope_True_DoesNotCreateScope()
         {
             // Arrange
@@ -1316,7 +1311,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.NotSame(services, capturedServices);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void SuppressScope_True_InScope_DoesNotCreateScope()
         {
             // Arrange

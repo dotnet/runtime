@@ -42,6 +42,34 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
+        /// Trivial example of passing an object
+        /// </summary>
+        [Fact]
+        public void ObjectPayload()
+        {
+            using (DiagnosticListener listener = new DiagnosticListener("TestingObjectPayload"))
+            {
+                DiagnosticSource source = listener;
+                var result = new List<KeyValuePair<string, object>>();
+                var observer = new ObserverToList<TelemData>(result);
+
+                using (listener.Subscribe(new ObserverToList<TelemData>(result)))
+                {
+                    object o = new object();
+
+                    listener.Write("ObjectPayload", o);
+                    Assert.Equal(1, result.Count);
+                    Assert.Equal("ObjectPayload", result[0].Key);
+                    Assert.Same(o, result[0].Value);
+                }   // unsubscribe
+
+                // Make sure that after unsubscribing, we don't get more events.
+                source.Write("ObjectPayload", new object());
+                Assert.Equal(1, result.Count);
+            }
+        }
+
+        /// <summary>
         /// slightly less trivial of passing a structure with a couple of fields
         /// </summary>
         [Fact]
@@ -500,7 +528,7 @@ namespace System.Diagnostics.Tests
         /// Stresses the AllListeners by having many threads be adding and removing.
         /// </summary>
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process), nameof(PlatformDetection.IsThreadingSupported))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/28772")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(100, 100)] // run multiple times to stress it further
         [InlineData(100, 101)]
         [InlineData(100, 102)]

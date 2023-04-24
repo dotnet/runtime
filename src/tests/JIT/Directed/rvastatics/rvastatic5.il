@@ -1,4 +1,5 @@
 .assembly extern mscorlib{}
+.assembly extern xunit.core {}
 .assembly rvastatic5{}
 .class public A{
  .method static native int Call1(int64) {.maxstack  50
@@ -7065,7 +7066,10 @@ a010126:
   throw
 a010127:
   ret}
- .method static int32 Main(string[] args){.entrypoint .maxstack  5
+ .method public static int32 Main(){.entrypoint .maxstack  5
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   call void [rvastatic5]A::V1()
   call void [rvastatic5]A::V2()
   call void [rvastatic5]A::V3()

@@ -5,6 +5,7 @@ using Microsoft.DotNet.Cli.Build;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
@@ -36,7 +37,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             RepoDirProvider = repoDirectoriesProvider;
 
-            Framework = framework ?? RepoDirProvider.GetTestContextVariable("MNA_TFM");
+            Framework = framework ?? RepoDirProvider.Tfm;
 
             SdkDotnet = new DotNetCli(repoDirectoriesProvider.DotnetSDK);
             CurrentRid = repoDirectoriesProvider.TargetRID;
@@ -75,40 +76,44 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
         }
 
+        private readonly static object s_buildFilesLock = new object();
+
         private TestProject CopyTestProject(TestProject sourceTestProject)
         {
-            EnsureDirectoryBuildFiles(TestArtifact.TestArtifactsPath);
-            return sourceTestProject.Copy();
-        }
-
-        private void EnsureDirectoryBuildFiles(string testArtifactDirectory)
-        {
-            Directory.CreateDirectory(testArtifactDirectory);
-
-            // write an empty Directory.Build.* file to ensure that msbuild doesn't pick up
-            // the repo's root Directory.Build.*.
-            EnsureTestProjectsFileContent(testArtifactDirectory, "props");
-            EnsureTestProjectsFileContent(testArtifactDirectory, "targets");
-        }
-
-        private void EnsureTestProjectsFileContent(string dir, string type) => EnsureFileWithContent(
-            Path.Combine(dir, $"Directory.Build.{type}"),
-            string.Join(
-                Environment.NewLine,
-                "<Project>",
-                $"  <Import Project=\"{RepoDirProvider.TestAssetsFolder}/TestUtils/TestProjects.{type}\" />",
-                "</Project>"));
-
-        private void EnsureFileWithContent(string path, string content)
-        {
-            for(int i = 0; i < 3 && !File.Exists(path); i++)
+            lock (s_buildFilesLock)
             {
-                try
+                // Prevent in-process race condition since the TestArtifactsPath is shared by the current
+                // assembly
+                EnsureDirectoryBuildFiles(RepoDirProvider.TestAssetsFolder, TestArtifact.TestArtifactsPath);
+            }
+
+            return sourceTestProject.Copy();
+
+            static void EnsureDirectoryBuildFiles(string testAssetsFolder, string testArtifactDirectory)
+            {
+                Directory.CreateDirectory(testArtifactDirectory);
+
+                // write an empty Directory.Build.* file to ensure that msbuild doesn't pick up
+                // the repo's root Directory.Build.*.
+                EnsureTestProjectsFileContent(testAssetsFolder, testArtifactDirectory, "props");
+                EnsureTestProjectsFileContent(testAssetsFolder, testArtifactDirectory, "targets");
+
+                static void EnsureTestProjectsFileContent(string testAssetsFolder, string dir, string type)
                 {
-                    File.WriteAllText(path, content);
+                    var fileName = Path.Combine(dir, $"Directory.Build.{type}");
+                    if (File.Exists(fileName))
+                    {
+                        return;
+                    }
+
+                    File.WriteAllText(
+                        fileName,
+                        string.Join(
+                            Environment.NewLine,
+                            "<Project>",
+                            $"  <Import Project=\"{testAssetsFolder}/TestUtils/TestProjects.{type}\" />",
+                            "</Project>"));
                 }
-                catch (IOException)
-                {}
             }
         }
 
@@ -293,6 +298,17 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 publishArgs.Add("--self-contained");
                 publishArgs.Add(selfContained.Value ? "true" : "false");
+
+                // Workaround for https://github.com/dotnet/sdk/issues/25062
+                // If self-contained is specified via the command line, also specify the
+                // runtime identifier (if we didn't already). Otherwise, the SDK ends up
+                // passing the runtime identifier of the SDK such that the one specified
+                // in the project file is ignored.
+                if (selfContained.Value && runtime == null)
+                {
+                    publishArgs.Add("--runtime");
+                    publishArgs.Add(RepoDirProvider.TargetRID);
+                }
             }
 
             if (outputDirectory != null)
@@ -358,7 +374,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public TestProjectFixture EnsureRestored(params string[] fallbackSources)
         {
-            if ( ! TestProject.IsRestored())
+            if (!TestProject.IsRestored())
             {
                 RestoreProject(fallbackSources);
             }
@@ -368,7 +384,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public TestProjectFixture EnsureRestoredForRid(string rid, params string[] fallbackSources)
         {
-            if ( ! TestProject.IsRestored())
+            if (!TestProject.IsRestored())
             {
                 string extraMSBuildProperties = $"/p:TestTargetRid={rid}";
                 RestoreProject(fallbackSources, extraMSBuildProperties);

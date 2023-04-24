@@ -29,7 +29,7 @@ namespace System.IO
         }
 
         [Fact]
-        public void FileSystemAccessRule_AcessControlTypeDeny_Returns_Valid_Object()
+        public void FileSystemAccessRule_AccessControlTypeDeny_Returns_Valid_Object()
         {
             var accessRule = new FileSystemAccessRule(Helpers.s_WorldSidNTAccount, FileSystemRights.AppendData, AccessControlType.Deny);
             var expectedFileSystemRights = FileSystemRights.AppendData & ~FileSystemRights.Synchronize;

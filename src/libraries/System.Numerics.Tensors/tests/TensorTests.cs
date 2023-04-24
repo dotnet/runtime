@@ -286,7 +286,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(3, tensor.Dimensions[2]);
         }
 
-        [Theory()]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [MemberData(nameof(GetSingleTensorConstructors))]
         public void ConstructTensorFromArrayRank3WithLowerBounds(TensorConstructor tensorConstructor)
         {
@@ -2161,9 +2161,9 @@ namespace System.Numerics.Tensors.Tests
     }
 }";
 
-            Assert.Equal(expected, tensor.GetArrayString());
+            Assert.Equal(expected, tensor.GetArrayString(), ignoreLineEndingDifferences: !LineEndingsHelper.IsNewLineConsistent);
 
-            var expectedNoSpace = expected.Replace(Environment.NewLine, "").Replace(" ", "");
+            var expectedNoSpace = expected.Replace(LineEndingsHelper.CompiledNewline, "").Replace(" ", "");
             Assert.Equal(expectedNoSpace, tensor.GetArrayString(false));
         }
 

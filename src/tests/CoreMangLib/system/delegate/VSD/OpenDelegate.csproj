@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>

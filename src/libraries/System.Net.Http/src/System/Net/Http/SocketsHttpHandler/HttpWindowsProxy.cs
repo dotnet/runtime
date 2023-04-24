@@ -55,6 +55,7 @@ namespace System.Net.Http
                 {
                     // Proxy failures are currently ignored by managed handler.
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(proxyHelper, $"{nameof(Interop.WinHttp.WinHttpOpen)} returned invalid handle");
+                    sessionHandle.Dispose();
                     return false;
                 }
             }
@@ -78,7 +79,6 @@ namespace System.Net.Http
                 if (!string.IsNullOrWhiteSpace(proxyHelper.ProxyBypass))
                 {
                     int idx = 0;
-                    int start = 0;
                     string? tmp;
 
                     // Process bypass list for manual setting.
@@ -104,7 +104,7 @@ namespace System.Net.Http
                             idx += 1;
                         }
 
-                        start = idx;
+                        int start = idx;
                         while (idx < proxyHelper.ProxyBypass.Length && proxyHelper.ProxyBypass[idx] != ' ' && proxyHelper.ProxyBypass[idx] != ';' && proxyHelper.ProxyBypass[idx] != ']') { idx += 1; };
 
                         if (idx == start)

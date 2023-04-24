@@ -3,12 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using ILCompiler.IBC;
 
 using Internal.Pgo;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler
 {
@@ -38,10 +36,9 @@ namespace ILCompiler
     {
         public MethodProfileData(MethodDesc method, MethodProfilingDataFlags flags, double exclusiveWeight, Dictionary<MethodDesc, int> callWeights, uint scenarioMask, PgoSchemaElem[] schemaData)
         {
-            if (method == null)
-                throw new ArgumentNullException("method");
-
-            Method = method;
+#pragma warning disable CA1507 // Use nameof to express symbol names
+            Method = method ?? throw new ArgumentNullException("method");
+#pragma warning restore CA1507 // Use nameof to express symbol names
             Flags = flags;
             ScenarioMask = scenarioMask;
             ExclusiveWeight = exclusiveWeight;
@@ -59,16 +56,14 @@ namespace ILCompiler
 
     public abstract class ProfileData
     {
+        public abstract MibcConfig Config { get; }
         public abstract bool PartialNGen { get; }
         public abstract MethodProfileData GetMethodProfileData(MethodDesc m);
         public abstract IEnumerable<MethodProfileData> GetAllMethodProfileData();
         public abstract byte[] GetMethodBlockCount(MethodDesc m);
 
-        public static void MergeProfileData(ref bool partialNgen, Dictionary<MethodDesc, MethodProfileData> mergedProfileData, ProfileData profileData)
+        public static void MergeProfileData(Dictionary<MethodDesc, MethodProfileData> mergedProfileData, ProfileData profileData)
         {
-            if (profileData.PartialNGen)
-                partialNgen = true;
-
             PgoSchemaElem[][] schemaElemMergerArray = new PgoSchemaElem[2][];
 
             foreach (MethodProfileData data in profileData.GetAllMethodProfileData())
@@ -111,7 +106,7 @@ namespace ILCompiler
                         // Actually merge
                         schemaElemMergerArray[0] = dataToMerge.SchemaData;
                         schemaElemMergerArray[1] = data.SchemaData;
-                        mergedSchemaData = PgoProcessor.Merge<TypeSystemEntityOrUnknown>(schemaElemMergerArray);
+                        mergedSchemaData = PgoProcessor.Merge<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>(schemaElemMergerArray);
                     }
                     mergedProfileData[data.Method] = new MethodProfileData(data.Method, dataToMerge.Flags | data.Flags, data.ExclusiveWeight + dataToMerge.ExclusiveWeight, mergedCallWeights, dataToMerge.ScenarioMask | data.ScenarioMask, mergedSchemaData);
                 }
@@ -130,6 +125,8 @@ namespace ILCompiler
         private EmptyProfileData()
         {
         }
+
+        public override MibcConfig Config { get; } = new ();
 
         public override bool PartialNGen => false;
 

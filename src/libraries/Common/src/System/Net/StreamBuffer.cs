@@ -192,8 +192,6 @@ namespace System.IO
 
         private (bool wait, int bytesRead) TryReadFromBuffer(Span<byte> buffer)
         {
-            Debug.Assert(buffer.Length > 0);
-
             Debug.Assert(!Monitor.IsEntered(SyncObject));
             lock (SyncObject)
             {
@@ -225,11 +223,6 @@ namespace System.IO
 
         public int Read(Span<byte> buffer)
         {
-            if (buffer.Length == 0)
-            {
-                return 0;
-            }
-
             (bool wait, int bytesRead) = TryReadFromBuffer(buffer);
             if (wait)
             {
@@ -245,11 +238,6 @@ namespace System.IO
         public async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            if (buffer.Length == 0)
-            {
-                return 0;
-            }
 
             (bool wait, int bytesRead) = TryReadFromBuffer(buffer.Span);
             if (wait)

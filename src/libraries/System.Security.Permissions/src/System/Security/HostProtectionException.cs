@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
 using System.Text;
 
 namespace System.Security
 {
-#if NET50_OBSOLETIONS
+#if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     [Serializable]
@@ -20,18 +21,21 @@ namespace System.Security
 
         public HostProtectionException() : base()
         {
+            HResult = E_HostProtection;
             ProtectedResources = HostProtectionResource.None;
             DemandedResources = HostProtectionResource.None;
         }
 
         public HostProtectionException(string message) : base(message)
         {
+            HResult = E_HostProtection;
             ProtectedResources = HostProtectionResource.None;
             DemandedResources = HostProtectionResource.None;
         }
 
         public HostProtectionException(string message, Exception e) : base(message, e)
         {
+            HResult = E_HostProtection;
             ProtectedResources = HostProtectionResource.None;
             DemandedResources = HostProtectionResource.None;
         }
@@ -44,6 +48,10 @@ namespace System.Security
             DemandedResources = demandedResources;
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected HostProtectionException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -55,7 +63,7 @@ namespace System.Security
 
         public HostProtectionResource ProtectedResources { get; }
 
-        private void AppendResourceString(string resourceString, object attr, StringBuilder sb)
+        private static void AppendResourceString(string resourceString, object attr, StringBuilder sb)
         {
             if (attr == null)
                 return;
@@ -77,6 +85,10 @@ namespace System.Security
             return sb.ToString();
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

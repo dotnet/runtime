@@ -167,11 +167,7 @@ namespace System.Linq.Parallel
                 {
                     for (int j = 0; j < _sharedBarriers[i].Length; j++)
                     {
-                        Barrier b = _sharedBarriers[i][j];
-                        if (b != null)
-                        {
-                            b.Dispose();
-                        }
+                        _sharedBarriers[i][j]?.Dispose();
                     }
                 }
             }
@@ -204,6 +200,7 @@ namespace System.Linq.Parallel
             // Step 3. Enter into the merging phases, each separated by several barriers.
             if (_partitionCount > 1)
             {
+                Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
                 // We only need to merge if there is more than 1 partition.
                 MergeSortCooperatively();
             }
@@ -232,10 +229,7 @@ namespace System.Linq.Parallel
                 TKey currentKey = default(TKey)!;
                 bool hadNext = _source.MoveNext(ref current!, ref currentKey);
 
-                if (keys == null)
-                {
-                    keys = new GrowingArray<TKey>();
-                }
+                keys ??= new GrowingArray<TKey>();
 
                 if (hadNext)
                 {
@@ -357,6 +351,7 @@ namespace System.Linq.Parallel
         // negatively impact speedups.
         //
 
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         private void MergeSortCooperatively()
         {
             CancellationToken cancelToken = _groupState.CancellationState.MergedCancellationToken;

@@ -3,8 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -30,6 +32,37 @@ namespace Microsoft.Extensions.Hosting.Tests
                 config["key1"] = "value";
                 Assert.Equal("value", config["key1"]);
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void BuildFiresEvents()
+        {
+            using var _ = RemoteExecutor.Invoke(() =>
+            {
+                IHostBuilder hostBuilderFromEvent = null;
+                IHost hostFromEvent = null;
+
+                var listener = new HostingListener((pair) =>
+                {
+                    if (pair.Key == "HostBuilding")
+                    {
+                        hostBuilderFromEvent = (IHostBuilder)pair.Value;
+                    }
+
+                    if (pair.Key == "HostBuilt")
+                    {
+                        hostFromEvent = (IHost)pair.Value;
+                    }
+                });
+
+                using var sub = DiagnosticListener.AllListeners.Subscribe(listener);
+
+                var hostBuilder = new HostBuilder();
+                var host = hostBuilder.Build();
+
+                Assert.Same(hostBuilder, hostBuilderFromEvent);
+                Assert.Same(host, hostFromEvent);
+            });
         }
 
         [Fact]
@@ -116,7 +149,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CanConfigureAppConfigurationFromFile()
         {
             var hostBuilder = new HostBuilder()
@@ -146,7 +178,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     Assert.NotNull(env.ApplicationName);
 #elif NETFRAMEWORK
                     // Note GetEntryAssembly returns null for the net4x console test runner.
-                    Assert.Null(env.ApplicationName);
+                    Assert.Equal(string.Empty, env.ApplicationName);
 #else
 #error TFMs need to be updated
 #endif
@@ -162,7 +194,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 Assert.NotNull(env.ApplicationName);
 #elif NETFRAMEWORK
                 // Note GetEntryAssembly returns null for the net4x console test runner.
-                Assert.Null(env.ApplicationName);
+                Assert.Equal(string.Empty, env.ApplicationName);
 #else
 #error TFMs need to be updated
 #endif
@@ -203,7 +235,7 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        public void UseEnvironmentIsNotOverriden()
+        public void UseEnvironmentIsNotOverridden()
         {
             var vals = new Dictionary<string, string>
             {
@@ -214,7 +246,6 @@ namespace Microsoft.Extensions.Hosting.Tests
             var config = builder.Build();
 
             var expected = "MY_TEST_ENVIRONMENT";
-
 
             using (var host = new HostBuilder()
                 .ConfigureHostConfiguration(configBuilder => configBuilder.AddConfiguration(config))
@@ -257,8 +288,8 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             var parameters = new Dictionary<string, string>()
             {
-                { "applicationName", "MyProjectReference"},
-                { "environment", Environments.Development},
+                { "applicationName", "MyProjectReference" },
+                { "environment", Environments.Development },
                 { "contentRoot", Path.GetFullPath(".") }
             };
 
@@ -330,6 +361,66 @@ namespace Microsoft.Extensions.Hosting.Tests
             {
                 Assert.NotNull(host.Services.GetService<ILoggerFactory>());
             }
+        }
+
+        public static IEnumerable<object[]> ConfigureHostOptionsTestInput = new[]
+        {
+            new object[] { BackgroundServiceExceptionBehavior.Ignore, TimeSpan.FromDays(3) },
+            new object[] { BackgroundServiceExceptionBehavior.StopHost, TimeSpan.FromTicks(long.MaxValue) },
+        };
+
+        [Theory]
+        [MemberData(nameof(ConfigureHostOptionsTestInput))]
+        public void CanConfigureHostOptionsWithOptionsOverload(
+            BackgroundServiceExceptionBehavior testBehavior, TimeSpan testShutdown)
+        {
+            using var host = new HostBuilder()
+                .ConfigureDefaults(Array.Empty<string>())
+                .ConfigureHostOptions(
+                    options =>
+                    {
+                        options.BackgroundServiceExceptionBehavior = testBehavior;
+                        options.ShutdownTimeout = testShutdown;
+                    })
+                .Build();
+
+            var options = host.Services.GetRequiredService<IOptions<HostOptions>>();
+            Assert.NotNull(options.Value);
+
+            var hostOptions = options.Value;
+            Assert.Equal(testBehavior, hostOptions.BackgroundServiceExceptionBehavior);
+            Assert.Equal(testShutdown, hostOptions.ShutdownTimeout);
+        }
+
+        [Theory]
+        [MemberData(nameof(ConfigureHostOptionsTestInput))]
+        public void CanConfigureHostOptionsWithContenxtAndOptionsOverload(
+            BackgroundServiceExceptionBehavior testBehavior, TimeSpan testShutdown)
+        {
+            using var host = new HostBuilder()
+                .ConfigureDefaults(Array.Empty<string>())
+                .ConfigureHostOptions(
+                    (context, options) =>
+                    {
+                        context.HostingEnvironment.ApplicationName = "TestApp";
+                        context.HostingEnvironment.EnvironmentName = Environments.Staging;
+
+                        options.BackgroundServiceExceptionBehavior = testBehavior;
+                        options.ShutdownTimeout = testShutdown;
+                    })
+                .Build();
+
+            var options = host.Services.GetRequiredService<IOptions<HostOptions>>();
+            Assert.NotNull(options.Value);
+
+            var hostOptions = options.Value;
+            Assert.Equal(testBehavior, hostOptions.BackgroundServiceExceptionBehavior);
+            Assert.Equal(testShutdown, hostOptions.ShutdownTimeout);
+
+            var env = host.Services.GetRequiredService<IHostEnvironment>();
+
+            Assert.Equal("TestApp", env.ApplicationName);
+            Assert.Equal(Environments.Staging, env.EnvironmentName);
         }
 
         [Fact]
@@ -547,13 +638,14 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void HostServicesSameServiceProviderAsInHostBuilder()
         {
             var hostBuilder = Host.CreateDefaultBuilder();
             var host = hostBuilder.Build();
-            
-            var type = hostBuilder.GetType();
+
+            // Use typeof so that trimming can see the field being used below
+            var type = typeof(HostBuilder);
+            Assert.Equal(hostBuilder.GetType(), type);
             var field = type.GetField("_appServices", BindingFlags.Instance | BindingFlags.NonPublic)!;
             var appServicesFromHostBuilder = (IServiceProvider)field.GetValue(hostBuilder)!;
             Assert.Same(appServicesFromHostBuilder, host.Services);
@@ -570,6 +662,28 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             var expectedContentRootPath = Directory.GetCurrentDirectory();
             Assert.Equal(expectedContentRootPath, env.ContentRootPath);
+        }
+
+        [Fact]
+        public void HostBuilderConfigureDefaultsDoesntThrowInDevelopment()
+        {
+            using (var host = new HostBuilder()
+                .ConfigureDefaults(args: null)
+                .ConfigureHostConfiguration(config =>
+                {
+                    config.AddInMemoryCollection(new[]
+                    {
+                        new KeyValuePair<string, string>(HostDefaults.ApplicationKey, "MyProjectReference"),
+                        new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, Environments.Development)
+                    });
+                })
+                .Build())
+            {
+                var env = host.Services.GetRequiredService<IHostEnvironment>();
+
+                Assert.Equal("MyProjectReference", env.ApplicationName);
+                Assert.Equal(Environments.Development, env.EnvironmentName);
+            }
         }
 
         [Theory]
@@ -591,6 +705,32 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(
                 testBehavior,
                 options.Value.BackgroundServiceExceptionBehavior);
+        }
+
+        private class HostingListener : IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object?>>
+        {
+            private IDisposable? _disposable;
+            private readonly Action<KeyValuePair<string, object?>> _callback;
+
+            public HostingListener(Action<KeyValuePair<string, object?>> callback)
+            {
+                _callback = callback;
+            }
+
+            public void OnCompleted() { _disposable?.Dispose(); }
+            public void OnError(Exception error) { }
+            public void OnNext(DiagnosticListener value)
+            {
+                if (value.Name == "Microsoft.Extensions.Hosting")
+                {
+                    _disposable = value.Subscribe(this);
+                }
+            }
+
+            public void OnNext(KeyValuePair<string, object?> value)
+            {
+                _callback(value);
+            }
         }
 
         private class FakeFileProvider : IFileProvider, IDisposable

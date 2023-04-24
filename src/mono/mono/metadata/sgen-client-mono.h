@@ -29,6 +29,24 @@ sgen_vtable_get_descriptor (GCVTable vtable)
 	return (SgenDescriptor)vtable->gc_descr;
 }
 
+static inline gboolean
+sgen_vtable_has_class_obj (GCVTable vtable)
+{
+	MonoGCHandle *handle = vtable->loader_alloc;
+	return handle != NULL;
+}
+
+static inline GCObject*
+sgen_vtable_get_class_obj (GCVTable vtable)
+{
+	MonoGCHandle *handle = vtable->loader_alloc;
+	if (handle)
+		/* This could return NULL during unloading */
+		return (GCObject*)mono_gchandle_get_target_internal (handle);
+	else
+		return NULL;
+}
+
 typedef struct _SgenClientThreadInfo SgenClientThreadInfo;
 struct _SgenClientThreadInfo {
 	MonoThreadInfo info;
@@ -39,13 +57,6 @@ struct _SgenClientThreadInfo {
 	*/
 	gboolean skip, suspend_done;
 	volatile int in_critical_region;
-
-#ifdef SGEN_POSIX_STW
-	/* This is -1 until the first suspend. */
-	int signal;
-	/* FIXME: kill this, we only use signals on systems that have rt-posix, which doesn't have issues with duplicates. */
-	unsigned int stop_count; /* to catch duplicate signals. */
-#endif
 
 	gpointer runtime_data;
 
@@ -60,7 +71,7 @@ struct _SgenClientThreadInfo {
 
 #include "metadata/profiler-private.h"
 #include "utils/dtrace.h"
-#include "utils/mono-counters.h"
+#include <mono/utils/mono-counters.h>
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-time.h"
 #include "utils/mono-os-semaphore.h"
@@ -194,28 +205,6 @@ sgen_client_update_copied_object (char *destination, GCVTable gc_vtable, void *o
 		mono_sgen_register_moved_object (obj, destination);
 }
 
-#ifdef XDOMAIN_CHECKS_IN_WBARRIER
-extern gboolean sgen_mono_xdomain_checks;
-
-#define sgen_client_wbarrier_generic_nostore_check(ptr) do {		\
-		/* FIXME: ptr_in_heap must be called with the GC lock held */ \
-		if (sgen_mono_xdomain_checks && *(MonoObject**)ptr && ptr_in_heap (ptr)) { \
-			char *start = find_object_for_ptr (ptr);	\
-			MonoObject *value = *(MonoObject**)ptr;		\
-			LOCK_GC;					\
-			SGEN_ASSERT (0, start, "Write barrier outside an object?"); \
-			if (start) {					\
-				MonoObject *obj = (MonoObject*)start;	\
-				if (obj->vtable->domain != value->vtable->domain) \
-					SGEN_ASSERT (0, is_xdomain_ref_allowed (ptr, start, obj->vtable->domain), "Cross-domain ref not allowed"); \
-			}						\
-			UNLOCK_GC;					\
-		}							\
-	} while (0)
-#else
-#define sgen_client_wbarrier_generic_nostore_check(ptr)
-#endif
-
 static gboolean G_GNUC_UNUSED
 sgen_client_object_has_critical_finalizer (GCObject *obj)
 {
@@ -250,10 +239,13 @@ sgen_client_bridge_processing_stw_step (void)
 	sgen_bridge_processing_stw_step ();
 }
 
+void
+mono_gc_wait_for_bridge_processing_internal (void);
+
 static void G_GNUC_UNUSED
 sgen_client_bridge_wait_for_processing (void)
 {
-	mono_gc_wait_for_bridge_processing ();
+	mono_gc_wait_for_bridge_processing_internal ();
 }
 
 static void G_GNUC_UNUSED
@@ -694,7 +686,7 @@ sgen_client_binary_protocol_ephemeron_ref (gpointer list, gpointer key, gpointer
 /* Enter must be visible before anything is done in the critical region. */
 #define ENTER_CRITICAL_REGION do { mono_atomic_store_acquire (&IN_CRITICAL_REGION, 1); } while (0)
 
-/* Exit must make sure all critical regions stores are visible before it signal the end of the region. 
+/* Exit must make sure all critical regions stores are visible before it signal the end of the region.
  * We don't need to emit a full barrier since we
  */
 #define EXIT_CRITICAL_REGION  do { mono_atomic_store_release (&IN_CRITICAL_REGION, 0); } while (0)
@@ -724,7 +716,6 @@ gboolean sgen_is_managed_allocator (MonoMethod *method);
 gboolean sgen_has_managed_allocator (void);
 void sgen_disable_native_stack_scan (void);
 
-void sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type);
 void sgen_null_links_for_domain (MonoDomain *domain);
 
 #endif

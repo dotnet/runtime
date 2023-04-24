@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
-public class Test
+public class Test_GetGCMemoryInfo
 {
     // Set this to false normally so the test doesn't have so much console output.
     static bool fPrintInfo = false;
@@ -71,7 +71,7 @@ public class Test
         int byteArraySize = 1000;
         for (int i = 0; i < (totalTempAllocBytes / byteArraySize); i++)
         {
-            byte[] byteArray = new byte[byteArraySize];
+            GC.KeepAlive(new byte[byteArraySize]);
         }
     }
 

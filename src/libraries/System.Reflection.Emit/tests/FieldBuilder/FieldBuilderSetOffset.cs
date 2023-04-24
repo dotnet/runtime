@@ -51,7 +51,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
             FieldBuilder field = type.DefineField("TestField", typeof(int), FieldAttributes.Public);
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
 
             Assert.Throws<InvalidOperationException>(() => field.SetOffset(0));
         }

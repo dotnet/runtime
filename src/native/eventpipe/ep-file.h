@@ -34,8 +34,8 @@ struct _EventPipeFile_Internal {
 	EventPipeMetadataBlock *metadata_block;
 	EventPipeStackBlock *stack_block;
 	// Hashtable of metadata labels.
-	ep_rt_metadata_labels_hash_map_t metadata_ids;
-	ep_rt_stack_hash_map_t stack_hash;
+	dn_umap_t *metadata_ids;
+	dn_umap_t *stack_hash;
 	// The timestamp when the file was opened.  Used for calculating file-relative timestamps.
 	ep_timestamp_t file_open_timestamp;
 #ifdef EP_CHECKED_BUILD
@@ -123,16 +123,10 @@ EP_DEFINE_GETTER(StackHashKey *, stack_hash_key, uint32_t, hash)
 StackHashKey *
 ep_stack_hash_key_init (
 	StackHashKey *key,
-	const EventPipeStackContents *stack_contents);
+	const EventPipeStackContentsInstance *stack_contents);
 
 void
 ep_stack_hash_key_fini (StackHashKey *key);
-
-uint32_t
-ep_stack_hash_key_hash (const void *key);
-
-bool
-ep_stack_hash_key_equal (const void *key1, const void *key2);
 
 /*
  * StackHashEntry.
@@ -163,7 +157,7 @@ ep_stack_hash_entry_get_key (StackHashEntry *stack_hash_entry);
 
 StackHashEntry *
 ep_stack_hash_entry_alloc (
-	const EventPipeStackContents *stack_contents,
+	const EventPipeStackContentsInstance *stack_contents,
 	uint32_t id,
 	uint32_t hash);
 

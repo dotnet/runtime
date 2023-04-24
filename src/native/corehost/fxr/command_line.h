@@ -33,7 +33,7 @@ typedef std::unordered_map<known_options, std::vector<pal::string_t>, known_opti
 
 namespace command_line
 {
-    const pal::string_t& get_option_name(known_options opt);
+    const pal::char_t* get_option_name(known_options opt);
     pal::string_t get_option_value(
         const opt_map_t& opts,
         known_options opt,
@@ -57,7 +57,7 @@ namespace command_line
         /*out*/ pal::string_t &app_candidate,
         /*out*/ opt_map_t &opts);
 
-    void print_muxer_info(const pal::string_t &dotnet_root);
+    void print_muxer_info(const pal::string_t &dotnet_root, const pal::string_t &global_json_path);
     void print_muxer_usage(bool is_sdk_present);
 };
 

@@ -1,12 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System
 {
@@ -42,21 +45,33 @@ namespace System
     //
     [StructLayout(LayoutKind.Auto)]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly partial struct DateTime : IComparable, ISpanFormattable, IConvertible, IComparable<DateTime>, IEquatable<DateTime>, ISerializable
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public readonly partial struct DateTime
+        : IComparable,
+          ISpanFormattable,
+          IConvertible,
+          IComparable<DateTime>,
+          IEquatable<DateTime>,
+          ISerializable,
+          ISpanParsable<DateTime>,
+          IUtf8SpanFormattable
     {
         // Number of 100ns ticks per time unit
-        private const long TicksPerMillisecond = 10000;
+        internal const int MicrosecondsPerMillisecond = 1000;
+        private const long TicksPerMicrosecond = 10;
+        private const long TicksPerMillisecond = TicksPerMicrosecond * MicrosecondsPerMillisecond;
+
+        private const int HoursPerDay = 24;
         private const long TicksPerSecond = TicksPerMillisecond * 1000;
         private const long TicksPerMinute = TicksPerSecond * 60;
         private const long TicksPerHour = TicksPerMinute * 60;
-        private const long TicksPerDay = TicksPerHour * 24;
+        private const long TicksPerDay = TicksPerHour * HoursPerDay;
 
         // Number of milliseconds per time unit
         private const int MillisPerSecond = 1000;
         private const int MillisPerMinute = MillisPerSecond * 60;
         private const int MillisPerHour = MillisPerMinute * 60;
-        private const int MillisPerDay = MillisPerHour * 24;
+        private const int MillisPerDay = MillisPerHour * HoursPerDay;
 
         // Number of days in a non-leap year
         private const int DaysPerYear = 365;
@@ -78,7 +93,12 @@ namespace System
 
         internal const long MinTicks = 0;
         internal const long MaxTicks = DaysTo10000 * TicksPerDay - 1;
-        private const long MaxMillis = (long)DaysTo10000 * MillisPerDay;
+        private const long MaxMicroseconds = MaxTicks / TicksPerMicrosecond;
+        private const long MaxMillis = MaxTicks / TicksPerMillisecond;
+        private const long MaxSeconds = MaxTicks / TicksPerSecond;
+        private const long MaxMinutes = MaxTicks / TicksPerMinute;
+        private const long MaxHours = MaxTicks / TicksPerHour;
+        private const long MaxDays = (long)DaysTo10000 - 1;
 
         internal const long UnixEpochTicks = DaysTo1970 * TicksPerDay;
         private const long FileTimeOffset = DaysTo1601 * TicksPerDay;
@@ -91,14 +111,20 @@ namespace System
         // All OA dates must be less than (not <=) OADateMaxAsDouble
         private const double OADateMaxAsDouble = 2958466.0;
 
-        private const int DatePartYear = 0;
-        private const int DatePartDayOfYear = 1;
-        private const int DatePartMonth = 2;
-        private const int DatePartDay = 3;
+        // Euclidean Affine Functions Algorithm (EAF) constants
 
-        private static readonly uint[] s_daysToMonth365 = {
+        // Constants used for fast calculation of following subexpressions
+        //      x / DaysPer4Years
+        //      x % DaysPer4Years / 4
+        private const uint EafMultiplier = (uint)(((1UL << 32) + DaysPer4Years - 1) / DaysPer4Years);   // 2,939,745
+        private const uint EafDivider = EafMultiplier * 4;                                              // 11,758,980
+
+        private const ulong TicksPer6Hours = TicksPerHour * 6;
+        private const int March1BasedDayOfNewYear = 306;              // Days between March 1 and January 1
+
+        internal static ReadOnlySpan<uint> DaysToMonth365 => new uint[] {
             0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
-        private static readonly uint[] s_daysToMonth366 = {
+        internal static ReadOnlySpan<uint> DaysToMonth366 => new uint[] {
             0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 };
 
         private static ReadOnlySpan<byte> DaysInMonth365 => new byte[] { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
@@ -154,6 +180,40 @@ namespace System
             _dateData = (ulong)ticks | ((ulong)(uint)kind << KindShift);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified <see cref="DateOnly"/> and <see cref="TimeOnly"/>.
+        /// The new instance will have the <see cref="DateTimeKind.Unspecified"/> kind.
+        /// </summary>
+        /// <param name="date">
+        /// The date part.
+        /// </param>
+        /// <param name="time">
+        /// The time part.
+        /// </param>
+        public DateTime(DateOnly date, TimeOnly time)
+        {
+            _dateData = (ulong)(date.DayNumber * TimeSpan.TicksPerDay + time.Ticks);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified <see cref="DateOnly"/> and <see cref="TimeOnly"/> respecting a <see cref="DateTimeKind"/>.
+        /// </summary>
+        /// <param name="date">
+        /// The date part.
+        /// </param>
+        /// <param name="time">
+        /// The time part.
+        /// </param>
+        /// <param name="kind">
+        /// One of the enumeration values that indicates whether <paramref name="date"/>
+        /// and <paramref name="time"/> specify a local time, Coordinated Universal Time (UTC), or neither.
+        /// </param>
+        public DateTime(DateOnly date, TimeOnly time, DateTimeKind kind)
+        {
+            if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
+            _dateData = (ulong)(date.DayNumber * TimeSpan.TicksPerDay + time.Ticks) | ((ulong)(uint)kind << KindShift);
+        }
+
         internal DateTime(long ticks, DateTimeKind kind, bool isAmbiguousDst)
         {
             if ((ulong)ticks > MaxTicks) ThrowTicksOutOfRange();
@@ -164,7 +224,9 @@ namespace System
         private static void ThrowTicksOutOfRange() => throw new ArgumentOutOfRangeException("ticks", SR.ArgumentOutOfRange_DateTimeBadTicks);
         private static void ThrowInvalidKind() => throw new ArgumentException(SR.Argument_InvalidDateTimeKind, "kind");
         private static void ThrowMillisecondOutOfRange() => throw new ArgumentOutOfRangeException("millisecond", SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1));
+        private static void ThrowMicrosecondOutOfRange() => throw new ArgumentOutOfRangeException("microsecond", SR.Format(SR.ArgumentOutOfRange_Range, 0, MicrosecondsPerMillisecond - 1));
         private static void ThrowDateArithmetic(int param) => throw new ArgumentOutOfRangeException(param switch { 0 => "value", 1 => "t", _ => "months" }, SR.ArgumentOutOfRange_DateArithmetic);
+        private static void ThrowAddOutOfRange() => throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_AddValue);
 
         // Constructs a DateTime from a given year, month, and day. The
         // time-of-day of the resulting DateTime is always midnight.
@@ -183,19 +245,96 @@ namespace System
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through the number of years in <paramref name="calendar"/>).</param>
+        /// <param name="month">The month (1 through the number of months in <paramref name="calendar"/>).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="calendar">The calendar that is used to interpret <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/>.</param>
+        /// <param name="kind">
+        /// One of the enumeration values that indicates whether <paramref name="year"/>, <paramref name="month"/>, <paramref name="day"/>,
+        /// <paramref name="hour"/>, <paramref name="minute"/>, <paramref name="second"/>, and <paramref name="millisecond"/>
+        /// specify a local time, Coordinated Universal Time (UTC), or neither.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="calendar"/> is <see langword="null"/>
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is not in the range supported by <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than the number of months in <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="kind"/> is not one of the <see cref="DateTimeKind"/> values.
+        /// </exception>
+        /// <remarks>
+        /// The allowable values for <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/> parameters
+        /// depend on the <paramref name="calendar"/> parameter. An exception is thrown if the specified date and time cannot
+        /// be expressed using <paramref name="calendar"/>.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, DateTimeKind kind)
+        {
+            ArgumentNullException.ThrowIfNull(calendar);
+
+            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
+            if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
+
+            if (second != 60 || !SystemSupportsLeapSeconds)
+            {
+                ulong ticks = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
+                _dateData = ticks | ((ulong)kind << KindShift);
+            }
+            else
+            {
+                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
+                this = new DateTime(year, month, day, hour, minute, 59, millisecond, calendar, kind);
+                ValidateLeapSecond();
+            }
+        }
+
         // Constructs a DateTime from a given year, month, day, hour,
         // minute, and second.
         //
         public DateTime(int year, int month, int day, int hour, int minute, int second)
         {
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 _dateData = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
             }
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59);
+                this = new DateTime(year, month, day, hour, minute, 59);
                 ValidateLeapSecond();
             }
         }
@@ -204,7 +343,7 @@ namespace System
         {
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
                 _dateData = ticks | ((ulong)kind << KindShift);
@@ -212,7 +351,7 @@ namespace System
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59, kind);
+                this = new DateTime(year, month, day, hour, minute, 59, kind);
                 ValidateLeapSecond();
             }
         }
@@ -222,101 +361,475 @@ namespace System
         //
         public DateTime(int year, int month, int day, int hour, int minute, int second, Calendar calendar)
         {
-            if (calendar == null)
-                throw new ArgumentNullException(nameof(calendar));
+            ArgumentNullException.ThrowIfNull(calendar);
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 _dateData = calendar.ToDateTime(year, month, day, hour, minute, second, 0).UTicks;
             }
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59, calendar);
+                this = new DateTime(year, month, day, hour, minute, 59, calendar);
                 ValidateLeapSecond();
             }
         }
 
-        // Constructs a DateTime from a given year, month, day, hour,
-        // minute, and second.
-        //
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond)
-        {
-            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through 9999).</param>
+        /// <param name="month">The month (1 through 12).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is less than 1 or greater than 9999.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than 12.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        /// </exception>
+        /// <remarks>
+        /// This constructor interprets <paramref name="year"/>, <paramref name="month"/> and <paramref name="day"/> as a year, month and day
+        /// in the Gregorian calendar. To instantiate a <see cref="DateTime"/> value by using the year, month and day in another calendar, call
+        /// the <see cref="DateTime(int, int, int, int, int, int, int, int, Calendar)"/> constructor.
+        ///
+        /// The <see cref="Kind"/> property is initialized to <see cref="DateTimeKind.Unspecified"/>.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond) =>
+            _dateData = Init(year, month, day, hour, minute, second, millisecond);
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
-            {
-                ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
-                ticks += (uint)millisecond * (uint)TicksPerMillisecond;
-                Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
-                _dateData = ticks;
-            }
-            else
-            {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59, millisecond);
-                ValidateLeapSecond();
-            }
-        }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through 9999).</param>
+        /// <param name="month">The month (1 through 12).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="kind">
+        /// One of the enumeration values that indicates whether <paramref name="year"/>, <paramref name="month"/>, <paramref name="day"/>,
+        /// <paramref name="hour"/>, <paramref name="minute"/>, <paramref name="second"/>, and <paramref name="millisecond"/>
+        /// specify a local time, Coordinated Universal Time (UTC), or neither.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is less than 1 or greater than 9999.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than 12.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="kind"/> is not one of the <see cref="DateTimeKind"/> values.
+        /// </exception>
+        /// <remarks>
+        /// This constructor interprets <paramref name="year"/>, <paramref name="month"/> and <paramref name="day"/> as a year, month and day
+        /// in the Gregorian calendar. To instantiate a <see cref="DateTime"/> value by using the year, month and day in another calendar, call
+        /// the <see cref="DateTime(int, int, int, int, int, int, int, int, Calendar, DateTimeKind)"/> constructor.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind) =>
+            _dateData = Init(year, month, day, hour, minute, second, millisecond, kind);
 
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind)
-        {
-            if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
-            if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
-
-            if (second != 60 || !s_systemSupportsLeapSeconds)
-            {
-                ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
-                ticks += (uint)millisecond * (uint)TicksPerMillisecond;
-                Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
-                _dateData = ticks | ((ulong)kind << KindShift);
-            }
-            else
-            {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59, millisecond, kind);
-                ValidateLeapSecond();
-            }
-        }
-
-        // Constructs a DateTime from a given year, month, day, hour,
-        // minute, and second for the specified calendar.
-        //
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through the number of years in <paramref name="calendar"/>).</param>
+        /// <param name="month">The month (1 through the number of months in <paramref name="calendar"/>).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="calendar">The calendar that is used to interpret <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/>.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="calendar"/> is <see langword="null"/>
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is not in the range supported by <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than the number of months in <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        /// </exception>
+        /// <remarks>
+        /// The allowable values for <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/> parameters
+        /// depend on the <paramref name="calendar"/> parameter. An exception is thrown if the specified date and time cannot
+        /// be expressed using <paramref name="calendar"/>.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
         public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar)
         {
-            if (calendar == null)
-                throw new ArgumentNullException(nameof(calendar));
+            ArgumentNullException.ThrowIfNull(calendar);
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
                 _dateData = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
             }
             else
             {
                 // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59, millisecond, calendar);
+                this = new DateTime(year, month, day, hour, minute, 59, millisecond, calendar);
                 ValidateLeapSecond();
             }
         }
 
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, DateTimeKind kind)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through 9999).</param>
+        /// <param name="month">The month (1 through 12).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="microsecond">The microseconds (0 through 999).</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is less than 1 or greater than 9999.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than 12.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="microsecond"/> is less than 0 or greater than 999.
+        /// </exception>
+        /// <remarks>
+        /// This constructor interprets <paramref name="year"/>, <paramref name="month"/> and <paramref name="day"/> as a year, month and day
+        /// in the Gregorian calendar. To instantiate a <see cref="DateTime"/> value by using the year, month and day in another calendar, call
+        /// the <see cref="DateTime(int, int, int, int, int, int, int, int, Calendar)"/> constructor.
+        ///
+        /// The <see cref="Kind"/> property is initialized to <see cref="DateTimeKind.Unspecified"/>.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond)
+            : this(year, month, day, hour, minute, second, millisecond, microsecond, DateTimeKind.Unspecified)
         {
-            if (calendar == null)
-                throw new ArgumentNullException(nameof(calendar));
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through 9999).</param>
+        /// <param name="month">The month (1 through 12).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="microsecond">The microseconds (0 through 999).</param>
+        /// <param name="kind">
+        /// One of the enumeration values that indicates whether <paramref name="year"/>, <paramref name="month"/>, <paramref name="day"/>,
+        /// <paramref name="hour"/>, <paramref name="minute"/>, <paramref name="second"/>, and <paramref name="millisecond"/>
+        /// specify a local time, Coordinated Universal Time (UTC), or neither.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is less than 1 or greater than 9999.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than 12.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="microsecond"/> is less than 0 or greater than 999.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="kind"/> is not one of the <see cref="DateTimeKind"/> values.
+        /// </exception>
+        /// <remarks>
+        /// This constructor interprets <paramref name="year"/>, <paramref name="month"/> and <paramref name="day"/> as a year, month and day
+        /// in the Gregorian calendar. To instantiate a <see cref="DateTime"/> value by using the year, month and day in another calendar, call
+        /// the <see cref="DateTime(int, int, int, int, int, int, int, int, Calendar, DateTimeKind)"/> constructor.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, DateTimeKind kind)
+        {
+            ulong ticks = Init(year, month, day, hour, minute, second, millisecond, kind);
+            if ((uint)microsecond >= MicrosecondsPerMillisecond) ThrowMicrosecondOutOfRange();
+
+            ulong newTicks = (ticks & TicksMask) + (ulong)(microsecond * TicksPerMicrosecond);
+
+            Debug.Assert(newTicks <= MaxTicks);
+            _dateData = newTicks | (ticks & FlagsMask);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through the number of years in <paramref name="calendar"/>).</param>
+        /// <param name="month">The month (1 through the number of months in <paramref name="calendar"/>).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="microsecond">The microseconds (0 through 999).</param>
+        /// <param name="calendar">The calendar that is used to interpret <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/>.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="calendar"/> is <see langword="null"/>
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is not in the range supported by <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than the number of months in <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="microsecond"/> is less than 0 or greater than 999.
+        /// </exception>
+        /// <remarks>
+        /// The allowable values for <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/> parameters
+        /// depend on the <paramref name="calendar"/> parameter. An exception is thrown if the specified date and time cannot
+        /// be expressed using <paramref name="calendar"/>.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar)
+            : this(year, month, day, hour, minute, second, millisecond, microsecond, calendar, DateTimeKind.Unspecified)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DateTime"/> structure to the specified year, month, day, hour, minute, second,
+        /// millisecond, and Coordinated Universal Time (UTC) or local time for the specified calendar.
+        /// </summary>
+        /// <param name="year">The year (1 through the number of years in <paramref name="calendar"/>).</param>
+        /// <param name="month">The month (1 through the number of months in <paramref name="calendar"/>).</param>
+        /// <param name="day">The day (1 through the number of days in <paramref name="month"/>).</param>
+        /// <param name="hour">The hours (0 through 23).</param>
+        /// <param name="minute">The minutes (0 through 59).</param>
+        /// <param name="second">The seconds (0 through 59).</param>
+        /// <param name="millisecond">The milliseconds (0 through 999).</param>
+        /// <param name="microsecond">The microseconds (0 through 999).</param>
+        /// <param name="calendar">The calendar that is used to interpret <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/>.</param>
+        /// <param name="kind">
+        /// One of the enumeration values that indicates whether <paramref name="year"/>, <paramref name="month"/>, <paramref name="day"/>,
+        /// <paramref name="hour"/>, <paramref name="minute"/>, <paramref name="second"/>, and <paramref name="millisecond"/>
+        /// specify a local time, Coordinated Universal Time (UTC), or neither.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="calendar"/> is <see langword="null"/>
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="year"/> is not in the range supported by <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="month"/> is less than 1 or greater than the number of months in <paramref name="calendar"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="day"/> is less than 1 or greater than the number of days in <paramref name="month"/>.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="hour"/> is less than 0 or greater than 23.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="minute"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="second"/> is less than 0 or greater than 59.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="millisecond"/> is less than 0 or greater than 999.
+        ///
+        /// -or-
+        ///
+        /// <paramref name="microsecond"/> is less than 0 or greater than 999.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="kind"/> is not one of the <see cref="DateTimeKind"/> values.
+        /// </exception>
+        /// <remarks>
+        /// The allowable values for <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/> parameters
+        /// depend on the <paramref name="calendar"/> parameter. An exception is thrown if the specified date and time cannot
+        /// be expressed using <paramref name="calendar"/>.
+        ///
+        /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
+        /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
+        /// </remarks>
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar, DateTimeKind kind)
+            : this(year, month, day, hour, minute, second, millisecond, calendar, kind)
+        {
+            if ((uint)microsecond >= MicrosecondsPerMillisecond)
+            {
+                ThrowMicrosecondOutOfRange();
+            }
+            _dateData = new DateTime(_dateData).AddMicroseconds(microsecond)._dateData;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong Init(int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind = DateTimeKind.Unspecified)
+        {
             if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 
-            if (second != 60 || !s_systemSupportsLeapSeconds)
+            if (second != 60 || !SystemSupportsLeapSeconds)
             {
-                ulong ticks = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
-                _dateData = ticks | ((ulong)kind << KindShift);
+                ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
+                ticks += (uint)millisecond * (uint)TicksPerMillisecond;
+                Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
+                return ticks | ((ulong)kind << KindShift);
             }
-            else
+
+            // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
+            DateTime dt = new(year, month, day, hour, minute, 59, millisecond, kind);
+
+            if (!IsValidTimeWithLeapSeconds(year, month, day, hour, 59, kind))
             {
-                // if we have a leap second, then we adjust it to 59 so that DateTime will consider it the last in the specified minute.
-                this = new(year, month, day, hour, minute, 59, millisecond, calendar, kind);
-                ValidateLeapSecond();
+                ThrowHelper.ThrowArgumentOutOfRange_BadHourMinuteSecond();
             }
+
+            return dt._dateData;
         }
 
         private void ValidateLeapSecond()
@@ -371,60 +884,83 @@ namespace System
             return AddTicks(value._ticks);
         }
 
-        // Returns the DateTime resulting from adding a fractional number of
-        // time units to this DateTime.
-        private DateTime Add(double value, int scale)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private DateTime AddUnits(double value, long maxUnitCount, long ticksPerUnit)
         {
-            double millis_double = value * scale + (value >= 0 ? 0.5 : -0.5);
-            if (millis_double <= -MaxMillis || millis_double >= MaxMillis) ThrowOutOfRange();
-            return AddTicks((long)millis_double * TicksPerMillisecond);
+            if (Math.Abs(value) > maxUnitCount)
+            {
+                ThrowAddOutOfRange();
+            }
 
-            static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
+            double integralPart = Math.Truncate(value);
+            double fractionalPart = value - integralPart;
+            long ticks = (long)(integralPart) * ticksPerUnit;
+            ticks += (long)(fractionalPart * ticksPerUnit);
+
+            return AddTicks(ticks);
         }
 
-        // Returns the DateTime resulting from adding a fractional number of
-        // days to this DateTime. The result is computed by rounding the
-        // fractional number of days given by value to the nearest
-        // millisecond, and adding that interval to this DateTime. The
-        // value argument is permitted to be negative.
-        //
-        public DateTime AddDays(double value)
-        {
-            return Add(value, MillisPerDay);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of days to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional days. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of days represented by value.
+        /// </returns>
+        public DateTime AddDays(double value) => AddUnits(value, MaxDays, TicksPerDay);
 
-        // Returns the DateTime resulting from adding a fractional number of
-        // hours to this DateTime. The result is computed by rounding the
-        // fractional number of hours given by value to the nearest
-        // millisecond, and adding that interval to this DateTime. The
-        // value argument is permitted to be negative.
-        //
-        public DateTime AddHours(double value)
-        {
-            return Add(value, MillisPerHour);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of hours to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional hours. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of hours represented by value.
+        /// </returns>
+        public DateTime AddHours(double value) => AddUnits(value, MaxHours, TicksPerHour);
 
-        // Returns the DateTime resulting from the given number of
-        // milliseconds to this DateTime. The result is computed by rounding
-        // the number of milliseconds given by value to the nearest integer,
-        // and adding that interval to this DateTime. The value
-        // argument is permitted to be negative.
-        //
-        public DateTime AddMilliseconds(double value)
-        {
-            return Add(value, 1);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of milliseconds to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional milliseconds. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of milliseconds represented by value.
+        /// </returns>
+        public DateTime AddMilliseconds(double value) => AddUnits(value, MaxMillis, TicksPerMillisecond);
 
-        // Returns the DateTime resulting from adding a fractional number of
-        // minutes to this DateTime. The result is computed by rounding the
-        // fractional number of minutes given by value to the nearest
-        // millisecond, and adding that interval to this DateTime. The
-        // value argument is permitted to be negative.
-        //
-        public DateTime AddMinutes(double value)
-        {
-            return Add(value, MillisPerMinute);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of microseconds to the value of this instance.
+        /// </summary>
+        /// <param name="value">
+        /// A number of whole and fractional microseconds.
+        /// The <paramref name="value"/> parameter can be negative or positive.
+        /// Note that this value is rounded to the nearest integer.
+        /// </param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented
+        /// by this instance and the number of microseconds represented by <paramref name="value"/>.
+        /// </returns>
+        /// <remarks>
+        /// This method does not change the value of this <see cref="DateTime"/>. Instead, it returns a new <see cref="DateTime"/>
+        /// whose value is the result of this operation.
+        ///
+        /// The fractional part of value is the fractional part of a microsecond.
+        /// For example, 4.5 is equivalent to 4 microseconds and 50 ticks, where one microsecond = 10 ticks.
+        ///
+        /// The value parameter is rounded to the nearest integer.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The resulting <see cref="DateTime"/> is less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>.
+        /// </exception>
+        public DateTime AddMicroseconds(double value) => AddUnits(value, MaxMicroseconds, TicksPerMicrosecond);
+
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of minutes to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional minutes. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of minutes represented by value.
+        /// </returns>
+        public DateTime AddMinutes(double value) => AddUnits(value, MaxMinutes, TicksPerMinute);
 
         // Returns the DateTime resulting from adding the given number of
         // months to this DateTime. The result is computed by incrementing
@@ -449,19 +985,11 @@ namespace System
             GetDate(out int year, out int month, out int day);
             int y = year, d = day;
             int m = month + months;
-            if (m > 0)
-            {
-                int q = (int)((uint)(m - 1) / 12);
-                y += q;
-                m -= q * 12;
-            }
-            else
-            {
-                y += m / 12 - 1;
-                m = 12 + m % 12;
-            }
+            int q = m > 0 ? (int)((uint)(m - 1) / 12) : m / 12 - 1;
+            y += q;
+            m -= q * 12;
             if (y < 1 || y > 9999) ThrowDateArithmetic(2);
-            uint[] daysTo = IsLeapYear(y) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<uint> daysTo = IsLeapYear(y) ? DaysToMonth366 : DaysToMonth365;
             uint daysToMonth = daysTo[m - 1];
             int days = (int)(daysTo[m] - daysToMonth);
             if (d > days) d = days;
@@ -469,16 +997,14 @@ namespace System
             return new DateTime(n * (ulong)TicksPerDay + UTicks % TicksPerDay | InternalKind);
         }
 
-        // Returns the DateTime resulting from adding a fractional number of
-        // seconds to this DateTime. The result is computed by rounding the
-        // fractional number of seconds given by value to the nearest
-        // millisecond, and adding that interval to this DateTime. The
-        // value argument is permitted to be negative.
-        //
-        public DateTime AddSeconds(double value)
-        {
-            return Add(value, MillisPerSecond);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of seconds to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional seconds. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of seconds represented by value.
+        /// </returns>
+        public DateTime AddSeconds(double value) => AddUnits(value, MaxSeconds, TicksPerSecond);
 
         // Returns the DateTime resulting from adding the given number of
         // 100-nanosecond ticks to this DateTime. The value argument
@@ -526,12 +1052,12 @@ namespace System
             int m = month - 1, d = day - 1;
             if (IsLeapYear(y))
             {
-                n += s_daysToMonth366[m];
+                n += DaysToMonth366[m];
             }
             else
             {
                 if (d == 28 && m == 1) d--;
-                n += s_daysToMonth365[m];
+                n += DaysToMonth365[m];
             }
             n += (uint)d;
             return new DateTime(n * (ulong)TicksPerDay + UTicks % TicksPerDay | InternalKind);
@@ -581,7 +1107,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
             }
 
-            uint[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<uint> days = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
             if ((uint)day > days[month] - days[month - 1])
             {
                 ThrowHelper.ThrowArgumentOutOfRange_BadYearMonthDay();
@@ -626,6 +1152,19 @@ namespace System
             return ticks;
         }
 
+        internal static ulong TimeToTicks(int hour, int minute, int second, int millisecond, int microsecond)
+        {
+            ulong ticks = TimeToTicks(hour, minute, second, millisecond);
+
+            if ((uint)microsecond >= MicrosecondsPerMillisecond) ThrowMicrosecondOutOfRange();
+
+            ticks += (uint)microsecond * (uint)TicksPerMicrosecond;
+
+            Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
+
+            return ticks;
+        }
+
         // Returns the number of days in the month given by the year and
         // month arguments.
         //
@@ -656,7 +1195,7 @@ namespace System
 
             millis += DoubleDateOffset / TicksPerMillisecond;
 
-            if (millis < 0 || millis >= MaxMillis) throw new ArgumentException(SR.Arg_OleAutDateScale);
+            if (millis < 0 || millis > MaxMillis) throw new ArgumentException(SR.Arg_OleAutDateScale);
             return millis * TicksPerMillisecond;
         }
 
@@ -667,16 +1206,12 @@ namespace System
         //
         public override bool Equals([NotNullWhen(true)] object? value)
         {
-            if (value is DateTime)
-            {
-                return Ticks == ((DateTime)value).Ticks;
-            }
-            return false;
+            return value is DateTime dt && this == dt;
         }
 
         public bool Equals(DateTime value)
         {
-            return Ticks == value.Ticks;
+            return this == value;
         }
 
         // Compares two DateTime values for equality. Returns true if
@@ -685,7 +1220,7 @@ namespace System
         //
         public static bool Equals(DateTime t1, DateTime t2)
         {
-            return t1.Ticks == t2.Ticks;
+            return t1 == t2;
         }
 
         public static DateTime FromBinary(long dateData)
@@ -758,12 +1293,10 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(fileTime), SR.ArgumentOutOfRange_FileTimeInvalid);
             }
 
-#pragma warning disable 162 // Unrechable code on Unix
-            if (s_systemSupportsLeapSeconds)
+            if (SystemSupportsLeapSeconds)
             {
                 return FromFileTimeLeapSecondsAware((ulong)fileTime);
             }
-#pragma warning restore 162
 
             // This is the ticks in Universal time for this fileTime.
             ulong universalTicks = (ulong)fileTime + FileTimeOffset;
@@ -843,94 +1376,31 @@ namespace System
             }
         }
 
-        // Returns a given date part of this DateTime. This method is used
-        // to compute the year, day-of-year, month, or day part.
-        private int GetDatePart(int part)
-        {
-            // n = number of days since 1/1/0001
-            uint n = (uint)(UTicks / TicksPerDay);
-            // y400 = number of whole 400-year periods since 1/1/0001
-            uint y400 = n / DaysPer400Years;
-            // n = day number within 400-year period
-            n -= y400 * DaysPer400Years;
-            // y100 = number of whole 100-year periods within 400-year period
-            uint y100 = n / DaysPer100Years;
-            // Last 100-year period has an extra day, so decrement result if 4
-            if (y100 == 4) y100 = 3;
-            // n = day number within 100-year period
-            n -= y100 * DaysPer100Years;
-            // y4 = number of whole 4-year periods within 100-year period
-            uint y4 = n / DaysPer4Years;
-            // n = day number within 4-year period
-            n -= y4 * DaysPer4Years;
-            // y1 = number of whole years within 4-year period
-            uint y1 = n / DaysPerYear;
-            // Last year has an extra day, so decrement result if 4
-            if (y1 == 4) y1 = 3;
-            // If year was requested, compute and return it
-            if (part == DatePartYear)
-            {
-                return (int)(y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1);
-            }
-            // n = day number within year
-            n -= y1 * DaysPerYear;
-            // If day-of-year was requested, return it
-            if (part == DatePartDayOfYear) return (int)n + 1;
-            // Leap year calculation looks different from IsLeapYear since y1, y4,
-            // and y100 are relative to year 1, not year 0
-            uint[] days = y1 == 3 && (y4 != 24 || y100 == 3) ? s_daysToMonth366 : s_daysToMonth365;
-            // All months have less than 32 days, so n >> 5 is a good conservative
-            // estimate for the month
-            uint m = (n >> 5) + 1;
-            // m = 1-based month number
-            while (n >= days[m]) m++;
-            // If month was requested, return it
-            if (part == DatePartMonth) return (int)m;
-            // Return 1-based day-of-month
-            return (int)(n - days[m - 1] + 1);
-        }
-
-        // Exactly the same as GetDatePart, except computing all of
+        // Exactly the same as Year, Month, Day properties, except computing all of
         // year/month/day rather than just one of them. Used when all three
         // are needed rather than redoing the computations for each.
+        //
+        // Implementation based on article https://arxiv.org/pdf/2102.06959.pdf
+        //   Cassio Neri, Lorenz Schneider - Euclidean Affine Functions and Applications to Calendar Algorithms - 2021
         internal void GetDate(out int year, out int month, out int day)
         {
-            // n = number of days since 1/1/0001
-            uint n = (uint)(UTicks / TicksPerDay);
-            // y400 = number of whole 400-year periods since 1/1/0001
-            uint y400 = n / DaysPer400Years;
-            // n = day number within 400-year period
-            n -= y400 * DaysPer400Years;
-            // y100 = number of whole 100-year periods within 400-year period
-            uint y100 = n / DaysPer100Years;
-            // Last 100-year period has an extra day, so decrement result if 4
-            if (y100 == 4) y100 = 3;
-            // n = day number within 100-year period
-            n -= y100 * DaysPer100Years;
-            // y4 = number of whole 4-year periods within 100-year period
-            uint y4 = n / DaysPer4Years;
-            // n = day number within 4-year period
-            n -= y4 * DaysPer4Years;
-            // y1 = number of whole years within 4-year period
-            uint y1 = n / DaysPerYear;
-            // Last year has an extra day, so decrement result if 4
-            if (y1 == 4) y1 = 3;
-            // compute year
-            year = (int)(y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1);
-            // n = day number within year
-            n -= y1 * DaysPerYear;
-            // dayOfYear = n + 1;
-            // Leap year calculation looks different from IsLeapYear since y1, y4,
-            // and y100 are relative to year 1, not year 0
-            uint[] days = y1 == 3 && (y4 != 24 || y100 == 3) ? s_daysToMonth366 : s_daysToMonth365;
-            // All months have less than 32 days, so n >> 5 is a good conservative
-            // estimate for the month
-            uint m = (n >> 5) + 1;
-            // m = 1-based month number
-            while (n >= days[m]) m++;
+            // y100 = number of whole 100-year periods since 3/1/0000
+            // r1 = (day number within 100-year period) * 4
+            (uint y100, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
+            ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+            ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
+            int n3 = 2141 * daySinceMarch1 + 197913;
+            year = (int)(100 * y100 + (uint)(u2 >> 32));
             // compute month and day
-            month = (int)m;
-            day = (int)(n - days[m - 1] + 1);
+            month = (ushort)(n3 >> 16);
+            day = (ushort)n3 / 2141 + 1;
+
+            // rollover December 31
+            if (daySinceMarch1 >= March1BasedDayOfNewYear)
+            {
+                ++year;
+                month -= 12;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -973,7 +1443,19 @@ namespace System
         // Returns the day-of-month part of this DateTime. The returned
         // value is an integer between 1 and 31.
         //
-        public int Day => GetDatePart(DatePartDay);
+        public int Day
+        {
+            get
+            {
+                // r1 = (day number within 100-year period) * 4
+                uint r1 = (((uint)(UTicks / TicksPer6Hours) | 3U) + 1224) % DaysPer400Years;
+                ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+                ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
+                int n3 = 2141 * daySinceMarch1 + 197913;
+                // Return 1-based day-of-month
+                return (ushort)n3 / 2141 + 1;
+            }
+        }
 
         // Returns the day-of-week part of this DateTime. The returned value
         // is an integer between 0 and 6, where 0 indicates Sunday, 1 indicates
@@ -985,7 +1467,8 @@ namespace System
         // Returns the day-of-year part of this DateTime. The returned value
         // is an integer between 1 and 366.
         //
-        public int DayOfYear => GetDatePart(DatePartDayOfYear);
+        public int DayOfYear =>
+            1 + (int)(((((uint)(UTicks / TicksPer6Hours) | 3U) % (uint)DaysPer400Years) | 3U) * EafMultiplier / EafDivider);
 
         // Returns the hash code for this DateTime.
         //
@@ -1019,6 +1502,16 @@ namespace System
         //
         public int Millisecond => (int)((UTicks / TicksPerMillisecond) % 1000);
 
+        /// <summary>
+        /// The microseconds component, expressed as a value between 0 and 999.
+        /// </summary>
+        public int Microsecond => (int)((UTicks / TicksPerMicrosecond) % 1000);
+
+        /// <summary>
+        /// The nanoseconds component, expressed as a value between 0 and 900 (in increments of 100 nanoseconds).
+        /// </summary>
+        public int Nanosecond => (int)(UTicks % TicksPerMicrosecond) * 100;
+
         // Returns the minute part of this DateTime. The returned value is
         // an integer between 0 and 59.
         //
@@ -1027,7 +1520,18 @@ namespace System
         // Returns the month part of this DateTime. The returned value is an
         // integer between 1 and 12.
         //
-        public int Month => GetDatePart(DatePartMonth);
+        public int Month
+        {
+            get
+            {
+                // r1 = (day number within 100-year period) * 4
+                uint r1 = (((uint)(UTicks / TicksPer6Hours) | 3U) + 1224) % DaysPer400Years;
+                ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+                ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
+                int n3 = 2141 * daySinceMarch1 + 197913;
+                return (ushort)(n3 >> 16) - (daySinceMarch1 >= March1BasedDayOfNewYear ? 12 : 0);
+            }
+        }
 
         // Returns a DateTime representing the current date and time. The
         // resolution of the returned value depends on the system timer.
@@ -1075,7 +1579,16 @@ namespace System
         // Returns the year part of this DateTime. The returned value is an
         // integer between 1 and 9999.
         //
-        public int Year => GetDatePart(DatePartYear);
+        public int Year
+        {
+            get
+            {
+                // y100 = number of whole 100-year periods since 1/1/0001
+                // r1 = (day number within 100-year period) * 4
+                (uint y100, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U), DaysPer400Years);
+                return 1 + (int)(100 * y100 + (r1 | 3) / DaysPer4Years);
+            }
+        }
 
         // Checks whether a given year is a leap year. This method returns true if
         // year is a leap year, or false if not.
@@ -1089,8 +1602,7 @@ namespace System
             }
             if ((year & 3) != 0) return false;
             if ((year & 15) == 0) return true;
-            // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-            return (uint)year % 25 != 0 ? true : false;
+            return (uint)year % 25 != 0;
         }
 
         // Constructs a DateTime from a string. The string must specify a
@@ -1130,7 +1642,7 @@ namespace System
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
         //
-        public static DateTime ParseExact(string s, string format, IFormatProvider? provider)
+        public static DateTime ParseExact(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             if (format == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
@@ -1141,7 +1653,7 @@ namespace System
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
         //
-        public static DateTime ParseExact(string s, string format, IFormatProvider? provider, DateTimeStyles style)
+        public static DateTime ParseExact(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format, IFormatProvider? provider, DateTimeStyles style)
         {
             DateTimeFormatInfo.ValidateStyles(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
@@ -1149,20 +1661,20 @@ namespace System
             return DateTimeParse.ParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style);
         }
 
-        public static DateTime ParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style = DateTimeStyles.None)
+        public static DateTime ParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style = DateTimeStyles.None)
         {
             DateTimeFormatInfo.ValidateStyles(style);
             return DateTimeParse.ParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style);
         }
 
-        public static DateTime ParseExact(string s, string[] formats, IFormatProvider? provider, DateTimeStyles style)
+        public static DateTime ParseExact(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats, IFormatProvider? provider, DateTimeStyles style)
         {
             DateTimeFormatInfo.ValidateStyles(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return DateTimeParse.ParseExactMultiple(s, formats, DateTimeFormatInfo.GetInstance(provider), style);
         }
 
-        public static DateTime ParseExact(ReadOnlySpan<char> s, string[] formats, IFormatProvider? provider, DateTimeStyles style = DateTimeStyles.None)
+        public static DateTime ParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats, IFormatProvider? provider, DateTimeStyles style = DateTimeStyles.None)
         {
             DateTimeFormatInfo.ValidateStyles(style);
             return DateTimeParse.ParseExactMultiple(s, formats, DateTimeFormatInfo.GetInstance(provider), style);
@@ -1218,12 +1730,10 @@ namespace System
             // Treats the input as universal if it is not specified
             long ticks = ((_dateData & KindLocal) != 0) ? ToUniversalTime().Ticks : Ticks;
 
-#pragma warning disable 162 // Unrechable code on Unix
-            if (s_systemSupportsLeapSeconds)
+            if (SystemSupportsLeapSeconds)
             {
                 return (long)ToFileTimeLeapSecondsAware(ticks);
             }
-#pragma warning restore 162
 
             ticks -= FileTimeOffset;
             if (ticks < 0)
@@ -1278,7 +1788,7 @@ namespace System
             return DateTimeFormat.Format(this, null, null);
         }
 
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string? format)
         {
             return DateTimeFormat.Format(this, format, null);
         }
@@ -1288,13 +1798,17 @@ namespace System
             return DateTimeFormat.Format(this, null, provider);
         }
 
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string? format, IFormatProvider? provider)
         {
             return DateTimeFormat.Format(this, format, provider);
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             DateTimeFormat.TryFormat(this, destination, out charsWritten, format, provider);
+
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+            DateTimeFormat.TryFormat(this, utf8Destination, out bytesWritten, format, provider);
 
         public DateTime ToUniversalTime()
         {
@@ -1335,7 +1849,7 @@ namespace System
             return DateTimeParse.TryParse(s, DateTimeFormatInfo.GetInstance(provider), styles, out result);
         }
 
-        public static bool TryParseExact([NotNullWhen(true)] string? s, [NotNullWhen(true)] string? format, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
+        public static bool TryParseExact([NotNullWhen(true)] string? s, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string? format, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
         {
             DateTimeFormatInfo.ValidateStyles(style);
 
@@ -1348,13 +1862,13 @@ namespace System
             return DateTimeParse.TryParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style, out result);
         }
 
-        public static bool TryParseExact(ReadOnlySpan<char> s, ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
+        public static bool TryParseExact(ReadOnlySpan<char> s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] ReadOnlySpan<char> format, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
         {
             DateTimeFormatInfo.ValidateStyles(style);
             return DateTimeParse.TryParseExact(s, format, DateTimeFormatInfo.GetInstance(provider), style, out result);
         }
 
-        public static bool TryParseExact([NotNullWhen(true)] string? s, [NotNullWhen(true)] string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
+        public static bool TryParseExact([NotNullWhen(true)] string? s, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
         {
             DateTimeFormatInfo.ValidateStyles(style);
 
@@ -1367,7 +1881,7 @@ namespace System
             return DateTimeParse.TryParseExactMultiple(s, formats, DateTimeFormatInfo.GetInstance(provider), style, out result);
         }
 
-        public static bool TryParseExact(ReadOnlySpan<char> s, [NotNullWhen(true)] string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
+        public static bool TryParseExact(ReadOnlySpan<char> s, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string?[]? formats, IFormatProvider? provider, DateTimeStyles style, out DateTime result)
         {
             DateTimeFormatInfo.ValidateStyles(style);
             return DateTimeParse.TryParseExactMultiple(s, formats, DateTimeFormatInfo.GetInstance(provider), style, out result);
@@ -1389,17 +1903,55 @@ namespace System
 
         public static TimeSpan operator -(DateTime d1, DateTime d2) => new TimeSpan(d1.Ticks - d2.Ticks);
 
-        public static bool operator ==(DateTime d1, DateTime d2) => d1.Ticks == d2.Ticks;
+        public static bool operator ==(DateTime d1, DateTime d2) => ((d1._dateData ^ d2._dateData) << 2) == 0;
 
-        public static bool operator !=(DateTime d1, DateTime d2) => d1.Ticks != d2.Ticks;
+        public static bool operator !=(DateTime d1, DateTime d2) => !(d1 == d2);
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(DateTime t1, DateTime t2) => t1.Ticks < t2.Ticks;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(DateTime t1, DateTime t2) => t1.Ticks <= t2.Ticks;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(DateTime t1, DateTime t2) => t1.Ticks > t2.Ticks;
 
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(DateTime t1, DateTime t2) => t1.Ticks >= t2.Ticks;
+
+        /// <summary>
+        /// Deconstructs <see cref="DateTime"/> into <see cref="DateOnly"/> and <see cref="TimeOnly"/>.
+        /// </summary>
+        /// <param name="date">
+        /// Deconstructed <see cref="DateOnly"/>.
+        /// </param>
+        /// <param name="time">
+        /// Deconstructed <see cref="TimeOnly"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out DateOnly date, out TimeOnly time)
+        {
+            date = DateOnly.FromDateTime(this);
+            time = TimeOnly.FromDateTime(this);
+        }
+
+        /// <summary>
+        /// Deconstructs <see cref="DateOnly"/> by <see cref="Year"/>, <see cref="Month"/> and <see cref="Day"/>.
+        /// </summary>
+        /// <param name="year">
+        /// Deconstructed parameter for <see cref="Year"/>.
+        /// </param>
+        /// <param name="month">
+        /// Deconstructed parameter for <see cref="Month"/>.
+        /// </param>
+        /// <param name="day">
+        /// Deconstructed parameter for <see cref="Day"/>.
+        /// </param>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void Deconstruct(out int year, out int month, out int day)
+        {
+            GetDate(out year, out month, out day);
+        }
 
         // Returns a string array containing all of the known date and time options for the
         // current culture.  The strings returned are properly formatted date and
@@ -1453,7 +2005,7 @@ namespace System
         double IConvertible.ToDouble(IFormatProvider? provider) => throw InvalidCast(nameof(Double));
         decimal IConvertible.ToDecimal(IFormatProvider? provider) => throw InvalidCast(nameof(Decimal));
 
-        private static Exception InvalidCast(string to) => new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, nameof(DateTime), to));
+        private static InvalidCastException InvalidCast(string to) => new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, nameof(DateTime), to));
 
         DateTime IConvertible.ToDateTime(IFormatProvider? provider) => this;
 
@@ -1474,7 +2026,7 @@ namespace System
                 return false;
             }
 
-            uint[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<uint> days = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
             if ((uint)day > days[month] - days[month - 1])
             {
                 return false;
@@ -1485,7 +2037,7 @@ namespace System
             {
                 ticks += TimeToTicks(hour, minute, second) + (uint)millisecond * (uint)TicksPerMillisecond;
             }
-            else if (second == 60 && s_systemSupportsLeapSeconds && IsValidTimeWithLeapSeconds(year, month, day, hour, minute, DateTimeKind.Unspecified))
+            else if (second == 60 && SystemSupportsLeapSeconds && IsValidTimeWithLeapSeconds(year, month, day, hour, minute, DateTimeKind.Unspecified))
             {
                 // if we have leap second (second = 60) then we'll need to check if it is valid time.
                 // if it is valid, then we adjust the second to 59 so DateTime will consider this second is last second
@@ -1503,5 +2055,22 @@ namespace System
             result = new DateTime(ticks);
             return true;
         }
+
+        //
+        // IParsable
+        //
+
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateTime result) => TryParse(s, provider, DateTimeStyles.None, out result);
+
+        //
+        // ISpanParsable
+        //
+
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static DateTime Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, provider, DateTimeStyles.None);
+
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateTime result) => TryParse(s, provider, DateTimeStyles.None, out result);
     }
 }

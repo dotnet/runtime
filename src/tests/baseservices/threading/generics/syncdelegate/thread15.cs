@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 interface IGen<T>
 {
@@ -15,7 +16,7 @@ class GenInt : IGen<int>
 
 	public virtual void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread15.Xcounter);
 	}
 	
 	public static void DelegateTest()
@@ -25,8 +26,8 @@ class GenInt : IGen<int>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread15.Eval(Test_thread15.Xcounter==1);
+		Test_thread15.Xcounter = 0;
 	}
 }
 
@@ -36,7 +37,7 @@ class GenDouble : IGen<double>
 
 	public virtual void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread15.Xcounter);
 	}
 	
 	public static void DelegateTest()
@@ -46,8 +47,8 @@ class GenDouble : IGen<double>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread15.Eval(Test_thread15.Xcounter==1);
+		Test_thread15.Xcounter = 0;
 	}
 }
 
@@ -57,7 +58,7 @@ class GenString : IGen<string>
 
 	public virtual void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread15.Xcounter);
 	}
 	
 	public static void DelegateTest()
@@ -67,8 +68,8 @@ class GenString : IGen<string>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread15.Eval(Test_thread15.Xcounter==1);
+		Test_thread15.Xcounter = 0;
 	}
 }
 
@@ -78,7 +79,7 @@ class GenObject : IGen<object>
 
 	public virtual void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread15.Xcounter);
 	}
 	
 	public static void DelegateTest()
@@ -88,8 +89,8 @@ class GenObject : IGen<object>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread15.Eval(Test_thread15.Xcounter==1);
+		Test_thread15.Xcounter = 0;
 	}
 }
 
@@ -99,7 +100,7 @@ class GenGuid : IGen<Guid>
 
 	public virtual void Target()
 	{		
-		Interlocked.Increment(ref Test.Xcounter);
+		Interlocked.Increment(ref Test_thread15.Xcounter);
 	}
 	
 	public static void DelegateTest()
@@ -109,11 +110,11 @@ class GenGuid : IGen<Guid>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread15.Eval(Test_thread15.Xcounter==1);
+		Test_thread15.Xcounter = 0;
 	}
 }
-public class Test
+public class Test_thread15
 {
 	public static int nThreads =50;
 	public static int counter = 0;
@@ -130,7 +131,8 @@ public class Test
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 	
 		GenInt.DelegateTest();

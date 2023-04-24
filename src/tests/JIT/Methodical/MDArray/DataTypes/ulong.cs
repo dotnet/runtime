@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct VT
 {
@@ -33,7 +34,8 @@ public class ulongMDArrTest
     static ulong[][,] ja1_b = new ulong[2][,];
     static ulong[][, ,] ja2_b = new ulong[2][, ,];
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         bool pass = true;

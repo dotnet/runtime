@@ -22,15 +22,15 @@
 # The following command
 #
 #  ~/git/coreclr$ python tests/scripts/crossgen_comparison.py crossgen_corelib
-#  --crossgen artifacts/bin/coreclr/Linux.arm.Checked/crossgen
-#  --il_corelib artifacts/bin/coreclr/Linux.arm.Checked/IL/System.Private.CoreLib.dll
-#  --result_dir Linux.arm_arm.Checked
+#  --crossgen artifacts/bin/coreclr/linux.arm.Checked/crossgen
+#  --il_corelib artifacts/bin/coreclr/linux.arm.Checked/IL/System.Private.CoreLib.dll
+#  --result_dir linux.arm_arm.Checked
 #
 # runs Hostarm/arm crossgen on System.Private.CoreLib.dll and puts all the
-# information in files Linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
+# information in files linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
 # and System.Private.CoreLib-DebuggingFile.json
 #
-#  ~/git/coreclr$ cat Linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
+#  ~/git/coreclr$ cat linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
 #  {
 #    "AssemblyName": "System.Private.CoreLib",
 #    "ReturnCode": 0,
@@ -43,7 +43,7 @@
 #    "OutputFileSizeInBytes": 9564160
 #  }
 #
-#  ~/git/coreclr$ cat Linux.x64_arm.Checked/System.Private.CoreLib-DebuggingFile.json
+#  ~/git/coreclr$ cat linux.x64_arm.Checked/System.Private.CoreLib-DebuggingFile.json
 #  {
 #    "ReturnCode": 0,
 #    "StdOut": [
@@ -59,16 +59,16 @@
 # The following command
 #
 #  ~/git/coreclr$ python tests/scripts/crossgen_comparison.py crossgen_dotnet_sdk
-#  --crossgen artifacts/bin/coreclr/Linux.arm.Checked/x64/crossgen
-#  --il_corelib artifacts/bin/coreclr/Linux.arm.Checked/IL/System.Private.CoreLib.dll
+#  --crossgen artifacts/bin/coreclr/linux.arm.Checked/x64/crossgen
+#  --il_corelib artifacts/bin/coreclr/linux.arm.Checked/IL/System.Private.CoreLib.dll
 #  --dotnet_sdk dotnet-sdk-latest-linux-arm.tar.gz
-#  --result_dir Linux.x64_arm.Checked
+#  --result_dir linux.x64_arm.Checked
 #
 #  runs Hostx64/arm crossgen on System.Private.CoreLib.dll in artifacts/Product and on
 #  all the assemblies inside dotnet-sdk-latest-linux-arm.tar.gz and stores the
-#  collected information in directory Linux.x64_arm.Checked
+#  collected information in directory linux.x64_arm.Checked
 #
-#  ~/git/coreclr$ ls Linux.x64_arm.Checked | head
+#  ~/git/coreclr$ ls linux.x64_arm.Checked | head
 #   Microsoft.AI.DependencyCollector.dll.json
 #   Microsoft.ApplicationInsights.AspNetCore.dll.json
 #   Microsoft.ApplicationInsights.dll.json
@@ -83,8 +83,8 @@
 # The following command
 #
 #  ~/git/coreclr$ python -u tests/scripts/crossgen_comparison.py compare
-#  --base_dir Linux.x64_arm.Checked
-#  --diff_dir Linux.x86_arm.Checked
+#  --base_dir linux.x64_arm.Checked
+#  --diff_dir linux.x86_arm.Checked
 #
 # compares the results of Hostx64/arm crossgen and Hostx86/arm crossgen.
 ################################################################################
@@ -104,6 +104,7 @@ import re
 import shutil
 import subprocess
 import sys
+from xml.dom import minidom
 
 ################################################################################
 # Argument Parser
@@ -136,6 +137,7 @@ def build_argument_parser():
     framework_parser.add_argument('--target_arch', dest='target_arch', required=True)
     framework_parser.add_argument('--core_root', dest='core_root', required=True)
     framework_parser.add_argument('--result_dir', dest='result_dirname', required=True)
+    framework_parser.add_argument('--compiler_arch_os', dest='compiler_arch_os', required=True)
     framework_parser.set_defaults(func=crossgen_framework)
 
 
@@ -152,6 +154,8 @@ def build_argument_parser():
     compare_parser = subparsers.add_parser('compare', description=compare_parser_description)
     compare_parser.add_argument('--base_dir', dest='base_dirname', required=True)
     compare_parser.add_argument('--diff_dir', dest='diff_dirname', required=True)
+    compare_parser.add_argument('--testresults', dest='testresultsxml', required=True)
+    compare_parser.add_argument('--target_arch_os', dest='target_arch_os', required=True)
     compare_parser.set_defaults(func=compare_results)
 
     return parser
@@ -242,7 +246,7 @@ class AsyncSubprocessHelper:
         """
 
         reset_env = os.environ.copy()
-        
+
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         loop.close()
@@ -347,7 +351,6 @@ g_Framework_Assemblies = [
     'System.DirectoryServices.dll',
     'System.DirectoryServices.Protocols.dll',
     'System.dll',
-    'System.Drawing.Common.dll',
     'System.Drawing.dll',
     'System.Drawing.Primitives.dll',
     'System.Dynamic.Runtime.dll',
@@ -380,7 +383,6 @@ g_Framework_Assemblies = [
     'System.Linq.Queryable.dll',
     'System.Management.dll',
     'System.Memory.dll',
-    'System.Net.Connections.dll',
     'System.Net.dll',
     'System.Net.Http.dll',
     'System.Net.Http.Json.dll',
@@ -480,7 +482,6 @@ g_Framework_Assemblies = [
     'System.Threading.Timer.dll',
     'System.Transactions.dll',
     'System.Transactions.Local.dll',
-    'System.Utf8String.Experimental.dll',
     'System.ValueTuple.dll',
     'System.Web.dll',
     'System.Web.HttpUtility.dll',
@@ -557,7 +558,7 @@ class CrossGenRunner:
         stdout = None
         stderr = None
 
-        proc = await asyncio.create_subprocess_shell(" ".join(args), 
+        proc = await asyncio.create_subprocess_shell(" ".join(args),
                                                      stdin=asyncio.subprocess.PIPE,
                                                      stdout=asyncio.subprocess.PIPE,
                                                      stderr=asyncio.subprocess.PIPE)
@@ -586,7 +587,7 @@ def compute_file_hashsum(filename):
 # This describes collected during crossgen information.
 ################################################################################
 class CrossGenResult:
-    def __init__(self, assembly_name, returncode, stdout, stderr, output_file_hashsum, output_file_size_in_bytes, output_file_type, args):
+    def __init__(self, assembly_name, returncode, stdout, stderr, output_file_hashsum, output_file_size_in_bytes, output_file_type, args, compiler_arch_os):
         self.assembly_name = assembly_name
         self.returncode = returncode
         self.stdout = stdout
@@ -595,6 +596,7 @@ class CrossGenResult:
         self.output_file_size_in_bytes = output_file_size_in_bytes
         self.output_file_type = output_file_type
         self.args = args
+        self.compiler_arch_os = compiler_arch_os
 
 ################################################################################
 # JSON Encoder for CrossGenResult objects.
@@ -603,10 +605,11 @@ class CrossGenResultEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, CrossGenResult):
             return {
+                'CompilerArchOS': obj.compiler_arch_os,
                 'AssemblyName': obj.assembly_name,
                 'ReturnCode': obj.returncode,
-                'StdOut': obj.stdout.splitlines(),
-                'StdErr': obj.stderr.splitlines(),
+                'StdOut': obj.stdout if isinstance(obj.stdout, list) else obj.stdout.splitlines(),
+                'StdErr': obj.stderr if isinstance(obj.stderr, list) else obj.stderr.splitlines(),
                 'OutputFileHash': obj.output_file_hashsum,
                 'OutputFileSizeInBytes': obj.output_file_size_in_bytes,
                 'OutputFileType': obj.output_file_type }
@@ -621,6 +624,7 @@ class CrossGenResultDecoder(json.JSONDecoder):
         json.JSONDecoder.__init__(self, object_hook=self._decode_object, *args, **kwargs)
     def _decode_object(self, dict):
         try:
+            compiler_arch_os = dict['CompilerArchOS']
             assembly_name = dict['AssemblyName']
             returncode = dict['ReturnCode']
             stdout = dict['StdOut']
@@ -628,7 +632,7 @@ class CrossGenResultDecoder(json.JSONDecoder):
             output_file_hashsum = dict['OutputFileHash']
             output_file_size_in_bytes = dict['OutputFileSizeInBytes']
             output_file_type = dict['OutputFileType']
-            return CrossGenResult(assembly_name, returncode, stdout, stderr, output_file_hashsum, output_file_size_in_bytes, output_file_type, "")
+            return CrossGenResult(assembly_name, returncode, stdout, stderr, output_file_hashsum, output_file_size_in_bytes, output_file_type, "", compiler_arch_os)
         except KeyError:
             return dict
 
@@ -645,13 +649,13 @@ class FileTypes:
     NativeOrReadyToRunImage = 'NativeOrReadyToRunImage'
     DebuggingFile = 'DebuggingFile'
 
-async def run_crossgen(dotnet, crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname, target_os, target_arch):
+async def run_crossgen(dotnet, crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname, target_os, target_arch, compiler_arch_os):
     runner = CrossGenRunner(dotnet, crossgen_executable_filename)
     returncode, stdout, stderr, args = await runner.crossgen_il_file(il_filename, ni_filename, platform_assemblies_paths, target_os, target_arch)
     ni_file_hashsum = compute_file_hashsum(ni_filename) if returncode == 0 else None
     ni_file_size_in_bytes = os.path.getsize(ni_filename) if returncode == 0 else None
     assembly_name = get_assembly_name(il_filename)
-    crossgen_assembly_result = CrossGenResult(assembly_name, returncode, stdout, stderr, ni_file_hashsum, ni_file_size_in_bytes, output_file_type=FileTypes.NativeOrReadyToRunImage, args=args)
+    crossgen_assembly_result = CrossGenResult(assembly_name, returncode, stdout, stderr, ni_file_hashsum, ni_file_size_in_bytes, output_file_type=FileTypes.NativeOrReadyToRunImage, args=args, compiler_arch_os=compiler_arch_os)
 
     if returncode != 0:
         return [crossgen_assembly_result]
@@ -722,10 +726,10 @@ def crossgen_framework(args):
 
         il_filename = os.path.join(args.core_root, assembly_name)
         ni_filename = os.path.join(ni_files_dirname, add_ni_extension(assembly_name))
-        crossgen_results = await run_crossgen(args.dotnet, args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname, args.target_os, args.target_arch)
+        crossgen_results = await run_crossgen(args.dotnet, args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname, args.target_os, args.target_arch, args.compiler_arch_os)
         if crossgen_results[0].returncode != 0:
             g_frameworkcompile_failed = True
-            print("{}{} {} return code={} args'{}'".format(print_prefix, args.crossgen_executable_filename, assembly_name, crossgen_results[0].returncode, crossgen_results[0].args))
+            print("{}{} {} return code={} args'{}' stdout '{}' stderr'{}'".format(print_prefix, args.crossgen_executable_filename, assembly_name, crossgen_results[0].returncode, crossgen_results[0].args, crossgen_results[0].stdout, crossgen_results[0].stderr))
         save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
 
     helper = AsyncSubprocessHelper(g_Framework_Assemblies, verbose=True)
@@ -867,6 +871,120 @@ def compare_results(args):
         print("Number of omitted results: {0}".format(num_omitted_results))
         print("Number of mismatched results: {0}".format(num_mismatched_results))
         print("Total number of files compared: {0}".format(len(both_assemblies)))
+
+        root = minidom.Document()
+        assemblies = root.createElement('assemblies')
+        root.appendChild(assemblies)
+
+        assembly = root.createElement('assembly')
+        assembly.setAttribute('name', 'crossgen2_comparison_job_targeting_{0}'.format(args.target_arch_os))
+        assembly.setAttribute('total', '{0}'.format(len(both_assemblies)))
+        assembly.setAttribute('passed', '{0}'.format(len(both_assemblies) - num_omitted_results - num_mismatched_results))
+        assembly.setAttribute('failed', '{0}'.format(num_omitted_results+num_mismatched_results))
+        assembly.setAttribute('skipped', '0')
+        assemblies.appendChild(assembly)
+
+        collection = root.createElement('collection')
+        collection.setAttribute('name', 'crossgen2_comparison_job_targeting_{0}'.format(args.target_arch_os))
+        collection.setAttribute('total', '{0}'.format(len(both_assemblies)))
+        collection.setAttribute('passed', '{0}'.format(len(both_assemblies) - num_omitted_results - num_mismatched_results))
+        collection.setAttribute('failed', '{0}'.format(num_omitted_results+num_mismatched_results))
+        collection.setAttribute('skipped', '0')
+        assembly.appendChild(collection)
+
+        for assembly_name in sorted(omitted_from_base_dir):
+            diff_result = diff_results_by_name[assembly_name]
+            message = 'Expected nothing, got {0}'.format(json.dumps(diff_result, cls=CrossGenResultEncoder, indent=2))
+            testresult = root.createElement('test')
+            testresult.setAttribute('name', 'CrossgenCompile_{2}_Target_{0}_Omitted_vs_{1}'.format(args.target_arch_os, diff_result.compiler_arch_os, assembly_name))
+            testresult.setAttribute('type', 'Target_{0}'.format(args.target_arch_os))
+            testresult.setAttribute('method', diff_result.compiler_arch_os)
+            testresult.setAttribute('time', '0')
+            testresult.setAttribute('result', 'Fail')
+            collection.appendChild(testresult)
+
+            failureXml = root.createElement('failure')
+            failureXml.setAttribute('exception-type', 'OmittedFromBase')
+            testresult.appendChild(failureXml)
+
+            messageXml = root.createElement('message')
+            messageXml.appendChild(root.createTextNode(message))
+            failureXml.appendChild(messageXml)
+            messageXml = root.createElement('output')
+            messageXml.appendChild(root.createTextNode(message))
+            failureXml.appendChild(messageXml)
+
+        for assembly_name in omitted_from_diff_dir:
+            base_result = diff_results_by_name[assembly_name]
+            message = 'Expected {0} got nothing'.format(json.dumps(base_result, cls=CrossGenResultEncoder, indent=2))
+            testresult = root.createElement('test')
+            testresult.setAttribute('name', 'CrossgenCompile_{2}_Target_{0}_{1}_vs__Omitted'.format(args.target_arch_os, base_result.compiler_arch_os, assembly_name))
+            testresult.setAttribute('type', 'Target_{0}'.format(args.target_arch_os))
+            testresult.setAttribute('method', base_result.compiler_arch_os)
+            testresult.setAttribute('time', '0')
+            testresult.setAttribute('result', 'Fail')
+            collection.appendChild(testresult)
+
+            failureXml = root.createElement('failure')
+            failureXml.setAttribute('exception-type', 'OmittedFromDiff')
+            testresult.appendChild(failureXml)
+
+            messageXml = root.createElement('message')
+            messageXml.appendChild(root.createTextNode(message))
+            failureXml.appendChild(messageXml)
+            messageXml = root.createElement('output')
+            messageXml.appendChild(root.createTextNode(message))
+            failureXml.appendChild(messageXml)
+
+        for assembly_name in sorted(both_assemblies):
+            base_result = base_results_by_name[assembly_name]
+            diff_result = diff_results_by_name[assembly_name]
+            base_diff_are_equal = True
+
+            if base_result.returncode != diff_result.returncode:
+                base_diff_are_equal = False
+            elif base_result.returncode == 0 and diff_result.returncode == 0:
+                if base_result.output_file_hashsum != diff_result.output_file_hashsum:
+                    base_diff_are_equal = False
+                if base_result.output_file_size_in_bytes != diff_result.output_file_size_in_bytes:
+                    base_diff_are_equal = False
+            else:
+                base_diff_are_equal = False
+
+            base_result_string = json.dumps(base_result, cls=CrossGenResultEncoder, indent=2)
+            diff_result_string = json.dumps(diff_result, cls=CrossGenResultEncoder, indent=2)
+            message = 'Expected {0} got {1}'.format(base_result_string, diff_result_string)
+            testresult = root.createElement('test')
+            testresult.setAttribute('name', 'CrossgenCompile_{3}_Target_{0}_{1}_vs_{2}'.format(args.target_arch_os, base_result.compiler_arch_os, diff_result.compiler_arch_os, assembly_name))
+            testresult.setAttribute('type', 'Target_{0}'.format(args.target_arch_os))
+            testresult.setAttribute('method', '{0}_{1}'.format(base_result.compiler_arch_os, diff_result.compiler_arch_os))
+            testresult.setAttribute('time', '0')
+            if base_diff_are_equal:
+                testresult.setAttribute('result', 'Pass')
+            else:
+                testresult.setAttribute('result', 'Fail')
+
+            collection.appendChild(testresult)
+
+            if not base_diff_are_equal:
+                failureXml = root.createElement('failure')
+                failureXml.setAttribute('exception-type', 'MismatchOrReturnCodeFail')
+                testresult.appendChild(failureXml)
+
+                messageXml = root.createElement('message')
+                messageXml.appendChild(root.createTextNode(message))
+
+                failureXml.appendChild(messageXml)
+                messageXml = root.createElement('output')
+                messageXml.appendChild(root.createTextNode(message))
+
+                failureXml.appendChild(messageXml)
+
+        xml_str = root.toprettyxml(indent ="\t")
+
+        if output_file_type == FileTypes.NativeOrReadyToRunImage:
+            with open(args.testresultsxml, "w") as f:
+                f.write(xml_str)
 
     if not did_compare:
         sys.exit(1)

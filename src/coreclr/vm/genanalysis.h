@@ -18,8 +18,9 @@ enum GcGenAnalysisState
     Done = 3,
 };
 
-#define GENAWARE_FILE_NAME W("gcgenaware.nettrace")
-#define GENAWARE_COMPLETION_FILE_NAME "gcgenaware.nettrace.completed"
+#define GENAWARE_TRACE_FILE_NAME W("gcgenaware.{pid}.nettrace")
+#define GENAWARE_DUMP_FILE_NAME W("gcgenaware.{pid}.dmp")
+#define GENAWARE_COMPLETION_FILE_NAME W("gcgenaware.{pid}.nettrace.completed")
 
 extern bool s_forcedGCInProgress;
 extern GcGenAnalysisState gcGenAnalysisState;
@@ -27,8 +28,11 @@ extern EventPipeSession* gcGenAnalysisEventPipeSession;
 extern uint64_t gcGenAnalysisEventPipeSessionId;
 extern GcGenAnalysisState gcGenAnalysisConfigured;
 extern int64_t gcGenAnalysisGen;
-extern int64_t gcGenAnalysisBytes;
+extern uint64_t gcGenAnalysisBytes;
+extern uint64_t gcGenAnalysisTime;
 extern int64_t gcGenAnalysisIndex;
+extern bool gcGenAnalysisTrace;
+extern bool gcGenAnalysisDump;
 
 class GenAnalysis
 {

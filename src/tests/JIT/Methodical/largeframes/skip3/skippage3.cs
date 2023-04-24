@@ -8,8 +8,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-namespace BigFrames
+namespace BigFrames_skippage3
 {
 
     [StructLayout(LayoutKind.Explicit)]
@@ -67,7 +68,8 @@ namespace BigFrames
             }
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Test1(); // force JIT of this
 

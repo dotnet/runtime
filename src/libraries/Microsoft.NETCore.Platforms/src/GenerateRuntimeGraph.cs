@@ -63,7 +63,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         }
 
         /// <summary>
-        /// Parent RID to use for any unknown AdditionalRuntimeIdentifer.
+        /// Parent RID to use for any unknown AdditionalRuntimeIdentifier.
         /// </summary>
         public string AdditionalRuntimeIdentifierParent
         {
@@ -130,7 +130,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
 
         public override bool Execute()
         {
-            if (RuntimeGroups != null && RuntimeGroups.Any() && RuntimeJson == null)
+            if (RuntimeGroups != null && RuntimeGroups.Length != 0 && RuntimeJson == null)
             {
                 Log.LogError($"{nameof(RuntimeJson)} argument must be specified when {nameof(RuntimeGroups)} is specified.");
                 return false;
@@ -240,7 +240,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             return !Log.HasLoggedErrors;
         }
 
-        private void EnsureWritable(string file)
+        private static void EnsureWritable(string file)
         {
             if (File.Exists(file))
             {
@@ -292,7 +292,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             return RuntimeGraph.Merge(existingGraph, runtimeGraph);
         }
 
-        private void ValidateImports(RuntimeGraph runtimeGraph, IDictionary<string, string> externalRIDs)
+        private void ValidateImports(RuntimeGraph runtimeGraph, Dictionary<string, string> externalRIDs)
         {
             foreach (var runtimeDescription in runtimeGraph.Runtimes.Values)
             {
@@ -328,7 +328,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             }
         }
 
-        private static IDictionary<string, IEnumerable<string>> GetCompatibilityMap(RuntimeGraph graph)
+        private static Dictionary<string, IEnumerable<string>> GetCompatibilityMap(RuntimeGraph graph)
         {
             Dictionary<string, IEnumerable<string>> compatibilityMap = new Dictionary<string, IEnumerable<string>>();
 
@@ -344,13 +344,13 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         {
             var serializer = new JsonSerializer();
             using (var file = File.OpenText(mapFile))
-            using (var jsonTextReader = new JsonTextReader(file))
+            using (var jsonTextReader = new JsonTextReader(file) { MaxDepth = null })
             {
                 return serializer.Deserialize<IDictionary<string, IEnumerable<string>>>(jsonTextReader);
             }
         }
 
-        private static void WriteCompatibilityMap(IDictionary<string, IEnumerable<string>> compatibilityMap, string mapFile)
+        private static void WriteCompatibilityMap(Dictionary<string, IEnumerable<string>> compatibilityMap, string mapFile)
         {
             var serializer = new JsonSerializer()
             {
@@ -370,7 +370,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             }
         }
 
-        private static bool CompatibilityMapEquals(IDictionary<string, IEnumerable<string>> left, IDictionary<string, IEnumerable<string>> right)
+        private static bool CompatibilityMapEquals(IDictionary<string, IEnumerable<string>> left, Dictionary<string, IEnumerable<string>> right)
         {
             if (left.Count != right.Count)
             {
@@ -395,7 +395,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             return true;
         }
 
-        private static XNamespace s_dgmlns = @"http://schemas.microsoft.com/vs/2009/dgml";
+        private static readonly XNamespace s_dgmlns = @"http://schemas.microsoft.com/vs/2009/dgml";
         private static void WriteRuntimeGraph(RuntimeGraph graph, string dependencyGraphFilePath)
         {
 
@@ -404,8 +404,6 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             var linksElement = new XElement(s_dgmlns + "Links");
             doc.Root.Add(nodesElement);
             doc.Root.Add(linksElement);
-
-            var nodeIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var runtimeDescription in graph.Runtimes.Values)
             {

@@ -1,8 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <RootNamespace>System.Composition</RootNamespace>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Contains runtime components of the Managed Extensibility Framework.
+
+Commonly Used Types:
+System.Composition.CompositionContext</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Composition\CompositionContext.cs" />
     <Compile Include="System\Composition\ExportFactoryOfT.cs" />

@@ -24,7 +24,7 @@ namespace ABIStress
                 Console.WriteLine("Usage: [--verbose] [--caller-index <number>] [--num-calls <number>] [--tailcalls] [--pinvokes] [--instantiatingstubs] [--unboxingstubs] [--sharedgenericunboxingstubs] [--max-params <number>] [--no-ctrlc-summary]");
                 Console.WriteLine("Either --caller-index or --num-calls must be specified.");
                 Console.WriteLine("Example: --num-calls 100");
-                Console.WriteLine("  Stress first 100 tailcalls and pinvokes");
+                Console.WriteLine("  Stress first 100 of all kinds");
                 Console.WriteLine("Example: --tailcalls --caller-index 37 --verbose");
                 Console.WriteLine("  Stress tailcaller 37, verbose output");
                 Console.WriteLine("Example: --pinvokes --num-calls 1000");
@@ -263,7 +263,7 @@ namespace ABIStress
                 Console.WriteLine("Invoking caller through reflection with args");
                 for (int j = 0; j < outerArgs.Length; j++)
                 {
-                    Console.Write($"arg{j}=");
+                    Console.Write($"arg{j}({outerArgs[j].GetType().Name})=");
                     DumpObject(outerArgs[j]);
                 }
             }
@@ -275,7 +275,7 @@ namespace ABIStress
                 Console.WriteLine("Invoking callee through reflection with args");
                 for (int j = 0; j < innerArgs.Length; j++)
                 {
-                    Console.Write($"arg{j}=");
+                    Console.Write($"arg{j}({innerArgs[j].GetType().Name})=");
                     DumpObject(innerArgs[j]);
                 }
             }
@@ -329,7 +329,7 @@ namespace ABIStress
             int index = 0;
             foreach (Value v in values)
             {
-                g.Emit(OpCodes.Ldstr, $"arg{index}=");
+                g.Emit(OpCodes.Ldstr, $"arg{index}({v.Type.Type.Name})=");
                 g.Emit(OpCodes.Call, s_writeString);
 
                 v.Emit(g);
@@ -344,6 +344,7 @@ namespace ABIStress
                 typeof(byte), typeof(short), typeof(int), typeof(long),
                 typeof(float), typeof(double),
                 typeof(Vector<int>), typeof(Vector128<int>), typeof(Vector256<int>),
+                typeof(Int128),
                 typeof(S1P), typeof(S2P), typeof(S2U), typeof(S3U),
                 typeof(S4P), typeof(S4U), typeof(S5U), typeof(S6U),
                 typeof(S7U), typeof(S8P), typeof(S8U), typeof(S9U),
@@ -351,6 +352,7 @@ namespace ABIStress
                 typeof(S14U), typeof(S15U), typeof(S16U), typeof(S17U),
                 typeof(S31U), typeof(S32U),
                 typeof(Hfa1), typeof(Hfa2),
+                typeof(I128_1), typeof(I128_2),
             }.Select(t => new TypeEx(t)).ToArray();
 
         private static readonly IAbi s_abi = SelectAbi();

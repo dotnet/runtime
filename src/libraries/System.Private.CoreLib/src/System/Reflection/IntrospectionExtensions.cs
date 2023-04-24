@@ -7,8 +7,7 @@ namespace System.Reflection
     {
         public static TypeInfo GetTypeInfo(this Type type)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             if (type is IReflectableType reflectableType)
                 return reflectableType.GetTypeInfo();

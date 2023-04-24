@@ -16,7 +16,7 @@ namespace System.IO.Tests
             return Directory.GetFiles(path);
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void EnumerateWithSymLinkToFile()
         {
             DirectoryInfo containingFolder = Directory.CreateDirectory(GetTestFilePath());
@@ -25,7 +25,7 @@ namespace System.IO.Tests
             FileInfo targetFile = new FileInfo(GetTestFilePath());
             targetFile.Create().Dispose();
 
-            string linkPath = Path.Combine(containingFolder.FullName, Path.GetRandomFileName());
+            string linkPath = Path.Combine(containingFolder.FullName, GetRandomLinkName());
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetFile.FullName, isDirectory: false));
 
             Assert.True(File.Exists(linkPath));
@@ -46,9 +46,9 @@ namespace System.IO.Tests
         {
             // We want to test that directories under the legacy MAX_PATH (260 characters, including the null) can iterate files
             // even if the full path is over 260.
-
-            string directory = IOServices.GetPath(GetTestFilePath(), 250);
-            Assert.Equal(250, directory.Length);
+            var length = OperatingSystem.IsWindows() ? 250 : 258;
+            string directory = IOServices.GetPath(GetTestFilePath(), length);
+            Assert.Equal(length, directory.Length);
             Assert.True(Directory.CreateDirectory(directory).Exists);
 
             for (int i = 0; i < 6; i++)

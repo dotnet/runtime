@@ -17,7 +17,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CanRead()
         {
-            var stream = new MemoryStream(Encoding.ASCII.GetBytes("Hello World"));
+            var stream = new MemoryStream("Hello World"u8.ToArray());
             var reader = PipeReader.Create(stream);
 
             ReadResult readResult = await reader.ReadAsync();
@@ -34,7 +34,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task TryReadReturnsTrueIfBufferedBytesAndNotExaminedEverything()
         {
-            var stream = new MemoryStream(Encoding.ASCII.GetBytes("Hello World"));
+            var stream = new MemoryStream("Hello World"u8.ToArray());
             var reader = PipeReader.Create(stream);
 
             ReadResult readResult = await reader.ReadAsync();
@@ -54,7 +54,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task TryReadReturnsFalseIfBufferedBytesAndEverythingExamined()
         {
-            var stream = new MemoryStream(Encoding.ASCII.GetBytes("Hello World"));
+            var stream = new MemoryStream("Hello World"u8.ToArray());
             var reader = PipeReader.Create(stream);
 
             ReadResult readResult = await reader.ReadAsync();
@@ -168,7 +168,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task BufferingDataPastEndOfStreamCanBeReadAgain()
         {
-            var helloBytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] helloBytes = "Hello World"u8.ToArray();
             var stream = new ThrowAfterZeroByteReadStream(helloBytes);
             PipeReader reader = PipeReader.Create(stream);
 
@@ -263,17 +263,40 @@ namespace System.IO.Pipelines.Tests
 
             stream.WaitForReadTask.TrySetResult(null);
 
-            await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+            var oce = await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+            Assert.Equal(cts.Token, oce.CancellationToken);
+            Assert.IsType<OperationCanceledException>(oce.InnerException);
             reader.Complete();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public async Task ReadCanBeCanceledViaCancelPendingReadWhenReadIsAsync()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReadCanBeCanceledViaCancelPendingReadWhenReadAsync(bool useZeroByteReads)
         {
             var stream = new CancelledReadsStream();
-            PipeReader reader = PipeReader.Create(stream);
+            PipeReader reader = PipeReader.Create(stream, new StreamPipeReaderOptions(useZeroByteReads: useZeroByteReads));
 
             ValueTask<ReadResult> task = reader.ReadAsync();
+
+            reader.CancelPendingRead();
+
+            stream.WaitForReadTask.TrySetResult(null);
+
+            ReadResult readResult = await task;
+            Assert.True(readResult.IsCanceled);
+            reader.Complete();
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ReadCanBeCanceledViaCancelPendingReadWhenReadAtLeastAsync(bool useZeroByteReads)
+        {
+            var stream = new CancelledReadsStream();
+            PipeReader reader = PipeReader.Create(stream, new StreamPipeReaderOptions(useZeroByteReads: useZeroByteReads));
+
+            ValueTask<ReadResult> task = reader.ReadAtLeastAsync(1);
 
             reader.CancelPendingRead();
 
@@ -579,6 +602,27 @@ namespace System.IO.Pipelines.Tests
             await Assert.ThrowsAsync<OperationCanceledException>(async () => await reader.ReadAsync());
         }
 
+        [Fact]
+        public async Task CompleteCallsAppropriateDisposeMethodOnUnderlyingStream()
+        {
+            DisposalTrackingStream stream = new();
+            PipeReader reader = PipeReader.Create(stream);
+            reader.Complete();
+            Assert.True(stream.DisposeCalled);
+            Assert.False(stream.DisposeAsyncCalled);
+
+            stream = new();
+            reader = PipeReader.Create(stream);
+            await reader.CompleteAsync();
+#if NETCOREAPP
+            Assert.False(stream.DisposeCalled);
+            Assert.True(stream.DisposeAsyncCalled);
+#else
+            Assert.True(stream.DisposeCalled);
+            Assert.False(stream.DisposeAsyncCalled);
+#endif
+        }
+
         private static async Task<string> ReadFromPipeAsString(PipeReader reader)
         {
             ReadResult readResult = await reader.ReadAsync();
@@ -665,6 +709,25 @@ namespace System.IO.Pipelines.Tests
                     _throwOnNextCallToRead = true;
                 }
                 return bytes;
+            }
+#endif
+        }
+
+        private class DisposalTrackingStream : MemoryStream
+        {
+            public bool DisposeCalled { get; private set; }
+            public bool DisposeAsyncCalled { get; private set; }
+
+            protected override void Dispose(bool disposing)
+            {
+                DisposeCalled = true;
+            }
+
+#if NETCOREAPP
+            public override ValueTask DisposeAsync()
+            {
+                DisposeAsyncCalled = true;
+                return default;
             }
 #endif
         }

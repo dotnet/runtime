@@ -4,10 +4,12 @@
 using System;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
+using Xunit;
 
-class BindHandleInvalid
+public class BindHandleInvalid
 {
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         return (new BindHandleInvalid().RunTest());
     }
@@ -22,14 +24,14 @@ class BindHandleInvalid
         }
         catch (Exception ex)
         {
-            if (ex.ToString().IndexOf("0x80070006") != -1) // E_HANDLE, we can't access hresult
+            if ((uint)ex.HResult == (uint)0x80070006) // E_HANDLE, we can't access hresult
             {
                 Console.WriteLine("Test passed");
                 return (100);
             }
             else
             {
-                Console.WriteLine("Got wrong error: {0}", ex);
+                Console.WriteLine($"Got wrong error - HResult: 0x{ex.HResult:x}, Exception: {ex}");
             }
         }
         Console.WriteLine("Didn't get argument null exception");

@@ -5,7 +5,7 @@ namespace Dynamic
 {
     using System;
     using System.Runtime.InteropServices;
-    using TestLibrary;
+    using Xunit;
 
     internal class BasicTest
     {
@@ -59,23 +59,23 @@ namespace Dynamic
             int expected = val * 2;
 
             // Invoke default member
-            Assert.AreEqual(expected, obj(val));
-            Assert.AreEqual(expected, obj.Default(val));
+            Assert.Equal(expected, obj(val));
+            Assert.Equal(expected, obj.Default(val));
         }
 
         private void Boolean()
         {
             // Get and set property
             obj.Boolean_Property = true;
-            Assert.IsTrue(obj.Boolean_Property);
+            Assert.True(obj.Boolean_Property);
 
             // Call method with return value
-            Assert.IsFalse(obj.Boolean_Inverse_Ret(true));
+            Assert.False(obj.Boolean_Inverse_Ret(true));
 
             // Call method passing by ref
             bool inout = true;
             obj.Boolean_Inverse_InOut(ref inout);
-            Assert.IsFalse(inout);
+            Assert.False(inout);
 
             // Pass as variant
             Variant<bool>(true, false);
@@ -88,15 +88,15 @@ namespace Dynamic
 
             // Get and set property
             obj.SByte_Property = val;
-            Assert.AreEqual(val, obj.SByte_Property);
+            Assert.Equal(val, obj.SByte_Property);
 
             // Call method with return value
-            Assert.AreEqual(expected, obj.SByte_Doubled_Ret(val));
+            Assert.Equal(expected, obj.SByte_Doubled_Ret(val));
 
             // Call method passing by ref
             sbyte inout = val;
             obj.SByte_Doubled_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
 
             // Pass as variant
             Variant<sbyte>(val, expected);
@@ -109,15 +109,15 @@ namespace Dynamic
 
             // Get and set property
             obj.Byte_Property = val;
-            Assert.AreEqual(val, obj.Byte_Property);
+            Assert.Equal(val, obj.Byte_Property);
 
             // Call method with return value
-            Assert.AreEqual(expected, obj.Byte_Doubled_Ret(val));
+            Assert.Equal(expected, obj.Byte_Doubled_Ret(val));
 
             // Call method passing by ref
             byte inout = val;
             obj.Byte_Doubled_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
 
             // Pass as variant
             Variant<byte>(val, expected);
@@ -130,15 +130,15 @@ namespace Dynamic
 
             // Get and set property
             obj.Short_Property = val;
-            Assert.AreEqual(val, obj.Short_Property);
+            Assert.Equal(val, obj.Short_Property);
 
             // Call method with return value
-            Assert.AreEqual(expected, obj.Short_Doubled_Ret(val));
+            Assert.Equal(expected, obj.Short_Doubled_Ret(val));
 
             // Call method passing by ref
             short inout = val;
             obj.Short_Doubled_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
 
             // Pass as variant
             Variant<short>(val, expected);
@@ -151,15 +151,15 @@ namespace Dynamic
 
             // Get and set property
             obj.UShort_Property = val;
-            Assert.AreEqual(val, obj.UShort_Property);
+            Assert.Equal(val, obj.UShort_Property);
 
             // Call method with return value
-            Assert.AreEqual(expected, obj.UShort_Doubled_Ret(val));
+            Assert.Equal(expected, obj.UShort_Doubled_Ret(val));
 
             // Call method passing by ref
             ushort inout = val;
             obj.UShort_Doubled_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
 
             // Pass as variant
             Variant<ushort>(val, expected);
@@ -172,15 +172,15 @@ namespace Dynamic
 
             // Get and set property
             obj.Int_Property = val;
-            Assert.AreEqual(val, obj.Int_Property);
+            Assert.Equal(val, obj.Int_Property);
 
             // Call method with return value
-            Assert.AreEqual(expected, obj.Int_Doubled_Ret(val));
+            Assert.Equal(expected, obj.Int_Doubled_Ret(val));
 
             // Call method passing by ref
             int inout = val;
             obj.Int_Doubled_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
 
             // Pass as variant
             Variant<int>(val, expected);
@@ -193,15 +193,15 @@ namespace Dynamic
 
             // Get and set property
             obj.UInt_Property = val;
-            Assert.AreEqual(val, obj.UInt_Property);
+            Assert.Equal(val, obj.UInt_Property);
 
             // Call method with return value
-            Assert.AreEqual(expected, obj.UInt_Doubled_Ret(val));
+            Assert.Equal(expected, obj.UInt_Doubled_Ret(val));
 
             // Call method passing by ref
             uint inout = val;
             obj.UInt_Doubled_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
 
             // Pass as variant
             Variant<uint>(val, expected);
@@ -214,15 +214,15 @@ namespace Dynamic
 
             // Get and set property
             obj.Int64_Property = val;
-            Assert.AreEqual(val, obj.Int64_Property);
+            Assert.Equal(val, obj.Int64_Property);
 
             // Call method with return value
-            Assert.AreEqual(expected, obj.Int64_Doubled_Ret(val));
+            Assert.Equal(expected, obj.Int64_Doubled_Ret(val));
 
             // Call method passing by ref
             long inout = val;
             obj.Int64_Doubled_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
 
             // Pass as variant
             Variant<long>(val, expected);
@@ -235,15 +235,15 @@ namespace Dynamic
 
             // Get and set property
             obj.UInt64_Property = val;
-            Assert.AreEqual(val, obj.UInt64_Property);
+            Assert.Equal(val, obj.UInt64_Property);
 
             // Call method with return value
-            Assert.AreEqual(expected, obj.UInt64_Doubled_Ret(val));
+            Assert.Equal(expected, obj.UInt64_Doubled_Ret(val));
 
             // Call method passing by ref
             ulong inout = val;
             obj.UInt64_Doubled_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
 
             // Pass as variant
             Variant<ulong>(val, expected);
@@ -256,15 +256,15 @@ namespace Dynamic
 
             // Get and set property
             obj.Float_Property = val;
-            Assert.AreEqual(val, obj.Float_Property);
+            Assert.Equal(val, obj.Float_Property);
 
             // Call method with return value
-            Assert.AreEqual(expected, obj.Float_Ceil_Ret(val));
+            Assert.Equal(expected, obj.Float_Ceil_Ret(val));
 
             // Call method passing by ref
             float inout = val;
             obj.Float_Ceil_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
 
             // Pass as variant
             Variant<float>(val, expected);
@@ -277,15 +277,15 @@ namespace Dynamic
 
             // Get and set property
             obj.Double_Property = val;
-            Assert.AreEqual(val, obj.Double_Property);
+            Assert.Equal(val, obj.Double_Property);
 
             // Call method with return value
-            Assert.AreEqual(expected, obj.Double_Ceil_Ret(val));
+            Assert.Equal(expected, obj.Double_Ceil_Ret(val));
 
             // Call method passing by ref
             double inout = val;
             obj.Double_Ceil_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
 
             // Pass as variant
             Variant<double>(val, expected);
@@ -304,15 +304,15 @@ namespace Dynamic
 
             // Get and set property
             obj.Variant_Property = val;
-            Assert.AreEqual(valRaw, obj.Variant_Property);
+            Assert.Equal(valRaw, obj.Variant_Property);
 
             // Call method with return value
-            Assert.AreEqual(expectedRaw, obj.Variant_Ret(val));
+            Assert.Equal(expectedRaw, obj.Variant_Ret(val));
 
             // Call method passing by ref
             IntPtr inout = val;
             obj.Variant_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
         }
 
         private void UIntPtr()
@@ -328,15 +328,15 @@ namespace Dynamic
 
             // Get and set property
             obj.Variant_Property = val;
-            Assert.AreEqual(valRaw, obj.Variant_Property);
+            Assert.Equal(valRaw, obj.Variant_Property);
 
             // Call method with return value
-            Assert.AreEqual(expectedRaw, obj.Variant_Ret(val));
+            Assert.Equal(expectedRaw, obj.Variant_Ret(val));
 
             // Call method passing by ref
             UIntPtr inout = val;
             obj.Variant_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
         }
 
         private void String()
@@ -348,15 +348,15 @@ namespace Dynamic
 
             // Get and set property
             obj.String_Property = val;
-            Assert.AreEqual(val, obj.String_Property);
+            Assert.Equal(val, obj.String_Property);
 
             // Call method with return value
-            Assert.AreEqual(expected, obj.String_Reverse_Ret(val));
+            Assert.Equal(expected, obj.String_Reverse_Ret(val));
 
             // Call method passing by ref
             string inout = val;
             obj.String_Reverse_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
 
             // Pass as variant
             Variant<string>(val, expected);
@@ -371,15 +371,15 @@ namespace Dynamic
 
             // Get and set property
             obj.Date_Property = val;
-            Assert.AreEqual(val, obj.Date_Property);
+            Assert.Equal(val, obj.Date_Property);
 
             // Call method with return value
-            Assert.AreEqual(expected, obj.Date_AddDay_Ret(val));
+            Assert.Equal(expected, obj.Date_AddDay_Ret(val));
 
             // Call method passing by ref
             DateTime inout = val;
             obj.Date_AddDay_InOut(ref inout);
-            Assert.AreEqual(expected, inout);
+            Assert.Equal(expected, inout);
 
             // Pass as variant
             Variant<DateTime>(val, expected);
@@ -392,25 +392,25 @@ namespace Dynamic
 
             // Get and set property
             obj.Dispatch_Property = val;
-            Assert.AreEqual(val, obj.Dispatch_Property);
+            Assert.Equal(val, obj.Dispatch_Property);
 
             // Update dispatch object
             obj.Dispatch_Property.Boolean_Property = false;
-            Assert.IsFalse(obj.Dispatch_Property.Boolean_Property);
-            Assert.IsFalse(val.Boolean_Property);
+            Assert.False(obj.Dispatch_Property.Boolean_Property);
+            Assert.False(val.Boolean_Property);
 
             // Call method with return value
             dynamic ret = obj.Dispatch_Ret(val);
-            Assert.IsTrue(ret.Boolean_Property);
-            Assert.IsFalse(val.Boolean_Property);
+            Assert.True(ret.Boolean_Property);
+            Assert.False(val.Boolean_Property);
 
             // Call method passing by ref
             obj.Dispatch_InOut(ref val);
-            Assert.IsTrue(val.Boolean_Property);
+            Assert.True(val.Boolean_Property);
 
             val.Boolean_Property = false;
-            Variant(val, new Action<dynamic>(d => Assert.IsTrue(d.Boolean_Property)));
-            Assert.IsTrue(val.Boolean_Property);
+            Variant(val, new Action<dynamic>(d => Assert.True(d.Boolean_Property)));
+            Assert.True(val.Boolean_Property);
 
             val.Boolean_Property = false;
             UnknownWrapper(val);
@@ -419,10 +419,10 @@ namespace Dynamic
         private void Null()
         {
             obj.Variant_Property = null;
-            Assert.IsNull(obj.Variant_Property);
+            Assert.Null(obj.Variant_Property);
 
             obj.String_Property = null;
-            Assert.AreEqual(string.Empty, obj.String_Property);
+            Assert.Equal(string.Empty, obj.String_Property);
         }
 
         private void StringWrapper(string toWrap, string expected)
@@ -431,15 +431,15 @@ namespace Dynamic
 
             // Get and set property
             obj.String_Property = val;
-            Assert.AreEqual(val.WrappedObject, obj.String_Property);
+            Assert.Equal(val.WrappedObject, obj.String_Property);
 
             // Call method with return value
-            Assert.AreEqual(expected, obj.String_Reverse_Ret(val));
+            Assert.Equal(expected, obj.String_Reverse_Ret(val));
 
             // Call method passing by ref
             BStrWrapper inout = new BStrWrapper(val.WrappedObject);
             obj.String_Reverse_InOut(ref inout);
-            Assert.AreEqual(expected, inout.WrappedObject);
+            Assert.Equal(expected, inout.WrappedObject);
         }
 
         private void UnknownWrapper(dynamic toWrap)
@@ -448,16 +448,16 @@ namespace Dynamic
 
             // Get and set property
             obj.Variant_Property = val;
-            Assert.AreEqual(val.WrappedObject, obj.Variant_Property);
+            Assert.Equal(val.WrappedObject, obj.Variant_Property);
 
             // Call method with return value
             dynamic ret = obj.Variant_Ret(val);
-            Assert.IsTrue(ret.Boolean_Property);
-            Assert.IsTrue(toWrap.Boolean_Property);
+            Assert.True(ret.Boolean_Property);
+            Assert.True(toWrap.Boolean_Property);
 
             // Call method passing by ref
             obj.Variant_InOut(ref val);
-            Assert.IsTrue(toWrap.Boolean_Property);
+            Assert.True(toWrap.Boolean_Property);
         }
 
         private void ErrorWrapper()
@@ -467,7 +467,7 @@ namespace Dynamic
 
             // Get and set property
             obj.Variant_Property = val;
-            Assert.AreEqual(val.ErrorCode, obj.Variant_Property);
+            Assert.Equal(val.ErrorCode, obj.Variant_Property);
         }
 
 #pragma warning disable 618 // CurrencyWrapper is marked obsolete
@@ -478,7 +478,7 @@ namespace Dynamic
 
             // Get and set property
             obj.Variant_Property = val;
-            Assert.AreEqual(val.WrappedObject, obj.Variant_Property);
+            Assert.Equal(val.WrappedObject, obj.Variant_Property);
         }
 #pragma warning restore 618
 
@@ -490,22 +490,22 @@ namespace Dynamic
 
             // Get and set property
             obj.Variant_Property = val;
-            Assert.AreEqual(val.WrappedObject, obj.Variant_Property);
+            Assert.Equal(val.WrappedObject, obj.Variant_Property);
 
             // Call method with return value
             dynamic ret = obj.Variant_Ret(val);
-            Assert.AreEqual(expected, ret);
+            Assert.Equal(expected, ret);
 
             // Call method passing by ref
             obj.Variant_InOut(ref val);
-            Assert.AreEqual(expected, val.WrappedObject);
+            Assert.Equal(expected, val.WrappedObject);
         }
 
         private void Variant<T>(T val, Action<T> validate)
         {
             // Get and set property
             obj.Variant_Property = val;
-            Assert.AreEqual(val, obj.Variant_Property);
+            Assert.Equal(val, obj.Variant_Property);
 
             // Call method with return value
             validate(obj.Variant_Ret(val));
@@ -518,7 +518,7 @@ namespace Dynamic
 
         private void Variant<T>(T val, T expected)
         {
-            Variant<T>(val, v => Assert.AreEqual(expected, v));
+            Variant<T>(val, v => Assert.Equal(expected, v));
         }
 
         private void Fail()
@@ -526,8 +526,8 @@ namespace Dynamic
             const int E_ABORT = unchecked((int)0x80004004);
             string message = "CUSTOM ERROR MESSAGE";
             COMException comException = Assert.Throws<COMException>(() => obj.Fail(E_ABORT, message));
-            Assert.AreEqual(E_ABORT, comException.HResult, "Unexpected HRESULT on COMException");
-            Assert.AreEqual(message, comException.Message, "Unexpected message on COMException");
+            Assert.Equal(E_ABORT, comException.HResult);
+            Assert.Equal(message, comException.Message);
 
             Assert.Throws<SEHException>(() => obj.Throw());
         }

@@ -25,17 +25,17 @@ namespace System.Drawing
         {
         }
 
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string strValue)
             {
@@ -45,12 +45,9 @@ namespace System.Drawing
             return base.ConvertFrom(context, culture, value);
         }
 
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
+            ArgumentNullException.ThrowIfNull(destinationType);
 
             if (value is Color c)
             {
@@ -72,19 +69,16 @@ namespace System.Drawing
                         return "'" + c.Name + "'";
                     }
 
-                    if (culture == null)
-                    {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
 
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
-                    string[] args;
+                    string?[] args;
                     int nArg = 0;
 
                     if (c.A < 255)
                     {
-                        args = new string[4];
+                        args = new string?[4];
                         args[nArg++] = intConverter.ConvertToString(context, culture, (object)c.A);
                     }
                     else
@@ -101,8 +95,8 @@ namespace System.Drawing
                 }
                 else if (destinationType == typeof(InstanceDescriptor))
                 {
-                    MemberInfo member = null;
-                    object[] args = null;
+                    MemberInfo? member;
+                    object[]? args = null;
 
                     if (c.IsEmpty)
                     {
@@ -143,12 +137,12 @@ namespace System.Drawing
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
         {
             return s_valuesLazy.Value;
         }
 
-        public override bool GetStandardValuesSupported(ITypeDescriptorContext context) => true;
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) => true;
 
         private sealed class ColorComparer : IComparer<Color>
         {

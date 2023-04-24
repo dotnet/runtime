@@ -5,6 +5,8 @@ internal static partial class Interop
 {
     internal static partial class Libraries
     {
+        internal const string libc = "libc";
+
         // Shims
         internal const string SystemNative = "libSystem.Native";
         internal const string NetSecurityNative = "libSystem.Net.Security.Native";
@@ -12,7 +14,6 @@ internal static partial class Interop
         internal const string CompressionNative = "libSystem.IO.Compression.Native";
         internal const string GlobalizationNative = "libSystem.Globalization.Native";
         internal const string IOPortsNative = "libSystem.IO.Ports.Native";
-        internal const string Libdl = "libdl";
         internal const string HostPolicy = "libhostpolicy";
     }
 }

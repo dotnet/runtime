@@ -27,11 +27,17 @@ public static class HandleTests
         Assert.True(default(RuntimeFieldHandle).Equals(default(RuntimeFieldHandle)));
 
         Assert.True(h.Equals((object)h));
+        Assert.True(((IEquatable<RuntimeFieldHandle>)h).Equals(h));
         Assert.False(h.Equals(new object()));
         Assert.False(h.Equals(null));
 
         Assert.False(h == default(RuntimeFieldHandle));
         Assert.True(h != default(RuntimeFieldHandle));
+
+        IntPtr hPtr = RuntimeFieldHandle.ToIntPtr(h);
+        RuntimeFieldHandle hNew = RuntimeFieldHandle.FromIntPtr(hPtr);
+        Assert.True(h.Equals(hNew));
+        Assert.True(hNew.Equals(h));
     }
 
     [Fact]
@@ -52,11 +58,20 @@ public static class HandleTests
         Assert.True(default(RuntimeMethodHandle).Equals(default(RuntimeMethodHandle)));
 
         Assert.True(h.Equals((object)h));
+        Assert.True(((IEquatable<RuntimeMethodHandle>)h).Equals(h));
         Assert.False(h.Equals(new object()));
         Assert.False(h.Equals(null));
 
         Assert.False(h == default(RuntimeMethodHandle));
         Assert.True(h != default(RuntimeMethodHandle));
+
+        IntPtr hPtr = RuntimeMethodHandle.ToIntPtr(h);
+        RuntimeMethodHandle hNew = RuntimeMethodHandle.FromIntPtr(hPtr);
+        Assert.True(h.Equals(hNew));
+        Assert.True(hNew.Equals(h));
+
+        // Confirm the created handle is valid
+        Assert.Equal(mi, MethodBase.GetMethodFromHandle(hNew));
     }
 
     [Fact]
@@ -85,6 +100,7 @@ public static class HandleTests
         Assert.True(default(RuntimeTypeHandle).Equals(default(RuntimeTypeHandle)));
 
         Assert.True(h.Equals((object)h));
+        Assert.True(((IEquatable<RuntimeTypeHandle>)h).Equals(h));
         Assert.False(h.Equals(typeof(int)));
         Assert.False(h.Equals(new object()));
         Assert.False(h.Equals(null));
@@ -93,6 +109,11 @@ public static class HandleTests
         Assert.False(null == h);
         Assert.True(h != null);
         Assert.True(null != h);
+
+        IntPtr hPtr = RuntimeTypeHandle.ToIntPtr(h);
+        RuntimeTypeHandle hNew = RuntimeTypeHandle.FromIntPtr(hPtr);
+        Assert.True(h.Equals(hNew));
+        Assert.True(hNew.Equals(h));
     }
 
     private class Base

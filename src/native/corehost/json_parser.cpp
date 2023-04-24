@@ -9,8 +9,8 @@
 #define RAPIDJSON_ERROR_CHARTYPE pal::char_t
 #define RAPIDJSON_ERROR_STRING(x) _X(x)
 
-#include "json_parser.h"
-#include "rapidjson/error/en.h"
+#include <json_parser.h>
+#include <external/rapidjson/error/en.h>
 #include "utils.h"
 #include <cassert>
 #include <cstdint>
@@ -120,7 +120,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
 
     if (bundle::info_t::is_single_file_bundle())
     {
-        // Due to in-situ parsing on Linux, 
+        // Due to in-situ parsing on Linux,
         //  * The json file is mapped as copy-on-write.
         //  * The mapping cannot be immediately released, and will be unmapped by the json_parser destructor.
         m_bundle_data = bundle::info_t::config_t::map(path, m_bundle_location);
@@ -135,7 +135,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
     pal::ifstream_t file{ path };
     if (!file.good())
     {
-        trace::error(_X("Cannot use file stream for [%s]: %s"), path.c_str(), pal::strerror(errno));
+        trace::error(_X("Cannot use file stream for [%s]: %s"), path.c_str(), pal::strerror(errno).c_str());
         return false;
     }
 

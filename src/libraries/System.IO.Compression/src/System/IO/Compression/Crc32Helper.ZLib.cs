@@ -14,7 +14,7 @@ namespace System.IO.Compression
             Debug.Assert((buffer != null) && (offset >= 0) && (length >= 0) && (offset <= buffer.Length - length));
             fixed (byte* bufferPtr = &buffer[offset])
             {
-                return Interop.zlib.crc32(crc32, bufferPtr, length);
+                return Interop.ZLib.crc32(crc32, bufferPtr, length);
             }
         }
 
@@ -22,7 +22,7 @@ namespace System.IO.Compression
         {
             fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
             {
-                return Interop.zlib.crc32(crc32, bufferPtr, buffer.Length);
+                return Interop.ZLib.crc32(crc32, bufferPtr, buffer.Length);
             }
         }
     }

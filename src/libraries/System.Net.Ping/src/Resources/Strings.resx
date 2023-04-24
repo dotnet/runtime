@@ -84,10 +84,10 @@
   <data name="net_ipv6_not_installed" xml:space="preserve">
     <value>IPv6 is not installed.</value>
   </data>
-  <data name="net_ping_not_supported_uwp" xml:space="preserve">
-    <value>Ping functionality is not currently supported in UWP.</value>
-  </data>
   <data name="SystemNetPing_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.Ping is not supported on this platform.</value>
+  </data>
+  <data name="net_ping_utility_custom_payload" xml:space="preserve">
+    <value>Unable to send custom ping payload. Run program under privileged user account or grant cap_net_raw capability using setcap(8).</value>
   </data>
 </root>

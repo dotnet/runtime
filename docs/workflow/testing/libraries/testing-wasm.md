@@ -49,31 +49,31 @@ PATH=/Users/<your_user>/.geckodriver:$PATH
 
 Now we're ready to build everything for WebAssembly (for more details, please read [this document](../../building/libraries/webassembly-instructions.md#building-everything)):
 ```bash
-./build.sh -os Browser -c Release
+./build.sh -os browser -c Release
 ```
 and even run tests one by one for each library:
 ```
-./build.sh libs.tests -test -os Browser -c Release
+./build.sh libs.tests -test -os browser -c Release
 ```
 
 ### Running individual test suites using JavaScript engine
 The following shows how to run tests for a specific library
 ```
-./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release
+./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release
 ```
 
 ### Running outer loop tests using JavaScript engine
 
 To run all tests, including "outer loop" tests (which are typically slower and in some test suites less reliable, but which are more comprehensive):
 ```
-./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:Outerloop=true
+./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:Outerloop=true
 ```
 
 ### Running tests using different JavaScript engines
 It's possible to set a JavaScript engine explicitly by adding `/p:JSEngine` property:
 
 ```
-./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:JSEngine=SpiderMonkey
+./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:JSEngine=SpiderMonkey
 ```
 
 At the moment supported values are:
@@ -89,7 +89,7 @@ The following shows how to run tests for a specific library
 
 - CLI
     ```
-    XHARNESS_COMMAND=test-browser ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release
+    XHARNESS_COMMAND=test-browser ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release
     ```
 - Makefile target `run-browser-tests-<test>`
     ```
@@ -98,13 +98,13 @@ The following shows how to run tests for a specific library
 
 ### Passing arguments to xharness
 
-- `$(WasmXHarnessArgs)` - xharness command arguments
+- `$(WasmXHarnessArgsCli)` - xharness command arguments
 
-    Example: `WasmXHarnessArgs="--xyz"` -> becomes `dotnet xharness wasm test --xyz`
+    Example: `WasmXHarnessArgsCli="--set-web-server-http-env=DOTNET_TEST_WEBSOCKETHOST"` -> becomes `dotnet xharness wasm test --set-web-server-http-env=DOTNET_TEST_WEBSOCKETHOST`
 
-- `$(WasmXHarnessMonoArgs)` - arguments to mono
+- `$(WasmXHarnessMonoArgs)` - arguments and variables for mono
 
-    Example: `WasmXHarnessMonoArgs="--runtime-arg=--trace=E"`
+    Example: `WasmXHarnessMonoArgs="--runtime-arg=--trace=E --setenv=MONO_LOG_LEVEL=debug"`
 
 - `$(WasmTestAppArgs)` - arguments for the test app itself
 
@@ -114,7 +114,7 @@ To run all tests, including "outer loop" tests (which are typically slower and i
 
 - CLI
     ```
-    XHARNESS_COMMAND=test-browser ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:Outerloop=true
+    XHARNESS_COMMAND=test-browser ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release /p:Outerloop=true
     ```
 
 - Makefile target `run-browser-tests-<test>`
@@ -128,7 +128,7 @@ It's possible to set a Browser explicitly by adding `--browser=` command line ar
 
 - CLI
     ```
-    XHARNESS_COMMAND="test-browser --browser=safari" ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=Release
+    XHARNESS_COMMAND="test-browser --browser=safari" ./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release
     ```
 
 - Makefile target `run-browser-tests-<test>`
@@ -144,6 +144,21 @@ At the moment supported values are:
 
 By default, `chrome` browser is used.
 
+## AOT library tests
+
+- Building library tests with AOT, and (even) with `EnableAggressiveTrimming` takes 3-9mins on CI, and that adds up for all the assemblies, causing
+a large build time. To circumvent that on CI, we build the test assemblies on the build machine, but skip the WasmApp build part of it, since
+that includes the expensive AOT step.
+
+- Instead, we take the built test assembly+dependencies, and enough related bits to be able to run the `WasmBuildApp` target, with the original
+inputs.
+
+- To recreate a similar build+test run locally, add `/p:BuildAOTTestsOnHelix=true` to the usual command line.
+- For example, with `./dotnet.sh build /t:Test src/libraries/System.AppContext/tests /p:TargetOS=browser /p:TargetArchitecture=wasm /p:Configuration=Release`
+
+    - AOT:  add `/p:EnableAggressiveTrimming=true /p:RunAOTCompilation=true /p:BuildAOTTestsOnHelix=true`
+    - Only trimming (helpful to isolate issues caused by trimming):
+        - add `/p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true`
 ## Debugging
 
 ### Getting more information

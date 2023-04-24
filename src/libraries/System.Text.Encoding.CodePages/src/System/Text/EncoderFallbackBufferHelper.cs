@@ -127,7 +127,7 @@ namespace System.Text
         }
 
         // private helper methods
-        internal void ThrowLastCharRecursive(int charRecursive)
+        internal static void ThrowLastCharRecursive(int charRecursive)
         {
             // Throw it, using our complete character
             throw new ArgumentException(SR.Format(SR.Argument_RecursiveFallback, charRecursive), "chars");

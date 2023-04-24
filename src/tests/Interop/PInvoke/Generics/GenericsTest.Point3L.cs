@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 unsafe partial class GenericsNative
 {
@@ -40,35 +40,35 @@ unsafe partial class GenericsTest
     private static void TestPoint3L()
     {
         GenericsNative.Point3<long> value = GenericsNative.GetPoint3L(1L, 2L, 3L);
-        Assert.AreEqual(value.e00, 1L);
-        Assert.AreEqual(value.e01, 2L);
-        Assert.AreEqual(value.e02, 3L);
+        Assert.Equal(value.e00, 1L);
+        Assert.Equal(value.e01, 2L);
+        Assert.Equal(value.e02, 3L);
 
         GenericsNative.Point3<long> value2;
         GenericsNative.GetPoint3LOut(1L, 2L, 3L, &value2);
-        Assert.AreEqual(value2.e00, 1L);
-        Assert.AreEqual(value2.e01, 2L);
-        Assert.AreEqual(value2.e02, 3L);
+        Assert.Equal(value2.e00, 1L);
+        Assert.Equal(value2.e01, 2L);
+        Assert.Equal(value2.e02, 3L);
 
         GenericsNative.GetPoint3LOut(1L, 2L, 3L, out GenericsNative.Point3<long> value3);
-        Assert.AreEqual(value3.e00, 1L);
-        Assert.AreEqual(value3.e01, 2L);
-        Assert.AreEqual(value3.e02, 3L);
+        Assert.Equal(value3.e00, 1L);
+        Assert.Equal(value3.e01, 2L);
+        Assert.Equal(value3.e02, 3L);
 
         GenericsNative.Point3<long>* value4 = GenericsNative.GetPoint3LPtr(1L, 2L, 3L);
-        Assert.AreEqual(value4->e00, 1L);
-        Assert.AreEqual(value4->e01, 2L);
-        Assert.AreEqual(value4->e02, 3L);
+        Assert.Equal(value4->e00, 1L);
+        Assert.Equal(value4->e01, 2L);
+        Assert.Equal(value4->e02, 3L);
 
         ref readonly GenericsNative.Point3<long> value5 = ref GenericsNative.GetPoint3LRef(1L, 2L, 3L);
-        Assert.AreEqual(value5.e00, 1L);
-        Assert.AreEqual(value5.e01, 2L);
-        Assert.AreEqual(value5.e02, 3L);
+        Assert.Equal(value5.e00, 1L);
+        Assert.Equal(value5.e01, 2L);
+        Assert.Equal(value5.e02, 3L);
 
         GenericsNative.Point3<long> result = GenericsNative.AddPoint3L(value, value);
-        Assert.AreEqual(result.e00, 2L);
-        Assert.AreEqual(result.e01, 4L);
-        Assert.AreEqual(result.e02, 6l);
+        Assert.Equal(result.e00, 2L);
+        Assert.Equal(result.e01, 4L);
+        Assert.Equal(result.e02, 6l);
 
         GenericsNative.Point3<long>[] values = new GenericsNative.Point3<long>[] {
             value,
@@ -81,19 +81,19 @@ unsafe partial class GenericsTest
         fixed (GenericsNative.Point3<long>* pValues = &values[0])
         {
             GenericsNative.Point3<long> result2 = GenericsNative.AddPoint3Ls(pValues, values.Length);
-            Assert.AreEqual(result2.e00, 5l);
-            Assert.AreEqual(result2.e01, 10l);
-            Assert.AreEqual(result2.e02, 15l);
+            Assert.Equal(result2.e00, 5l);
+            Assert.Equal(result2.e01, 10l);
+            Assert.Equal(result2.e02, 15l);
         }
 
         GenericsNative.Point3<long> result3 = GenericsNative.AddPoint3Ls(values, values.Length);
-        Assert.AreEqual(result3.e00, 5l);
-        Assert.AreEqual(result3.e01, 10l);
-        Assert.AreEqual(result3.e02, 15l);
+        Assert.Equal(result3.e00, 5l);
+        Assert.Equal(result3.e01, 10l);
+        Assert.Equal(result3.e02, 15l);
 
         GenericsNative.Point3<long> result4 = GenericsNative.AddPoint3Ls(in values[0], values.Length);
-        Assert.AreEqual(result4.e00, 5l);
-        Assert.AreEqual(result4.e01, 10l);
-        Assert.AreEqual(result4.e02, 15l);
+        Assert.Equal(result4.e00, 5l);
+        Assert.Equal(result4.e01, 10l);
+        Assert.Equal(result4.e02, 15l);
     }
 }

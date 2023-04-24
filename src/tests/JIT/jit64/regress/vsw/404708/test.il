@@ -2,18 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
 
-.assembly test1 {}
-.module test1.exe
+.assembly 'test_404708' {}
 
 .namespace Test
 {
-  .class private auto ansi beforefieldinit Class1 extends [mscorlib]System.Object
+  .class public auto ansi beforefieldinit Class1 extends [mscorlib]System.Object
   {
 
     .method public hidebysig specialname rtspecialname instance void  .ctor() cil managed
@@ -47,8 +47,11 @@
     }
 
 
-    .method public hidebysig static int32 Main(string[] args) cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  1
 

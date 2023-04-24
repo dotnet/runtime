@@ -1,31 +1,31 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;netcoreapp2.1-windows;netstandard2.0</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <!-- CS0649: uninitialized interop type fields -->
-    <!-- CA2249: Consider using String.Contains instead of String.IndexOf.  We compile for netcoreapp2.1 where this doesn't exist.-->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
-    <NoWarn>$(NoWarn);CS0649;CA2249;SA1129</NoWarn>
+    <NoWarn>$(NoWarn);CS0649;SA1129;IDE0059;IDE0060;CA1822;CA1852</NoWarn>
+    <Nullable>annotations</Nullable>
+    <IsTrimmable>false</IsTrimmable>
+    <IsPackable>true</IsPackable>
+    <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
+    <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
+    <PackageDescription>Provides types to perform speech synthesis and speech recognition.
+
+Commonly Used Types
+System.Speech.Synthesis.SpeechSynthesizer
+System.Speech.Recognition.SpeechRecognizer</PackageDescription>
   </PropertyGroup>
+
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFramework)' == 'netstandard2.0'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
-    <!-- On older TFM's we needed to disable obsoletion warnings about Marshalling VARIANTs -->
-    <NoWarn Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)-windows'">$(NoWarn);IDE0079</NoWarn>
-    <!-- On newer TFM's we needed to disable obsoletion warning about WebRequest -->
-    <NoWarn Condition="'$(TargetFramework)' == 'netcoreapp2.1-windows'">$(NoWarn);IDE0079</NoWarn>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <!-- System.Speech has its own SR scheme in which resource ID's are mapped to SAPI error codes. So we disable our default SR.cs generation and include resources explicitly -->
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
+    <OmitResources Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">true</OmitResources>
   </PropertyGroup>
-  <!-- System.Speech has its own SR scheme in which resource ID's are mapped to SAPI error codes. So we disable our default SR.cs generation and include resources explicitly -->
-  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
-    <OmitResources>true</OmitResources>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <EmbeddedResource Include="Resources\Strings.resx">
-      <Visible>true</Visible>
-      <ManifestResourceName>ExceptionStringTable</ManifestResourceName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="SR.cs" />
     <Compile Include="SRID.cs" />
     <Compile Include="AudioFormat\AudioFormatConverter.cs" />
@@ -123,7 +123,6 @@
     <Compile Include="Internal\Synthesis\EngineSiteSapi.cs" />
     <Compile Include="Internal\Synthesis\ISSmlParser.cs" />
     <Compile Include="Internal\Synthesis\PcmConverter.cs" />
-    <Compile Include="Internal\Synthesis\SafeNativeMethods.cs" />
     <Compile Include="Internal\Synthesis\SpeakInfo.cs" />
     <Compile Include="Internal\Synthesis\SpeechSeg.cs" />
     <Compile Include="Internal\Synthesis\SSmlParser.cs" />
@@ -202,56 +201,57 @@
     <Compile Include="Synthesis\VoiceInfo.cs" />
     <Compile Include="Synthesis\TTSEngine\SAPIEngineTypes.cs" />
     <Compile Include="Synthesis\TTSEngine\TTSEngineTypes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+            Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.MMSYSERR.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.MMSYSERR.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutClose.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutClose.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutGetDevCaps.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutGetDevCaps.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutGetNumDevs.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutGetNumDevs.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutOpen.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutOpen.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutPause.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutOpen.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutPrepareHeader.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutPrepareHeader.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutReset.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutReset.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutRestart.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutRestart.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutWrite.cs"
+            Link="Common\Interop\Windows\WinMm\Interop.waveOutWrite.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+            Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0-windows'))">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <EmbeddedResource Include="Resources\Strings.resx"
+                      Visible="true"
+                      ManifestResourceName="ExceptionStringTable" />
+  </ItemGroup>
+
   <ItemGroup>
-    <EmbeddedResource Include="upstable_chs.upsmap">
-      <LogicalName>upstable_chs.upsmap</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="upstable_cht.upsmap">
-      <LogicalName>upstable_cht.upsmap</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="upstable_deu.upsmap">
-      <LogicalName>upstable_deu.upsmap</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="upstable_enu.upsmap">
-      <LogicalName>upstable_enu.upsmap</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="upstable_esp.upsmap">
-      <LogicalName>upstable_esp.upsmap</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="upstable_fra.upsmap">
-      <LogicalName>upstable_fra.upsmap</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="upstable_jpn.upsmap">
-      <LogicalName>upstable_jpn.upsmap</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Net.WebClient" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel.EventBasedAsync" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.TraceSource" />
-    <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Net.Requests" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.Serialization.Formatters" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Threading.ThreadPool" />
-    <Reference Include="System.Xml.ReaderWriter" />
+    <EmbeddedResource Include="upstable_chs.upsmap"
+                      LogicalName="upstable_chs.upsmap" />
+    <EmbeddedResource Include="upstable_cht.upsmap"
+                      LogicalName="upstable_cht.upsmap" />
+    <EmbeddedResource Include="upstable_deu.upsmap"
+                      LogicalName="upstable_deu.upsmap" />
+    <EmbeddedResource Include="upstable_enu.upsmap"
+                      LogicalName="upstable_enu.upsmap" />
+    <EmbeddedResource Include="upstable_esp.upsmap"
+                      LogicalName="upstable_esp.upsmap" />
+    <EmbeddedResource Include="upstable_fra.upsmap"
+                      LogicalName="upstable_fra.upsmap" />
+    <EmbeddedResource Include="upstable_jpn.upsmap"
+                      LogicalName="upstable_jpn.upsmap" />
   </ItemGroup>
 </Project>

@@ -3,8 +3,12 @@
 
 // Runtime headers
 #include <coreclrhost.h>
+#include <corehost/host_runtime_contract.h>
 
 #include "corerun.hpp"
+#include "dotenv.hpp"
+
+#include <fstream>
 
 using char_t = pal::char_t;
 using string_t = pal::string_t;
@@ -40,11 +44,19 @@ struct configuration
     int entry_assembly_argc;
     const char_t** entry_assembly_argv;
 
+    // Collection of user-defined key/value pairs that will be appended
+    // to the initialization of the runtime.
+    std::vector<string_t> user_defined_keys;
+    std::vector<string_t> user_defined_values;
+
     // Wait for debugger to be attached.
     bool wait_to_debug;
 
     // Perform self test.
     bool self_test;
+
+    // configured .env file to load
+    dotenv dotenv_configuration;
 };
 
 namespace envvar
@@ -69,7 +81,8 @@ static void wait_for_debugger()
     }
     else if (state == pal::debugger_state_t::not_attached)
     {
-        pal::fprintf(stdout, W("Waiting for the debugger to attach. Press any key to continue ...\n"));
+        uint32_t pid = pal::get_process_id();
+        pal::fprintf(stdout, W("Waiting for the debugger to attach (PID: %u). Press any key to continue ...\n"), pid);
         (void)getchar();
         state = pal::is_debugger_attached();
     }
@@ -193,6 +206,40 @@ public:
 static void* CurrentClrInstance;
 static unsigned int CurrentAppDomainId;
 
+static void log_error_info(const char* line)
+{
+    std::fprintf(stderr, "%s\n", line);
+}
+
+size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
+    const char* key,
+    char* value_buffer,
+    size_t value_buffer_size,
+    void* contract_context)
+{
+    configuration* config = static_cast<configuration *>(contract_context);
+
+    if (::strcmp(key, HOST_PROPERTY_ENTRY_ASSEMBLY_NAME) == 0)
+    {
+        // Compute the entry assembly name based on the entry assembly full path
+        pal::string_t dir;
+        pal::string_t file;
+        pal::split_path_to_dir_filename(config->entry_assembly_fullpath, dir, file);
+        file = file.substr(0, file.rfind(W('.')));
+
+        pal::string_utf8_t file_utf8 = pal::convert_to_utf8(file.c_str());
+        size_t len = file_utf8.size() + 1;
+        if (value_buffer_size < len)
+            return len;
+
+        ::strncpy(value_buffer, file_utf8.c_str(), len - 1);
+        value_buffer[len - 1] = '\0';
+        return len;
+    }
+
+    return -1;
+}
+
 static int run(const configuration& config)
 {
     platform_specific_actions actions;
@@ -210,12 +257,6 @@ static int run(const configuration& config)
         pal::split_path_to_dir_filename(config.entry_assembly_fullpath, app_path, file);
         pal::ensure_trailing_delimiter(app_path);
     }
-
-    // Define the NI app_path.
-    string_t app_path_ni = app_path + W("NI");
-    pal::ensure_trailing_delimiter(app_path_ni);
-    app_path_ni.append(1, pal::env_path_delim);
-    app_path_ni.append(app_path);
 
     // Accumulate path for native search path.
     pal::stringstream_t native_search_dirs;
@@ -262,6 +303,8 @@ static int run(const configuration& config)
         }
     }
 
+    config.dotenv_configuration.load_into_current_process();
+
     actions.before_coreclr_load();
 
     // Attempt to load CoreCLR.
@@ -274,6 +317,7 @@ static int run(const configuration& config)
     // Get CoreCLR exports
     coreclr_initialize_ptr coreclr_init_func = nullptr;
     coreclr_execute_assembly_ptr coreclr_execute_func = nullptr;
+    coreclr_set_error_writer_ptr coreclr_set_error_writer_func = nullptr;
     coreclr_shutdown_2_ptr coreclr_shutdown2_func = nullptr;
     if (!try_get_export(coreclr_mod, "coreclr_initialize", (void**)&coreclr_init_func)
         || !try_get_export(coreclr_mod, "coreclr_execute_assembly", (void**)&coreclr_execute_func)
@@ -282,65 +326,87 @@ static int run(const configuration& config)
         return -1;
     }
 
-    // Construct CoreCLR properties.
-    pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(std::move(tpa_list));
-    pal::string_utf8_t app_path_utf8 = pal::convert_to_utf8(std::move(app_path));
-    pal::string_utf8_t app_path_ni_utf8 = pal::convert_to_utf8(std::move(app_path_ni));
-    pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str());
+    // The coreclr_set_error_writer is optional
+    (void)try_get_export(coreclr_mod, "coreclr_set_error_writer", (void**)&coreclr_set_error_writer_func);
 
-    // Allowed property names:
-    //
+    // Construct CoreCLR properties.
+    pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(tpa_list.c_str());
+    pal::string_utf8_t app_path_utf8 = pal::convert_to_utf8(app_path.c_str());
+    pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str().c_str());
+
+    std::vector<pal::string_utf8_t> user_defined_keys_utf8;
+    std::vector<pal::string_utf8_t> user_defined_values_utf8;
+    for (const string_t& str : config.user_defined_keys)
+        user_defined_keys_utf8.push_back(pal::convert_to_utf8(str.c_str()));
+    for (const string_t& str : config.user_defined_values)
+        user_defined_values_utf8.push_back(pal::convert_to_utf8(str.c_str()));
+
+    // Set base initialization properties.
+    std::vector<const char*> propertyKeys;
+    std::vector<const char*> propertyValues;
+
     // TRUSTED_PLATFORM_ASSEMBLIES
     // - The list of complete paths to each of the fully trusted assemblies
-    //
+    propertyKeys.push_back("TRUSTED_PLATFORM_ASSEMBLIES");
+    propertyValues.push_back(tpa_list_utf8.c_str());
+
     // APP_PATHS
     // - The list of paths which will be probed by the assembly loader
-    //
-    // APP_NI_PATHS
-    // - The list of additional paths that the assembly loader will probe for ngen images
-    //
+    propertyKeys.push_back("APP_PATHS");
+    propertyValues.push_back(app_path_utf8.c_str());
+
     // NATIVE_DLL_SEARCH_DIRECTORIES
     // - The list of paths that will be probed for native DLLs called by PInvoke
-    const char* propertyKeys[] =
-    {
-        "TRUSTED_PLATFORM_ASSEMBLIES",
-        "APP_PATHS",
-        "APP_NI_PATHS",
-        "NATIVE_DLL_SEARCH_DIRECTORIES",
-    };
+    propertyKeys.push_back("NATIVE_DLL_SEARCH_DIRECTORIES");
+    propertyValues.push_back(native_search_dirs_utf8.c_str());
 
-    const char* propertyValues[] =
-    {
-        // TRUSTED_PLATFORM_ASSEMBLIES
-        tpa_list_utf8.c_str(),
-        // APP_PATHS
-        app_path_utf8.c_str(),
-        // APP_NI_PATHS
-        app_path_ni_utf8.c_str(),
-        // NATIVE_DLL_SEARCH_DIRECTORIES
-        native_search_dirs_utf8.c_str(),
-    };
+    // Sanity check before adding user-defined properties
+    assert(propertyKeys.size() == propertyValues.size());
 
-    int propertyCount = (int)(sizeof(propertyKeys) / sizeof(propertyKeys[0]));
+    // Insert user defined properties
+    for (const pal::string_utf8_t& str : user_defined_keys_utf8)
+        propertyKeys.push_back(str.c_str());
+    for (const pal::string_utf8_t& str : user_defined_values_utf8)
+        propertyValues.push_back(str.c_str());
+
+    host_runtime_contract host_contract = {
+        sizeof(host_runtime_contract),
+        (void*)&config,
+        &get_runtime_property,
+        nullptr,
+        nullptr };
+    propertyKeys.push_back(HOST_PROPERTY_RUNTIME_CONTRACT);
+    std::stringstream ss;
+    ss << "0x" << std::hex << (size_t)(&host_contract);
+    pal::string_utf8_t contract_str = ss.str();
+    propertyValues.push_back(contract_str.c_str());
+
+    assert(propertyKeys.size() == propertyValues.size());
+    int propertyCount = (int)propertyKeys.size();
 
     // Construct arguments
-    pal::string_utf8_t exe_path_utf8 = pal::convert_to_utf8(std::move(exe_path));
+    pal::string_utf8_t exe_path_utf8 = pal::convert_to_utf8(exe_path.c_str());
     std::vector<pal::string_utf8_t> argv_lifetime;
     pal::malloc_ptr<const char*> argv_utf8{ pal::convert_argv_to_utf8(config.entry_assembly_argc, config.entry_assembly_argv, argv_lifetime) };
     pal::string_utf8_t entry_assembly_utf8 = pal::convert_to_utf8(config.entry_assembly_fullpath.c_str());
 
     logger_t logger{
         exe_path_utf8.c_str(),
-        propertyCount, propertyKeys, propertyValues,
+        propertyCount, propertyKeys.data(), propertyValues.data(),
         entry_assembly_utf8.c_str(), config.entry_assembly_argc, argv_utf8.get() };
+
+    if (coreclr_set_error_writer_func != nullptr)
+    {
+        coreclr_set_error_writer_func(log_error_info);
+    }
 
     int result;
     result = coreclr_init_func(
         exe_path_utf8.c_str(),
         "corerun",
         propertyCount,
-        propertyKeys,
-        propertyValues,
+        propertyKeys.data(),
+        propertyValues.data(),
         &CurrentClrInstance,
         &CurrentAppDomainId);
     if (FAILED(result))
@@ -349,6 +415,11 @@ static int run(const configuration& config)
         logger.dump_details();
         pal::fprintf(stderr, W("END: coreclr_initialize failed - Error: 0x%08x\n"), result);
         return -1;
+    }
+
+    if (coreclr_set_error_writer_func != nullptr)
+    {
+        coreclr_set_error_writer_func(nullptr);
     }
 
     int exit_code;
@@ -397,12 +468,22 @@ static void display_usage()
         W("Execute the managed assembly with the passed in arguments\n")
         W("\n")
         W("Options:\n")
-        W("    -c, --clr-path - path to CoreCLR binary and managed CLR assemblies\n")
-        W("    -d, --debug - causes corerun to wait for a debugger to attach before executing\n")
-        W("    -?, -h, --help - show this help\n")
+        W("  -c, --clr-path - path to CoreCLR binary and managed CLR assemblies.\n")
+        W("  -p, --property - Property to pass to runtime during initialization.\n")
+        W("                   If a property value contains spaces, quote the entire argument.\n")
+        W("                   May be supplied multiple times. Format: <key>=<value>.\n")
+        W("  -d, --debug - causes corerun to wait for a debugger to attach before executing.\n")
+        W("  -e, --env - path to a .env file with environment variables that corerun should set.\n")
+        W("  -?, -h, --help - show this help.\n")
         W("\n")
-        W("CoreCLR is searched for in %%CORE_ROOT%%, then in the directory\n")
-        W("the corerun binary is located.\n"));
+        W("The runtime binary is searched for in --clr-path, CORE_ROOT environment variable, then\n")
+        W("in the directory the corerun binary is located.\n")
+        W("\n")
+        W("Example:\n")
+        W("Wait for a debugger to attach, provide 2 additional properties for .NET\n")
+        W("runtime initialization, and pass an argument to the HelloWorld.dll assembly.\n")
+        W("  corerun -d -p System.GC.Concurrent=true -p \"FancyProp=/usr/first last/root\" HelloWorld.dll arg1\n")
+        );
 }
 
 // Parse the command line arguments
@@ -466,7 +547,29 @@ static bool parse_args(
                 break;
             }
         }
-        else if ((pal::strcmp(option, W("d")) == 0 || (pal::strcmp(option, W("debug")) == 0)))
+        else if (pal::strcmp(option, W("p")) == 0 || (pal::strcmp(option, W("property")) == 0))
+        {
+            i++;
+            if (i >= argc)
+            {
+                pal::fprintf(stderr, W("Option %s: missing property\n"), arg);
+                break;
+            }
+
+            string_t prop = argv[i];
+            size_t delim_maybe = prop.find(W('='));
+            if (delim_maybe == string_t::npos)
+            {
+                pal::fprintf(stderr, W("Option %s: '%s' missing property value\n"), arg, prop.c_str());
+                break;
+            }
+
+            string_t key = prop.substr(0, delim_maybe);
+            string_t value = prop.substr(delim_maybe + 1);
+            config.user_defined_keys.push_back(std::move(key));
+            config.user_defined_values.push_back(std::move(value));
+        }
+        else if (pal::strcmp(option, W("d")) == 0 || (pal::strcmp(option, W("debug")) == 0))
         {
             config.wait_to_debug = true;
         }
@@ -474,6 +577,18 @@ static bool parse_args(
         {
             config.self_test = true;
             return true;
+        }
+        else if (pal::strcmp(option, W("e")) == 0 || (pal::strcmp(option, W("env")) == 0))
+        {
+            i++;
+            if (i >= argc)
+            {
+                pal::fprintf(stderr, W("Option %s: missing .env file path\n"), arg);
+                break;
+            }
+
+            std::ifstream dotenvFile{ pal::convert_to_utf8(argv[i]) };
+            config.dotenv_configuration = dotenv{ pal::string_t{ argv[i] }, dotenvFile};
         }
         else if ((pal::strcmp(option, W("?")) == 0 || (pal::strcmp(option, W("h")) == 0 || (pal::strcmp(option, W("help")) == 0))))
         {
@@ -510,22 +625,20 @@ int MAIN(const int argc, const char_t* argv[])
     return exit_code;
 }
 
-#ifdef TARGET_WINDOWS
-// Used by CoreShim to determine running CoreCLR details.
-extern "C" __declspec(dllexport) HRESULT __cdecl GetCurrentClrDetails(void** clrInstance, unsigned int* appDomainId)
+extern "C" DLL_EXPORT HRESULT CDECL GetCurrentClrDetails(void** clrInstance, unsigned int* appDomainId)
 {
     assert(clrInstance != nullptr && appDomainId != nullptr);
     *clrInstance = CurrentClrInstance;
     *appDomainId = CurrentAppDomainId;
     return S_OK;
 }
-#endif // TARGET_WINDOWS
 
 //
 // Self testing for corerun.
 //
 
 #define THROW_IF_FALSE(stmt) if (!(stmt)) throw W(#stmt);
+#define THROW_IF_TRUE(stmt) if (stmt) throw W(#stmt);
 static int self_test()
 {
     try
@@ -557,6 +670,35 @@ static int self_test()
             THROW_IF_FALSE(config.entry_assembly_argc == 1);
         }
         {
+            configuration config{};
+            const char_t* args[] = { W(""), W("-p"), W("invalid"), W("foo") };
+            THROW_IF_TRUE(parse_args(4, args, config));
+        }
+        {
+            configuration config{};
+            const char_t* args[] = { W(""), W("-p"), W("empty="), W("foo") };
+            THROW_IF_FALSE(parse_args(4, args, config));
+            THROW_IF_FALSE(config.user_defined_keys.size() == 1);
+            THROW_IF_FALSE(config.user_defined_values.size() == 1);
+            THROW_IF_FALSE(!config.entry_assembly_fullpath.empty());
+        }
+        {
+            configuration config{};
+            const char_t* args[] = { W(""), W("-p"), W("one=1"), W("foo") };
+            THROW_IF_FALSE(parse_args(4, args, config));
+            THROW_IF_FALSE(config.user_defined_keys.size() == 1);
+            THROW_IF_FALSE(config.user_defined_values.size() == 1);
+            THROW_IF_FALSE(!config.entry_assembly_fullpath.empty());
+        }
+        {
+            configuration config{};
+            const char_t* args[] = { W(""), W("-p"), W("one=1"), W("--property"), W("System.GC.Concurrent=true"), W("foo") };
+            THROW_IF_FALSE(parse_args(6, args, config));
+            THROW_IF_FALSE(config.user_defined_keys.size() == 2);
+            THROW_IF_FALSE(config.user_defined_values.size() == 2);
+            THROW_IF_FALSE(!config.entry_assembly_fullpath.empty());
+        }
+        {
             string_t path;
             path = W("path");
             pal::ensure_trailing_delimiter(path);
@@ -576,6 +718,9 @@ static int self_test()
             THROW_IF_FALSE(pal::string_ends_with(W("ab.cd"), W(".cd")));
             THROW_IF_FALSE(!pal::string_ends_with(W("ab.cd"), W(".cde")));
             THROW_IF_FALSE(!pal::string_ends_with(W("ab.cd"), W("ab.cde")));
+        }
+        {
+            dotenv::self_test();
         }
     }
     catch (const char_t msg[])

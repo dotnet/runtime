@@ -1,17 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
 namespace System.Security.Cryptography.Xml
 {
     public class DataObject
     {
-        private string _id;
-        private string _mimeType;
-        private string _encoding;
+        private string? _id;
+        private string? _mimeType;
+        private string? _encoding;
         private CanonicalXmlNodeList _elData;
-        private XmlElement _cachedXml;
+        private XmlElement? _cachedXml;
 
         //
         // public constructors
@@ -25,8 +26,10 @@ namespace System.Security.Cryptography.Xml
 
         public DataObject(string id, string mimeType, string encoding, XmlElement data)
         {
-            if (data == null)
+            if (data is null)
+            {
                 throw new ArgumentNullException(nameof(data));
+            }
 
             _id = id;
             _mimeType = mimeType;
@@ -40,7 +43,7 @@ namespace System.Security.Cryptography.Xml
         // public properties
         //
 
-        public string Id
+        public string? Id
         {
             get { return _id; }
             set
@@ -50,7 +53,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public string MimeType
+        public string? MimeType
         {
             get { return _mimeType; }
             set
@@ -60,7 +63,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        public string Encoding
+        public string? Encoding
         {
             get { return _encoding; }
             set
@@ -88,6 +91,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [MemberNotNullWhen(true, nameof(_cachedXml))]
         private bool CacheValid
         {
             get
@@ -102,7 +106,7 @@ namespace System.Security.Cryptography.Xml
 
         public XmlElement GetXml()
         {
-            if (CacheValid) return (_cachedXml);
+            if (CacheValid) return _cachedXml;
 
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;
@@ -133,8 +137,10 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
 
             _id = Utils.GetAttribute(value, "Id", SignedXml.XmlDsigNamespaceUrl);
             _mimeType = Utils.GetAttribute(value, "MimeType", SignedXml.XmlDsigNamespaceUrl);

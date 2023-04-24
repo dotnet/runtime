@@ -88,6 +88,9 @@ namespace System.Diagnostics
         /// </devdoc>
         public ThreadPriorityLevel PriorityLevel
         {
+            [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("linux")]
+            [SupportedOSPlatform("freebsd")]
             get
             {
                 if (!_priorityLevel.HasValue)
@@ -108,9 +111,9 @@ namespace System.Diagnostics
         ///     Returns the memory address of the function that was called when the associated
         ///     thread was started.
         /// </devdoc>
-        public IntPtr StartAddress
+        public unsafe IntPtr StartAddress
         {
-            get { return _threadInfo._startAddress; }
+            get { return (IntPtr)_threadInfo._startAddress; }
         }
 
         /// <devdoc>
@@ -134,6 +137,14 @@ namespace System.Diagnostics
                 }
                 return _threadInfo._threadWaitReason;
             }
+        }
+
+        /// <summary>Returns the time the associated thread was started.</summary>
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("linux")]
+        public DateTime StartTime
+        {
+            get => GetStartTime();
         }
 
         /// <devdoc>

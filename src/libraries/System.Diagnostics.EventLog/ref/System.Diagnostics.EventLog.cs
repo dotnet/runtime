@@ -64,7 +64,7 @@ namespace System.Diagnostics
         public void Close() { }
         public static void CreateEventSource(System.Diagnostics.EventSourceCreationData sourceData) { }
         public static void CreateEventSource(string source, string logName) { }
-        [System.ObsoleteAttribute("This method has been deprecated.  Please use System.Diagnostics.EventLog.CreateEventSource(EventSourceCreationData sourceData) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("EventLog.CreateEventSource has been deprecated. Use System.Diagnostics.EventLog.CreateEventSource(EventSourceCreationData sourceData) instead.")]
         public static void CreateEventSource(string source, string logName, string machineName) { }
         public static void Delete(string logName) { }
         public static void Delete(string logName, string machineName) { }
@@ -105,7 +105,7 @@ namespace System.Diagnostics
         public short CategoryNumber { get { throw null; } }
         public byte[] Data { get { throw null; } }
         public System.Diagnostics.EventLogEntryType EntryType { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.EventLogEntry.InstanceId instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("EventLogEntry.EventID has been deprecated. Use System.Diagnostics.EventLogEntry.InstanceId instead.")]
         public int EventID { get { throw null; } }
         public int Index { get { throw null; } }
         public long InstanceId { get { throw null; } }
@@ -227,10 +227,18 @@ namespace System.Diagnostics.Eventing.Reader
     {
         public EventLogException() { }
         protected EventLogException(int errorCode) { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected EventLogException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public EventLogException(string message) { }
         public EventLogException(string message, System.Exception innerException) { }
         public override string Message { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public sealed partial class EventLogInformation
@@ -248,6 +256,10 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogInvalidDataException : System.Diagnostics.Eventing.Reader.EventLogException
     {
         public EventLogInvalidDataException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected EventLogInvalidDataException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public EventLogInvalidDataException(string message) { }
         public EventLogInvalidDataException(string message, System.Exception innerException) { }
@@ -274,6 +286,10 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogNotFoundException : System.Diagnostics.Eventing.Reader.EventLogException
     {
         public EventLogNotFoundException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected EventLogNotFoundException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public EventLogNotFoundException(string message) { }
         public EventLogNotFoundException(string message, System.Exception innerException) { }
@@ -287,6 +303,10 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogProviderDisabledException : System.Diagnostics.Eventing.Reader.EventLogException
     {
         public EventLogProviderDisabledException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected EventLogProviderDisabledException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public EventLogProviderDisabledException(string message) { }
         public EventLogProviderDisabledException(string message, System.Exception innerException) { }
@@ -319,6 +339,10 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogReadingException : System.Diagnostics.Eventing.Reader.EventLogException
     {
         public EventLogReadingException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected EventLogReadingException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public EventLogReadingException(string message) { }
         public EventLogReadingException(string message, System.Exception innerException) { }
@@ -514,7 +538,7 @@ namespace System.Diagnostics.Eventing.Reader
         WdiDiagnostic = (long)1125899906842624,
         Sqm = (long)2251799813685248,
         AuditFailure = (long)4503599627370496,
-        [System.ObsoleteAttribute("Incorrect value: use CorrelationHint2 instead", false)]
+        [System.ObsoleteAttribute("StandardEventKeywords.CorrelationHint has an incorrect value and has been deprecated. Use CorrelationHint2 instead.")]
         CorrelationHint = (long)4503599627370496,
         AuditSuccess = (long)9007199254740992,
         CorrelationHint2 = (long)18014398509481984,

@@ -4,6 +4,7 @@
 #include "trace.h"
 #include "info.h"
 #include "utils.h"
+#include <cinttypes>
 
 using namespace bundle;
 
@@ -48,8 +49,8 @@ StatusCode info_t::process_bundle(const pal::char_t* bundle_path, const pal::cha
     }
 
     trace::info(_X("Single-File bundle details:"));
-    trace::info(_X("DepsJson Offset:[%lx] Size[%lx]"), info.m_header.deps_json_location().offset, info.m_header.deps_json_location().size);
-    trace::info(_X("RuntimeConfigJson Offset:[%lx] Size[%lx]"), info.m_header.runtimeconfig_json_location().offset, info.m_header.runtimeconfig_json_location().size);
+    trace::info(_X("DepsJson Offset:[%" PRIx64 "] Size[%" PRIx64 "]"), info.m_header.deps_json_location().offset, info.m_header.deps_json_location().size);
+    trace::info(_X("RuntimeConfigJson Offset:[%" PRIx64 "] Size[%" PRIx64 "]"), info.m_header.runtimeconfig_json_location().offset, info.m_header.runtimeconfig_json_location().size);
     trace::info(_X(".net core 3 compatibility mode: [%s]"), info.m_header.is_netcoreapp3_compat_mode() ? _X("Yes") : _X("No"));
 
     the_app = &info;
@@ -64,6 +65,7 @@ StatusCode info_t::process_header()
         const char* addr = map_bundle();
 
         reader_t reader(addr, m_bundle_size, m_header_offset);
+        m_offset_in_file = reader.offset_in_file();
 
         m_header = header_t::read(reader);
         m_deps_json.set_location(&m_header.deps_json_location());
@@ -107,7 +109,14 @@ char* info_t::config_t::map(const pal::string_t& path, const location_t* &locati
     // * There is no performance limitation due to a larger sized mapping, since we actually only read the pages with relevant contents.
     // * Files that are too large to be mapped (ex: that exhaust 32-bit virtual address space) are not supported. 
 
+#ifdef _WIN32
+    // Since we can't use in-situ parsing on Windows, as JSON data is encoded in
+    // UTF-8 and the host expects wide strings.
+    // We do not need COW and read-only mapping will be enough.
+    char* addr = (char*)pal::mmap_read(app->m_bundle_path);
+#else // _WIN32
     char* addr = (char*)pal::mmap_copy_on_write(app->m_bundle_path);
+#endif // _WIN32
     if (addr == nullptr)
     {
         trace::error(_X("Failure processing application bundle."));
@@ -116,13 +125,16 @@ char* info_t::config_t::map(const pal::string_t& path, const location_t* &locati
 
     trace::info(_X("Mapped bundle for [%s]"), path.c_str());
 
-    return addr + location->offset;
+    // Adjust to the beginning of the bundle
+    return addr + (location->offset + app->m_offset_in_file);
 }
 
 void info_t::config_t::unmap(const char* addr, const location_t* location)
 {
-    // Adjust to the beginning of the bundle.
-    addr -= location->offset;
+    const bundle::info_t* app = bundle::info_t::the_app;
+    // Reverse the adjustment to the beginning of the bundle
+    addr = addr - (location->offset + app->m_offset_in_file);
+
     bundle::info_t::the_app->unmap_bundle(addr);
 }
 

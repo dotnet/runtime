@@ -190,7 +190,7 @@ namespace System.Net.Sockets.Tests
 
                 using (NetworkStream s = client.GetStream())
                 {
-                    byte[] getRequest = Encoding.ASCII.GetBytes("GET / HTTP/1.1\r\n\r\n");
+                    byte[] getRequest = "GET / HTTP/1.1\r\n\r\n"u8.ToArray();
                     await s.WriteAsync(getRequest, 0, getRequest.Length);
                     Assert.NotEqual(-1, s.ReadByte()); // just verify we successfully get any data back
                 }
@@ -240,7 +240,7 @@ namespace System.Net.Sockets.Tests
 
                 using (NetworkStream s = client.GetStream())
                 {
-                    byte[] getRequest = Encoding.ASCII.GetBytes("GET / HTTP/1.1\r\n\r\n");
+                    byte[] getRequest = "GET / HTTP/1.1\r\n\r\n"u8.ToArray();
                     s.Write(getRequest, 0, getRequest.Length);
                     Assert.NotEqual(-1, s.ReadByte()); // just verify we successfully get any data back
                 }
@@ -271,19 +271,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop]
         [Fact]
-        public void ExclusiveAddressUse_NullClient()
-        {
-            using (TcpClient client = new TcpClient())
-            {
-                client.Client = null;
-
-                Assert.False(client.ExclusiveAddressUse);
-            }
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_True()
         {
             using (TcpClient client = new TcpClient())
@@ -293,7 +281,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
         public void Roundtrip_ExclusiveAddressUse_GetEqualsSet_False()
         {
             using (TcpClient client = new TcpClient())

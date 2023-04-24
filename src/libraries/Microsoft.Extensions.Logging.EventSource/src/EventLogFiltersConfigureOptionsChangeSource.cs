@@ -7,7 +7,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal sealed class EventLogFiltersConfigureOptionsChangeSource: IOptionsChangeTokenSource<LoggerFilterOptions>
+    internal sealed class EventLogFiltersConfigureOptionsChangeSource : IOptionsChangeTokenSource<LoggerFilterOptions>
     {
         private readonly LoggingEventSource _eventSource;
 
@@ -18,6 +18,6 @@ namespace Microsoft.Extensions.Logging
 
         public IChangeToken GetChangeToken() => _eventSource.GetFilterChangeToken();
 
-        public string Name { get; }
+        public string? Name { get; }
     }
 }

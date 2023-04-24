@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 
 public struct ValX1<T> {}
@@ -15,13 +16,13 @@ struct Gen<T>
 		Type monitorT = typeof(Gen<T>);
 		Type monitorU = typeof(Gen<U>);
 
-		TestHelper myHelper = new TestHelper(Test.nThreads);
-		TestHelper myHelper2 = new TestHelper(Test.nThreads);
+		TestHelper myHelper = new TestHelper(Test_TryEnter06.nThreads);
+		TestHelper myHelper2 = new TestHelper(Test_TryEnter06.nThreads);
 		WaitHandle[] myWaiter = new WaitHandle[2];
 		myWaiter[0] = myHelper.m_Event;
 		myWaiter[1] = myHelper2.m_Event;
 
-		for (int i=0; i<Test.nThreads; i++)
+		for (int i=0; i<Test_TryEnter06.nThreads; i++)
 		{
 			// 	new MonitorDelegateTS(myHelper.ConsumerTryEnter).BeginInvoke(monitorT,100,null,null);
 			// 	new MonitorDelegateTS(myHelper2.ConsumerTryEnter).BeginInvoke(monitorU,100,null,null);
@@ -43,7 +44,7 @@ struct Gen<T>
 			if(myHelper.Error == true || myHelper2.Error == true)
 				break;
 		}
-		Test.Eval(!(myHelper.Error || myHelper2.Error));
+		Test_TryEnter06.Eval(!(myHelper.Error || myHelper2.Error));
 		
 	}
 
@@ -51,7 +52,7 @@ struct Gen<T>
 	
 }
 
-public class Test
+public class Test_TryEnter06
 {
 	public static int nThreads = 25;
 	public static int counter = 0;
@@ -68,7 +69,8 @@ public class Test
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Gen<int>.TryEnterTest<int>(true);	
 		Gen<double>.TryEnterTest<int>(false);

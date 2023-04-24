@@ -112,9 +112,9 @@ namespace System.Net.Mail
         public string User { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
-        public static bool TryCreate(string address, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
-        public static bool TryCreate(string address, string? displayName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
-        public static bool TryCreate(string address, string? displayName, System.Text.Encoding? displayNameEncoding, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
+        public static bool TryCreate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? address, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
+        public static bool TryCreate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? address, string? displayName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
+        public static bool TryCreate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? address, string? displayName, System.Text.Encoding? displayNameEncoding, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out MailAddress? result) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class MailAddressCollection : System.Collections.ObjectModel.Collection<System.Net.Mail.MailAddress>
@@ -146,7 +146,7 @@ namespace System.Net.Mail
         public System.Text.Encoding? HeadersEncoding { get { throw null; } set { } }
         public bool IsBodyHtml { get { throw null; } set { } }
         public System.Net.Mail.MailPriority Priority { get { throw null; } set { } }
-        [System.ObsoleteAttribute("ReplyTo is obsoleted for this type.  Please use ReplyToList instead which can accept multiple addresses. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("ReplyTo has been deprecated. Use ReplyToList instead, which can accept multiple addresses.")]
         public System.Net.Mail.MailAddress? ReplyTo { get { throw null; } set { } }
         public System.Net.Mail.MailAddressCollection ReplyToList { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
@@ -209,41 +209,50 @@ namespace System.Net.Mail
         SpecifiedPickupDirectory = 1,
         PickupDirectoryFromIis = 2,
     }
-    public partial class SmtpException : System.Exception, System.Runtime.Serialization.ISerializable
+    public partial class SmtpException : System.Exception
     {
         public SmtpException() { }
         public SmtpException(System.Net.Mail.SmtpStatusCode statusCode) { }
         public SmtpException(System.Net.Mail.SmtpStatusCode statusCode, string? message) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SmtpException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public SmtpException(string? message) { }
         public SmtpException(string? message, System.Exception? innerException) { }
         public System.Net.Mail.SmtpStatusCode StatusCode { get { throw null; } set { } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
-    public partial class SmtpFailedRecipientException : System.Net.Mail.SmtpException, System.Runtime.Serialization.ISerializable
+    public partial class SmtpFailedRecipientException : System.Net.Mail.SmtpException
     {
         public SmtpFailedRecipientException() { }
         public SmtpFailedRecipientException(System.Net.Mail.SmtpStatusCode statusCode, string? failedRecipient) { }
         public SmtpFailedRecipientException(System.Net.Mail.SmtpStatusCode statusCode, string? failedRecipient, string? serverResponse) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SmtpFailedRecipientException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SmtpFailedRecipientException(string? message) { }
         public SmtpFailedRecipientException(string? message, System.Exception? innerException) { }
         public SmtpFailedRecipientException(string? message, string? failedRecipient, System.Exception? innerException) { }
         public string? FailedRecipient { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
-    public partial class SmtpFailedRecipientsException : System.Net.Mail.SmtpFailedRecipientException, System.Runtime.Serialization.ISerializable
+    public partial class SmtpFailedRecipientsException : System.Net.Mail.SmtpFailedRecipientException
     {
         public SmtpFailedRecipientsException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SmtpFailedRecipientsException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SmtpFailedRecipientsException(string? message) { }
         public SmtpFailedRecipientsException(string? message, System.Exception? innerException) { }
         public SmtpFailedRecipientsException(string? message, System.Net.Mail.SmtpFailedRecipientException[] innerExceptions) { }
         public System.Net.Mail.SmtpFailedRecipientException[] InnerExceptions { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public enum SmtpStatusCode
     {

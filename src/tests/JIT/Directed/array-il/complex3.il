@@ -6,9 +6,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 .assembly extern legacy library mscorlib {}
-.assembly complex3
+.assembly '_Arrayscomplex3'
 {
 }
 
@@ -38,7 +39,7 @@
 
 } // end of class 'Yak'
 
-.class auto ansi Complex2_Array_Test
+.class public auto ansi Complex2_Array_Test
 {
    .method public static int32 TestRank(value class Yak[,,,,,,] Odd_Variable) il managed
   {
@@ -67,8 +68,11 @@
     IL_000b:  ret
   } // end of method 'Complex2_Array_Test::test'
 
-  .method public static int32 Main(string[] args) il managed
+  .method public static int32 Main() il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  9
     .locals (int32 SIZE,

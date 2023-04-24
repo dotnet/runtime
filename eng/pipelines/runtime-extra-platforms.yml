@@ -1,0 +1,112 @@
+# This pipeline includes the platforms that we don't have resources to run on every PR but that we want
+# to still have test coverage, we run this pipeline on a schedule and also developers can run it
+# via /azp run command on PRs. This pipeline permits us to have the main runtime pipeline run the same
+# platforms in PRs and Scheduled builds.
+
+# Setting batch to true, triggers one build at a time.
+# if there is a push while a build in progress, it will wait,
+# until the running build finishes, and produce a build with all the changes
+# that happened during the last build.
+trigger:
+  batch: true
+  branches:
+    include:
+    - release/*.*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - '**.md'
+    - eng/Version.Details.xml
+    - .devcontainer/*
+    - .github/*
+    - docs/*
+    - LICENSE.TXT
+    - PATENTS.TXT
+    - THIRD-PARTY-NOTICES.TXT
+
+schedules:
+  - cron: "0 9,21 * * *" # run at 9:00 and 21:00 (UTC) which is 1:00 and 13:00 (PST).
+    displayName: Runtime extra main schedule
+    branches:
+      include:
+      - main
+    always: false # run only if there were changes since the last successful scheduled run.
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+
+      #
+      # Evaluate paths
+      #
+      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+        - template: /eng/pipelines/common/evaluate-default-paths.yml
+
+      # Add wasm jobs only for rolling builds
+      - ${{ if eq(variables.isRollingBuild, true) }}:
+        - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-wasm.yml
+          parameters:
+            isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+            isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
+            isRollingBuild: ${{ variables.isRollingBuild }}
+
+      # Add iOS/tvOS jobs
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
+        parameters:
+          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+          isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
+
+      # Add iOS/tvOS simulator jobs
+      #
+      # Disabled pending queue backup investigation 
+      #
+      #- template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslikesimulator.yml
+      #  parameters:
+      #    isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+      #    isiOSLikeSimulatorOnlyBuild: ${{ variables.isiOSLikeSimulatorOnlyBuild }}
+      #    isRollingBuild: ${{ variables.isRollingBuild }}
+
+      # Add Android jobs
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-android.yml
+        parameters:
+          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+          isAndroidOnlyBuild: ${{ variables.isAndroidOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
+
+      # Add Android emulator jobs
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
+        parameters:
+          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+          isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
+
+      # Add Mac Catalyst jobs
+      #
+      # Disabled pending queue backup investigation 
+      #
+      #- template: /eng/pipelines/extra-platforms/runtime-extra-platforms-maccatalyst.yml
+      #  parameters:
+      #    isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+      #    isMacCatalystOnlyBuild: ${{ variables.isMacCatalystOnlyBuild }}
+      #    isRollingBuild: ${{ variables.isRollingBuild }}
+
+      # Add Linux Bionic jobs
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-linuxbionic.yml
+        parameters:
+          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+          isLinuxBionicOnlyBuild: ${{ variables.isLinuxBionicOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
+
+      # Any jobs that are not specific to any platform
+      - ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:
+        - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-other.yml
+          parameters:
+            isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}

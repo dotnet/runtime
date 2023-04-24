@@ -109,7 +109,7 @@ PATCH_LABEL JIT_DebugWriteBarrier\rg
     mov     [edx], edx
     cmp     ecx, [edx]
     pop     edx
-    ja      LOCAL_LABEL(WriteBarrier_NoShadow_\rg)
+    jae     LOCAL_LABEL(WriteBarrier_NoShadow_\rg)
 
     // TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable
     // mfence barriers on either side of these two writes to make sure that
@@ -281,7 +281,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
     mov     eax, [eax]
     cmp     edx, [eax]
     pop     eax
-    ja      LOCAL_LABEL(ByRefWriteBarrier_NoShadow)
+    jae     LOCAL_LABEL(ByRefWriteBarrier_NoShadow)
 
     // TODO: In Orcas timeframe if we move to P4+ only on X86 we should enable
     // mfence barriers on either side of these two writes to make sure that
@@ -377,10 +377,31 @@ LEAF_ENTRY JIT_WriteBarrierGroup, _TEXT
     ret
 LEAF_END JIT_WriteBarrierGroup, _TEXT
 
-#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
-// *******************************************************************************
-//  Write barrier wrappers with fcall calling convention
-//
+// Pointer to JIT_WriteBarrierEAX
+    .data
+    .align 4
+    .global C_FUNC(JIT_WriteBarrierEAX_Loc)
+C_FUNC(JIT_WriteBarrierEAX_Loc):
+    .word 0
+    .text
+
+LEAF_ENTRY JIT_WriteBarrier_Callable, _TEXT
+    mov eax, edx
+    mov edx, ecx
+    push    eax
+    call    1f
+1:
+    pop     eax
+2:
+.att_syntax
+    addl     $_GLOBAL_OFFSET_TABLE_+(2b-1b), %eax
+.intel_syntax noprefix
+    mov     eax, dword ptr [eax + C_FUNC(JIT_WriteBarrierEAX_Loc)@GOT]
+    mov     eax, [eax]
+    xchg    eax, dword ptr [esp]
+    ret
+LEAF_END JIT_WriteBarrier_Callable, _TEXT
+
 .macro UniversalWriteBarrierHelper name
 .align 4
 
@@ -391,6 +412,11 @@ LEAF_ENTRY JIT_\name, _TEXT
 LEAF_END JIT_\name, _TEXT
 
 .endm
+
+#ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
+// *******************************************************************************
+//  Write barrier wrappers with fcall calling convention
+//
 
 // Only define these if we're using the ASM GC write barriers; if this flag is not defined,
 // we'll use C++ versions of these write barriers.

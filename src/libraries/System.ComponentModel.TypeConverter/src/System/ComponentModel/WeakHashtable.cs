@@ -74,16 +74,12 @@ namespace System.ComponentModel
             {
                 // Perform a scavenge through our keys, looking
                 // for dead references.
-                List<object> cleanupList = null;
+                List<object>? cleanupList = null;
                 foreach (object o in Keys)
                 {
                     if (o is WeakReference wr && !wr.IsAlive)
                     {
-                        if (cleanupList == null)
-                        {
-                            cleanupList = new List<object>();
-                        }
-
+                        cleanupList ??= new List<object>();
                         cleanupList.Add(wr);
                     }
                 }
@@ -103,7 +99,7 @@ namespace System.ComponentModel
 
         private sealed class WeakKeyComparer : IEqualityComparer
         {
-            bool IEqualityComparer.Equals(object x, object y)
+            bool IEqualityComparer.Equals(object? x, object? y)
             {
                 if (x == null)
                 {
@@ -155,7 +151,7 @@ namespace System.ComponentModel
                 _hashCode = o.GetHashCode();
             }
 
-            public override bool Equals(object o)
+            public override bool Equals(object? o)
             {
                 if (o?.GetHashCode() != _hashCode)
                 {

@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -37,7 +37,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LOCAL/${TEST_LOCAL}/g" > $TEST_FIL
 		${OPCODE_2}
 		leave END
         }
-        catch [mscorlib]System.NullReferenceException 
+        catch [mscorlib]System.NullReferenceException
 	{
 		pop
 		${OPCODE_3}
@@ -47,7 +47,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LOCAL/${TEST_LOCAL}/g" > $TEST_FIL
 			${OPCODE_4}
 			leave END
 		}
-		catch [mscorlib]System.NullReferenceException 
+		catch [mscorlib]System.NullReferenceException
 		{
 			pop
 			${OPCODE_5}
@@ -55,7 +55,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LOCAL/${TEST_LOCAL}/g" > $TEST_FIL
 		}
 
 
-		.try 
+		.try
 		{
 			nop
 	   		leave END
@@ -87,7 +87,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/LOCAL/${TEST_LOCAL}/g" > $TEST_FIL
 		endfinally
 	}
 
-	.try 
+	.try
 	{
 		nop
    		leave END

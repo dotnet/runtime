@@ -499,7 +499,7 @@ namespace MS.Internal.Xml.Cache
 
             for (int i = 0; i < _hashTable.Length; i++)
             {
-                bldr.AppendFormat("{0,4}: ", i);
+                bldr.Append($"{i,4}: ");
 
                 infoAtom = _hashTable[i];
 

@@ -8,11 +8,11 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, ExactSpelling = true)]
-        internal static extern unsafe uint EventRegister(
-            in Guid providerId,
-            EtwEnableCallback enableCallback,
+        [LibraryImport(Libraries.Advapi32)]
+        internal static unsafe partial uint EventRegister(
+            Guid* providerId,
+            delegate* unmanaged<Guid*, int, byte, long, long, EVENT_FILTER_DESCRIPTOR*, void*, void> enableCallback,
             void* callbackContext,
-            ref long registrationHandle);
+            long* registrationHandle);
     }
 }

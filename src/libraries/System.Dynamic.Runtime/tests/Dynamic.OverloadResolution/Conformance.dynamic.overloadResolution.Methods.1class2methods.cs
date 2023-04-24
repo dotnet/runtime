@@ -530,6 +530,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
     public class Test
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55117", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));
@@ -2966,7 +2967,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -2998,7 +2998,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

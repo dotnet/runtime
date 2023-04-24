@@ -1,8 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
@@ -10,6 +7,6 @@
     <Compile Include="call05_large.il" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\common\common.ilproj" />
+    <ProjectReference Include="..\..\..\common\localloc_common.ilproj" />
   </ItemGroup>
 </Project>

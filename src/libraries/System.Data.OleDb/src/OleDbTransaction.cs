@@ -25,13 +25,12 @@ namespace System.Data.OleDb
 
             internal WrappedTransaction(UnsafeNativeMethods.ITransactionLocal transaction, int isolevel, out OleDbHResult hr) : base(transaction)
             {
-                int transactionLevel = 0;
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 { }
                 finally
                 {
-                    hr = transaction.StartTransaction(isolevel, 0, IntPtr.Zero, out transactionLevel);
+                    hr = transaction.StartTransaction(isolevel, 0, IntPtr.Zero, out _);
                     if (0 <= hr)
                     {
                         _mustComplete = true;
@@ -181,7 +180,7 @@ namespace System.Data.OleDb
             }
             else if ((null != _nestedTransaction) && _nestedTransaction.IsAlive)
             {
-                throw ADP.ParallelTransactionsNotSupported(Connection);
+                throw ADP.ParallelTransactionsNotSupported(Connection!);
             }
             // either the connection will be open or this will be a zombie
 
@@ -296,7 +295,7 @@ namespace System.Data.OleDb
 
         private void ProcessResults(OleDbHResult hr)
         {
-            Exception? e = OleDbConnection.ProcessResults(hr, _parentConnection, this);
+            Exception? e = OleDbConnection.ProcessResults(hr, _parentConnection);
             if (null != e)
             { throw e; }
         }

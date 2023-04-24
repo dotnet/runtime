@@ -13,62 +13,38 @@ namespace Microsoft.Extensions.Caching.Distributed
 {
     public class MemoryDistributedCache : IDistributedCache
     {
-        private readonly IMemoryCache _memCache;
+        private readonly MemoryCache _memCache;
 
         public MemoryDistributedCache(IOptions<MemoryDistributedCacheOptions> optionsAccessor)
             : this(optionsAccessor, NullLoggerFactory.Instance) { }
 
         public MemoryDistributedCache(IOptions<MemoryDistributedCacheOptions> optionsAccessor, ILoggerFactory loggerFactory)
         {
-            if (optionsAccessor == null)
-            {
-                throw new ArgumentNullException(nameof(optionsAccessor));
-            }
-
-            if (loggerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
+            ThrowHelper.ThrowIfNull(optionsAccessor);
+            ThrowHelper.ThrowIfNull(loggerFactory);
 
             _memCache = new MemoryCache(optionsAccessor.Value, loggerFactory);
         }
 
-        public byte[] Get(string key)
+        public byte[]? Get(string key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ThrowHelper.ThrowIfNull(key);
 
-            return (byte[])_memCache.Get(key);
+            return (byte[]?)_memCache.Get(key);
         }
 
-        public Task<byte[]> GetAsync(string key, CancellationToken token = default(CancellationToken))
+        public Task<byte[]?> GetAsync(string key, CancellationToken token = default(CancellationToken))
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ThrowHelper.ThrowIfNull(key);
 
             return Task.FromResult(Get(key));
         }
 
         public void Set(string key, byte[] value, DistributedCacheEntryOptions options)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ThrowHelper.ThrowIfNull(key);
+            ThrowHelper.ThrowIfNull(value);
+            ThrowHelper.ThrowIfNull(options);
 
             var memoryCacheEntryOptions = new MemoryCacheEntryOptions();
             memoryCacheEntryOptions.AbsoluteExpiration = options.AbsoluteExpiration;
@@ -81,20 +57,9 @@ namespace Microsoft.Extensions.Caching.Distributed
 
         public Task SetAsync(string key, byte[] value, DistributedCacheEntryOptions options, CancellationToken token = default(CancellationToken))
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ThrowHelper.ThrowIfNull(key);
+            ThrowHelper.ThrowIfNull(value);
+            ThrowHelper.ThrowIfNull(options);
 
             Set(key, value, options);
             return Task.CompletedTask;
@@ -102,20 +67,14 @@ namespace Microsoft.Extensions.Caching.Distributed
 
         public void Refresh(string key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ThrowHelper.ThrowIfNull(key);
 
-            _memCache.TryGetValue(key, out object value);
+            _memCache.TryGetValue(key, out _);
         }
 
         public Task RefreshAsync(string key, CancellationToken token = default(CancellationToken))
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ThrowHelper.ThrowIfNull(key);
 
             Refresh(key);
             return Task.CompletedTask;
@@ -123,20 +82,14 @@ namespace Microsoft.Extensions.Caching.Distributed
 
         public void Remove(string key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ThrowHelper.ThrowIfNull(key);
 
             _memCache.Remove(key);
         }
 
         public Task RemoveAsync(string key, CancellationToken token = default(CancellationToken))
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ThrowHelper.ThrowIfNull(key);
 
             Remove(key);
             return Task.CompletedTask;

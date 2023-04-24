@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -18,7 +18,7 @@ TEST_OP5=$7
 TEST_FILE=${TEST_VALIDITY}_exception_branch_${TEST_NAME}_generated.il
 echo $TEST_FILE
 $SED -e "s/OPCODE1/${TEST_OP1}/g" -e "s/OPCODE2/${TEST_OP2}/g" -e "s/OPCODE3/${TEST_OP3}/g" -e "s/OPCODE4/${TEST_OP4}/g" -e "s/OPCODE5/${TEST_OP5}/g" > $TEST_FILE <<//EOF
-// ${TEST_VALIDITY} CIL which breaks the ECMA-335 rules. 
+// ${TEST_VALIDITY} CIL which breaks the ECMA-335 rules.
 // This CIL should fail verification by a conforming CLI verifier.
 
 .assembly '${TEST_NAME}_generated'
@@ -42,7 +42,7 @@ branch_target1:
 		OPCODE2
 		leave branch_target5
         }
-        catch [mscorlib]System.Exception 
+        catch [mscorlib]System.Exception
 	{
 		pop
 branch_target2:
@@ -61,7 +61,7 @@ branch_target3:
 		OPCODE4
 		endfinally
 	}
-	.try 
+	.try
 	{
 		nop
    		leave branch_target5

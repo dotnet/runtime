@@ -4,9 +4,11 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
 {
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class NullableConverterFactory : JsonConverterFactory
     {
         public override bool CanConvert(Type typeToConvert)
@@ -20,7 +22,7 @@ namespace System.Text.Json.Serialization.Converters
 
             Type valueTypeToConvert = typeToConvert.GetGenericArguments()[0];
 
-            JsonConverter valueConverter = options.GetConverter(valueTypeToConvert);
+            JsonConverter valueConverter = options.GetConverterInternal(valueTypeToConvert);
             Debug.Assert(valueConverter != null);
 
             // If the value type has an interface or object converter, just return that converter directly.
@@ -42,7 +44,7 @@ namespace System.Text.Json.Serialization.Converters
                 culture: null)!;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "'NullableConverter<T> where T : struct' implies 'T : new()', so the trimmer is warning calling MakeGenericType here because valueTypeToConvert's constructors are not annotated. " +
             "But NullableConverter doesn't call new T(), so this is safe.")]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]

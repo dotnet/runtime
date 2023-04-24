@@ -31,20 +31,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public GenericSpecializationPartCreationInfo(IReflectionPartCreationInfo originalPartCreationInfo, ReflectionComposablePartDefinition originalPart, Type[] specialization)
         {
-            if (originalPartCreationInfo == null)
-            {
-                throw new ArgumentNullException(nameof(originalPartCreationInfo));
-            }
-
-            if (originalPart == null)
-            {
-                throw new ArgumentNullException(nameof(originalPart));
-            }
-
-            if (specialization == null)
-            {
-                throw new ArgumentNullException(nameof(specialization));
-            }
+            ArgumentNullException.ThrowIfNull(originalPartCreationInfo);
+            ArgumentNullException.ThrowIfNull(originalPart);
+            ArgumentNullException.ThrowIfNull(specialization);
 
             _originalPartCreationInfo = originalPartCreationInfo;
             _originalPart = originalPart;
@@ -82,13 +71,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             if (_constructor == null)
             {
-                ConstructorInfo? genericConstuctor = _originalPartCreationInfo.GetConstructor();
+                ConstructorInfo? genericConstructor = _originalPartCreationInfo.GetConstructor();
                 ConstructorInfo? result = null;
-                if (genericConstuctor != null)
+                if (genericConstructor != null)
                 {
                     foreach (ConstructorInfo constructor in GetPartType().GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                     {
-                        if (constructor.MetadataToken == genericConstuctor.MetadataToken)
+                        if (constructor.MetadataToken == genericConstructor.MetadataToken)
                         {
                             result = constructor;
                             break;
@@ -99,10 +88,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 Thread.MemoryBarrier();
                 lock (_lock)
                 {
-                    if (_constructor == null)
-                    {
-                        _constructor = result;
-                    }
+                    _constructor ??= result;
                 }
             }
 
@@ -190,10 +176,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private Dictionary<LazyMemberInfo, MemberInfo[]> BuildMembersTable(List<LazyMemberInfo> members)
         {
-            if (members == null)
-            {
-                throw new ArgumentNullException(nameof(members));
-            }
+            ArgumentNullException.ThrowIfNull(members);
 
             Dictionary<LazyMemberInfo, MemberInfo[]> membersTable = new Dictionary<LazyMemberInfo, MemberInfo[]>();
             Dictionary<int, MemberInfo> specializedPartMembers = new Dictionary<int, MemberInfo>();
@@ -255,7 +238,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return membersTable;
         }
 
-        [return: NotNullIfNotNull("parameters")]
+        [return: NotNullIfNotNull(nameof(parameters))]
         private Dictionary<Lazy<ParameterInfo>, ParameterInfo>? BuildParametersTable(List<Lazy<ParameterInfo>>? parameters)
         {
             if (parameters != null)
@@ -472,7 +455,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private IDictionary<string, object?> TranslateExportMetadata(ReflectionMemberExportDefinition originalExport)
+        private Dictionary<string, object?> TranslateExportMetadata(ReflectionMemberExportDefinition originalExport)
         {
             Dictionary<string, object?> metadata = new Dictionary<string, object?>(originalExport.Metadata, StringComparers.MetadataKeyNames);
 
@@ -550,7 +533,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return _originalPartCreationInfo.Origin; }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is GenericSpecializationPartCreationInfo that && (_originalPartCreationInfo.Equals(that._originalPartCreationInfo)) &&
                 (_specialization.IsArrayEqual(that._specialization));
@@ -573,7 +556,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             object[]? genericParameterConstraints = partMetadata.GetValue<object[]>(CompositionConstants.GenericParameterConstraintsMetadataName);
             GenericParameterAttributes[]? genericParameterAttributes = partMetadata.GetValue<GenericParameterAttributes[]>(CompositionConstants.GenericParameterAttributesMetadataName);
 
-            // if no constraints and attributes been specifed, anything can be created
+            // if no constraints and attributes been specified, anything can be created
             if ((genericParameterConstraints == null) && (genericParameterAttributes == null))
             {
                 return true;

@@ -2,17 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
-    <PackageDescription>Provides support for managing access and audit control lists for synchronization primitives.
-
-Commonly Used Types:
-System.Security.AccessControl.EventWaitHandleAccessRule
-System.Security.AccessControl.EventWaitHandleAuditRule
-System.Security.AccessControl.MutexAccessRule
-System.Security.AccessControl.MutexAuditRule
-System.Security.AccessControl.MutexSecurity
-System.Security.AccessControl.SemaphoreAccessRule
-System.Security.AccessControl.SemaphoreAuditRule
-System.Security.AccessControl.SemaphoreSecurity</PackageDescription>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
   </PropertyGroup>
 </Project>

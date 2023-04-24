@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
-using System.Reflection;
-using System.Globalization;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.Serialization.DataContracts;
+using System.Text;
 using System.Xml;
 
 namespace System.Runtime.Serialization
@@ -17,22 +19,20 @@ namespace System.Runtime.Serialization
         private const string XPathSeparator = "/";
         private const string NsSeparator = ":";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public static string CreateFromDataContractSerializer(Type type, MemberInfo[] pathToMember, out XmlNamespaceManager namespaces)
         {
             return CreateFromDataContractSerializer(type, pathToMember, null, out namespaces);
         }
 
         // Here you can provide your own root element Xpath which will replace the Xpath of the top level element
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public static string CreateFromDataContractSerializer(Type type, MemberInfo[] pathToMember, StringBuilder? rootElementXpath, out XmlNamespaceManager namespaces)
         {
-            if (type == null)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(type)));
-            }
-            if (pathToMember == null)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(pathToMember)));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(pathToMember);
 
             DataContract currentContract = DataContract.GetDataContract(type);
             ExportContext context;
@@ -56,15 +56,19 @@ namespace System.Runtime.Serialization
             return context.XPath;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static DataContract ProcessDataContract(DataContract contract, ExportContext context, MemberInfo memberNode)
         {
             if (contract is ClassDataContract)
             {
                 return ProcessClassDataContract((ClassDataContract)contract, context, memberNode);
             }
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound));
+            throw XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static DataContract ProcessClassDataContract(ClassDataContract contract, ExportContext context, MemberInfo memberNode)
         {
             string prefix = context.SetNamespace(contract.Namespace!.Value);
@@ -76,14 +80,14 @@ namespace System.Runtime.Serialization
                     return member.MemberTypeContract;
                 }
             }
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound));
+            throw XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound);
         }
 
         private static IEnumerable<DataMember> GetDataMembers(ClassDataContract contract)
         {
-            if (contract.BaseContract != null)
+            if (contract.BaseClassContract != null)
             {
-                foreach (DataMember baseClassMember in GetDataMembers(contract.BaseContract))
+                foreach (DataMember baseClassMember in GetDataMembers(contract.BaseClassContract))
                 {
                     yield return baseClassMember;
                 }

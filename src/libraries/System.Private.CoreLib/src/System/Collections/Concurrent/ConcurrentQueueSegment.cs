@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -44,7 +46,7 @@ namespace System.Collections.Concurrent
         {
             // Validate the length
             Debug.Assert(boundedLength >= 2, $"Must be >= 2, got {boundedLength}");
-            Debug.Assert((boundedLength & (boundedLength - 1)) == 0, $"Must be a power of 2, got {boundedLength}");
+            Debug.Assert(BitOperations.IsPow2(boundedLength), $"Must be a power of 2, got {boundedLength}");
 
             // Initialize the slots and the mask.  The mask is used as a way of quickly doing "% _slots.Length",
             // instead letting us do "& _slotsMask".
@@ -140,7 +142,10 @@ namespace System.Collections.Concurrent
                             // If we're preserving, though, we don't zero out the slot, as we need it for
                             // enumerations, peeking, ToArray, etc.  And we don't update the sequence number,
                             // so that an enqueuer will see it as full and be forced to move to a new segment.
-                            slots[slotsIndex].Item = default;
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                            {
+                                slots[slotsIndex].Item = default;
+                            }
                             Volatile.Write(ref slots[slotsIndex].SequenceNumber, currentHead + slots.Length);
                         }
                         return true;

@@ -4,6 +4,7 @@
 .assembly extern mscorlib { auto }
 .assembly extern System.Console { auto }
 .assembly GitHub_15949 { }
+.assembly extern xunit.core {}
 
 // Ensure that shifting a 64 bit value by 64 bits produces the same value. The ECMA spec doesn't specify
 // what should happen in this case but it would be preferable to have the same behavior for all shift
@@ -13,10 +14,13 @@
 // helper call, decomposition, constant folding via gtFoldExpr and constant folding via VN's EvalOpIntegral.
 // But it also works on the current 64 bit targets (ARM64 & x64) because they too have the same behavior.
 
-.class private auto ansi Program extends [mscorlib]System.Object
+.class public auto ansi Program extends [mscorlib]System.Object
 {
-    .method static int32 Main() cil managed
+    .method public static int32 Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
         .maxstack 8
         .locals(int64)

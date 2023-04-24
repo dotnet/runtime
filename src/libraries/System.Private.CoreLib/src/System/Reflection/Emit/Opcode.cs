@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Emit
 {
@@ -102,13 +103,13 @@ namespace System.Reflection.Emit
                     return name;
 
                 // Create ilasm style name from the enum value name.
-                name = Enum.GetName(typeof(OpCodeValues), opCodeValue)!.ToLowerInvariant().Replace('_', '.');
+                name = Enum.GetName<OpCodeValues>(opCodeValue)!.ToLowerInvariant().Replace('_', '.');
                 Volatile.Write(ref nameCache[idx], name);
                 return name;
             }
         }
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is OpCode other && Equals(other);
 
         public bool Equals(OpCode obj) => obj.Value == Value;

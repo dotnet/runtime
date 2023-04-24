@@ -37,7 +37,6 @@ set(MDCOMPILER_HEADERS
   disp.h
   filtermanager.h
   importhelper.h
-  mdperf.h
   mdutil.h
   regmeta.h
 )
@@ -75,10 +74,6 @@ target_sources(mdcompiler_wks INTERFACE $<TARGET_OBJECTS:mdcompiler_wks_obj>)
 add_library_clr(mdcompiler-dbi ${MDCOMPILER_SOURCES})
 set_target_properties(mdcompiler-dbi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(mdcompiler-dbi PRIVATE stdafx.h)
-
-add_library_clr(mdcompiler_crossgen ${MDCOMPILER_SOURCES})
-set_target_properties(mdcompiler_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
-target_precompile_headers(mdcompiler_crossgen PRIVATE stdafx.h)
 
 add_library_clr(mdcompiler_ppdb ${MDCOMPILER_SOURCES})
 target_compile_definitions(mdcompiler_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB)

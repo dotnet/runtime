@@ -1,12 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLSCompliant>false</CLSCompliant>
-    <Nullable>enable</Nullable>
-    <TargetFrameworks>netstandard2.0;netstandard1.0;netstandard2.1;net45;net461</TargetFrameworks>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'net45'">true</ExcludeFromPackage>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Runtime.CompilerServices.Unsafe.cs" />
+    <Compile Include="System.Runtime.CompilerServices.Unsafe.Forwards.cs" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
 </Project>

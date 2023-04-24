@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -160,9 +161,20 @@ namespace System.Diagnostics
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.
     /// </summary>
     [EventSource(Name = "Microsoft-Diagnostics-DiagnosticSource")]
+    // These suppressions can go away with https://github.com/mono/linker/issues/2175
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:ReflectionToRequiresUnreferencedCode",
+        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
+                        "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
+                        "This includes Delegate and MulticastDelegate methods which require unreferenced code, but " +
+                        "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2115:ReflectionToDynamicallyAccessedMembers",
+        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
+                        "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
+                        "This includes Delegate and MulticastDelegate methods which have dynamically accessed members requirements, but " +
+                        "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
     internal sealed class DiagnosticSourceEventSource : EventSource
     {
-        public static DiagnosticSourceEventSource Logger = new DiagnosticSourceEventSource();
+        public static DiagnosticSourceEventSource Log = new DiagnosticSourceEventSource();
 
         public static class Keywords
         {
@@ -219,20 +231,18 @@ namespace System.Diagnostics
             WriteEvent(1, Message);
         }
 
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         /// <summary>
         /// Events from DiagnosticSource can be forwarded to EventSource using this event.
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
-#endif
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(2, Keywords = Keywords.Events)]
         private void Event(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>>? Arguments)
         {
             WriteEvent(2, SourceName, EventName, Arguments);
         }
-#endif
+
         /// <summary>
         /// This is only used on V4.5 systems that don't have the ability to log KeyValuePairs directly.
         /// It will eventually go away, but we should always reserve the ID for this.
@@ -243,14 +253,12 @@ namespace System.Diagnostics
             WriteEvent(3, SourceName, EventName, ArgmentsJson);
         }
 
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
-#endif
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(4, Keywords = Keywords.Events)]
         private void Activity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -260,10 +268,9 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
-#endif
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(5, Keywords = Keywords.Events)]
         private void Activity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -273,10 +280,9 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
-#endif
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(6, Keywords = Keywords.Events)]
         private void Activity2Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -286,10 +292,9 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
-#endif
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(7, Keywords = Keywords.Events)]
         private void Activity2Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -299,10 +304,9 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the beginning of an activity
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
-#endif
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(8, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void RecursiveActivity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -312,16 +316,14 @@ namespace System.Diagnostics
         /// <summary>
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
-#endif
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(9, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void RecursiveActivity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
             WriteEvent(9, SourceName, EventName, Arguments);
         }
-#endif
 
         /// <summary>
         /// Fires when a new DiagnosticSource becomes available.
@@ -339,15 +341,10 @@ namespace System.Diagnostics
         /// <param name="SourceName">The ActivitySource name</param>
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
-#endif
-#if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-        [Event(11, Keywords = Keywords.Events)]
-#else
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(11, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-#endif
         private void ActivityStart(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(11, SourceName, ActivityName, Arguments);
 
@@ -357,69 +354,19 @@ namespace System.Diagnostics
         /// <param name="SourceName">The ActivitySource name</param>
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
-#endif
-#if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-        [Event(12, Keywords = Keywords.Events)]
-#else
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(12, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
-#endif
         private void ActivityStop(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(12, SourceName, ActivityName, Arguments);
 
         #region private
 
-#if NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-        /// <summary>
-        /// Converts a keyvalue bag to JSON. Only used on V4.5 EventSources.
-        /// </summary>
-        private static string ToJson(IEnumerable<KeyValuePair<string, string>> keyValues)
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("{");
-            bool first = true;
-            foreach (var keyValue in keyValues)
-            {
-                if (!first)
-                    sb.Append(',').AppendLine();
-                first = false;
-
-                sb.Append('"').Append(keyValue.Key).Append("\":\"");
-
-                // Write out the value characters, escaping things as needed.
-                foreach (var c in keyValue.Value)
-                {
-                    if (char.IsControl(c))
-                    {
-                        if (c == '\n')
-                            sb.Append("\\n");
-                        else if (c == '\r')
-                            sb.Append("\\r");
-                        else
-                            sb.Append("\\u").Append(((int)c).ToString("x").PadLeft(4, '0'));
-                    }
-                    else
-                    {
-                        if (c == '"' || c == '\\')
-                            sb.Append('\\');
-                        sb.Append(c);
-                    }
-                }
-                sb.Append('"');     // Close the string.
-            }
-            sb.AppendLine().AppendLine("}");
-            return sb.ToString();
-        }
-#endif
-
         private DiagnosticSourceEventSource()
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
             // This constructor uses EventSourceSettings which is only available on V4.6 and above
             // Use the EventSourceSettings to turn on support for complex types, if available (v4.6 and above).
             : base(EventSourceSettings.EtwSelfDescribingEventFormat)
-#endif
         {
         }
 
@@ -528,8 +475,7 @@ namespace System.Diagnostics
             public static void CreateFilterAndTransformList(ref FilterAndTransform? specList, string? filterAndPayloadSpecs, DiagnosticSourceEventSource eventSource)
             {
                 DestroyFilterAndTransformList(ref specList, eventSource);        // Stop anything that was on before.
-                if (filterAndPayloadSpecs == null)
-                    filterAndPayloadSpecs = "";
+                filterAndPayloadSpecs ??= "";
 
                 // Points just beyond the last point in the string that has yet to be parsed. Thus we start with the whole string.
                 int endIdx = filterAndPayloadSpecs.Length;
@@ -548,13 +494,11 @@ namespace System.Diagnostics
                     while (startIdx < endIdx && char.IsWhiteSpace(filterAndPayloadSpecs[startIdx]))
                         startIdx++;
 
-#if EVENTSOURCE_ACTIVITY_SUPPORT
                     if (IsActivitySourceEntry(filterAndPayloadSpecs, startIdx, endIdx))
                     {
                         AddNewActivitySourceTransform(filterAndPayloadSpecs, startIdx, endIdx, eventSource);
                     }
                     else
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
                     {
                         specList = new FilterAndTransform(filterAndPayloadSpecs, startIdx, endIdx, eventSource, specList);
                     }
@@ -563,13 +507,12 @@ namespace System.Diagnostics
                     if (endIdx < 0)
                         break;
                 }
-#if EVENTSOURCE_ACTIVITY_SUPPORT
+
                 if (eventSource._activitySourceSpecs != null)
                 {
                     NormalizeActivitySourceSpecsList(eventSource);
                     CreateActivityListener(eventSource);
                 }
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
             }
 
             /// <summary>
@@ -579,11 +522,9 @@ namespace System.Diagnostics
             /// <param name="eventSource"></param>
             public static void DestroyFilterAndTransformList(ref FilterAndTransform? specList, DiagnosticSourceEventSource eventSource)
             {
-#if EVENTSOURCE_ACTIVITY_SUPPORT
                 eventSource._activityListener?.Dispose();
                 eventSource._activityListener = null;
                 eventSource._activitySourceSpecs = null; // nothing to dispose inside this list.
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
 
                 var curSpec = specList;
                 specList = null;            // Null out the list
@@ -677,7 +618,6 @@ namespace System.Diagnostics
                 Action<string, string, IEnumerable<KeyValuePair<string, string?>>>? writeEvent = null;
                 if (activityName != null && activityName.Contains("Activity"))
                 {
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
                     writeEvent = activityName switch
                     {
                         nameof(Activity1Start) => _eventSource.Activity1Start,
@@ -688,23 +628,12 @@ namespace System.Diagnostics
                         nameof(RecursiveActivity1Stop) => _eventSource.RecursiveActivity1Stop,
                         _ => null
                     };
-#endif
 
                     if (writeEvent == null)
                         _eventSource.Message("DiagnosticSource: Could not find Event to log Activity " + activityName);
                 }
 
-                if (writeEvent == null)
-                {
-#if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
-                    writeEvent = _eventSource.Event;
-#else
-                    writeEvent = delegate (string sourceName, string eventName, IEnumerable<KeyValuePair<string, string>> arguments)
-                    {
-                        _eventSource.EventJson(sourceName, eventName, ToJson(arguments));
-                    };
-#endif
-                }
+                writeEvent ??= _eventSource.Event;
 
                 // Set up a subscription that watches for the given Diagnostic Sources and events which will call back
                 // to the EventSource.
@@ -719,6 +648,9 @@ namespace System.Diagnostics
 
                         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "DiagnosticSource.Write is marked with RequiresUnreferencedCode.")]
+                        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2119",
+                            Justification = "DAM on EventSource references this compiler-generated local function which calls a " +
+                                            "method that requires unreferenced code. EventSource will not access this local function.")]
                         void OnEventWritten(KeyValuePair<string, object?> evnt)
                         {
                             // The filter given to the DiagnosticSource may not work if users don't is 'IsEnabled' as expected.
@@ -737,7 +669,6 @@ namespace System.Diagnostics
                 }));
             }
 
-#if EVENTSOURCE_ACTIVITY_SUPPORT
             internal FilterAndTransform(string filterAndPayloadSpec, int endIdx, int colonIdx, string activitySourceName, string? activityName, ActivityEvents events, ActivitySamplingResult samplingResult, DiagnosticSourceEventSource eventSource)
             {
                 _eventSource = eventSource;
@@ -815,13 +746,13 @@ namespace System.Diagnostics
                 {
                     activitySourceName = entry.Slice(0, eventNameIndex).Trim();
 
-                    ReadOnlySpan<char> suffixPart = entry.Slice(eventNameIndex + 1, entry.Length - eventNameIndex - 1).Trim();
+                    ReadOnlySpan<char> suffixPart = entry.Slice(eventNameIndex + 1).Trim();
                     int samplingResultIndex = suffixPart.IndexOf('-');
                     if (samplingResultIndex >= 0)
                     {
                         // We have the format "[AS]SourceName/[EventName]-[SamplingResult]
                         eventName = suffixPart.Slice(0, samplingResultIndex).Trim();
-                        suffixPart = suffixPart.Slice(samplingResultIndex + 1, suffixPart.Length - samplingResultIndex - 1).Trim();
+                        suffixPart = suffixPart.Slice(samplingResultIndex + 1).Trim();
 
                         if (suffixPart.Length > 0)
                         {
@@ -877,7 +808,7 @@ namespace System.Diagnostics
                     activitySourceName = activitySourceName.Slice(0, plusSignIndex).Trim();
                 }
 
-                var transform = new FilterAndTransform(filterAndPayloadSpec, endIdx, colonIdx, activitySourceName.ToString(), activityName, supportedEvent, samplingResult, eventSource);
+                new FilterAndTransform(filterAndPayloadSpec, endIdx, colonIdx, activitySourceName.ToString(), activityName, supportedEvent, samplingResult, eventSource);
             }
 
             // Check if we are interested to listen to such ActivitySource
@@ -1063,7 +994,6 @@ namespace System.Diagnostics
 
                 eventSource._activitySourceSpecs = firstSpecificList;
             }
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
 
             private void Dispose()
             {
@@ -1085,6 +1015,9 @@ namespace System.Diagnostics
                 }
             }
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
             public List<KeyValuePair<string, string?>> Morph(object? args)
             {
@@ -1124,11 +1057,7 @@ namespace System.Diagnostics
                                 Interlocked.CompareExchange(ref _implicitTransformsTable,
                                     new ConcurrentDictionary<Type, TransformSpec?>(1, 8), null);
                             }
-                            implicitTransforms = _implicitTransformsTable.GetOrAdd(argType, type => MakeImplicitTransformsWrapper(type));
-
-                            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                                Justification = "The Morph method has RequiresUnreferencedCode, but the trimmer can't see through lamdba calls.")]
-                            static TransformSpec? MakeImplicitTransformsWrapper(Type transformType) => MakeImplicitTransforms(transformType);
+                            implicitTransforms = _implicitTransformsTable.GetOrAdd(argType, MakeImplicitTransforms);
                         }
 
                         // implicitTransformas now fetched from cache or constructed, use it to Fetch all the implicit fields.
@@ -1156,24 +1085,25 @@ namespace System.Diagnostics
 
             // Specific ActivitySource Transforms information
 
-#if EVENTSOURCE_ACTIVITY_SUPPORT
             internal const string c_ActivitySourcePrefix = "[AS]";
             internal string? SourceName { get; set; }
             internal string? ActivityName { get; set; }
             internal DiagnosticSourceEventSource.ActivityEvents Events  { get; set; }
             internal ActivitySamplingResult SamplingResult { get; set; }
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
 
             #region private
 
             // Given a type generate all the implicit transforms for type (that is for every field
             // generate the spec that fetches it).
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
             private static TransformSpec? MakeImplicitTransforms(Type type)
             {
                 TransformSpec? newSerializableArgs = null;
                 TypeInfo curTypeInfo = type.GetTypeInfo();
-                foreach (PropertyInfo property in curTypeInfo.DeclaredProperties)
+                foreach (PropertyInfo property in curTypeInfo.GetProperties(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
                 {
                     // prevent TransformSpec from attempting to implicitly transform index properties
                     if (property.GetMethod == null || property.GetMethod!.GetParameters().Length > 0)
@@ -1247,12 +1177,11 @@ namespace System.Diagnostics
                     if (0 <= dotIdx)
                         idIdx = dotIdx + 1;
 
-                    string propertName = transformSpec.Substring(idIdx, endIdx - idIdx);
-                    _fetches = new PropertySpec(propertName, _fetches);
+                    string propertyName = transformSpec.Substring(idIdx, endIdx - idIdx);
+                    _fetches = new PropertySpec(propertyName, _fetches);
 
                     // If the user did not explicitly set a name, it is the last one (first to be processed from the end).
-                    if (_outputName == null)
-                        _outputName = propertName;
+                    _outputName ??= propertyName;
 
                     endIdx = dotIdx;    // This works even when LastIndexOf return -1.
                 }
@@ -1263,6 +1192,9 @@ namespace System.Diagnostics
             /// if the spec is OUTSTR=EVENT_VALUE.PROP1.PROP2.PROP3 and the ultimate value of PROP3 is
             /// 10 then the return key value pair is  KeyValuePair("OUTSTR","10")
             /// </summary>
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
             public KeyValuePair<string, string?> Morph(object? obj)
             {
@@ -1314,6 +1246,9 @@ namespace System.Diagnostics
                 /// Given an object fetch the property that this PropertySpec represents.
                 /// obj may be null when IsStatic is true, otherwise it must be non-null.
                 /// </summary>
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                    Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                 [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
                 public object? Fetch(object? obj)
                 {
@@ -1326,7 +1261,7 @@ namespace System.Diagnostics
                     }
                     object? ret = null;
                     // Avoid the exception which can be thrown during accessing the object properties.
-                    try { ret = fetch!.Fetch(obj); } catch (Exception e) { Logger.Message($"Property {objType}.{_propertyName} threw the exception {e}"); }
+                    try { ret = fetch!.Fetch(obj); } catch (Exception e) { Log.Message($"Property {objType}.{_propertyName} threw the exception {e}"); }
                     return ret;
                 }
 
@@ -1357,6 +1292,9 @@ namespace System.Diagnostics
                     /// <summary>
                     /// Create a property fetcher for a propertyName
                     /// </summary>
+                    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+                        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
+                                        "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                     [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
                     public static PropertyFetch FetcherForProperty(Type? type, string propertyName)
                     {
@@ -1364,25 +1302,13 @@ namespace System.Diagnostics
                             return new PropertyFetch(type);     // returns null on any fetch.
                         if (propertyName == CurrentActivityPropertyName)
                         {
-#if EVENTSOURCE_ACTIVITY_SUPPORT
                             return new CurrentActivityPropertyFetch();
-#else
-                            // In netstandard1.1 the Activity.Current API doesn't exist
-                            Logger.Message($"{CurrentActivityPropertyName} not supported for this TFM");
-                            return new PropertyFetch(type);
-#endif
                         }
 
                         Debug.Assert(type != null, "Type should only be null for the well-known static fetchers already checked");
                         TypeInfo typeInfo = type.GetTypeInfo();
                         if (propertyName == EnumeratePropertyName)
                         {
-#if !EVENTSOURCE_ENUMERATE_SUPPORT
-                            // In netstandard1.1 and 1.3 the reflection APIs needed to implement Enumerate support aren't
-                            // available
-                            Logger.Message($"{EnumeratePropertyName} not supported for this TFM");
-                            return new PropertyFetch(type);
-#else
                             // If there are multiple implementations of IEnumerable<T>, this arbitrarily uses the first one
                             foreach (Type iFaceType in typeInfo.GetInterfaces())
                             {
@@ -1393,37 +1319,75 @@ namespace System.Diagnostics
                                     continue;
                                 }
 
-                                Type elemType = iFaceTypeInfo.GetGenericArguments()[0];
-                                Type instantiatedTypedPropertyFetcher = typeof(EnumeratePropertyFetch<>)
-                                    .GetTypeInfo().MakeGenericType(elemType);
-                                return (PropertyFetch)Activator.CreateInstance(instantiatedTypedPropertyFetcher, type)!;
+                                return CreateEnumeratePropertyFetch(type, iFaceTypeInfo);
                             }
 
                             // no implementation of IEnumerable<T> found, return a null fetcher
-                            Logger.Message($"*Enumerate applied to non-enumerable type {type}");
+                            Log.Message($"*Enumerate applied to non-enumerable type {type}");
                             return new PropertyFetch(type);
-#endif
                         }
                         else
                         {
                             PropertyInfo? propertyInfo = typeInfo.GetDeclaredProperty(propertyName);
                             if (propertyInfo == null)
                             {
-                                Logger.Message($"Property {propertyName} not found on {type}. Ensure the name is spelled correctly. If you published the application with PublishTrimmed=true, ensure the property was not trimmed away.");
+                                foreach (PropertyInfo pi in typeInfo.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+                                {
+                                    if (pi.Name == propertyName)
+                                    {
+                                        propertyInfo = pi;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (propertyInfo == null)
+                            {
+                                Log.Message($"Property {propertyName} not found on {type}. Ensure the name is spelled correctly. If you published the application with PublishTrimmed=true, ensure the property was not trimmed away.");
                                 return new PropertyFetch(type);
                             }
                             // Delegate creation below is incompatible with static properties.
                             else if (propertyInfo.GetMethod?.IsStatic == true || propertyInfo.SetMethod?.IsStatic == true)
                             {
-                                Logger.Message($"Property {propertyName} is static.");
+                                Log.Message($"Property {propertyName} is static.");
                                 return new PropertyFetch(type);
                             }
-                            Type typedPropertyFetcher = typeInfo.IsValueType ?
-                                typeof(ValueTypedFetchProperty<,>) : typeof(RefTypedFetchProperty<,>);
-                            Type instantiatedTypedPropertyFetcher = typedPropertyFetcher.GetTypeInfo().MakeGenericType(
-                                propertyInfo.DeclaringType!, propertyInfo.PropertyType);
-                            return (PropertyFetch)Activator.CreateInstance(instantiatedTypedPropertyFetcher, type, propertyInfo)!;
+
+                            return CreatePropertyFetch(typeInfo, propertyInfo);
                         }
+                    }
+
+                    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+                        Justification = "MakeGenericType is only called when IsDynamicCodeSupported is true or only with ref types.")]
+                    private static PropertyFetch CreateEnumeratePropertyFetch(Type type, TypeInfo enumerableOfTType)
+                    {
+                        Type elemType = enumerableOfTType.GetGenericArguments()[0];
+#if NETCOREAPP
+                        if (!RuntimeFeature.IsDynamicCodeSupported && elemType.IsValueType)
+                        {
+                            return new EnumeratePropertyFetch(type);
+                        }
+#endif
+                        Type instantiatedTypedPropertyFetcher = typeof(EnumeratePropertyFetch<>)
+                            .GetTypeInfo().MakeGenericType(elemType);
+                        return (PropertyFetch)Activator.CreateInstance(instantiatedTypedPropertyFetcher, type)!;
+                    }
+
+                    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+                        Justification = "MakeGenericType is only called when IsDynamicCodeSupported is true or only with ref types.")]
+                    private static PropertyFetch CreatePropertyFetch(Type type, PropertyInfo propertyInfo)
+                    {
+#if NETCOREAPP
+                        if (!RuntimeFeature.IsDynamicCodeSupported && (propertyInfo.DeclaringType!.IsValueType || propertyInfo.PropertyType.IsValueType))
+                        {
+                            return new ReflectionPropertyFetch(type, propertyInfo);
+                        }
+#endif
+                        Type typedPropertyFetcher = type.IsValueType ?
+                            typeof(ValueTypedFetchProperty<,>) : typeof(RefTypedFetchProperty<,>);
+                        Type instantiatedTypedPropertyFetcher = typedPropertyFetcher.GetTypeInfo().MakeGenericType(
+                            propertyInfo.DeclaringType!, propertyInfo.PropertyType);
+                        return (PropertyFetch)Activator.CreateInstance(instantiatedTypedPropertyFetcher, type, propertyInfo)!;
                     }
 
                     /// <summary>
@@ -1431,7 +1395,7 @@ namespace System.Diagnostics
                     /// </summary>
                     public virtual object? Fetch(object? obj) { return null; }
 
-                    #region private
+#region private
 
                     private sealed class RefTypedFetchProperty<TObject, TProperty> : PropertyFetch
                     {
@@ -1470,8 +1434,74 @@ namespace System.Diagnostics
                         private readonly StructFunc<TStruct, TProperty> _propertyFetch;
                     }
 
+#if NETCOREAPP
+                    /// <summary>
+                    /// A fetcher that can be used when MakeGenericType isn't available.
+                    /// </summary>
+                    private sealed class ReflectionPropertyFetch : PropertyFetch
+                    {
+                        private readonly PropertyInfo _property;
+                        public ReflectionPropertyFetch(Type type, PropertyInfo property) : base(type)
+                        {
+                            _property = property;
+                        }
 
-#if EVENTSOURCE_ACTIVITY_SUPPORT
+                        public override object? Fetch(object? obj) => _property.GetValue(obj);
+                    }
+
+                    /// <summary>
+                    /// A fetcher that enumerates and formats an IEnumerable when MakeGenericType isn't available.
+                    /// </summary>
+                    private sealed class EnumeratePropertyFetch : PropertyFetch
+                    {
+                        public EnumeratePropertyFetch(Type type) : base(type) { }
+
+                        public override object? Fetch(object? obj)
+                        {
+                            IEnumerable? enumerable = obj as IEnumerable;
+                            Debug.Assert(enumerable is not null);
+
+                            // string.Join for a non-generic IEnumerable
+                            IEnumerator en = enumerable.GetEnumerator();
+                            using (IDisposable? disposable = en as IDisposable)
+                            {
+                                if (!en.MoveNext())
+                                {
+                                    return string.Empty;
+                                }
+
+                                object? currentValue = en.Current;
+                                string? firstString = currentValue?.ToString();
+
+                                // If there's only 1 item, simply return the ToString of that
+                                if (!en.MoveNext())
+                                {
+                                    // Only one value available
+                                    return firstString ?? string.Empty;
+                                }
+
+                                var result = new ValueStringBuilder(stackalloc char[256]);
+
+                                result.Append(firstString);
+
+                                do
+                                {
+                                    currentValue = en.Current;
+
+                                    result.Append(",");
+                                    if (currentValue != null)
+                                    {
+                                        result.Append(currentValue.ToString());
+                                    }
+                                }
+                                while (en.MoveNext());
+
+                                return result.ToString();
+                            }
+                        }
+                    }
+#endif
+
                     /// <summary>
                     /// A fetcher that returns the result of Activity.Current
                     /// </summary>
@@ -1483,7 +1513,6 @@ namespace System.Diagnostics
                             return Activity.Current;
                         }
                     }
-#endif
 
                     /// <summary>
                     /// A fetcher that enumerates and formats an IEnumerable
@@ -1497,17 +1526,17 @@ namespace System.Diagnostics
                             return string.Join(",", (IEnumerable<ElementType>)obj);
                         }
                     }
-                    #endregion
+#endregion
                 }
 
                 private readonly string _propertyName;
                 private volatile PropertyFetch? _fetchForExpectedType;
-                #endregion
+#endregion
             }
 
             private readonly string _outputName = null!;
             private readonly PropertySpec? _fetches;
-            #endregion
+#endregion
         }
 
         /// <summary>
@@ -1520,13 +1549,13 @@ namespace System.Diagnostics
         {
             public CallbackObserver(Action<T> callback) { _callback = callback; }
 
-            #region private
+#region private
             public void OnCompleted() { }
             public void OnError(Exception error) { }
             public void OnNext(T value) { _callback(value); }
 
             private readonly Action<T> _callback;
-            #endregion
+#endregion
         }
 
         // A linked list of IObservable subscriptions (which are IDisposable).
@@ -1543,13 +1572,11 @@ namespace System.Diagnostics
             public Subscriptions? Next;
         }
 
-        #endregion
+#endregion
 
         private FilterAndTransform? _specs;                 // Transformation specifications that indicate which sources/events are forwarded.
-#if EVENTSOURCE_ACTIVITY_SUPPORT
         private FilterAndTransform? _activitySourceSpecs;   // ActivitySource Transformation specifications that indicate which sources/events are forwarded.
         private ActivityListener? _activityListener;
-#endif // EVENTSOURCE_ACTIVITY_SUPPORT
-        #endregion
+#endregion
     }
 }

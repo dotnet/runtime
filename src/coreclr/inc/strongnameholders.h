@@ -13,7 +13,7 @@
 
 // Holder for any memory allocated by the strong name APIs
 template<class T>
-void VoidStrongNameFreeBuffer(__in T *pBuffer)
+void VoidStrongNameFreeBuffer(_In_ T *pBuffer)
 {
     StrongNameFreeBuffer(reinterpret_cast<BYTE *>(pBuffer));
 }

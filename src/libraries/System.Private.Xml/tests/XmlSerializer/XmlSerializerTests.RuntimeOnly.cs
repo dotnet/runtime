@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using SerializationTypes;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization.Tests;
 using System.Text;
-using System.Threading;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using SerializationTypes;
 using Xunit;
 
 public static partial class XmlSerializerTests
@@ -43,14 +43,27 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_ByteArrayNull()
+    {
+        Assert.Null(SerializeAndDeserialize<byte[]>(null,
+@"<?xml version=""1.0""?>
+<base64Binary d1p1:nil=""true"" xmlns:d1p1=""http://www.w3.org/2001/XMLSchema-instance"" />"));
+        byte[] x = new byte[] { 1, 2 };
+        byte[] y = SerializeAndDeserialize<byte[]>(x,
+@"<?xml version=""1.0""?>
+<base64Binary>AQI=</base64Binary>");
+        Assert.Equal(x, y);
+    }
+
+    [Fact]
     public static void Xml_CharAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MinValue,
+        Assert.StrictEqual(char.MinValue, SerializeAndDeserialize<char>(char.MinValue,
 @"<?xml version=""1.0""?>
-<char>0</char>"), char.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<char>(char.MaxValue,
+<char>0</char>"));
+        Assert.StrictEqual(char.MaxValue, SerializeAndDeserialize<char>(char.MaxValue,
 @"<?xml version=""1.0""?>
-<char>65535</char>"), char.MaxValue);
+<char>65535</char>"));
         Assert.StrictEqual('a', SerializeAndDeserialize<char>('a',
 @"<?xml version=""1.0""?>
 <char>97</char>"));
@@ -68,12 +81,12 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(10, SerializeAndDeserialize<byte>(10,
 @"<?xml version=""1.0""?>
 <unsignedByte>10</unsignedByte>"));
-        Assert.StrictEqual(SerializeAndDeserialize<byte>(byte.MinValue,
+        Assert.StrictEqual(byte.MinValue, SerializeAndDeserialize<byte>(byte.MinValue,
 @"<?xml version=""1.0""?>
-<unsignedByte>0</unsignedByte>"), byte.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<byte>(byte.MaxValue,
+<unsignedByte>0</unsignedByte>"));
+        Assert.StrictEqual(byte.MaxValue, SerializeAndDeserialize<byte>(byte.MaxValue,
 @"<?xml version=""1.0""?>
-<unsignedByte>255</unsignedByte>"), byte.MaxValue);
+<unsignedByte>255</unsignedByte>"));
     }
 
     [Fact]
@@ -115,46 +128,46 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_DoubleAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<double>(-1.2,
+        Assert.StrictEqual(-1.2, SerializeAndDeserialize<double>(-1.2,
 @"<?xml version=""1.0""?>
-<double>-1.2</double>"), -1.2);
+<double>-1.2</double>"));
         Assert.StrictEqual(0, SerializeAndDeserialize<double>(0,
 @"<?xml version=""1.0""?>
 <double>0</double>"));
         Assert.StrictEqual(2.3, SerializeAndDeserialize<double>(2.3,
 @"<?xml version=""1.0""?>
 <double>2.3</double>"));
-        Assert.StrictEqual(SerializeAndDeserialize<double>(double.MinValue,
+        Assert.StrictEqual(double.MinValue, SerializeAndDeserialize<double>(double.MinValue,
 @"<?xml version=""1.0""?>
-<double>-1.7976931348623157E+308</double>"), double.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<double>(double.MaxValue,
+<double>-1.7976931348623157E+308</double>"));
+        Assert.StrictEqual(double.MaxValue, SerializeAndDeserialize<double>(double.MaxValue,
 @"<?xml version=""1.0""?>
-<double>1.7976931348623157E+308</double>"), double.MaxValue);
+<double>1.7976931348623157E+308</double>"));
     }
 
     [Fact]
     public static void Xml_FloatAsRoot()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<float>((float)-1.2,
+        Assert.StrictEqual((float)-1.2, SerializeAndDeserialize<float>((float)-1.2,
 @"<?xml version=""1.0""?>
-<float>-1.2</float>"), (float)-1.2);
-        Assert.StrictEqual(SerializeAndDeserialize<float>((float)0,
+<float>-1.2</float>"));
+        Assert.StrictEqual((float)0, SerializeAndDeserialize<float>((float)0,
 @"<?xml version=""1.0""?>
-<float>0</float>"), (float)0);
-        Assert.StrictEqual(SerializeAndDeserialize<float>((float)2.3,
+<float>0</float>"));
+        Assert.StrictEqual((float)2.3, SerializeAndDeserialize<float>((float)2.3,
 @"<?xml version=""1.0""?>
-<float>2.3</float>"), (float)2.3);
+<float>2.3</float>"));
     }
 
     [Fact]
     public static void Xml_FloatAsRoot_NotNetFramework()
     {
-        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MinValue,
+        Assert.StrictEqual(float.MinValue, SerializeAndDeserialize<float>(float.MinValue,
 @"<?xml version=""1.0""?>
-<float>-3.4028235E+38</float>"), float.MinValue);
-        Assert.StrictEqual(SerializeAndDeserialize<float>(float.MaxValue,
+<float>-3.4028235E+38</float>"));
+        Assert.StrictEqual(float.MaxValue, SerializeAndDeserialize<float>(float.MaxValue,
 @"<?xml version=""1.0""?>
-<float>3.4028235E+38</float>"), float.MaxValue);
+<float>3.4028235E+38</float>"));
     }
 
     [Fact]
@@ -216,8 +229,8 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(SerializeAndDeserialize<XmlQualifiedName>(new XmlQualifiedName("abc", "def"),
 @"<?xml version=""1.0""?>
 <QName xmlns:q1=""def"">q1:abc</QName>"), new XmlQualifiedName("abc", "def"));
-        Assert.StrictEqual(SerializeAndDeserialize<XmlQualifiedName>(XmlQualifiedName.Empty,
-@"<?xml version=""1.0""?><QName xmlns="""" />"), XmlQualifiedName.Empty);
+        Assert.StrictEqual(XmlQualifiedName.Empty, SerializeAndDeserialize<XmlQualifiedName>(XmlQualifiedName.Empty,
+@"<?xml version=""1.0""?><QName xmlns="""" />"));
     }
 
     [Fact]
@@ -260,6 +273,13 @@ public static partial class XmlSerializerTests
 <string> </string>"), string.Empty);
         Assert.Equal("Hello World! \u6F22 \u00F1", SerializeAndDeserialize<string>("Hello World! \u6F22 \u00F1",
 "<?xml version=\"1.0\"?><string>Hello World! \u6F22 \u00F1</string>"));
+    }
+
+    [Fact]
+    public static void Xml_StringWithNullChar()
+    {
+        Assert.Throws<InvalidOperationException>(() => SerializeWithDefaultValue<string>("Sample\0String", null));
+        Assert.Throws<InvalidOperationException>(() => DeserializeFromXmlString<string>("<?xml version=\"1.0\"?><string>Sample&#x0;String</string>"));
     }
 
     [Fact]
@@ -392,6 +412,51 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void Xml_CollectionRoot_MorePrimitiveTypes()
+    {
+        DateTime now = new DateTime(2022, 9, 30, 9, 4, 15, DateTimeKind.Utc);
+        DateTimeOffset dtoNow = now.AddDays(1);
+        TimeSpan ts = new TimeSpan(1, 2, 3, 4, 5);
+        MyCollection x = new MyCollection(123.45m, now, ts, dtoNow, (short)55, 2345324L, (sbyte)11, (ushort)34, (uint)4564, (ulong)456734767,
+            new byte[] { 33, 44, 55 }, (byte)67);
+        MyCollection y = SerializeAndDeserialize<MyCollection>(x,
+@"<?xml version=""1.0""?>
+<ArrayOfAnyType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+ <anyType xsi:type=""xsd:decimal"">123.45</anyType>
+ <anyType xsi:type=""xsd:dateTime"">2022-09-30T09:04:15Z</anyType>
+ <anyType xmlns:q2=""http://microsoft.com/wsdl/types/"" xsi:type=""q2:TimeSpan"">P1DT2H3M4.005S</anyType>
+ <anyType xmlns:q3=""http://microsoft.com/wsdl/types/"" xsi:type=""q3:dateTimeOffset"">2022-10-01T09:04:15Z</anyType>
+ <anyType xsi:type=""xsd:short"">55</anyType>
+ <anyType xsi:type=""xsd:long"">2345324</anyType>
+ <anyType xsi:type=""xsd:byte"">11</anyType>
+ <anyType xsi:type=""xsd:unsignedShort"">34</anyType>
+ <anyType xsi:type=""xsd:unsignedInt"">4564</anyType>
+ <anyType xsi:type=""xsd:unsignedLong"">456734767</anyType>
+ <anyType xsi:type=""xsd:base64Binary"">ISw3</anyType>
+ <anyType xsi:type=""xsd:unsignedByte"">67</anyType>
+</ArrayOfAnyType>");
+
+        Assert.NotNull(y);
+        Assert.True(y.Count == 12);
+        Assert.True((decimal)y[0] == 123.45m);
+        Assert.True((DateTime)y[1] == now);
+        Assert.True((TimeSpan)y[2] == ts);
+        Assert.True((DateTimeOffset)y[3] == dtoNow);
+        Assert.True((short)y[4] == 55);
+        Assert.True((long)y[5] == 2345324L);
+        Assert.True((sbyte)y[6] == 11);
+        Assert.True((ushort)y[7] == 34);
+        Assert.True((uint)y[8] == 4564);
+        Assert.True((ulong)y[9] == 456734767);
+        Assert.True(y[10] is byte[]);
+        Assert.Equal(3, ((byte[])y[10]).Length);
+        Assert.Equal(33, ((byte[])y[10])[0]);
+        Assert.Equal(44, ((byte[])y[10])[1]);
+        Assert.Equal(55, ((byte[])y[10])[2]);
+        Assert.True((byte)y[11] == 67);
+    }
+
+    [Fact]
     public static void Xml_EnumerableRoot()
     {
         MyEnumerable x = new MyEnumerable("abc", 3);
@@ -480,6 +545,21 @@ public static partial class XmlSerializerTests
 
         VerifyXElementObject(original.e1, actual.e1);
         VerifyXElementObject((XElement)original.e1.FirstNode, (XElement)actual.e1.FirstNode);
+    }
+
+    [Fact]
+    public static void Xml_WithXElementWithEmptyNestedElement()
+    {
+        var original = new WithXmlElement(true);
+        original.xml.InnerXml = "<empty></empty>";
+
+        MemoryStream ms = new MemoryStream();
+        new XmlSerializer(typeof(WithXmlElement)).Serialize(ms, original);
+
+        ms.Position = 0;
+        StreamReader sr = new StreamReader(ms);
+        string output = sr.ReadToEnd();
+        Assert.Contains("<empty></empty>", output);   // Self-closed, or completely empty is OK. No added space.
     }
 
     [Fact]
@@ -1024,7 +1104,7 @@ public static partial class XmlSerializerTests
         });
     }
 
-    [ConditionalFact(nameof(IsTimeSpanSerializationAvailable))]
+    [Fact]
     public static void Xml_TimeSpanAsRoot()
     {
         Assert.StrictEqual(new TimeSpan(1, 2, 3), SerializeAndDeserialize<TimeSpan>(new TimeSpan(1, 2, 3),
@@ -1277,6 +1357,19 @@ public static partial class XmlSerializerTests
 
         Assert.NotNull(actual);
         Assert.True(Enumerable.SequenceEqual(value.XmlAttributeForms, actual.XmlAttributeForms));
+    }
+
+    [Fact]
+    public static void XML_TypeWithNullableByteArray()
+    {
+        var value = new TypeWithNullableByteArray(); // XmlAttributeForms == null
+
+        var actual = SerializeAndDeserialize(value,
+            "<?xml version=\"1.0\"?>\r\n<MyXmlType xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <XmlAttributeForms xsi:nil=\"true\" />\r\n</MyXmlType>");
+
+        Assert.NotNull(actual);
+        Assert.Null(value.XmlAttributeForms);
+        Assert.Null(actual.XmlAttributeForms);
     }
 
     [Fact]
@@ -1689,6 +1782,48 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void SoapEncodedSerialization_IncludeTypes_NullProvider()
+    {
+        var soapImporter = new SoapReflectionImporter();
+        Assert.Throws<ArgumentNullException>(() => soapImporter.IncludeTypes(default(ICustomAttributeProvider)));
+    }
+
+    [Fact]
+    public static void SoapEncodedSerialization_ImportMembersMapping_NullMembers()
+    {
+        var soapImporter = new SoapReflectionImporter();
+        Assert.Throws<ArgumentNullException>(() => soapImporter.ImportMembersMapping(
+            elementName: null,
+            ns: null,
+            members:
+            default(XmlReflectionMember[])));
+
+        Assert.Throws<ArgumentNullException>(() => soapImporter.ImportMembersMapping(
+            elementName: null,
+            ns: null,
+            members: default(XmlReflectionMember[]),
+            hasWrapperElement: default,
+            writeAccessors: default));
+
+        Assert.Throws<ArgumentNullException>(() => soapImporter.ImportMembersMapping(
+            elementName: null,
+            ns: null,
+            members: default(XmlReflectionMember[]),
+            hasWrapperElement: default,
+            writeAccessors: default,
+            validate: default));
+
+        Assert.Throws<ArgumentNullException>(() => soapImporter.ImportMembersMapping(
+            elementName: null,
+            ns: null,
+            members: default(XmlReflectionMember[]),
+            hasWrapperElement: default,
+            writeAccessors: default,
+            validate: default,
+            access: default));
+    }
+
+    [Fact]
     public static void SoapEncodedSerialization_CircularLink()
     {
         XmlTypeMapping myTypeMapping = new SoapReflectionImporter().ImportTypeMapping(typeof(MyCircularLink));
@@ -1923,6 +2058,20 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    public static void XmlReflectionMember_NullXmlAttributes()
+    {
+        XmlReflectionMember member = new();
+        Assert.Throws<ArgumentNullException>(() => member.XmlAttributes = null);
+    }
+
+    [Fact]
+    public static void XmlReflectionMember_NullSoapAttributes()
+    {
+        XmlReflectionMember member = new();
+        Assert.Throws<ArgumentNullException>(() => member.SoapAttributes = null);
+    }
+
+    [Fact]
     public static void XmlSerializerVersionAttributeTest()
     {
         XmlSerializerVersionAttribute attr = new XmlSerializerVersionAttribute();
@@ -1950,6 +2099,14 @@ public static partial class XmlSerializerTests
         Assert.Equal("camelText", CodeIdentifier.MakeCamel("Camel Text"));
         Assert.Equal("PascalText", CodeIdentifier.MakePascal("Pascal Text"));
         Assert.Equal("ValidText", CodeIdentifier.MakeValid("Valid  Text!"));
+    }
+
+    [Fact]
+    public static void CodeIdentifierNullArgumentTest()
+    {
+        Assert.Throws<ArgumentNullException>(() => CodeIdentifier.MakeValid(default(string)));
+        Assert.Throws<ArgumentNullException>(() => CodeIdentifier.MakeCamel(default(string)));
+        Assert.Throws<ArgumentNullException>(() => CodeIdentifier.MakePascal(default(string)));
     }
 
     [Fact]
@@ -2796,6 +2953,7 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DerivedTypeWithDifferentOverrides()
     {
         DerivedTypeWithDifferentOverrides value = new DerivedTypeWithDifferentOverrides() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5" };
@@ -2808,15 +2966,17 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60462", TestPlatforms.iOS | TestPlatforms.tvOS)]
     public static void DerivedTypeWithDifferentOverrides2()
     {
-        DerivedTypeWithDifferentOverrides2 value = new DerivedTypeWithDifferentOverrides2() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5", Name6 = "Name6" };
+        DerivedTypeWithDifferentOverrides2 value = new DerivedTypeWithDifferentOverrides2() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5", Name6 = "Name6", Name7 = "Name7" };
         ((DerivedTypeWithDifferentOverrides)value).Name5 = "MidLevelName5";
         ((DerivedTypeWithDifferentOverrides)value).Name4 = "MidLevelName4";
         ((SerializationTypes.BaseType)value).Name4 = "BaseLevelName4";
         ((DerivedTypeWithDifferentOverrides)value).Name6 = "MidLevelName6";
         ((SerializationTypes.BaseType)value).Name6 = "BaseLevelName6";
-        DerivedTypeWithDifferentOverrides2 actual = SerializeAndDeserialize<DerivedTypeWithDifferentOverrides2>(value, @"<?xml version=""1.0""?><DerivedTypeWithDifferentOverrides2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Name1>Name1</Name1><Name2>Name2</Name2><Name3>Name3</Name3><Name4>BaseLevelName4</Name4><Name5>MidLevelName5</Name5><Name6>BaseLevelName6</Name6></DerivedTypeWithDifferentOverrides2>");
+        ((DerivedTypeWithDifferentOverrides)value).Name7 = "MidLevelName7";
+        DerivedTypeWithDifferentOverrides2 actual = SerializeAndDeserialize<DerivedTypeWithDifferentOverrides2>(value, @"<?xml version=""1.0""?><DerivedTypeWithDifferentOverrides2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Name1>Name1</Name1><Name2>Name2</Name2><Name3>Name3</Name3><Name4>BaseLevelName4</Name4><Name5>MidLevelName5</Name5><Name6>BaseLevelName6</Name6><Name7>MidLevelName7</Name7></DerivedTypeWithDifferentOverrides2>");
         Assert.Equal(value.Name1, actual.Name1);
         Assert.Equal(value.Name2, actual.Name2);
         Assert.Equal(value.Name3, actual.Name3);
@@ -2829,6 +2989,8 @@ public static partial class XmlSerializerTests
         Assert.Null(actual.Name6);
         Assert.Equal(((DerivedTypeWithDifferentOverrides)actual).Name6, ((SerializationTypes.BaseType)actual).Name6);
         Assert.Equal(((SerializationTypes.BaseType)actual).Name6, ((SerializationTypes.BaseType)actual).Name6);
+        Assert.Equal(((DerivedTypeWithDifferentOverrides)actual).Name7, ((SerializationTypes.BaseType)actual).Name7);
+        Assert.Equal(actual.Name7, ((SerializationTypes.BaseType)actual).Name7);
     }
 
     [Fact]
@@ -2896,7 +3058,7 @@ public static partial class XmlSerializerTests
         Assert.StrictEqual(value, actual);
     }
 
-    [ConditionalFact(nameof(IsTimeSpanSerializationAvailable))]
+    [Fact]
     public static void VerifyRestrictionElementForTimeSpanTest()
     {
         var schemas = new XmlSchemas();

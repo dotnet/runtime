@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.IO;
 using Xunit;
 
 namespace System.IO.Tests
@@ -23,7 +21,9 @@ namespace System.IO.Tests
         [Fact]
         public void InvalidAccessThrows()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("access", () => CreateFileStream(GetTestFilePath(), FileMode.Create, ~FileAccess.Read));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                GetExpectedParamName("access"),
+                () => CreateFileStream(GetTestFilePath(), FileMode.Create, ~FileAccess.Read));
         }
 
         [Fact]

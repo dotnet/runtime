@@ -63,6 +63,23 @@ Exception * Exception::GetOOMException()
     return GetOOMException();
 }
 
+#ifdef DACCESS_COMPILE
+
+extern void* AllocDbiMemory(size_t size);
+extern void DeleteDbiMemory(void* p);
+
+void * Exception::operator new(size_t size)
+{
+    return AllocDbiMemory(size);
+}
+
+void Exception::operator delete(void* ptr)
+{
+    DeleteDbiMemory(ptr);
+}
+
+#endif
+
 //------------------------------------------------------------------------------
 void Exception::Delete(Exception* pvMemory)
 {
@@ -79,7 +96,12 @@ void Exception::Delete(Exception* pvMemory)
         return;
     }
 
-    ::delete((Exception *) pvMemory);
+#ifdef DACCESS_COMPILE
+    delete pvMemory;
+#else
+    ::delete pvMemory;
+#endif
+
 }
 
 void Exception::GetMessage(SString &result)
@@ -548,21 +570,13 @@ LPCSTR Exception::GetHRSymbolicName(HRESULT hr)
 
 #ifdef _DEBUG  // @todo: do we want to burn strings for this in a free build?
 
-    CASE_HRESULT(CEE_E_CVTRES_NOT_FOUND)
     CASE_HRESULT(COR_E_APPDOMAINUNLOADED)
     CASE_HRESULT(COR_E_CANNOTUNLOADAPPDOMAIN)
     CASE_HRESULT(MSEE_E_ASSEMBLYLOADINPROGRESS)
-    CASE_HRESULT(COR_E_FIXUPSINEXE)
-    CASE_HRESULT(COR_E_MODULE_HASH_CHECK_FAILED)
-    CASE_HRESULT(FUSION_E_LOADFROM_BLOCKED)
     CASE_HRESULT(FUSION_E_CACHEFILE_FAILED)
     CASE_HRESULT(FUSION_E_REF_DEF_MISMATCH)
-    CASE_HRESULT(FUSION_E_INVALID_PRIVATE_ASM_LOCATION)
-    CASE_HRESULT(FUSION_E_ASM_MODULE_MISSING)
     CASE_HRESULT(FUSION_E_PRIVATE_ASM_DISALLOWED)
-    CASE_HRESULT(FUSION_E_SIGNATURE_CHECK_FAILED)
     CASE_HRESULT(FUSION_E_INVALID_NAME)
-    CASE_HRESULT(FUSION_E_CODE_DOWNLOAD_DISABLED)
     CASE_HRESULT(CLDB_E_FILE_BADREAD)
     CASE_HRESULT(CLDB_E_FILE_BADWRITE)
     CASE_HRESULT(CLDB_S_TRUNCATION)
@@ -686,20 +700,15 @@ LPCSTR Exception::GetHRSymbolicName(HRESULT hr)
     CASE_HRESULT(CORPROF_E_NOT_MANAGED_THREAD)
     CASE_HRESULT(CORPROF_E_CALL_ONLY_FROM_INIT)
     CASE_HRESULT(CORPROF_E_NOT_YET_AVAILABLE)
-    CASE_HRESULT(SECURITY_E_INCOMPATIBLE_SHARE)
-    CASE_HRESULT(SECURITY_E_UNVERIFIABLE)
-    CASE_HRESULT(SECURITY_E_INCOMPATIBLE_EVIDENCE)
     CASE_HRESULT(CLDB_E_INTERNALERROR)
     CASE_HRESULT(CORSEC_E_POLICY_EXCEPTION)
     CASE_HRESULT(CORSEC_E_MIN_GRANT_FAIL)
     CASE_HRESULT(CORSEC_E_NO_EXEC_PERM)
     CASE_HRESULT(CORSEC_E_XMLSYNTAX)
     CASE_HRESULT(CORSEC_E_INVALID_STRONGNAME)
-    CASE_HRESULT(CORSEC_E_MISSING_STRONGNAME)
     CASE_HRESULT(CORSEC_E_INVALID_IMAGE_FORMAT)
     CASE_HRESULT(CORSEC_E_CRYPTO)
     CASE_HRESULT(CORSEC_E_CRYPTO_UNEX_OPER)
-    CASE_HRESULT(CORSECATTR_E_BAD_ACTION)
     CASE_HRESULT(COR_E_APPLICATION)
     CASE_HRESULT(COR_E_ARGUMENTOUTOFRANGE)
     CASE_HRESULT(COR_E_ARITHMETIC)
@@ -1148,8 +1157,6 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
 
     result = W("");     // Make sure this routine isn't an inadvertent data-leak exploit!
 
-
-
     SString strDescr;
     BOOL    fHaveDescr = FALSE;
 
@@ -1165,8 +1172,6 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
         fHaveDescr = strDescr.FormatMessage(dwFlags, 0, hr, 0);
     }
 
-    LPCSTR name = Exception::GetHRSymbolicName(hr);
-
     // If we can't get a resource string, print the hresult regardless.
     if (!fHaveDescr)
     {
@@ -1180,21 +1185,26 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
 
     if (!bNoGeekStuff)
     {
+        SString geekStuffUtf8;
         if (fHaveDescr)
         {
-            result.Append(W(" ("));
+            geekStuffUtf8.AppendUTF8(" (");
         }
 
-        result.AppendPrintf(W("0x%.8X"), hr);
+        geekStuffUtf8.AppendPrintf("0x%.8X", hr);
+
+        LPCSTR name = Exception::GetHRSymbolicName(hr);
         if (name != NULL)
         {
-            result.AppendPrintf(W(" (%S)"), name);
+            geekStuffUtf8.AppendPrintf(" (%s)", name);
         }
 
         if (fHaveDescr)
         {
-            result.Append(W(")"));
+            geekStuffUtf8.AppendUTF8(")");
         }
+
+        result.Append(geekStuffUtf8);
     }
 }
 

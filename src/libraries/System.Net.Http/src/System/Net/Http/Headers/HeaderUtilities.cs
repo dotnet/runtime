@@ -5,8 +5,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Net.Mail;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -23,10 +21,12 @@ namespace System.Net.Http.Headers
 
         internal const string BytesUnit = "bytes";
 
-        // Validator
-        internal static readonly Action<HttpHeaderValueCollection<string>, string> TokenValidator = ValidateToken;
+        // attr-char = ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+        //      ; token except ( "*" / "'" / "%" )
+        private static readonly IndexOfAnyValues<byte> s_rfc5987AttrBytes =
+            IndexOfAnyValues.Create("!#$&+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~"u8);
 
-        internal static void SetQuality(ObjectCollection<NameValueHeaderValue> parameters, double? value)
+        internal static void SetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
             Debug.Assert(parameters != null);
 
@@ -38,12 +38,11 @@ namespace System.Net.Http.Headers
                 // using Parameters.Add() they could always add invalid values using HttpHeaders.AddWithoutValidation().
                 // So this check is really for convenience to show users that they're trying to add an invalid
                 // value.
-                if ((value < 0) || (value > 1))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                double d = value.GetValueOrDefault();
+                ArgumentOutOfRangeException.ThrowIfNegative(d);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(d, 1);
 
-                string qualityString = ((double)value).ToString("0.0##", NumberFormatInfo.InvariantInfo);
+                string qualityString = d.ToString("0.0##", NumberFormatInfo.InvariantInfo);
                 if (qualityParameter != null)
                 {
                     qualityParameter.Value = qualityString;
@@ -63,70 +62,63 @@ namespace System.Net.Http.Headers
             }
         }
 
-        internal static bool ContainsNonAscii(string input)
-        {
-            Debug.Assert(input != null);
-
-            foreach (char c in input)
-            {
-                if ((int)c > 0x7f)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         // Encode a string using RFC 5987 encoding.
         // encoding'lang'PercentEncodedSpecials
         internal static string Encode5987(string input)
         {
-            // Encode a string using RFC 5987 encoding.
-            // encoding'lang'PercentEncodedSpecials
-            StringBuilder builder = StringBuilderCache.Acquire();
+            var builder = new ValueStringBuilder(stackalloc char[256]);
             byte[] utf8bytes = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(input.Length));
             int utf8length = Encoding.UTF8.GetBytes(input, 0, input.Length, utf8bytes, 0);
 
             builder.Append("utf-8\'\'");
-            for (int i = 0; i < utf8length; i++)
+
+            ReadOnlySpan<byte> utf8 = utf8bytes.AsSpan(0, utf8length);
+            do
             {
-                byte utf8byte = utf8bytes[i];
-
-                // attr-char = ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
-                //      ; token except ( "*" / "'" / "%" )
-                if (utf8byte > 0x7F) // Encodes as multiple utf-8 bytes
+                int length = utf8.IndexOfAnyExcept(s_rfc5987AttrBytes);
+                if (length < 0)
                 {
-                    AddHexEscaped(utf8byte, builder);
-                }
-                else if (!HttpRuleParser.IsTokenChar((char)utf8byte) || utf8byte == '*' || utf8byte == '\'' || utf8byte == '%')
-                {
-                    // ASCII - Only one encoded byte.
-                    AddHexEscaped(utf8byte, builder);
-                }
-                else
-                {
-                    builder.Append((char)utf8byte);
+                    length = utf8.Length;
                 }
 
+                Encoding.ASCII.GetChars(utf8.Slice(0, length), builder.AppendSpan(length));
+
+                utf8 = utf8.Slice(length);
+
+                if (utf8.IsEmpty)
+                {
+                    break;
+                }
+
+                length = utf8.IndexOfAny(s_rfc5987AttrBytes);
+                if (length < 0)
+                {
+                    length = utf8.Length;
+                }
+
+                foreach (byte b in utf8.Slice(0, length))
+                {
+                    AddHexEscaped(b, ref builder);
+                }
+
+                utf8 = utf8.Slice(length);
             }
+            while (!utf8.IsEmpty);
 
-            Array.Clear(utf8bytes, 0, utf8length);
             ArrayPool<byte>.Shared.Return(utf8bytes);
 
-            return StringBuilderCache.GetStringAndRelease(builder);
+            return builder.ToString();
         }
 
         /// <summary>Transforms an ASCII character into its hexadecimal representation, adding the characters to a StringBuilder.</summary>
-        private static void AddHexEscaped(byte c, StringBuilder destination)
+        private static void AddHexEscaped(byte c, ref ValueStringBuilder destination)
         {
-            Debug.Assert(destination != null);
-
             destination.Append('%');
             destination.Append(HexConverter.ToCharUpper(c >> 4));
             destination.Append(HexConverter.ToCharUpper(c));
         }
 
-        internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)
+        internal static double? GetQuality(UnvalidatedObjectCollection<NameValueHeaderValue> parameters)
         {
             Debug.Assert(parameters != null);
 
@@ -135,7 +127,7 @@ namespace System.Net.Http.Headers
             {
                 // Note that the RFC requires decimal '.' regardless of the culture. I.e. using ',' as decimal
                 // separator is considered invalid (even if the current culture would allow it).
-                double qualityValue = 0;
+                double qualityValue;
                 if (double.TryParse(qualityParameter.Value, NumberStyles.AllowDecimalPoint,
                     NumberFormatInfo.InvariantInfo, out qualityValue))
                 {
@@ -156,7 +148,7 @@ namespace System.Net.Http.Headers
 
             if (HttpRuleParser.GetTokenLength(value, 0) != value.Length)
             {
-                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+                throw new FormatException(SR.Format(CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
             }
         }
 
@@ -167,11 +159,11 @@ namespace System.Net.Http.Headers
                 throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
             }
 
-            int length = 0;
+            int length;
             if ((HttpRuleParser.GetCommentLength(value, 0, out length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {
-                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+                throw new FormatException(SR.Format(CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
             }
         }
 
@@ -182,11 +174,11 @@ namespace System.Net.Http.Headers
                 throw new ArgumentException(SR.net_http_argument_empty_string, parameterName);
             }
 
-            int length = 0;
+            int length;
             if ((HttpRuleParser.GetQuotedStringLength(value, 0, out length) != HttpParseResult.Parsed) ||
                 (length != value.Length)) // no trailing spaces allowed
             {
-                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
+                throw new FormatException(SR.Format(CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, value));
             }
         }
 
@@ -274,14 +266,14 @@ namespace System.Net.Http.Headers
             // empty values, continue until the current character is neither a separator nor a whitespace.
             separatorFound = true;
             current++; // skip delimiter.
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             if (skipEmptyValues)
             {
                 while ((current < input.Length) && (input[current] == ','))
                 {
                     current++; // skip delimiter.
-                    current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                    current += HttpRuleParser.GetWhitespaceLength(input, current);
                 }
             }
 
@@ -292,7 +284,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(store != null);
 
-            object? storedValue = store.GetParsedValues(descriptor);
+            object? storedValue = store.GetSingleParsedValue(descriptor);
             if (storedValue != null)
             {
                 return (DateTimeOffset)storedValue;
@@ -309,7 +301,7 @@ namespace System.Net.Http.Headers
         {
             Debug.Assert(store != null);
 
-            object? storedValue = store.GetParsedValues(descriptor);
+            object? storedValue = store.GetSingleParsedValue(descriptor);
             if (storedValue != null)
             {
                 return (TimeSpan)storedValue;
@@ -318,7 +310,7 @@ namespace System.Net.Http.Headers
         }
 
         internal static bool TryParseInt32(string value, out int result) =>
-            int.TryParse(value, NumberStyles.None, provider: null, out result);
+            int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out result);
 
         internal static bool TryParseInt32(string value, int offset, int length, out int result)
         {
@@ -328,7 +320,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            return int.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
+            return int.TryParse(value.AsSpan(offset, length), NumberStyles.None, CultureInfo.InvariantCulture, out result);
         }
 
         internal static bool TryParseInt64(string value, int offset, int length, out long result)
@@ -339,7 +331,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
+            return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, CultureInfo.InvariantCulture, out result);
         }
 
         internal static void DumpHeaders(StringBuilder sb, params HttpHeaders?[] headers)
@@ -357,7 +349,7 @@ namespace System.Net.Http.Headers
             {
                 if (headers[i] is HttpHeaders hh)
                 {
-                    foreach (KeyValuePair<string, string[]> header in hh.EnumerateWithoutValidation())
+                    foreach (KeyValuePair<string, HeaderStringValues> header in hh.NonValidated)
                     {
                         foreach (string headerValue in header.Value)
                         {
@@ -373,30 +365,12 @@ namespace System.Net.Http.Headers
             sb.Append('}');
         }
 
-        internal static bool IsValidEmailAddress(string value)
-        {
-            if (MailAddressParser.TryParseAddress(value, out ParseAddressInfo _, throwExceptionIfFail: false))
-            {
-                return true;
-            }
-            else
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_wrong_email_format, value));
-                return false;
-            }
-        }
-
-        private static void ValidateToken(HttpHeaderValueCollection<string> collection, string value)
-        {
-            CheckValidToken(value, "item");
-        }
-
-        internal static ObjectCollection<NameValueHeaderValue>? Clone(this ObjectCollection<NameValueHeaderValue>? source)
+        internal static UnvalidatedObjectCollection<NameValueHeaderValue>? Clone(this UnvalidatedObjectCollection<NameValueHeaderValue>? source)
         {
             if (source == null)
                 return null;
 
-            var copy = new ObjectCollection<NameValueHeaderValue>();
+            var copy = new UnvalidatedObjectCollection<NameValueHeaderValue>();
             foreach (NameValueHeaderValue item in source)
             {
                 copy.Add(new NameValueHeaderValue(item));

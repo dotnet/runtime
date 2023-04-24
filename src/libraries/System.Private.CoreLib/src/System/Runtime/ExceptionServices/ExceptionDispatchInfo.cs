@@ -29,10 +29,7 @@ namespace System.Runtime.ExceptionServices
         // needed to be propagated when the exception is "rethrown" on a different thread.
         public static ExceptionDispatchInfo Capture(Exception source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             return new ExceptionDispatchInfo(source);
         }
@@ -70,10 +67,7 @@ namespace System.Runtime.ExceptionServices
         [StackTraceHidden]
         public static Exception SetCurrentStackTrace(Exception source)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
             source.SetCurrentStackTrace();
 
@@ -93,18 +87,15 @@ namespace System.Runtime.ExceptionServices
         /// This method populates the <see cref="Exception.StackTrace"/> property from an arbitrary string value.
         /// The typical use case is the transmission of <see cref="Exception"/> objects across processes with high fidelity,
         /// allowing preservation of the exception object's stack trace information. .NET does not attempt to parse the
-        /// provided string value. The caller is responsible for normalizing line endings if required.
+        /// provided string value.
+        ///
+        /// The caller is responsible for canonicalizing line endings if required. <see cref="string.ReplaceLineEndings"/>
+        /// can be used to canonicalize line endings.
         /// </remarks>
         public static Exception SetRemoteStackTrace(Exception source, string stackTrace)
         {
-            if (source is null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-            if (stackTrace is null)
-            {
-                throw new ArgumentNullException(nameof(stackTrace));
-            }
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(stackTrace);
 
             source.SetRemoteStackTrace(stackTrace);
 

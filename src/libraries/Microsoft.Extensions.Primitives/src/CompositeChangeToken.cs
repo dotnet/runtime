@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Microsoft.Extensions.Primitives
@@ -13,11 +14,14 @@ namespace Microsoft.Extensions.Primitives
     /// </summary>
     public class CompositeChangeToken : IChangeToken
     {
-        private static readonly Action<object> _onChangeDelegate = OnChange;
-        private readonly object _callbackLock = new object();
-        private CancellationTokenSource _cancellationTokenSource;
-        private bool _registeredCallbackProxy;
-        private List<IDisposable> _disposables;
+        private static readonly Action<object?> _onChangeDelegate = OnChange;
+        private readonly object _callbackLock = new();
+        private CancellationTokenSource? _cancellationTokenSource;
+        private List<IDisposable>? _disposables;
+
+        [MemberNotNullWhen(true, nameof(_cancellationTokenSource))]
+        [MemberNotNullWhen(true, nameof(_disposables))]
+        private bool RegisteredCallbackProxy { get; set; }
 
         /// <summary>
         /// Creates a new instance of <see cref="CompositeChangeToken"/>.
@@ -25,7 +29,12 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="changeTokens">The list of <see cref="IChangeToken"/> to compose.</param>
         public CompositeChangeToken(IReadOnlyList<IChangeToken> changeTokens)
         {
-            ChangeTokens = changeTokens ?? throw new ArgumentNullException(nameof(changeTokens));
+            if (changeTokens is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokens);
+            }
+
+            ChangeTokens = changeTokens;
             for (int i = 0; i < ChangeTokens.Count; i++)
             {
                 if (ChangeTokens[i].ActiveChangeCallbacks)
@@ -42,7 +51,7 @@ namespace Microsoft.Extensions.Primitives
         public IReadOnlyList<IChangeToken> ChangeTokens { get; }
 
         /// <inheritdoc />
-        public IDisposable RegisterChangeCallback(Action<object> callback, object state)
+        public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
         {
             EnsureCallbacksInitialized();
             return _cancellationTokenSource.Token.Register(callback, state);
@@ -74,16 +83,18 @@ namespace Microsoft.Extensions.Primitives
         /// <inheritdoc />
         public bool ActiveChangeCallbacks { get; }
 
+        [MemberNotNull(nameof(_cancellationTokenSource))]
+        [MemberNotNull(nameof(_disposables))]
         private void EnsureCallbacksInitialized()
         {
-            if (_registeredCallbackProxy)
+            if (RegisteredCallbackProxy)
             {
                 return;
             }
 
             lock (_callbackLock)
             {
-                if (_registeredCallbackProxy)
+                if (RegisteredCallbackProxy)
                 {
                     return;
                 }
@@ -95,15 +106,22 @@ namespace Microsoft.Extensions.Primitives
                     if (ChangeTokens[i].ActiveChangeCallbacks)
                     {
                         IDisposable disposable = ChangeTokens[i].RegisterChangeCallback(_onChangeDelegate, this);
+                        if (_cancellationTokenSource.IsCancellationRequested)
+                        {
+                            disposable.Dispose();
+                            break;
+                        }
                         _disposables.Add(disposable);
                     }
                 }
-                _registeredCallbackProxy = true;
+                RegisteredCallbackProxy = true;
             }
         }
 
-        private static void OnChange(object state)
+        private static void OnChange(object? state)
         {
+            Debug.Assert(state != null);
+
             var compositeChangeTokenState = (CompositeChangeToken)state;
             if (compositeChangeTokenState._cancellationTokenSource == null)
             {
@@ -121,13 +139,12 @@ namespace Microsoft.Extensions.Primitives
                 }
             }
 
-            List<IDisposable> disposables = compositeChangeTokenState._disposables;
+            List<IDisposable>? disposables = compositeChangeTokenState._disposables;
             Debug.Assert(disposables != null);
             for (int i = 0; i < disposables.Count; i++)
             {
                 disposables[i].Dispose();
             }
-
         }
     }
 }

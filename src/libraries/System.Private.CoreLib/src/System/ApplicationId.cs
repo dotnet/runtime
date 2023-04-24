@@ -12,10 +12,9 @@ namespace System
 
         public ApplicationId(byte[] publicKeyToken, string name, Version version, string? processorArchitecture, string? culture)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0) throw new ArgumentException(SR.Argument_EmptyApplicationName);
-            if (version == null) throw new ArgumentNullException(nameof(version));
-            if (publicKeyToken == null) throw new ArgumentNullException(nameof(publicKeyToken));
+            ArgumentException.ThrowIfNullOrEmpty(name);
+            ArgumentNullException.ThrowIfNull(version);
+            ArgumentNullException.ThrowIfNull(publicKeyToken);
 
             _publicKeyToken = (byte[])publicKeyToken.Clone();
             Name = name;
@@ -40,67 +39,46 @@ namespace System
         {
             var sb = new ValueStringBuilder(stackalloc char[128]);
             sb.Append(Name);
+
             if (Culture != null)
             {
                 sb.Append(", culture=\"");
                 sb.Append(Culture);
                 sb.Append('"');
             }
+
             sb.Append(", version=\"");
             sb.Append(Version.ToString());
             sb.Append('"');
+
             if (_publicKeyToken != null)
             {
                 sb.Append(", publicKeyToken=\"");
-                EncodeHexString(_publicKeyToken, ref sb);
+                HexConverter.EncodeToUtf16(_publicKeyToken, sb.AppendSpan(2 * _publicKeyToken.Length), HexConverter.Casing.Upper);
                 sb.Append('"');
             }
+
             if (ProcessorArchitecture != null)
             {
                 sb.Append(", processorArchitecture =\"");
                 sb.Append(ProcessorArchitecture);
                 sb.Append('"');
             }
+
             return sb.ToString();
         }
 
-        private static void EncodeHexString(byte[] sArray, ref ValueStringBuilder stringBuilder)
-        {
-            for (int i = 0; i < sArray.Length; i++)
-            {
-                HexConverter.ToCharsBuffer(sArray[i], stringBuilder.AppendSpan(2), 0, HexConverter.Casing.Upper);
-            }
-        }
+        public override bool Equals([NotNullWhen(true)] object? o) =>
+            o is ApplicationId other &&
+            Equals(Name, other.Name) &&
+            Equals(Version, other.Version) &&
+            Equals(ProcessorArchitecture, other.ProcessorArchitecture) &&
+            Equals(Culture, other.Culture) &&
+            _publicKeyToken.AsSpan().SequenceEqual(other._publicKeyToken);
 
-        public override bool Equals([NotNullWhen(true)] object? o)
-        {
-            ApplicationId? other = o as ApplicationId;
-            if (other == null)
-                return false;
-
-            if (!(Equals(Name, other.Name) &&
-                  Equals(Version, other.Version) &&
-                  Equals(ProcessorArchitecture, other.ProcessorArchitecture) &&
-                  Equals(Culture, other.Culture)))
-                return false;
-
-            if (_publicKeyToken.Length != other._publicKeyToken.Length)
-                return false;
-
-            for (int i = 0; i < _publicKeyToken.Length; i++)
-            {
-                if (_publicKeyToken[i] != other._publicKeyToken[i])
-                    return false;
-            }
-
-            return true;
-        }
-
-        public override int GetHashCode()
-        {
+        public override int GetHashCode() =>
             // Note: purposely skipping publicKeyToken, processor architecture and culture as they
             // are less likely to make things not equal than name and version.
-            return Name.GetHashCode() ^ Version.GetHashCode();
-        }
+            Name.GetHashCode() ^ Version.GetHashCode();
     }
 }

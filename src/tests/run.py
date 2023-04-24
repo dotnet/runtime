@@ -9,7 +9,7 @@
 # Notes:
 #
 # Universal script to setup and run the xunit console runner. The script relies
-# on run.proj and the bash and batch wrappers. All test excludes will also
+# on build.proj and the bash and batch wrappers. All test excludes will also
 # come from issues.targets. If there is a jit stress or gc stress exclude,
 # please add GCStressIncompatible or JitOptimizationSensitive to the test's
 # ilproj or csproj.
@@ -58,7 +58,7 @@ from coreclr_arguments import *
 ################################################################################
 
 description = ("""Universal script to setup and run the xunit console runner. The script relies
-on run.proj and the bash and batch wrappers. All test excludes will also
+on build.proj and the bash and batch wrappers. All test excludes will also
 come from issues.targets. If there is a jit stress or gc stress exclude,
 please add GCStressIncompatible or JitOptimizationSensitive to the test's
 ilproj or csproj.
@@ -75,6 +75,11 @@ into the Core_Root directory or the test's managed directory. The latter is
 prone to failure; however, copying into the Core_Root directory may create
 naming conflicts.""")
 
+parallel_help = """
+Specify the level of parallelism: none, collections, assemblies, all. Default: collections.
+`-parallel none` is a synonym for `--sequential`.
+"""
+
 parser = argparse.ArgumentParser(description=description)
 
 parser.add_argument("-os", dest="host_os", nargs='?', default=None)
@@ -84,7 +89,7 @@ parser.add_argument("-test_location", dest="test_location", nargs="?", default=N
 parser.add_argument("-core_root", dest="core_root", nargs='?', default=None)
 parser.add_argument("-runtime_repo_location", dest="runtime_repo_location", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 parser.add_argument("-test_env", dest="test_env", default=None)
-parser.add_argument("-crossgen_altjit", dest="crossgen_altjit", default=None)
+parser.add_argument("-parallel", dest="parallel", default=None, help=parallel_help)
 
 # Optional arguments which change execution.
 
@@ -92,17 +97,18 @@ parser.add_argument("--il_link", dest="il_link", action="store_true", default=Fa
 parser.add_argument("--long_gc", dest="long_gc", action="store_true", default=False)
 parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", default=False)
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
-parser.add_argument("--run_crossgen_tests", dest="run_crossgen_tests", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
-parser.add_argument("--precompile_core_root", dest="precompile_core_root", action="store_true", default=False)
-parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests. Useful in conjunction with --precompile_core_root")
+parser.add_argument("--synthesize_pgo", dest="synthesize_pgo", action="store_true", default=False)
+parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests.")
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
 parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="store_true", default=False)
 parser.add_argument("--run_in_context", dest="run_in_context", action="store_true", default=False)
+parser.add_argument("--tiering_test", dest="tiering_test", action="store_true", default=False)
+parser.add_argument("--run_nativeaot_tests", dest="run_nativeaot_tests", action="store_true", default=False)
 
 ################################################################################
 # Globals
@@ -149,7 +155,7 @@ class DebugEnv:
             test ({})               : The test metadata
 
         """
-        self.unique_name = "%s_%s_%s_%s" % (test["name"],
+        self.unique_name = "%s_%s_%s_%s" % (test["test_path"],
                                             args.host_os,
                                             args.arch,
                                             args.build_type)
@@ -162,7 +168,7 @@ class DebugEnv:
         self.__create_repro_wrapper__()
 
         self.path = None
-        
+
         if self.args.host_os == "windows":
             self.path = self.unique_name + ".cmd"
         else:
@@ -221,8 +227,8 @@ class DebugEnv:
         dbg_type = "cppvsdbg" if self.host_os == "windows" else ""
 
         env = {
-            "COMPlus_AssertOnNYI": "1",
-            "COMPlus_ContinueOnAssert": "0"
+            "DOTNET_AssertOnNYI": "1",
+            "DOTNET_ContinueOnAssert": "0"
         }
 
         if self.env is not None:
@@ -296,7 +302,7 @@ REM
 REM Notes:
 REM
 REM This wrapper is automatically generated by run.py. It includes the
-REM necessary environment to reproduce a failure that occured during running
+REM necessary environment to reproduce a failure that occurred during running
 REM the tests.
 REM
 REM In order to change how this wrapper is generated, see
@@ -339,7 +345,7 @@ echo Core_Root is set to: "%%CORE_ROOT%%"
 # Notes:
 #
 # This wrapper is automatically generated by run.py. It includes the
-# necessary environment to reproduce a failure that occured during running
+# necessary environment to reproduce a failure that occurred during running
 # the tests.
 #
 # In order to change how this wrapper is generated, see
@@ -395,7 +401,7 @@ def create_and_use_test_env(_os, env, func):
 
     Args:
         _os(str)                        : OS name
-        env(defaultdict(lambda: None))  : complus variables, key,value dict
+        env(defaultdict(lambda: None))  : DOTNET variables, key,value dict
         func(lambda)                    : lambda to call, after creating the
                                         : test_env
 
@@ -409,15 +415,15 @@ def create_and_use_test_env(_os, env, func):
 
     ret_code = 0
 
-    complus_vars = defaultdict(lambda: None)
+    dotnet_vars = defaultdict(lambda: None)
 
     for key in env:
         value = env[key]
-        if "complus" in key.lower() or "superpmi" in key.lower():
-            complus_vars[key] = value
+        if "dotnet" in key.lower() or "superpmi" in key.lower():
+            dotnet_vars[key] = value
 
-    if len(list(complus_vars.keys())) > 0:
-        print("Found COMPlus variables in the current environment")
+    if len(list(dotnet_vars.keys())) > 0:
+        print("Found DOTNET variables in the current environment")
         print("")
 
         contents = ""
@@ -452,15 +458,15 @@ def create_and_use_test_env(_os, env, func):
             test_env.write(file_header)
             contents += file_header
 
-            for key in complus_vars:
-                value = complus_vars[key]
+            for key in dotnet_vars:
+                value = dotnet_vars[key]
                 command = None
                 if _os == "windows":
                     command = "set"
                 else:
                     command = "export"
 
-                if key.lower() == "complus_gcstress":
+                if key.lower() == "dotnet_gcstress":
                     gc_stress = True
 
                 print("Unset %s" % key)
@@ -501,10 +507,10 @@ def create_and_use_test_env(_os, env, func):
     return ret_code
 
 def get_environment(test_env=None):
-    """ Get all the COMPlus_* Environment variables
+    """ Get all the DOTNET_* Environment variables
 
     Notes:
-        All COMPlus variables need to be captured as a test_env script to avoid
+        All DOTNET variables need to be captured as a test_env script to avoid
         influencing the test runner.
 
         On Windows, os.environ keys (the environment variable names) are all upper case,
@@ -512,14 +518,14 @@ def get_environment(test_env=None):
     """
     global gc_stress
 
-    complus_vars = defaultdict(lambda: "")
+    dotnet_vars = defaultdict(lambda: "")
 
     for key in os.environ:
-        if "complus" in key.lower():
-            complus_vars[key] = os.environ[key]
+        if "dotnet" in key.lower():
+            dotnet_vars[key] = os.environ[key]
             os.environ[key] = ''
         elif "superpmi" in key.lower():
-            complus_vars[key] = os.environ[key]
+            dotnet_vars[key] = os.environ[key]
             os.environ[key] = ''
 
     # Get the env from the test_env
@@ -542,15 +548,15 @@ def get_environment(test_env=None):
                 except:
                     pass
 
-                complus_vars[key] = value
+                dotnet_vars[key] = value
 
                 # Supoort looking up case insensitive.
-                complus_vars[key.lower()] = value
+                dotnet_vars[key.lower()] = value
 
-        if "complus_gcstress" in complus_vars:
+        if "dotnet_gcstress" in dotnet_vars:
             gc_stress = True
 
-    return complus_vars
+    return dotnet_vars
 
 def call_msbuild(args):
     """ Call msbuild to run the tests built.
@@ -567,6 +573,9 @@ def call_msbuild(args):
 
     common_msbuild_arguments = []
 
+    if args.parallel:
+        common_msbuild_arguments += ["/p:ParallelRun={}".format(args.parallel)]
+
     if args.sequential:
         common_msbuild_arguments += ["/p:ParallelRun=none"]
 
@@ -581,8 +590,8 @@ def call_msbuild(args):
 
     command =   [args.dotnetcli_script_path,
                  "msbuild",
-                 os.path.join(args.coreclr_tests_src_dir, "run.proj"),
-                 "/p:Runtests=true",
+                 os.path.join(args.coreclr_tests_src_dir, "build.proj"),
+                 "/t:RunTests",
                  "/clp:showcommandline"]
 
     command += common_msbuild_arguments
@@ -644,9 +653,9 @@ def setup_coredump_generation(host_os):
     """
     global coredump_pattern
 
-    if host_os == "OSX":
+    if host_os == "osx":
         coredump_pattern = subprocess.check_output("sysctl -n kern.corefile", shell=True).rstrip()
-    elif host_os == "Linux":
+    elif host_os == "linux":
         with open("/proc/sys/kernel/core_pattern", "r") as f:
             coredump_pattern = f.read().rstrip()
     else:
@@ -688,7 +697,7 @@ def setup_coredump_generation(host_os):
 
     print("CoreDump generation enabled")
 
-    if host_os == "Linux" and os.path.isfile("/proc/self/coredump_filter"):
+    if host_os == "linux" and os.path.isfile("/proc/self/coredump_filter"):
         # Include memory in private and shared file-backed mappings in the dump.
         # This ensures that we can see disassembly from our shared libraries when
         # inspecting the contents of the dump. See 'man core' for details.
@@ -720,9 +729,9 @@ def print_info_from_coredump_file(host_os, arch, coredump_name, executable_name)
 
     command = ""
 
-    if host_os == "OSX":
+    if host_os == "osx":
         command = "lldb -c %s -b -o 'bt all' -o 'disassemble -b -p'" % coredump_name
-    elif host_os == "Linux":
+    elif host_os == "linux":
         command = "gdb --batch -ex \"thread apply all bt full\" -ex \"disassemble /r $pc\" -ex \"quit\" %s %s" % (executable_name, coredump_name)
     else:
         print("Not printing coredump due to unsupported OS: %s" % host_os)
@@ -808,7 +817,7 @@ def inspect_and_delete_coredump_files(host_os, arch, test_location):
 
     if "%P" in coredump_pattern:
         coredump_name_uses_pid=True
-    elif host_os == "Linux" and os.path.isfile("/proc/sys/kernel/core_uses_pid"):
+    elif host_os == "linux" and os.path.isfile("/proc/sys/kernel/core_uses_pid"):
         with open("/proc/sys/kernel/core_uses_pid", "r") as f:
             if f.read().rstrip() == "1":
                 coredump_name_uses_pid=True
@@ -842,25 +851,22 @@ def run_tests(args,
         test_env_script_path  : Path to script to use to set the test environment, if any.
     """
 
-    if args.precompile_core_root:
-        precompile_core_root(args)
-
     if args.skip_test_run:
         return
 
-    # Set default per-test timeout to 15 minutes (in milliseconds).
-    per_test_timeout = 15*60*1000
+    # Set default per-test timeout to 30 minutes (in milliseconds).
+    per_test_timeout = 30*60*1000
 
     # Setup the environment
     if args.long_gc:
-        print("Running Long GC Tests, extending timeout to 20 minutes.")
-        per_test_timeout = 20*60*1000
+        print("Running Long GC Tests, extending timeout to 40 minutes.")
+        per_test_timeout = 40*60*1000
         print("Setting RunningLongGCTests=1")
         os.environ["RunningLongGCTests"] = "1"
 
     if args.gcsimulator:
-        print("Running GCSimulator tests, extending timeout to one hour.")
-        per_test_timeout = 60*60*1000
+        print("Running GCSimulator tests, extending timeout to two hours.")
+        per_test_timeout = 120*60*1000
         print("Setting RunningGCSimulatorTests=1")
         os.environ["RunningGCSimulatorTests"] = "1"
 
@@ -869,23 +875,18 @@ def run_tests(args,
         print("Setting RunningIlasmRoundTrip=1")
         os.environ["RunningIlasmRoundTrip"] = "1"
 
-    if args.run_crossgen_tests:
-        print("Running tests R2R")
-        print("Setting RunCrossGen=true")
-        os.environ["RunCrossGen"] = "true"
-
     if args.run_crossgen2_tests:
         print("Running tests R2R (Crossgen2)")
-        print("Setting RunCrossGen2=true")
-        os.environ["RunCrossGen2"] = "true"
+        print("Setting RunCrossGen2=1")
+        os.environ["RunCrossGen2"] = "1"
 
     if args.large_version_bubble:
         print("Large Version Bubble enabled")
-        os.environ["LargeVersionBubble"] = "true"
+        os.environ["LargeVersionBubble"] = "1"
 
-    if gc_stress:
-        print("Running GCStress, extending timeout to 120 minutes.")
-        per_test_timeout = 120*60*1000
+    if args.synthesize_pgo:
+        print("Synthesizing PGO")
+        os.environ["CrossGen2SynthesizePgo"] = "1"
 
     if args.limited_core_dumps:
         setup_coredump_generation(args.host_os)
@@ -893,8 +894,20 @@ def run_tests(args,
     if args.run_in_context:
         print("Running test in an unloadable AssemblyLoadContext")
         os.environ["CLRCustomTestLauncher"] = args.runincontext_script_path
-        os.environ["RunInUnloadableContext"] = "1";
-        per_test_timeout = 20*60*1000
+        os.environ["RunInUnloadableContext"] = "1"
+        per_test_timeout = 40*60*1000
+
+    if args.tiering_test:
+        print("Running test repeatedly to promote methods to tier1")
+        os.environ["CLRCustomTestLauncher"] = args.tieringtest_script_path
+
+    if args.run_nativeaot_tests:
+        print("Running tests NativeAOT")
+        os.environ["CLRCustomTestLauncher"] = args.nativeaottest_script_path
+
+    if gc_stress:
+        per_test_timeout *= 8
+        print("Running GCStress, extending test timeout to cater for slower runtime.")
 
     # Set __TestTimeout environment variable, which is the per-test timeout in milliseconds.
     # This is read by the test wrapper invoker, in src\tests\Common\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs.
@@ -926,7 +939,7 @@ def setup_args(args):
         location using the build type and the arch.
     """
 
-    requires_coreroot = args.host_os != "Browser" and args.host_os != "Android"
+    requires_coreroot = args.host_os != "browser" and args.host_os != "android"
     coreclr_setup_args = CoreclrArguments(args,
                                           require_built_test_dir=True,
                                           require_built_core_root=requires_coreroot,
@@ -952,20 +965,23 @@ def setup_args(args):
         print("Error, msbuild currently expects tests in {} (got test_location {})".format(normal_location, coreclr_setup_args.test_location))
         raise Exception("Error, msbuild currently expects tests in artifacts/tests/...")
 
+    # valid_parallel_args is the same list as that allowed by the xunit.console.dll "-parallel" argument.
+    valid_parallel_args = ["none", "collections", "assemblies", "all"]
+
     coreclr_setup_args.verify(args,
                               "test_env",
                               lambda arg: True,
                               "Error setting test_env")
 
     coreclr_setup_args.verify(args,
+                              "parallel",
+                              lambda arg: arg is None or arg in valid_parallel_args,
+                              "Parallel argument '{}' unknown".format)
+
+    coreclr_setup_args.verify(args,
                               "analyze_results_only",
                               lambda arg: True,
                               "Error setting analyze_results_only")
-
-    coreclr_setup_args.verify(args,
-                              "crossgen_altjit",
-                              lambda arg: True,
-                              "Error setting crossgen_altjit")
 
     coreclr_setup_args.verify(args,
                               "rid",
@@ -998,19 +1014,14 @@ def setup_args(args):
                               "Error setting large_version_bubble")
 
     coreclr_setup_args.verify(args,
-                              "run_crossgen_tests",
-                              lambda arg: True,
-                              "Error setting run_crossgen_tests")
-
-    coreclr_setup_args.verify(args,
                               "run_crossgen2_tests",
                               lambda unused: True,
                               "Error setting run_crossgen2_tests")
 
     coreclr_setup_args.verify(args,
-                              "precompile_core_root",
+                              "synthesize_pgo",
                               lambda arg: True,
-                              "Error setting precompile_core_root")
+                              "Error setting synthesize_pgo")
 
     coreclr_setup_args.verify(args,
                               "skip_test_run",
@@ -1037,6 +1048,20 @@ def setup_args(args):
                               lambda arg: True,
                               "Error setting run_in_context")
 
+    coreclr_setup_args.verify(args,
+                              "tiering_test",
+                              lambda arg: True,
+                              "Error setting tiering_test")
+
+    coreclr_setup_args.verify(args,
+                              "run_nativeaot_tests",
+                              lambda arg: True,
+                              "Error setting run_nativeaot_tests")
+
+    if coreclr_setup_args.sequential and coreclr_setup_args.parallel:
+        print("Error: don't specify both --sequential and -parallel")
+        sys.exit(1)
+
     print("host_os                  : %s" % coreclr_setup_args.host_os)
     print("arch                     : %s" % coreclr_setup_args.arch)
     print("build_type               : %s" % coreclr_setup_args.build_type)
@@ -1044,101 +1069,16 @@ def setup_args(args):
     print("core_root                : %s" % coreclr_setup_args.core_root)
     print("test_location            : %s" % coreclr_setup_args.test_location)
 
-    coreclr_setup_args.crossgen_path = os.path.join(coreclr_setup_args.core_root, "crossgen%s" % (".exe" if coreclr_setup_args.host_os == "windows" else ""))
     coreclr_setup_args.corerun_path = os.path.join(coreclr_setup_args.core_root, "corerun%s" % (".exe" if coreclr_setup_args.host_os == "windows" else ""))
     coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
     coreclr_setup_args.coreclr_tests_dir = os.path.join(coreclr_setup_args.coreclr_dir, "tests")
     coreclr_setup_args.coreclr_tests_src_dir = os.path.join(coreclr_setup_args.runtime_repo_location, "src", "tests")
     coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
+    coreclr_setup_args.tieringtest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "tieringtest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
+    coreclr_setup_args.nativeaottest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "nativeaottest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
     coreclr_setup_args.logs_dir = os.path.join(coreclr_setup_args.artifacts_location, "log")
 
     return coreclr_setup_args
-
-def precompile_core_root(args):
-    """ Precompile all of the assemblies in the core_root directory
-
-    Args:
-        args
-    """
-
-    skip_list = [
-        ".*xunit.*",
-        ".*api-ms-win-core.*",
-        ".*api-ms-win.*",
-        ".*System.Private.CoreLib.*"
-    ]
-
-    unix_skip_list = [
-        ".*mscorlib.*",
-        ".*System.Runtime.WindowsRuntime.*",
-        ".*System.Runtime.WindowsRuntime.UI.Xaml.*",
-        ".*R2RDump.dll.*"
-    ]
-
-    arm64_unix_skip_list = [
-        ".*Microsoft.CodeAnalysis.VisualBasic.*",
-        ".*System.Net.NameResolution.*",
-        ".*System.Net.Sockets.*",
-        ".*System.Net.Primitives.*"
-    ]
-
-    if args.host_os != "windows":
-        skip_list += unix_skip_list
-
-        if args.arch == "arm64":
-            skip_list += arm64_unix_skip_list
-
-    assert os.path.isdir(args.test_location)
-    assert os.path.isdir(args.core_root)
-
-    def call_crossgen(file, env):
-        assert os.path.isfile(args.crossgen_path)
-        command = [args.crossgen_path, "/Platform_Assemblies_Paths", args.core_root, file]
-
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-        proc.communicate()
-
-        return_code = proc.returncode
-
-        if return_code == -2146230517:
-            print("%s is not a managed assembly." % file)
-            return False
-
-        if return_code != 0:
-            print("Unable to precompile %s (%d)" % (file, return_code))
-            return False
-
-        print("Successfully precompiled %s" % file)
-        return True
-
-    print("Precompiling all assemblies in %s" % args.core_root)
-    print("")
-
-    env = os.environ.copy()
-
-    if not args.crossgen_altjit is None:
-        env["COMPlus_AltJit"]="*"
-        env["COMPlus_AltJitNgen"]="*"
-        env["COMPlus_AltJitName"]=args.crossgen_altjit
-        env["COMPlus_AltJitAssertOnNYI"]="1"
-        env["COMPlus_NoGuiOnAssert"]="1"
-        env["COMPlus_ContinueOnAssert"]="0"
-
-    dlls = [os.path.join(args.core_root, item) for item in os.listdir(args.core_root) if item.endswith("dll") and "mscorlib" not in item]
-
-    def in_skip_list(item):
-        found = False
-        for skip_re in skip_list:
-            if re.match(skip_re, item.lower()) is not None:
-                found = True
-        return found
-
-    dlls = [dll for dll in dlls if not in_skip_list(dll)]
-
-    for dll in dlls:
-        call_crossgen(dll, env)
-
-    print("")
 
 if sys.version_info.major < 3:
     def to_unicode(s):
@@ -1249,14 +1189,13 @@ def find_test_from_name(host_os, test_location, test_name):
 
     location = starting_path
     if not os.path.isfile(location):
-        print("Warning: couldn't find test: %s" % test_name)
         return None
 
     assert(os.path.isfile(location))
 
     return location
 
-def parse_test_results(args):
+def parse_test_results(args, tests, assemblies):
     """ Parse the test results for test execution information
 
     Args:
@@ -1265,30 +1204,52 @@ def parse_test_results(args):
     log_path = os.path.join(args.logs_dir, "TestRunResults_%s_%s_%s" % (args.host_os, args.arch, args.build_type))
     print("Parsing test results from (%s)" % log_path)
 
-    test_run_location = os.path.join(args.logs_dir, "testRun.xml")
+    found = False
 
-    if not os.path.isfile(test_run_location):
-        # Check if this is a casing issue
+    for item in os.listdir(args.logs_dir):
+        suffix_index = item.lower().find("testrun.xml")
+        if suffix_index >= 0:
+            found = True
+            item_name = ""
+            if suffix_index > 0:
+                item_name = item[:suffix_index - 1]
+            parse_test_results_xml_file(args, item, item_name, tests, assemblies)
 
-        found = False
-        for item in os.listdir(args.logs_dir):
-            item_lower = item.lower()
-            if item_lower == "testrun.xml":
-                # Correct the name.
-                os.rename(os.path.join(args.logs_dir, item), test_run_location)
-                found = True
-                break
+    if not found:
+        print("Unable to find testRun.xml. This normally means the tests did not run.")
+        print("It could also mean there was a problem logging. Please run the tests again.")
+        return
 
-        if not found:
-            print("Unable to find testRun.xml. This normally means the tests did not run.")
-            print("It could also mean there was a problem logging. Please run the tests again.")
-            return
+def parse_test_results_xml_file(args, item, item_name, tests, assemblies):
+    """ Parse test results from a single xml results file
+    Args:
+        xml_result_file      : results xml file to parse
+        args                 : arguments
+        tests                : list of individual test results
+        assemblies           : dictionary of per-assembly aggregations
+    """
 
-    print("Analyzing {}".format(test_run_location))
-    assemblies = xml.etree.ElementTree.parse(test_run_location).getroot()
-
-    tests = defaultdict(lambda: None)
-    for assembly in assemblies:
+    xml_result_file = os.path.join(args.logs_dir, item)
+    print("Analyzing {}".format(xml_result_file))
+    xml_assemblies = xml.etree.ElementTree.parse(xml_result_file).getroot()
+    for assembly in xml_assemblies:
+        if "name" not in assembly.attrib:
+            continue
+        assembly_name = assembly.attrib["name"]
+        assembly_info = assemblies[assembly_name]
+        display_name = assembly_name
+        if len(item_name) > 0:
+            display_name = item_name
+        if assembly_info == None:
+            assembly_info = defaultdict(lambda: None, {
+                "name": assembly_name,
+                "display_name": display_name,
+                "time": 0.0,
+                "passed": 0,
+                "failed": 0,
+                "skipped": 0,
+            })
+        assembly_info["time"] = assembly_info["time"] + float(assembly.attrib["time"])
         for collection in assembly:
             if collection.tag == "errors" and collection.text != None:
                 # Something went wrong during running the tests.
@@ -1301,39 +1262,32 @@ def parse_test_results(args):
                     method = test.attrib["method"]
 
                     type = type.split("._")[0]
-                    test_name = type + method
-
-                assert test_name != None
-
-                failed = collection.attrib["failed"]
-                skipped = collection.attrib["skipped"]
-                passed = collection.attrib["passed"]
-                time = float(collection.attrib["time"])
-
-                test_output = None
-
-                if failed == "1":
-                    failure_info = collection[0][0]
-                    test_output = failure_info.text
-
-                test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, test_name)
-                if test_location_on_filesystem is not None:
-                    assert os.path.isfile(test_location_on_filesystem)
-
-                    assert tests[test_name] == None
-                    tests[test_name] = defaultdict(lambda: None, {
+                    test_name = type + "::" + method
+                    name = test.attrib["name"]
+                    if len(name) > 0:
+                        test_name += " (" + name + ")"
+                    result = test.attrib["result"]
+                    time = float(collection.attrib["time"])
+                    test_location_on_filesystem = find_test_from_name(args.host_os, args.test_location, name)
+                    if test_location_on_filesystem is None or not os.path.isfile(test_location_on_filesystem):
+                        test_location_on_filesystem = None
+                    test_output = test.findtext("output")
+                    tests.append(defaultdict(lambda: None, {
                         "name": test_name,
                         "test_path": test_location_on_filesystem,
-                        "failed": failed,
-                        "skipped": skipped,
-                        "passed": passed,
+                        "result" : result,
                         "time": time,
                         "test_output": test_output
-                    })
+                    }))
+                    if result == "Pass":
+                        assembly_info["passed"] += 1
+                    elif result == "Fail":
+                        assembly_info["failed"] += 1
+                    else:
+                        assembly_info["skipped"] += 1
+        assemblies[assembly_name] = assembly_info
 
-    return tests
-
-def print_summary(tests):
+def print_summary(tests, assemblies):
     """ Print a summary of the test results
 
     Args:
@@ -1343,122 +1297,63 @@ def print_summary(tests):
     """
 
     assert tests is not None
+    assert assemblies is not None
 
     failed_tests = []
-    passed_tests = []
-    skipped_tests = []
 
     for test in tests:
-        test = tests[test]
+        if test["result"] == "Fail":
+            print("Failed test: %s" % test["name"])
 
-        if test["failed"] == "1":
-            failed_tests.append(test)
-        elif test["passed"] == "1":
-            passed_tests.append(test)
-        else:
-            skipped_tests.append(test)
-
-    failed_tests.sort(key=lambda item: item["time"], reverse=True)
-    passed_tests.sort(key=lambda item: item["time"], reverse=True)
-    skipped_tests.sort(key=lambda item: item["time"], reverse=True)
-
-    def print_tests_helper(tests, stop_count):
-        for index, item in enumerate(tests):
-            time = item["time"]
-            unit = "seconds"
-            time_remainder = ""
-            second_unit = ""
-            saved_time = time
-            remainder_str = ""
-
-            # If it can be expressed in hours
-            if time > 60**2:
-                time = saved_time / (60**2)
-                time_remainder = saved_time % (60**2)
-                time_remainder /= 60
-                time_remainder = math.floor(time_remainder)
-                unit = "hours"
-                second_unit = "minutes"
-
-                remainder_str = " %s %s" % (int(time_remainder), second_unit)
-
-            elif time > 60 and time < 60**2:
-                time = saved_time / 60
-                time_remainder = saved_time % 60
-                time_remainder = math.floor(time_remainder)
-                unit = "minutes"
-                second_unit = "seconds"
-
-                remainder_str = " %s %s" % (int(time_remainder), second_unit)
-
-            print("%s (%d %s%s)" % (item["test_path"], time, unit, remainder_str))
-
-            if stop_count != None:
-                if index >= stop_count:
-                    break
-
-    if len(failed_tests) > 0:
-        print("%d failed tests:" % len(failed_tests))
-        print("")
-        print_tests_helper(failed_tests, None)
-
-    # The following code is currently disabled, as it produces too much verbosity in a normal
-    # test run. It could be put under a switch, or else just enabled as needed when investigating
-    # test slowness.
-    #
-    # if len(passed_tests) > 50:
-    #     print("")
-    #     print("50 slowest passing tests:")
-    #     print("")
-    #     print_tests_helper(passed_tests, 50)
-
-    if len(failed_tests) > 0:
-        print("")
-        print("#################################################################")
-        print("Output of failing tests:")
-        print("")
-
-        for item in failed_tests:
-            print("[%s]: " % item["test_path"])
-            print("")
-
-            test_output = item["test_output"]
-
-            # XUnit results are captured as escaped characters.
-            #test_output = test_output.replace("\\r", "\r")
-            #test_output = test_output.replace("\\n", "\n")
-            #test_output = test_output.replace("/r", "\r")
-            #test_output = test_output.replace("/n", "\n")
+            test_output = test["test_output"]
 
             # Replace CR/LF by just LF; Python "print", below, will map as necessary on the platform.
             # If we don't do this, then Python on Windows will convert \r\n to \r\r\n on output.
-            test_output = test_output.replace("\r\n", "\n")
+            if test_output is not None:
+                test_output = test_output.replace("\r\n", "\n")
 
-            unicode_output = None
-            if sys.version_info < (3,0):
-                # Handle unicode characters in output in python2.*
-                try:
-                    unicode_output = unicode(test_output, "utf-8")
-                except:
-                    print("Error: failed to convert Unicode output")
+                unicode_output = None
+                if sys.version_info < (3,0):
+                    # Handle unicode characters in output in python2.*
+                    try:
+                        unicode_output = unicode(test_output, "utf-8")
+                    except:
+                        print("Error: failed to convert Unicode output")
+                else:
+                    unicode_output = test_output
+
+                if unicode_output is not None:
+                    print(unicode_output)
             else:
-                unicode_output = test_output
-
-            if unicode_output is not None:
-                print(unicode_output)
+                print("# Test output recorded in log file.")
             print("")
 
-        print("")
-        print("#################################################################")
-        print("End of output of failing tests")
-        print("#################################################################")
-        print("")
+    print("Time [secs] | Total | Passed | Failed | Skipped | Assembly Execution Summary")
+    print("============================================================================")
 
-    print("")
-    print("Total tests run    : %d" % len(tests))
-    print("Total passing tests: %d" % len(passed_tests))
-    print("Total failed tests : %d" % len(failed_tests))
-    print("Total skipped tests: %d" % len(skipped_tests))
+    total_time = 0.0
+    total_total = 0
+    total_passed = 0
+    total_failed = 0
+    total_skipped = 0
+
+    for assembly in assemblies:
+        assembly = assemblies[assembly]
+        name = assembly["display_name"]
+        time = assembly["time"]
+        passed = assembly["passed"]
+        failed = assembly["failed"]
+        skipped = assembly["skipped"]
+        total = passed + failed + skipped
+        print("%11.3f | %5d | %6d | %6d | %7d | %s" % (time, total, passed, failed, skipped, name))
+        total_time += time
+        total_total += total
+        total_passed += passed
+        total_failed += failed
+        total_skipped += skipped
+
+    print("----------------------------------------------------------------------------")
+    print("%11.3f | %5d | %6d | %6d | %7d | (total)" % (total_time, total_total, total_passed, total_failed, total_skipped))
     print("")
 
 def create_repro(args, env, tests):
@@ -1473,7 +1368,7 @@ def create_repro(args, env, tests):
     """
     assert tests is not None
 
-    failed_tests = [tests[item] for item in tests if tests[item]["failed"] == "1"]
+    failed_tests = [test for test in tests if test["result"] == "Fail" and test["test_path"] is not None]
     if len(failed_tests) == 0:
         return
 
@@ -1517,10 +1412,11 @@ def main(args):
         print("Test run finished.")
 
     if not args.skip_test_run:
-        tests = parse_test_results(args)
-        if tests is not None:
-            print_summary(tests)
-            create_repro(args, env, tests)
+        assemblies = defaultdict(lambda: None)
+        tests = []
+        parse_test_results(args, tests, assemblies)
+        print_summary(tests, assemblies)
+        create_repro(args, env, tests)
 
     return ret_code
 

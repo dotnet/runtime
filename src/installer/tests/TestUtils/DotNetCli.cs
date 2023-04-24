@@ -11,59 +11,39 @@ namespace Microsoft.DotNet.Cli.Build
     public partial class DotNetCli
     {
         public string BinPath { get; }
+        public string SharedFxPath { get; }
         public string GreatestVersionSharedFxPath { get; }
-        public string GreatestVersionHostFxrPath { get; } 
-        public string GreatestVersionHostFxrFilePath { get => Path.Combine(
-            GreatestVersionHostFxrPath,
-            RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")); }
-        public string DotnetExecutablePath
-        {
-            get
-            {
-                return Path.Combine(BinPath, RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("dotnet"));
-            }
-        }
+        public string GreatestVersionHostFxrPath { get; }
+        public string GreatestVersionHostFxrFilePath => Path.Combine(GreatestVersionHostFxrPath, Binaries.HostFxr.FileName);
+        public string DotnetExecutablePath => Path.Combine(BinPath, Binaries.DotNet.FileName);
 
         public DotNetCli(string binPath)
         {
             BinPath = binPath;
 
-            var sharedFxBaseDirectory = Path.Combine(BinPath, "shared", "Microsoft.NETCore.App");
-            if (!Directory.Exists(sharedFxBaseDirectory))
+            SharedFxPath = Path.Combine(BinPath, "shared", Constants.MicrosoftNETCoreApp);
+            if (Directory.Exists(SharedFxPath))
             {
-                GreatestVersionSharedFxPath = null;
-                return;
+                var sharedFxVersionDirectories = Directory.EnumerateDirectories(SharedFxPath);
+                GreatestVersionSharedFxPath = sharedFxVersionDirectories
+                    .OrderByDescending(p => p.ToLower())
+                    .First();
             }
 
             var hostFxrBaseDirectory = Path.Combine(BinPath, "host", "fxr");
-
-            if (!Directory.Exists(hostFxrBaseDirectory))
+            if (Directory.Exists(hostFxrBaseDirectory))
             {
-                GreatestVersionHostFxrPath = null;
-                return;
+                var hostFxrVersionDirectories = Directory.EnumerateDirectories(hostFxrBaseDirectory);
+                GreatestVersionHostFxrPath = hostFxrVersionDirectories
+                    .OrderByDescending(p => p.ToLower())
+                    .First();
             }
-
-            var sharedFxVersionDirectories = Directory.EnumerateDirectories(sharedFxBaseDirectory);
-
-            GreatestVersionSharedFxPath = sharedFxVersionDirectories
-                .OrderByDescending(p => p.ToLower())
-                .First();
-
-            var hostFxrVersionDirectories = Directory.EnumerateDirectories(hostFxrBaseDirectory);
-            GreatestVersionHostFxrPath = hostFxrVersionDirectories
-                .OrderByDescending(p => p.ToLower())
-                .First();
         }
 
         public Command Exec(string command, params string[] args)
         {
             var newArgs = args.ToList();
             newArgs.Insert(0, command);
-
-            if (EnvVars.Verbose)
-            {
-                newArgs.Insert(0, "-v");
-            }
 
             return Command.Create(DotnetExecutablePath, newArgs)
                 .EnvironmentVariable("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1")

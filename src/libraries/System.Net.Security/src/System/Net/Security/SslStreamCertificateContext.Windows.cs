@@ -13,10 +13,10 @@ namespace System.Net.Security
         internal static SslStreamCertificateContext Create(X509Certificate2 target)
         {
             // On Windows we do not need to build chain unless we are asked for it.
-            return new SslStreamCertificateContext(target, Array.Empty<X509Certificate2>());
+            return new SslStreamCertificateContext(target, Array.Empty<X509Certificate2>(), null);
         }
 
-        private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates)
+        private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates, SslCertificateTrust? trust)
         {
             if (intermediates.Length > 0)
             {
@@ -101,8 +101,9 @@ namespace System.Net.Security
                 }
             }
 
+            _intermediateCertificates = intermediates;
             Certificate = target;
-            IntermediateCertificates = intermediates;
+            Trust = trust;
         }
     }
 }

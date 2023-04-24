@@ -150,8 +150,7 @@ namespace System.Linq.Parallel
                 TKey keyUnused = default!;
                 Pair<TInputOutput, NoKeyMemoizationRequired> current = default(Pair<TInputOutput, NoKeyMemoizationRequired>);
 
-                if (_outputLoopCount == null)
-                    _outputLoopCount = new Shared<int>(0);
+                _outputLoopCount ??= new Shared<int>(0);
 
                 while (_source.MoveNext(ref current, ref keyUnused))
                 {
@@ -271,10 +270,7 @@ namespace System.Linq.Parallel
                 Debug.Assert(_source != null);
                 _source.Dispose();
 
-                if (_hashLookupEnumerator != null)
-                {
-                    _hashLookupEnumerator.Dispose();
-                }
+                _hashLookupEnumerator?.Dispose();
             }
         }
     }

@@ -11,9 +11,9 @@ internal static partial class Interop
         internal const int COR_E_PLATFORMNOTSUPPORTED = unchecked((int)0x80131539);
 
         // https://msdn.microsoft.com/en-us/library/windows/desktop/bb762188.aspx
-        [DllImport(Libraries.Shell32, CharSet = CharSet.Unicode, SetLastError = false, BestFitMapping = false, ExactSpelling = true)]
-        internal static extern int SHGetKnownFolderPath(
-            [MarshalAs(UnmanagedType.LPStruct)] Guid rfid,
+        [LibraryImport(Libraries.Shell32, SetLastError = false, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial int SHGetKnownFolderPath(
+            in Guid rfid,
             uint dwFlags,
             IntPtr hToken,
             out string ppszPath);
@@ -285,12 +285,6 @@ internal static partial class Interop
             /// "%APPDATA%\Microsoft\Windows\Start Menu\Programs\StartUp"
             /// </summary>
             internal const string Startup = "{B97D20BB-F46A-4C97-BA10-5E3608430854}";
-
-            /// <summary>
-            /// (CSIDL_SYSTEM) System32 folder
-            /// "%windir%\system32"
-            /// </summary>
-            internal const string System = "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}";
 
             /// <summary>
             /// (CSIDL_SYSTEMX86) X86 System32 folder

@@ -1,6 +1,6 @@
 #! /bin/sh
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -42,11 +42,11 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/FILTER_EXTRAS/${TEST_FILTER_EXTRAS
 	.try
 	{
 		nop
-		nop 
+		nop
 
 		${LEAVE_2}
         }
-        catch [mscorlib]System.Exception 
+        catch [mscorlib]System.Exception
 	{
 		pop
 		${LEAVE_3}
@@ -73,14 +73,14 @@ TRY_2:
 
 		leave END
 
-	} catch [mscorlib]System.Exception 
+	} catch [mscorlib]System.Exception
 	{
 		pop
 		leave END
 	}
 
 NEXT_4:
-	.try 
+	.try
 	{
 		nop
 		nop

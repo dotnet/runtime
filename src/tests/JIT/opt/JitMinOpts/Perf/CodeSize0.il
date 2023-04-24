@@ -6,18 +6,21 @@
 // TID 934: IL Code Size,Instr 59998,15513, Basic Block count 722, Local Variable Num,Ref count  17,5326 for method CodeSize0.Main():int
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
 .assembly CodeSize0 {}
-.module CodeSize0.exe
 .class private auto ansi beforefieldinit CodeSize0
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       59998 (0xea5e)
     .maxstack  3

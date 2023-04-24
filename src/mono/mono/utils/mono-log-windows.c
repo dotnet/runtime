@@ -34,7 +34,7 @@ static const wchar_t *logFileName = L".//mono.log"; // FIXME double slash
 
 /**
  * mapSyslogLevel:
- * 	
+ *
  * 	@level - GLogLevelFlags value
  * 	@returns The equivalent character identifier
  */
@@ -60,7 +60,7 @@ mapLogFileLevel (GLogLevelFlags level)
  * mono_log_open_syslog:
  * \param ident Identifier: ignored
  * \param userData Not used
- * Open the syslog file. If the open fails issue a warning and 
+ * Open the syslog file. If the open fails issue a warning and
  * use stdout as the log file destination.
  */
 void
@@ -113,7 +113,7 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
  * 	Close the syslog file
  */
 void
-mono_log_close_syslog()
+mono_log_close_syslog(void)
 {
 	if (logFile) {
 		fclose(logFile);

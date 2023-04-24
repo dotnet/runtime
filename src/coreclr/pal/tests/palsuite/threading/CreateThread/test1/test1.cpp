@@ -3,10 +3,10 @@
 
 /*============================================================
 **
-** Source: test1.c 
+** Source: test1.c
 **
 ** Purpose: Test for CreateThread.  Call CreateThread and ensure
-** that it succeeds.  Also check to ensure the paramater is passed
+** that it succeeds.  Also check to ensure the parameter is passed
 ** properly.
 **
 **
@@ -21,10 +21,10 @@ ULONGLONG dwCreateThreadTestParameter = 0;
 DWORD PALAPI CreateThreadTestThread( LPVOID lpParameter)
 {
     DWORD dwRet = 0;
-    
+
     /* save parameter for test */
     dwCreateThreadTestParameter = (ULONGLONG)lpParameter;
-    
+
     return dwRet;
 }
 
@@ -34,7 +34,7 @@ BOOL CreateThreadTest()
     DWORD dwRet = 0;
 
     LPSECURITY_ATTRIBUTES lpThreadAttributes = NULL;
-    DWORD dwStackSize = 0; 
+    DWORD dwStackSize = 0;
     LPTHREAD_START_ROUTINE lpStartAddress =  &CreateThreadTestThread;
     LPVOID lpParameter = (LPVOID)lpStartAddress;
     DWORD dwCreationFlags = 0;  /* run immediately */
@@ -44,17 +44,17 @@ BOOL CreateThreadTest()
 
     dwCreateThreadTestParameter = 0;
 
-    /* Create a thread, passing the appropriate paramaters as declared
+    /* Create a thread, passing the appropriate parameters as declared
        above.
     */
-    
-    hThread = CreateThread( lpThreadAttributes,   
-                            dwStackSize,          
-                            lpStartAddress,       
-                            lpParameter,          
-                            dwCreationFlags,      
-                            &dwThreadId );       
-    
+
+    hThread = CreateThread( lpThreadAttributes,
+                            dwStackSize,
+                            lpStartAddress,
+                            lpParameter,
+                            dwCreationFlags,
+                            &dwThreadId );
+
     /* Ensure that the HANDLE is not invalid! */
     if (hThread != INVALID_HANDLE_VALUE)
     {
@@ -70,7 +70,7 @@ BOOL CreateThreadTest()
             /* Check to ensure that the parameter passed to the thread
                function is the same in the function as what we passed.
             */
-            
+
             if (dwCreateThreadTestParameter != (ULONGLONG)lpParameter)
             {
                 Trace("CreateThreadTest:parameter error.  The "
@@ -91,7 +91,7 @@ BOOL CreateThreadTest()
         Trace("CreateThreadTest:CreateThread failed (%x)\n",GetLastError());
     }
 
-    return bRet; 
+    return bRet;
 }
 
 
@@ -101,12 +101,12 @@ PALTEST(threading_CreateThread_test1_paltest_createthread_test1, "threading/Crea
     {
         return ( FAIL );
     }
-    
-    if(!CreateThreadTest()) 
+
+    if(!CreateThreadTest())
     {
         Fail ("Test failed\n");
     }
-      
+
     Trace("Test Passed\n");
     PAL_Terminate();
     return ( PASS );

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
 {
@@ -25,18 +26,28 @@ namespace System.Net.Security
             private readonly int _allowedProtocols;
             private readonly EncryptionPolicy _encryptionPolicy;
             private readonly bool _isServerMode;
+            private readonly bool _sendTrustList;
+            private readonly bool _checkRevocation;
 
             //
             // SECURITY: X509Certificate.GetCertHash() is virtual hence before going here,
             //           the caller of this ctor has to ensure that a user cert object was inspected and
             //           optionally cloned.
             //
-            internal SslCredKey(byte[]? thumbPrint, int allowedProtocols, bool isServerMode, EncryptionPolicy encryptionPolicy)
+            internal SslCredKey(
+                byte[]? thumbPrint,
+                int allowedProtocols,
+                bool isServerMode,
+                EncryptionPolicy encryptionPolicy,
+                bool sendTrustList,
+                bool checkRevocation)
             {
                 _thumbPrint = thumbPrint ?? Array.Empty<byte>();
                 _allowedProtocols = allowedProtocols;
                 _encryptionPolicy = encryptionPolicy;
                 _isServerMode = isServerMode;
+                _checkRevocation = checkRevocation;
+                _sendTrustList = sendTrustList;
             }
 
             public override int GetHashCode()
@@ -65,46 +76,28 @@ namespace System.Net.Security
                 hashCode ^= _allowedProtocols;
                 hashCode ^= (int)_encryptionPolicy;
                 hashCode ^= _isServerMode ? 0x10000 : 0x20000;
+                hashCode ^= _sendTrustList ? 0x40000 : 0x80000;
+                hashCode ^= _checkRevocation ? 0x100000 : 0x200000;
 
                 return hashCode;
             }
 
-            public override bool Equals([NotNullWhen(true)] object? obj) => (obj is SslCredKey && Equals((SslCredKey)obj));
+            public override bool Equals([NotNullWhen(true)] object? obj) =>
+                obj is SslCredKey other && Equals(other);
 
             public bool Equals(SslCredKey other)
             {
                 byte[] thumbPrint = _thumbPrint;
                 byte[] otherThumbPrint = other._thumbPrint;
 
-                if (thumbPrint.Length != otherThumbPrint.Length)
-                {
-                    return false;
-                }
-
-                if (_encryptionPolicy != other._encryptionPolicy)
-                {
-                    return false;
-                }
-
-                if (_allowedProtocols != other._allowedProtocols)
-                {
-                    return false;
-                }
-
-                if (_isServerMode != other._isServerMode)
-                {
-                    return false;
-                }
-
-                for (int i = 0; i < thumbPrint.Length; ++i)
-                {
-                    if (thumbPrint[i] != otherThumbPrint[i])
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
+                return
+                    thumbPrint.Length == otherThumbPrint.Length &&
+                    _encryptionPolicy == other._encryptionPolicy &&
+                    _allowedProtocols == other._allowedProtocols &&
+                    _isServerMode == other._isServerMode &&
+                    _sendTrustList == other._sendTrustList &&
+                    _checkRevocation == other._checkRevocation &&
+                    thumbPrint.AsSpan().SequenceEqual(otherThumbPrint);
             }
         }
 
@@ -114,7 +107,13 @@ namespace System.Net.Security
         // ATTN: The returned handle can be invalid, the callers of InitializeSecurityContext and AcceptSecurityContext
         // must be prepared to execute a back-out code if the call fails.
         //
-        internal static SafeFreeCredentials? TryCachedCredential(byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy)
+        internal static SafeFreeCredentials? TryCachedCredential(
+            byte[]? thumbPrint,
+            SslProtocols sslProtocols,
+            bool isServer,
+            EncryptionPolicy encryptionPolicy,
+            bool checkRevocation,
+            bool sendTrustList = false)
         {
             if (s_cachedCreds.IsEmpty)
             {
@@ -122,13 +121,13 @@ namespace System.Net.Security
                 return null;
             }
 
-            var key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy);
+            var key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy, sendTrustList, checkRevocation);
 
             //SafeCredentialReference? cached;
             SafeFreeCredentials? credentials = GetCachedCredential(key);
-            if (credentials == null || credentials.IsClosed || credentials.IsInvalid)
+            if (credentials == null || credentials.IsClosed || credentials.IsInvalid || credentials.Expiry < DateTime.UtcNow)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Not found or invalid, Current Cache Coun = {s_cachedCreds.Count}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Not found or invalid, Current Cache Count = {s_cachedCreds.Count}");
                 return null;
             }
 
@@ -147,7 +146,14 @@ namespace System.Net.Security
         //
         // ATTN: The thumbPrint must be from inspected and possibly cloned user Cert object or we get a security hole in SslCredKey ctor.
         //
-        internal static void CacheCredential(SafeFreeCredentials creds, byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy)
+        internal static void CacheCredential(
+            SafeFreeCredentials creds,
+            byte[]? thumbPrint,
+            SslProtocols sslProtocols,
+            bool isServer,
+            EncryptionPolicy encryptionPolicy,
+            bool checkRevocation,
+            bool sendTrustList = false)
         {
             Debug.Assert(creds != null, "creds == null");
 
@@ -157,16 +163,17 @@ namespace System.Net.Security
                 return;
             }
 
-            SslCredKey key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy);
+            SslCredKey key = new SslCredKey(thumbPrint, (int)sslProtocols, isServer, encryptionPolicy, sendTrustList, checkRevocation);
 
             SafeFreeCredentials? credentials = GetCachedCredential(key);
 
-            if (credentials == null || credentials.IsClosed || credentials.IsInvalid)
+            DateTime utcNow = DateTime.UtcNow;
+            if (credentials == null || credentials.IsClosed || credentials.IsInvalid || credentials.Expiry < utcNow)
             {
                 lock (s_cachedCreds)
                 {
                     credentials = GetCachedCredential(key);
-                    if (credentials == null || credentials.IsClosed || credentials.IsInvalid)
+                    if (credentials == null || credentials.IsClosed || credentials.IsInvalid || credentials.Expiry < utcNow)
                     {
                         SafeCredentialReference? cached = SafeCredentialReference.CreateReference(creds);
 
@@ -212,8 +219,8 @@ namespace System.Net.Security
 
                     for (int i = 0; i < toRemoveAttempt.Length; ++i)
                     {
-                        SafeCredentialReference? cahced = toRemoveAttempt[i].Value;
-                        SafeFreeCredentials? creds = cahced.Target;
+                        SafeCredentialReference? cached = toRemoveAttempt[i].Value;
+                        SafeFreeCredentials? creds = cached.Target;
 
                         if (creds == null)
                         {
@@ -221,11 +228,11 @@ namespace System.Net.Security
                             continue;
                         }
 
-                        cahced.Dispose();
-                        cahced = SafeCredentialReference.CreateReference(creds);
-                        if (cahced != null)
+                        cached.Dispose();
+                        cached = SafeCredentialReference.CreateReference(creds);
+                        if (cached != null)
                         {
-                            s_cachedCreds[toRemoveAttempt[i].Key] = cahced;
+                            s_cachedCreds[toRemoveAttempt[i].Key] = cached;
                         }
                         else
                         {

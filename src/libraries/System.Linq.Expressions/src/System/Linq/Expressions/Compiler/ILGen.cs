@@ -12,6 +12,10 @@ namespace System.Linq.Expressions.Compiler
 {
     internal static class ILGen
     {
+        private static readonly MethodInfo s_nullableHasValueGetter = typeof(Nullable<>).GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public)!;
+        private static readonly MethodInfo s_nullableValueGetter = typeof(Nullable<>).GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public)!;
+        private static readonly MethodInfo s_nullableGetValueOrDefault = typeof(Nullable<>).GetMethod("GetValueOrDefault", Type.EmptyTypes)!;
+
         internal static void Emit(this ILGenerator il, OpCode opcode, MethodBase methodBase)
         {
             Debug.Assert(methodBase is MethodInfo || methodBase is ConstructorInfo);
@@ -485,7 +489,7 @@ namespace System.Linq.Expressions.Compiler
 
                 if (TryEmitILConstant(il, value, nonNullType))
                 {
-                    il.Emit(OpCodes.Newobj, TypeUtils.GetNullableConstructor(type, nonNullType));
+                    il.Emit(OpCodes.Newobj, TypeUtils.GetNullableConstructor(type));
                     return true;
                 }
 
@@ -669,11 +673,6 @@ namespace System.Linq.Expressions.Compiler
                     }
                     else
                     {
-                        if (tf == TypeCode.Byte)
-                        {
-                            return;
-                        }
-
                         convCode = OpCodes.Conv_I1;
                     }
 
@@ -685,11 +684,6 @@ namespace System.Linq.Expressions.Compiler
                     }
                     else
                     {
-                        if (tf == TypeCode.SByte)
-                        {
-                            return;
-                        }
-
                         convCode = OpCodes.Conv_U1;
                     }
 
@@ -700,14 +694,6 @@ namespace System.Linq.Expressions.Compiler
                         case TypeCode.SByte:
                         case TypeCode.Byte:
                             return;
-                        case TypeCode.Char:
-                        case TypeCode.UInt16:
-                            if (!isChecked)
-                            {
-                                return;
-                            }
-
-                            break;
                     }
 
                     convCode = isChecked
@@ -722,14 +708,6 @@ namespace System.Linq.Expressions.Compiler
                         case TypeCode.Char:
                         case TypeCode.UInt16:
                             return;
-                        case TypeCode.SByte:
-                        case TypeCode.Int16:
-                            if (!isChecked)
-                            {
-                                return;
-                            }
-
-                            break;
                     }
 
                     convCode = isChecked
@@ -826,7 +804,7 @@ namespace System.Linq.Expressions.Compiler
             Type nnTypeTo = typeTo.GetNonNullableType();
             il.EmitConvertToType(nnTypeFrom, nnTypeTo, isChecked, locals);
             // construct result type
-            ConstructorInfo ci = TypeUtils.GetNullableConstructor(typeTo, nnTypeTo);
+            ConstructorInfo ci = TypeUtils.GetNullableConstructor(typeTo);
             il.Emit(OpCodes.Newobj, ci);
             labEnd = il.DefineLabel();
             il.Emit(OpCodes.Br_S, labEnd);
@@ -846,7 +824,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(typeTo.IsNullableType());
             Type nnTypeTo = typeTo.GetNonNullableType();
             il.EmitConvertToType(typeFrom, nnTypeTo, isChecked, locals);
-            ConstructorInfo ci = TypeUtils.GetNullableConstructor(typeTo, nnTypeTo);
+            ConstructorInfo ci = TypeUtils.GetNullableConstructor(typeTo);
             il.Emit(OpCodes.Newobj, ci);
         }
 
@@ -898,38 +876,29 @@ namespace System.Linq.Expressions.Compiler
                 il.EmitNonNullableToNullableConversion(typeFrom, typeTo, isChecked, locals);
         }
 
-        [DynamicDependency("get_HasValue", typeof(Nullable<>))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The Nullable<T> method will be preserved by the DynamicDependency.")]
         internal static void EmitHasValue(this ILGenerator il, Type nullableType)
         {
             Debug.Assert(nullableType.IsNullableType());
 
-            MethodInfo mi = nullableType.GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public)!;
+            MethodInfo mi = (MethodInfo)nullableType.GetMemberWithSameMetadataDefinitionAs(s_nullableHasValueGetter);
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
 
-        [DynamicDependency("get_Value", typeof(Nullable<>))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The Nullable<T> method will be preserved by the DynamicDependency.")]
         internal static void EmitGetValue(this ILGenerator il, Type nullableType)
         {
             Debug.Assert(nullableType.IsNullableType());
 
-            MethodInfo mi = nullableType.GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public)!;
+            MethodInfo mi = (MethodInfo)nullableType.GetMemberWithSameMetadataDefinitionAs(s_nullableValueGetter);
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
 
-        [DynamicDependency("GetValueOrDefault()", typeof(Nullable<>))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The Nullable<T> method will be preserved by the DynamicDependency.")]
         internal static void EmitGetValueOrDefault(this ILGenerator il, Type nullableType)
         {
             Debug.Assert(nullableType.IsNullableType());
 
-            MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", Type.EmptyTypes)!;
+            MethodInfo mi = (MethodInfo)nullableType.GetMemberWithSameMetadataDefinitionAs(s_nullableGetValueOrDefault);
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }

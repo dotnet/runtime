@@ -1,24 +1,34 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Globalization;
+
 namespace System.Text.RegularExpressions
 {
     internal sealed class CompiledRegexRunner : RegexRunner
     {
-        private readonly Action<RegexRunner> _goMethod;
-        private readonly Func<RegexRunner, bool> _findFirstCharMethod;
+        private readonly ScanDelegate _scanMethod;
 
-        public CompiledRegexRunner(Action<RegexRunner> go, Func<RegexRunner, bool> findFirstChar, int trackCount)
+        private readonly IndexOfAnyValues<char>[]? _indexOfAnyValues;
+
+        /// <summary>This field will only be set if the pattern contains backreferences and has RegexOptions.IgnoreCase</summary>
+        private readonly CultureInfo? _culture;
+
+#pragma warning disable CA1823, CS0169, IDE0044 // Used via reflection to cache the Case behavior if needed.
+        private RegexCaseBehavior _caseBehavior;
+#pragma warning restore CA1823, CS0169, IDE0044
+
+        internal delegate void ScanDelegate(RegexRunner runner, ReadOnlySpan<char> text);
+
+        public CompiledRegexRunner(ScanDelegate scan, IndexOfAnyValues<char>[]? indexOfAnyValues, CultureInfo? culture)
         {
-            _goMethod = go;
-            _findFirstCharMethod = findFirstChar;
-            runtrackcount = trackCount;
+            _scanMethod = scan;
+            _indexOfAnyValues = indexOfAnyValues;
+            _culture = culture;
         }
 
-        protected override void Go() => _goMethod(this);
-
-        protected override bool FindFirstChar() => _findFirstCharMethod(this);
-
-        protected override void InitTrackCount() { }
+        protected internal override void Scan(ReadOnlySpan<char> text)
+            => _scanMethod(this, text);
     }
 }

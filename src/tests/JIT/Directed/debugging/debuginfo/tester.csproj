@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible, NativeAotIncompatible, CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- These expectedly interfere with debug info -->
+    <CLRTestEnvironmentVariable Include="DOTNET_JitNoForwardSub" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitEnableTailMerge" Value="0" />
+
+    <ProjectReference Include="tests_d.ilproj" Aliases="tests_d" />
+    <ProjectReference Include="tests_r.ilproj" Aliases="tests_r" />
+    <ProjectReference Include="attribute.csproj" />
+    <ProjectReference Include="../../../../tracing/eventpipe/common/common.csproj" />
+    <ProjectReference Include="../../../../tracing/eventpipe/common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

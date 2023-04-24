@@ -13,7 +13,7 @@ namespace System.Composition.TypedParts
 {
     internal sealed class TypedPartExportDescriptorProvider : ExportDescriptorProvider
     {
-        private readonly IDictionary<CompositionContract, ICollection<DiscoveredExport>> _discoveredParts = new Dictionary<CompositionContract, ICollection<DiscoveredExport>>();
+        private readonly Dictionary<CompositionContract, ICollection<DiscoveredExport>> _discoveredParts = new Dictionary<CompositionContract, ICollection<DiscoveredExport>>();
 
         public TypedPartExportDescriptorProvider(IEnumerable<Type> types, AttributedModelProvider attributeContext)
         {

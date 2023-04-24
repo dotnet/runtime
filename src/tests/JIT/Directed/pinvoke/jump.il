@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -10,7 +11,7 @@
 .assembly jump { }
 .namespace JitTest
 {
-  .class private sequential ansi sealed beforefieldinit SYSTEM_INFO
+  .class public sequential ansi sealed beforefieldinit SYSTEM_INFO
          extends [mscorlib]System.ValueType
   {
     .field private unsigned int32 dwOemId
@@ -34,9 +35,11 @@
     	call  void [System.Console]System.Console::WriteLine(string)
     	jmp  void JitTest.SYSTEM_INFO::GetSystemInfo(valuetype JitTest.SYSTEM_INFO& si)
     }
-    .method public hidebysig static int32 
-            Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       83 (0x53)
       .maxstack  3

@@ -41,7 +41,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal void GetDataSource(OleDbConnectionString constr, ref DataSourceWrapper datasrcWrapper)
+        internal unsafe void GetDataSource(OleDbConnectionString constr, ref DataSourceWrapper datasrcWrapper)
         {
             OleDbHResult hr;
             UnsafeNativeMethods.IDataInitializeGetDataSource GetDataSource = DangerousIDataInitializeGetDataSource!;
@@ -57,7 +57,31 @@ namespace System.Data.OleDb
                 // base.handle is the 'this' pointer for making the COM call to GetDataSource
                 // the datasrcWrapper will store the IID_IDBInitialize pointer
                 // call IDataInitiailze::GetDataSource via the delegate
-                hr = GetDataSource(base.handle, IntPtr.Zero, ODB.CLSCTX_ALL, connectionString, ref ODB.IID_IDBInitialize, ref datasrcWrapper);
+                fixed (char* connectionStringPtr = connectionString)
+                fixed (Guid* riid = &ODB.IID_IDBInitialize)
+                {
+                    bool addRefd = false;
+                    DataSourceWrapper newWrapper = new DataSourceWrapper();
+                    datasrcWrapper.DangerousAddRef(ref addRefd);
+                    IntPtr originalHandle = datasrcWrapper.DangerousGetHandle();
+                    IntPtr handle = originalHandle;
+                    try
+                    {
+                        hr = GetDataSource(base.handle, IntPtr.Zero, ODB.CLSCTX_ALL, connectionStringPtr, riid, &handle);
+                    }
+                    finally
+                    {
+                        if (addRefd)
+                        {
+                            datasrcWrapper.DangerousRelease();
+                        }
+                        if (handle != originalHandle)
+                        {
+                            Marshal.InitHandle(newWrapper, handle);
+                            datasrcWrapper = newWrapper;
+                        }
+                    }
+                }
             }
             finally
             {
@@ -72,7 +96,7 @@ namespace System.Data.OleDb
                 {
                     throw ODB.ProviderUnavailable(constr.Provider, null);
                 }
-                Exception? e = OleDbConnection.ProcessResults(hr, null, null);
+                Exception? e = OleDbConnection.ProcessResults(hr, null);
                 Debug.Assert(null != e, "CreateProviderError");
                 throw e;
             }
@@ -92,11 +116,11 @@ namespace System.Data.OleDb
         // we expect to store IDBInitialize instance pointer in base.handle
 
         // construct a DataSourceWrapper and used as a ref parameter to GetDataSource
-        internal DataSourceWrapper() : base()
+        public DataSourceWrapper() : base()
         {
         }
 
-        internal OleDbHResult InitializeAndCreateSession(OleDbConnectionString constr, ref SessionWrapper sessionWrapper)
+        internal unsafe OleDbHResult InitializeAndCreateSession(OleDbConnectionString constr, ref SessionWrapper sessionWrapper)
         {
             OleDbHResult hr;
             bool mustRelease = false;
@@ -147,7 +171,10 @@ namespace System.Data.OleDb
                 if ((0 <= hr) || (OleDbHResult.DB_E_ALREADYINITIALIZED == hr))
                 {
                     // call IUnknown::QueryInterface via the delegate
-                    hr = (OleDbHResult)QueryInterface(base.handle, ref ODB.IID_IDBCreateSession, ref idbCreateSession);
+                    fixed (Guid* riid = &ODB.IID_IDBCreateSession)
+                    {
+                        hr = (OleDbHResult)QueryInterface(base.handle, riid, &idbCreateSession);
+                    }
                     if ((0 <= hr) && (IntPtr.Zero != idbCreateSession))
                     {
                         // native COM rules are the QI result is the 'this' pointer
@@ -170,7 +197,30 @@ namespace System.Data.OleDb
                         if (null != constr.DangerousIDBCreateCommandCreateCommand)
                         {
                             // call IDBCreateSession::CreateSession via the delegate directly for IDBCreateCommand
-                            hr = CreateSession(idbCreateSession, IntPtr.Zero, ref ODB.IID_IDBCreateCommand, ref sessionWrapper);
+                            fixed (Guid* riid = &ODB.IID_IDBCreateCommand)
+                            {
+                                bool addRefd = false;
+                                SessionWrapper newWrapper = new SessionWrapper();
+                                sessionWrapper.DangerousAddRef(ref addRefd);
+                                IntPtr originalHandle = sessionWrapper.DangerousGetHandle();
+                                IntPtr handle = originalHandle;
+                                try
+                                {
+                                    hr = CreateSession(idbCreateSession, IntPtr.Zero, riid, &handle);
+                                }
+                                finally
+                                {
+                                    if (addRefd)
+                                    {
+                                        sessionWrapper.DangerousRelease();
+                                    }
+                                    if (handle != originalHandle)
+                                    {
+                                        Marshal.InitHandle(newWrapper, handle);
+                                        sessionWrapper = newWrapper;
+                                    }
+                                }
+                            }
                             if ((0 <= hr) && !sessionWrapper.IsInvalid)
                             {
                                 // double check the cached delegate is correct
@@ -180,7 +230,30 @@ namespace System.Data.OleDb
                         else
                         {
                             // otherwise ask for IUnknown (it may be first time usage or IDBCreateCommand not supported)
-                            hr = CreateSession(idbCreateSession, IntPtr.Zero, ref ODB.IID_IUnknown, ref sessionWrapper);
+                            fixed (Guid* riid = &ODB.IID_IUnknown)
+                            {
+                                bool addRefd = false;
+                                SessionWrapper newWrapper = new SessionWrapper();
+                                sessionWrapper.DangerousAddRef(ref addRefd);
+                                IntPtr originalHandle = sessionWrapper.DangerousGetHandle();
+                                IntPtr handle = originalHandle;
+                                try
+                                {
+                                    hr = CreateSession(idbCreateSession, IntPtr.Zero, riid, &handle);
+                                }
+                                finally
+                                {
+                                    if (addRefd)
+                                    {
+                                        sessionWrapper.DangerousRelease();
+                                    }
+                                    if (handle != originalHandle)
+                                    {
+                                        Marshal.InitHandle(newWrapper, handle);
+                                        sessionWrapper = newWrapper;
+                                    }
+                                }
+                            }
                             if ((0 <= hr) && !sessionWrapper.IsInvalid)
                             {
                                 // and check support for IDBCreateCommand and create delegate for CreateCommand
@@ -206,11 +279,11 @@ namespace System.Data.OleDb
             return hr;
         }
 
-        internal IDBInfoWrapper IDBInfo(OleDbConnectionInternal connection)
+        internal IDBInfoWrapper IDBInfo()
         {
             return new IDBInfoWrapper(ComWrapper());
         }
-        internal IDBPropertiesWrapper IDBProperties(OleDbConnectionInternal connection)
+        internal IDBPropertiesWrapper IDBProperties()
         {
             return new IDBPropertiesWrapper(ComWrapper());
         }
@@ -229,16 +302,16 @@ namespace System.Data.OleDb
         // since we maintain an AddRef on IDBCreateCommand it is safe to use the delegate without rechecking its function pointer
         private UnsafeNativeMethods.IDBCreateCommandCreateCommand? DangerousIDBCreateCommandCreateCommand;
 
-        internal SessionWrapper() : base()
+        public SessionWrapper() : base()
         {
         }
 
         // if OleDbConnectionString.DangerousIDBCreateCommandCreateCommand does not exist
         // this method will be called to query for IDBCreateCommand (and cache that interface pointer)
         // or it will be known that IDBCreateCommand is not supported
-        internal void QueryInterfaceIDBCreateCommand(OleDbConnectionString constr)
+        internal unsafe void QueryInterfaceIDBCreateCommand(OleDbConnectionString constr)
         {
-            // DangerousAddRef/DangerousRelease are not neccessary here in the current implementation
+            // DangerousAddRef/DangerousRelease are not necessary here in the current implementation
             // only used from within OleDbConnectionInternal.ctor->DataSourceWrapper.InitializeAndCreateSession
 
             // caching the fact if we have queried for IDBCreateCommand or not
@@ -264,7 +337,11 @@ namespace System.Data.OleDb
                     IntPtr method = Marshal.ReadIntPtr(vtable, 0);
                     UnsafeNativeMethods.IUnknownQueryInterface QueryInterface = (UnsafeNativeMethods.IUnknownQueryInterface)Marshal.GetDelegateForFunctionPointer(method, typeof(UnsafeNativeMethods.IUnknownQueryInterface));
 
-                    int hresult = QueryInterface(base.handle, ref ODB.IID_IDBCreateCommand, ref idbCreateCommand);
+                    int hresult;
+                    fixed (Guid* riid = &ODB.IID_IDBCreateCommand)
+                    {
+                        hresult = QueryInterface(base.handle, riid, &idbCreateCommand);
+                    }
                     if ((0 <= hresult) && (IntPtr.Zero != idbCreateCommand))
                     {
                         vtable = Marshal.ReadIntPtr(idbCreateCommand, 0);
@@ -292,7 +369,7 @@ namespace System.Data.OleDb
 
         internal void VerifyIDBCreateCommand(OleDbConnectionString constr)
         {
-            // DangerousAddRef/DangerousRelease are not neccessary here in the current implementation
+            // DangerousAddRef/DangerousRelease are not necessary here in the current implementation
             // only used from within OleDbConnectionInternal.ctor->DataSourceWrapper.InitializeAndCreateSession
 
             Debug.Assert(constr.HaveQueriedForCreateCommand, "expected HaveQueriedForCreateCommand");
@@ -319,21 +396,32 @@ namespace System.Data.OleDb
             DangerousIDBCreateCommandCreateCommand = CreateCommand;
         }
 
-        internal OleDbHResult CreateCommand(ref object? icommandText)
+        internal unsafe OleDbHResult CreateCommand(ref object? icommandText)
         {
             // if (null == CreateCommand), the IDBCreateCommand isn't supported - aka E_NOINTERFACE
             OleDbHResult hr = OleDbHResult.E_NOINTERFACE;
             UnsafeNativeMethods.IDBCreateCommandCreateCommand? CreateCommand = DangerousIDBCreateCommandCreateCommand;
             if (null != CreateCommand)
             {
+                IntPtr nativeICommandText = IntPtr.Zero;
                 bool mustRelease = false;
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
                     DangerousAddRef(ref mustRelease);
 
-                    // call IDBCreateCommand::CreateCommand via the delegate directly for IDBCreateCommand
-                    hr = CreateCommand(base.handle, IntPtr.Zero, ref ODB.IID_ICommandText, ref icommandText);
+                    if (icommandText is not null)
+                    {
+                        nativeICommandText = Marshal.GetIUnknownForObject(icommandText);
+                    }
+
+                    fixed (Guid* riid = &ODB.IID_ICommandText)
+                    {
+                        // call IDBCreateCommand::CreateCommand via the delegate directly for IDBCreateCommand
+                        hr = CreateCommand(base.handle, IntPtr.Zero, riid, &nativeICommandText);
+                    }
+
+                    icommandText = Marshal.GetObjectForIUnknown(nativeICommandText);
                 }
                 finally
                 {
@@ -341,22 +429,23 @@ namespace System.Data.OleDb
                     {
                         DangerousRelease();
                     }
+                    Marshal.Release(nativeICommandText);
                 }
             }
             return hr;
         }
 
-        internal IDBSchemaRowsetWrapper IDBSchemaRowset(OleDbConnectionInternal connection)
+        internal IDBSchemaRowsetWrapper IDBSchemaRowset()
         {
             return new IDBSchemaRowsetWrapper(ComWrapper());
         }
 
-        internal IOpenRowsetWrapper IOpenRowset(OleDbConnectionInternal connection)
+        internal IOpenRowsetWrapper IOpenRowset()
         {
             return new IOpenRowsetWrapper(ComWrapper());
         }
 
-        internal ITransactionJoinWrapper ITransactionJoin(OleDbConnectionInternal connection)
+        internal ITransactionJoinWrapper ITransactionJoin()
         {
             return new ITransactionJoinWrapper(ComWrapper());
         }

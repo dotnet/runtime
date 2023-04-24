@@ -1,15 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="System.CodeDom.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
-    <ProjectReference Include="..\..\System.Security.Permissions\ref\System.Security.Permissions.csproj" />
+    <Compile Include="System.CodeDom.cs" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'" />
+    <Compile Include="System.CodeDom.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
 </Project>

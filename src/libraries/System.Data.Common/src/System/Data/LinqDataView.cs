@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -62,7 +63,7 @@ namespace System.Data
                 comparison,
                 DataViewRowState.CurrentRows)
         {
-            this.sortExpressionBuilder = (sortExpressionBuilder == null) ? this.sortExpressionBuilder : sortExpressionBuilder;
+            this.sortExpressionBuilder = sortExpressionBuilder ?? this.sortExpressionBuilder;
             this.comparerKeyRow = comparerKeyRow;
         }
 
@@ -82,7 +83,7 @@ namespace System.Data
                     return null;
                 }
             }
-
+            [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (value == null)
@@ -139,7 +140,7 @@ namespace System.Data
         /// <summary>
         /// Since LinkDataView does not support multiple selectors/comparers, it does not make sense for
         /// them to Find using multiple keys.
-        /// This overriden method prevents users calling multi-key find on dataview.
+        /// This overridden method prevents users calling multi-key find on dataview.
         /// </summary>
         internal override int FindByKey(object?[] key)
         {
@@ -179,7 +180,7 @@ namespace System.Data
         /// <summary>
         /// Searches the index and finds rows where the sort-key matches the input key.
         /// Since LinkDataView does not support multiple selectors/comparers, it does not make sense for
-        /// them to Find using multiple keys. This overriden method prevents users calling multi-key find on dataview.
+        /// them to Find using multiple keys. This overridden method prevents users calling multi-key find on dataview.
         /// </summary>
         internal override DataRowView[] FindRowsByKey(object?[] key)
         {
@@ -230,8 +231,6 @@ namespace System.Data
         #endregion
 
         #region IBindingList
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         /// <summary>
         /// Clears both expression-based and DataView's string-based sorting.
         /// </summary>
@@ -245,7 +244,7 @@ namespace System.Data
         /// Overrides IBindingList's SortProperty so that it returns null if expression based sort
         /// is used in the LinkDataView, otherwise it defers the result to DataView
         /// </summary>
-        PropertyDescriptor IBindingList.SortProperty
+        PropertyDescriptor? IBindingList.SortProperty
         {
             get
             {
@@ -282,7 +281,6 @@ namespace System.Data
                 return !(base.SortComparison == null && base.Sort.Length == 0);
             }
         }
-#nullable enable
         #endregion
     }
 }

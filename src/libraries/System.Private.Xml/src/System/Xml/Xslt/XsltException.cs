@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Resources;
@@ -23,6 +24,8 @@ namespace System.Xml.Xsl
         // message == null for created V2 exceptions; the exception message is stored in Exception._message
         private readonly string? _message;
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected XsltException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             _res = (string)info.GetValue("res", typeof(string))!;
@@ -53,6 +56,8 @@ namespace System.Xml.Xsl
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -123,17 +128,17 @@ namespace System.Xml.Xsl
                 string message = FormatMessage(res, args);
                 if (res != SR.Xslt_CompileError && lineNumber != 0)
                 {
-                    message += " " + FormatMessage(SR.Xml_ErrorFilePosition, sourceUri, lineNumber.ToString(CultureInfo.InvariantCulture), linePosition.ToString(CultureInfo.InvariantCulture));
+                    message += $" {FormatMessage(SR.Xml_ErrorFilePosition, sourceUri, lineNumber.ToString(CultureInfo.InvariantCulture), linePosition.ToString(CultureInfo.InvariantCulture))}";
                 }
                 return message;
             }
             catch (MissingManifestResourceException)
             {
-                return "UNKNOWN(" + res + ")";
+                return $"UNKNOWN({res})";
             }
         }
 
-        [return: NotNullIfNotNull("key")]
+        [return: NotNullIfNotNull(nameof(key))]
         private static string? FormatMessage(string? key, params string?[]? args)
         {
             string? message = key;
@@ -149,10 +154,14 @@ namespace System.Xml.Xsl
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class XsltCompileException : XsltException
     {
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected XsltCompileException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 
 namespace System.Diagnostics.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public partial class ProcessThreadTests : ProcessTestBase
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -47,6 +46,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void TestThreadCount()
         {
             int numOfThreads = 10;
@@ -162,6 +162,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void TestStartAddressProperty()
         {
             using (Process p = Process.GetCurrentProcess())

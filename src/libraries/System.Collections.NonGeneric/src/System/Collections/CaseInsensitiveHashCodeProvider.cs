@@ -9,7 +9,7 @@ namespace System.Collections
     /// Designed to support hashtables which require case-insensitive behavior while still maintaining case,
     /// this provides an efficient mechanism for getting the hashcode of the string ignoring case.
     /// </summary>
-    [Obsolete("Please use StringComparer instead.")]
+    [Obsolete("CaseInsensitiveHashCodeProvider has been deprecated. Use StringComparer instead.")]
     public class CaseInsensitiveHashCodeProvider : IHashCodeProvider
     {
         private static volatile CaseInsensitiveHashCodeProvider? s_invariantCaseInsensitiveHashCodeProvider;
@@ -22,24 +22,18 @@ namespace System.Collections
 
         public CaseInsensitiveHashCodeProvider(CultureInfo culture)
         {
-            if (culture == null)
-            {
-                throw new ArgumentNullException(nameof(culture));
-            }
+            ArgumentNullException.ThrowIfNull(culture);
+
             _compareInfo = culture.CompareInfo;
         }
 
         public static CaseInsensitiveHashCodeProvider Default => new CaseInsensitiveHashCodeProvider();
 
-        public static CaseInsensitiveHashCodeProvider DefaultInvariant => s_invariantCaseInsensitiveHashCodeProvider ??
-            (s_invariantCaseInsensitiveHashCodeProvider = new CaseInsensitiveHashCodeProvider(CultureInfo.InvariantCulture));
+        public static CaseInsensitiveHashCodeProvider DefaultInvariant => s_invariantCaseInsensitiveHashCodeProvider ??= new CaseInsensitiveHashCodeProvider(CultureInfo.InvariantCulture);
 
         public int GetHashCode(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             string? s = obj as string;
             return s != null ?

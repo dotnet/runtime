@@ -1,6 +1,0 @@
-<Project>
-  <PropertyGroup>
-    <MonoAOTCompilerTasksAssemblyPath>$(MSBuildThisFileDirectory)..\tasks\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
-  </PropertyGroup>
-  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
-</Project>

@@ -5,14 +5,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
 namespace System.CodeDom
 #else
 namespace System.Runtime.Serialization
 #endif
 {
     [Flags]
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
     public enum CodeTypeReferenceOptions
 #else
     internal enum CodeTypeReferenceOptions
@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization
         GenericTypeParameter = 0x00000002
     }
 
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
     public class CodeTypeReference : CodeObject
 #else
     internal sealed class CodeTypeReference : CodeObject
@@ -42,10 +42,14 @@ namespace System.Runtime.Serialization
 
         public CodeTypeReference(Type type)
         {
-            if (type == null)
+#if NET5_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(type);
+#else
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
+#endif
 
             if (type.IsArray)
             {
@@ -68,12 +72,12 @@ namespace System.Runtime.Serialization
             Options = codeTypeReferenceOption;
         }
 
-        public CodeTypeReference(string typeName, CodeTypeReferenceOptions codeTypeReferenceOption)
+        public CodeTypeReference(string? typeName, CodeTypeReferenceOptions codeTypeReferenceOption)
         {
             Initialize(typeName, codeTypeReferenceOption);
         }
 
-        public CodeTypeReference(string typeName)
+        public CodeTypeReference(string? typeName)
         {
             Initialize(typeName);
         }
@@ -281,7 +285,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
         public CodeTypeReference(CodeTypeParameter typeParameter) :
             this(typeParameter?.Name)
         {
@@ -325,7 +329,7 @@ namespace System.Runtime.Serialization
 
                 string returnType = _baseType;
                 return _needsFixup && TypeArguments.Count > 0 ?
-                    returnType + '`' + TypeArguments.Count.ToString(CultureInfo.InvariantCulture) :
+                    $"{returnType}`{(uint)TypeArguments.Count}" :
                     returnType;
             }
             set
@@ -346,12 +350,7 @@ namespace System.Runtime.Serialization
                     return ArrayElementType.TypeArguments;
                 }
 
-                if (_typeArguments == null)
-                {
-                    _typeArguments = new CodeTypeReferenceCollection();
-                }
-
-                return _typeArguments;
+                return _typeArguments ??= new CodeTypeReferenceCollection();
             }
         }
 
@@ -365,7 +364,7 @@ namespace System.Runtime.Serialization
         // " [System.Collections.Generic.List[[System.string, mscorlib, Version=2.0.0.0, Culture=neutral,
         //   PublicKeyToken=b77a5c561934e089]], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]"
         //
-        private string RipOffAssemblyInformationFromTypeName(string typeName)
+        private static string RipOffAssemblyInformationFromTypeName(string typeName)
         {
             int start = 0;
             int end = typeName.Length - 1;

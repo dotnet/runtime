@@ -15,7 +15,6 @@
 #include "winbase.h"
 #include "corpriv.h"
 #include "corsym.h"
-#include "ildbsymlib.h"
 
 #include "pedecoder.h"
 #include "stgpool.h"
@@ -49,17 +48,17 @@ STDAPI ReOpenMetaDataWithMemoryEx(
 //
 // Arguments:
 //    pProcess - process that this module lives in
-//    vmDomainFile - CLR cookie for module.
+//    vmDomainAssembly - CLR cookie for module.
 CordbModule::CordbModule(
     CordbProcess *     pProcess,
     VMPTR_Module        vmModule,
-    VMPTR_DomainFile    vmDomainFile)
-: CordbBase(pProcess, vmDomainFile.IsNull() ? VmPtrToCookie(vmModule) : VmPtrToCookie(vmDomainFile), enumCordbModule),
+    VMPTR_DomainAssembly    vmDomainAssembly)
+: CordbBase(pProcess, vmDomainAssembly.IsNull() ? VmPtrToCookie(vmModule) : VmPtrToCookie(vmDomainAssembly), enumCordbModule),
     m_pAssembly(0),
     m_pAppDomain(0),
     m_classes(11),
     m_functions(101),
-    m_vmDomainFile(vmDomainFile),
+    m_vmDomainAssembly(vmDomainAssembly),
     m_vmModule(vmModule),
     m_EnCCount(0),
     m_fForceMetaDataSerialize(FALSE),
@@ -83,13 +82,13 @@ CordbModule::CordbModule(
 
     m_fDynamic  = modInfo.fIsDynamic;
     m_fInMemory = modInfo.fInMemory;
-    m_vmPEFile = modInfo.vmPEFile;
+    m_vmPEFile = modInfo.vmPEAssembly;
 
-    if (!vmDomainFile.IsNull())
+    if (!vmDomainAssembly.IsNull())
     {
-        DomainFileInfo dfInfo;
+        DomainAssemblyInfo dfInfo;
 
-        pProcess->GetDAC()->GetDomainFileData(vmDomainFile, &dfInfo); // throws
+        pProcess->GetDAC()->GetDomainAssemblyData(vmDomainAssembly, &dfInfo); // throws
 
         m_pAppDomain = pProcess->LookupOrCreateAppDomain(dfInfo.vmAppDomain);
         m_pAssembly  = m_pAppDomain->LookupOrCreateAssembly(dfInfo.vmDomainAssembly);
@@ -116,21 +115,21 @@ CordbModule::CordbModule(
 // Callback helper for code:CordbModule::DbgAssertModuleDeleted
 //
 // Arguments
-//    vmDomainFile - domain file in the enumeration
+//    vmDomainAssembly - domain file in the enumeration
 //    pUserData - pointer to the CordbModule that we just got an exit event for.
 //
-void DbgAssertModuleDeletedCallback(VMPTR_DomainFile vmDomainFile, void * pUserData)
+void DbgAssertModuleDeletedCallback(VMPTR_DomainAssembly vmDomainAssembly, void * pUserData)
 {
     CordbModule * pThis = reinterpret_cast<CordbModule *>(pUserData);
     INTERNAL_DAC_CALLBACK(pThis->GetProcess());
 
-    if (!pThis->m_vmDomainFile.IsNull())
+    if (!pThis->m_vmDomainAssembly.IsNull())
     {
-        VMPTR_DomainFile vmDomainFileDeleted = pThis->m_vmDomainFile;
+        VMPTR_DomainAssembly vmDomainAssemblyDeleted = pThis->m_vmDomainAssembly;
 
-        CONSISTENCY_CHECK_MSGF((vmDomainFileDeleted != vmDomainFile),
-            ("A Module Unload event was sent for a module, but it still shows up in the enumeration.\n vmDomainFileDeleted=%p\n",
-            VmPtrToCookie(vmDomainFileDeleted)));
+        CONSISTENCY_CHECK_MSGF((vmDomainAssemblyDeleted != vmDomainAssembly),
+            ("A Module Unload event was sent for a module, but it still shows up in the enumeration.\n vmDomainAssemblyDeleted=%p\n",
+            VmPtrToCookie(vmDomainAssemblyDeleted)));
     }
 }
 
@@ -269,13 +268,13 @@ IDacDbiInterface::SymbolFormat CordbModule::GetInMemorySymbolStream(IStream ** p
 // Accessor for PE file.
 //
 // Returns:
-//    VMPTR_PEFile for this module. Should always be non-null
+//    VMPTR_PEAssembly for this module. Should always be non-null
 //
 // Notes:
 //    A main usage of this is to find the proper internal MetaData importer.
-//    DACized code needs to map from PEFile --> IMDInternalImport.
+//    DACized code needs to map from PEAssembly --> IMDInternalImport.
 //
-VMPTR_PEFile CordbModule::GetPEFile()
+VMPTR_PEAssembly CordbModule::GetPEFile()
 {
     return m_vmPEFile;
 }
@@ -484,7 +483,7 @@ void CordbModule::RefreshMetaData()
 
     // There are several different ways we can get the metadata
     // 1) [Most common] Module is loaded into VM and never changed. The importer
-    //    will be constructed refering to the file on disk. This is a significant
+    //    will be constructed referring to the file on disk. This is a significant
     //    working set win because the VM and debugger share the image. If there is
     //    an error reading by file we can fall back to case #2 for these modules
     // 2) Most modules have a buffer in target memory that represents their
@@ -1257,7 +1256,7 @@ HRESULT CordbModule::GetAssembly(ICorDebugAssembly **ppAssembly)
 
 // Public implementation of ICorDebugModule::GetName,
 // wrapper around code:GetNameWorker (which throws).
-HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)
@@ -1325,7 +1324,7 @@ HRESULT CordbModule::GetName(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_pa
 // Note:
 //    Filename isn't necessarily the same as the module name in the metadata.
 //
-HRESULT CordbModule::GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+HRESULT CordbModule::GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     CONTRACTL
     {
@@ -1500,7 +1499,7 @@ HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
     if (m_fDynamic && !bClassLoadCallbacks)
         return E_INVALIDARG;
 
-    if (m_vmDomainFile.IsNull())
+    if (m_vmDomainAssembly.IsNull())
         return E_UNEXPECTED;
 
     // Send a Set Class Load Flag event to the left side. There is no need to wait for a response, and this can be
@@ -1512,7 +1511,7 @@ HRESULT CordbModule::EnableClassLoadCallbacks(BOOL bClassLoadCallbacks)
                            DB_IPCE_SET_CLASS_LOAD_FLAG,
                            false,
                            (GetAppDomain()->GetADToken()));
-    event.SetClassLoad.vmDomainFile = this->m_vmDomainFile;
+    event.SetClassLoad.vmDomainAssembly = this->m_vmDomainAssembly;
     event.SetClassLoad.flag = (bClassLoadCallbacks == TRUE);
 
     HRESULT hr = pProcess->m_cordb->SendIPCEvent(pProcess, &event,
@@ -1753,7 +1752,7 @@ CordbFunction * CordbModule::LookupOrCreateFunction(mdMethodDef funcMetaDataToke
 
     CordbFunction * pFunction = m_functions.GetBase(funcMetaDataToken);
 
-    // special case non-existance as need to add to the hash table too
+    // special case non-existence as need to add to the hash table too
     if (pFunction == NULL)
     {
         // EnC adds each version to the hash. So if the hash lookup fails,
@@ -1861,7 +1860,7 @@ CordbFunction * CordbModule::CreateFunction(mdMethodDef funcMetaDataToken, SIZE_
 //
 // Arguments:
 //    funcMetaDataToken - the functions methodDef token in this module
-//    enCVerison        - The new version number of this function
+//    enCVersion        - The new version number of this function
 //    ppFunction        - Output param for the new instance - optional
 //
 // Assumptions:
@@ -2042,7 +2041,7 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
         return E_INVALIDARG;
     }
 
-    if (m_vmDomainFile.IsNull() || m_pAppDomain == NULL)
+    if (m_vmDomainAssembly.IsNull() || m_pAppDomain == NULL)
     {
         return E_UNEXPECTED;
     }
@@ -2051,7 +2050,7 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
     *ppClass = NULL;
     EX_TRY
     {
-        TypeRefData inData = {m_vmDomainFile, token};
+        TypeRefData inData = {m_vmDomainAssembly, token};
         TypeRefData outData;
 
         {
@@ -2059,7 +2058,7 @@ HRESULT CordbModule::ResolveTypeRef(mdTypeRef token, CordbClass **ppClass)
             pProcess->GetDAC()->ResolveTypeReference(&inData, &outData);
         }
 
-        CordbModule * pModule = m_pAppDomain->LookupOrCreateModule(outData.vmDomainFile);
+        CordbModule * pModule = m_pAppDomain->LookupOrCreateModule(outData.vmDomainAssembly);
         IfFailThrow(pModule->LookupClassByToken(outData.typeToken, ppClass));
     }
     EX_CATCH_HRESULT(hr);
@@ -2272,7 +2271,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
     FAIL_IF_NEUTERED(this);
     INTERNAL_SYNC_API_ENTRY(this->GetProcess()); //
 
-    if (m_vmDomainFile.IsNull())
+    if (m_vmDomainAssembly.IsNull())
         return E_UNEXPECTED;
 
 #ifdef FEATURE_ENC_SUPPORTED
@@ -2289,7 +2288,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
         DebuggerIPCEvent event;
         GetProcess()->InitIPCEvent(&event, DB_IPCE_APPLY_CHANGES, false, VMPTR_AppDomain::NullPtr());
 
-        event.ApplyChanges.vmDomainFile = this->m_vmDomainFile;
+        event.ApplyChanges.vmDomainAssembly = this->m_vmDomainAssembly;
 
         // Have the left-side create a buffer for us to store the delta into
         ULONG cbSize = cbMetaData+cbIL;
@@ -2355,7 +2354,7 @@ HRESULT CordbModule::ApplyChangesInternal(ULONG  cbMetaData,
                 CordbModule* pModule = NULL;
 
 
-                pModule = pAppDomain->LookupOrCreateModule(retEvent->EnCUpdate.vmDomainFile); // throws
+                pModule = pAppDomain->LookupOrCreateModule(retEvent->EnCUpdate.vmDomainAssembly); // throws
                 _ASSERTE(pModule != NULL);
 
                 // update to the newest version
@@ -2413,7 +2412,7 @@ HRESULT CordbModule::SetJMCStatus(
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
 
-    if (m_vmDomainFile.IsNull())
+    if (m_vmDomainAssembly.IsNull())
         return E_UNEXPECTED;
 
     // @todo -allow the other parameters. These are functions that have default status
@@ -2432,7 +2431,7 @@ HRESULT CordbModule::SetJMCStatus(
     // Tell the LS that this module is/is not user code
     DebuggerIPCEvent event;
     pProcess->InitIPCEvent(&event, DB_IPCE_SET_MODULE_JMC_STATUS, true, this->GetAppDomain()->GetADToken());
-    event.SetJMCFunctionStatus.vmDomainFile = m_vmDomainFile;
+    event.SetJMCFunctionStatus.vmDomainAssembly = m_vmDomainAssembly;
     event.SetJMCFunctionStatus.dwStatus = fIsUserCode;
 
 
@@ -2521,10 +2520,10 @@ CordbAssembly * CordbModule::ResolveAssemblyInternal(mdToken tkAssemblyRef)
 
     CordbAssembly *    pAssembly = NULL;
 
-    if (!m_vmDomainFile.IsNull())
+    if (!m_vmDomainAssembly.IsNull())
     {
         // Get DAC to do the real work to resolve the assembly
-        VMPTR_DomainAssembly vmDomainAssembly = GetProcess()->GetDAC()->ResolveAssembly(m_vmDomainFile, tkAssemblyRef);
+        VMPTR_DomainAssembly vmDomainAssembly = GetProcess()->GetDAC()->ResolveAssembly(m_vmDomainAssembly, tkAssemblyRef);
 
         // now find the ICorDebugAssembly corresponding to it
         if (!vmDomainAssembly.IsNull() && m_pAppDomain != NULL)
@@ -2576,13 +2575,6 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
                                              IID_ISymUnmanagedBinder,
                                              (void**)&pBinder));
 #endif
-        }
-        else if (symFormat == IDacDbiInterface::kSymbolFormatILDB)
-        {
-            // ILDB format - use statically linked-in ildbsymlib
-            IfFailThrow(IldbSymbolsCreateInstance(CLSID_CorSymBinder_SxS,
-                                                IID_ISymUnmanagedBinder,
-                                                (void**)&pBinder));
         }
         else
         {
@@ -2654,7 +2646,7 @@ void CordbModule::SetLoadEventContinueMarker()
 //   The comparison is done via continue counters. The counter of the load
 //   event is cached via code:CordbModule::SetLoadEventContinueMarker.
 //
-//   This state is currently stored on the RS. Alternatively, it could likely be retreived from the LS state as
+//   This state is currently stored on the RS. Alternatively, it could likely be retrieved from the LS state as
 //   well. One disadvantage of the current model is that if we detach during the load-module callback and
 //   then reattach, the RS state is flushed and we lose the fact that we can toggle the jit flags.
 HRESULT CordbModule::EnsureModuleIsInLoadCallback()
@@ -2702,7 +2694,7 @@ HRESULT CordbModule::SetJITCompilerFlags(DWORD dwFlags)
             if (SUCCEEDED(hr))
             {
                 // DD interface will check if it's a valid time to change the flags.
-                hr = pProcess->GetDAC()->SetCompilerFlags(GetRuntimeDomainFile(), fAllowJitOpts, fEnableEnC);
+                hr = pProcess->GetDAC()->SetCompilerFlags(GetRuntimeDomainAssembly(), fAllowJitOpts, fEnableEnC);
             }
         }
     }
@@ -2738,7 +2730,7 @@ HRESULT CordbModule::GetJITCompilerFlags(DWORD *pdwFlags )
         BOOL fEnableEnC;
 
         pProcess->GetDAC()->GetCompilerFlags (
-            GetRuntimeDomainFile(),
+            GetRuntimeDomainAssembly(),
             &fAllowJitOpts,
             &fEnableEnC);
 
@@ -2763,6 +2755,7 @@ HRESULT CordbModule::IsMappedLayout(BOOL *isMapped)
     FAIL_IF_NEUTERED(this);
 
     HRESULT hr = S_OK;
+    *isMapped = FALSE;
     CordbProcess *pProcess = GetProcess();
 
     ATT_REQUIRE_STOPPED_MAY_FAIL(pProcess);
@@ -3265,9 +3258,8 @@ HRESULT CordbILCode::GetLocalVarSig(SigParser *pLocalSigParser,
     // A function will not have a local var sig if it has no locals!
     if (m_localVarSigToken != mdSignatureNil)
     {
-        PCCOR_SIGNATURE localSignature;
-        ULONG size;
-        uint32_t localCount;
+        PCCOR_SIGNATURE localSignature = NULL;
+        ULONG size = 0;
 
         EX_TRY // // @dbgtodo  exceptions  - push this up
         {
@@ -3293,6 +3285,7 @@ HRESULT CordbILCode::GetLocalVarSig(SigParser *pLocalSigParser,
         _ASSERTE(data == IMAGE_CEE_CS_CALLCONV_LOCAL_SIG);
 
         // Snagg the count of locals in the sig.
+        uint32_t localCount;
         IfFailRet(sigParser.GetData(&localCount));
         LOG((LF_CORDB, LL_INFO100000, "CIC::GLVS localCount=0x%x\n", localCount));
         if (pLocalSigParser != NULL)
@@ -3536,7 +3529,7 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
             m_pClauses[i].TryLength = pClauses[i].TryLength;
             m_pClauses[i].HandlerOffset = pClauses[i].HandlerOffset;
             m_pClauses[i].HandlerLength = pClauses[i].HandlerLength;
-            // these two fields are a union in the image, but are seperate in the struct ICorDebug returns
+            // these two fields are a union in the image, but are separate in the struct ICorDebug returns
             m_pClauses[i].ClassToken = isFilter ? 0 : pClauses[i].ClassToken;
             m_pClauses[i].FilterOffset = isFilter ? pClauses[i].FilterOffset : 0;
         }
@@ -3571,7 +3564,7 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
             m_pClauses[i].TryLength = pClauses[i].TryLength;
             m_pClauses[i].HandlerOffset = pClauses[i].HandlerOffset;
             m_pClauses[i].HandlerLength = pClauses[i].HandlerLength;
-            // these two fields are a union in the image, but are seperate in the struct ICorDebug returns
+            // these two fields are a union in the image, but are separate in the struct ICorDebug returns
             m_pClauses[i].ClassToken = isFilter ? 0 : pClauses[i].ClassToken;
             m_pClauses[i].FilterOffset = isFilter ? pClauses[i].FilterOffset : 0;
         }
@@ -4514,6 +4507,8 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
         return 2;
 #elif defined(TARGET_ARM64)
     return MAX_INSTRUCTION_LENGTH;
+#elif defined(TARGET_LOONGARCH64)
+    return MAX_INSTRUCTION_LENGTH;
 #elif defined(TARGET_X86)
     if (count < 2)
         return -1;
@@ -4877,6 +4872,8 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
 
     _ASSERTE(!"Invalid opcode!");
     return -1;
+#elif defined(TARGET_RISCV64)
+    return MAX_INSTRUCTION_LENGTH;
 #else
 #error Platform not implemented
 #endif
@@ -5109,11 +5106,11 @@ HRESULT CordbNativeCode::GetCallSignature(ULONG32 ILoffset, mdToken *pClass, mdT
     CordbILCode *pCode = this->m_pFunction->GetILCode();
     BYTE buffer[3];
     ULONG32 fetched = 0;
-    HRESULT hr = pCode->GetCode(ILoffset, ILoffset+_countof(buffer), _countof(buffer), buffer, &fetched);
+    HRESULT hr = pCode->GetCode(ILoffset, ILoffset+ARRAY_SIZE(buffer), ARRAY_SIZE(buffer), buffer, &fetched);
 
     if (FAILED(hr))
         return hr;
-    else if (fetched != _countof(buffer))
+    else if (fetched != ARRAY_SIZE(buffer))
         return CORDBG_E_INVALID_OPCODE;
 
     // tail.    - fe 14 (ECMA III.2.4)
@@ -5172,24 +5169,24 @@ HRESULT CordbNativeCode::GetReturnValueLiveOffsetImpl(Instantiation *currentInst
                 BYTE nativeBuffer[8];
 
                 ULONG32 fetched = 0;
-                IfFailRet(GetCode(pMap->nativeStartOffset, pMap->nativeStartOffset+_countof(nativeBuffer), _countof(nativeBuffer), nativeBuffer, &fetched));
+                IfFailRet(GetCode(pMap->nativeStartOffset, pMap->nativeStartOffset+ARRAY_SIZE(nativeBuffer), ARRAY_SIZE(nativeBuffer), nativeBuffer, &fetched));
 
                 int skipBytes = 0;
 
-#if defined(TARGET_X86) && defined(FEATURE_CORESYSTEM)
-                // Skip nop sleds on x86 coresystem.  The JIT adds these instructions as a security measure,
+#if defined(PSEUDORANDOM_NOP_INSERTION)
+                // Skip nop sleds the JIT adds. These instructions as a security measure,
                 // and incorrectly reports to us the wrong offset of the call instruction.
                 const BYTE nop_opcode = 0x90;
                 while (fetched && nativeBuffer[0] == nop_opcode)
                 {
                     skipBytes++;
 
-                    for (int j = 1; j < _countof(nativeBuffer) && nativeBuffer[j] == nop_opcode; ++j)
+                    for (int j = 1; j < ARRAY_SIZE(nativeBuffer) && nativeBuffer[j] == nop_opcode; ++j)
                         skipBytes++;
 
                     // We must have at least one skip byte since the outer while ensures it.  Thus we always need to reread
                     // the buffer at the end of this loop.
-                    IfFailRet(GetCode(pMap->nativeStartOffset+skipBytes, pMap->nativeStartOffset+skipBytes+_countof(nativeBuffer), _countof(nativeBuffer), nativeBuffer, &fetched));
+                    IfFailRet(GetCode(pMap->nativeStartOffset+skipBytes, pMap->nativeStartOffset+skipBytes+ARRAY_SIZE(nativeBuffer), ARRAY_SIZE(nativeBuffer), nativeBuffer, &fetched));
                 }
 #endif
 

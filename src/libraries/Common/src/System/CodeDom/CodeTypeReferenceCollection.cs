@@ -3,13 +3,13 @@
 
 using System.Collections;
 
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
 namespace System.CodeDom
 #else
 namespace System.Runtime.Serialization
 #endif
 {
-#if !FEATURE_SERIALIZATION
+#if CODEDOM
     public class CodeTypeReferenceCollection : CollectionBase
 #else
     internal sealed class CodeTypeReferenceCollection : CollectionBase
@@ -41,10 +41,14 @@ namespace System.Runtime.Serialization
 
         public void AddRange(CodeTypeReference[] value)
         {
-            if (value == null)
+#if NET5_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(value);
+#else
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
+#endif
 
             for (int i = 0; i < value.Length; i++)
             {
@@ -54,10 +58,14 @@ namespace System.Runtime.Serialization
 
         public void AddRange(CodeTypeReferenceCollection value)
         {
-            if (value == null)
+#if NET5_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(value);
+#else
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
+#endif
 
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i++)

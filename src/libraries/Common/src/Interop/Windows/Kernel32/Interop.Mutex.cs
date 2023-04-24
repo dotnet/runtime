@@ -11,13 +11,14 @@ internal static partial class Interop
     {
         internal const uint CREATE_MUTEX_INITIAL_OWNER = 0x1;
 
-        [DllImport(Libraries.Kernel32, EntryPoint = "OpenMutexW", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        internal static extern SafeWaitHandle OpenMutex(uint desiredAccess, bool inheritHandle, string name);
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "OpenMutexW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial SafeWaitHandle OpenMutex(uint desiredAccess, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, string name);
 
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateMutexExW", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        internal static extern SafeWaitHandle CreateMutexEx(IntPtr lpMutexAttributes, string? name, uint flags, uint desiredAccess);
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateMutexExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial SafeWaitHandle CreateMutexEx(IntPtr lpMutexAttributes, string? name, uint flags, uint desiredAccess);
 
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool ReleaseMutex(SafeWaitHandle handle);
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return:MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool ReleaseMutex(SafeWaitHandle handle);
     }
 }

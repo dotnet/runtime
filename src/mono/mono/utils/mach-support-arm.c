@@ -26,7 +26,7 @@
 #endif
 
 int
-mono_mach_arch_get_mcontext_size ()
+mono_mach_arch_get_mcontext_size (void)
 {
 	return sizeof (struct __darwin_mcontext);
 }
@@ -64,13 +64,13 @@ mono_mach_arch_thread_states_to_mono_context (thread_state_t state, thread_state
 }
 
 int
-mono_mach_arch_get_thread_state_size ()
+mono_mach_arch_get_thread_state_size (void)
 {
 	return sizeof (arm_thread_state_t);
 }
 
 int
-mono_mach_arch_get_thread_fpstate_size ()
+mono_mach_arch_get_thread_fpstate_size (void)
 {
 	return sizeof (arm_neon_state_t);
 }
@@ -80,7 +80,7 @@ mono_mach_arch_get_thread_states (thread_port_t thread, thread_state_t state, ma
 {
 #if defined(HOST_WATCHOS)
 	g_error ("thread_get_state() is not supported by this platform");
-#else	
+#else
 	arm_thread_state_t *arch_state = (arm_thread_state_t *) state;
 	kern_return_t ret;
 

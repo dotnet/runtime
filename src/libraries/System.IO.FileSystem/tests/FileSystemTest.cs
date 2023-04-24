@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -11,14 +12,13 @@ namespace System.IO.Tests
     {
         public static readonly byte[] TestBuffer = { 0xBA, 0x5E, 0xBA, 0x11, 0xF0, 0x07, 0xBA, 0x11 };
 
-        protected const TestPlatforms CaseInsensitivePlatforms = TestPlatforms.Windows | TestPlatforms.OSX;
-        protected const TestPlatforms CaseSensitivePlatforms = TestPlatforms.AnyUnix & ~TestPlatforms.OSX;
-
         public static bool AreAllLongPathsAvailable => PathFeatures.AreAllLongPathsAvailable();
 
         public static bool LongPathsAreNotBlocked => !PathFeatures.AreLongPathsBlocked();
 
         public static bool UsingNewNormalization => !PathFeatures.IsUsingLegacyPathNormalization();
+
+        public static bool ReservedDeviceNamesAreBlocked => PlatformDetection.IsWindows && !PlatformDetection.IsWindows10OrLater;
 
         public static TheoryData<string> PathsWithInvalidColons = TestData.PathsWithInvalidColons;
         public static TheoryData<string> PathsWithInvalidCharacters = TestData.PathsWithInvalidCharacters;
@@ -51,41 +51,6 @@ namespace System.IO.Tests
 
                 return data;
             }
-        }
-
-        /// <summary>
-        /// In some cases (such as when running without elevated privileges),
-        /// the symbolic link may fail to create. Only run this test if it creates
-        /// links successfully.
-        /// </summary>
-        protected static bool CanCreateSymbolicLinks => s_canCreateSymbolicLinks.Value;
-
-        private static readonly Lazy<bool> s_canCreateSymbolicLinks = new Lazy<bool>(() =>
-        {
-            // Verify file symlink creation
-            string path = Path.GetTempFileName();
-            string linkPath = path + ".link";
-            bool success = MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false);
-            try { File.Delete(path); } catch { }
-            try { File.Delete(linkPath); } catch { }
-
-            // Verify directory symlink creation
-            path = Path.GetTempFileName();
-            linkPath = path + ".link";
-            success = success && MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true);
-            try { Directory.Delete(path); } catch { }
-            try { Directory.Delete(linkPath); } catch { }
-
-            return success;
-        });
-
-        public static string GetNamedPipeServerStreamName()
-        {
-            if (PlatformDetection.IsInAppContainer)
-            {
-                return @"LOCAL\" + Guid.NewGuid().ToString("N");
-            }
-            return Guid.NewGuid().ToString("N");
         }
 
         /// <summary>
@@ -124,6 +89,72 @@ namespace System.IO.Tests
                 // Clean up test environment
                 Assert.Equal(0, AdminHelpers.RunAsSudo($"umount {readOnlyDirectory}"));
             }
+        }
+
+        /// <summary>
+        /// Determines whether the file system is case sensitive by creating a file in the specified folder and observing the result.
+        /// </summary>
+        /// <remarks>
+        /// Ideally we'd use something like pathconf with _PC_CASE_SENSITIVE, but that is non-portable,
+        /// not supported on Windows or Linux, etc. For now, this function creates a tmp file with capital letters
+        /// and then tests for its existence with lower-case letters.  This could return invalid results in corner
+        /// cases where, for example, different file systems are mounted with differing sensitivities.
+        /// </remarks>
+        protected static bool GetIsCaseSensitiveByProbing(string probingDirectory)
+        {
+            string pathWithUpperCase = Path.Combine(probingDirectory, $"CASESENSITIVETEST{Guid.NewGuid():N}");
+            using (new FileStream(pathWithUpperCase, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, 0x1000, FileOptions.DeleteOnClose))
+            {
+                string lowerCased = pathWithUpperCase.ToLowerInvariant();
+                return !File.Exists(lowerCased);
+            }
+        }
+
+        protected const UnixFileMode AllAccess =
+                UnixFileMode.UserRead |
+                UnixFileMode.UserWrite |
+                UnixFileMode.UserExecute |
+                UnixFileMode.GroupRead |
+                UnixFileMode.GroupWrite |
+                UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead |
+                UnixFileMode.OtherWrite |
+                UnixFileMode.OtherExecute;
+
+        public static IEnumerable<object[]> TestUnixFileModes
+        {
+            get
+            {
+                // Make combinations of the enum with 0, 1 and 2 bits set.
+                UnixFileMode[] modes = Enum.GetValues<UnixFileMode>();
+                for (int i = 0; i < modes.Length; i++)
+                {
+                    for (int j = i; j < modes.Length; j++)
+                    {
+                        yield return new object[] { modes[i] | modes[j] };
+                    }
+                }
+            }
+        }
+
+        private static UnixFileMode s_umask = (UnixFileMode)(-1);
+
+        protected static UnixFileMode GetUmask()
+        {
+            if (s_umask == (UnixFileMode)(-1))
+            {
+                // The umask can't be retrieved without changing it.
+                // We launch a child process to get its value.
+                using Process px = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "/bin/sh",
+                    ArgumentList = { "-c", "umask" },
+                    RedirectStandardOutput = true
+                });
+                string stdout = px.StandardOutput.ReadToEnd().Trim();
+                s_umask = (UnixFileMode)Convert.ToInt32(stdout, 8);
+            }
+            return s_umask;
         }
     }
 }

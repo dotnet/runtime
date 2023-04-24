@@ -10,7 +10,7 @@ namespace System.Reflection.Emit
         // Set the default value of the parameter
         public virtual void SetConstant(object? defaultValue)
         {
-            TypeBuilder.SetConstantValue(
+            RuntimeTypeBuilder.SetConstantValue(
                 _methodBuilder.GetModuleBuilder(),
                 _token,
                 _position == 0 ? _methodBuilder.ReturnType : _methodBuilder.m_parameterTypes![_position - 1],
@@ -20,34 +20,26 @@ namespace System.Reflection.Emit
         // Use this function if client decides to form the custom attribute blob themselves
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
-            {
-                throw new ArgumentNullException(nameof(con));
-            }
-            if (binaryAttribute == null)
-            {
-                throw new ArgumentNullException(nameof(binaryAttribute));
-            }
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
-            TypeBuilder.DefineCustomAttribute(
+            RuntimeTypeBuilder.DefineCustomAttribute(
                 _methodBuilder.GetModuleBuilder(),
                 _token,
-                ((ModuleBuilder)_methodBuilder.GetModule()).GetConstructorToken(con),
+                ((RuntimeModuleBuilder)_methodBuilder.GetModule()).GetMethodMetadataToken(con),
                 binaryAttribute);
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(customBuilder));
-            }
-            customBuilder.CreateCustomAttribute((ModuleBuilder)(_methodBuilder.GetModule()), _token);
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
+            customBuilder.CreateCustomAttribute((RuntimeModuleBuilder)(_methodBuilder.GetModule()), _token);
         }
 
         internal ParameterBuilder(
-            MethodBuilder methodBuilder,
+            RuntimeMethodBuilder methodBuilder,
             int sequence,
             ParameterAttributes attributes,
             string? paramName)            // can be NULL string
@@ -56,8 +48,8 @@ namespace System.Reflection.Emit
             _name = paramName;
             _methodBuilder = methodBuilder;
             _attributes = attributes;
-            ModuleBuilder module = _methodBuilder.GetModuleBuilder();
-            _token = TypeBuilder.SetParamInfo(
+            RuntimeModuleBuilder module = _methodBuilder.GetModuleBuilder();
+            _token = RuntimeTypeBuilder.SetParamInfo(
                         new QCallModule(ref module),
                         _methodBuilder.MetadataToken,
                         sequence,
@@ -85,7 +77,7 @@ namespace System.Reflection.Emit
         private readonly string? _name;
         private readonly int _position;
         private readonly ParameterAttributes _attributes;
-        private MethodBuilder _methodBuilder;
-        private int _token;
+        private readonly RuntimeMethodBuilder _methodBuilder;
+        private readonly int _token;
     }
 }

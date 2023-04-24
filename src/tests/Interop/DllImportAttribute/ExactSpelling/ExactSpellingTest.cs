@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 class ExactSpellingTest
 {
@@ -125,12 +125,12 @@ class ExactSpellingTest
         Assert.Throws<EntryPointNotFoundException>(() => Ansi.MarshalPointer_Int_InOut2(ref int8));
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {
             ExactSpellingTrue();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 ExactSpellingFalse_Windows();
             }
@@ -149,7 +149,7 @@ class ExactSpellingTest
 
     private static void Verify(int expectedReturnValue, int expectedParameterValue, int actualReturnValue, int actualParameterValue)
     {
-        Assert.AreEqual(expectedReturnValue, actualReturnValue);
-        Assert.AreEqual(expectedParameterValue, actualParameterValue);
+        Assert.Equal(expectedReturnValue, actualReturnValue);
+        Assert.Equal(expectedParameterValue, actualParameterValue);
     }
 }

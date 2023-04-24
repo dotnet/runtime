@@ -17,7 +17,8 @@ internal static partial class Interop
             HANDLE_FLAG_PROTECT_FROM_CLOSE = 2
         }
 
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool SetHandleInformation(SafeHandle hObject, HandleFlags dwMask, HandleFlags dwFlags);
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool SetHandleInformation(SafeHandle hObject, HandleFlags dwMask, HandleFlags dwFlags);
     }
 }

@@ -13,7 +13,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Gets the object that is currently the primary selection.
         /// </summary>
-        object PrimarySelection { get; }
+        object? PrimarySelection { get; }
 
         /// <summary>
         /// Gets the count of selected objects.
@@ -43,11 +43,11 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Sets the currently selected set of components.
         /// </summary>
-        void SetSelectedComponents(ICollection components);
+        void SetSelectedComponents(ICollection? components);
 
         /// <summary>
         /// Sets the currently selected set of components to those with the specified selection type within the specified array of components.
         /// </summary>
-        void SetSelectedComponents(ICollection components, SelectionTypes selectionType);
+        void SetSelectedComponents(ICollection? components, SelectionTypes selectionType);
     }
 }

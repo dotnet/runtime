@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -140,7 +136,7 @@ namespace System.Net.Http.Tests
             // Note that even if after a valid tag & whitespace there are invalid characters, GetEntityTagLength()
             // will return the length of the valid tag and ignore the invalid characters at the end. It is the callers
             // responsibility to consider the whole string invalid if after a valid ETag there are invalid chars.
-            Assert.Equal(11, EntityTagHeaderValue.GetEntityTagLength("\"tag\"  \r\n  !!", 0, out result));
+            Assert.Equal(9, EntityTagHeaderValue.GetEntityTagLength("\"tag\"    !!", 0, out result));
             Assert.Equal("\"tag\"", result.Tag);
             Assert.False(result.IsWeak);
 
@@ -198,7 +194,6 @@ namespace System.Net.Http.Tests
         {
             CheckValidParse("\"tag\"", new EntityTagHeaderValue("\"tag\""));
             CheckValidParse(" \"tag\" ", new EntityTagHeaderValue("\"tag\""));
-            CheckValidParse("\r\n \"tag\"\r\n ", new EntityTagHeaderValue("\"tag\""));
             CheckValidParse("\"tag\"", new EntityTagHeaderValue("\"tag\""));
             CheckValidParse("\"tag\u4F1A\"", new EntityTagHeaderValue("\"tag\u4F1A\""));
             CheckValidParse("W/\"tag\"", new EntityTagHeaderValue("\"tag\"", true));
@@ -217,32 +212,8 @@ namespace System.Net.Http.Tests
             CheckInvalidParse("\"tag\" \"tag2\"");
             CheckInvalidParse("/\"tag\"");
             CheckInvalidParse("*"); // "any" is not allowed as ETag value.
-        }
-
-        [Fact]
-        public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
-        {
-            CheckValidTryParse("\"tag\"", new EntityTagHeaderValue("\"tag\""));
-            CheckValidTryParse(" \"tag\" ", new EntityTagHeaderValue("\"tag\""));
-            CheckValidTryParse("\r\n \"tag\"\r\n ", new EntityTagHeaderValue("\"tag\""));
-            CheckValidTryParse("\"tag\"", new EntityTagHeaderValue("\"tag\""));
-            CheckValidTryParse("\"tag\u4F1A\"", new EntityTagHeaderValue("\"tag\u4F1A\""));
-            CheckValidTryParse("W/\"tag\"", new EntityTagHeaderValue("\"tag\"", true));
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
-        {
-            CheckInvalidTryParse(null);
-            CheckInvalidTryParse(string.Empty);
-            CheckInvalidTryParse("  ");
-            CheckInvalidTryParse("  !");
-            CheckInvalidTryParse("tag\"  !");
-            CheckInvalidTryParse("!\"tag\"");
-            CheckInvalidTryParse("\"tag\",");
-            CheckInvalidTryParse("\"tag\" \"tag2\"");
-            CheckInvalidTryParse("/\"tag\"");
-            CheckInvalidTryParse("*"); // "any" is not allowed as ETag value.
+            CheckInvalidParse("\r\n \"tag\"\r\n ");
+            CheckInvalidParse("\"tag\"  \r\n  !!");
         }
 
         #region Helper methods
@@ -251,24 +222,16 @@ namespace System.Net.Http.Tests
         {
             EntityTagHeaderValue result = EntityTagHeaderValue.Parse(input);
             Assert.Equal(expectedResult, result);
+
+            Assert.True(EntityTagHeaderValue.TryParse(input, out result));
+            Assert.Equal(expectedResult, result);
         }
 
         private void CheckInvalidParse(string input)
         {
             Assert.Throws<FormatException>(() => { EntityTagHeaderValue.Parse(input); });
-        }
 
-        private void CheckValidTryParse(string input, EntityTagHeaderValue expectedResult)
-        {
-            EntityTagHeaderValue result = null;
-            Assert.True(EntityTagHeaderValue.TryParse(input, out result));
-            Assert.Equal(expectedResult, result);
-        }
-
-        private void CheckInvalidTryParse(string input)
-        {
-            EntityTagHeaderValue result = null;
-            Assert.False(EntityTagHeaderValue.TryParse(input, out result));
+            Assert.False(EntityTagHeaderValue.TryParse(input, out EntityTagHeaderValue result));
             Assert.Null(result);
         }
 

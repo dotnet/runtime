@@ -149,10 +149,14 @@ Function:
   Aborts the process after calling the shutdown cleanup handler. This function
   should be called instead of calling abort() directly.
 
+Parameters:
+  signal - POSIX signal number
+  siginfo - POSIX signal info
+
   Does not return
 --*/
 PAL_NORETURN
-VOID PROCAbort();
+VOID PROCAbort(int signal = SIGABRT, siginfo_t* siginfo = nullptr);
 
 /*++
 Function:
@@ -172,9 +176,12 @@ Function:
   Creates crash dump of the process (if enabled). Can be
   called from the unhandled native exception handler.
 
+Parameters:
+  signal - POSIX signal number
+
 (no return value)
 --*/
-VOID PROCCreateCrashDumpIfEnabled();
+VOID PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo);
 
 /*++
 Function:

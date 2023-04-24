@@ -27,6 +27,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Runtime_45557
 {
@@ -77,9 +78,10 @@ namespace Runtime_45557
         }
     }
 
-    class Program
+    public class Program
     {
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             ObjectBinderSnapshot o = ObjectBinder.GetSnapshot();
             Console.WriteLine($"Test output: {o.SomeValue}");

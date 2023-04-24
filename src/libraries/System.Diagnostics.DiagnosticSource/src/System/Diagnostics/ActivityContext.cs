@@ -65,16 +65,26 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="traceParent">W3C trace parent header.</param>
         /// <param name="traceState">W3C trace state.</param>
+        /// <param name="isRemote">Indicate the context is propagated from remote parent.</param>
         /// <param name="context">The ActivityContext object created from the parsing operation.</param>
-        public static bool TryParse(string traceParent, string? traceState, out ActivityContext context)
+        public static bool TryParse(string? traceParent, string? traceState, bool isRemote, out ActivityContext context)
         {
-            if (traceParent == null)
+            if (traceParent is null)
             {
-                throw new ArgumentNullException(nameof(traceParent));
+                context = default;
+                return false;
             }
 
-            return Activity.TryConvertIdToContext(traceParent, traceState, out context);
+            return Activity.TryConvertIdToContext(traceParent, traceState, isRemote, out context);
         }
+
+        /// <summary>
+        /// Parse W3C trace context headers to ActivityContext object.
+        /// </summary>
+        /// <param name="traceParent">W3C trace parent header.</param>
+        /// <param name="traceState">W3C trace state.</param>
+        /// <param name="context">The ActivityContext object created from the parsing operation.</param>
+        public static bool TryParse(string? traceParent, string? traceState, out ActivityContext context) => TryParse(traceParent, traceState, isRemote: false, out context);
 
         /// <summary>
         /// Parse W3C trace context headers to ActivityContext object.
@@ -86,7 +96,12 @@ namespace System.Diagnostics
         /// </returns>
         public static ActivityContext Parse(string traceParent, string? traceState)
         {
-            if (!TryParse(traceParent, traceState, out ActivityContext context))
+            if (traceParent is null)
+            {
+                throw new ArgumentNullException(nameof(traceParent));
+            }
+
+            if (!Activity.TryConvertIdToContext(traceParent, traceState, isRemote: false, out ActivityContext context))
             {
                 throw new ArgumentException(SR.InvalidTraceParent);
             }

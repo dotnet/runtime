@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Xml;
+using System.Globalization;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
+using System.Collections;
+using System.Configuration;
+using System.Xml.Serialization.Configuration;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Xml;
-    using System.Globalization;
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Text;
-    using System.Collections;
-    using System.Configuration;
-    using System.Xml.Serialization.Configuration;
-
     /// <summary>
     ///   The <see cref="XmlCustomFormatter"/> class provides a set of static methods for converting
     ///   primitive type values to and from their XML string representations.</summary>
@@ -33,7 +33,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? FromDefaultValue(object? value, string formatter)
         {
             if (value == null) return null;
@@ -105,30 +105,41 @@ namespace System.Xml.Serialization
             }
         }
 
+        internal static bool TryFormatDateTime(DateTime value, Span<char> destination, out int charsWritten)
+        {
+            if (Mode == DateTimeSerializationSection.DateTimeSerializationMode.Local)
+            {
+                return XmlConvert.TryFormat(value, "yyyy-MM-ddTHH:mm:ss.fffffffzzzzzz", destination, out charsWritten);
+            }
+
+            // for mode DateTimeSerializationMode.Roundtrip and DateTimeSerializationMode.Default
+            return XmlConvert.TryFormat(value, XmlDateTimeSerializationMode.RoundtripKind, destination, out charsWritten);
+        }
+
         internal static string FromChar(char value)
         {
             return XmlConvert.ToString((ushort)value);
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         internal static string? FromXmlName(string? name)
         {
             return XmlConvert.EncodeName(name);
         }
 
-        [return: NotNullIfNotNull("ncName")]
+        [return: NotNullIfNotNull(nameof(ncName))]
         internal static string? FromXmlNCName(string? ncName)
         {
             return XmlConvert.EncodeLocalName(ncName);
         }
 
-        [return: NotNullIfNotNull("nmToken")]
+        [return: NotNullIfNotNull(nameof(nmToken))]
         internal static string? FromXmlNmToken(string? nmToken)
         {
             return XmlConvert.EncodeNmToken(nmToken);
         }
 
-        [return: NotNullIfNotNull("nmTokens")]
+        [return: NotNullIfNotNull(nameof(nmTokens))]
         internal static string? FromXmlNmTokens(string? nmTokens)
         {
             if (nmTokens == null)
@@ -157,7 +168,7 @@ namespace System.Xml.Serialization
             writer.WriteBase64(inData, start, count);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? FromByteArrayHex(byte[]? value)
         {
             if (value == null)
@@ -201,7 +212,7 @@ namespace System.Xml.Serialization
             if (val != 0)
             {
                 // failed to parse the enum value
-                throw new InvalidOperationException(SR.Format(SR.XmlUnknownConstant, originalValue, typeName == null ? "enum" : typeName));
+                throw new InvalidOperationException(SR.Format(SR.XmlUnknownConstant, originalValue, typeName ?? "enum"));
             }
             if (sb.Length == 0 && iZero >= 0)
             {
@@ -399,31 +410,31 @@ namespace System.Xml.Serialization
             return (char)XmlConvert.ToUInt16(value);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? ToXmlName(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? ToXmlNCName(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? ToXmlNmToken(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static string? ToXmlNmTokens(string? value)
         {
             return XmlConvert.DecodeName(CollapseWhitespace(value));
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static byte[]? ToByteArrayBase64(string? value)
         {
             if (value == null) return null;
@@ -433,12 +444,11 @@ namespace System.Xml.Serialization
             return Convert.FromBase64String(value);
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         internal static byte[]? ToByteArrayHex(string? value)
         {
             if (value == null) return null;
-            value = value.Trim();
-            return XmlConvert.FromBinHexString(value);
+            return XmlConvert.FromBinHexString(value.AsSpan().Trim(), true);
         }
 
         internal static long ToEnum(string val, Hashtable vals, string? typeName, bool validate)
@@ -456,7 +466,7 @@ namespace System.Xml.Serialization
             return value;
         }
 
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull(nameof(value))]
         private static string? CollapseWhitespace(string? value)
         {
             if (value == null)

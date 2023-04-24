@@ -16,7 +16,7 @@ namespace
         PathBuffer()
             : DefBuffer{}
             , Buf{ DefBuffer }
-            , Len{ ARRAYSIZE(DefBuffer) }
+            , Len{ ARRAY_SIZE(DefBuffer) }
         { }
 
         void SetLength(_In_ DWORD len)
@@ -277,7 +277,7 @@ HRESULT coreclr::CreateTpaList(_Inout_ std::string &tpaList, _In_opt_z_ const WC
 
         // Walk the directory for each extension separately so assembly types
         // are discovered in priority order - see above.
-        for (int extIndex = 0; extIndex < ARRAYSIZE(tpaExtensions); extIndex++)
+        for (int extIndex = 0; extIndex < ARRAY_SIZE(tpaExtensions); extIndex++)
         {
             const WCHAR* ext = tpaExtensions[extIndex];
             size_t extLength = ::wcslen(ext);
@@ -359,8 +359,8 @@ coreclr::~coreclr()
 
 HRESULT coreclr::Initialize(
     _In_ int propertyCount,
-    _In_reads_(propertCount) const char **keys,
-    _In_reads_(propertCount) const char **values,
+    _In_reads_(propertyCount) const char **keys,
+    _In_reads_(propertyCount) const char **values,
     _In_opt_z_ const char *appDomainName)
 {
     if (_clrInst != nullptr)
@@ -375,7 +375,7 @@ HRESULT coreclr::Initialize(
     HMODULE mod = ::GetModuleHandleW(W("CoreRun.exe"));
     if (mod != NULL)
     {
-        using GetCurrentClrDetailsFunc = HRESULT(*)(void **clrInstance, unsigned int *appDomainId);
+        using GetCurrentClrDetailsFunc = HRESULT(__cdecl *)(void **clrInstance, unsigned int *appDomainId);
         auto getCurrentClrDetails = (GetCurrentClrDetailsFunc)::GetProcAddress(mod, "GetCurrentClrDetails");
         RETURN_IF_FAILED(getCurrentClrDetails(&_clrInst, &_appDomainId));
         if (_clrInst != nullptr)

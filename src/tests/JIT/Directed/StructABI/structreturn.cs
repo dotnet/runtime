@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 #region Test struct return optimizations.
 class TestStructReturns
@@ -831,7 +832,7 @@ class TestMergeReturnBlocks
         }
     }
 
-    static ReturnStruct TestConstPropogation(int a)
+    static ReturnStruct TestConstPropagation(int a)
     {
         if (a == 0)
         {
@@ -860,9 +861,9 @@ class TestMergeReturnBlocks
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void TestConstPropogation()
+    static void TestConstPropagation()
     {
-        TestConstPropogation(5);
+        TestConstPropagation(5);
     }
 
 
@@ -883,7 +884,7 @@ class TestMergeReturnBlocks
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static ReturnStruct TestNoFieldSeqPropogation(int a)
+    static ReturnStruct TestNoFieldSeqPropagation(int a)
     {
         StructWithOverlaps s = new StructWithOverlaps();
         if (a == 0)
@@ -913,16 +914,16 @@ class TestMergeReturnBlocks
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void TestNoFieldSeqPropogation()
+    static void TestNoFieldSeqPropagation()
     {
-        TestNoFieldSeqPropogation(5);
+        TestNoFieldSeqPropagation(5);
     }
 
 
     public static void Test()
     {
-        TestConstPropogation();
-        TestNoFieldSeqPropogation();
+        TestConstPropagation();
+        TestNoFieldSeqPropagation();
     }
 }
 #endregion
@@ -1332,7 +1333,7 @@ class TestHFAandHVA
             T value = vector[Vector<T>.Count];
             System.Diagnostics.Debug.Assert(false);
         }
-        catch (IndexOutOfRangeException)
+        catch (ArgumentOutOfRangeException)
         {
             return;
         }
@@ -1809,9 +1810,10 @@ class TestNon2PowerStructs
     }
 }
 
-class TestStructs
+public class TestStructs
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestStructReturns.Test();
         TestUnsafeCasts.Test();

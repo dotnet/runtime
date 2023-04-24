@@ -148,7 +148,7 @@ namespace System.Diagnostics
             EventLog.WriteEvent(inst, new object[] { sb.ToString() });
         }
 
-        private EventInstance CreateEventInstance(TraceEventType severity, int id)
+        private static EventInstance CreateEventInstance(TraceEventType severity, int id)
         {
             // Win32 EventLog has an implicit cap at ushort.MaxValue
             // We need to cap this explicitly to prevent larger value

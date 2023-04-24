@@ -3,14 +3,15 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
-internal class Test
+public class Test_b99969
 {
     public int i;
     private volatile bool _bSpoof = false;
     private volatile bool _bDoSpoof = false;
 
-    private static Test s_target;
+    private static Test_b99969 s_target;
 
     private static void DoSpoof()
     {
@@ -55,9 +56,10 @@ internal class Test
         return result;
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
-        Test t = new Test();
+        Test_b99969 t = new Test_b99969();
 
         s_target = t;
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 
 struct S2
@@ -18,7 +19,8 @@ public class GitHub_19256
     static S2 s_one = new S2(1);
     static S2 s_two = new S2(2);
     static uint sum = 0;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         M28(s_two, M28(s_one, s_one));
         return sum == 3 ? 100 : -1;
@@ -29,9 +31,12 @@ public class GitHub_19256
         sum += arg0.F0;
         System.Console.WriteLine(arg0.F0);
         arg0.F0 = 1234; // this is printed in next invocation
-        System.GC.KeepAlive(arg0); // ensure that assignment isn't removed
+        Use(arg0); // ensure that assignment isn't removed
         return ref s_one;
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Use(S2 arg) { }
 }
 
 

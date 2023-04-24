@@ -333,7 +333,7 @@ static inline void mono_atomic_store_i32(volatile gint32 *dst, gint32 val)
 	} while (gcc_sync_val_compare_and_swap (dst, old_val, val) != old_val);
 }
 
-#if defined (TARGET_OSX) || defined (__arm__) || (defined (__mips__) && !defined (__mips64)) || (defined (__powerpc__) && !defined (__powerpc64__)) || (defined (__sparc__) && !defined (__arch64__))
+#if defined (TARGET_OSX) || defined (__arm__) || (defined (__powerpc__) && !defined (__powerpc64__))
 #define BROKEN_64BIT_ATOMICS_INTRINSIC 1
 #endif
 
@@ -373,7 +373,7 @@ static inline gint64 mono_atomic_load_i64(volatile gint64 *src)
 #else
 
 /* Implement 64-bit cas by hand or emulate it. */
-extern gint64 mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp);
+MONO_COMPONENT_API gint64 mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp);
 
 /* Implement all other 64-bit atomics in terms of a specialized CAS
  * in this case, since chances are that the other 64-bit atomic

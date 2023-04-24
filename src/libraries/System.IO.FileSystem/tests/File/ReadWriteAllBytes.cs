@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using System.IO.Pipes;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.IO.Tests
 {
@@ -55,21 +58,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
-        public void ReadFileOver2GB()
-        {
-            string path = GetTestFilePath();
-            using (FileStream fs = File.Create(path))
-            {
-                fs.SetLength(int.MaxValue + 1L);
-            }
-
-            // File is too large for ReadAllBytes at once
-            Assert.Throws<IOException>(() => File.ReadAllBytes(path));
-        }
-
-        [Fact]
         public void Overwrite()
         {
             string path = GetTestFilePath();
@@ -80,8 +68,7 @@ namespace System.IO.Tests
             Assert.Equal(overwriteBytes, File.ReadAllBytes(path));
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void OpenFile_ThrowsIOException()
         {
             string path = GetTestFilePath();
@@ -96,7 +83,7 @@ namespace System.IO.Tests
         /// <summary>
         /// On Unix, modifying a file that is ReadOnly will fail under normal permissions.
         /// If the test is being run under the superuser, however, modification of a ReadOnly
-        /// file is allowed.
+        /// file is allowed. On Windows, modifying a file that is ReadOnly will always fail.
         /// </summary>
         [Fact]
         public void WriteToReadOnlyFile()
@@ -106,14 +93,13 @@ namespace System.IO.Tests
             File.SetAttributes(path, FileAttributes.ReadOnly);
             try
             {
-                // Operation succeeds when being run by the Unix superuser
-                if (PlatformDetection.IsSuperUser)
+                if (PlatformDetection.IsNotWindows && PlatformDetection.IsPrivilegedProcess)
                 {
-                    File.WriteAllBytes(path, Encoding.UTF8.GetBytes("text"));
-                    Assert.Equal(Encoding.UTF8.GetBytes("text"), File.ReadAllBytes(path));
+                    File.WriteAllBytes(path, "text"u8.ToArray());
+                    Assert.Equal("text"u8.ToArray(), File.ReadAllBytes(path));
                 }
                 else
-                    Assert.Throws<UnauthorizedAccessException>(() => File.WriteAllBytes(path, Encoding.UTF8.GetBytes("text")));
+                    Assert.Throws<UnauthorizedAccessException>(() => File.WriteAllBytes(path, "text"u8.ToArray()));
             }
             finally
             {
@@ -171,6 +157,63 @@ namespace System.IO.Tests
         public void ProcFs_NotEmpty(string path)
         {
             Assert.InRange(File.ReadAllBytes(path).Length, 1, int.MaxValue);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60427")]
+        public async Task ReadAllBytes_NonSeekableFileStream_InWindows()
+        {
+            string pipeName = GetNamedPipeServerStreamName();
+            string pipePath = Path.GetFullPath($@"\\.\pipe\{pipeName}");
+
+            var namedPipeWriterStream = new NamedPipeServerStream(pipeName, PipeDirection.Out);
+            var contentBytes = new byte[] { 1, 2, 3 };
+
+            using (var cts = new CancellationTokenSource())
+            {
+                Task writingServerTask = WaitConnectionAndWritePipeStreamAsync(namedPipeWriterStream, contentBytes, cts.Token);
+                Task<byte[]> readTask = Task.Run(() => File.ReadAllBytes(pipePath), cts.Token);
+                cts.CancelAfter(TimeSpan.FromSeconds(3));
+
+                await writingServerTask;
+                byte[] readBytes = await readTask;
+                Assert.Equal<byte>(contentBytes, readBytes);
+            }
+
+            static async Task WaitConnectionAndWritePipeStreamAsync(NamedPipeServerStream namedPipeWriterStream, byte[] contentBytes, CancellationToken cancellationToken)
+            {
+                await using (namedPipeWriterStream)
+                {
+                    await namedPipeWriterStream.WaitForConnectionAsync(cancellationToken);
+                    await namedPipeWriterStream.WriteAsync(contentBytes, cancellationToken);
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS)]
+        public async Task ReadAllBytes_NonSeekableFileStream_InUnix()
+        {
+            string fifoPath = GetTestFilePath();
+            Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */ ));
+
+            var contentBytes = new byte[] { 1, 2, 3 };
+
+            await Task.WhenAll(
+                Task.Run(() =>
+                {
+                    byte[] readBytes = File.ReadAllBytes(fifoPath);
+                    Assert.Equal<byte>(contentBytes, readBytes);
+                }),
+                Task.Run(() =>
+                {
+                    using var fs = new FileStream(fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read);
+                    foreach (byte content in contentBytes)
+                    {
+                        fs.WriteByte(content);
+                    }
+                }));
         }
     }
 }

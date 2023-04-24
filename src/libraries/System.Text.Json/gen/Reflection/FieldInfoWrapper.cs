@@ -5,10 +5,11 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using System.Globalization;
+using Microsoft.CodeAnalysis.CSharp;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
-    internal class FieldInfoWrapper : FieldInfo
+    internal sealed class FieldInfoWrapper : FieldInfo
     {
         private readonly IFieldSymbol _field;
         private readonly MetadataLoadContextInternal _metadataLoadContext;
@@ -16,9 +17,13 @@ namespace System.Text.Json.SourceGeneration.Reflection
         {
             _field = parameter;
             _metadataLoadContext = metadataLoadContext;
+
+            NeedsAtSign = SyntaxFacts.GetKeywordKind(_field.Name) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(_field.Name) != SyntaxKind.None;
         }
 
         private FieldAttributes? _attributes;
+
+        public IFieldSymbol Symbol => _field;
 
         public override FieldAttributes Attributes
         {
@@ -33,6 +38,11 @@ namespace System.Text.Json.SourceGeneration.Reflection
                         _attributes |= FieldAttributes.Static;
                     }
 
+                    if (_field.IsReadOnly)
+                    {
+                        _attributes |= FieldAttributes.InitOnly;
+                    }
+
                     switch (_field.DeclaredAccessibility)
                     {
                         case Accessibility.Public:
@@ -40,6 +50,9 @@ namespace System.Text.Json.SourceGeneration.Reflection
                             break;
                         case Accessibility.Private:
                             _attributes |= FieldAttributes.Private;
+                            break;
+                        case Accessibility.Protected:
+                            _attributes |= FieldAttributes.Family;
                             break;
                     }
                 }
@@ -56,6 +69,8 @@ namespace System.Text.Json.SourceGeneration.Reflection
 
         public override string Name => _field.Name;
 
+        public bool NeedsAtSign { get; }
+
         public override Type ReflectedType => throw new NotImplementedException();
 
         public override object[] GetCustomAttributes(bool inherit)
@@ -68,7 +83,7 @@ namespace System.Text.Json.SourceGeneration.Reflection
             throw new NotImplementedException();
         }
 
-        public override object GetValue(object obj)
+        public override object? GetValue(object? obj)
         {
             throw new NotImplementedException();
         }
@@ -88,9 +103,11 @@ namespace System.Text.Json.SourceGeneration.Reflection
             throw new NotImplementedException();
         }
 
-        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             throw new NotImplementedException();
         }
+
+        public Location? Location => _field.Locations.Length > 0 ? _field.Locations[0] : null;
     }
 }

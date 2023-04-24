@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Correctness of interop for abstract delegates cannot be guaranteed after native compilation -->
+    <NoWarn>$(NoWarn);IL3055</NoWarn>
+
+    <!-- Look for MULTIMODULE_BUILD #define for the more specific incompatible parts -->
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="PInvoke.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>

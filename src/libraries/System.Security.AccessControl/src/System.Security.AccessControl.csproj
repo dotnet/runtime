@@ -1,16 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net461-windows;netstandard2.0-windows;netstandard2.0</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Security\AccessControl\ACE.cs" />
     <Compile Include="System\Security\AccessControl\ACL.cs" />
     <Compile Include="System\Security\AccessControl\CommonObjectSecurity.cs" />
@@ -26,7 +24,11 @@
     <Compile Include="System\Security\Principal\Win32.cs" />
     <Compile Include="System\Security\Policy\Evidence.cs" />
     <Compile Include="System\Security\Policy\EvidenceBase.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <!-- PInvoke sources -->
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeTokenHandle.cs"
@@ -80,19 +82,15 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DuplicateTokenEx_SafeTokenHandle.cs"
              Link="Common\Interop\Interop.DuplicateTokenEx_SafeTokenHandle.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+  <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="Microsoft.Win32.Primitives" />
-  </ItemGroup>
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4'))">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
 </Project>

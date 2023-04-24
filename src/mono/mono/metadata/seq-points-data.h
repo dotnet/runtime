@@ -3,11 +3,12 @@
  * Copyright 2015 Xamarin Inc
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
- 
+
 #ifndef __MONO_SEQ_POINTS_DATA_H__
 #define __MONO_SEQ_POINTS_DATA_H__
 
 #include <glib.h>
+#include "mono/utils/mono-compiler.h"
 
 #define MONO_SEQ_POINT_FLAG_NONEMPTY_STACK 1
 #define MONO_SEQ_POINT_FLAG_EXIT_IL 2
@@ -20,7 +21,7 @@
 #define SEQ_POINT_AOT_EXT ".msym"
 
 /* Native offset used to mark seq points in dead code */
-#define SEQ_POINT_NATIVE_OFFSET_DEAD_CODE -1 
+#define SEQ_POINT_NATIVE_OFFSET_DEAD_CODE -1
 
 typedef struct {
 	int il_offset, native_offset, flags;
@@ -45,13 +46,13 @@ typedef struct {
 void
 mono_seq_point_info_free (gpointer info);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_seq_point_iterator_next (SeqPointIterator* it);
 
-void
+MONO_COMPONENT_API void
 mono_seq_point_iterator_init (SeqPointIterator* it, MonoSeqPointInfo* info);
 
-void
+MONO_COMPONENT_API void
 mono_seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next);
 
 int

@@ -62,12 +62,10 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="optional">Whether the file is optional.</param>
         /// <param name="reloadOnChange">Whether the configuration should be reloaded if the file changes.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, IFileProvider provider, string path, bool optional, bool reloadOnChange)
+        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, IFileProvider? provider, string path, bool optional, bool reloadOnChange)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
+            ThrowHelper.ThrowIfNull(builder);
+
             if (string.IsNullOrEmpty(path))
             {
                 throw new ArgumentException(SR.Error_InvalidFilePath, nameof(path));
@@ -89,7 +87,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="configureSource">Configures the source.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, Action<JsonConfigurationSource> configureSource)
+        public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, Action<JsonConfigurationSource>? configureSource)
             => builder.Add(configureSource);
 
         /// <summary>
@@ -100,10 +98,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddJsonStream(this IConfigurationBuilder builder, Stream stream)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
+            ThrowHelper.ThrowIfNull(builder);
 
             return builder.Add<JsonStreamConfigurationSource>(s => s.Stream = stream);
         }

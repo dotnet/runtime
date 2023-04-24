@@ -22,7 +22,7 @@
 {
     ldc.i4.1
     stsfld int32 TestInt
-    ldc.i4.2
+    ldc.i8 2
     stsfld int64 TestLong
     ret
 }

@@ -25,7 +25,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
- 
+
 #ifndef _TEST_H
 #define _TEST_H
 
@@ -36,8 +36,8 @@
 #include <glib.h>
 
 #ifdef _MSC_VER
-/* disable the following warnings 
- * C4100: The formal parameter is not referenced in the body of the function. The unreferenced parameter is ignored. 
+/* disable the following warnings
+ * C4100: The formal parameter is not referenced in the body of the function. The unreferenced parameter is ignored.
  * C4127: conditional expression is constant (test macros produce a lot of these)
 */
 #pragma warning(disable:4100 4127)

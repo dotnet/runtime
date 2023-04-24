@@ -8,16 +8,19 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        internal const uint LMEM_FIXED = 0x0000;
-        internal const uint LMEM_MOVEABLE = 0x0002;
+        private const uint LMEM_FIXED = 0x000;
+        private const uint LMEM_ZEROINIT = 0x0040;
+        private const uint LPTR = LMEM_FIXED | LMEM_ZEROINIT;
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern IntPtr LocalAlloc(uint uFlags, nuint uBytes);
+        // https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-localalloc
+        [LibraryImport(Libraries.Kernel32)]
+        // [return: NativeTypeName("HLOCAL")]
+        private static partial nint LocalAlloc(uint uFlags, nuint uBytes);
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern IntPtr LocalReAlloc(IntPtr hMem, nuint uBytes, uint uFlags);
+        internal static unsafe void* LocalAlloc(nuint byteCount) =>
+            (void*)LocalAlloc(LMEM_FIXED, byteCount);
 
-        [DllImport(Libraries.Kernel32)]
-        internal static extern IntPtr LocalFree(IntPtr hMem);
+        internal static unsafe void* LocalAllocZeroed(nuint byteCount) =>
+            (void*)LocalAlloc(LPTR, byteCount);
     }
 }

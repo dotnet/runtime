@@ -7,32 +7,35 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest._CpuId
 {
-    class Program
+    public class Program
     {
         const int Pass = 100;
         const int Fail = 0;
 
-        static unsafe int Main(string[] args)
+        [Fact]
+        public unsafe static void CpuId()
         {
             int testResult = Pass;
 
             if (!X86Base.IsSupported)
             {
-                return testResult;
+                return;
             }
 
             (int eax, int ebx, int ecx, int edx) = X86Base.CpuId(0x00000000, 0x00000000);
 
             bool isAuthenticAmd = (ebx == 0x68747541) && (ecx == 0x444D4163) && (edx == 0x69746E65);
             bool isGenuineIntel = (ebx == 0x756E6547) && (ecx == 0x6C65746E) && (edx == 0x49656E69);
+            bool isVirtualCPU = (ebx == 0x74726956) && (ecx == 0x20555043) && (edx == 0x206C6175);
 
-            if (!isAuthenticAmd && !isGenuineIntel)
+            if (!isAuthenticAmd && !isGenuineIntel && !isVirtualCPU)
             {
                 // CPUID checks are vendor specific and aren't guaranteed to match up, even across Intel/AMD
-                // as such, we limit ourselves to just AuthenticAMD and GenuineIntel right now. Any other
+                // as such, we limit ourselves to just AuthenticAMD, GenuineIntel and "Virtual CPU" right now. Any other
                 // vendors would need to be validated against the checks below and added to the list as necessary.
 
                 // An example of a difference is Intel/AMD for LZCNT. While the same underlying bit is used to
@@ -47,9 +50,10 @@ namespace IntelHardwareIntrinsicTest
 
             int maxFunctionId = eax;
 
-            if ((maxFunctionId < 0x00000001) || (Environment.GetEnvironmentVariable("COMPlus_EnableHWIntrinsic") is null))
+            if ((maxFunctionId < 0x00000001) || (Environment.GetEnvironmentVariable("DOTNET_EnableHWIntrinsic") is null))
             {
-                return testResult;
+                Assert.Equal(Pass, testResult);
+                return;
             }
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000001, 0x00000000);
@@ -122,7 +126,8 @@ namespace IntelHardwareIntrinsicTest
 
             if (maxFunctionId < 0x00000007)
             {
-                return testResult;
+                Assert.Equal(Pass, testResult);
+                return;
             }
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(0x00000007, 0x00000000);
@@ -163,7 +168,8 @@ namespace IntelHardwareIntrinsicTest
 
             if (maxFunctionIdEx < 0x00000001)
             {
-                return testResult;
+                Assert.Equal(Pass, testResult);
+                return;
             }
 
             (eax, ebx, ecx, edx) = X86Base.CpuId(unchecked((int)0x80000001), 0x00000000);
@@ -174,13 +180,14 @@ namespace IntelHardwareIntrinsicTest
                 testResult = Fail;
             }
 
-            return testResult;
+            Assert.Equal(Pass, testResult);
+            return;
         }
 
         static bool IsBitIncorrect(int register, int bitNumber, bool expectedResult, string name)
         {
             return ((register & (1 << bitNumber)) != ((expectedResult ? 1 : 0) << bitNumber))
-                && (Environment.GetEnvironmentVariable($"COMPlus_Enable{name}") is null);
+                && (Environment.GetEnvironmentVariable($"DOTNET_Enable{name}") is null);
         }
     }
 }

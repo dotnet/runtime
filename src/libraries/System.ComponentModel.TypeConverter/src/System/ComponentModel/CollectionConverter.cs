@@ -16,11 +16,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to the specified destination type.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(string) && value is ICollection)
             {
-                return SR.Collection;
+                return SR.GetResourceString(nameof(SR.Collection), "(Collection)");
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
@@ -31,7 +31,7 @@ namespace System.ComponentModel
         /// parameter using the specified context and attributes.
         /// </summary>
         [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
-        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object value, Attribute[]? attributes)
         {
             return new PropertyDescriptorCollection(null);
         }

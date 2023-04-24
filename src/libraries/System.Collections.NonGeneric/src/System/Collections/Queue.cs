@@ -51,10 +51,9 @@ namespace System.Collections
         //
         public Queue(int capacity, float growFactor)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (!(growFactor >= 1.0 && growFactor <= 10.0))
-                throw new ArgumentOutOfRangeException(nameof(growFactor), SR.Format(SR.ArgumentOutOfRange_QueueGrowFactor, 1, 10));
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
+            ArgumentOutOfRangeException.ThrowIfLessThan(growFactor, 1.0f);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(growFactor, 10.0f);
 
             _array = new object[capacity];
             _head = 0;
@@ -66,11 +65,8 @@ namespace System.Collections
         // Fills a Queue with the elements of an ICollection.  Uses the enumerator
         // to get each of the elements.
         //
-        public Queue(ICollection col) : this((col == null ? 32 : col.Count))
+        public Queue(ICollection col) : this(col?.Count ?? throw new ArgumentNullException(nameof(col)))
         {
-            if (col == null)
-                throw new ArgumentNullException(nameof(col));
-
             IEnumerator en = col.GetEnumerator();
             while (en.MoveNext())
                 Enqueue(en.Current);
@@ -131,12 +127,11 @@ namespace System.Collections
         //
         public virtual void CopyTo(Array array, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             int arrayLen = array.Length;
             if (arrayLen - index < _size)
@@ -212,8 +207,7 @@ namespace System.Collections
         //
         public static Queue Synchronized(Queue queue)
         {
-            if (queue == null)
-                throw new ArgumentNullException(nameof(queue));
+            ArgumentNullException.ThrowIfNull(queue);
 
             return new SynchronizedQueue(queue);
         }
@@ -492,8 +486,7 @@ namespace System.Collections
 
             public QueueDebugView(Queue queue)
             {
-                if (queue == null)
-                    throw new ArgumentNullException(nameof(queue));
+                ArgumentNullException.ThrowIfNull(queue);
 
                 _queue = queue;
             }

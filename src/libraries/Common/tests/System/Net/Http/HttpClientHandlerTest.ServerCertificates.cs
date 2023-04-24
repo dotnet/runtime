@@ -31,8 +31,10 @@ namespace System.Net.Http.Functional.Tests
         public HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
 
         // This enables customizing ServerCertificateCustomValidationCallback in WinHttpHandler variants:
-        protected bool AllowAllHttp2Certificates { get; set; } = true;
-        protected new HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion, allowAllHttp2Certificates: AllowAllHttp2Certificates);
+        protected bool AllowAllCertificates { get; set; } = true;
+        protected new HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(
+            useVersion: UseVersion,
+            allowAllCertificates: UseVersion >= HttpVersion20.Value && AllowAllCertificates);
         protected override HttpClient CreateHttpClient() => CreateHttpClient(CreateHttpClientHandler());
 
         [Fact]
@@ -76,7 +78,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Fact]
         public async Task NoCallback_ValidCertificate_SuccessAndExpectedPropertyBehavior()
         {
@@ -93,7 +95,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Fact]
         public async Task UseCallback_NotSecureConnection_CallbackNotCalled()
         {
@@ -136,7 +138,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(UseCallback_ValidCertificate_ExpectedValuesDuringCallback_Urls))]
         public async Task UseCallback_ValidCertificate_ExpectedValuesDuringCallback(Configuration.Http.RemoteServer remoteServer, Uri url, bool checkRevocation)
@@ -146,7 +148,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 bool callbackCalled = false;
                 handler.CheckCertificateRevocationList = checkRevocation;
-                handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) => {
+                handler.ServerCertificateCustomValidationCallback = (request, cert, chain, errors) =>
+                {
                     callbackCalled = true;
                     Assert.NotNull(request);
 
@@ -179,7 +182,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Fact]
         public async Task UseCallback_CallbackReturnsFailure_ThrowsException()
         {
@@ -191,7 +194,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Fact]
         public async Task UseCallback_CallbackThrowsException_ExceptionPropagatesAsBaseException()
         {
@@ -213,7 +216,7 @@ namespace System.Net.Http.Functional.Tests
             new object[] { Configuration.Http.WrongHostNameCertRemoteServer },
         };
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(ClientSupportsDHECipherSuites))]
         [MemberData(nameof(CertificateValidationServers))]
         public async Task NoCallback_BadCertificate_ThrowsException(string url)
@@ -224,7 +227,8 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77726")]
         [ConditionalFact(nameof(ClientSupportsDHECipherSuites))]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
@@ -235,7 +239,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Fact]
         public async Task NoCallback_RevokedCertificate_RevocationChecking_Fails()
         {
@@ -279,7 +283,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
@@ -336,7 +340,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [PlatformSpecific(TestPlatforms.Windows)] // CopyToAsync(Stream, TransportContext) isn't used on unix
         [Fact]
         public async Task PostAsync_Post_ChannelBinding_ConfiguredCorrectly()
@@ -391,19 +395,17 @@ namespace System.Net.Http.Functional.Tests
             File.WriteAllText(sslCertFile, "");
             psi.Environment.Add("SSL_CERT_FILE", sslCertFile);
 
-            RemoteExecutor.Invoke(async (useVersionString, allowAllHttp2CertificatesString) =>
+            RemoteExecutor.Invoke(async (useVersionString, allowAllCertificatesString) =>
             {
                 const string Url = "https://www.microsoft.com";
+                var version = Version.Parse(useVersionString);
+                using HttpClientHandler handler = CreateHttpClientHandler(
+                    useVersion: version,
+                    allowAllCertificates: version >= HttpVersion20.Value && bool.Parse(allowAllCertificatesString));
+                using HttpClient client = CreateHttpClient(handler, useVersionString);
 
-                HttpClientHandler handler = CreateHttpClientHandler(
-                    Version.Parse(useVersionString),
-                    allowAllHttp2Certificates: bool.Parse(allowAllHttp2CertificatesString));
-
-                using (HttpClient client = CreateHttpClient(handler, useVersionString))
-                {
-                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
-                }
-            }, UseVersion.ToString(), AllowAllHttp2Certificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
+            }, UseVersion.ToString(), AllowAllCertificates.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }
 }

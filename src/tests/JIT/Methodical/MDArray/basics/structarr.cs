@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//Simple arithmatic manipulation of one 2D array elements
+//Simple arithmetic manipulation of one 2D array elements
 
 using System;
+using Xunit;
 
 public struct ArrayStruct
 {
@@ -19,6 +20,7 @@ public struct ArrayStruct
 public class struct1
 {
     public static Random rand;
+    public const int DefaultSeed = 20010415;
     public static int size;
     public static ArrayStruct ima;
 
@@ -149,16 +151,25 @@ public class struct1
             }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = false;
 
-        rand = new Random();
+        int seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
+        rand = new Random(seed);
         size = rand.Next(5, 10);
 
         Console.WriteLine();
         Console.WriteLine("2D Array");
-        Console.WriteLine("Element manipulation of {0} by {0} matrices with different arithmatic operations", size);
+        Console.WriteLine("Random seed: {0}; set environment variable CORECLR_SEED to this value to reproduce", seed);
+        Console.WriteLine("Element manipulation of {0} by {0} matrices with different arithmetic operations", size);
         Console.WriteLine("Matrix is member of struct, element stores random double");
         Console.WriteLine("array set/get, ref/out param are used");
 
@@ -207,7 +218,7 @@ public class struct1
 
         Console.WriteLine();
         Console.WriteLine("3D Array");
-        Console.WriteLine("Element manipulation of 3D matrice with different arithmatic operations, size is {0}", size);
+        Console.WriteLine("Element manipulation of 3D matrice with different arithmetic operations, size is {0}", size);
         Console.WriteLine("Matrix is member of struct, element stores random double");
 
         ima = new ArrayStruct(size);

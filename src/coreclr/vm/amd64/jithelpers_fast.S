@@ -32,26 +32,14 @@ LEAF_ENTRY JIT_CheckedWriteBarrier, _TEXT
         // See if this is in GCHeap
         PREPARE_EXTERNAL_VAR g_lowest_address, rax
         cmp     rdi, [rax]
-#ifdef FEATURE_WRITEBARRIER_COPY
         // jb      NotInHeap
         .byte 0x72, 0x12
-#else
-        // jb      NotInHeap
-        .byte 0x72, 0x0e
-#endif
         PREPARE_EXTERNAL_VAR g_highest_address, rax
         cmp     rdi, [rax]
 
-#ifdef FEATURE_WRITEBARRIER_COPY
         // jnb     NotInHeap
         .byte 0x73, 0x06
         jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
-#else
-        // jnb     NotInHeap
-        .byte 0x73, 0x02
-        // jmp C_FUNC(JIT_WriteBarrier)
-        .byte 0xeb, 0x05
-#endif
 
     NotInHeap:
         // See comment above about possible AV
@@ -150,6 +138,31 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
     .balign 16
     Exit:
         REPRET
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+        NOP_3_BYTE
+
 #else
         // JIT_WriteBarrier_PostGrow64
 
@@ -221,7 +234,7 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
         REPRET
 #endif
 
-    // make sure this is bigger than any of the others 
+    // make sure this is bigger than any of the others
     .balign 16
         nop
 LEAF_END_MARKED JIT_WriteBarrier, _TEXT
@@ -231,7 +244,7 @@ LEAF_ENTRY JIT_PatchedCodeLast, _TEXT
         ret
 LEAF_END JIT_PatchedCodeLast, _TEXT
 
-// JIT_ByRefWriteBarrier has weird symantics, see usage in StubLinkerX86.cpp
+// JIT_ByRefWriteBarrier has weird semantics, see usage in StubLinkerX86.cpp
 //
 // Entry:
 //   RDI - address of ref-field (assigned to)
@@ -287,7 +300,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         add     r10, [rax]
         PREPARE_EXTERNAL_VAR g_GCShadowEnd, rax
         cmp     r10, [rax]
-        ja      NoShadow_ByRefWriteBarrier
+        jnb     NoShadow_ByRefWriteBarrier
 
         // Write ref into real GC
         mov     [rdi], rcx
@@ -342,6 +355,41 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         cmp     rcx, [rax]
         jnb     Exit_ByRefWriteBarrier
 
+        mov     rax, rcx
+
+        PREPARE_EXTERNAL_VAR g_region_shr, rcx
+        mov     cl, [rcx]
+        test    cl, cl
+        je      SkipCheck_ByRefWriteBarrier
+
+        // check if the source is in gen 2 - then it's not an ephemeral pointer
+        shr     rax, cl
+        PREPARE_EXTERNAL_VAR g_region_to_generation_table, r10
+        mov     r10, [r10]
+        cmp     byte ptr [rax + r10], 0x82
+        je      Exit_ByRefWriteBarrier
+
+        // check if the destination happens to be in gen 0
+        mov     rax, rdi
+        shr     rax, cl
+        cmp     byte ptr [rax + r10], 0
+        je      Exit_ByRefWriteBarrier
+    SkipCheck_ByRefWriteBarrier:
+
+        PREPARE_EXTERNAL_VAR g_card_table, r10
+        mov     r10, [r10]
+
+        PREPARE_EXTERNAL_VAR g_region_use_bitwise_write_barrier, rax
+        cmp     byte ptr [rax], 0
+        je      CheckCardTableByte_ByRefWriteBarrier
+
+        // compute card table bit
+        mov     ecx, edi
+        mov     al, 1
+        shr     ecx, 8
+        and     cl, 7
+        shl     al, cl
+
         // move current rdi value into rcx and then increment the pointers
         mov     rcx, rdi
         add     rsi, 0x8
@@ -349,19 +397,31 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
 
         // Check if we need to update the card table
         // Calc pCardByte
-        shr     rcx, 0x0B
-
-        PREPARE_EXTERNAL_VAR g_card_table, rax
-        mov     rax, [rax]
-
-        // Check if this card is dirty
-        cmp     byte ptr [rcx + rax], 0xFF
-
-        jne     UpdateCardTable_ByRefWriteBarrier
+        shr     rcx, 0xB
+        // Check if this card table bit is already set
+        test    byte ptr [rcx + r10], al
+        je      SetCardTableBit_ByRefWriteBarrier
         REPRET
 
-    UpdateCardTable_ByRefWriteBarrier:
-        mov     byte ptr [rcx + rax], 0xFF
+    SetCardTableBit_ByRefWriteBarrier:
+        lock or byte ptr [rcx + r10], al
+
+        jmp     CheckCardBundle_ByRefWriteBarrier
+
+    CheckCardTableByte_ByRefWriteBarrier:
+        // move current rdi value into rcx and then increment the pointers
+        mov     rcx, rdi
+        add     rsi, 0x8
+        add     rdi, 0x8
+
+        shr     rcx, 0xB
+        cmp     byte ptr [rcx + r10], 0xFF
+        jne     SetCardTableByte_ByRefWriteBarrier
+        REPRET
+    SetCardTableByte_ByRefWriteBarrier:
+        mov     byte ptr [rcx + r10], 0xFF
+
+    CheckCardBundle_ByRefWriteBarrier:
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         // Shift rcx by 0x0A more to get the card bundle byte (we shifted by 0x0B already)
@@ -398,11 +458,17 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         ret
 LEAF_END_MARKED JIT_ByRefWriteBarrier, _TEXT
 
-#ifdef FEATURE_WRITEBARRIER_COPY
         // When JIT_WriteBarrier is copied into an allocated page,
         // helpers use this global variable to jump to it. This variable is set in InitThreadManager.
-        .global _JIT_WriteBarrier_Loc
-        .zerofill __DATA,__common,_JIT_WriteBarrier_Loc,8,3
+        .global C_FUNC(JIT_WriteBarrier_Loc)
+#ifdef TARGET_OSX
+        .zerofill __DATA,__common,C_FUNC(JIT_WriteBarrier_Loc),8,3
+#else
+        .data
+    C_FUNC(JIT_WriteBarrier_Loc):
+        .quad 0
+        .text
+#endif
 
 // ------------------------------------------------------------------
 // __declspec(naked) void F_CALL_CONV JIT_WriteBarrier_Callable(Object **dst, Object* val)
@@ -411,8 +477,6 @@ LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
     // JIT_WriteBarrier(Object** dst, Object* src)
     jmp     [rip + C_FUNC(JIT_WriteBarrier_Loc)]
 LEAF_END JIT_WriteBarrier_Callable, _TEXT
-
-#endif // FEATURE_WRITEBARRIER_COPY
 
 
 // The following helper will access ("probe") a word on each page of the stack
@@ -455,3 +519,13 @@ LOCAL_LABEL(ProbeLoop):
         ret
 
 LEAF_END_MARKED JIT_StackProbe, _TEXT
+
+LEAF_ENTRY JIT_ValidateIndirectCall, _TEST
+        ret
+LEAF_END JIT_ValidateIndirectCall, _TEST
+
+LEAF_ENTRY JIT_DispatchIndirectCall, _TEST
+        movabs r10, 0xCDCDCDCDCDCDCDCD // The real helper clobbers these registers, so clobber them too in the fake helper
+        movabs r11, 0xCDCDCDCDCDCDCDCD
+        rex64 jmp rax
+LEAF_END JIT_DispatchIndirectCall, _TEST

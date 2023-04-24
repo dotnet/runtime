@@ -6,6 +6,6 @@
     <Compile Include="*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\LPArrayNative\CMakeLists.txt" />
+    <CMakeProjectReference Include="..\LPArrayNative\CMakeLists.txt" />
   </ItemGroup>
 </Project>

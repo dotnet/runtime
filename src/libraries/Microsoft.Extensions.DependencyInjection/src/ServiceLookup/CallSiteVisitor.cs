@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -19,7 +18,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (!_stackGuard.TryEnterOnCurrentStack())
             {
-                return _stackGuard.RunOnEmptyStack((c, a) => VisitCallSite(c, a), callSite, argument);
+                return _stackGuard.RunOnEmptyStack(VisitCallSite, callSite, argument);
             }
 
             switch (callSite.Cache.Location)
@@ -51,8 +50,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     return VisitConstant((ConstantCallSite)callSite, argument);
                 case CallSiteKind.ServiceProvider:
                     return VisitServiceProvider((ServiceProviderCallSite)callSite, argument);
-                case CallSiteKind.ServiceScopeFactory:
-                    return VisitServiceScopeFactory((ServiceScopeFactoryCallSite)callSite, argument);
                 default:
                     throw new NotSupportedException(SR.Format(SR.CallSiteTypeNotSupported, callSite.GetType()));
             }
@@ -83,8 +80,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected abstract TResult VisitConstant(ConstantCallSite constantCallSite, TArgument argument);
 
         protected abstract TResult VisitServiceProvider(ServiceProviderCallSite serviceProviderCallSite, TArgument argument);
-
-        protected abstract TResult VisitServiceScopeFactory(ServiceScopeFactoryCallSite serviceScopeFactoryCallSite, TArgument argument);
 
         protected abstract TResult VisitIEnumerable(IEnumerableCallSite enumerableCallSite, TArgument argument);
 

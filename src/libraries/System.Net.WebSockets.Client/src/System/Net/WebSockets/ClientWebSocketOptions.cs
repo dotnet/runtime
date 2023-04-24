@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Http;
 using System.Net.Security;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
@@ -25,10 +26,48 @@ namespace System.Net.WebSockets
         internal X509CertificateCollection? _clientCertificates;
         internal WebHeaderCollection? _requestHeaders;
         internal List<string>? _requestedSubProtocols;
+        private Version _version = Net.HttpVersion.Version11;
+        private HttpVersionPolicy _versionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+        private bool _collectHttpResponseDetails;
+
+        internal bool AreCompatibleWithCustomInvoker() =>
+            !UseDefaultCredentials &&
+            Credentials is null &&
+            (_clientCertificates?.Count ?? 0) == 0 &&
+            RemoteCertificateValidationCallback is null &&
+            Cookies is null &&
+            (Proxy is null || Proxy == WebSocketHandle.DefaultWebProxy.Instance);
 
         internal ClientWebSocketOptions() { } // prevent external instantiation
 
         #region HTTP Settings
+
+        /// <summary>Gets or sets the HTTP version to use.</summary>
+        /// <value>The HTTP message version. The default value is <c>1.1</c>.</value>
+        public Version HttpVersion
+        {
+            get => _version;
+            [UnsupportedOSPlatform("browser")]
+            set
+            {
+                ThrowIfReadOnly();
+                ArgumentNullException.ThrowIfNull(value);
+                _version = value;
+            }
+        }
+
+        /// <summary>Gets or sets the policy that determines how <see cref="ClientWebSocketOptions.HttpVersion" /> is interpreted and how the final HTTP version is negotiated with the server.</summary>
+        /// <value>The version policy used when the HTTP connection is established.</value>
+        public HttpVersionPolicy HttpVersionPolicy
+        {
+            get => _versionPolicy;
+            [UnsupportedOSPlatform("browser")]
+            set
+            {
+                ThrowIfReadOnly();
+                _versionPolicy = value;
+            }
+        }
 
         [UnsupportedOSPlatform("browser")]
         // Note that some headers are restricted like Host.
@@ -84,7 +123,8 @@ namespace System.Net.WebSockets
             set
             {
                 ThrowIfReadOnly();
-                _clientCertificates = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                _clientCertificates = value;
             }
         }
 
@@ -148,6 +188,18 @@ namespace System.Net.WebSockets
             }
         }
 
+        /// <summary>
+        /// Gets or sets the options for the per-message-deflate extension.
+        /// When present, the options are sent to the server during the handshake phase. If the server
+        /// supports per-message-deflate and the options are accepted, the <see cref="WebSocket"/> instance
+        /// will be created with compression enabled by default for all messages.<para />
+        /// Be aware that enabling compression makes the application subject to CRIME/BREACH type of attacks.
+        /// It is strongly advised to turn off compression when sending data containing secrets by
+        /// specifying <see cref="WebSocketMessageFlags.DisableCompression" /> flag for such messages.
+        /// </summary>
+        [UnsupportedOSPlatform("browser")]
+        public WebSocketDeflateOptions? DangerousDeflateOptions { get; set; }
+
         internal int ReceiveBufferSize => _receiveBufferSize;
         internal ArraySegment<byte>? Buffer => _buffer;
 
@@ -156,14 +208,8 @@ namespace System.Net.WebSockets
         {
             ThrowIfReadOnly();
 
-            if (receiveBufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize, SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 1));
-            }
-            if (sendBufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(sendBufferSize), sendBufferSize, SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 1));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(receiveBufferSize);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sendBufferSize);
 
             _receiveBufferSize = receiveBufferSize;
             _buffer = null;
@@ -174,23 +220,28 @@ namespace System.Net.WebSockets
         {
             ThrowIfReadOnly();
 
-            if (receiveBufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize, SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 1));
-            }
-            if (sendBufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(sendBufferSize), sendBufferSize, SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 1));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(receiveBufferSize);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sendBufferSize);
 
             WebSocketValidate.ValidateArraySegment(buffer, nameof(buffer));
-            if (buffer.Count == 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(buffer));
-            }
+            ArgumentOutOfRangeException.ThrowIfZero(buffer.Count, nameof(buffer));
 
             _receiveBufferSize = receiveBufferSize;
             _buffer = buffer;
+        }
+
+        /// <summary>
+        /// Indicates whether <see cref="ClientWebSocket.HttpStatusCode" /> and <see cref="ClientWebSocket.HttpResponseHeaders" /> should be set when establishing the connection.
+        /// </summary>
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public bool CollectHttpResponseDetails
+        {
+            get => _collectHttpResponseDetails;
+            set
+            {
+                ThrowIfReadOnly();
+                _collectHttpResponseDetails = value;
+            }
         }
 
         #endregion WebSocket settings

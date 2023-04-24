@@ -3,10 +3,8 @@
 
 using System;
 using System.Reflection.Metadata;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
-
-using Internal.TypeSystem;
+using System.Text;
 using System.Collections.Generic;
 
 namespace Internal.TypeSystem.Ecma
@@ -48,10 +46,9 @@ namespace Internal.TypeSystem.Ecma
             _resolutionFailure = null;
         }
 
-        void SetResolutionFailure(ResolutionFailure failure)
+        private void SetResolutionFailure(ResolutionFailure failure)
         {
-            if (_resolutionFailure == null)
-                _resolutionFailure = failure;
+            _resolutionFailure ??= failure;
         }
 
         public ResolutionFailure ResolutionFailure => _resolutionFailure;
@@ -85,7 +82,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private TypeDesc GetWellKnownType(WellKnownType wellKnownType)
+        private DefType GetWellKnownType(WellKnownType wellKnownType)
         {
             return _tsc.GetWellKnownType(wellKnownType);
         }
@@ -99,10 +96,7 @@ namespace Internal.TypeSystem.Ecma
                 _indexStack.Push(0);
             }
             TypeDesc result = ParseTypeImpl(typeCode);
-            if (_indexStack != null)
-            {
-                _indexStack.Pop();
-            }
+            _indexStack?.Pop();
             return result;
         }
 
@@ -159,13 +153,42 @@ namespace Internal.TypeSystem.Ecma
                         var elementType = ParseType();
                         var rank = _reader.ReadCompressedInteger();
 
-                        // TODO: Bounds for multi-dimmensional arrays
-                        var boundsCount = _reader.ReadCompressedInteger();
-                        for (int i = 0; i < boundsCount; i++)
-                            _reader.ReadCompressedInteger();
-                        var lowerBoundsCount = _reader.ReadCompressedInteger();
-                        for (int j = 0; j < lowerBoundsCount; j++)
-                            _reader.ReadCompressedInteger();
+                        if (_embeddedSignatureDataList != null)
+                        {
+                            var boundsCount = _reader.ReadCompressedInteger();
+                            int []bounds = boundsCount > 0 ? new int[boundsCount] : Array.Empty<int>();
+                            for (int i = 0; i < boundsCount; i++)
+                                bounds[i] = _reader.ReadCompressedInteger();
+
+                            var lowerBoundsCount = _reader.ReadCompressedInteger();
+                            int []lowerBounds = lowerBoundsCount > 0 ? new int[lowerBoundsCount] : Array.Empty<int>();
+                            bool nonZeroLowerBounds = false;
+                            for (int j = 0; j < lowerBoundsCount; j++)
+                            {
+                                int loBound = _reader.ReadCompressedSignedInteger();
+                                if (loBound != 0)
+                                    nonZeroLowerBounds = true;
+                                lowerBounds[j] = loBound;
+                            }
+
+                            if (boundsCount != 0 || lowerBoundsCount != rank || nonZeroLowerBounds)
+                            {
+                                StringBuilder arrayShapeString = new StringBuilder();
+                                arrayShapeString.Append(string.Join(",", bounds));
+                                arrayShapeString.Append('|');
+                                arrayShapeString.Append(string.Join(",", lowerBounds));
+                                _embeddedSignatureDataList.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack) + "|" + arrayShapeString.ToString(), kind = EmbeddedSignatureDataKind.ArrayShape, type = null });
+                            }
+                        }
+                        else
+                        {
+                            var boundsCount = _reader.ReadCompressedInteger();
+                            for (int i = 0; i < boundsCount; i++)
+                                _reader.ReadCompressedInteger();
+                            var lowerBoundsCount = _reader.ReadCompressedInteger();
+                            for (int j = 0; j < lowerBoundsCount; j++)
+                                _reader.ReadCompressedSignedInteger();
+                        }
 
                         if (elementType != null)
                             return _tsc.GetArrayType(elementType, rank);
@@ -226,7 +249,8 @@ namespace Internal.TypeSystem.Ecma
                     else
                         return null;
                 default:
-                    throw new BadImageFormatException();
+                    ThrowHelper.ThrowBadImageFormatException();
+                    return null;
             }
         }
 
@@ -239,10 +263,7 @@ namespace Internal.TypeSystem.Ecma
                 _indexStack.Push(0);
             }
             SignatureTypeCode result = ParseTypeCodeImpl(skipPinned);
-            if (_indexStack != null)
-            {
-                _indexStack.Pop();
-            }
+            _indexStack?.Pop();
             return result;
         }
 
@@ -255,20 +276,14 @@ namespace Internal.TypeSystem.Ecma
                 if (typeCode == SignatureTypeCode.RequiredModifier)
                 {
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
-                    if (_embeddedSignatureDataList != null)
-                    {
-                        _embeddedSignatureDataList.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.RequiredCustomModifier, type = ResolveHandle(typeHandle) });
-                    }
+                    _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.RequiredCustomModifier, type = ResolveHandle(typeHandle) });
                     continue;
                 }
 
                 if (typeCode == SignatureTypeCode.OptionalModifier)
                 {
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
-                    if (_embeddedSignatureDataList != null)
-                    {
-                        _embeddedSignatureDataList.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.OptionalCustomModifier, type = ResolveHandle(typeHandle) });
-                    }
+                    _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.OptionalCustomModifier, type = ResolveHandle(typeHandle) });
                     continue;
                 }
 
@@ -292,10 +307,7 @@ namespace Internal.TypeSystem.Ecma
                 _indexStack.Push(0);
             }
             TypeDesc result = ParseTypeImpl();
-            if (_indexStack != null)
-            {
-                _indexStack.Pop();
-            }
+            _indexStack?.Pop();
             return result;
         }
 
@@ -339,10 +351,7 @@ namespace Internal.TypeSystem.Ecma
                 _indexStack.Push(0);
             }
             MethodSignature result = ParseMethodSignatureImpl(skipEmbeddedSignatureData);
-            if (_indexStack != null)
-            {
-                _indexStack.Pop();
-            }
+            _indexStack?.Pop();
             return result;
         }
 
@@ -362,7 +371,19 @@ namespace Internal.TypeSystem.Ecma
                 Debug.Assert((int)MethodSignatureFlags.CallingConventionVarargs == (int)SignatureCallingConvention.VarArgs);
                 Debug.Assert((int)MethodSignatureFlags.UnmanagedCallingConvention == (int)SignatureCallingConvention.Unmanaged);
 
-                flags = (MethodSignatureFlags)signatureCallConv;
+                // If skipEmbeddedSignatureData is true, we're building the signature for the purposes of building a type.
+                // We normalize unmanaged calling convention into a single value - "unmanaged".
+                if (skipEmbeddedSignatureData)
+                {
+                    flags = MethodSignatureFlags.UnmanagedCallingConvention;
+
+                    // But we still need to remember this signature is different, so add this to the EmbeddedSignatureData of the owner signature.
+                    _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack) + "|" + ((int)signatureCallConv).ToString(), kind = EmbeddedSignatureDataKind.UnmanagedCallConv, type = null });
+                }
+                else
+                {
+                    flags = (MethodSignatureFlags)signatureCallConv;
+                }
             }
 
             if (!header.IsInstance)
@@ -440,6 +461,25 @@ namespace Internal.TypeSystem.Ecma
             return ParseType();
         }
 
+        public TypeDesc ParseFieldSignature(out EmbeddedSignatureData[] embeddedSigData)
+        {
+            try
+            {
+                _indexStack = new Stack<int>();
+                _indexStack.Push(1);
+                _indexStack.Push(0);
+                _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
+                TypeDesc parsedType = ParseFieldSignature();
+                embeddedSigData = _embeddedSignatureDataList.Count == 0 ? null : _embeddedSignatureDataList.ToArray();
+                return parsedType;
+            }
+            finally
+            {
+                _indexStack = null;
+                _embeddedSignatureDataList = null;
+            }
+        }
+
         public LocalVariableDefinition[] ParseLocalsSignature()
         {
             if (_reader.ReadSignatureHeader().Kind != SignatureKind.LocalVariables)
@@ -504,6 +544,8 @@ namespace Internal.TypeSystem.Ecma
             NativeTypeKind type = (NativeTypeKind)_reader.ReadByte();
             NativeTypeKind arraySubType = NativeTypeKind.Default;
             uint? paramNum = null, numElem = null;
+            string cookie = null;
+            TypeDesc marshallerType = null;
 
             switch (type)
             {
@@ -576,9 +618,6 @@ namespace Internal.TypeSystem.Ecma
                     break;
                 case NativeTypeKind.CustomMarshaler:
                     {
-                        // There's nobody to consume CustomMarshaller, so let's just parse the data
-                        // to avoid asserting later.
-
                         // Read typelib guid
                         _reader.ReadSerializedString();
 
@@ -586,10 +625,11 @@ namespace Internal.TypeSystem.Ecma
                         _reader.ReadSerializedString();
 
                         // Read managed marshaler name
-                        _reader.ReadSerializedString();
+                        var customMarshallerTypeName = _reader.ReadSerializedString();
+                        marshallerType = _ecmaModule.GetTypeByCustomAttributeTypeName(customMarshallerTypeName, true);
 
                         // Read cookie
-                        _reader.ReadSerializedString();
+                        cookie = _reader.ReadSerializedString();
                     }
                     break;
                 default:
@@ -598,7 +638,7 @@ namespace Internal.TypeSystem.Ecma
 
             Debug.Assert(_reader.RemainingBytes == 0);
 
-            return new MarshalAsDescriptor(type, arraySubType, paramNum, numElem);
+            return new MarshalAsDescriptor(type, arraySubType, paramNum, numElem, marshallerType, cookie);
         }
     }
 }

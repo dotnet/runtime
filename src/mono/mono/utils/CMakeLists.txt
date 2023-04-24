@@ -1,3 +1,4 @@
+project(utils C)
 
 set(utils_win32_sources
     mono-os-semaphore-win32.c
@@ -14,6 +15,10 @@ if(HOST_WIN32 AND HOST_AMD64)
     set(CMAKE_ASM_MASM_COMPILE_OPTIONS_MSVC_RUNTIME_LIBRARY_MultiThreadedDebugDLL "")
 
     list(APPEND utils_win32_sources win64.asm)
+elseif(HOST_WASI)
+    set (CMAKE_ASM_COMPILER_VERSION "${CMAKE_C_COMPILER_VERSION}")
+    set (CMAKE_ASM_COMPILER_TARGET "${CMAKE_C_COMPILER_TARGET}")
+    enable_language(ASM)
 endif()
 
 set(utils_unix_sources
@@ -23,6 +28,8 @@ set(utils_unix_sources
 
 if(HOST_WIN32)
     set(utils_platform_sources ${utils_win32_sources})
+elseif(HOST_WASI)
+    set(utils_platform_sources ${utils_unix_sources} mono-threads-wasi.S)
 else()
     set(utils_platform_sources ${utils_unix_sources})
 endif()
@@ -32,6 +39,7 @@ set(utils_common_sources
     mono-sha1.c
     mono-logger.c
     mono-logger-internals.h
+    mono-cgroup.c
     mono-codeman.c
     mono-counters.c
     mono-compiler.h
@@ -48,14 +56,8 @@ set(utils_common_sources
     mono-log-android.c
     mono-log-darwin.c
     mono-log-flight-recorder.c
-    mono-merp.c
-    mono-merp.h
-    mono-state.h
-    mono-state.c
     mono-internal-hash.c
     mono-internal-hash.h
-    mono-io-portability.c
-    mono-io-portability.h
     monobitset.c
     mono-filemap.c
     mono-math-c.c
@@ -71,14 +73,9 @@ set(utils_common_sources
     mono-coop-mutex.h
     mono-once.h
     mono-lazy-init.h
-    mono-networkinterfaces.c
-    mono-networkinterfaces.h
     mono-proclib.c
-    mono-proclib-windows.c
     mono-proclib.h
-    mono-proclib-windows-internals.h
     mono-publib.c
-    mono-jemalloc.c
     mono-string.h
     mono-time.c
     mono-time.h
@@ -94,21 +91,13 @@ set(utils_common_sources
     mono-stdlib.c
     mono-property-hash.h
     mono-property-hash.c
-    mono-value-hash.h
-    mono-value-hash.c
-    freebsd-elf_common.h
-    freebsd-elf32.h
-    freebsd-elf64.h
     freebsd-dwarf.h
     dtrace.h
-    gc_wrapper.h
     mono-error.c
     mono-error-internals.h
     monobitset.h
     mono-codeman.h
-    mono-counters.h
     mono-digest.h
-    mono-error.h
     mono-forward-internal.h
     mono-machine.h
     mono-math.h
@@ -149,6 +138,7 @@ set(utils_common_sources
     mono-threads-android.c
     mono-threads-haiku.c
     mono-threads-aix.c
+    mono-threads-wasm.h
     mono-threads-wasm.c
     mono-threads-sunos.c
     mono-threads.h
@@ -163,7 +153,6 @@ set(utils_common_sources
     mono-tls.c
     mono-utils-debug.c
     mono-utils-debug.h
-    linux_magic.h
     mono-memory-model.h
     atomic.h
     atomic.c
@@ -178,12 +167,6 @@ set(utils_common_sources
     mono-conc-hashtable.c
     json.h
     json.c
-    networking.c
-    networking-posix.c
-    networking-fallback.c
-    networking-missing.c
-    networking-windows.c
-    networking.h
     mono-rand.c
     mono-rand-windows.c
     mono-rand.h
@@ -223,29 +206,60 @@ endif()
 
 if(MONO_CROSS_COMPILE)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-cross.c")
-elseif(TARGET_AMD64)
-set(utils_arch_sources "${utils_arch_sources};mono-hwcap-x86.c")
-elseif(TARGET_X86)
+elseif(TARGET_AMD64 OR TARGET_X86)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-x86.c")
 elseif(TARGET_ARM64)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm64.c")
 elseif(TARGET_ARM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm.c")
+elseif(TARGET_RISCV64)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-riscv.c")
+elseif(TARGET_S390X)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
+elseif(TARGET_WASI)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c")
+elseif(TARGET_POWERPC OR TARGET_POWERPC64)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-ppc.c")
 else()
   message(FATAL_ERROR "")
 endif()
 
-addprefix(utils_sources ../utils/ "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
+set(utils_sources "${utils_platform_sources};${utils_arch_sources};${utils_common_sources}")
 
-set(utils_public_headers_base
-    mono-logger.h
-    mono-error.h
-    mono-forward.h
-    mono-publib.h
-    mono-jemalloc.h
-    mono-dl-fallback.h
-    mono-private-unstable.h
-    mono-counters.h)
-addprefix(utils_public_headers ../utils "${utils_public_headers_base}")
+set(utils_sources
+    ${utils_sources}
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf_common.h
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf32.h
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/remote/freebsd-elf64.h)
+
+if(ENABLE_DTRACE)
+    find_program(DTRACE dtrace)
+    if(TARGET_OSX)
+        set(dtrace_flags "-arch ${TARGET_ARCH}")
+    else()
+        if(TARGET_SIZEOF_VOID_P EQUAL 8)
+            set(dtrace_flags "-64")
+        elseif(TARGET_SIZEOF_VOID_P EQUAL 4)
+            set(dtrace_flags "-32")
+        endif()
+    endif()
+
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h
+        COMMAND ${DTRACE} -h -s "${CMAKE_CURRENT_LIST_DIR}/mono.d" -o "${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h"
+        DEPENDS ${CMAKE_CURRENT_LIST_DIR}/mono.d
+        VERBATIM
+    )
+
+    set(utils_sources "${utils_sources};${CMAKE_CURRENT_LIST_DIR}/mono-dtrace.h;../utils/dtrace.h")
+endif()
+
+add_library(utils_objects OBJECT ${utils_sources})
+target_link_libraries(utils_objects PRIVATE monoapi eglib_api)
+target_compile_definitions(utils_objects PRIVATE -DMONO_DLL_EXPORT)
+target_include_directories(utils_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/../..
+  ${PROJECT_SOURCE_DIR}/..)
+

@@ -13,16 +13,14 @@ namespace System.Security.Cryptography.Pkcs
         // Constructors.
         //
 
-        public Pkcs9MessageDigest() :
-            base(Oids.MessageDigestOid.CopyOid())
+        public Pkcs9MessageDigest()
+            : base(Oids.MessageDigestOid.CopyOid())
         {
         }
 
-        internal Pkcs9MessageDigest(ReadOnlySpan<byte> signatureDigest)
+        internal Pkcs9MessageDigest(ReadOnlySpan<byte> rawData)
+            : base(Oids.MessageDigestOid.CopyOid(), rawData)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            writer.WriteOctetString(signatureDigest);
-            RawData = writer.Encode();
         }
 
         //
@@ -33,7 +31,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                return _lazyMessageDigest ?? (_lazyMessageDigest = Decode(RawData));
+                return _lazyMessageDigest ??= Decode(RawData);
             }
         }
 
@@ -47,7 +45,7 @@ namespace System.Security.Cryptography.Pkcs
         // Private methods.
         //
 
-        [return: NotNullIfNotNull("rawData")]
+        [return: NotNullIfNotNull(nameof(rawData))]
         private static byte[]? Decode(byte[]? rawData)
         {
             if (rawData == null)

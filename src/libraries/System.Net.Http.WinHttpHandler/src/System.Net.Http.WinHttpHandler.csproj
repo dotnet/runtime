@@ -1,20 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppPrevious)-windows;$(NetCoreAppPrevious);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <TargetFrameworks>netstandard2.0-windows;netstandard2.0;netstandard2.1-windows;netstandard2.1;net461-windows</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Nullable>enable</Nullable>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides a message handler for HttpClient based on the WinHTTP interface of Windows. While similar to HttpClientHandler, it provides developers more granular control over the application's HTTP communication than the HttpClientHandler.
+
+Commonly Used Types:
+System.Net.Http.WinHttpHandler</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="$(TargetFramework.StartsWith('netstandard')) and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_WinHttpHandler</GeneratePlatformNotSupportedAssemblyMessage>
-    <!-- Ensure Assemblies are first resolved via targeting pack when targeting net461 -->
-    <AssemblySearchPaths Condition="'$(TargetFramework)' == 'net461'">$(NuGetPackageRoot)\microsoft.targetingpack.netframework.v4.6.1\1.0.1\lib\net461\;$(AssemblySearchPaths)</AssemblySearchPaths>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETFramework' and '$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_WinHttpHandler</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
-  </ItemGroup>  
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'" >
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' or '$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs"
@@ -77,13 +79,12 @@
              Link="Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs"
              Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="System\Net\Http\NetEventSource.WinHttpHandler.cs" />
     <Compile Include="System\Net\Http\NoWriteNoSeekStreamContent.cs" />
     <Compile Include="System\Net\Http\WinHttpAuthHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpCertificateHelper.cs" />
     <Compile Include="System\Net\Http\WinHttpChannelBinding.cs" />
+    <Compile Include="System\Net\Http\WinHttpChunkMode.cs" />
     <Compile Include="System\Net\Http\WinHttpCookieContainerAdapter.cs" />
     <Compile Include="System\Net\Http\WinHttpException.cs" />
     <Compile Include="System\Net\Http\WinHttpHandler.cs" />
@@ -100,13 +101,24 @@
              Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs"
+             Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
-  <ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0-windows'))">
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToAsyncResult.cs" Link="Common\System\Threading\Tasks\TaskToAsyncResult.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
-  </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 </Project>

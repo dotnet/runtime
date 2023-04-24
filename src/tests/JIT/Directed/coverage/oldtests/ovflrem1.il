@@ -6,13 +6,17 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly ovflrem1 {}
-.class private auto ansi beforefieldinit ovflrem1
+.class public auto ansi beforefieldinit ovflrem1
        extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32  Main(string[] args) cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  10
 

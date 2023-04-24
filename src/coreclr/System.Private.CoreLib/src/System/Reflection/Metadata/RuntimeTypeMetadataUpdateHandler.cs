@@ -14,7 +14,7 @@ namespace System.Reflection.Metadata
         /// <summary>Clear type caches in response to an update notification.</summary>
         /// <param name="types">The specific types to be cleared, or null to clear everything.</param>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Clearing the caches on a Type isn't affected if a Type is trimmed, or has any of its members trimmed.")]
-        public static void BeforeUpdate(Type[]? types)
+        public static void ClearCache(Type[]? types)
         {
             if (RequiresClearingAllTypes(types))
             {

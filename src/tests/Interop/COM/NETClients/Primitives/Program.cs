@@ -6,11 +6,11 @@ namespace NetClient
     using System;
     using System.Threading;
     using System.Runtime.InteropServices;
-    using TestLibrary;
+    using Xunit;
 
     class Program
     {
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             // RegFree COM is not supported on Windows Nano
             if (TestLibrary.Utilities.IsWindowsNanoServer)

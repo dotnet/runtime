@@ -1,16 +1,47 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System
 {
     public sealed class OperatingSystem : ISerializable, ICloneable
     {
-#if TARGET_UNIX && !TARGET_OSX
-        private static readonly string s_osPlatformName = Interop.Sys.GetUnixName();
+        private const string OSPlatformName =
+#if TARGET_BROWSER
+        "BROWSER"
+#elif TARGET_WASI
+        "WASI"
+#elif TARGET_WINDOWS
+        "WINDOWS"
+#elif TARGET_OSX
+        "OSX"
+#elif TARGET_MACCATALYST
+        "MACCATALYST"
+#elif TARGET_IOS
+        "IOS"
+#elif TARGET_TVOS
+        "TVOS"
+#elif TARGET_ANDROID
+        "ANDROID"
+#elif TARGET_LINUX
+        "LINUX"
+#elif TARGET_FREEBSD
+        "FREEBSD"
+#elif TARGET_NETBSD
+        "NETBSD"
+#elif TARGET_ILLUMOS
+        "ILLUMOS"
+#elif TARGET_SOLARIS
+        "SOLARIS"
+#else
+#error Unknown OS, add a corresponding TARGET_* constant to System.Private.CoreLib.Shared.projitems
 #endif
+        ;
 
         private readonly Version _version;
         private readonly PlatformID _platform;
@@ -28,16 +59,15 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(platform), platform, SR.Format(SR.Arg_EnumIllegalVal, platform));
             }
 
-            if (version == null)
-            {
-                throw new ArgumentNullException(nameof(version));
-            }
+            ArgumentNullException.ThrowIfNull(version);
 
             _platform = platform;
             _version = version;
             _servicePack = servicePack;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -75,9 +105,10 @@ namespace System
                             os = "<unknown> "; break;
                     }
 
+                    Span<char> stackBuffer = stackalloc char[128];
                     _versionString = string.IsNullOrEmpty(_servicePack) ?
-                        os + _version.ToString() :
-                        os + _version.ToString(3) + " " + _servicePack;
+                        string.Create(null, stackBuffer, $"{os}{_version}") :
+                        string.Create(null, stackBuffer, $"{os}{_version.ToString(3)} {_servicePack}");
                 }
 
                 return _versionString;
@@ -88,24 +119,18 @@ namespace System
         /// Indicates whether the current application is running on the specified platform.
         /// </summary>
         /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, watchOS, Windows.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsOSPlatform(string platform)
         {
-            if (platform == null)
-            {
-                throw new ArgumentNullException(nameof(platform));
-            }
+            ArgumentNullException.ThrowIfNull(platform);
 
-#if TARGET_BROWSER
-            return platform.Equals("BROWSER", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_WINDOWS
-            return platform.Equals("WINDOWS", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_OSX
-            return platform.Equals("OSX", StringComparison.OrdinalIgnoreCase) || platform.Equals("MACOS", StringComparison.OrdinalIgnoreCase);
-#elif TARGET_UNIX
-            return platform.Equals(s_osPlatformName, StringComparison.OrdinalIgnoreCase);
-#else
-#error Unknown OS
+            return platform.Equals(OSPlatformName, StringComparison.OrdinalIgnoreCase)
+#if TARGET_OSX
+            || platform.Equals("MACOS", StringComparison.OrdinalIgnoreCase)
+#elif TARGET_MACCATALYST
+            || platform.Equals("IOS", StringComparison.OrdinalIgnoreCase)
 #endif
+            ;
         }
 
         /// <summary>
@@ -122,6 +147,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running as WASM in a Browser.
         /// </summary>
+        [NonVersionable]
         public static bool IsBrowser() =>
 #if TARGET_BROWSER
             true;
@@ -130,10 +156,22 @@ namespace System
 #endif
 
         /// <summary>
+        /// Indicates whether the current application is running as WASI.
+        /// </summary>
+        [NonVersionable]
+        public static bool IsWasi() =>
+#if TARGET_WASI
+            true;
+#else
+            false;
+#endif
+
+        /// <summary>
         /// Indicates whether the current application is running on Linux.
         /// </summary>
+        [NonVersionable]
         public static bool IsLinux() =>
-#if TARGET_LINUX
+#if TARGET_LINUX && !TARGET_ANDROID
             true;
 #else
             false;
@@ -142,6 +180,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on FreeBSD.
         /// </summary>
+        [NonVersionable]
         public static bool IsFreeBSD() =>
 #if TARGET_FREEBSD
             true;
@@ -158,6 +197,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on Android.
         /// </summary>
+        [NonVersionable]
         public static bool IsAndroid() =>
 #if TARGET_ANDROID
             true;
@@ -166,32 +206,44 @@ namespace System
 #endif
 
         /// <summary>
-        /// Check for the Android version (returned by 'uname') with a >= version comparison. Used to guard APIs that were added in the given Android release.
+        /// Check for the Android API level (returned by 'ro.build.version.sdk') with a >= version comparison. Used to guard APIs that were added in the given Android release.
         /// </summary>
         public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0)
             => IsAndroid() && IsOSVersionAtLeast(major, minor, build, revision);
 
         /// <summary>
-        /// Indicates whether the current application is running on iOS.
+        /// Indicates whether the current application is running on iOS or MacCatalyst.
         /// </summary>
+        [SupportedOSPlatformGuard("maccatalyst")]
+        [NonVersionable]
         public static bool IsIOS() =>
-#if TARGET_IOS
+#if TARGET_IOS || TARGET_MACCATALYST
             true;
 #else
             false;
 #endif
 
         /// <summary>
-        /// Check for the iOS version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given iOS release.
+        /// Check for the iOS/MacCatalyst version (returned by 'libobjc.get_operatingSystemVersion') with a >= version comparison. Used to guard APIs that were added in the given iOS release.
         /// </summary>
+        [SupportedOSPlatformGuard("maccatalyst")]
+        [NonVersionable]
         public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0)
             => IsIOS() && IsOSVersionAtLeast(major, minor, build, 0);
 
         /// <summary>
         /// Indicates whether the current application is running on macOS.
         /// </summary>
+        [NonVersionable]
         public static bool IsMacOS() =>
 #if TARGET_OSX
+            true;
+#else
+            false;
+#endif
+
+        internal static bool IsOSXLike() =>
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             true;
 #else
             false;
@@ -206,6 +258,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on Mac Catalyst.
         /// </summary>
+        [NonVersionable]
         public static bool IsMacCatalyst() =>
 #if TARGET_MACCATALYST
             true;
@@ -222,6 +275,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on tvOS.
         /// </summary>
+        [NonVersionable]
         public static bool IsTvOS() =>
 #if TARGET_TVOS
             true;
@@ -238,6 +292,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on watchOS.
         /// </summary>
+        [NonVersionable]
         public static bool IsWatchOS() =>
 #if TARGET_WATCHOS
             true;
@@ -254,6 +309,7 @@ namespace System
         /// <summary>
         /// Indicates whether the current application is running on Windows.
         /// </summary>
+        [NonVersionable]
         public static bool IsWindows() =>
 #if TARGET_WINDOWS
             true;

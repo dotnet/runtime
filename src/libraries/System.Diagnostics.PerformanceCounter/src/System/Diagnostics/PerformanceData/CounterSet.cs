@@ -126,10 +126,8 @@ namespace System.Diagnostics.PerformanceData
         /// <param name="counterName">This is friendly name to help provider developers as indexer. and it might not match what is displayed in counter consumption applications lie perfmon.</param>
         public void AddCounter(int counterId, CounterType counterType, string counterName)
         {
-            if (counterName == null)
-            {
-                throw new ArgumentNullException(nameof(counterName));
-            }
+            ArgumentNullException.ThrowIfNull(counterName);
+
             if (counterName.Length == 0)
             {
                 throw new ArgumentException(SR.Perflib_Argument_EmptyCounterName, nameof(counterName));
@@ -174,10 +172,8 @@ namespace System.Diagnostics.PerformanceData
         /// <returns>CounterSetInstance object</returns>
         public CounterSetInstance CreateCounterSetInstance(string instanceName)
         {
-            if (instanceName == null)
-            {
-                throw new ArgumentNullException(nameof(instanceName));
-            }
+            ArgumentNullException.ThrowIfNull(instanceName);
+
             if (instanceName.Length == 0)
             {
                 throw new ArgumentException(SR.Perflib_Argument_EmptyInstanceName, nameof(instanceName));

@@ -40,7 +40,7 @@
 //    Crst *pcrst = new Crst(type);
 //
 //      where "type" is one of the enums created in the auto-generated
-//      file:..\inc\CrstTypes.h header file (matching the definition in
+//      file:..\inc\crsttypes_generated.h header file (matching the definition in
 //      file:..\inc\CrstTypes.def).
 //
 //      By default, crsts don't support nested enters by the same thread. If
@@ -240,11 +240,11 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         if (bSet)
-            FastInterlockIncrement(&m_cannotLeave);
+            InterlockedIncrement(&m_cannotLeave);
         else
         {
             _ASSERTE(m_cannotLeave);
-            FastInterlockDecrement(&m_cannotLeave);
+            InterlockedDecrement(&m_cannotLeave);
         }
     };
     //-----------------------------------------------------------------
@@ -253,11 +253,7 @@ public:
     BOOL OwnedByCurrentThread()
     {
         WRAPPER_NO_CONTRACT;
-#ifdef CROSSGEN_COMPILE
-        return TRUE;
-#else
         return m_holderthreadid.IsCurrentThread();
-#endif
     }
 
     NOINLINE EEThreadId GetHolderThreadId()
@@ -423,6 +419,12 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         return new BYTE[size];
+    }
+
+    void operator delete(void* mem)
+    {
+        WRAPPER_NO_CONTRACT;
+        delete[] (BYTE*)mem;
     }
 
 private:

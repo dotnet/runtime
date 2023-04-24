@@ -1,0 +1,7 @@
+<Project>
+  <Import Project="runtime.native.System.IO.Ports.props" />
+  <PropertyGroup>
+    <!-- This is a native package, where package baseline validation doesn't really make much sense -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+  </PropertyGroup>
+</Project>

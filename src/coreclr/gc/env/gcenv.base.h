@@ -6,6 +6,8 @@
 // Sets up basic environment for CLR GC
 //
 
+#include <minipal/utils.h>
+
 #ifdef _MSC_VER
 #include <intrin.h>
 #endif // _MSC_VER
@@ -41,6 +43,10 @@
 #endif
 #ifndef SSIZE_T_MAX
 #define SSIZE_T_MAX ((ptrdiff_t)(SIZE_T_MAX / 2))
+#endif
+
+#ifndef __has_builtin
+#define __has_builtin(x) 0
 #endif
 
 #ifndef _INC_WINDOWS
@@ -80,6 +86,7 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT    0x8013200B
 #define CLR_E_GC_BAD_HARD_LIMIT                0x8013200D
 #define CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT 0x8013200E
+#define CLR_E_GC_BAD_REGION_SIZE               0x8013200F
 
 #define NOERROR                 0x0
 #define ERROR_TIMEOUT           1460
@@ -93,10 +100,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define INFINITE 0xFFFFFFFF
 
 #define ZeroMemory(Destination,Length) memset((Destination),0,(Length))
-
-#ifndef _countof
-#define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
-#endif
 
 #ifndef min
 #define min(a,b) (((a) < (b)) ? (a) : (b))
@@ -113,7 +116,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #ifdef TARGET_UNIX
 #define _vsnprintf_s(string, sizeInBytes, count, format, args) vsnprintf(string, sizeInBytes, format, args)
 #define sprintf_s snprintf
-#define swprintf_s swprintf
 #define _snprintf_s(string, sizeInBytes, count, format, ...) \
   snprintf(string, sizeInBytes, format, ## __VA_ARGS__)
 #endif
@@ -121,12 +123,10 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #ifdef UNICODE
 #define _tcslen wcslen
 #define _tcscpy wcscpy
-#define _stprintf_s swprintf_s
 #define _tfopen _wfopen
 #else
 #define _tcslen strlen
 #define _tcscpy strcpy
-#define _stprintf_s sprintf_s
 #define _tfopen fopen
 #endif
 
@@ -191,26 +191,15 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #endif
 #else // _MSC_VER
 
-#ifdef __llvm__
-#define HAS_IA32_PAUSE __has_builtin(__builtin_ia32_pause)
-#define HAS_IA32_MFENCE __has_builtin(__builtin_ia32_mfence)
-#else
-#define HAS_IA32_PAUSE 0
-#define HAS_IA32_MFENCE 0
-#endif
-
-// Only clang defines __has_builtin, so we first test for a GCC define
-// before using __has_builtin.
-
 #if defined(__i386__) || defined(__x86_64__)
 
-#if (__GNUC__ > 4 && __GNUC_MINOR > 7) || HAS_IA32_PAUSE
+#if __has_builtin(__builtin_ia32_pause)
  // clang added this intrinsic in 3.8
  // gcc added this intrinsic by 4.7.1
  #define YieldProcessor __builtin_ia32_pause
 #endif // __has_builtin(__builtin_ia32_pause)
 
-#if defined(__GNUC__) || HAS_IA32_MFENCE
+#if __has_builtin(__builtin_ia32_mfence)
  // clang has had this intrinsic since at least 3.0
  // gcc has had this intrinsic since forever
  #define MemoryBarrier __builtin_ia32_mfence
@@ -227,15 +216,20 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 
 #endif // defined(__i386__) || defined(__x86_64__)
 
-#ifdef __aarch64__
+#if defined(__arm__) || defined(__aarch64__)
  #define YieldProcessor() asm volatile ("yield")
  #define MemoryBarrier __sync_synchronize
-#endif // __aarch64__
+#endif // __arm__ || __aarch64__
 
-#ifdef __arm__
- #define YieldProcessor()
+#ifdef __loongarch64
+ #define YieldProcessor() __asm__ volatile( "dbar 0; \n")
  #define MemoryBarrier __sync_synchronize
-#endif // __arm__
+#endif // __loongarch64
+
+#ifdef __riscv
+ #define YieldProcessor() asm volatile( ".word 0x0100000f");
+ #define MemoryBarrier __sync_synchronize
+#endif // __riscv
 
 #endif // _MSC_VER
 
@@ -414,7 +408,7 @@ typedef struct _PROCESSOR_NUMBER {
 
 // -----------------------------------------------------------------------------------------------------------
 //
-// The subset of the contract code required by the GC/HandleTable sources. If Redhawk moves to support
+// The subset of the contract code required by the GC/HandleTable sources. If NativeAOT moves to support
 // contracts these local definitions will disappear and be replaced by real implementations.
 //
 
@@ -496,8 +490,6 @@ class MethodTable;
 class Object;
 class ArrayBase;
 
-// Various types used to refer to object references or handles. This will get more complex if we decide
-// Redhawk wants to wrap object references in the debug build.
 typedef DPTR(Object) PTR_Object;
 typedef DPTR(PTR_Object) PTR_PTR_Object;
 
@@ -534,7 +526,11 @@ namespace ETW
         GC_ROOT_HANDLES = 2,
         GC_ROOT_OLDER = 3,
         GC_ROOT_SIZEDREF = 4,
-        GC_ROOT_OVERFLOW = 5
+        GC_ROOT_OVERFLOW = 5,
+        GC_ROOT_DH_HANDLES = 6,
+        GC_ROOT_NEW_FQ = 7,
+        GC_ROOT_STEAL = 8,
+        GC_ROOT_BGC = 9
     } GC_ROOT_KIND;
 };
 

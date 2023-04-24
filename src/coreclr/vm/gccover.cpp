@@ -36,7 +36,7 @@
 
 MethodDesc* AsMethodDesc(size_t addr);
 static PBYTE getTargetOfCall(PBYTE instrPtr, PCONTEXT regs, PBYTE*nextInstr);
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 static void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID codeStart);
 static bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 stopOffset, LPVOID codeStart);
 #endif
@@ -52,19 +52,50 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
         return targetMD;
     }
 
-    VirtualCallStubManager::StubKind vsdStubKind = VirtualCallStubManager::SK_UNKNOWN;
-    VirtualCallStubManager *pVSDStubManager = VirtualCallStubManager::FindStubManager(target, &vsdStubKind);
-    if (vsdStubKind != VirtualCallStubManager::SK_BREAKPOINT && vsdStubKind != VirtualCallStubManager::SK_UNKNOWN)
+    auto stubKind = RangeSectionStubManager::GetStubKind(target);
+
+    if ((stubKind == STUB_CODE_BLOCK_VSD_DISPATCH_STUB) ||
+        (stubKind == STUB_CODE_BLOCK_VSD_RESOLVE_STUB) ||
+        (stubKind == STUB_CODE_BLOCK_VSD_LOOKUP_STUB) ||
+        (stubKind == STUB_CODE_BLOCK_VSD_VTABLE_STUB))
     {
-        // It is a VSD stub manager.
-        DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pVSDStubManager, target, vsdStubKind));
-        _ASSERTE(token.IsValid());
-        return VirtualCallStubManager::GetInterfaceMethodDescFromToken(token);
+        VirtualCallStubManager *pVSDStubManager = VirtualCallStubManager::FindStubManager(target, &stubKind);
+        if (pVSDStubManager != NULL)
+        {
+            // It is a VSD stub manager.
+            DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pVSDStubManager, target, stubKind));
+            _ASSERTE(token.IsValid());
+            return VirtualCallStubManager::GetInterfaceMethodDescFromToken(token);
+        }
     }
-    if (RangeSectionStubManager::GetStubKind(target) == STUB_CODE_BLOCK_PRECODE)
+
+    if (stubKind == STUB_CODE_BLOCK_PRECODE)
     {
         // The address looks like a value stub, try to get the method descriptor.
         return MethodDesc::GetMethodDescFromStubAddr(target, TRUE);
+    }
+
+    if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
+    {
+        return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(target))->GetMethodDesc();
+    }
+
+    if (stubKind == STUB_CODE_BLOCK_FIXUPPRECODE)
+    {
+        if (!FixupPrecode::IsFixupPrecodeByASM(target))
+        {
+            // If the target slot points to the fixup part of the stub, the actual
+            // stub starts FixupPrecode::FixupCodeOffset bytes below the target,
+            // so we need to compensate for it.
+            target -= FixupPrecode::FixupCodeOffset;
+            if (!FixupPrecode::IsFixupPrecodeByASM(target))
+            {
+                _ASSERTE(!"Invalid FixupPrecode address"); // We should never get other precode type here
+                return nullptr;
+            }
+        }
+
+        return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(target))->GetMethodDesc();
     }
 
     return nullptr;
@@ -74,7 +105,7 @@ bool IsGcCoverageInterruptInstruction(PBYTE instrPtr)
 {
     UINT32 instrVal;
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     instrVal = *reinterpret_cast<UINT32*>(instrPtr);
 #elif defined(TARGET_ARM)
     size_t instrLen = GetARMInstructionLength(instrPtr);
@@ -95,7 +126,7 @@ bool IsGcCoverageInterruptInstruction(PBYTE instrPtr)
 
 bool IsOriginalInstruction(PBYTE instrPtr, GCCoverageInfo* gcCover, DWORD offset)
 {
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     UINT32 instrVal = *reinterpret_cast<UINT32*>(instrPtr);
     UINT32 origInstrVal = *reinterpret_cast<UINT32*>(gcCover->savedCode + offset);
     return (instrVal == origInstrVal);
@@ -151,7 +182,7 @@ void SetupAndSprinkleBreakpoints(
                                  fZapped);
 
     // This is not required for ARM* as the above call does the work for both hot & cold regions
-#if !defined(TARGET_ARM) && !defined(TARGET_ARM64)
+#if !defined(TARGET_ARM) && !defined(TARGET_ARM64)  && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     if (gcCover->methodRegion.coldSize != 0)
     {
         gcCover->SprinkleBreakpoints(gcCover->savedCode + gcCover->methodRegion.hotSize,
@@ -229,79 +260,6 @@ void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
     PCODE codeStart = (PCODE) methodStartPtr;
     SetupAndSprinkleBreakpointsForJittedMethod(nativeCodeVersion, codeStart);
 }
-
-#ifdef FEATURE_PREJIT
-
-void SetupGcCoverageForNativeMethod(NativeCodeVersion nativeCodeVersion,
-                                    PCODE codeStart,
-                                     IJitManager::MethodRegionInfo& methodRegionInfo
-                                   )
-{
-    _ASSERTE(!nativeCodeVersion.IsNull());
-
-    EECodeInfo codeInfo(codeStart);
-    _ASSERTE(codeInfo.IsValid());
-    _ASSERTE(codeInfo.GetRelOffset() == 0);
-
-    _ASSERTE(PCODEToPINSTR(codeStart) == methodRegionInfo.hotStartAddress);
-
-    SetupAndSprinkleBreakpoints(nativeCodeVersion,
-                                &codeInfo,
-                                methodRegionInfo,
-                                TRUE
-                               );
-}
-
-void SetupGcCoverageForNativeImage(Module* module)
-{
-    // Disable IBC logging here because of NGen image is not fully initialized yet. Eager bound
-    // indirection cells are not initialized yet and so IBC logging would crash while attempting to dereference them.
-    IBCLoggingDisabler disableLogging;
-
-#if 0
-    // Debug code
-    LPWSTR wszSetupGcCoverage = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_SetupGcCoverage);
-
-    if (!wszSetupGcCoverage)
-    {
-        printf("wszSetupGcCoverage is NULL. Will not SetupGcCoverage for any module.\n");
-        return;
-    }
-    else
-    {
-        if ((wcscmp(W("*"), wszSetupGcCoverage) == 0) ||  // "*" means will gcstress all modules
-            (wcsstr(module->GetDebugName(), wszSetupGcCoverage) != NULL))
-        {
-            printf("[%ws] matched %ws\n", wszSetupGcCoverage, module->GetDebugName());
-            // Fall through
-        }
-        else
-        {
-            printf("[%ws] NOT match %ws\n", wszSetupGcCoverage, module->GetDebugName());
-            return;
-        }
-    }
-#endif
-
-#ifdef _DEBUG
-    if (g_pConfig->SkipGCCoverage(module->GetSimpleName()))
-        return;
-#endif
-
-    MethodIterator mi(module);
-    while (mi.Next())
-    {
-        PTR_MethodDesc pMD = mi.GetMethodDesc();
-        PCODE pMethodStart = mi.GetMethodStartAddress();
-
-        IJitManager::MethodRegionInfo methodRegionInfo;
-        mi.GetMethodRegionInfo(&methodRegionInfo);
-
-        SetupGcCoverageForNativeMethod(NativeCodeVersion(pMD), pMethodStart, methodRegionInfo);
-    }
-}
-#endif
-
 
 void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
 {
@@ -385,6 +343,14 @@ void ReplaceInstrAfterCall(PBYTE instrToReplace, MethodDesc* callMD)
     {
         *instrToReplace = INTERRUPT_INSTR;
     }
+#elif defined(TARGET_LOONGARCH64)
+    bool protectReturn = ispointerKind;
+    if (protectReturn)
+        *(DWORD*)instrToReplace = INTERRUPT_INSTR_PROTECT_RET;
+    else
+        *(DWORD*)instrToReplace = INTERRUPT_INSTR;
+#elif defined(TARGET_RISCV64)
+    _ASSERTE(!"not implemented for RISCV64 NYI");
 #else
     _ASSERTE(!"not implemented for platform");
 #endif
@@ -491,6 +457,8 @@ void GCCoverageInfo::SprinkleBreakpoints(
 #if (defined(TARGET_X86) || defined(TARGET_AMD64)) && USE_DISASSEMBLER
 
     BYTE * codeStart = (BYTE *)pCode;
+    ExecutableWriterHolderNoLog<BYTE> codeWriterHolder;
+    size_t writeableOffset;
 
     memcpy(saveAddr, codeStart, codeSize);
 
@@ -499,6 +467,12 @@ void GCCoverageInfo::SprinkleBreakpoints(
     {
         DWORD oldProtect;
         ClrVirtualProtect(codeStart, codeSize, PAGE_EXECUTE_READWRITE, &oldProtect);
+        writeableOffset = 0;
+    }
+    else
+    {
+        codeWriterHolder.AssignExecutableWriterHolder(codeStart, codeSize);
+        writeableOffset = codeWriterHolder.GetRW() - codeStart;
     }
 
     PBYTE cur;
@@ -579,7 +553,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
             if(safePointDecoder.IsSafePoint((UINT32)(cur + len - codeStart + regionOffsetAdj)))
 #endif
             {
-               *cur = INTERRUPT_INSTR_CALL;        // return value.  May need to protect
+               *(cur + writeableOffset) = INTERRUPT_INSTR_CALL;        // return value.  May need to protect
             }
             break;
 
@@ -614,7 +588,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
 
         if (prevDirectCallTargetMD != 0)
         {
-            ReplaceInstrAfterCall(cur, prevDirectCallTargetMD);
+            ReplaceInstrAfterCall(cur + writeableOffset, prevDirectCallTargetMD);
         }
 
         // For fully interruptible code, we end up whacking every instruction
@@ -625,7 +599,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
         _ASSERTE(FitsIn<DWORD>(dwRelOffset));
         if (codeMan->IsGcSafe(&codeInfo, static_cast<DWORD>(dwRelOffset)))
         {
-            *cur = INTERRUPT_INSTR;
+            *(cur + writeableOffset) = INTERRUPT_INSTR;
         }
 
 #ifdef TARGET_X86
@@ -633,7 +607,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
         // our unwinding logic works there.
         if (codeMan->IsInPrologOrEpilog((cur - codeStart) + (DWORD)regionOffsetAdj, gcInfoToken, NULL))
         {
-            *cur = INTERRUPT_INSTR;
+            *(cur + writeableOffset) = INTERRUPT_INSTR;
         }
 #endif
 
@@ -660,7 +634,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
     if ((regionOffsetAdj==0) && (*codeStart != INTERRUPT_INSTR))
         doingEpilogChecks = false;
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     //Save the method code from hotRegion
     memcpy(saveAddr, (BYTE*)methodRegion.hotStartAddress, methodRegion.hotSize);
 
@@ -704,7 +678,7 @@ void GCCoverageInfo::SprinkleBreakpoints(
 #endif // TARGET_X86
 }
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
@@ -791,6 +765,22 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
     {
         instructionIsACallThroughRegister = TRUE;
     }
+#elif defined(TARGET_LOONGARCH64)
+    DWORD instr = *((DWORD*)savedInstrPtr - 1);
+
+    // Is the call through a register or an immediate offset
+    // bl
+    if (((instr >> 26) & 0x3F) == 0x15)
+    {
+        instructionIsACallThroughImmediate = TRUE;
+    }
+    // jirl
+    else if (((instr >> 26) & 0x3F) == 0x13)
+    {
+        instructionIsACallThroughRegister = TRUE;
+    }
+#elif defined(TARGET_RISCV64)
+    _ASSERTE(!"not implemented for RISCV64 NYI");
 #endif  // _TARGET_XXXX_
 
     // safe point must always be after a call instruction
@@ -801,14 +791,21 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
     // instruction will not be a call instruction.
     //_ASSERTE(instructionIsACallThroughRegister ^ instructionIsACallThroughImmediate);
 
+#if defined(TARGET_ARM)
+    size_t instrLen = sizeof(WORD);
+#else
+    size_t instrLen = sizeof(DWORD);
+#endif
+
+    ExecutableWriterHolder<BYTE> instrPtrWriterHolder(instrPtr - instrLen, 2 * instrLen);
     if(instructionIsACallThroughRegister)
     {
         // If it is call by register then cannot know MethodDesc so replace the call instruction with illegal instruction
         // safe point will be replaced with appropriate illegal instruction at execution time when reg value is known
 #if defined(TARGET_ARM)
-        *((WORD*)instrPtr - 1) = INTERRUPT_INSTR_CALL;
-#elif defined(TARGET_ARM64)
-        *((DWORD*)instrPtr - 1) = INTERRUPT_INSTR_CALL;
+        *((WORD*)instrPtrWriterHolder.GetRW()) = INTERRUPT_INSTR_CALL;
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        *((DWORD*)instrPtrWriterHolder.GetRW()) = INTERRUPT_INSTR_CALL;
 #endif // _TARGET_XXXX_
     }
     else if(instructionIsACallThroughImmediate)
@@ -849,14 +846,14 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
                 //
                 // Given all of this, skip the ReplaceInstrAfterCall call by default to avoid
                 // unexpected AVs.  This implies leaving out the GC coverage breakpoints for direct calls
-                // unless COMPlus_GcStressOnDirectCalls=1 is explicitly set in the environment.
+                // unless DOTNET_GcStressOnDirectCalls=1 is explicitly set in the environment.
                 //
 
                 static ConfigDWORD fGcStressOnDirectCalls;
 
                 if (fGcStressOnDirectCalls.val(CLRConfig::INTERNAL_GcStressOnDirectCalls))
                 {
-                    ReplaceInstrAfterCall(instrPtr, targetMD);
+                    ReplaceInstrAfterCall(instrPtrWriterHolder.GetRW() + instrLen, targetMD);
                 }
             }
         }
@@ -910,25 +907,27 @@ bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 sto
     // Need to do two iterations if interruptible range spans across hot & cold region
     while(acrossHotRegion--)
     {
-        PBYTE instrPtr = rangeStart;
-        while(instrPtr < rangeStop)
+        ExecutableWriterHolder<BYTE> instrPtrWriterHolder(rangeStart, rangeStop - rangeStart);
+        PBYTE instrPtrRW =  instrPtrWriterHolder.GetRW();
+        PBYTE rangeStopRW = instrPtrRW + (rangeStop - rangeStart);
+        while(instrPtrRW < rangeStopRW)
         {
             // The instruction about to be replaced cannot already be a gcstress instruction
-            _ASSERTE(!IsGcCoverageInterruptInstruction(instrPtr));
+            _ASSERTE(!IsGcCoverageInterruptInstruction(instrPtrRW));
 #if defined(TARGET_ARM)
-            size_t instrLen = GetARMInstructionLength(instrPtr);
+            size_t instrLen = GetARMInstructionLength(instrPtrRW);
 
             if (instrLen == 2)
-                *((WORD*)instrPtr)  = INTERRUPT_INSTR;
+                *((WORD*)instrPtrRW)  = INTERRUPT_INSTR;
             else
             {
-                *((DWORD*)instrPtr) = INTERRUPT_INSTR_32;
+                *((DWORD*)instrPtrRW) = INTERRUPT_INSTR_32;
             }
 
-            instrPtr += instrLen;
-#elif defined(TARGET_ARM64)
-            *((DWORD*)instrPtr) = INTERRUPT_INSTR;
-            instrPtr += 4;
+            instrPtrRW += instrLen;
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+            *((DWORD*)instrPtrRW) = INTERRUPT_INSTR;
+            instrPtrRW += 4;
 #endif // TARGET_XXXX_
 
         }
@@ -1008,6 +1007,28 @@ static PBYTE getTargetOfCall(PBYTE instrPtr, PCONTEXT regs, PBYTE* nextInstr) {
    {
        return 0; // Fail
    }
+#elif defined(TARGET_LOONGARCH64)
+    if ((((*reinterpret_cast<DWORD*>(instrPtr)) >> 26) & 0x3F) == 0x15)
+    {
+        int imm26 = (((*reinterpret_cast<DWORD*>(instrPtr)) & 0x3ff) << 16) | (((*reinterpret_cast<DWORD*>(instrPtr)) >> 10) & 0xffff);
+        *nextInstr = instrPtr + 4;
+        return PC + imm26;
+    }
+    else if ((((*reinterpret_cast<DWORD*>(instrPtr)) >> 26) & 0x3F) == 0x13)
+    {
+        // call through register
+        *nextInstr = instrPtr + 4;
+
+        assert((((*reinterpret_cast<DWORD*>(instrPtr)) >> 10) & 0xffff) == 0);
+        unsigned int regnum = ((*reinterpret_cast<DWORD*>(instrPtr)) >> 5) & 0x1F;
+        return (BYTE *)getRegVal(regnum, regs);
+    }
+    else
+    {
+        return 0; // Fail
+    }
+#elif defined(TARGET_RISCV64)
+    _ASSERTE(!"not implemented for RISCV64 NYI");
 #endif
 
 #ifdef TARGET_AMD64
@@ -1239,19 +1260,20 @@ bool IsGcCoverageInterrupt(LPVOID ip)
 
 void RemoveGcCoverageInterrupt(TADDR instrPtr, BYTE * savedInstrPtr, GCCoverageInfo* gcCover, DWORD offset)
 {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
+    ExecutableWriterHolder<void> instrPtrWriterHolder((void*)instrPtr, 4);
 #ifdef TARGET_ARM
-        if (GetARMInstructionLength(savedInstrPtr) == 2)
-            *(WORD *)instrPtr  = *(WORD *)savedInstrPtr;
-        else
-            *(DWORD *)instrPtr = *(DWORD *)savedInstrPtr;
+    if (GetARMInstructionLength(savedInstrPtr) == 2)
+        *(WORD *)instrPtrWriterHolder.GetRW()  = *(WORD *)savedInstrPtr;
+    else
+        *(DWORD *)instrPtrWriterHolder.GetRW() = *(DWORD *)savedInstrPtr;
 #elif defined(TARGET_ARM64)
-        *(DWORD *)instrPtr = *(DWORD *)savedInstrPtr;
+    *(DWORD *)instrPtrWriterHolder.GetRW() = *(DWORD *)savedInstrPtr;
+#elif defined(TARGET_LOONGARCH64)
+    *(DWORD *)instrPtrWriterHolder.GetRW() = *(DWORD *)savedInstrPtr;
+#elif defined(TARGET_RISCV64)
+    *(DWORD *)instrPtrWriterHolder.GetRW() = *(DWORD *)savedInstrPtr;
 #else
-        *(BYTE *)instrPtr = *savedInstrPtr;
+    *(BYTE *)instrPtrWriterHolder.GetRW() = *savedInstrPtr;
 #endif
 
 #ifdef TARGET_X86
@@ -1353,19 +1375,21 @@ BOOL OnGcCoverageInterrupt(PCONTEXT regs)
 #if defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX)
     // If we're unable to redirect, then we simply won't test GC at this
     // location.
-    if (!pThread->CheckForAndDoRedirectForGCStress(regs))
+    if (Thread::UseRedirectForGcStress())
     {
-        RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
+        if (!pThread->CheckForAndDoRedirectForGCStress(regs))
+        {
+            RemoveGcCoverageInterrupt(instrPtr, savedInstrPtr, gcCover, offset);
+        }
     }
-
-#else // !USE_REDIRECT_FOR_GCSTRESS
-
-#ifdef _DEBUG
-    if (!g_pConfig->SkipGCCoverage(pMD->GetModule()->GetSimpleName()))
-#endif
-    DoGcStress(regs, codeInfo.GetNativeCodeVersion());
-
+    else
 #endif // !USE_REDIRECT_FOR_GCSTRESS
+    {
+#ifdef _DEBUG
+        if (!g_pConfig->SkipGCCoverage(pMD->GetModule()->GetSimpleName()))
+#endif
+        DoGcStress(regs, codeInfo.GetNativeCodeVersion());
+    }
 
     return TRUE;
 }
@@ -1464,6 +1488,19 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     atCall = (instrVal == INTERRUPT_INSTR_CALL);
     afterCallProtect[0] = (instrVal == INTERRUPT_INSTR_PROTECT_RET);
 
+#elif defined(TARGET_LOONGARCH64)
+    DWORD instrVal = *(DWORD *)instrPtr;
+    forceStack[6] = &instrVal;            // This is so I can see it fastchecked
+
+    atCall = (instrVal == INTERRUPT_INSTR_CALL);
+    afterCallProtect[0] = (instrVal == INTERRUPT_INSTR_PROTECT_RET);
+#elif defined(TARGET_RISCV64)
+    _ASSERTE(!"not implemented for RISCV64 NYI");
+    DWORD instrVal = *(DWORD *)instrPtr;
+    forceStack[6] = &instrVal;            // This is so I can see it fastchecked
+
+    atCall = (instrVal == INTERRUPT_INSTR_CALL);
+    afterCallProtect[0] = (instrVal == INTERRUPT_INSTR_PROTECT_RET);
 #endif // _TARGET_*
 
     if (!IsGcCoverageInterruptInstruction(instrPtr))
@@ -1482,7 +1519,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     bool bShouldUpdateProlog = true;
     if (gcCover->doingEpilogChecks) {
         if (offset == 0) {
-            if ((gcCover->callerThread == 0) && (FastInterlockCompareExchangePointer(&gcCover->callerThread, pThread, 0) == 0)) {
+            if ((gcCover->callerThread == 0) && (InterlockedCompareExchangeT(&gcCover->callerThread, pThread, 0) == 0)) {
                 gcCover->callerRegs = *regs;
                 gcCover->gcCount = GCHeapUtilities::GetGCHeap()->GetGcCount();
                 bShouldUpdateProlog = false;
@@ -1582,7 +1619,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     }
 #endif // TARGET_X86
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     /* In non-fully interruptible code, if the EIP is just after a call instr
        means something different because it expects that we are IN the
@@ -1623,6 +1660,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         PBYTE target = getTargetOfCall((BYTE*) instrPtr, regs, (BYTE**)&nextInstr);
         if (target != 0)
         {
+            ExecutableWriterHolder<BYTE> nextInstrWriterHolder(nextInstr, sizeof(DWORD));
             if (!pThread->PreemptiveGCDisabled())
             {
                 // We are in preemptive mode in JITTed code. This implies that we are into IL stub
@@ -1630,13 +1668,17 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
 #ifdef TARGET_ARM
                 size_t instrLen = GetARMInstructionLength(nextInstr);
                 if (instrLen == 2)
-                    *(WORD*)nextInstr  = INTERRUPT_INSTR;
+                    *(WORD*)nextInstrWriterHolder.GetRW()  = INTERRUPT_INSTR;
                 else
-                    *(DWORD*)nextInstr = INTERRUPT_INSTR_32;
+                    *(DWORD*)nextInstrWriterHolder.GetRW() = INTERRUPT_INSTR_32;
 #elif defined(TARGET_ARM64)
-                *(DWORD*)nextInstr = INTERRUPT_INSTR;
+                *(DWORD*)nextInstrWriterHolder.GetRW() = INTERRUPT_INSTR;
+#elif defined(TARGET_LOONGARCH64)
+                *(DWORD*)nextInstrWriterHolder.GetRW() = INTERRUPT_INSTR;
+#elif defined(TARGET_RISCV64)
+                *(DWORD*)nextInstrWriterHolder.GetRW() = INTERRUPT_INSTR;
 #else
-                *nextInstr = INTERRUPT_INSTR;
+                *nextInstrWriterHolder.GetRW() = INTERRUPT_INSTR;
 #endif
             }
             else
@@ -1649,7 +1691,7 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
                     // It could become a problem if 64bit does partially interrupt work.
                     // OK, we have the MD, mark the instruction after the CALL
                     // appropriately
-                    ReplaceInstrAfterCall(nextInstr, targetMD);
+                    ReplaceInstrAfterCall(nextInstrWriterHolder.GetRW(), targetMD);
                 }
             }
         }
@@ -1692,16 +1734,15 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     }
 #endif // 0
 
-
-#if !defined(USE_REDIRECT_FOR_GCSTRESS)
     //
     // If we redirect for gc stress, we don't need this frame on the stack,
     // the redirection will push a resumable frame.
     //
     FrameWithCookie<ResumableFrame> frame(regs);
-    frame.Push(pThread);
-#endif // USE_REDIRECT_FOR_GCSTRESS
-
+    if (!Thread::UseRedirectForGcStress())
+    {
+        frame.Push(pThread);
+    }
 
     DWORD_PTR retValRegs[2] = { 0 };
     UINT  numberOfRegs = 0;
@@ -1716,6 +1757,10 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         retValRegs[numberOfRegs++] = regs->R0;
 #elif defined(TARGET_ARM64)
         retValRegs[numberOfRegs++] = regs->X0;
+#elif defined(TARGET_LOONGARCH64)
+        retValRegs[numberOfRegs++] = regs->A0;
+#elif defined(TARGET_RISCV64)
+        retValRegs[numberOfRegs++] = regs->A0;
 #endif // TARGET_ARM64
     }
 
@@ -1767,6 +1812,10 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
             regs->R0 = retValRegs[0];
 #elif defined(TARGET_ARM64)
             regs->X[0] = retValRegs[0];
+#elif defined(TARGET_LOONGARCH64)
+            regs->A0 = retValRegs[0];
+#elif defined(TARGET_RISCV64)
+            regs->A0 = retValRegs[0];
 #else
             PORTABILITY_ASSERT("DoGCStress - return register");
 #endif
@@ -1782,9 +1831,10 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
         }
     }
 
-#if !defined(USE_REDIRECT_FOR_GCSTRESS)
-    frame.Pop(pThread);
-#endif // USE_REDIRECT_FOR_GCSTRESS
+    if (!Thread::UseRedirectForGcStress())
+    {
+        frame.Pop(pThread);
+    }
 
     if (enableWhenDone)
     {

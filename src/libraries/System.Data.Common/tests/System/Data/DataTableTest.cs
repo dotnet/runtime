@@ -28,6 +28,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Globalization;
@@ -35,6 +36,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Formatters.Tests;
 using System.Tests;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using Microsoft.DotNet.RemoteExecutor;
@@ -375,23 +377,42 @@ namespace System.Data.Tests
 
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        public void DataColumnTypeSerialization()
+        [Fact]
+        public void SerializationFormat_Binary_does_not_work_by_default()
         {
             DataTable dt = new DataTable("MyTable");
-            DataColumn dc = new DataColumn("dc", typeof(int));
-            dt.Columns.Add(dc);
-            dt.RemotingFormat = SerializationFormat.Binary;
+#pragma warning disable SYSLIB0038
+            Assert.Throws<InvalidEnumArgumentException>(() => dt.RemotingFormat = SerializationFormat.Binary);
+#pragma warning restore SYSLIB0038
+        }
 
-            DataTable dtDeserialized;
-            using (MemoryStream ms = new MemoryStream())
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void SerializationFormat_Binary_works_with_appconfig_switch()
+        {
+            RemoteExecutor.Invoke(RunTest).Dispose();
+
+            static void RunTest()
             {
-                BinaryFormatter bf = new BinaryFormatter();
-                bf.Serialize(ms, dt);
-                ms.Seek(0, SeekOrigin.Begin);
-                dtDeserialized = (DataTable)bf.Deserialize(ms);
+                AppContext.SetSwitch("Switch.System.Data.AllowUnsafeSerializationFormatBinary", true);
+
+                DataTable dt = new DataTable("MyTable");
+                DataColumn dc = new DataColumn("dc", typeof(int));
+                dt.Columns.Add(dc);
+#pragma warning disable SYSLIB0038
+                dt.RemotingFormat = SerializationFormat.Binary;
+#pragma warning restore SYSLIB0038
+
+                DataTable dtDeserialized;
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    BinaryFormatter bf = new BinaryFormatter();
+                    bf.Serialize(ms, dt);
+                    ms.Seek(0, SeekOrigin.Begin);
+                    dtDeserialized = (DataTable)bf.Deserialize(ms);
+                }
+
+                Assert.Equal(dc.DataType, dtDeserialized.Columns[0].DataType);
             }
-            Assert.Equal(dc.DataType, dtDeserialized.Columns[0].DataType);
         }
 
         [Fact]
@@ -1444,69 +1465,27 @@ Assert.False(true);
             dt1.Rows.Add(dr1);
             TextWriter writer = new StringWriter();
             dt.WriteXmlSchema(writer);
+
+            string expected = @"<?xml version=""1.0"" encoding=""utf-16""?>
+<xs:schema id=""NewDataSet"" xmlns="""" xmlns:xs=""http://www.w3.org/2001/XMLSchema"" xmlns:msdata=""urn:schemas-microsoft-com:xml-msdata"">
+  <xs:element name=""NewDataSet"" msdata:IsDataSet=""true"" msdata:MainDataTable=""TestWriteXmlSchema"" msdata:UseCurrentLocale=""true"">
+    <xs:complexType>
+      <xs:choice minOccurs=""0"" maxOccurs=""unbounded"">
+        <xs:element name=""TestWriteXmlSchema"">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name=""Col1"" type=""xs:int"" minOccurs=""0"" />
+              <xs:element name=""Col2"" type=""xs:int"" minOccurs=""0"" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>".ReplaceLineEndings();
+
             string textString = writer.ToString();
-            string substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("<xs:schema id=\"NewDataSet\" xmlns=\"\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\">", substring);
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("  <xs:element name=\"NewDataSet\" msdata:IsDataSet=\"true\" msdata:MainDataTable=\"TestWriteXmlSchema\" msdata:UseCurrentLocale=\"true\">", substring);
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("    <xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("      <xs:choice minOccurs=\"0\" maxOccurs=\"unbounded\">", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("        <xs:element name=\"TestWriteXmlSchema\">", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("          <xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("            <xs:sequence>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("              <xs:element name=\"Col1\" type=\"xs:int\" minOccurs=\"0\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("              <xs:element name=\"Col2\" type=\"xs:int\" minOccurs=\"0\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("            </xs:sequence>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("          </xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("        </xs:element>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("      </xs:choice>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("    </xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("  </xs:element>", substring);
-            Assert.Equal("</xs:schema>", textString);
+            Assert.Equal(expected, textString.ReplaceLineEndings());
         }
 
         [Fact]
@@ -1533,85 +1512,31 @@ Assert.False(true);
             ds.Relations.Add(rel);
             TextWriter writer = new StringWriter();
             dt.WriteXmlSchema(writer);
+
+            string expected = @"<?xml version=""1.0"" encoding=""utf-16""?>
+<xs:schema id=""NewDataSet"" xmlns="""" xmlns:xs=""http://www.w3.org/2001/XMLSchema"" xmlns:msdata=""urn:schemas-microsoft-com:xml-msdata"">
+  <xs:element name=""NewDataSet"" msdata:IsDataSet=""true"" msdata:MainDataTable=""TestWriteXmlSchema"" msdata:UseCurrentLocale=""true"">
+    <xs:complexType>
+      <xs:choice minOccurs=""0"" maxOccurs=""unbounded"">
+        <xs:element name=""TestWriteXmlSchema"">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name=""Col1"" type=""xs:int"" minOccurs=""0"" />
+              <xs:element name=""Col2"" type=""xs:int"" minOccurs=""0"" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+    <xs:unique name=""Constraint1"">
+      <xs:selector xpath="".//TestWriteXmlSchema"" />
+      <xs:field xpath=""Col1"" />
+    </xs:unique>
+  </xs:element>
+</xs:schema>".ReplaceLineEndings();
+
             string textString = writer.ToString();
-            string substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("<xs:schema id=\"NewDataSet\" xmlns=\"\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\">", substring);
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("  <xs:element name=\"NewDataSet\" msdata:IsDataSet=\"true\" msdata:MainDataTable=\"TestWriteXmlSchema\" msdata:UseCurrentLocale=\"true\">", substring);
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("    <xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("      <xs:choice minOccurs=\"0\" maxOccurs=\"unbounded\">", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("        <xs:element name=\"TestWriteXmlSchema\">", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("          <xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("            <xs:sequence>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("              <xs:element name=\"Col1\" type=\"xs:int\" minOccurs=\"0\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("              <xs:element name=\"Col2\" type=\"xs:int\" minOccurs=\"0\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("            </xs:sequence>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("          </xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("        </xs:element>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("      </xs:choice>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("    </xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("    <xs:unique name=\"Constraint1\">", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("      <xs:selector xpath=\".//TestWriteXmlSchema\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("      <xs:field xpath=\"Col1\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("    </xs:unique>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("  </xs:element>", substring);
-            Assert.Equal("</xs:schema>", textString);
+            Assert.Equal(expected, textString.ReplaceLineEndings());
         }
 
         [Fact]
@@ -1638,139 +1563,49 @@ Assert.False(true);
             ds.Relations.Add(rel);
             TextWriter writer = new StringWriter();
             dt.WriteXmlSchema(writer, true);
+
+            string expected = @"<?xml version=""1.0"" encoding=""utf-16""?>
+<xs:schema id=""NewDataSet"" xmlns="""" xmlns:xs=""http://www.w3.org/2001/XMLSchema"" xmlns:msdata=""urn:schemas-microsoft-com:xml-msdata"">
+  <xs:element name=""NewDataSet"" msdata:IsDataSet=""true"" msdata:MainDataTable=""TestWriteXmlSchema"" msdata:UseCurrentLocale=""true"">
+    <xs:complexType>
+      <xs:choice minOccurs=""0"" maxOccurs=""unbounded"">
+        <xs:element name=""TestWriteXmlSchema"">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name=""Col1"" type=""xs:int"" minOccurs=""0"" />
+              <xs:element name=""Col2"" type=""xs:int"" minOccurs=""0"" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name=""HelloWorld"">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name=""T1"" type=""xs:int"" minOccurs=""0"" />
+              <xs:element name=""T2"" type=""xs:int"" minOccurs=""0"" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+    <xs:unique name=""Constraint1"">
+      <xs:selector xpath="".//TestWriteXmlSchema"" />
+      <xs:field xpath=""Col1"" />
+    </xs:unique>
+    <xs:keyref name=""Relation1"" refer=""Constraint1"">
+      <xs:selector xpath="".//HelloWorld"" />
+      <xs:field xpath=""T1"" />
+    </xs:keyref>
+  </xs:element>
+</xs:schema>".ReplaceLineEndings();
+
             string textString = writer.ToString();
-            string substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("<xs:schema id=\"NewDataSet\" xmlns=\"\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\">", substring);
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("  <xs:element name=\"NewDataSet\" msdata:IsDataSet=\"true\" msdata:MainDataTable=\"TestWriteXmlSchema\" msdata:UseCurrentLocale=\"true\">", substring);
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("    <xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("      <xs:choice minOccurs=\"0\" maxOccurs=\"unbounded\">", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("        <xs:element name=\"TestWriteXmlSchema\">", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("          <xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("            <xs:sequence>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("              <xs:element name=\"Col1\" type=\"xs:int\" minOccurs=\"0\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("              <xs:element name=\"Col2\" type=\"xs:int\" minOccurs=\"0\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("            </xs:sequence>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("          </xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("        </xs:element>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("        <xs:element name=\"HelloWorld\">", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("          <xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("            <xs:sequence>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("              <xs:element name=\"T1\" type=\"xs:int\" minOccurs=\"0\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("              <xs:element name=\"T2\" type=\"xs:int\" minOccurs=\"0\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("            </xs:sequence>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("          </xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("        </xs:element>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("      </xs:choice>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("    </xs:complexType>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("    <xs:unique name=\"Constraint1\">", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("      <xs:selector xpath=\".//TestWriteXmlSchema\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("      <xs:field xpath=\"Col1\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("    </xs:unique>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("    <xs:keyref name=\"Relation1\" refer=\"Constraint1\">", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("      <xs:selector xpath=\".//HelloWorld\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("      <xs:field xpath=\"T1\" />", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("    </xs:keyref>", substring);
-
-            substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-            textString = textString.Substring(textString.IndexOf('\n') + 1);
-            Assert.Equal("  </xs:element>", substring);
-            Assert.Equal("</xs:schema>", textString);
+            Assert.Equal(expected, textString.ReplaceLineEndings());
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         public void Serialize()
         {
-            // Create an array with multiple elements refering to
+            // Create an array with multiple elements referring to
             // the one Singleton object.
             DataTable dt = new DataTable();
 
@@ -2959,7 +2794,7 @@ Assert.False(true);
             // ReadXmlSchema - Tables 1 Col count
             Assert.Equal(ds1.Tables[1].Columns.Count, dt2.Columns.Count);
 
-            //check some colummns types
+            //check some columns types
             // ReadXmlSchema - Tables 0 Col type
             Assert.Equal(ds1.Tables[0].Columns[0].GetType(), dt1.Columns[0].GetType());
 
@@ -3039,7 +2874,7 @@ Assert.False(true);
             // ReadXmlSchema - Tables 1 Col count
             Assert.Equal(ds1.Tables[1].Columns.Count, dt2.Columns.Count);
 
-            //check some colummns types
+            //check some columns types
             // ReadXmlSchema - Tables 0 Col type
             Assert.Equal(ds1.Tables[0].Columns[0].GetType(), dt1.Columns[0].GetType());
 
@@ -3096,7 +2931,7 @@ Assert.False(true);
             // ReadXmlSchema - Tables 1 Col count
             Assert.Equal(ds1.Tables[1].Columns.Count, dt2.Columns.Count);
 
-            //check some colummns types
+            //check some columns types
             // ReadXmlSchema - Tables 0 Col type
             Assert.Equal(ds1.Tables[0].Columns[0].GetType(), dt1.Columns[0].GetType());
 
@@ -3121,74 +2956,27 @@ Assert.False(true);
                 TextWriter writer = new StringWriter();
                 ds.Tables[0].WriteXmlSchema(writer);
 
+                // Looks like whoever added this test depended on en-US culture (see 'msdata:Locale attr' in 3rd line below), which is wrong.
+                string expected = @"<?xml version=""1.0"" encoding=""utf-16""?>
+<xs:schema id=""Root"" xmlns:msdata=""urn:schemas-microsoft-com:xml-msdata"" xmlns:xs=""http://www.w3.org/2001/XMLSchema"">
+  <xs:element msdata:IsDataSet=""true"" msdata:Locale=""en-US"" msdata:MainDataTable=""Region"" name=""Root"">
+    <xs:complexType>
+      <xs:choice maxOccurs=""unbounded"" minOccurs=""0"">
+        <xs:element name=""Region"">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs=""0"" name=""RegionID"" type=""xs:string"" />
+              <xs:element minOccurs=""0"" name=""RegionDescription"" type=""xs:string"" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>".ReplaceLineEndings();
+
                 string textString = DataSetAssertion.GetNormalizedSchema(writer.ToString());
-
-                string substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("<?xml version=\"1.0\" encoding=\"utf-16\"?>", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("<xs:schema id=\"Root\" xmlns:msdata=\"urn:schemas-microsoft-com:xml-msdata\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                // Looks like whoever added this test depended on English culture, which is wrong.
-                Assert.Equal("  <xs:element msdata:IsDataSet=\"true\" msdata:Locale=\"en-US\" msdata:MainDataTable=\"Region\" name=\"Root\">", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("    <xs:complexType>", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("      <xs:choice maxOccurs=\"unbounded\" minOccurs=\"0\">", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("        <xs:element name=\"Region\">", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("          <xs:complexType>", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("            <xs:sequence>", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("              <xs:element minOccurs=\"0\" name=\"RegionID\" type=\"xs:string\" />", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("              <xs:element minOccurs=\"0\" name=\"RegionDescription\" type=\"xs:string\" />", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("            </xs:sequence>", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("          </xs:complexType>", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("        </xs:element>", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("      </xs:choice>", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("    </xs:complexType>", substring);
-
-                substring = textString.Substring(0, textString.IndexOfAny(new[] { '\r', '\n' }));
-                textString = textString.Substring(textString.IndexOf('\n') + 1);
-                Assert.Equal("  </xs:element>", substring);
-
-                Assert.Equal("</xs:schema>", textString);
+                Assert.Equal(expected, textString.ReplaceLineEndings());
             }
         }
 
@@ -3804,22 +3592,42 @@ Assert.False(true);
             dt.Columns.Add("StartDate", typeof(DateTime));
 
             DataRow dr;
-            DateTime date = DateTime.Now;
+            DateTime now = DateTime.Now;
+
+            // In RowFilter we have a string containing only seconds,
+            // but in rows we have a DateTime which also contains milliseconds.
+            // The test would fail without this extra minute, when now.Millisecond is 0.
+            DateTime rowDate = now.AddMinutes(1);
 
             for (int i = 0; i < 10; i++)
             {
                 dr = dt.NewRow();
-                dr["StartDate"] = date.AddDays(i);
+                dr["StartDate"] = rowDate.AddDays(i);
                 dt.Rows.Add(dr);
             }
 
             DataView dv = dt.DefaultView;
             dv.RowFilter = string.Format(CultureInfo.InvariantCulture,
                                 "StartDate >= #{0}# and StartDate <= #{1}#",
-                                DateTime.Now.AddDays(2),
-                                DateTime.Now.AddDays(4));
+                                now.AddDays(2),
+                                now.AddDays(4));
             Assert.Equal(10, dt.Rows.Count);
-            Assert.Equal(2, dv.Count);
+
+            int expectedRowCount = 2;
+            if (dv.Count != expectedRowCount)
+            {
+                StringBuilder sb = new();
+                sb.AppendLine($"DataView.Rows.Count: Expected: {expectedRowCount}, Actual: {dv.Count}. Debug data: RowFilter: {dv.RowFilter}, date: {now}");
+                for (int i = 0; i < dv.Count; i++)
+                {
+                    sb.Append($"row#{i}: ");
+                    foreach (var row in dv[i].Row.ItemArray)
+                        sb.Append($"'{row}', ");
+                    sb.AppendLine();
+                }
+
+                Assert.True(expectedRowCount == dv.Count, sb.ToString());
+            }
         }
 
         [Fact]

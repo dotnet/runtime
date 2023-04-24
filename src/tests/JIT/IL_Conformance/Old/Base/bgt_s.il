@@ -2,10 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.class public auto ansi bgt_s {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .locals         (class [mscorlib]System.String)
 .entrypoint
 
@@ -78,7 +83,8 @@ fail:
 end:
         ret
 }
+}
 
 
-.assembly bgt_s.exe {}
+.assembly bgt_s {}
 

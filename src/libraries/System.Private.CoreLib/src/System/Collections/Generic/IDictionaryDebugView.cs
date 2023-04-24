@@ -11,8 +11,7 @@ namespace System.Collections.Generic
 
         public IDictionaryDebugView(IDictionary<K, V> dictionary)
         {
-            if (dictionary == null)
-                throw new ArgumentNullException(nameof(dictionary));
+            ArgumentNullException.ThrowIfNull(dictionary);
 
             _dict = dictionary;
         }
@@ -35,8 +34,7 @@ namespace System.Collections.Generic
 
         public DictionaryKeyCollectionDebugView(ICollection<TKey> collection)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
+            ArgumentNullException.ThrowIfNull(collection);
 
             _collection = collection;
         }
@@ -59,8 +57,7 @@ namespace System.Collections.Generic
 
         public DictionaryValueCollectionDebugView(ICollection<TValue> collection)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
+            ArgumentNullException.ThrowIfNull(collection);
 
             _collection = collection;
         }

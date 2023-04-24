@@ -22,7 +22,7 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData(null)]
         public void TestSetMessage(string message)
         {
-            var attr = new RequiresAssemblyFilesAttribute(Message = message);
+            var attr = new RequiresAssemblyFilesAttribute(message);
 
             Assert.Equal(message, attr.Message);
             Assert.Null(attr.Url);
@@ -34,7 +34,10 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData(null)]
         public void TestSetUrl(string url)
         {
-            var attr = new RequiresAssemblyFilesAttribute(Url = url);
+            var attr = new RequiresAssemblyFilesAttribute()
+            {
+                Url = url
+            };
 
             Assert.Null(attr.Message);
             Assert.Equal(url, attr.Url);
@@ -52,10 +55,13 @@ namespace System.Diagnostics.CodeAnalysis.Tests
         [InlineData(null, null)]
         public void TestSetMessageAndUrl(string message, string url)
         {
-            var attr = new RequiresAssemblyFilesAttribute(Message = message, Url = url);
+            var attr = new RequiresAssemblyFilesAttribute(message)
+            {
+                Url = url
+            };
 
             Assert.Equal(message, attr.Message);
-            Assert.Equal(ur, attr.Url);
+            Assert.Equal(url, attr.Url);
         }
     }
 }

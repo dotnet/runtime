@@ -74,7 +74,7 @@ extern guint64 stat_nursery_copy_object_failed_to_space; /* from sgen-gc.c */
  */
 
 static MONO_ALWAYS_INLINE void
-SERIAL_COPY_OBJECT (GCObject **obj_slot, SgenGrayQueue *queue) 
+SERIAL_COPY_OBJECT (GCObject **obj_slot, SgenGrayQueue *queue)
 {
 	GCObject *forwarded;
 	GCObject *copy;
@@ -115,7 +115,7 @@ SERIAL_COPY_OBJECT (GCObject **obj_slot, SgenGrayQueue *queue)
 	if (sgen_nursery_is_to_space (obj)) {
 		SGEN_ASSERT (9, sgen_vtable_get_descriptor (SGEN_LOAD_VTABLE(obj)), "to space object %p has no gc descriptor", obj);
 		SGEN_LOG (9, " (tospace, no change)");
-		HEAVY_STAT (++stat_nursery_copy_object_failed_to_space);		
+		HEAVY_STAT (++stat_nursery_copy_object_failed_to_space);
 		return;
 	}
 #endif
@@ -188,7 +188,7 @@ SERIAL_COPY_OBJECT_FROM_OBJ (GCObject **obj_slot, SgenGrayQueue *queue)
 		/* FIXME: all of these could just use `sgen_obj_get_descriptor_safe()` */
 		SGEN_ASSERT (9, sgen_vtable_get_descriptor (SGEN_LOAD_VTABLE(obj)), "to space object %p has no gc descriptor", obj);
 		SGEN_LOG (9, " (tospace, no change)");
-		HEAVY_STAT (++stat_nursery_copy_object_failed_to_space);		
+		HEAVY_STAT (++stat_nursery_copy_object_failed_to_space);
 
 		/*
 		 * FIXME:

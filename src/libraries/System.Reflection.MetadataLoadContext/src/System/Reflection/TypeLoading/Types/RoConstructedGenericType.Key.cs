@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.TypeLoading
 {
@@ -29,20 +30,33 @@ namespace System.Reflection.TypeLoading
                     return false;
                 for (int i = 0; i < GenericTypeArguments.Length; i++)
                 {
-                    if (GenericTypeArguments[i] != other.GenericTypeArguments[i])
+                    Type t1 = GenericTypeArguments[i];
+                    Type t2 = other.GenericTypeArguments[i];
+
+                    // Modified types do not support Equals\GetHashCode.
+                    if (t1 is RoModifiedType || t2 is RoModifiedType)
+                    {
+                        return ReferenceEquals(t1, t2);
+                    }
+                    else if (t1 != t2)
+                    {
                         return false;
+                    }
                 }
                 return true;
             }
 
-            public override bool Equals(object? obj) => obj is Key other && Equals(other);
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is Key other && Equals(other);
 
             public override int GetHashCode()
             {
                 int hashCode = GenericTypeDefinition.GetHashCode();
                 for (int i = 0; i < GenericTypeArguments.Length; i++)
                 {
-                    hashCode ^= GenericTypeArguments[i].GetHashCode();
+                    RoType argType = GenericTypeArguments[i];
+                    hashCode ^= argType is RoModifiedType ?
+                        argType.UnderlyingSystemType.GetHashCode() :
+                        argType.GetHashCode();
                 }
                 return hashCode;
             }

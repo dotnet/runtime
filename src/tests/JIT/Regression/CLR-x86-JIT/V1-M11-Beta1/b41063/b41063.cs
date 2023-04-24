@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -17,7 +18,7 @@ namespace Test
         { return null; }
     }
 
-    struct BB
+    public struct BB
     {
         static AA[] m_axStatic1;
         static int m_nForward5;
@@ -27,7 +28,8 @@ namespace Test
         int Method4(uint param1, double param2, long param3)
         { return new BB().Method1(); }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

@@ -16,16 +16,17 @@
 #define MAX_EXPAND_MECHANISMS_COUNT     6
 #define MAX_GC_MECHANISM_BITS_COUNT     2
 #define MAX_GLOBAL_GC_MECHANISMS_COUNT  6
+#define FREE_REGION_KINDS               3
 
 // The number of generations is hardcoded in to the dac APIS (DacpGcHeapDetails hard codes the size of its arrays)
 // The number of generations is hardcoded into some older dac APIS (for example DacpGcHeapDetails hard codes the size of its arrays)
 // This value cannot change and should not be used in new DAC APIs. New APIs can query GcDacVars.total_generation_count
 // variable which is dynamically initialized at runtime
 
-
 #define NUMBERGENERATIONS               4
-#define INITIAL_HANDLE_TABLE_ARRAY_SIZE 10
-#define HANDLE_MAX_INTERNAL_TYPES       12
+
+
+#include "handletableconstants.h"
 
 // Analogue for the GC heap_segment class, containing information regarding a single
 // heap segment.
@@ -42,13 +43,32 @@ public:
     class dac_gc_heap* heap;
 };
 
+class dac_region_free_list {
+public:
+    size_t  num_free_regions;
+    size_t  size_free_regions;
+    size_t  size_committed_in_free_regions;
+    size_t  num_free_regions_added;
+    size_t  num_free_regions_removed;
+    DPTR(dac_heap_segment) head_free_region;
+    DPTR(dac_heap_segment) tail_free_region;
+};
+
 // Analogue for the GC generation class, containing information about the start segment
 // of a generation and its allocation context.
 class dac_generation {
 public:
-    gc_alloc_context allocation_context;
-    DPTR(dac_heap_segment) start_segment;
-    uint8_t* allocation_start;
+#define ALL_FIELDS
+#define DEFINE_FIELD(field_name, field_type) field_type field_name;
+#define DEFINE_DPTR_FIELD(field_name, field_type) DPTR(field_type) field_name;
+#define DEFINE_MISSING_FIELD(field_name)
+
+#include "dac_generation_fields.h"
+
+#undef DEFINE_DPTR_FIELD
+#undef DEFINE_FIELD
+#undef ALL_FIELDS
+#undef DEFINE_MISSING_FIELD
 };
 
 // Analogue for the GC CFinalize class, containing information about the finalize queue.
@@ -58,6 +78,21 @@ public:
     uint8_t** m_FillPointers[NUMBERGENERATIONS + ExtraSegCount];
 };
 
+class dac_handle_table_segment {
+public:
+    uint8_t rgGeneration[HANDLE_BLOCKS_PER_SEGMENT * sizeof(uint32_t) / sizeof(uint8_t)];
+    uint8_t rgAllocation[HANDLE_BLOCKS_PER_SEGMENT];
+    uint32_t rgFreeMask[HANDLE_MASKS_PER_SEGMENT];
+    uint8_t rgBlockType[HANDLE_BLOCKS_PER_SEGMENT];
+    uint8_t rgUserData[HANDLE_BLOCKS_PER_SEGMENT];
+    uint8_t rgLocks[HANDLE_BLOCKS_PER_SEGMENT];
+    uint8_t rgTail[HANDLE_MAX_INTERNAL_TYPES];
+    uint8_t rgHint[HANDLE_MAX_INTERNAL_TYPES];
+    uint32_t rgFreeCount[HANDLE_MAX_INTERNAL_TYPES];
+    DPTR(dac_handle_table_segment) pNextSegment;
+ };
+
+
 class dac_handle_table {
 public:
     // We do try to keep everything that the DAC knows about as close to the
@@ -65,6 +100,7 @@ public:
     // HandleTable has rgTypeFlags at offset 0 for performance reasons and
     // we don't want to disrupt that.
     uint32_t padding[HANDLE_MAX_INTERNAL_TYPES];
+    DPTR(dac_handle_table_segment) pSegmentList;
 };
 
 class dac_handle_table_bucket {
@@ -78,6 +114,13 @@ public:
     DPTR(DPTR(dac_handle_table_bucket)) pBuckets;
     DPTR(dac_handle_table_map) pNext;
     uint32_t dwMaxIndex;
+};
+
+class dac_card_table_info {
+public:
+    unsigned    recount;
+    size_t      size;
+    TADDR       next_card_table;
 };
 
 // Possible values of the current_c_gc_state dacvar, indicating the state of
@@ -105,7 +148,7 @@ enum oom_reason
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 /* If you modify failure_get_memory and         */
 /* oom_reason be sure to make the corresponding */
-/* changes in toolbox\sos\strike\strike.cpp.    */
+/* changes in ClrMD.                            */
 /*!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!*/
 enum failure_get_memory
 {
@@ -117,7 +160,7 @@ enum failure_get_memory
     fgm_commit_table = 5
 };
 
-// A record of the last OOM that occured in the GC, with some
+// A record of the last OOM that occurred in the GC, with some
 // additional information as to what triggered the OOM.
 struct oom_history
 {
@@ -136,17 +179,17 @@ struct oom_history
 // GC heap (of which there are multiple, with server GC).
 class dac_gc_heap {
 public:
-    uint8_t* alloc_allocated;
-    DPTR(dac_heap_segment) ephemeral_heap_segment;
-    DPTR(dac_finalize_queue) finalize_queue;
-    oom_history oom_info;
-    size_t interesting_data_per_heap[NUM_GC_DATA_POINTS];
-    size_t compact_reasons_per_heap[MAX_COMPACT_REASONS_COUNT];
-    size_t expand_mechanisms_per_heap[MAX_EXPAND_MECHANISMS_COUNT];
-    size_t interesting_mechanism_bits_per_heap[MAX_GC_MECHANISM_BITS_COUNT];
-    uint8_t* internal_root_array;
-    size_t internal_root_array_index;
-    BOOL heap_analyze_success;
+#define ALL_FIELDS
+#define DEFINE_FIELD(field_name, field_type) field_type field_name;
+#define DEFINE_DPTR_FIELD(field_name, field_type) DPTR(field_type) field_name;
+#define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) field_type field_name[array_length];
+
+#include "dac_gcheap_fields.h"
+
+#undef DEFINE_ARRAY_FIELD
+#undef DEFINE_DPTR_FIELD
+#undef DEFINE_FIELD
+#undef ALL_FIELDS
 
     // The generation table must always be last, because the size of this array
     // (stored inline in the gc_heap class) can vary.
@@ -162,6 +205,19 @@ public:
     dac_generation generation_table[1];
 };
 
+#define GENERATION_TABLE_FIELD_INDEX 21
+
+// Unlike other DACized structures, these types are loaded manually in the debugger.
+// To avoid misuse, pointers to them are explicitly casted to these unused type.
+struct unused_gc_heap
+{
+    uint8_t unused;
+};
+
+struct unused_generation
+{
+    uint8_t unused;
+};
 
 // The DAC links against six symbols that build as part of the VM DACCESS_COMPILE
 // build. These symbols are considered to be GC-private functions, but the DAC needs
@@ -182,7 +238,7 @@ public:
 
 // The actual structure containing the DAC variables. When DACCESS_COMPILE is not
 // defined (i.e. the normal runtime build), this structure contains pointers to the
-// GC's global DAC variabels. When DACCESS_COMPILE is defined (i.e. the DAC build),
+// GC's global DAC variables. When DACCESS_COMPILE is defined (i.e. the DAC build),
 // this structure contains __DPtrs for every DAC variable that will marshal values
 // from the debugee process to the debugger process when dereferenced.
 struct GcDacVars {
@@ -190,6 +246,9 @@ struct GcDacVars {
   uint8_t minor_version_number;
   size_t generation_size;
   size_t total_generation_count;
+  int total_bookkeeping_elements;
+  int count_free_region_kinds;
+  size_t card_table_info_size;
 #ifdef DACCESS_COMPILE
  #define GC_DAC_VAR(type, name)       DPTR(type) name;
  #define GC_DAC_PTR_VAR(type, name)   DPTR(type*) name;

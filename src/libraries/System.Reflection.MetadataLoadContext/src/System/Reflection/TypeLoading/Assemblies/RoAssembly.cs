@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.Serialization;
@@ -32,21 +34,25 @@ namespace System.Reflection.TypeLoading
 
         // Naming
         public sealed override AssemblyName GetName(bool copiedName) => GetAssemblyNameDataNoCopy().CreateAssemblyName();
-        internal AssemblyNameData GetAssemblyNameDataNoCopy() => _lazyAssemblyNameData ?? (_lazyAssemblyNameData = ComputeNameData());
+        internal AssemblyNameData GetAssemblyNameDataNoCopy() => _lazyAssemblyNameData ??= ComputeNameData();
         protected abstract AssemblyNameData ComputeNameData();
         private volatile AssemblyNameData? _lazyAssemblyNameData;
 
-        public sealed override string FullName => _lazyFullName ?? (_lazyFullName = GetName().FullName);
+        public sealed override string FullName => _lazyFullName ??= GetName().FullName;
         private volatile string? _lazyFullName;
+
+        internal const string ThrowingMessageInRAF = "This member throws an exception for assemblies embedded in a single-file app";
 
         // Location and codebase
         public abstract override string Location { get; }
-#if NET50_OBSOLETIONS
+#if NETCOREAPP
         [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
         public sealed override string CodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
-#if NET50_OBSOLETIONS
+#if NETCOREAPP
         [Obsolete(Obsoletions.CodeBaseMessage, DiagnosticId = Obsoletions.CodeBaseDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
 #endif
         public sealed override string EscapedCodeBase => throw new NotSupportedException(SR.NotSupported_AssemblyCodeBase);
 
@@ -93,8 +99,10 @@ namespace System.Reflection.TypeLoading
         // Api to retrieve types by name. Retrieves both types physically defined in this module and types this assembly forwards from another assembly.
         public sealed override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
-            if (name == null)
+            if (name is null)
+            {
                 throw new ArgumentNullException(nameof(name));
+            }
 
             // Known compat disagreement: This api is supposed to throw an ArgumentException if the name has an assembly qualification
             // (though the intended meaning seems clear.) This is difficult for us to implement as we don't have our own type name parser.
@@ -145,13 +153,13 @@ namespace System.Reflection.TypeLoading
             return result;
         }
 
-        private AssemblyNameData[] GetReferencedAssembliesNoCopy() => _lazyAssemblyReferences ?? (_lazyAssemblyReferences = ComputeAssemblyReferences());
+        private AssemblyNameData[] GetReferencedAssembliesNoCopy() => _lazyAssemblyReferences ??= ComputeAssemblyReferences();
         protected abstract AssemblyNameData[] ComputeAssemblyReferences();
         private volatile AssemblyNameData[]? _lazyAssemblyReferences;
 
         // Miscellaneous properties
         public sealed override bool ReflectionOnly => true;
-#if NET50_OBSOLETIONS
+#if NETCOREAPP
         [Obsolete("The Global Assembly Cache is not supported.", DiagnosticId = "SYSLIB0005", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public sealed override bool GlobalAssemblyCache => false;
@@ -161,7 +169,7 @@ namespace System.Reflection.TypeLoading
         public abstract override MethodInfo? EntryPoint { get; }
 
         // Manifest resource support.
-        public abstract override ManifestResourceInfo GetManifestResourceInfo(string resourceName);
+        public abstract override ManifestResourceInfo? GetManifestResourceInfo(string resourceName);
         public abstract override string[] GetManifestResourceNames();
         public abstract override Stream? GetManifestResourceStream(string name);
         public sealed override Stream? GetManifestResourceStream(Type type, string name)
@@ -190,6 +198,10 @@ namespace System.Reflection.TypeLoading
         }
 
         // Serialization
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context) => throw new NotSupportedException();
 
         // Satellite assemblies

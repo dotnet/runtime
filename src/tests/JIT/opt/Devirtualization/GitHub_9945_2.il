@@ -4,6 +4,7 @@
 .assembly extern mscorlib
 {
 }
+.assembly extern xunit.core {}
 
 .assembly GitHub_9945_2
 {
@@ -32,10 +33,13 @@
   }
 }
 
-.class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+.class public auto ansi beforefieldinit Test_GitHub_9945_2 extends [mscorlib]System.Object
 {
   .method public hidebysig static  int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .locals (object)
     .entrypoint
     // Store ref in supertyped local to "forget" type

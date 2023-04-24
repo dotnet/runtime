@@ -2,13 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 1.1.2019.0
-//  Copyright (C) Microsoft Corporation 1998-2002. All rights reserved.
-
-
-
-// Metadata version: v1.1.2019
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
@@ -26,7 +21,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module arity01.exe
 // MVID: {076E2FBD-6901-448E-AD54-697AB5AE59C9}
 .imagebase 0x00400000
 .subsystem 0x00000003
@@ -139,7 +133,7 @@
  
 } // end of class Foo03
 
-.class public auto ansi beforefieldinit Test
+.class public auto ansi beforefieldinit Test_arity01
        extends [mscorlib]System.Object
 {
   .field public static int32 counter
@@ -148,17 +142,17 @@
   {
     // Code size       47 (0x2f)
     .maxstack  2
-    IL_0000:  ldsfld     int32 Test::counter
+    IL_0000:  ldsfld     int32 Test_arity01::counter
     IL_0005:  ldc.i4.1
     IL_0006:  add
-    IL_0007:  stsfld     int32 Test::counter
+    IL_0007:  stsfld     int32 Test_arity01::counter
     IL_000c:  ldarg.0
     IL_000d:  brtrue.s   IL_002e
 
     IL_000f:  ldarg.0
-    IL_0010:  stsfld     bool Test::result
+    IL_0010:  stsfld     bool Test_arity01::result
     IL_0015:  ldstr      "Test Failed at location: "
-    IL_001a:  ldsfld     int32 Test::counter
+    IL_001a:  ldsfld     int32 Test_arity01::counter
     IL_001f:  box        [mscorlib]System.Int32
     IL_0024:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
@@ -168,6 +162,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       478 (0x1de)
     .maxstack  4
@@ -188,19 +185,19 @@
     IL_0019:  callvirt   instance string Foo::Function()
     IL_001e:  ldstr      ""
     IL_0023:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_0028:  call       void Test::Eval(bool)
+    IL_0028:  call       void Test_arity01::Eval(bool)
     IL_002d:  ldloc.0
     IL_002e:  ldstr      "1"
     IL_0033:  callvirt   instance string Foo::Function<string>(!!0)
     IL_0038:  ldstr      "1"
     IL_003d:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_0042:  call       void Test::Eval(bool)
+    IL_0042:  call       void Test_arity01::Eval(bool)
     IL_0047:  ldloc.0
     IL_0048:  ldc.i4.1
     IL_0049:  callvirt   instance string Foo::Function<int32>(!!0)
     IL_004e:  ldstr      "1"
     IL_0053:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_0058:  call       void Test::Eval(bool)
+    IL_0058:  call       void Test_arity01::Eval(bool)
     IL_005d:  ldloc.0
     IL_005e:  ldstr      "1"
     IL_0063:  ldstr      "2"
@@ -208,7 +205,7 @@
                                                                         !!1)
     IL_006d:  ldstr      "12"
     IL_0072:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_0077:  call       void Test::Eval(bool)
+    IL_0077:  call       void Test_arity01::Eval(bool)
     IL_007c:  ldloc.0
     IL_007d:  ldc.i4.1
     IL_007e:  ldc.i4.2
@@ -216,7 +213,7 @@
                                                                         !!1)
     IL_0084:  ldstr      "12"
     IL_0089:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_008e:  call       void Test::Eval(bool)
+    IL_008e:  call       void Test_arity01::Eval(bool)
     IL_0093:  ldloc.0
     IL_0094:  ldc.i4.1
     IL_0095:  ldstr      "2"
@@ -224,7 +221,7 @@
                                                                         !!1)
     IL_009f:  ldstr      "12"
     IL_00a4:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_00a9:  call       void Test::Eval(bool)
+    IL_00a9:  call       void Test_arity01::Eval(bool)
     IL_00ae:  ldloc.0
     IL_00af:  ldstr      "1"
     IL_00b4:  ldc.i4.2
@@ -232,7 +229,7 @@
                                                                         !!1)
     IL_00ba:  ldstr      "12"
     IL_00bf:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_00c4:  call       void Test::Eval(bool)
+    IL_00c4:  call       void Test_arity01::Eval(bool)
     IL_00c9:  ldloc.0
     IL_00ca:  ldstr      "1"
     IL_00cf:  ldstr      "2"
@@ -242,7 +239,7 @@
                                                                                !!2)
     IL_00de:  ldstr      "123"
     IL_00e3:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_00e8:  call       void Test::Eval(bool)
+    IL_00e8:  call       void Test_arity01::Eval(bool)
     IL_00ed:  ldloc.0
     IL_00ee:  ldstr      "1"
     IL_00f3:  ldstr      "2"
@@ -252,7 +249,7 @@
                                                                                !!2)
     IL_00fe:  ldstr      "123"
     IL_0103:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_0108:  call       void Test::Eval(bool)
+    IL_0108:  call       void Test_arity01::Eval(bool)
     IL_010d:  ldloc.0
     IL_010e:  ldstr      "1"
     IL_0113:  ldc.i4.2
@@ -262,7 +259,7 @@
                                                                                !!2)
     IL_011a:  ldstr      "123"
     IL_011f:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_0124:  call       void Test::Eval(bool)
+    IL_0124:  call       void Test_arity01::Eval(bool)
     IL_0129:  ldloc.0
     IL_012a:  ldstr      "1"
     IL_012f:  ldc.i4.2
@@ -272,7 +269,7 @@
                                                                                !!2)
     IL_013a:  ldstr      "123"
     IL_013f:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_0144:  call       void Test::Eval(bool)
+    IL_0144:  call       void Test_arity01::Eval(bool)
     IL_0149:  ldloc.0
     IL_014a:  ldc.i4.1
     IL_014b:  ldc.i4.2
@@ -282,7 +279,7 @@
                                                                                !!2)
     IL_0152:  ldstr      "123"
     IL_0157:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_015c:  call       void Test::Eval(bool)
+    IL_015c:  call       void Test_arity01::Eval(bool)
     IL_0161:  ldloc.0
     IL_0162:  ldc.i4.1
     IL_0163:  ldc.i4.2
@@ -292,7 +289,7 @@
                                                                                !!2)
     IL_016e:  ldstr      "123"
     IL_0173:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_0178:  call       void Test::Eval(bool)
+    IL_0178:  call       void Test_arity01::Eval(bool)
     IL_017d:  ldloc.0
     IL_017e:  ldc.i4.1
     IL_017f:  ldstr      "2"
@@ -302,7 +299,7 @@
                                                                                !!2)
     IL_018a:  ldstr      "123"
     IL_018f:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_0194:  call       void Test::Eval(bool)
+    IL_0194:  call       void Test_arity01::Eval(bool)
     IL_0199:  ldloc.0
     IL_019a:  ldstr      "1"
     IL_019f:  ldc.i4.2
@@ -312,8 +309,8 @@
                                                                                !!2)
     IL_01a6:  ldstr      "123"
     IL_01ab:  callvirt   instance bool [mscorlib]System.String::Equals(string)
-    IL_01b0:  call       void Test::Eval(bool)
-    IL_01b5:  ldsfld     bool Test::result
+    IL_01b0:  call       void Test_arity01::Eval(bool)
+    IL_01b5:  ldsfld     bool Test_arity01::result
     IL_01ba:  brfalse.s  IL_01cc
 
     IL_01bc:  ldstr      "Test Passed"
@@ -338,9 +335,9 @@
     // Code size       13 (0xd)
     .maxstack  1
     IL_0000:  ldc.i4.0
-    IL_0001:  stsfld     int32 Test::counter
+    IL_0001:  stsfld     int32 Test_arity01::counter
     IL_0006:  ldc.i4.1
-    IL_0007:  stsfld     bool Test::result
+    IL_0007:  stsfld     bool Test_arity01::result
     IL_000c:  ret
   } // end of method Test::.cctor
 

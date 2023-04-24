@@ -26,7 +26,7 @@ public sealed class ParallelRunner
     /// error output streams to prevent them from interleaving in the final build output log.
     /// Multiple instances of this class representing the individual running processes
     /// can exist at the same time.
-    /// </summmary>
+    /// </summary>
     class ProcessSlot
     {
         /// <summary>
@@ -159,7 +159,14 @@ public sealed class ParallelRunner
         }
     }
 
-    private static void BuildEtwProcesses(int startIndex, int endIndex, int totalCount, int failureCount, List<ProcessInfo> processList, int degreeOfParallelism, bool measurePerf)
+    private static void BuildEtwProcesses(
+        int startIndex,
+        int endIndex,
+        int totalCount,
+        int failureCount,
+        List<ProcessInfo> processList,
+        int degreeOfParallelism,
+        bool measurePerf)
     {
         using (TraceEventSession traceEventSession = new TraceEventSession("ReadyToRunTestSession"))
         {

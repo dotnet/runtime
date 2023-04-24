@@ -15,13 +15,9 @@
 #include "contract.h"
 #include <string.h>
 
-#ifndef _countof
-#define _countof(x) (sizeof(x)/sizeof(x[0]))
-#endif
-
 #ifdef ENABLE_CONTRACTS_IMPL
 
-inline void BaseContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z const char *szFile, int lineNum)
+inline void BaseContract::DoChecks(UINT testmask, _In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum)
 {
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_NOTHROW;
@@ -177,7 +173,7 @@ inline BOOL ClrDebugState::CheckOkayToThrowNoAssert()
     return TRUE;
 }
 
-inline void ClrDebugState::CheckOkayToThrow(__in_z const char *szFunction, __in_z const char *szFile, int lineNum)
+inline void ClrDebugState::CheckOkayToThrow(_In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum)
 {
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_NOTHROW;
@@ -207,7 +203,7 @@ inline BOOL ClrDebugState::CheckOkayToLockNoAssert()
     return TRUE;
 }
 
-inline void ClrDebugState::CheckOkayToLock(__in_z const char *szFunction, __in_z const char *szFile, int lineNum)
+inline void ClrDebugState::CheckOkayToLock(_In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum)
 {
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_NOTHROW;
@@ -230,8 +226,8 @@ inline void ClrDebugState::CheckOkayToLock(__in_z const char *szFunction, __in_z
 inline void ClrDebugState::LockTaken(DbgStateLockType dbgStateLockType,
                                      UINT cTakes,
                                      void * pvLock,
-                                     __in_z const char * szFunction,
-                                     __in_z const char * szFile,
+                                     _In_z_ const char * szFunction,
+                                     _In_z_ const char * szFile,
                                      int lineNum)
 {
     STATIC_CONTRACT_DEBUG_ONLY;
@@ -321,8 +317,8 @@ inline UINT ClrDebugState::GetCombinedLockCount()
 inline void DbgStateLockData::LockTaken(DbgStateLockType dbgStateLockType,
                                         UINT cTakes,      // # times we're taking this lock (usually 1)
                                         void * pvLock,
-                                        __in_z const char * szFunction,
-                                        __in_z const char * szFile,
+                                        _In_z_ const char * szFunction,
+                                        _In_z_ const char * szFile,
                                         int lineNum)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -341,8 +337,8 @@ inline void DbgStateLockData::LockTaken(DbgStateLockType dbgStateLockType,
 
     // Are we exceeding the threshold for what we can store in m_rgTakenLockInfos?
     // If so, assert a warning, but we'll deal with it.
-    if ((cCombinedLocks <= _countof(m_rgTakenLockInfos)) &&
-        (cCombinedLocks + cTakes > _countof(m_rgTakenLockInfos)))
+    if ((cCombinedLocks <= ARRAY_SIZE(m_rgTakenLockInfos)) &&
+        (cCombinedLocks + cTakes > ARRAY_SIZE(m_rgTakenLockInfos)))
     {
         // Actually, for now we are NOT asserting until I can dedicate more time
         // to this.  Some class loader code paths legally hold many simultaneous
@@ -356,7 +352,7 @@ inline void DbgStateLockData::LockTaken(DbgStateLockType dbgStateLockType,
 
     // Remember as many of these new entrances in m_rgTakenLockInfos as we can
     for (UINT i = cCombinedLocks;
-         i < min (_countof(m_rgTakenLockInfos), cCombinedLocks + cTakes);
+         i < min (ARRAY_SIZE(m_rgTakenLockInfos), cCombinedLocks + cTakes);
          i++)
     {
         m_rgTakenLockInfos[i].m_pvLock = pvLock;
@@ -381,7 +377,7 @@ inline void DbgStateLockData::LockReleased(DbgStateLockType dbgStateLockType, UI
     // If lock count is within range of our m_rgTakenLockInfos buffer size, then
     // make sure we're releasing locks in reverse order of how we took them
     for (UINT i = cCombinedLocks - cReleases;
-         i < min (_countof(m_rgTakenLockInfos), cCombinedLocks);
+         i < min (ARRAY_SIZE(m_rgTakenLockInfos), cCombinedLocks);
          i++)
     {
         if (m_rgTakenLockInfos[i].m_pvLock != pvLock)
@@ -447,7 +443,7 @@ inline BOOL DbgStateLockState::IsLockRetaken(void * pvLock)
     // m_cLocksEnteringCannotRetakeLock records the number of locks that were taken
     // when CANNOT_RETAKE_LOCK contract was constructed.
     for (UINT i = 0;
-        i < min(_countof(m_pLockData->m_rgTakenLockInfos), m_cLocksEnteringCannotRetakeLock);
+        i < min(ARRAY_SIZE(m_pLockData->m_rgTakenLockInfos), m_cLocksEnteringCannotRetakeLock);
         ++i)
     {
         if (m_pLockData->m_rgTakenLockInfos[i].m_pvLock == pvLock)
@@ -497,7 +493,7 @@ void CONTRACT_ASSERT(const char *szElaboration,
     {
         char Buf[512*20 + 2048 + 1024];
 
-        sprintf_s(Buf,_countof(Buf), "CONTRACT VIOLATION by %s at \"%s\" @ %d\n\n%s\n", szFunction, szFile, lineNum, szElaboration);
+        sprintf_s(Buf,ARRAY_SIZE(Buf), "CONTRACT VIOLATION by %s at \"%s\" @ %d\n\n%s\n", szFunction, szFile, lineNum, szElaboration);
 
         int count = 20;
         ContractStackRecord *pRec = CheckClrDebugState() ? CheckClrDebugState()->GetContractStackTrace() : NULL;
@@ -529,11 +525,11 @@ void CONTRACT_ASSERT(const char *szElaboration,
                     else
                     {
                         // Show that some lines have been skipped
-                        strcat_s(Buf, _countof(Buf), "\n                        ...");
+                        strcat_s(Buf, ARRAY_SIZE(Buf), "\n                        ...");
 
                     }
 
-                    sprintf_s(tmpbuf,_countof(tmpbuf),
+                    sprintf_s(tmpbuf,ARRAY_SIZE(tmpbuf),
                             "\n%s  %s in %s at \"%s\" @ %d",
                             fshowconflict ? "VIOLATED-->" : "                      ",
                             pRec->m_construct,
@@ -542,7 +538,7 @@ void CONTRACT_ASSERT(const char *szElaboration,
                             pRec->m_lineNum
                             );
 
-                    strcat_s(Buf, _countof(Buf), tmpbuf);
+                    strcat_s(Buf, ARRAY_SIZE(Buf), tmpbuf);
                 }
 
                 pRec = pRec->m_pNext;
@@ -560,12 +556,12 @@ void CONTRACT_ASSERT(const char *szElaboration,
 
         if (count == 0)
         {
-            strcat_s(Buf,_countof(Buf), "\n                        ...");
+            strcat_s(Buf,ARRAY_SIZE(Buf), "\n                        ...");
         }
 
         if (exceptionBuildingStack)
         {
-            strcat_s(Buf,_countof(Buf),
+            strcat_s(Buf,ARRAY_SIZE(Buf),
                    "\n"
                    "\nError forming contract stack. Any contract stack displayed above is correct,"
                    "\nbut it's most probably truncated. This is probably due to a CONTRACT in a"
@@ -579,17 +575,17 @@ void CONTRACT_ASSERT(const char *szElaboration,
                    );
         }
 
-        strcat_s(Buf,_countof(Buf), "\n\n");
+        strcat_s(Buf,ARRAY_SIZE(Buf), "\n\n");
 
         if (!foundconflict && count != 0)
         {
             if (whichTest == BaseContract::THROWS_No)
             {
-                strcat_s(Buf,_countof(Buf), "You can't throw here because there is no handler on the stack.\n");
+                strcat_s(Buf,ARRAY_SIZE(Buf), "You can't throw here because there is no handler on the stack.\n");
             }
             else
             {
-                strcat_s(Buf,_countof(Buf), "We can't find the violated contract. Look for an old-style non-holder-based contract.\n");
+                strcat_s(Buf,ARRAY_SIZE(Buf), "We can't find the violated contract. Look for an old-style non-holder-based contract.\n");
             }
         }
 

@@ -81,7 +81,7 @@
   this can be done just for locals as a start, so that at least
   part of the stack is handled precisely.
 
- *) test/fix endianess issues
+ *) test/fix endianness issues
 
  *) Implement a card table as the write barrier instead of remembered
     sets?  Card tables are not easy to implement with our current
@@ -300,6 +300,9 @@ static guint64 time_major_sweep = 0;
 static guint64 time_major_fragment_creation = 0;
 
 static guint64 time_max = 0;
+static guint64 time_last = 0;
+static guint64 time_since_last = 0;
+static guint64 timestamp_last_start = 0;
 
 static int sgen_max_pause_time = SGEN_DEFAULT_MAX_PAUSE_TIME;
 static float sgen_max_pause_margin = SGEN_DEFAULT_MAX_PAUSE_MARGIN;
@@ -394,7 +397,7 @@ static SgenPointerQueue fin_ready_queue = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_
 static SgenPointerQueue critical_fin_queue = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_FINALIZE_READY);
 
 /* registered roots: the key to the hash is the root start address */
-/* 
+/*
  * Different kinds of roots are kept separate to speed up pin_from_roots () for example.
  */
 SgenHashTable sgen_roots_hash [ROOT_TYPE_NUM] = {
@@ -405,7 +408,7 @@ SgenHashTable sgen_roots_hash [ROOT_TYPE_NUM] = {
 static mword roots_size = 0; /* amount of memory in the root set */
 
 /* The size of a TLAB */
-/* The bigger the value, the less often we have to go to the slow path to allocate a new 
+/* The bigger the value, the less often we have to go to the slow path to allocate a new
  * one, but the more space is wasted by threads not allocating much memory.
  * FIXME: Tune this.
  * FIXME: Make this self-tuning for each thread.
@@ -826,7 +829,7 @@ sgen_sort_addresses (void **array, size_t size)
 	}
 }
 
-/* 
+/*
  * Scan the memory between start and end and queue values which could be pointers
  * to the area between start_nursery and end_nursery for later consideration.
  * Typically used for thread stacks.
@@ -1131,7 +1134,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	 * We need to walk the LO list as well in search of marked big objects
 	 * (use a flag since this is needed only on major collections). We need to loop
 	 * here as well, so keep a counter of marked LO (increasing it in copy_object).
-	 *   To achieve better cache locality and cache usage, we drain the gray stack 
+	 *   To achieve better cache locality and cache usage, we drain the gray stack
 	 * frequently, after each object is copied, and just finish the work here.
 	 */
 	sgen_drain_gray_stack (ctx);
@@ -1176,7 +1179,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 		/*
 		Do the first bridge step here, as the collector liveness state will become useless after that.
 
-		An important optimization is to only proccess the possibly dead part of the object graph and skip
+		An important optimization is to only process the possibly dead part of the object graph and skip
 		over all live objects as we transitively know everything they point must be alive too.
 
 		The above invariant is completely wrong if we let the gray queue be drained and mark/copy everything.
@@ -1228,7 +1231,7 @@ finish_gray_stack (int generation, ScanCopyContext ctx)
 	sgen_client_clear_unreachable_ephemerons (ctx);
 
 	/*
-	 * We clear togglerefs only after all possible chances of revival are done. 
+	 * We clear togglerefs only after all possible chances of revival are done.
 	 * This is semantically more inline with what users expect and it allows for
 	 * user finalizers to correctly interact with TR objects.
 	*/
@@ -1633,7 +1636,7 @@ workers_finish_callback (void)
 		psj->scan_job.gc_thread_gray_queue = NULL;
 		psj->job_index = i;
 		psj->job_split_count = split_count;
-		psj->data = num_major_sections / split_count;
+		psj->data = (int)(num_major_sections / split_count);
 		sgen_workers_enqueue_job (GENERATION_OLD, &psj->scan_job.job, TRUE);
 	}
 
@@ -1675,7 +1678,7 @@ enqueue_scan_remembered_set_jobs (SgenGrayQueue *gc_thread_gray_queue, SgenObjec
 		psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
 		psj->job_index = i;
 		psj->job_split_count = split_count;
-		psj->data = num_major_sections / split_count;
+		psj->data = (int)(num_major_sections / split_count);
 		sgen_workers_enqueue_deferred_job (GENERATION_NURSERY, &psj->scan_job.job, is_parallel);
 
 		psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan LOS remsets", job_scan_los_card_table, sizeof (ParallelScanJob));
@@ -1704,7 +1707,7 @@ sgen_iterate_all_block_ranges (sgen_cardtable_block_callback callback, gboolean 
 		pjob = (ParallelIterateBlockRangesJob*)sgen_thread_pool_job_alloc ("iterate major block ranges", job_major_collector_iterate_block_ranges, sizeof (ParallelIterateBlockRangesJob));
 		pjob->job_index = i;
 		pjob->job_split_count = split_count;
-		pjob->data = num_major_sections / split_count;
+		pjob->data = (int)(num_major_sections / split_count);
 		pjob->callback = callback;
 		sgen_workers_enqueue_deferred_job (GENERATION_NURSERY, &pjob->job, is_parallel);
 
@@ -1835,8 +1838,6 @@ collect_nursery (const char *reason, gboolean is_overflow)
 	/* world must be stopped already */
 	TV_GETTIME (btv);
 	time_minor_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
-
-	sgen_client_pre_collection_checks ();
 
 	sgen_major_collector.start_nursery_collection ();
 
@@ -2075,8 +2076,6 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 
 	objects_pinned = 0;
 
-	sgen_client_pre_collection_checks ();
-
 	if (mode != COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
 		/* Remsets are not useful for a major collection */
 		remset.clear_cards ();
@@ -2204,7 +2203,7 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 			psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
 			psj->job_index = i;
 			psj->job_split_count = split_count;
-			psj->data = num_major_sections / split_count;
+			psj->data = (int)(num_major_sections / split_count);
 			sgen_workers_enqueue_job (GENERATION_OLD, &psj->scan_job.job, parallel);
 
 			psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan LOS mod union cardtable", job_scan_los_mod_union_card_table, sizeof (ParallelScanJob));
@@ -2328,8 +2327,6 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 	SGEN_ASSERT (0, sgen_workers_all_done (), "Can't have workers working after joining");
 
 	if (objects_pinned) {
-		g_assert (!sgen_concurrent_collection_in_progress);
-
 		/*
 		 * This is slow, but we just OOM'd.
 		 *
@@ -2603,7 +2600,7 @@ sgen_ensure_free_space (size_t size, int generation)
 			generation_to_collect = GENERATION_OLD;
 		} else {
 			generation_to_collect = GENERATION_NURSERY;
-			reason = "Nursery full";                        
+			reason = "Nursery full";
 		}
 	}
 
@@ -2640,7 +2637,7 @@ sgen_perform_collection_inner (size_t requested_size, int generation_to_collect,
 		sgen_stop_world (generation_to_collect, forced_serial || !sgen_major_collector.is_concurrent);
 	else
 		SGEN_ASSERT (0, sgen_is_world_stopped (), "We can only collect if the world is stopped");
-		
+
 
 	TV_GETTIME (gc_total_start);
 
@@ -2698,13 +2695,25 @@ sgen_perform_collection_inner (size_t requested_size, int generation_to_collect,
 	}
 
 	TV_GETTIME (gc_total_end);
-	time_max = MAX (time_max, TV_ELAPSED (gc_total_start, gc_total_end));
+
+	time_last = TV_ELAPSED (gc_total_start, gc_total_end);
+
+	// Long running timers start/stop on different threads might not be correct an all platforms
+	// using mono_100ns_ticks, use mono_100ns_datetime for long running timers.
+	gint64 timestamp_last_end = mono_100ns_datetime ();
+
+	// Elapsed time since ending last GC.
+	time_since_last = TV_ELAPSED (timestamp_last_start, timestamp_last_end);
+
+	timestamp_last_start = timestamp_last_end;
+
+	time_max = MAX (time_max, time_last);
 
 	if (stw)
 		sgen_restart_world (oldest_generation_collected, forced_serial || !sgen_major_collector.is_concurrent);
 }
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 
 typedef struct {
 	size_t requested_size;
@@ -2724,14 +2733,14 @@ gc_pump_callback (void)
 }
 #endif
 
-#ifdef HOST_WASM
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
 extern gboolean mono_wasm_enable_gc;
 #endif
 
 void
 sgen_perform_collection (size_t requested_size, int generation_to_collect, const char *reason, gboolean forced_serial, gboolean stw)
 {
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 	if (!mono_wasm_enable_gc) {
 		g_assert (stw); //can't handle non-stw mode (IE, domain unload)
 		//we ignore forced_serial
@@ -2831,13 +2840,6 @@ sgen_object_is_live (GCObject *obj)
  */
 
 static volatile gboolean pending_unqueued_finalizer = FALSE;
-volatile gboolean sgen_suspend_finalizers = FALSE;
-
-void
-sgen_set_suspend_finalizers (void)
-{
-	sgen_suspend_finalizers = TRUE;
-}
 
 int
 sgen_gc_invoke_finalizers (void)
@@ -2893,8 +2895,6 @@ sgen_gc_invoke_finalizers (void)
 gboolean
 sgen_have_pending_finalizers (void)
 {
-	if (sgen_suspend_finalizers)
-		return FALSE;
 	return pending_unqueued_finalizer || !sgen_pointer_queue_is_empty (&fin_ready_queue) || !sgen_pointer_queue_is_empty (&critical_fin_queue);
 }
 
@@ -3140,8 +3140,6 @@ mono_gc_wbarrier_generic_nostore_internal (gpointer ptr)
 
 	HEAVY_STAT (++stat_wbarrier_generic_store);
 
-	sgen_client_wbarrier_generic_nostore_check (ptr);
-
 	obj = *(gpointer*)ptr;
 	if (obj)
 		sgen_binary_protocol_wbarrier (ptr, obj, (gpointer)LOAD_VTABLE (obj));
@@ -3236,7 +3234,17 @@ sgen_gc_get_used_size (void)
 	tot += sgen_major_collector.get_used_size ();
 	/* FIXME: account for pinned objects */
 	UNLOCK_GC;
-	return tot;
+	return GINT64_TO_SIZE (tot);
+}
+
+void sgen_gc_get_gctimeinfo (
+	guint64 *time_last_gc_100ns,
+	guint64 *time_since_last_gc_100ns,
+	guint64 *time_max_gc_100ns)
+{
+	*time_last_gc_100ns = time_last;
+	*time_since_last_gc_100ns = time_since_last;
+	*time_max_gc_100ns = time_max;
 }
 
 void
@@ -3557,7 +3565,7 @@ sgen_gc_init (void)
 				if (*opt && mono_gc_parse_environment_string_extract_number (opt, &max_heap_candidate)) {
 					max_heap = (max_heap_candidate + page_size - 1) & ~(size_t)(page_size - 1);
 					if (max_heap != max_heap_candidate)
-						sgen_env_var_error (MONO_GC_PARAMS_NAME, "Rounding up.", "`max-heap-size` size must be a multiple of %d.", page_size);
+						sgen_env_var_error (MONO_GC_PARAMS_NAME, "Rounding up.", "`max-heap-size` size must be a multiple of %zu.", page_size);
 				} else {
 					sgen_env_var_error (MONO_GC_PARAMS_NAME, NULL, "`max-heap-size` must be an integer.");
 				}
@@ -3897,7 +3905,7 @@ sgen_gc_init (void)
 }
 
 gboolean
-sgen_gc_initialized ()
+sgen_gc_initialized (void)
 {
 	return gc_initialized > 0;
 }
@@ -3918,12 +3926,6 @@ void
 sgen_gc_unlock (void)
 {
 	mono_coop_mutex_unlock (&sgen_gc_mutex);
-}
-
-void
-sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
-{
-	sgen_major_collector.iterate_live_block_ranges (callback);
 }
 
 void
@@ -4058,4 +4060,104 @@ sgen_check_canary_for_object (gpointer addr)
 	}
 }
 
+
+#define MEM_PRESSURE_COUNT  4
+#define MAX_MEMORYPRESSURE_RATIO  10  
+guint64 memory_pressure_gc_count = 0;
+guint64 memory_pressure_iteration = 0;
+guint64 memory_pressure_adds[MEM_PRESSURE_COUNT] = {0, 0, 0, 0}; 
+guint64 memory_pressure_removes[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // history of memory pressure removals
+const unsigned min_memorypressure_budget = 4 * 1024 * 1024;		// 4 MB
+
+// Resets pressure accounting after a gen2 GC has occurred.
+static void check_pressure_counts ()
+{
+	if (memory_pressure_gc_count != sgen_gc_collection_count(GENERATION_OLD)) {
+		memory_pressure_gc_count = sgen_gc_collection_count(GENERATION_OLD);
+		mono_atomic_inc_i64((gint64*)&memory_pressure_iteration);
+
+		guint32 p = memory_pressure_iteration % MEM_PRESSURE_COUNT;
+
+		memory_pressure_adds[p] = 0;   // new pressure will be accumulated here
+		memory_pressure_removes[p] = 0;
+	}
+}
+
+void sgen_remove_memory_pressure (guint64 bytes_allocated)
+{
+	check_pressure_counts();
+
+	guint32 p = memory_pressure_iteration % MEM_PRESSURE_COUNT;
+
+	mono_atomic_fetch_add_i64((gint64*)&memory_pressure_removes[p], bytes_allocated);
+}
+
+
+static gboolean pressure_check_heuristic (guint64 new_mem_value)
+{
+
+	guint64 add = 0;
+	guint64 rem = 0;
+
+	guint p = memory_pressure_iteration % MEM_PRESSURE_COUNT;
+
+	for (gint i = 0; i < MEM_PRESSURE_COUNT; i++) {
+		add += memory_pressure_adds[i];
+		rem += memory_pressure_removes[i];
+	} 
+
+	add -= memory_pressure_adds[p];
+	rem -= memory_pressure_removes[p];
+
+	if (new_mem_value >= min_memorypressure_budget) {
+		guint64 budget = min_memorypressure_budget;
+
+		if (memory_pressure_iteration >= MEM_PRESSURE_COUNT) { // wait until we have enough data points
+			// Adjust according to effectiveness of GC
+			// Scale budget according to past memory_pressure_adds / memory_pressure_removes ratio
+			if (add >= rem * MAX_MEMORYPRESSURE_RATIO)
+			{
+				budget = min_memorypressure_budget * MAX_MEMORYPRESSURE_RATIO;
+			}
+			else if (add > rem)
+			{
+				g_assert (rem != 0);
+				// Avoid overflow by calculating addPressure / remPressure as fixed point (1 = 1024)
+				budget = (add * 1024 / rem) * budget / 1024;
+			}
+		}
+
+		// If still over budget, check current managed heap size
+		if (new_mem_value >= budget) {
+		guint64 heap_over_3 =  sgen_gc_info.heap_size_bytes / 3;
+
+			if (budget < heap_over_3) {
+				budget = heap_over_3;
+			}
+			if (new_mem_value >= budget) {
+				// last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
+				if ((size_t)(mono_time_since_last_stw() + time_last) > (time_last * 5)) {	
+					return TRUE;
+				}
+			}
+		}
+	}
+
+	return FALSE;
+}
+
+void sgen_add_memory_pressure (guint64 bytes_allocated)
+{
+
+	check_pressure_counts ();
+
+	guint p = memory_pressure_iteration % MEM_PRESSURE_COUNT;
+
+	guint64 new_mem_value = mono_atomic_fetch_add_i64 ((gint64*)&memory_pressure_adds[p], bytes_allocated);
+
+	if (pressure_check_heuristic(new_mem_value)) {
+		sgen_gc_collect (GENERATION_OLD);
+  		check_pressure_counts ();
+	}
+}
 #endif /* HAVE_SGEN_GC */

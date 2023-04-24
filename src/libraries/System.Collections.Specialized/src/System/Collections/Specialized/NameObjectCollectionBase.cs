@@ -10,6 +10,7 @@
 
 #pragma warning disable 618 // obsolete types, namely IHashCodeProvider
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
@@ -43,7 +44,7 @@ namespace System.Collections.Specialized
 
         protected NameObjectCollectionBase(IEqualityComparer? equalityComparer)
         {
-            _keyComparer = (equalityComparer == null) ? s_defaultComparer : equalityComparer;
+            _keyComparer = equalityComparer ?? s_defaultComparer;
             Reset();
         }
 
@@ -52,14 +53,14 @@ namespace System.Collections.Specialized
             Reset(capacity);
         }
 
-        [Obsolete("Please use NameObjectCollectionBase(IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use NameObjectCollectionBase(IEqualityComparer) instead.")]
         protected NameObjectCollectionBase(IHashCodeProvider? hashProvider, IComparer? comparer)
         {
             _keyComparer = new CompatibleComparer(hashProvider, comparer);
             Reset();
         }
 
-        [Obsolete("Please use NameObjectCollectionBase(Int32, IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use NameObjectCollectionBase(Int32, IEqualityComparer) instead.")]
         protected NameObjectCollectionBase(int capacity, IHashCodeProvider? hashProvider, IComparer? comparer)
         {
             _keyComparer = new CompatibleComparer(hashProvider, comparer);
@@ -77,11 +78,15 @@ namespace System.Collections.Specialized
             Reset(capacity);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected NameObjectCollectionBase(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -177,9 +182,9 @@ namespace System.Collections.Specialized
                     _entriesTable.Add(name, entry);
             }
             else
-            { // null key -- special case -- hashtable doesn't like null keys
-                if (_nullKeyEntry == null)
-                    _nullKeyEntry = entry;
+            {
+                // null key -- special case -- hashtable doesn't like null keys
+                _nullKeyEntry ??= entry;
             }
 
             // add entry to the list
@@ -275,7 +280,7 @@ namespace System.Collections.Specialized
         protected object? BaseGet(string? name)
         {
             NameObjectEntry? e = FindEntry(name);
-            return (e != null) ? e.Value : null;
+            return e?.Value;
         }
 
         /// <devdoc>
@@ -365,20 +370,14 @@ namespace System.Collections.Specialized
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_MultiRank, nameof(array));
             }
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array.Length - index < _entriesArray.Count)
             {
@@ -434,13 +433,13 @@ namespace System.Collections.Specialized
         ///    <para>Returns an array of the specified type containing
         ///       all the values in the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The API only works for reference type arguments and code for reference typed arrays is shareable.")]
         protected object?[] BaseGetAllValues(Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             int n = _entriesArray.Count;
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
             object?[] allValues = (object?[])Array.CreateInstance(type, n);
 
             for (int i = 0; i < n; i++)
@@ -459,15 +458,7 @@ namespace System.Collections.Specialized
         /// <para>Returns a <see cref='System.Collections.Specialized.NameObjectCollectionBase.KeysCollection'/> instance containing
         ///    all the keys in the <see cref='System.Collections.Specialized.NameObjectCollectionBase'/> instance.</para>
         /// </devdoc>
-        public virtual KeysCollection Keys
-        {
-            get
-            {
-                if (_keys == null)
-                    _keys = new KeysCollection(this);
-                return _keys;
-            }
-        }
+        public virtual KeysCollection Keys => _keys ??= new KeysCollection(this);
 
         //
         // Simple entry class to allow substitution of values and indexed access to keys
@@ -603,20 +594,14 @@ namespace System.Collections.Specialized
 
             void ICollection.CopyTo(Array array, int index)
             {
-                if (array == null)
-                {
-                    throw new ArgumentNullException(nameof(array));
-                }
+                ArgumentNullException.ThrowIfNull(array);
 
                 if (array.Rank != 1)
                 {
                     throw new ArgumentException(SR.Arg_MultiRank, nameof(array));
                 }
 
-                if (index < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
 
                 if (array.Length - index < _coll.Count)
                 {

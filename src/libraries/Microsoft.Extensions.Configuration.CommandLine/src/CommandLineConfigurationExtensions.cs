@@ -152,7 +152,7 @@ namespace Microsoft.Extensions.Configuration
         public static IConfigurationBuilder AddCommandLine(
             this IConfigurationBuilder configurationBuilder,
             string[] args,
-            IDictionary<string, string> switchMappings)
+            IDictionary<string, string>? switchMappings)
         {
             configurationBuilder.Add(new CommandLineConfigurationSource { Args = args, SwitchMappings = switchMappings });
             return configurationBuilder;
@@ -164,7 +164,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
         /// <param name="configureSource">Configures the source.</param>
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
-        public static IConfigurationBuilder AddCommandLine(this IConfigurationBuilder builder, Action<CommandLineConfigurationSource> configureSource)
+        public static IConfigurationBuilder AddCommandLine(this IConfigurationBuilder builder, Action<CommandLineConfigurationSource>? configureSource)
             => builder.Add(configureSource);
     }
 }

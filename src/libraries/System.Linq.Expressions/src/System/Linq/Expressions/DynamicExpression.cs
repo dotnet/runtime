@@ -856,8 +856,8 @@ namespace System.Linq.Expressions
                     return MakeDynamic(delegateType, binder, argumentList[0], argumentList[1], argumentList[2], argumentList[3]);
             }
 
-            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(delegateType);
+            ArgumentNullException.ThrowIfNull(binder);
             if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
@@ -883,8 +883,8 @@ namespace System.Linq.Expressions
         /// </returns>
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0)
         {
-            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(delegateType);
+            ArgumentNullException.ThrowIfNull(binder);
             if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
@@ -913,8 +913,8 @@ namespace System.Linq.Expressions
         /// </returns>
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1)
         {
-            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(delegateType);
+            ArgumentNullException.ThrowIfNull(binder);
             if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
@@ -946,8 +946,8 @@ namespace System.Linq.Expressions
         /// </returns>
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2)
         {
-            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(delegateType);
+            ArgumentNullException.ThrowIfNull(binder);
             if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
@@ -982,8 +982,8 @@ namespace System.Linq.Expressions
         /// </returns>
         public static DynamicExpression MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
         {
-            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(delegateType);
+            ArgumentNullException.ThrowIfNull(binder);
             if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw Error.TypeMustBeDerivedFromSystemDelegate();
 
             var method = GetValidMethodForDynamic(delegateType);
@@ -1049,7 +1049,7 @@ namespace System.Linq.Expressions
         /// </remarks>
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             ValidateDynamicArgument(arg0, nameof(arg0));
 
             DelegateHelpers.TypeInfo info = DelegateHelpers.GetNextTypeInfo(
@@ -1084,7 +1084,7 @@ namespace System.Linq.Expressions
         /// </remarks>
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             ValidateDynamicArgument(arg0, nameof(arg0));
             ValidateDynamicArgument(arg1, nameof(arg1));
 
@@ -1124,7 +1124,7 @@ namespace System.Linq.Expressions
         /// </remarks>
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             ValidateDynamicArgument(arg0, nameof(arg0));
             ValidateDynamicArgument(arg1, nameof(arg1));
             ValidateDynamicArgument(arg2, nameof(arg2));
@@ -1169,7 +1169,7 @@ namespace System.Linq.Expressions
         /// </remarks>
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             ValidateDynamicArgument(arg0, nameof(arg0));
             ValidateDynamicArgument(arg1, nameof(arg1));
             ValidateDynamicArgument(arg2, nameof(arg2));
@@ -1215,8 +1215,8 @@ namespace System.Linq.Expressions
         /// </remarks>
         public static DynamicExpression Dynamic(CallSiteBinder binder, Type returnType, IEnumerable<Expression> arguments)
         {
-            ContractUtils.RequiresNotNull(arguments, nameof(arguments));
-            ContractUtils.RequiresNotNull(returnType, nameof(returnType));
+            ArgumentNullException.ThrowIfNull(arguments);
+            ArgumentNullException.ThrowIfNull(returnType);
 
             var args = arguments.ToReadOnly();
             ContractUtils.RequiresNotEmpty(args, nameof(arguments));
@@ -1225,7 +1225,7 @@ namespace System.Linq.Expressions
 
         private static DynamicExpression MakeDynamic(CallSiteBinder binder, Type returnType, ReadOnlyCollection<Expression> arguments)
         {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
 
             int n = arguments.Count;
 
@@ -1260,7 +1260,7 @@ namespace System.Linq.Expressions
         {
             ExpressionUtils.RequiresCanRead(arg, paramName, index);
             var type = arg.Type;
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type), allowByRef: true, allowPointer: true);
             if (type == typeof(void)) throw Error.ArgumentTypeCannotBeVoid();
         }

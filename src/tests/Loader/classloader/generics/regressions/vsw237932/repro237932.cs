@@ -12,7 +12,7 @@ using System;
 using System.Threading;
 
 
-public class Test
+public class Test_repro237932
 {
 	public static int Main()
 	{
@@ -27,7 +27,7 @@ public class Test
 		}
 		else
 		{
-			Console.WriteLine("FAIL: Excpected ThreadStatic field of both objects to be 1");
+			Console.WriteLine("FAIL: Expected ThreadStatic field of both objects to be 1");
 			return 101;
 		}
 
@@ -36,6 +36,7 @@ public class Test
 
 public class C1<T>
 {
+	[ThreadStatic]
 	public static int x;
 
 	public C1()

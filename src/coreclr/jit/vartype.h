@@ -17,15 +17,18 @@ enum var_types_classification
     VTF_BYR = 0x0010, // type is Byref
     VTF_I   = 0x0020, // is machine sized
     VTF_S   = 0x0040, // is a struct type
+    VTF_VEC = 0x0080, // is a vector type
 };
 
-enum var_types : BYTE
+enum var_types_register
 {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf, howUsed) TYP_##tn,
-#include "typelist.h"
-#undef DEF_TP
-    TYP_COUNT
+    VTR_UNKNOWN = 0,
+    VTR_INT     = 1,
+    VTR_FLOAT   = 2,
+    VTR_MASK    = 3,
 };
+
+#include "vartypesdef.h"
 
 /*****************************************************************************
  * C-style pointers are implemented as TYP_INT or TYP_LONG depending on the
@@ -35,11 +38,9 @@ enum var_types : BYTE
 #ifdef TARGET_64BIT
 #define TYP_I_IMPL TYP_LONG
 #define TYP_U_IMPL TYP_ULONG
-#define TYPE_REF_IIM TYPE_REF_LNG
 #else
 #define TYP_I_IMPL TYP_INT
 #define TYP_U_IMPL TYP_UINT
-#define TYPE_REF_IIM TYPE_REF_INT
 #ifdef _PREFAST_
 // We silence this in the 32-bit build because for portability, we like to have asserts like this:
 // assert(op2->gtType == TYP_INT || op2->gtType == TYP_I_IMPL);
@@ -52,6 +53,7 @@ enum var_types : BYTE
 /*****************************************************************************/
 
 const extern BYTE varTypeClassification[TYP_COUNT];
+const extern BYTE varTypeRegister[TYP_COUNT];
 
 // make any class with a TypeGet member also have a function TypeGet() that does the same thing
 template <class T>
@@ -69,30 +71,26 @@ inline var_types TypeGet(var_types v)
     return v;
 }
 
+template <class T>
+inline bool varTypeIsSIMD(T vt)
+{
 #ifdef FEATURE_SIMD
-template <class T>
-inline bool varTypeIsSIMD(T vt)
-{
-    switch (TypeGet(vt))
-    {
-        case TYP_SIMD8:
-        case TYP_SIMD12:
-        case TYP_SIMD16:
-        case TYP_SIMD32:
-            return true;
-        default:
-            return false;
-    }
-}
-#else  // FEATURE_SIMD
-
-// Always return false if FEATURE_SIMD is not enabled
-template <class T>
-inline bool varTypeIsSIMD(T vt)
-{
+    return ((varTypeClassification[TypeGet(vt)] & VTF_VEC) != 0);
+#else
+    // Always return false if FEATURE_SIMD is not enabled
     return false;
+#endif
 }
-#endif // !FEATURE_SIMD
+
+template <class T>
+inline bool varTypeIsMask(T vt)
+{
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+    return (TypeGet(vt) == TYP_MASK);
+#else // FEATURE_SIMD
+    return false;
+#endif
+}
 
 template <class T>
 inline bool varTypeIsIntegral(T vt)
@@ -118,13 +116,15 @@ inline bool varTypeIsSigned(T vt)
     return varTypeIsIntegralOrI(vt) && !varTypeIsUnsigned(vt);
 }
 
-// If "vt" is an unsigned integral type, returns the corresponding signed integral type, otherwise
-// return "vt".
-inline var_types varTypeUnsignedToSigned(var_types vt)
+// If "vt" represents an unsigned integral type, returns the corresponding signed integral type,
+// otherwise returns the original type.
+template <class T>
+inline var_types varTypeToSigned(T vt)
 {
-    if (varTypeIsUnsigned(vt))
+    var_types type = TypeGet(vt);
+    if (varTypeIsUnsigned(type))
     {
-        switch (vt)
+        switch (type)
         {
             case TYP_BOOL:
             case TYP_UBYTE:
@@ -139,35 +139,29 @@ inline var_types varTypeUnsignedToSigned(var_types vt)
                 unreached();
         }
     }
-    else
-    {
-        return vt;
-    }
+
+    return type;
 }
 
-// If "vt" is a signed integral type, returns the corresponding unsigned integral type, otherwise
-// return "vt".
-inline var_types varTypeSignedToUnsigned(var_types vt)
+// If "vt" represents a signed integral type, returns the corresponding unsigned integral type,
+// otherwise returns the original type.
+template <class T>
+inline var_types varTypeToUnsigned(T vt)
 {
-    if (varTypeIsSigned(vt))
+    // Force signed types into corresponding unsigned type.
+    var_types type = TypeGet(vt);
+    switch (type)
     {
-        switch (vt)
-        {
-            case TYP_BYTE:
-                return TYP_UBYTE;
-            case TYP_SHORT:
-                return TYP_USHORT;
-            case TYP_INT:
-                return TYP_UINT;
-            case TYP_LONG:
-                return TYP_ULONG;
-            default:
-                unreached();
-        }
-    }
-    else
-    {
-        return vt;
+        case TYP_BYTE:
+            return TYP_UBYTE;
+        case TYP_SHORT:
+            return TYP_USHORT;
+        case TYP_INT:
+            return TYP_UINT;
+        case TYP_LONG:
+            return TYP_ULONG;
+        default:
+            return type;
     }
 }
 
@@ -242,6 +236,12 @@ inline bool varTypeIsIntOrI(T vt)
 }
 
 template <class T>
+inline bool genActualTypeIsInt(T vt)
+{
+    return ((TypeGet(vt) >= TYP_BOOL) && (TypeGet(vt) <= TYP_UINT));
+}
+
+template <class T>
 inline bool genActualTypeIsIntOrI(T vt)
 {
     return ((TypeGet(vt) >= TYP_BOOL) && (TypeGet(vt) <= TYP_U_IMPL));
@@ -251,6 +251,12 @@ template <class T>
 inline bool varTypeIsLong(T vt)
 {
     return (TypeGet(vt) >= TYP_LONG) && (TypeGet(vt) <= TYP_ULONG);
+}
+
+template <class T>
+inline bool varTypeIsInt(T vt)
+{
+    return (TypeGet(vt) >= TYP_INT) && (TypeGet(vt) <= TYP_UINT);
 }
 
 template <class T>
@@ -285,11 +291,14 @@ inline bool varTypeIsComposite(T vt)
 template <class T>
 inline bool varTypeIsPromotable(T vt)
 {
-    return (varTypeIsStruct(vt) || (TypeGet(vt) == TYP_BLK)
-#if !defined(TARGET_64BIT)
-            || varTypeIsLong(vt)
-#endif // !defined(TARGET_64BIT)
-                );
+#ifndef TARGET_64BIT
+    if (varTypeIsLong(vt))
+    {
+        return true;
+    }
+#endif
+
+    return varTypeIsStruct(vt);
 }
 
 template <class T>
@@ -298,12 +307,28 @@ inline bool varTypeIsStruct(T vt)
     return ((varTypeClassification[TypeGet(vt)] & VTF_S) != 0);
 }
 
+template <class T, class U>
+inline bool varTypeUsesSameRegType(T vt, U vu)
+{
+    return varTypeRegister[TypeGet(vt)] == varTypeRegister[TypeGet(vu)];
+}
+
+template <class T>
+inline bool varTypeUsesIntReg(T vt)
+{
+    return varTypeRegister[TypeGet(vt)] == VTR_INT;
+}
+
 template <class T>
 inline bool varTypeUsesFloatReg(T vt)
 {
-    // Note that not all targets support SIMD, but if they don't, varTypeIsSIMD will
-    // always return false.
-    return varTypeIsFloating(vt) || varTypeIsSIMD(vt);
+    return varTypeRegister[TypeGet(vt)] == VTR_FLOAT;
+}
+
+template <class T>
+inline bool varTypeUsesMaskReg(T vt)
+{
+    return varTypeRegister[TypeGet(vt)] == VTR_MASK;
 }
 
 template <class T>

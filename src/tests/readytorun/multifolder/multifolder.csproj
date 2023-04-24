@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
-    <GCStressIncompatible>true</GCStressIncompatible> <!-- https://github.com/dotnet/runtime/issues/39933 -->
+    <!-- Running Crossgen2 under GCStress takes too long -->
+    <GCStressIncompatible>true</GCStressIncompatible>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
-    <CLRTestPriority>0</CLRTestPriority>
 
     <!-- Crossgen2 currently targets x64 and ARM64 only -->
     <DisableProjectBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64'">true</DisableProjectBuild>
@@ -36,9 +35,14 @@ $(CLRTestBatchPreCommands)
     echo -o:%scriptPath%\multifolder-composite.dll>>%__ResponseFile%
     echo --crp:%scriptPath%\..>>%__ResponseFile%
     echo --targetarch:$(TargetArchitecture)>>%__ResponseFile%
+    echo --targetos:$(TargetOS)>>%__ResponseFile%
     echo %scriptPath%\multifolder.dll>>%__ResponseFile%
     echo %scriptPath%\..\FolderA\FolderA\FolderA.dll>>%__ResponseFile%
     echo %scriptPath%\..\FolderB\FolderB\FolderB.dll>>%__ResponseFile%
+
+    REM Suppress GC stand alone mode for the duration of Crossgen2 execution
+    set __gcStandaloneModeToRestore=!DOTNET_GCName!
+    set DOTNET_GCName=
 
     set __Command=%_DebuggerFullPath%
     REM Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -50,6 +54,10 @@ $(CLRTestBatchPreCommands)
     set __Command=%__Command% "%CORE_ROOT%\crossgen2\crossgen2.dll"
     set __Command=%__Command% @"%__ResponseFile%"
 
+    REM work around problems in 6.0 OSR
+    set "DOTNET_TC_OnStackReplacement="
+    set "DOTNET_TC_PartialCompilation="
+
     echo Response file: %__ResponseFile%
     type %__ResponseFile%
     echo ------------------
@@ -60,11 +68,12 @@ $(CLRTestBatchPreCommands)
     dir %scriptPath%\multifolder
 
     set ExePath=multifolder\multifolder.dll
-    set COMPlus_NativeImageSearchPaths=%scriptPath%
+    set DOTNET_NativeImageSearchPaths=%scriptPath%
+    set DOTNET_GCName=!__gcStandaloneModeToRestore!
 
 ]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
 
     __OutputDir=$PWD
     __ResponseFile=$__OutputDir/multifolder.rsp
@@ -77,9 +86,13 @@ $(BashCLRTestPreCommands)
     echo -o:$__OutputDir/multifolder-composite.dll>>$__ResponseFile
     echo --crp:$__OutputDir/..>>$__ResponseFile
     echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
+    echo --targetos:$(TargetOS)>>$__ResponseFile
     echo $__OutputDir/multifolder.dll>>$__ResponseFile
     echo $__OutputDir/../FolderA/FolderA/FolderA.dll>>$__ResponseFile
     echo $__OutputDir/../FolderB/FolderB/FolderB.dll>>$__ResponseFile
+
+    # Suppress some DOTNET variables for the duration of Crossgen2 execution
+    export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
 
     __Command=$_DebuggerFullPath
     # Tests run locally need __TestDotNetCmd (set by runtest.py) or a compatible 5.0 dotnet runtime in the path
@@ -97,9 +110,11 @@ $(BashCLRTestPreCommands)
     echo Running crossgen2: $__Command
     $__Command
 
-    ExePath=multifolder/multifolder.dll
-    export COMPlus_NativeImageSearchPaths=$__OutputDir
+    export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
 
-]]></BashCLRTestPreCommands>
+    ExePath=multifolder/multifolder.dll
+    export DOTNET_NativeImageSearchPaths=$__OutputDir
+
+]]></CLRTestBashPreCommands>
   </PropertyGroup>
 </Project>

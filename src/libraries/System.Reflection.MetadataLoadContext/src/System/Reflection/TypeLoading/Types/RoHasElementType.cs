@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
 
 namespace System.Reflection.TypeLoading
@@ -30,6 +31,8 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsGenericTypeParameter => false;
         public sealed override bool IsGenericMethodParameter => false;
         public sealed override bool ContainsGenericParameters => _elementType.ContainsGenericParameters;
+        public sealed override bool IsFunctionPointer => false;
+        public sealed override bool IsUnmanagedFunctionPointer => false;
 
         internal sealed override RoModule GetRoModule() => _elementType.GetRoModule();
 
@@ -60,12 +63,15 @@ namespace System.Reflection.TypeLoading
         internal sealed override RoType[] GetGenericTypeParametersNoCopy() => Array.Empty<RoType>();
         internal sealed override RoType[] GetGenericTypeArgumentsNoCopy() => Array.Empty<RoType>();
         protected internal sealed override RoType[] GetGenericArgumentsNoCopy() => _elementType.GetGenericArgumentsNoCopy();
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override Type MakeGenericType(params Type[] typeArguments) => throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
         public sealed override GenericParameterAttributes GenericParameterAttributes => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
         public sealed override int GenericParameterPosition => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
         public sealed override Type[] GetGenericParameterConstraints() => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
+        public sealed override Type GetFunctionPointerReturnType() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        public sealed override Type[] GetFunctionPointerParameterTypes() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
         public sealed override Guid GUID => Guid.Empty;
         public sealed override StructLayoutAttribute? StructLayoutAttribute => null;
         protected internal sealed override RoType ComputeEnumUnderlyingType() => throw new ArgumentException(SR.Arg_MustBeEnum);

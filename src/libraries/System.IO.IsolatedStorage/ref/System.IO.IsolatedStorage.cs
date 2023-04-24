@@ -17,11 +17,11 @@ namespace System.IO.IsolatedStorage
         public object AssemblyIdentity { get { throw null; } }
         public virtual long AvailableFreeSpace { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("IsolatedStorage.CurrentSize has been deprecated because it is not CLS Compliant.  To get the current size use IsolatedStorage.UsedSize")]
+        [System.ObsoleteAttribute("IsolatedStorage.CurrentSize has been deprecated because it is not CLS Compliant. To get the current size use IsolatedStorage.UsedSize instead.")]
         public virtual ulong CurrentSize { get { throw null; } }
         public object DomainIdentity { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("IsolatedStorage.MaximumSize has been deprecated because it is not CLS Compliant.  To get the maximum size use IsolatedStorage.Quota")]
+        [System.ObsoleteAttribute("IsolatedStorage.MaximumSize has been deprecated because it is not CLS Compliant. To get the maximum size use IsolatedStorage.Quota instead.")]
         public virtual ulong MaximumSize { get { throw null; } }
         public virtual long Quota { get { throw null; } }
         public System.IO.IsolatedStorage.IsolatedStorageScope Scope { get { throw null; } }
@@ -36,6 +36,8 @@ namespace System.IO.IsolatedStorage
     public partial class IsolatedStorageException : System.Exception
     {
         public IsolatedStorageException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected IsolatedStorageException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public IsolatedStorageException(string? message) { }
         public IsolatedStorageException(string? message, System.Exception? inner) { }
@@ -45,11 +47,11 @@ namespace System.IO.IsolatedStorage
         internal IsolatedStorageFile() { }
         public override long AvailableFreeSpace { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("IsolatedStorageFile.CurrentSize has been deprecated because it is not CLS Compliant.  To get the current size use IsolatedStorageFile.UsedSize")]
+        [System.ObsoleteAttribute("IsolatedStorageFile.CurrentSize has been deprecated because it is not CLS Compliant. To get the current size use IsolatedStorageFile.UsedSize instead.")]
         public override ulong CurrentSize { get { throw null; } }
         public static bool IsEnabled { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
-        [System.ObsoleteAttribute("IsolatedStorageFile.MaximumSize has been deprecated because it is not CLS Compliant.  To get the maximum size use IsolatedStorageFile.Quota")]
+        [System.ObsoleteAttribute("IsolatedStorageFile.MaximumSize has been deprecated because it is not CLS Compliant. To get the maximum size use IsolatedStorageFile.Quota instead.")]
         public override ulong MaximumSize { get { throw null; } }
         public override long Quota { get { throw null; } }
         public override long UsedSize { get { throw null; } }
@@ -104,7 +106,7 @@ namespace System.IO.IsolatedStorage
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated.  Please use IsolatedStorageFileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("IsolatedStorageFileStream.Handle has been deprecated. Use IsolatedStorageFileStream's SafeFileHandle property instead.")]
         public override System.IntPtr Handle { get { throw null; } }
         public override bool IsAsync { get { throw null; } }
         public override long Length { get { throw null; } }

@@ -28,7 +28,7 @@ struct Gen<T>
     }
 }
 
-public class Test
+public class Test_struct_instance01
 {
     public static int Main()
     {

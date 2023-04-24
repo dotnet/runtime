@@ -12,47 +12,6 @@ namespace System.Reflection
 {
     public partial class AssemblyName
     {
-        public AssemblyName(string assemblyName)
-        {
-            if (assemblyName == null)
-                throw new ArgumentNullException(nameof(assemblyName));
-            if (assemblyName.Length == 0 || assemblyName[0] == '\0')
-                throw new ArgumentException(SR.Format_StringZeroLength);
-
-            using (SafeStringMarshal name = RuntimeMarshal.MarshalString(assemblyName))
-            {
-                // TODO: Should use CoreRT AssemblyNameParser
-                if (!ParseAssemblyName(name.Value, out MonoAssemblyName nativeName, out bool isVersionDefined, out bool isTokenDefined))
-                    throw new FileLoadException("The assembly name is invalid.");
-
-                try
-                {
-                    unsafe
-                    {
-                        FillName(&nativeName, null, isVersionDefined, false, isTokenDefined);
-                    }
-                }
-                finally
-                {
-                    RuntimeMarshal.FreeAssemblyName(ref nativeName, false);
-                }
-            }
-        }
-
-        private unsafe byte[]? ComputePublicKeyToken()
-        {
-            if (_publicKey == null)
-                return null;
-            if (_publicKey.Length == 0)
-                return Array.Empty<byte>();
-
-            var token = new byte[8];
-            fixed (byte* pkt = token)
-            fixed (byte* pk = _publicKey)
-                get_public_token(pkt, pk, _publicKey.Length);
-            return token;
-        }
-
         internal static AssemblyName Create(IntPtr monoAssembly, string? codeBase)
         {
             AssemblyName aname = new AssemblyName();
@@ -66,7 +25,7 @@ namespace System.Reflection
 
         internal unsafe void FillName(MonoAssemblyName* native, string? codeBase, bool addVersion, bool addPublickey, bool defaultToken)
         {
-            _name = RuntimeMarshal.PtrToUtf8String(native->name);
+            _name = Marshal.PtrToStringUTF8(native->name);
 
             _flags = (AssemblyNameFlags)native->flags;
 
@@ -90,11 +49,11 @@ namespace System.Reflection
             _codeBase = codeBase;
 
             if (native->culture != IntPtr.Zero)
-                _cultureInfo = CultureInfo.GetCultureInfo(RuntimeMarshal.PtrToUtf8String(native->culture));
+                _cultureInfo = CultureInfo.GetCultureInfo(Marshal.PtrToStringUTF8(native->culture)!);
 
             if (native->public_key != IntPtr.Zero)
             {
-                _publicKey = RuntimeMarshal.DecodeBlobArray(native->public_key);
+                _publicKey = DecodeBlobArray(native->public_key);
                 _flags |= AssemblyNameFlags.PublicKey;
             }
             else if (addPublickey)
@@ -119,32 +78,50 @@ namespace System.Reflection
             }
         }
 
-        private static AssemblyName GetFileInformationCore(string assemblyFile)
+        private static int DecodeBlobSize(IntPtr in_ptr, out IntPtr out_ptr)
         {
+            uint size;
             unsafe
             {
-                Assembly.InternalGetAssemblyName(Path.GetFullPath(assemblyFile), out MonoAssemblyName nativeName, out string? codebase);
+                byte* ptr = (byte*)in_ptr;
 
-                var aname = new AssemblyName();
-                try
+                if ((*ptr & 0x80) == 0)
                 {
-                    aname.FillName(&nativeName, codebase, true, false, true);
-                    return aname;
+                    size = (uint)(ptr[0] & 0x7f);
+                    ptr++;
                 }
-                finally
+                else if ((*ptr & 0x40) == 0)
                 {
-                    RuntimeMarshal.FreeAssemblyName(ref nativeName, false);
+                    size = (uint)(((ptr[0] & 0x3f) << 8) + ptr[1]);
+                    ptr += 2;
                 }
+                else
+                {
+                    size = (uint)(((ptr[0] & 0x1f) << 24) +
+                        (ptr[1] << 16) +
+                        (ptr[2] << 8) +
+                        ptr[3]);
+                    ptr += 4;
+                }
+                out_ptr = (IntPtr)ptr;
             }
+
+            return (int)size;
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe void get_public_token(byte* token, byte* pubkey, int len);
+        internal static byte[] DecodeBlobArray(IntPtr ptr)
+        {
+            IntPtr out_ptr;
+            int size = DecodeBlobSize(ptr, out out_ptr);
+            byte[] res = new byte[size];
+            Marshal.Copy(out_ptr, res, 0, size);
+            return res;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void FreeAssemblyName(ref MonoAssemblyName name, bool freeStruct);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe MonoAssemblyName* GetNativeName(IntPtr assemblyPtr);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool ParseAssemblyName(IntPtr name, out MonoAssemblyName aname, out bool is_version_definited, out bool is_token_defined);
     }
 }

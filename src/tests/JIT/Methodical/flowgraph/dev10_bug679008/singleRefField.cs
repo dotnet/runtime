@@ -9,13 +9,16 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal struct MB8
+namespace Test_singleRefField_cs
+{
+public struct MB8
 {
     public object foo;
 }
 
-internal class Repro
+public class Repro
 {
     private int _state = 1;
 
@@ -36,13 +39,13 @@ internal class Repro
     {
     }
 
-    private Repro[] _preExecutionDelegates = new Repro[0];
+    private Repro[] _preExecutionDelegates = Array.Empty<Repro>();
 
     private int Bug(MB8 mb8, string V_2)
     {
         if (V_2 == null)
         {
-            throw new ArgumentNullException("V_2");
+            throw new ArgumentNullException(nameof(V_2));
         }
         _state = 2;
         int loc0 = 0;
@@ -66,9 +69,11 @@ internal class Repro
         return loc0;
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         new Repro().Bug(new MB8(), "Test");
         return 100;
     }
+}
 }

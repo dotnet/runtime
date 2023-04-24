@@ -69,6 +69,50 @@ namespace System.Text
                 return new Span<byte>(ref *pDestination, bytesWritten).ToArray(); // this overload of Span ctor doesn't validate length
             }
 
+            public override int GetMaxByteCount(int charCount)
+            {
+                // This is a specialization of UTF8Encoding.GetMaxByteCount
+                // with the assumption that the default replacement fallback
+                // emits 3 fallback bytes ([ EF BF BD ] = '\uFFFD') per
+                // malformed input char in the worst case.
+
+                if ((uint)charCount > (int.MaxValue / MaxUtf8BytesPerChar) - 1)
+                {
+                    // Move the throw out of the hot path to allow for inlining.
+                    ThrowArgumentException(charCount);
+                    static void ThrowArgumentException(int charCount)
+                    {
+                        throw new ArgumentOutOfRangeException(
+                            paramName: nameof(charCount),
+                            message: (charCount < 0) ? SR.ArgumentOutOfRange_NeedNonNegNum : SR.ArgumentOutOfRange_GetByteCountOverflow);
+                    }
+                }
+
+                return (charCount * MaxUtf8BytesPerChar) + MaxUtf8BytesPerChar;
+            }
+
+            public override int GetMaxCharCount(int byteCount)
+            {
+                // This is a specialization of UTF8Encoding.GetMaxCharCount
+                // with the assumption that the default replacement fallback
+                // emits one fallback char ('\uFFFD') per malformed input
+                // byte in the worst case.
+
+                if ((uint)byteCount > int.MaxValue - 1)
+                {
+                    // Move the throw out of the hot path to allow for inlining.
+                    ThrowArgumentException(byteCount);
+                    static void ThrowArgumentException(int byteCount)
+                    {
+                        throw new ArgumentOutOfRangeException(
+                            paramName: nameof(byteCount),
+                            message: (byteCount < 0) ? SR.ArgumentOutOfRange_NeedNonNegNum : SR.ArgumentOutOfRange_GetCharCountOverflow);
+                    }
+                }
+
+                return byteCount + 1;
+            }
+
             public override string GetString(byte[] bytes)
             {
                 // This method is short and can be inlined, meaning that the null check below
@@ -101,6 +145,13 @@ namespace System.Text
                 }
 
                 return new string(new ReadOnlySpan<char>(ref *pDestination, charsWritten)); // this overload of ROS ctor doesn't validate length
+            }
+
+            // TODO https://github.com/dotnet/runtime/issues/84425: Make this public.
+            // TODO: Make this [Intrinsic] and handle JIT-time UTF8 encoding of literal `chars`.
+            internal override unsafe bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
+            {
+                return base.TryGetBytes(chars, bytes, out bytesWritten);
             }
         }
     }

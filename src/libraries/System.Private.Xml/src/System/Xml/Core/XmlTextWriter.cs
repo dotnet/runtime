@@ -144,7 +144,7 @@ namespace System.Xml
         private static char[] CreateDefaultIndentChars()
         {
             var result = new char[IndentArrayLength];
-            result.AsSpan().Fill(DefaultIndentChar);
+            Array.Fill(result, DefaultIndentChar);
             return result;
         }
 
@@ -350,8 +350,7 @@ namespace System.Xml
             get { return _indentation; }
             set
             {
-                if (value < 0)
-                    throw new ArgumentException(SR.Xml_InvalidIndentation);
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 _indentation = value;
             }
         }
@@ -450,15 +449,15 @@ namespace System.Xml
                 _textWriter.Write(name);
                 if (pubid != null)
                 {
-                    _textWriter.Write(" PUBLIC " + _quoteChar);
+                    _textWriter.Write($" PUBLIC {_quoteChar}");
                     _textWriter.Write(pubid);
-                    _textWriter.Write(_quoteChar + " " + _quoteChar);
+                    _textWriter.Write($"{_quoteChar} {_quoteChar}");
                     _textWriter.Write(sysid);
                     _textWriter.Write(_quoteChar);
                 }
                 else if (sysid != null)
                 {
-                    _textWriter.Write(" SYSTEM " + _quoteChar);
+                    _textWriter.Write($" SYSTEM {_quoteChar}");
                     _textWriter.Write(sysid);
                     _textWriter.Write(_quoteChar);
                 }
@@ -666,10 +665,7 @@ namespace System.Xml
                             }
                             else
                             {
-                                if (prefix == null)
-                                {
-                                    prefix = GeneratePrefix(); // need a prefix if
-                                }
+                                prefix ??= GeneratePrefix(); // need a prefix if
                                 PushNamespace(prefix, ns, false);
                             }
                         }
@@ -763,7 +759,7 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && (text.Contains("--") || (text.Length != 0 && text[text.Length - 1] == '-')))
+                if (null != text && (text.Contains("--") || text.EndsWith('-')))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCommentChars);
                 }
@@ -792,7 +788,7 @@ namespace System.Xml
                     throw new ArgumentException(SR.Xml_InvalidPiChars);
                 }
 
-                if (0 == string.Compare(name, "xml", StringComparison.OrdinalIgnoreCase) && _stateTable == s_stateTableDocument)
+                if (string.Equals(name, "xml", StringComparison.OrdinalIgnoreCase) && _stateTable == s_stateTableDocument)
                 {
                     throw new ArgumentException(SR.Xml_DupXmlDecl);
                 }
@@ -1186,7 +1182,7 @@ namespace System.Xml
                 _currentState = State.Prolog;
 
                 StringBuilder bufBld = new StringBuilder(128);
-                bufBld.Append("version=" + _quoteChar + "1.0" + _quoteChar);
+                bufBld.Append($"version={_quoteChar}1.0{_quoteChar}");
                 if (_encoding != null)
                 {
                     bufBld.Append(" encoding=");
@@ -1478,7 +1474,7 @@ namespace System.Xml
                 switch (_stack[_top].defaultNsState)
                 {
                     case NamespaceState.DeclaredButNotWrittenOut:
-                        Debug.Assert(declared == true, "Unexpected situation!!");
+                        Debug.Assert(declared, "Unexpected situation!!");
                         // the first namespace that the user gave us is what we
                         // like to keep.
                         break;
@@ -1592,8 +1588,7 @@ namespace System.Xml
         private string GeneratePrefix()
         {
             int temp = _stack[_top].prefixCount++ + 1;
-            return "d" + _top.ToString("d", CultureInfo.InvariantCulture)
-                + "p" + temp.ToString("d", CultureInfo.InvariantCulture);
+            return string.Create(CultureInfo.InvariantCulture, $"d{_top:d}p{temp:d}");
         }
 
         private void InternalWriteProcessingInstruction(string name, string? text)
@@ -1697,7 +1692,7 @@ namespace System.Xml
         // all valid name characters at that position. This can't be changed because of backwards compatibility.
         private void ValidateName(string name, bool isNCName)
         {
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
             {
                 throw new ArgumentException(SR.Xml_EmptyName);
             }
@@ -1762,18 +1757,16 @@ namespace System.Xml
                     break;
                 case SpecialAttr.XmlSpace:
                     // validate XmlSpace attribute
-                    value = XmlConvert.TrimString(value);
-                    if (value == "default")
+                    switch (value.AsSpan().Trim(XmlConvert.WhitespaceChars))
                     {
-                        _stack[_top].xmlSpace = XmlSpace.Default;
-                    }
-                    else if (value == "preserve")
-                    {
-                        _stack[_top].xmlSpace = XmlSpace.Preserve;
-                    }
-                    else
-                    {
-                        throw new ArgumentException(SR.Format(SR.Xml_InvalidXmlSpace, value));
+                        case "default":
+                            _stack[_top].xmlSpace = XmlSpace.Default;
+                            break;
+                        case "preserve":
+                            _stack[_top].xmlSpace = XmlSpace.Preserve;
+                            break;
+                        default:
+                            throw new ArgumentException(SR.Format(SR.Xml_InvalidXmlSpace, value));
                     }
                     break;
                 case SpecialAttr.XmlNs:
@@ -1784,21 +1777,13 @@ namespace System.Xml
         }
 
 
-        private void VerifyPrefixXml(string? prefix, string ns)
+        private static void VerifyPrefixXml(string? prefix, string ns)
         {
-            if (prefix != null && prefix.Length == 3)
+            if (prefix != null &&
+                prefix.Equals("xml", StringComparison.OrdinalIgnoreCase) &&
+                XmlReservedNs.NsXml != ns)
             {
-                if (
-                   (prefix[0] == 'x' || prefix[0] == 'X') &&
-                   (prefix[1] == 'm' || prefix[1] == 'M') &&
-                   (prefix[2] == 'l' || prefix[2] == 'L')
-                   )
-                {
-                    if (XmlReservedNs.NsXml != ns)
-                    {
-                        throw new ArgumentException(SR.Xml_InvalidPrefix);
-                    }
-                }
+                throw new ArgumentException(SR.Xml_InvalidPrefix);
             }
         }
 
@@ -1817,11 +1802,8 @@ namespace System.Xml
 
         private void FlushEncoders()
         {
-            if (null != _base64Encoder)
-            {
-                // The Flush will call WriteRaw to write out the rest of the encoded characters
-                _base64Encoder.Flush();
-            }
+            // The Flush will call WriteRaw to write out the rest of the encoded characters
+            _base64Encoder?.Flush();
             _flush = false;
         }
     }

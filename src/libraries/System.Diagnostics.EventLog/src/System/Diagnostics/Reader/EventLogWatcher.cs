@@ -51,11 +51,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public EventLogWatcher(EventLogQuery eventQuery, EventBookmark bookmark, bool readExistingEvents)
         {
-
-            if (eventQuery == null)
-            {
-                throw new ArgumentNullException(nameof(eventQuery));
-            }
+            ArgumentNullException.ThrowIfNull(eventQuery);
 
             if (bookmark != null)
             {
@@ -111,10 +107,7 @@ namespace System.Diagnostics.Eventing.Reader
                 {
                     // Not calling Stop from within callback - wait for
                     // Any outstanding callbacks to complete.
-                    if (_unregisterDoneHandle != null)
-                    {
-                        _unregisterDoneHandle.WaitOne();
-                    }
+                    _unregisterDoneHandle?.WaitOne();
                 }
 
                 _registeredWaitHandle = null;
@@ -260,10 +253,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         private void IssueCallback(EventRecordWrittenEventArgs eventArgs)
         {
-            if (EventRecordWritten != null)
-            {
-                EventRecordWritten(this, eventArgs);
-            }
+            EventRecordWritten?.Invoke(this, eventArgs);
         }
 
         private void HandleEventsRequestCompletion()

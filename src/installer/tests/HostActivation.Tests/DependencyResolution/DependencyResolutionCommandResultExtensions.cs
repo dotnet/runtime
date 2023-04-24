@@ -22,7 +22,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             foreach (string value in values)
             {
                 Execute.Assertion.ForCondition(propertyValue != null && propertyValue.Contains(value))
-                    .FailWith("The property {0} doesn't contain expected value: {1}\n{2}\n{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+                    .FailWith($"The property {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
+                        $"{propertyName}='{propertyValue}'" +
+                        $"{assertion.GetDiagnosticsInfo()}");
             }
 
             return new AndConstraint<CommandResultAssertions>(assertion);
@@ -35,7 +37,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             foreach (string value in values)
             {
                 Execute.Assertion.ForCondition(propertyValue != null && !propertyValue.Contains(value))
-                    .FailWith("The property {0} contains unexpected value: {1}\n{2}\n{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+                    .FailWith($"The property {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
+                        $"{propertyName}='{propertyValue}'" +
+                        $"{assertion.GetDiagnosticsInfo()}");
             }
 
             return new AndConstraint<CommandResultAssertions>(assertion);
@@ -80,7 +84,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             foreach (string value in values)
             {
                 Execute.Assertion.ForCondition(propertyValue != null && propertyValue.Contains(value))
-                    .FailWith("The resolved {0} doesn't contain expected value: {1}\n{2}\n{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+                    .FailWith($"The resolved {propertyName} doesn't contain expected value: '{value}'{Environment.NewLine}" +
+                        $"{propertyName}='{propertyValue}'" +
+                        $"{assertion.GetDiagnosticsInfo()}");
             }
 
             return new AndConstraint<CommandResultAssertions>(assertion);
@@ -96,7 +102,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             foreach (string value in values)
             {
                 Execute.Assertion.ForCondition(propertyValue != null && !propertyValue.Contains(value))
-                    .FailWith("The resolved {0} contains unexpected value: {1}\n{2}\n{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+                    .FailWith($"The resolved {propertyName} contains unexpected value: '{value}'{Environment.NewLine}" +
+                        $"{propertyName}='{propertyValue}'" +
+                        $"{assertion.GetDiagnosticsInfo()}");
             }
 
             return new AndConstraint<CommandResultAssertions>(assertion);
@@ -134,6 +142,41 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return assertion.NotHaveResolvedComponentDependencyContaining(native_search_paths, RelativePathsToAbsoluteAppPaths(path, app));
         }
 
+        public static AndConstraint<CommandResultAssertions> ErrorWithMissingAssembly(this CommandResultAssertions assertion, string depsFileName, string dependencyName, string dependencyVersion)
+        {
+            return assertion.HaveStdErrContaining(
+                $"Error:{Environment.NewLine}" +
+                $"  An assembly specified in the application dependencies manifest ({depsFileName}) was not found:" + Environment.NewLine +
+                $"    package: \'{dependencyName}\', version: \'{dependencyVersion}\'" + Environment.NewLine +
+                $"    path: \'{dependencyName}.dll\'");
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveUsedAdditionalDeps(this CommandResultAssertions assertion, string depsFilePath)
+        {
+            return assertion.HaveStdErrContaining($"Using specified additional deps.json: '{depsFilePath}'");
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveUsedAdditionalProbingPath(this CommandResultAssertions assertion, string path)
+        {
+            return assertion.HaveStdErrContaining($"Additional probe dir: {path}")
+                .And.HaveStdErrContaining($"probe type=lookup dir=[{path}]");
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveUsedFallbackRid(this CommandResultAssertions assertion, bool usedFallbackRid)
+        {
+            string msg = "Falling back to base HostRID";
+            return usedFallbackRid ? assertion.HaveStdErrContaining(msg) : assertion.NotHaveStdErrContaining(msg);
+        }
+
+        public static AndConstraint<CommandResultAssertions> HaveUsedFrameworkProbe(this CommandResultAssertions assertion, string path, int level)
+        {
+            return assertion.HaveStdErrContaining($"probe type=framework dir=[{path}] fx_level={level}");
+        }
+
+        public static AndConstraint<CommandResultAssertions> NotHaveUsedFrameworkProbe(this CommandResultAssertions assertion, string path)
+        {
+            return assertion.NotHaveStdErrContaining($"probe type=framework dir=[{path}]");
+        }
 
         private static string GetAppMockPropertyValue(CommandResultAssertions assertion, string propertyName) =>
             GetMockPropertyValue(assertion, $"mock property[{propertyName}] = ");

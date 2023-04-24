@@ -1,15 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if TARGET_AMD64 || TARGET_ARM64 || (TARGET_32BIT && !TARGET_ARM)
+#if TARGET_AMD64 || TARGET_ARM64 || (TARGET_32BIT && !TARGET_ARM) || TARGET_LOONGARCH64
 #define HAS_CUSTOM_BLOCKS
 #endif
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -21,12 +19,10 @@ namespace System
         // array element indices and counts, use Array.Copy.
         public static unsafe void BlockCopy(Array src, int srcOffset, Array dst, int dstOffset, int count)
         {
-            if (src == null)
-                throw new ArgumentNullException(nameof(src));
-            if (dst == null)
-                throw new ArgumentNullException(nameof(dst));
+            ArgumentNullException.ThrowIfNull(src);
+            ArgumentNullException.ThrowIfNull(dst);
 
-            nuint uSrcLen = (nuint)src.LongLength;
+            nuint uSrcLen = src.NativeLength;
             if (src.GetType() != typeof(byte[]))
             {
                 if (!src.GetCorElementTypeOfElementType().IsPrimitiveType())
@@ -37,7 +33,7 @@ namespace System
             nuint uDstLen = uSrcLen;
             if (src != dst)
             {
-                uDstLen = (nuint)dst.LongLength;
+                uDstLen = dst.NativeLength;
                 if (dst.GetType() != typeof(byte[]))
                 {
                     if (!dst.GetCorElementTypeOfElementType().IsPrimitiveType())
@@ -46,12 +42,9 @@ namespace System
                 }
             }
 
-            if (srcOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(srcOffset), SR.ArgumentOutOfRange_MustBeNonNegInt32);
-            if (dstOffset < 0)
-                throw new ArgumentOutOfRangeException(nameof(dstOffset), SR.ArgumentOutOfRange_MustBeNonNegInt32);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_MustBeNonNegInt32);
+            ArgumentOutOfRangeException.ThrowIfNegative(srcOffset);
+            ArgumentOutOfRangeException.ThrowIfNegative(dstOffset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             nuint uCount = (nuint)count;
             nuint uSrcOffset = (nuint)srcOffset;
@@ -60,27 +53,25 @@ namespace System
             if ((uSrcLen < uSrcOffset + uCount) || (uDstLen < uDstOffset + uCount))
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            Memmove(ref Unsafe.AddByteOffset(ref dst.GetRawArrayData(), uDstOffset), ref Unsafe.AddByteOffset(ref src.GetRawArrayData(), uSrcOffset), uCount);
+            Memmove(ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(dst), uDstOffset), ref Unsafe.AddByteOffset(ref MemoryMarshal.GetArrayDataReference(src), uSrcOffset), uCount);
         }
 
         public static int ByteLength(Array array)
         {
-            // Is the array present?
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
 
             // Is it of primitive types?
             if (!array.GetCorElementTypeOfElementType().IsPrimitiveType())
                 throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
 
-            nuint byteLength = (nuint)array.LongLength * (nuint)array.GetElementSize();
+            nuint byteLength = array.NativeLength * (nuint)array.GetElementSize();
 
             // This API is explosed both as Buffer.ByteLength and also used indirectly in argument
             // checks for Buffer.GetByte/SetByte.
             //
             // If somebody called Get/SetByte on 2GB+ arrays, there is a decent chance that
             // the computation of the index has overflowed. Thus we intentionally always
-            // throw on 2GB+ arrays in Get/SetByte argument checks (even for indicies <2GB)
+            // throw on 2GB+ arrays in Get/SetByte argument checks (even for indices <2GB)
             // to prevent people from running into a trap silently.
 
             return checked((int)byteLength);
@@ -94,7 +85,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return Unsafe.Add<byte>(ref array.GetRawArrayData(), index);
+            return Unsafe.Add<byte>(ref MemoryMarshal.GetArrayDataReference(array), index);
         }
 
         public static void SetByte(Array array, int index, byte value)
@@ -105,12 +96,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            Unsafe.Add<byte>(ref array.GetRawArrayData(), index) = value;
-        }
-
-        internal static unsafe void ZeroMemory(byte* dest, nuint len)
-        {
-            SpanHelpers.ClearWithoutReferences(ref *dest, len);
+            Unsafe.Add<byte>(ref MemoryMarshal.GetArrayDataReference(array), index) = value;
         }
 
         // The attributes on this method are chosen for best JIT performance.
@@ -141,6 +127,7 @@ namespace System
             Memmove(ref *(byte*)destination, ref *(byte*)source, checked((nuint)sourceBytesToCopy));
         }
 
+        [Intrinsic] // Unrolled for small constant lengths
         internal static void Memmove(ref byte dest, ref byte src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping.
@@ -344,5 +331,95 @@ namespace System
         [StructLayout(LayoutKind.Sequential, Size = 64)]
         private struct Block64 { }
 #endif // HAS_CUSTOM_BLOCKS
+
+        // Non-inlinable wrapper around the QCall that avoids polluting the fast path
+        // with P/Invoke prolog/epilog.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static unsafe void _ZeroMemory(ref byte b, nuint byteLength)
+        {
+            fixed (byte* bytePointer = &b)
+            {
+                __ZeroMemory(bytePointer, byteLength);
+            }
+        }
+
+#if !MONO // Mono BulkMoveWithWriteBarrier is in terms of elements (not bytes) and takes a type handle.
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void Memmove<T>(ref T destination, ref T source, nuint elementCount)
+        {
+#pragma warning disable 8500 // sizeof of managed types
+            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                // Blittable memmove
+                Memmove(
+                    ref Unsafe.As<T, byte>(ref destination),
+                    ref Unsafe.As<T, byte>(ref source),
+                    elementCount * (nuint)sizeof(T));
+            }
+            else
+            {
+                // Non-blittable memmove
+                BulkMoveWithWriteBarrier(
+                    ref Unsafe.As<T, byte>(ref destination),
+                    ref Unsafe.As<T, byte>(ref source),
+                    elementCount * (nuint)sizeof(T));
+            }
+#pragma warning restore 8500
+        }
+
+        // The maximum block size to for __BulkMoveWithWriteBarrier FCall. This is required to avoid GC starvation.
+#if DEBUG // Stress the mechanism in debug builds
+        private const uint BulkMoveWithWriteBarrierChunk = 0x400;
+#else
+        private const uint BulkMoveWithWriteBarrierChunk = 0x4000;
+#endif
+
+        internal static void BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
+        {
+            if (byteCount <= BulkMoveWithWriteBarrierChunk)
+                __BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
+            else
+                _BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
+        }
+
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
+        // Non-inlinable wrapper around the loop for copying large blocks in chunks
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void _BulkMoveWithWriteBarrier(ref byte destination, ref byte source, nuint byteCount)
+        {
+            Debug.Assert(byteCount > BulkMoveWithWriteBarrierChunk);
+
+            if (Unsafe.AreSame(ref source, ref destination))
+                return;
+
+            // This is equivalent to: (destination - source) >= byteCount || (destination - source) < 0
+            if ((nuint)(nint)Unsafe.ByteOffset(ref source, ref destination) >= byteCount)
+            {
+                // Copy forwards
+                do
+                {
+                    byteCount -= BulkMoveWithWriteBarrierChunk;
+                    __BulkMoveWithWriteBarrier(ref destination, ref source, BulkMoveWithWriteBarrierChunk);
+                    destination = ref Unsafe.AddByteOffset(ref destination, BulkMoveWithWriteBarrierChunk);
+                    source = ref Unsafe.AddByteOffset(ref source, BulkMoveWithWriteBarrierChunk);
+                }
+                while (byteCount > BulkMoveWithWriteBarrierChunk);
+            }
+            else
+            {
+                // Copy backwards
+                do
+                {
+                    byteCount -= BulkMoveWithWriteBarrierChunk;
+                    __BulkMoveWithWriteBarrier(ref Unsafe.AddByteOffset(ref destination, byteCount), ref Unsafe.AddByteOffset(ref source, byteCount), BulkMoveWithWriteBarrierChunk);
+                }
+                while (byteCount > BulkMoveWithWriteBarrierChunk);
+            }
+            __BulkMoveWithWriteBarrier(ref destination, ref source, byteCount);
+        }
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
+
+#endif // !MONO
     }
 }

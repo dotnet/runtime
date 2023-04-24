@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <PropertyGroup>
+    <SkipBuild Condition="'$(RuntimeFlavor)' == 'Mono' or '$(PgoInstrument)' == 'true'">true</SkipBuild>
+    <IsShipping Condition="'$(PgoInstrument)' == 'true'">false</IsShipping>
+    <ArchiveName>dotnet-runtime-composite</ArchiveName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <BundleComponentReference Include="../Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.Composite.sfxproj" />
+    <BundleComponentReference Include="../installers/dotnet-hostfxr.proj" />
+    <BundleComponentReference Include="../installers/dotnet-host.proj" />
+  </ItemGroup>
+
+  <Target Name="PublishToDisk">
+    <Error Condition="'$(OutputPath)' == ''" Text="Publishing to disk requires the OutputPath to be set to the root of the path to write to." />
+
+    <MSBuild Projects="@(BundleComponentReference)"
+             Targets="PublishToDisk"
+             Properties="OutputPath=$(OutputPath)" />
+  </Target>
+
+  <Target Name="PublishSymbolsToDisk">
+    <Error Condition="'$(SymbolsOutputPath)' == ''" Text="Publishing to disk requires the SymbolsOutputPath to be set to the root of the path to write to." />
+
+    <MSBuild Projects="@(BundleComponentReference)"
+             Targets="PublishSymbolsToDisk"
+             Properties="SymbolsOutputPath=$(SymbolsOutputPath)" />
+  </Target>
+
+</Project>

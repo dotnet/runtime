@@ -10,7 +10,7 @@ namespace System.Reflection
     public sealed class AmbiguousMatchException : SystemException
     {
         public AmbiguousMatchException()
-            : base(SR.RFLCT_Ambiguous)
+            : base(SR.Arg_AmbiguousMatchException)
         {
             HResult = HResults.COR_E_AMBIGUOUSMATCH;
         }
@@ -27,6 +27,7 @@ namespace System.Reflection
             HResult = HResults.COR_E_AMBIGUOUSMATCH;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private AmbiguousMatchException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

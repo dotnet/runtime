@@ -35,13 +35,13 @@ public struct Gen<T>
 			}
 			if (throwException)
 			{
-				Test.Eval(false);
+				Test_try_catch_struct03.Eval(false);
 			}
 		}
 		catch(GenException<System.InvalidCastException>)
 		{
 				//this should never bee hit!
-				Test.Eval(false);
+				Test_try_catch_struct03.Eval(false);
 		}		
 	}
 	
@@ -50,17 +50,17 @@ public struct Gen<T>
 		try
 		{
 			InternalExceptionTest(throwException);
-			Test.Eval(!throwException);
+			Test_try_catch_struct03.Eval(!throwException);
 		}
 		catch
 		{
-			Test.Eval(throwException);
+			Test_try_catch_struct03.Eval(throwException);
 		}
 	}
 	
 }
 
-public class Test
+public class Test_try_catch_struct03
 {
 	public static int counter = 0;
 	public static bool result = true;

@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -42,7 +42,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE_EXTRA_1/${OPCODE_EXTRA_1}/g
 		throw
 		leave END
         }
-        catch [mscorlib]System.Exception 
+        catch [mscorlib]System.Exception
 	{
 		pop
 		leave END
@@ -51,7 +51,7 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/OPCODE_EXTRA_1/${OPCODE_EXTRA_1}/g
 	.try
 	{
 		newobj instance void class [mscorlib]System.Exception::.ctor()
-		throw 
+		throw
 		leave END
 	}
 	finally
@@ -63,10 +63,10 @@ END_2:
 		endfinally
 	}
 
-	.try 
+	.try
 	{
 		newobj instance void class [mscorlib]System.Exception::.ctor()
-		throw 
+		throw
  		leave END
 	}
 	filter

@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyBuilderTests.cs" />
@@ -33,6 +34,7 @@
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderSetCustomAttribute.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderSetGenericParameterAttributes.cs" />
     <Compile Include="GenericTypeParameterBuilder\GenericTypeParameterBuilderSetInterfaceConstraints.cs" />
+    <Compile Include="MethodBuilder\MethodBuilderByRefs.cs" />
     <Compile Include="MethodBuilder\MethodBuilderContainsGenericParameters.cs" />
     <Compile Include="MethodBuilder\MethodBuilderDefineGenericParameters.cs" />
     <Compile Include="MethodBuilder\MethodBuilderDefineParameter.cs" />
@@ -60,6 +62,8 @@
     <Compile Include="ModuleBuilder\ModuleBuilderGetArrayMethod.cs" />
     <Compile Include="ModuleBuilder\ModuleBuilderSetCustomAttribute.cs" />
     <Compile Include="ParameterBuilder\ParameterBuilderSetConstant.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblySaveTestsWithVariousTypes.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblyTools.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAddOtherMethod.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAttributes.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderCanRead.cs" />
@@ -72,7 +76,7 @@
     <Compile Include="PropertyBuilder\PropertyBuilderSetGetMethod.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderSetSetMethod.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderSetValue.cs" />
-    <Compile Include="TypeBuilder\TypeBuilderAddInterfaceImplementaion.cs" />
+    <Compile Include="TypeBuilder\TypeBuilderAddInterfaceImplementation.cs" />
     <Compile Include="TypeBuilder\TypeBuilderAssemblyQualifiedName.cs" />
     <Compile Include="TypeBuilder\TypeBuilderCreateType.cs" />
     <Compile Include="TypeBuilder\TypeBuilderCreateTypeInfo.cs" />
@@ -112,5 +116,10 @@
     <Compile Include="TypeBuilder\TypeBuilderSize.cs" />
     <Compile Include="TypeBuilder\TypeBuilderToString.cs" />
     <Compile Include="Utilities.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Reflection.Emit.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.MetadataLoadContext\src\System.Reflection.MetadataLoadContext.csproj" />
   </ItemGroup>
 </Project>

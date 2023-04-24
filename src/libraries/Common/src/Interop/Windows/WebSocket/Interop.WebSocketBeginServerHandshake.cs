@@ -3,21 +3,20 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Security;
 
 internal static partial class Interop
 {
     internal static partial class WebSocket
     {
-        [DllImport(Libraries.WebSocket)]
-        internal static extern int WebSocketBeginServerHandshake(
-            [In] SafeHandle webSocketHandle,
-            [In] IntPtr subProtocol,
-            [In] IntPtr extensions,
-            [In] uint extensionCount,
-            [In] HttpHeader[] requestHeaders,
-            [In] uint requestHeaderCount,
-            [Out] out IntPtr responseHeadersPtr,
-            [Out] out uint responseHeaderCount);
+        [LibraryImport(Libraries.WebSocket)]
+        internal static partial int WebSocketBeginServerHandshake(
+            SafeHandle webSocketHandle,
+            IntPtr subProtocol,
+            IntPtr extensions,
+            uint extensionCount,
+            HttpHeader[] requestHeaders,
+            uint requestHeaderCount,
+            out IntPtr responseHeadersPtr,
+            out uint responseHeaderCount);
     }
 }

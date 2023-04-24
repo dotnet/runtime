@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 .assembly extern mscorlib{}
 .assembly abstract03{}
 
@@ -50,7 +51,7 @@
     IL_0007:  ret
   }
 
-  .method public instance bool Test() 
+  .method public instance bool Test_abstract03() 
   {
     .maxstack  2
     .locals init (class [mscorlib]System.Exception V_0, bool V_1)
@@ -102,7 +103,7 @@
 
 } // end of class GenTest
 
-.class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+.class public auto ansi beforefieldinit Test_abstract03 extends [mscorlib]System.Object
 {
   .field public static int32 counter
   .field public static bool result
@@ -110,17 +111,17 @@
   {
     // Code size       47 (0x2f)
     .maxstack  2
-    IL_0000:  ldsfld     int32 Test::counter
+    IL_0000:  ldsfld     int32 Test_abstract03::counter
     IL_0005:  ldc.i4.1
     IL_0006:  add
-    IL_0007:  stsfld     int32 Test::counter
+    IL_0007:  stsfld     int32 Test_abstract03::counter
     IL_000c:  ldarg.0
     IL_000d:  brtrue.s   IL_002e
 
     IL_000f:  ldarg.0
-    IL_0010:  stsfld     bool Test::result
+    IL_0010:  stsfld     bool Test_abstract03::result
     IL_0015:  ldstr      "Test Failed at location: "
-    IL_001a:  ldsfld     int32 Test::counter
+    IL_001a:  ldsfld     int32 Test_abstract03::counter
     IL_001f:  box        [mscorlib]System.Int32
     IL_0024:  call       string [mscorlib]System.String::Concat(object,
                                                                 object)
@@ -130,14 +131,17 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       53 (0x35)
     .maxstack  1
     .locals init (int32 V_0)
     IL_0000:  newobj     instance void GenTest::.ctor()
-    IL_0005:  call       instance bool GenTest::Test()
-    IL_000a:  call       void Test::Eval(bool)
-    IL_000f:  ldsfld     bool Test::result
+    IL_0005:  call       instance bool GenTest::Test_abstract03()
+    IL_000a:  call       void Test_abstract03::Eval(bool)
+    IL_000f:  ldsfld     bool Test_abstract03::result
     IL_0014:  brfalse.s  IL_0025
 
     IL_0016:  ldstr      "Test Passed"
@@ -162,9 +166,9 @@
     // Code size       13 (0xd)
     .maxstack  1
     IL_0000:  ldc.i4.0
-    IL_0001:  stsfld     int32 Test::counter
+    IL_0001:  stsfld     int32 Test_abstract03::counter
     IL_0006:  ldc.i4.1
-    IL_0007:  stsfld     bool Test::result
+    IL_0007:  stsfld     bool Test_abstract03::result
     IL_000c:  ret
   } // end of method Test::.cctor
 

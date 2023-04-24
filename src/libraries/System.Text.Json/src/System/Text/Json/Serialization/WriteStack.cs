@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
@@ -12,23 +13,63 @@ using System.Threading.Tasks;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("Path:{PropertyPath()} Current: ConverterStrategy.{ConverterStrategy.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo.Type.Name}")]
+    [StructLayout(LayoutKind.Auto)]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStack
     {
+        public int CurrentDepth => _count;
+
         /// <summary>
-        /// The number of stack frames when the continuation started.
+        /// Exposes the stackframe that is currently active.
+        /// </summary>
+        public WriteStackFrame Current;
+
+        /// <summary>
+        /// Gets the parent stackframe, if it exists.
+        /// </summary>
+        public ref WriteStackFrame Parent
+        {
+            get
+            {
+                Debug.Assert(_count - _indexOffset > 0);
+                Debug.Assert(_stack is not null);
+                return ref _stack[_count - _indexOffset - 1];
+            }
+        }
+
+        /// <summary>
+        /// Buffer containing all frames in the stack. For performance it is only populated for serialization depths > 1.
+        /// </summary>
+        private WriteStackFrame[] _stack;
+
+        /// <summary>
+        /// Tracks the current depth of the stack.
+        /// </summary>
+        private int _count;
+
+        /// <summary>
+        /// If not zero, indicates that the stack is part of a re-entrant continuation of given depth.
         /// </summary>
         private int _continuationCount;
 
         /// <summary>
-        /// The number of stack frames including Current. _previous will contain _count-1 higher frames.
+        /// Offset used to derive the index of the current frame in the stack buffer from the current value of <see cref="_count"/>,
+        /// following the formula currentIndex := _count - _indexOffset.
+        /// Value can vary between 0 or 1 depending on whether we need to allocate a new frame on the first Push() operation,
+        /// which can happen if the root converter is polymorphic.
         /// </summary>
-        private int _count;
+        private byte _indexOffset;
 
         /// <summary>
         /// Cancellation token used by converters performing async serialization (e.g. IAsyncEnumerable)
         /// </summary>
         public CancellationToken CancellationToken;
+
+        /// <summary>
+        /// In the case of async serialization, used by resumable converters to signal that
+        /// the current buffer contents should not be flushed to the underlying stream.
+        /// </summary>
+        public bool SuppressFlush;
 
         /// <summary>
         /// Stores a pending task that a resumable converter depends on to continue work.
@@ -37,14 +78,9 @@ namespace System.Text.Json
         public Task? PendingTask;
 
         /// <summary>
-        /// List of IAsyncDisposables that have been scheduled for disposal by converters.
+        /// List of completed IAsyncDisposables that have been scheduled for disposal by converters.
         /// </summary>
-        public List<IAsyncDisposable>? PendingAsyncDisposables;
-
-        private List<WriteStackFrame> _previous;
-
-        // A field is used instead of a property to avoid value semantics.
-        public WriteStackFrame Current;
+        public List<IAsyncDisposable>? CompletedAsyncDisposables;
 
         /// <summary>
         /// The amount of bytes to write before the underlying Stream should be flushed and the
@@ -52,7 +88,16 @@ namespace System.Text.Json
         /// </summary>
         public int FlushThreshold;
 
+        /// <summary>
+        /// Indicates that the state still contains suspended frames waiting re-entry.
+        /// </summary>
         public bool IsContinuation => _continuationCount != 0;
+
+        /// <summary>
+        /// Indicates that the root-level JsonTypeInfo is the result of
+        /// polymorphic dispatch from the internal System.Object converter.
+        /// </summary>
+        public bool IsPolymorphicRootValue;
 
         // The bag of preservable references.
         public ReferenceResolver ReferenceResolver;
@@ -62,97 +107,128 @@ namespace System.Text.Json
         /// </summary>
         public bool SupportContinuation;
 
-        private void AddCurrent()
-        {
-            if (_previous == null)
-            {
-                _previous = new List<WriteStackFrame>();
-            }
-
-            if (_count > _previous.Count)
-            {
-                // Need to allocate a new array element.
-                _previous.Add(Current);
-            }
-            else
-            {
-                // Use a previously allocated slot.
-                _previous[_count - 1] = Current;
-            }
-
-            _count++;
-        }
+        /// <summary>
+        /// Internal flag indicating that async serialization is supported. Implies `SupportContinuation`.
+        /// </summary>
+        public bool SupportAsync;
 
         /// <summary>
-        /// Initialize the state without delayed initialization of the JsonTypeInfo.
+        /// Stores a reference id that has been calculated for a newly serialized object.
         /// </summary>
-        public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation)
+        public string? NewReferenceId;
+
+        /// <summary>
+        /// Indicates that the next converter is polymorphic and must serialize a type discriminator.
+        /// </summary>
+        public object? PolymorphicTypeDiscriminator;
+
+        /// <summary>
+        /// Whether the current frame needs to write out any metadata.
+        /// </summary>
+        public bool CurrentContainsMetadata => NewReferenceId != null || PolymorphicTypeDiscriminator != null;
+
+        private void EnsurePushCapacity()
         {
-            JsonTypeInfo jsonTypeInfo = options.GetOrAddClassForRootType(type);
-            return Initialize(jsonTypeInfo, options, supportContinuation);
+            if (_stack is null)
+            {
+                _stack = new WriteStackFrame[4];
+            }
+            else if (_count - _indexOffset == _stack.Length)
+            {
+                Array.Resize(ref _stack, 2 * _stack.Length);
+            }
         }
 
-        internal JsonConverter Initialize(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, bool supportContinuation)
+        internal void Initialize(
+            JsonTypeInfo jsonTypeInfo,
+            object? rootValueBoxed = null,
+            bool isPolymorphicRootValue = false,
+            bool supportContinuation = false,
+            bool supportAsync = false)
         {
-            Current.JsonTypeInfo = jsonTypeInfo;
-            Current.DeclaredJsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
-            Current.NumberHandling = Current.DeclaredJsonPropertyInfo.NumberHandling;
+            Debug.Assert(!supportAsync || supportContinuation, "supportAsync must imply supportContinuation");
+            Debug.Assert(!IsContinuation);
+            Debug.Assert(CurrentDepth == 0);
 
+            Current.JsonTypeInfo = jsonTypeInfo;
+            Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
+            Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
+            IsPolymorphicRootValue = isPolymorphicRootValue;
+            SupportContinuation = supportContinuation;
+            SupportAsync = supportAsync;
+
+            JsonSerializerOptions options = jsonTypeInfo.Options;
             if (options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
             {
                 Debug.Assert(options.ReferenceHandler != null);
                 ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: true);
+
+                if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                    rootValueBoxed is not null && jsonTypeInfo.Type.IsValueType)
+                {
+                    // Root object is a boxed value type, we need to push it to the reference stack before starting the serializer.
+                    ReferenceResolver.PushReferenceForCycleDetection(rootValueBoxed);
+                }
             }
+        }
 
-            SupportContinuation = supportContinuation;
-
-            return jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+        /// <summary>
+        /// Gets the nested JsonTypeInfo before resolving any polymorphic converters
+        /// </summary>
+        public JsonTypeInfo PeekNestedJsonTypeInfo()
+        {
+            Debug.Assert(Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted);
+            return _count == 0 ? Current.JsonTypeInfo : Current.JsonPropertyInfo!.JsonTypeInfo;
         }
 
         public void Push()
         {
             if (_continuationCount == 0)
             {
-                if (_count == 0)
+                Debug.Assert(Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntrySuspended);
+
+                if (_count == 0 && Current.PolymorphicSerializationState == PolymorphicSerializationState.None)
                 {
-                    // The first stack frame is held in Current.
+                    // Perf enhancement: do not create a new stackframe on the first push operation
+                    // unless the converter has primed the current frame for polymorphic dispatch.
                     _count = 1;
+                    _indexOffset = 1; // currentIndex := _count - 1;
                 }
                 else
                 {
-                    JsonTypeInfo jsonTypeInfo = Current.GetPolymorphicJsonPropertyInfo().RuntimeTypeInfo;
+                    JsonTypeInfo jsonTypeInfo = Current.GetNestedJsonTypeInfo();
                     JsonNumberHandling? numberHandling = Current.NumberHandling;
 
-                    AddCurrent();
-                    Current.Reset();
+                    EnsurePushCapacity();
+                    _stack[_count - _indexOffset] = Current;
+                    Current = default;
+                    _count++;
 
                     Current.JsonTypeInfo = jsonTypeInfo;
-                    Current.DeclaredJsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
+                    Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
                     // Allow number handling on property to win over handling on type.
-                    Current.NumberHandling = numberHandling ?? Current.DeclaredJsonPropertyInfo.NumberHandling;
+                    Current.NumberHandling = numberHandling ?? Current.JsonPropertyInfo.EffectiveNumberHandling;
                 }
-            }
-            else if (_continuationCount == 1)
-            {
-                // No need for a push since there is only one stack frame.
-                Debug.Assert(_count == 1);
-                _continuationCount = 0;
             }
             else
             {
-                // A continuation, adjust the index.
-                Current = _previous[_count - 1];
+                // We are re-entering a continuation, adjust indices accordingly
+                if (_count++ > 0 || _indexOffset == 0)
+                {
+                    Current = _stack[_count - _indexOffset];
+                }
 
-                // Check if we are done.
-                if (_count == _continuationCount)
+                // check if we are done
+                if (_continuationCount == _count)
                 {
                     _continuationCount = 0;
                 }
-                else
-                {
-                    _count++;
-                }
             }
+
+#if DEBUG
+            // Ensure the method is always exercised in debug builds.
+            _ = PropertyPath();
+#endif
         }
 
         public void Pop(bool success)
@@ -164,62 +240,50 @@ namespace System.Text.Json
                 // Check if we need to initialize the continuation.
                 if (_continuationCount == 0)
                 {
-                    if (_count == 1)
+                    if (_count == 1 && _indexOffset > 0)
                     {
-                        // No need for a continuation since there is only one stack frame.
+                        // No need to copy any frames here.
                         _continuationCount = 1;
-                        _count = 1;
-                    }
-                    else
-                    {
-                        AddCurrent();
-                        _count--;
-                        _continuationCount = _count;
-                        _count--;
-                        Current = _previous[_count - 1];
+                        _count = 0;
+                        return;
                     }
 
-                    return;
+                    // Need to push the Current frame to the stack,
+                    // ensure that we have sufficient capacity.
+                    EnsurePushCapacity();
+                    _continuationCount = _count--;
                 }
-
-                if (_continuationCount == 1)
+                else if (--_count == 0 && _indexOffset > 0)
                 {
-                    // No need for a pop since there is only one stack frame.
-                    Debug.Assert(_count == 1);
+                    // reached the root, no need to copy frames.
                     return;
                 }
 
-                // Update the list entry to the current value.
-                _previous[_count - 1] = Current;
-
-                Debug.Assert(_count > 0);
+                int currentIndex = _count - _indexOffset;
+                _stack[currentIndex + 1] = Current;
+                Current = _stack[currentIndex];
             }
             else
             {
                 Debug.Assert(_continuationCount == 0);
 
-                if (Current.AsyncEnumerator is not null)
+                if (--_count > 0 || _indexOffset == 0)
                 {
-                    // we have completed serialization of an AsyncEnumerator,
-                    // pop from the stack and schedule for async disposal.
-                    PendingAsyncDisposables ??= new List<IAsyncDisposable>();
-                    PendingAsyncDisposables.Add(Current.AsyncEnumerator);
+                    Current = _stack[_count - _indexOffset];
                 }
-            }
-
-            if (_count > 1)
-            {
-                Current = _previous[--_count - 1];
             }
         }
 
+        public void AddCompletedAsyncDisposable(IAsyncDisposable asyncDisposable)
+            => (CompletedAsyncDisposables ??= new List<IAsyncDisposable>()).Add(asyncDisposable);
+
         // Asynchronously dispose of any AsyncDisposables that have been scheduled for disposal
-        public async ValueTask DisposePendingAsyncDisposables()
+        public async ValueTask DisposeCompletedAsyncDisposables()
         {
-            Debug.Assert(PendingAsyncDisposables?.Count > 0);
+            Debug.Assert(CompletedAsyncDisposables?.Count > 0);
             Exception? exception = null;
 
-            foreach (IAsyncDisposable asyncDisposable in PendingAsyncDisposables)
+            foreach (IAsyncDisposable asyncDisposable in CompletedAsyncDisposables)
             {
                 try
                 {
@@ -236,7 +300,7 @@ namespace System.Text.Json
                 ExceptionDispatchInfo.Capture(exception).Throw();
             }
 
-            PendingAsyncDisposables.Clear();
+            CompletedAsyncDisposables.Clear();
         }
 
         /// <summary>
@@ -247,17 +311,14 @@ namespace System.Text.Json
         {
             Exception? exception = null;
 
-            Debug.Assert(Current.AsyncEnumerator is null);
+            Debug.Assert(Current.AsyncDisposable is null);
             DisposeFrame(Current.CollectionEnumerator, ref exception);
 
             int stackSize = Math.Max(_count, _continuationCount);
-            if (stackSize > 1)
+            for (int i = 0; i < stackSize - 1; i++)
             {
-                for (int i = 0; i < stackSize - 1; i++)
-                {
-                    Debug.Assert(_previous[i].AsyncEnumerator is null);
-                    DisposeFrame(_previous[i].CollectionEnumerator, ref exception);
-                }
+                Debug.Assert(_stack[i].AsyncDisposable is null);
+                DisposeFrame(_stack[i].CollectionEnumerator, ref exception);
             }
 
             if (exception is not null)
@@ -289,15 +350,12 @@ namespace System.Text.Json
         {
             Exception? exception = null;
 
-            exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncEnumerator, exception).ConfigureAwait(false);
+            exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncDisposable, exception).ConfigureAwait(false);
 
             int stackSize = Math.Max(_count, _continuationCount);
-            if (stackSize > 1)
+            for (int i = 0; i < stackSize - 1; i++)
             {
-                for (int i = 0; i < stackSize - 1; i++)
-                {
-                    exception = await DisposeFrame(_previous[i].CollectionEnumerator, _previous[i].AsyncEnumerator, exception).ConfigureAwait(false);
-                }
+                exception = await DisposeFrame(_stack[i].CollectionEnumerator, _stack[i].AsyncDisposable, exception).ConfigureAwait(false);
             }
 
             if (exception is not null)
@@ -336,39 +394,40 @@ namespace System.Text.Json
         {
             StringBuilder sb = new StringBuilder("$");
 
-            // If a continuation, always report back full stack.
-            int count = Math.Max(_count, _continuationCount);
-
-            for (int i = 0; i < count - 1; i++)
+            (int frameCount, bool includeCurrentFrame) = _continuationCount switch
             {
-                AppendStackFrame(sb, _previous[i]);
+                0 => (_count - 1, true), // Not a continuation, report previous frames and Current.
+                1 => (0, true), // Continuation of depth 1, just report Current frame.
+                int c => (c, false) // Continuation of depth > 1, report the entire stack.
+            };
+
+            for (int i = 1; i <= frameCount; i++)
+            {
+                AppendStackFrame(sb, ref _stack[i - _indexOffset]);
             }
 
-            if (_continuationCount == 0)
+            if (includeCurrentFrame)
             {
-                AppendStackFrame(sb, Current);
+                AppendStackFrame(sb, ref Current);
             }
 
             return sb.ToString();
 
-            void AppendStackFrame(StringBuilder sb, in WriteStackFrame frame)
+            static void AppendStackFrame(StringBuilder sb, ref WriteStackFrame frame)
             {
-                // Append the property name.
-                string? propertyName = frame.DeclaredJsonPropertyInfo?.MemberInfo?.Name;
-                if (propertyName == null)
-                {
-                    // Attempt to get the JSON property name from the property name specified in re-entry.
-                    propertyName = frame.JsonPropertyNameAsString;
-                }
+                // Append the property name. Or attempt to get the JSON property name from the property name specified in re-entry.
+                string? propertyName =
+                    frame.JsonPropertyInfo?.MemberName ??
+                    frame.JsonPropertyNameAsString;
 
                 AppendPropertyName(sb, propertyName);
             }
 
-            void AppendPropertyName(StringBuilder sb, string? propertyName)
+            static void AppendPropertyName(StringBuilder sb, string? propertyName)
             {
                 if (propertyName != null)
                 {
-                    if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
+                    if (propertyName.AsSpan().ContainsSpecialCharacters())
                     {
                         sb.Append(@"['");
                         sb.Append(propertyName);
@@ -382,5 +441,8 @@ namespace System.Text.Json
                 }
             }
         }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.EffectiveConverter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

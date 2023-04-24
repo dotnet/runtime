@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Policy;
@@ -59,8 +60,8 @@ namespace System.Security.Cryptography.Xml
         //
 
         private readonly XmlDocument _document;
-        private Evidence _evidence;
-        private XmlResolver _xmlResolver;
+        private Evidence? _evidence;
+        private XmlResolver? _xmlResolver;
         // hash table defining the key name mapping
         private const int _capacity = 4; // 4 is a reasonable capacity for
                                          // the key name mapping hash table
@@ -68,18 +69,24 @@ namespace System.Security.Cryptography.Xml
         private PaddingMode _padding;
         private CipherMode _mode;
         private Encoding _encoding;
-        private string _recipient;
+        private string? _recipient;
         private int _xmlDsigSearchDepthCounter;
         private int _xmlDsigSearchDepth;
 
         //
         // public constructors
         //
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public EncryptedXml() : this(new XmlDocument()) { }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public EncryptedXml(XmlDocument document) : this(document, null) { }
 
-        public EncryptedXml(XmlDocument document, Evidence evidence)
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
+        public EncryptedXml(XmlDocument document, Evidence? evidence)
         {
             _document = document;
             _evidence = evidence;
@@ -124,14 +131,14 @@ namespace System.Security.Cryptography.Xml
         }
 
         // The evidence of the document being loaded: will be used to resolve external URIs
-        public Evidence DocumentEvidence
+        public Evidence? DocumentEvidence
         {
             get { return _evidence; }
             set { _evidence = value; }
         }
 
         // The resolver to use for external entities
-        public XmlResolver Resolver
+        public XmlResolver? Resolver
         {
             get { return _xmlResolver; }
             set { _xmlResolver = value; }
@@ -161,17 +168,12 @@ namespace System.Security.Cryptography.Xml
         }
 
         // This is used to specify the EncryptedKey elements that should be considered
-        // when an EncyptedData references an EncryptedKey using a CarriedKeyName and Recipient
+        // when an EncryptedData references an EncryptedKey using a CarriedKeyName and Recipient
+        [AllowNull]
         public string Recipient
         {
-            get
-            {
-                // an unspecified value for an XmlAttribute is string.Empty
-                if (_recipient == null)
-                    _recipient = string.Empty;
-                return _recipient;
-            }
-            set { _recipient = value; }
+            get => _recipient ??= string.Empty; // an unspecified value for an XmlAttribute is string.Empty
+            set => _recipient = value;
         }
 
         //
@@ -180,10 +182,12 @@ namespace System.Security.Cryptography.Xml
 
         private byte[] GetCipherValue(CipherData cipherData)
         {
-            if (cipherData == null)
+            if (cipherData is null)
+            {
                 throw new ArgumentNullException(nameof(cipherData));
+            }
 
-            Stream inputStream = null;
+            MemoryStream? inputStream = null;
 
             if (cipherData.CipherValue != null)
             {
@@ -193,7 +197,7 @@ namespace System.Security.Cryptography.Xml
             {
                 if (cipherData.CipherReference.CipherValue != null)
                     return cipherData.CipherReference.CipherValue;
-                Stream decInputStream = null;
+                Stream? decInputStream;
                 if (cipherData.CipherReference.Uri == null)
                 {
                     throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
@@ -202,7 +206,7 @@ namespace System.Security.Cryptography.Xml
                 if (cipherData.CipherReference.Uri.Length == 0)
                 {
                     // self referenced Uri
-                    string baseUri = (_document == null ? null : _document.BaseURI);
+                    string? baseUri = _document?.BaseURI;
                     TransformChain tc = cipherData.CipherReference.TransformChain;
                     if (tc == null)
                     {
@@ -214,13 +218,13 @@ namespace System.Security.Cryptography.Xml
                 {
                     string idref = Utils.ExtractIdFromLocalUri(cipherData.CipherReference.Uri);
                     // Serialize
-                    XmlElement idElem = GetIdElement(_document, idref);
+                    XmlElement? idElem = GetIdElement(_document, idref);
                     if (idElem == null || idElem.OuterXml == null)
                     {
                         throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
                     }
                     inputStream = new MemoryStream(_encoding.GetBytes(idElem.OuterXml));
-                    string baseUri = (_document == null ? null : _document.BaseURI);
+                    string baseUri = _document.BaseURI;
                     TransformChain tc = cipherData.CipherReference.TransformChain;
                     if (tc == null)
                     {
@@ -233,14 +237,13 @@ namespace System.Security.Cryptography.Xml
                     throw new CryptographicException(SR.Cryptography_Xml_UriNotResolved, cipherData.CipherReference.Uri);
                 }
                 // read the output stream into a memory stream
-                byte[] cipherValue = null;
+                byte[]? cipherValue = null;
                 using (MemoryStream ms = new MemoryStream())
                 {
                     Utils.Pump(decInputStream, ms);
                     cipherValue = ms.ToArray();
                     // Close the stream and return
-                    if (inputStream != null)
-                        inputStream.Close();
+                    inputStream?.Close();
                     decInputStream.Close();
                 }
 
@@ -258,18 +261,20 @@ namespace System.Security.Cryptography.Xml
         //
 
         // This describes how the application wants to associate id references to elements
-        public virtual XmlElement GetIdElement(XmlDocument document, string idValue)
+        public virtual XmlElement? GetIdElement(XmlDocument document, string idValue)
         {
             return SignedXml.DefaultGetIdElement(document, idValue);
         }
 
         // default behaviour is to look for the IV in the CipherValue
-        public virtual byte[] GetDecryptionIV(EncryptedData encryptedData, string symmetricAlgorithmUri)
+        public virtual byte[] GetDecryptionIV(EncryptedData encryptedData, string? symmetricAlgorithmUri)
         {
-            if (encryptedData == null)
+            if (encryptedData is null)
+            {
                 throw new ArgumentNullException(nameof(encryptedData));
+            }
 
-            int initBytesSize = 0;
+            int initBytesSize;
             // If the Uri is not provided by the application, try to get it from the EncryptionMethod
             if (symmetricAlgorithmUri == null)
             {
@@ -300,18 +305,22 @@ namespace System.Security.Cryptography.Xml
 
         // default behaviour is to look for keys defined by an EncryptedKey clause
         // either directly or through a KeyInfoRetrievalMethod, and key names in the key mapping
-        public virtual SymmetricAlgorithm GetDecryptionKey(EncryptedData encryptedData, string symmetricAlgorithmUri)
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
+        public virtual SymmetricAlgorithm? GetDecryptionKey(EncryptedData encryptedData, string? symmetricAlgorithmUri)
         {
-            if (encryptedData == null)
+            if (encryptedData is null)
+            {
                 throw new ArgumentNullException(nameof(encryptedData));
+            }
 
             if (encryptedData.KeyInfo == null)
                 return null;
             IEnumerator keyInfoEnum = encryptedData.KeyInfo.GetEnumerator();
-            KeyInfoRetrievalMethod kiRetrievalMethod;
-            KeyInfoName kiName;
-            KeyInfoEncryptedKey kiEncKey;
-            EncryptedKey ek = null;
+            KeyInfoRetrievalMethod? kiRetrievalMethod;
+            KeyInfoName? kiName;
+            KeyInfoEncryptedKey? kiEncKey;
+            EncryptedKey? ek = null;
 
             while (keyInfoEnum.MoveNext())
             {
@@ -319,18 +328,18 @@ namespace System.Security.Cryptography.Xml
                 if (kiName != null)
                 {
                     // Get the decryption key from the key mapping
-                    string keyName = kiName.Value;
-                    if ((SymmetricAlgorithm)_keyNameMapping[keyName] != null)
-                        return (SymmetricAlgorithm)_keyNameMapping[keyName];
+                    string keyName = kiName.Value!;
+                    if ((SymmetricAlgorithm?)_keyNameMapping[keyName] != null)
+                        return (SymmetricAlgorithm)_keyNameMapping[keyName]!;
                     // try to get it from a CarriedKeyName
                     XmlNamespaceManager nsm = new XmlNamespaceManager(_document.NameTable);
                     nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
-                    XmlNodeList encryptedKeyList = _document.SelectNodes("//enc:EncryptedKey", nsm);
+                    XmlNodeList? encryptedKeyList = _document.SelectNodes("//enc:EncryptedKey", nsm);
                     if (encryptedKeyList != null)
                     {
                         foreach (XmlNode encryptedKeyNode in encryptedKeyList)
                         {
-                            XmlElement encryptedKeyElement = encryptedKeyNode as XmlElement;
+                            XmlElement encryptedKeyElement = (encryptedKeyNode as XmlElement)!;
                             EncryptedKey ek1 = new EncryptedKey();
                             ek1.LoadXml(encryptedKeyElement);
                             if (ek1.CarriedKeyName == keyName && ek1.Recipient == Recipient)
@@ -345,9 +354,9 @@ namespace System.Security.Cryptography.Xml
                 kiRetrievalMethod = keyInfoEnum.Current as KeyInfoRetrievalMethod;
                 if (kiRetrievalMethod != null)
                 {
-                    string idref = Utils.ExtractIdFromLocalUri(kiRetrievalMethod.Uri);
+                    string idref = Utils.ExtractIdFromLocalUri(kiRetrievalMethod.Uri!);
                     ek = new EncryptedKey();
-                    ek.LoadXml(GetIdElement(_document, idref));
+                    ek.LoadXml(GetIdElement(_document, idref)!);
                     break;
                 }
                 kiEncKey = keyInfoEnum.Current as KeyInfoEncryptedKey;
@@ -369,11 +378,11 @@ namespace System.Security.Cryptography.Xml
                         throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
                     symmetricAlgorithmUri = encryptedData.EncryptionMethod.KeyAlgorithm;
                 }
-                byte[] key = DecryptEncryptedKey(ek);
+                byte[]? key = DecryptEncryptedKey(ek);
                 if (key == null)
                     throw new CryptographicException(SR.Cryptography_Xml_MissingDecryptionKey);
 
-                SymmetricAlgorithm symAlg = CryptoHelpers.CreateFromName<SymmetricAlgorithm>(symmetricAlgorithmUri);
+                SymmetricAlgorithm? symAlg = CryptoHelpers.CreateNonTransformFromName<SymmetricAlgorithm>(symmetricAlgorithmUri);
                 if (symAlg == null)
                 {
                     throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
@@ -385,20 +394,25 @@ namespace System.Security.Cryptography.Xml
         }
 
         // Try to decrypt the EncryptedKey given the key mapping
-        public virtual byte[] DecryptEncryptedKey(EncryptedKey encryptedKey)
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
+        public virtual byte[]? DecryptEncryptedKey(EncryptedKey encryptedKey)
         {
-            if (encryptedKey == null)
+            if (encryptedKey is null)
+            {
                 throw new ArgumentNullException(nameof(encryptedKey));
+            }
+
             if (encryptedKey.KeyInfo == null)
                 return null;
 
             IEnumerator keyInfoEnum = encryptedKey.KeyInfo.GetEnumerator();
-            KeyInfoName kiName;
-            KeyInfoX509Data kiX509Data;
-            KeyInfoRetrievalMethod kiRetrievalMethod;
-            KeyInfoEncryptedKey kiEncKey;
-            EncryptedKey ek = null;
-            bool fOAEP = false;
+            KeyInfoName? kiName;
+            KeyInfoX509Data? kiX509Data;
+            KeyInfoRetrievalMethod? kiRetrievalMethod;
+            KeyInfoEncryptedKey? kiEncKey;
+            EncryptedKey? ek;
+            bool fOAEP;
 
             while (keyInfoEnum.MoveNext())
             {
@@ -406,8 +420,8 @@ namespace System.Security.Cryptography.Xml
                 if (kiName != null)
                 {
                     // Get the decryption key from the key mapping
-                    string keyName = kiName.Value;
-                    object kek = _keyNameMapping[keyName];
+                    string keyName = kiName.Value!;
+                    object? kek = _keyNameMapping[keyName];
                     if (kek != null)
                     {
                         if (encryptedKey.CipherData == null || encryptedKey.CipherData.CipherValue == null)
@@ -430,7 +444,7 @@ namespace System.Security.Cryptography.Xml
                     X509Certificate2Collection collection = Utils.BuildBagOfCerts(kiX509Data, CertUsageType.Decryption);
                     foreach (X509Certificate2 certificate in collection)
                     {
-                        using (RSA privateKey = certificate.GetRSAPrivateKey())
+                        using (RSA? privateKey = certificate.GetRSAPrivateKey())
                         {
                             if (privateKey != null)
                             {
@@ -448,9 +462,9 @@ namespace System.Security.Cryptography.Xml
                 kiRetrievalMethod = keyInfoEnum.Current as KeyInfoRetrievalMethod;
                 if (kiRetrievalMethod != null)
                 {
-                    string idref = Utils.ExtractIdFromLocalUri(kiRetrievalMethod.Uri);
+                    string idref = Utils.ExtractIdFromLocalUri(kiRetrievalMethod.Uri!);
                     ek = new EncryptedKey();
-                    ek.LoadXml(GetIdElement(_document, idref));
+                    ek.LoadXml(GetIdElement(_document, idref)!);
                     try
                     {
                         //Following checks if XML dsig processing is in loop and within the limit defined by machine
@@ -476,11 +490,11 @@ namespace System.Security.Cryptography.Xml
                 {
                     ek = kiEncKey.EncryptedKey;
                     // recursively process EncryptedKey elements
-                    byte[] encryptionKey = DecryptEncryptedKey(ek);
+                    byte[]? encryptionKey = DecryptEncryptedKey(ek!);
                     if (encryptionKey != null)
                     {
                         // this is a symmetric algorithm for sure
-                        SymmetricAlgorithm symAlg = CryptoHelpers.CreateFromName<SymmetricAlgorithm>(encryptedKey.EncryptionMethod.KeyAlgorithm);
+                        SymmetricAlgorithm? symAlg = CryptoHelpers.CreateNonTransformFromName<SymmetricAlgorithm>(encryptedKey.EncryptionMethod!.KeyAlgorithm);
                         if (symAlg == null)
                         {
                             throw new CryptographicException(SR.Cryptography_Xml_MissingAlgorithm);
@@ -506,10 +520,14 @@ namespace System.Security.Cryptography.Xml
         // to be an RSA key or a SymmetricAlgorithm
         public void AddKeyNameMapping(string keyName, object keyObject)
         {
-            if (keyName == null)
+            if (keyName is null)
+            {
                 throw new ArgumentNullException(nameof(keyName));
-            if (keyObject == null)
+            }
+            if (keyObject is null)
+            {
                 throw new ArgumentNullException(nameof(keyObject));
+            }
 
             if (!(keyObject is SymmetricAlgorithm) && !(keyObject is RSA))
                 throw new CryptographicException(SR.Cryptography_Xml_NotSupportedCryptographicTransform);
@@ -523,14 +541,20 @@ namespace System.Security.Cryptography.Xml
 
         // Encrypts the given element with the certificate specified. The certificate is added as
         // an X509Data KeyInfo to an EncryptedKey (AES session key) generated randomly.
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
         public EncryptedData Encrypt(XmlElement inputElement, X509Certificate2 certificate)
         {
-            if (inputElement == null)
+            if (inputElement is null)
+            {
                 throw new ArgumentNullException(nameof(inputElement));
-            if (certificate == null)
+            }
+            if (certificate is null)
+            {
                 throw new ArgumentNullException(nameof(certificate));
+            }
 
-            using (RSA rsaPublicKey = certificate.GetRSAPublicKey())
+            using (RSA? rsaPublicKey = certificate.GetRSAPublicKey())
             {
                 if (rsaPublicKey == null)
                     throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
@@ -546,13 +570,15 @@ namespace System.Security.Cryptography.Xml
                 ek.KeyInfo.AddClause(new KeyInfoX509Data(certificate));
 
                 // Create a random AES session key and encrypt it with the public key associated with the certificate.
-                RijndaelManaged rijn = new RijndaelManaged();
-                ek.CipherData.CipherValue = EncryptedXml.EncryptKey(rijn.Key, rsaPublicKey, false);
+                using (Aes aes = Aes.Create())
+                {
+                    ek.CipherData.CipherValue = EncryptedXml.EncryptKey(aes.Key, rsaPublicKey, false);
 
-                // Encrypt the input element with the random session key that we've created above.
-                KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
-                ed.KeyInfo.AddClause(kek);
-                ed.CipherData.CipherValue = EncryptData(inputElement, rijn, false);
+                    // Encrypt the input element with the random session key that we've created above.
+                    KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
+                    ed.KeyInfo.AddClause(kek);
+                    ed.CipherData.CipherValue = EncryptData(inputElement, aes, false);
+                }
 
                 return ed;
             }
@@ -561,14 +587,20 @@ namespace System.Security.Cryptography.Xml
         // Encrypts the given element with the key name specified. A corresponding key name mapping
         // has to be defined before calling this method. The key name is added as
         // a KeyNameInfo KeyInfo to an EncryptedKey (AES session key) generated randomly.
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
         public EncryptedData Encrypt(XmlElement inputElement, string keyName)
         {
-            if (inputElement == null)
+            if (inputElement is null)
+            {
                 throw new ArgumentNullException(nameof(inputElement));
-            if (keyName == null)
+            }
+            if (keyName is null)
+            {
                 throw new ArgumentNullException(nameof(keyName));
+            }
 
-            object encryptionKey = null;
+            object? encryptionKey = null;
             if (_keyNameMapping != null)
                 encryptionKey = _keyNameMapping[keyName];
 
@@ -576,8 +608,8 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_MissingEncryptionKey);
 
             // kek is either a SymmetricAlgorithm or an RSA key, otherwise, we wouldn't be able to insert it in the hash table
-            SymmetricAlgorithm symKey = encryptionKey as SymmetricAlgorithm;
-            RSA rsa = encryptionKey as RSA;
+            SymmetricAlgorithm symKey = (encryptionKey as SymmetricAlgorithm)!;
+            RSA rsa = (encryptionKey as RSA)!;
 
             // Create the EncryptedData object, using an AES-256 session key by default.
             EncryptedData ed = new EncryptedData();
@@ -585,7 +617,7 @@ namespace System.Security.Cryptography.Xml
             ed.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
 
             // Include the key name in the EncryptedKey KeyInfo.
-            string encryptionMethod = null;
+            string? encryptionMethod = null;
             if (symKey == null)
             {
                 encryptionMethod = EncryptedXml.XmlEncRSA15Url;
@@ -595,7 +627,9 @@ namespace System.Security.Cryptography.Xml
                 // CMS Triple DES Key Wrap
                 encryptionMethod = EncryptedXml.XmlEncTripleDESKeyWrapUrl;
             }
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
             else if (symKey is Rijndael || symKey is Aes)
+#pragma warning restore SYSLIB0022
             {
                 // FIPS AES Key Wrap
                 switch (symKey.KeySize)
@@ -621,13 +655,15 @@ namespace System.Security.Cryptography.Xml
             ek.KeyInfo.AddClause(new KeyInfoName(keyName));
 
             // Create a random AES session key and encrypt it with the public key associated with the certificate.
-            RijndaelManaged rijn = new RijndaelManaged();
-            ek.CipherData.CipherValue = (symKey == null ? EncryptedXml.EncryptKey(rijn.Key, rsa, false) : EncryptedXml.EncryptKey(rijn.Key, symKey));
+            using (Aes aes = Aes.Create())
+            {
+                ek.CipherData.CipherValue = (symKey == null ? EncryptedXml.EncryptKey(aes.Key, rsa, false) : EncryptedXml.EncryptKey(aes.Key, symKey));
 
-            // Encrypt the input element with the random session key that we've created above.
-            KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
-            ed.KeyInfo.AddClause(kek);
-            ed.CipherData.CipherValue = EncryptData(inputElement, rijn, false);
+                // Encrypt the input element with the random session key that we've created above.
+                KeyInfoEncryptedKey kek = new KeyInfoEncryptedKey(ek);
+                ed.KeyInfo.AddClause(kek);
+                ed.CipherData.CipherValue = EncryptData(inputElement, aes, false);
+            }
 
             return ed;
         }
@@ -635,20 +671,22 @@ namespace System.Security.Cryptography.Xml
         // decrypts the document using the defined key mapping in GetDecryptionKey
         // The behaviour of this method can be extended because GetDecryptionKey is virtual
         // the document is decrypted in place
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
         public void DecryptDocument()
         {
             // Look for all EncryptedData elements and decrypt them
             XmlNamespaceManager nsm = new XmlNamespaceManager(_document.NameTable);
             nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
-            XmlNodeList encryptedDataList = _document.SelectNodes("//enc:EncryptedData", nsm);
+            XmlNodeList? encryptedDataList = _document.SelectNodes("//enc:EncryptedData", nsm);
             if (encryptedDataList != null)
             {
                 foreach (XmlNode encryptedDataNode in encryptedDataList)
                 {
-                    XmlElement encryptedDataElement = encryptedDataNode as XmlElement;
+                    XmlElement encryptedDataElement = (encryptedDataNode as XmlElement)!;
                     EncryptedData ed = new EncryptedData();
                     ed.LoadXml(encryptedDataElement);
-                    SymmetricAlgorithm symAlg = GetDecryptionKey(ed, null);
+                    SymmetricAlgorithm? symAlg = GetDecryptionKey(ed, null);
                     if (symAlg == null)
                         throw new CryptographicException(SR.Cryptography_Xml_MissingDecryptionKey);
                     byte[] decrypted = DecryptData(ed, symAlg);
@@ -660,22 +698,26 @@ namespace System.Security.Cryptography.Xml
         // encrypts the supplied arbitrary data
         public byte[] EncryptData(byte[] plaintext, SymmetricAlgorithm symmetricAlgorithm)
         {
-            if (plaintext == null)
+            if (plaintext is null)
+            {
                 throw new ArgumentNullException(nameof(plaintext));
-            if (symmetricAlgorithm == null)
+            }
+            if (symmetricAlgorithm is null)
+            {
                 throw new ArgumentNullException(nameof(symmetricAlgorithm));
+            }
 
             // save the original symmetric algorithm
             CipherMode origMode = symmetricAlgorithm.Mode;
             PaddingMode origPadding = symmetricAlgorithm.Padding;
 
-            byte[] cipher = null;
+            byte[]? cipher = null;
             try
             {
                 symmetricAlgorithm.Mode = _mode;
                 symmetricAlgorithm.Padding = _padding;
 
-                ICryptoTransform enc = symmetricAlgorithm.CreateEncryptor();
+                using ICryptoTransform enc = symmetricAlgorithm.CreateEncryptor();
                 cipher = enc.TransformFinalBlock(plaintext, 0, plaintext.Length);
             }
             finally
@@ -685,7 +727,7 @@ namespace System.Security.Cryptography.Xml
                 symmetricAlgorithm.Padding = origPadding;
             }
 
-            byte[] output = null;
+            byte[] output;
             if (_mode == CipherMode.ECB)
             {
                 output = cipher;
@@ -703,10 +745,14 @@ namespace System.Security.Cryptography.Xml
         // encrypts the supplied input element
         public byte[] EncryptData(XmlElement inputElement, SymmetricAlgorithm symmetricAlgorithm, bool content)
         {
-            if (inputElement == null)
+            if (inputElement is null)
+            {
                 throw new ArgumentNullException(nameof(inputElement));
-            if (symmetricAlgorithm == null)
+            }
+            if (symmetricAlgorithm is null)
+            {
                 throw new ArgumentNullException(nameof(symmetricAlgorithm));
+            }
 
             byte[] plainText = (content ? _encoding.GetBytes(inputElement.InnerXml) : _encoding.GetBytes(inputElement.OuterXml));
             return EncryptData(plainText, symmetricAlgorithm);
@@ -715,10 +761,14 @@ namespace System.Security.Cryptography.Xml
         // decrypts the supplied EncryptedData
         public byte[] DecryptData(EncryptedData encryptedData, SymmetricAlgorithm symmetricAlgorithm)
         {
-            if (encryptedData == null)
+            if (encryptedData is null)
+            {
                 throw new ArgumentNullException(nameof(encryptedData));
-            if (symmetricAlgorithm == null)
+            }
+            if (symmetricAlgorithm is null)
+            {
                 throw new ArgumentNullException(nameof(symmetricAlgorithm));
+            }
 
             // get the cipher value and decrypt
             byte[] cipherValue = GetCipherValue(encryptedData.CipherData);
@@ -729,11 +779,11 @@ namespace System.Security.Cryptography.Xml
             byte[] origIV = symmetricAlgorithm.IV;
 
             // read the IV from cipherValue
-            byte[] decryptionIV = null;
+            byte[]? decryptionIV = null;
             if (_mode != CipherMode.ECB)
                 decryptionIV = GetDecryptionIV(encryptedData, null);
 
-            byte[] output = null;
+            byte[]? output = null;
             try
             {
                 int lengthIV = 0;
@@ -745,7 +795,7 @@ namespace System.Security.Cryptography.Xml
                 symmetricAlgorithm.Mode = _mode;
                 symmetricAlgorithm.Padding = _padding;
 
-                ICryptoTransform dec = symmetricAlgorithm.CreateDecryptor();
+                using ICryptoTransform dec = symmetricAlgorithm.CreateDecryptor();
                 output = dec.TransformFinalBlock(cipherValue, lengthIV, cipherValue.Length - lengthIV);
             }
             finally
@@ -762,12 +812,16 @@ namespace System.Security.Cryptography.Xml
         // This method replaces an EncryptedData element with the decrypted sequence of bytes
         public void ReplaceData(XmlElement inputElement, byte[] decryptedData)
         {
-            if (inputElement == null)
+            if (inputElement is null)
+            {
                 throw new ArgumentNullException(nameof(inputElement));
-            if (decryptedData == null)
+            }
+            if (decryptedData is null)
+            {
                 throw new ArgumentNullException(nameof(decryptedData));
+            }
 
-            XmlNode parent = inputElement.ParentNode;
+            XmlNode parent = inputElement.ParentNode!;
             if (parent.NodeType == XmlNodeType.Document)
             {
                 // We're replacing the root element, but we can't just wholesale replace the owner
@@ -785,14 +839,14 @@ namespace System.Security.Cryptography.Xml
                     }
                 }
 
-                XmlNode importedNode = inputElement.OwnerDocument.ImportNode(importDocument.DocumentElement, true);
+                XmlNode importedNode = inputElement.OwnerDocument.ImportNode(importDocument.DocumentElement!, true);
 
                 parent.RemoveChild(inputElement);
                 parent.AppendChild(importedNode);
             }
             else
             {
-                XmlNode dummy = parent.OwnerDocument.CreateElement(parent.Prefix, parent.LocalName, parent.NamespaceURI);
+                XmlNode dummy = parent.OwnerDocument!.CreateElement(parent.Prefix, parent.LocalName, parent.NamespaceURI);
 
                 try
                 {
@@ -803,10 +857,10 @@ namespace System.Security.Cryptography.Xml
                     dummy.InnerXml = _encoding.GetString(decryptedData);
 
                     // Move the children of the dummy node up to the parent.
-                    XmlNode child = dummy.FirstChild;
-                    XmlNode sibling = inputElement.NextSibling;
+                    XmlNode? child = dummy.FirstChild;
+                    XmlNode? sibling = inputElement.NextSibling;
 
-                    XmlNode nextChild = null;
+                    XmlNode? nextChild = null;
                     while (child != null)
                     {
                         nextChild = child.NextSibling;
@@ -832,10 +886,14 @@ namespace System.Security.Cryptography.Xml
         // replaces the inputElement with the provided EncryptedData
         public static void ReplaceElement(XmlElement inputElement, EncryptedData encryptedData, bool content)
         {
-            if (inputElement == null)
+            if (inputElement is null)
+            {
                 throw new ArgumentNullException(nameof(inputElement));
-            if (encryptedData == null)
+            }
+            if (encryptedData is null)
+            {
                 throw new ArgumentNullException(nameof(encryptedData));
+            }
 
             // First, get the XML representation of the EncryptedData object
             XmlElement elemED = encryptedData.GetXml(inputElement.OwnerDocument);
@@ -848,7 +906,7 @@ namespace System.Security.Cryptography.Xml
                     inputElement.AppendChild(elemED);
                     break;
                 case false:
-                    XmlNode parentNode = inputElement.ParentNode;
+                    XmlNode parentNode = inputElement.ParentNode!;
                     // remove the input element from the containing document
                     parentNode.ReplaceChild(elemED, inputElement);
                     break;
@@ -858,17 +916,23 @@ namespace System.Security.Cryptography.Xml
         // wraps the supplied input key data using the provided symmetric algorithm
         public static byte[] EncryptKey(byte[] keyData, SymmetricAlgorithm symmetricAlgorithm)
         {
-            if (keyData == null)
+            if (keyData is null)
+            {
                 throw new ArgumentNullException(nameof(keyData));
-            if (symmetricAlgorithm == null)
+            }
+            if (symmetricAlgorithm is null)
+            {
                 throw new ArgumentNullException(nameof(symmetricAlgorithm));
+            }
 
             if (symmetricAlgorithm is TripleDES)
             {
                 // CMS Triple DES Key Wrap
                 return SymmetricKeyWrap.TripleDESKeyWrapEncrypt(symmetricAlgorithm.Key, keyData);
             }
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
             else if (symmetricAlgorithm is Rijndael || symmetricAlgorithm is Aes)
+#pragma warning restore SYSLIB0022
             {
                 // FIPS AES Key Wrap
                 return SymmetricKeyWrap.AESKeyWrapEncrypt(symmetricAlgorithm.Key, keyData);
@@ -882,10 +946,14 @@ namespace System.Security.Cryptography.Xml
         // padding or PKCS#1 v1.5 padding as described in the PKCS specification
         public static byte[] EncryptKey(byte[] keyData, RSA rsa, bool useOAEP)
         {
-            if (keyData == null)
+            if (keyData is null)
+            {
                 throw new ArgumentNullException(nameof(keyData));
-            if (rsa == null)
+            }
+            if (rsa is null)
+            {
                 throw new ArgumentNullException(nameof(rsa));
+            }
 
             if (useOAEP)
             {
@@ -902,17 +970,23 @@ namespace System.Security.Cryptography.Xml
         // decrypts the supplied wrapped key using the provided symmetric algorithm
         public static byte[] DecryptKey(byte[] keyData, SymmetricAlgorithm symmetricAlgorithm)
         {
-            if (keyData == null)
+            if (keyData is null)
+            {
                 throw new ArgumentNullException(nameof(keyData));
-            if (symmetricAlgorithm == null)
+            }
+            if (symmetricAlgorithm is null)
+            {
                 throw new ArgumentNullException(nameof(symmetricAlgorithm));
+            }
 
             if (symmetricAlgorithm is TripleDES)
             {
                 // CMS Triple DES Key Wrap
                 return SymmetricKeyWrap.TripleDESKeyWrapDecrypt(symmetricAlgorithm.Key, keyData);
             }
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
             else if (symmetricAlgorithm is Rijndael || symmetricAlgorithm is Aes)
+#pragma warning restore SYSLIB0022
             {
                 // FIPS AES Key Wrap
                 return SymmetricKeyWrap.AESKeyWrapDecrypt(symmetricAlgorithm.Key, keyData);
@@ -925,10 +999,14 @@ namespace System.Security.Cryptography.Xml
         // padding or PKCS#1 v1.5 padding as described in the PKCS specification
         public static byte[] DecryptKey(byte[] keyData, RSA rsa, bool useOAEP)
         {
-            if (keyData == null)
+            if (keyData is null)
+            {
                 throw new ArgumentNullException(nameof(keyData));
-            if (rsa == null)
+            }
+            if (rsa is null)
+            {
                 throw new ArgumentNullException(nameof(rsa));
+            }
 
             if (useOAEP)
             {

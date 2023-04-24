@@ -7,7 +7,10 @@ using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+    [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
     internal sealed class AnsiParsingLogConsole : IConsole
     {
         private readonly TextWriter _textWriter;
@@ -24,13 +27,13 @@ namespace Microsoft.Extensions.Logging.Console
             _parser.Parse(message);
         }
 
-        private bool SetColor(ConsoleColor? background, ConsoleColor? foreground)
+        private static bool SetColor(ConsoleColor? background, ConsoleColor? foreground)
         {
             var backgroundChanged = SetBackgroundColor(background);
             return SetForegroundColor(foreground) || backgroundChanged;
         }
 
-        private bool SetBackgroundColor(ConsoleColor? background)
+        private static bool SetBackgroundColor(ConsoleColor? background)
         {
             if (background.HasValue)
             {
@@ -40,7 +43,7 @@ namespace Microsoft.Extensions.Logging.Console
             return false;
         }
 
-        private bool SetForegroundColor(ConsoleColor? foreground)
+        private static bool SetForegroundColor(ConsoleColor? foreground)
         {
             if (foreground.HasValue)
             {
@@ -50,7 +53,7 @@ namespace Microsoft.Extensions.Logging.Console
             return false;
         }
 
-        private void ResetColor()
+        private static void ResetColor()
         {
             System.Console.ResetColor();
         }

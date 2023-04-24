@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using OLEDB.Test.ModuleCore;
 using System.IO;
 using System.Text;
+using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlWriterApiTests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49365", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public partial class TCEOFHandling
     {
         private static NewLineHandling[] s_nlHandlingMembers = { NewLineHandling.Entitize, NewLineHandling.Replace, NewLineHandling.None };

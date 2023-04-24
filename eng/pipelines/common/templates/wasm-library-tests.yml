@@ -1,0 +1,70 @@
+parameters:
+  alwaysRun: false
+  extraBuildArgs: ''
+  extraHelixArgs: ''
+  isExtraPlatformsBuild: false
+  isWasmOnlyBuild: false
+  nameSuffix: ''
+  platforms: []
+  scenarios: ['normal']
+  shouldContinueOnError: false
+  shouldRunSmokeOnly: false 
+
+jobs:
+
+#
+# Build for Browser/wasm and test it
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    variables:
+      # map dependencies variables to local variables
+      - name: alwaysRunVar
+        value: ${{ parameters.alwaysRun }}
+      # - wasm darc deps changed
+      # - any libs that can have wasm specific changes
+      # - any other wasm specific changes that are not wbt, or dbg
+      - name: shouldRunOnDefaultPipelines
+        value: $[
+          or(
+            eq(variables['wasmDarcDependenciesChanged'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true))
+         ]
+      - name: _wasmRunSmokeTestsOnlyArg
+        value: /p:RunSmokeTestsOnly=${{ eq(parameters.shouldRunSmokeOnly, true) }}
+      - name: chromeInstallArg
+        ${{ if containsValue(parameters.scenarios, 'wasmtestonbrowser') }}:
+          value: /p:InstallChromeForTests=true
+        ${{ else }}:
+          value: ''
+
+    jobParameters:
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      testGroup: innerloop
+      nameSuffix: LibraryTests${{ parameters.nameSuffix }}
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) ${{ parameters.extraBuildArgs }}
+      timeoutInMinutes: 240
+      # if !alwaysRun, then:
+      #   if this is runtime-wasm (isWasmOnlyBuild):
+      #     - then run only if it would not have run on default pipelines (based
+      #       on path changes)
+      #     - else run based on path changes
+      condition: >-
+        or(
+          eq(variables['alwaysRunVar'], true),
+          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArgs }}
+        scenarios: ${{ parameters.scenarios }}

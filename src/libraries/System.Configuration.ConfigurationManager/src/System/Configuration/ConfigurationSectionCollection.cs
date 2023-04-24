@@ -3,7 +3,6 @@
 
 using System.Collections;
 using System.Collections.Specialized;
-using System.Runtime.Serialization;
 
 namespace System.Configuration
 {
@@ -24,12 +23,6 @@ namespace System.Configuration
                 FactoryId factoryId = (FactoryId)de.Value;
                 if (factoryId.Group == _configSectionGroup.SectionGroupName) BaseAdd(factoryId.Name, factoryId.Name);
             }
-        }
-
-        private ConfigurationSectionCollection(SerializationInfo serializationInfo, StreamingContext streamingContext)
-            : base(serializationInfo, streamingContext)
-        {
-            throw new PlatformNotSupportedException();
         }
 
         public ConfigurationSection this[string name] => Get(name);
@@ -70,7 +63,10 @@ namespace System.Configuration
 
         public void CopyTo(ConfigurationSection[] array, int index)
         {
-            if (array == null) throw new ArgumentNullException(nameof(array));
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
 
             int c = Count;
             if (array.Length < c + index) throw new ArgumentOutOfRangeException(nameof(index));
@@ -92,7 +88,11 @@ namespace System.Configuration
                 throw ExceptionUtil.ParameterNullOrEmpty(nameof(name));
 
             // prevent GetConfig from returning config not in this collection
-            if (name.IndexOf('/') >= 0) // string.Contains(char) is .NetCore2.1+ specific
+#if NETCOREAPP
+            if (name.Contains('/'))
+#else
+            if (name.IndexOf('/') >= 0)
+#endif
                 return null;
 
             // get the section from the config record

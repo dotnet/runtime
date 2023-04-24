@@ -9,8 +9,9 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Interop.Libraries.Advapi32, SetLastError = true)]
-        internal static extern bool DuplicateTokenEx(
+        [LibraryImport(Interop.Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool DuplicateTokenEx(
             SafeAccessTokenHandle hExistingToken,
             uint dwDesiredAccess,
             IntPtr lpTokenAttributes,   // LPSECURITY_ATTRIBUTES

@@ -268,6 +268,10 @@ namespace System.Configuration
     public partial class ConfigurationErrorsException : System.Configuration.ConfigurationException
     {
         public ConfigurationErrorsException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected ConfigurationErrorsException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ConfigurationErrorsException(string message) { }
         public ConfigurationErrorsException(string message, System.Exception inner) { }
@@ -286,33 +290,45 @@ namespace System.Configuration
         public static string GetFilename(System.Xml.XmlReader reader) { throw null; }
         public static int GetLineNumber(System.Xml.XmlNode node) { throw null; }
         public static int GetLineNumber(System.Xml.XmlReader reader) { throw null; }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class ConfigurationException : System.SystemException
     {
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected ConfigurationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, System.Exception inner) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, System.Exception inner, string filename, int line) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, System.Exception inner, System.Xml.XmlNode node) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, string filename, int line) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, System.Xml.XmlNode node) { }
         public virtual string BareMessage { get { throw null; } }
         public virtual string Filename { get { throw null; } }
         public virtual int Line { get { throw null; } }
         public override string Message { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        [System.ObsoleteAttribute("This class is obsolete, use System.Configuration.ConfigurationErrorsException.GetFilename instead")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException.GetFilename instead.")]
         public static string GetXmlNodeFilename(System.Xml.XmlNode node) { throw null; }
-        [System.ObsoleteAttribute("This class is obsolete, use System.Configuration.ConfigurationErrorsException.GetLinenumber instead")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException.GetLinenumber instead.")]
         public static int GetXmlNodeLineNumber(System.Xml.XmlNode node) { throw null; }
     }
     public partial class ConfigurationFileMap : System.ICloneable
@@ -455,6 +471,10 @@ namespace System.Configuration
         public System.Configuration.ConfigurationSection Get(string name) { throw null; }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
         public string GetKey(int index) { throw null; }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void Remove(string name) { }
         public void RemoveAt(int index) { }
@@ -487,6 +507,10 @@ namespace System.Configuration
         public System.Configuration.ConfigurationSectionGroup Get(string name) { throw null; }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
         public string GetKey(int index) { throw null; }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void Remove(string name) { }
         public void RemoveAt(int index) { }
@@ -494,9 +518,9 @@ namespace System.Configuration
     public sealed partial class ConfigurationSettings
     {
         internal ConfigurationSettings() { }
-        [System.ObsoleteAttribute("This property is obsolete, it has been replaced by System.Configuration.ConfigurationManager.AppSettings")]
+        [System.ObsoleteAttribute("ConfigurationSettings.AppSettings has been deprecated. Use System.Configuration.ConfigurationManager.AppSettings instead.")]
         public static System.Collections.Specialized.NameValueCollection AppSettings { get { throw null; } }
-        [System.ObsoleteAttribute("This method is obsolete, it has been replaced by System.Configuration.ConfigurationManager.GetSection")]
+        [System.ObsoleteAttribute("ConfigurationSettings.GetConfig has been deprecated. Use System.Configuration.ConfigurationManager.GetSection instead.")]
         public static object GetConfig(string sectionName) { throw null; }
     }
     public enum ConfigurationUserLevel
@@ -864,6 +888,10 @@ namespace System.Configuration
         public System.Configuration.PropertyInformation this[string propertyName] { get { throw null; } }
         public void CopyTo(System.Configuration.PropertyInformation[] array, int index) { }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public enum PropertyValueOrigin
@@ -1052,6 +1080,7 @@ namespace System.Configuration
     {
         public SettingsAttributeDictionary() { }
         public SettingsAttributeDictionary(System.Configuration.SettingsAttributeDictionary attributes) { }
+        protected SettingsAttributeDictionary(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public abstract partial class SettingsBase
     {
@@ -1070,6 +1099,7 @@ namespace System.Configuration
     public partial class SettingsContext : System.Collections.Hashtable
     {
         public SettingsContext() { }
+        protected SettingsContext(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
     public sealed partial class SettingsDescriptionAttribute : System.Attribute
@@ -1144,6 +1174,10 @@ namespace System.Configuration
     public partial class SettingsPropertyIsReadOnlyException : System.Exception
     {
         public SettingsPropertyIsReadOnlyException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected SettingsPropertyIsReadOnlyException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SettingsPropertyIsReadOnlyException(string message) { }
         public SettingsPropertyIsReadOnlyException(string message, System.Exception innerException) { }
@@ -1151,6 +1185,10 @@ namespace System.Configuration
     public partial class SettingsPropertyNotFoundException : System.Exception
     {
         public SettingsPropertyNotFoundException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected SettingsPropertyNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SettingsPropertyNotFoundException(string message) { }
         public SettingsPropertyNotFoundException(string message, System.Exception innerException) { }
@@ -1184,6 +1222,10 @@ namespace System.Configuration
     public partial class SettingsPropertyWrongTypeException : System.Exception
     {
         public SettingsPropertyWrongTypeException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected SettingsPropertyWrongTypeException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SettingsPropertyWrongTypeException(string message) { }
         public SettingsPropertyWrongTypeException(string message, System.Exception innerException) { }
@@ -1213,6 +1255,7 @@ namespace System.Configuration
     {
         String = 0,
         Xml = 1,
+        [System.ObsoleteAttribute(System.Obsoletions.BinaryFormatterMessage + @". Consider using Xml instead.")]
         Binary = 2,
         ProviderSpecific = 3,
     }
@@ -1380,6 +1423,7 @@ namespace System.Configuration.Internal
         public virtual string GetConfigPathFromLocationSubPath(string configPath, string locationSubPath) { throw null; }
         public virtual System.Type GetConfigType(string typeName, bool throwOnError) { throw null; }
         public virtual string GetConfigTypeName(System.Type t) { throw null; }
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual void GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord configRecord, out System.Security.PermissionSet permissionSet, out bool isHostReady) { throw null; }
         public virtual string GetStreamName(string configPath) { throw null; }
         public virtual string GetStreamNameForConfigSource(string streamName, string configSource) { throw null; }
@@ -1468,6 +1512,7 @@ namespace System.Configuration.Internal
         string GetConfigPathFromLocationSubPath(string configPath, string locationSubPath);
         System.Type GetConfigType(string typeName, bool throwOnError);
         string GetConfigTypeName(System.Type t);
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         void GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord configRecord, out System.Security.PermissionSet permissionSet, out bool isHostReady);
         string GetStreamName(string configPath);
         string GetStreamNameForConfigSource(string streamName, string configSource);
@@ -1566,6 +1611,10 @@ namespace System.Configuration.Provider
     public partial class ProviderException : System.Exception
     {
         public ProviderException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected ProviderException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ProviderException(string message) { }
         public ProviderException(string message, System.Exception innerException) { }

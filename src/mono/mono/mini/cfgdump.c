@@ -27,23 +27,10 @@
 #define CFG_DEBUG
 #endif
 
-
 #ifdef CFG_DEBUG
-
-#ifdef HAVE_C99_SUPPORT
-#define cfg_debug(format, ...) g_debug(format, __VA_ARGS__)
-#else
 #define cfg_debug(...) g_debug(__VA_ARGS__)
-#endif
-
-#else
-
-#ifdef HAVE_C99_SUPPORT
-#define cfg_debug(format, ...) do {} while (0)
 #else
 #define cfg_debug(...) do {} while (0)
-#endif
-
 #endif
 
 static ConstantPoolEntry*
@@ -69,7 +56,7 @@ create_socket (const char *hostname, const int port)
     }
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons (port);
+    serv_addr.sin_port = htons (GINT_TO_UINT16 (port));
     serv_addr.sin_addr.s_addr = inet_addr (hostname);
 
     if (connect (sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
@@ -83,21 +70,23 @@ create_socket (const char *hostname, const int port)
 static void
 write_byte (MonoCompile *cfg, unsigned char b)
 {
-	write (cfg->gdump_ctx->fd, &b, 1);
+	int ret;
+	while ((ret = write (cfg->gdump_ctx->fd, &b, 1)) < 0 && errno == EINTR);
 }
 
 static void
 write_short (MonoCompile *cfg, short s)
 {
 	short swap = htons (s);
-	write (cfg->gdump_ctx->fd, &swap, 2);
+	int ret;
+	while ((ret = write (cfg->gdump_ctx->fd, &swap, 2)) < 0 && errno == EINTR);
 }
 
 static void
 write_int (MonoCompile *cfg, int v)
 {
-	int swap = htonl (v);
-	write (cfg->gdump_ctx->fd, &swap, 4);
+	int swap = htonl (v), ret;
+	while ((ret = write (cfg->gdump_ctx->fd, &swap, 4)) < 0 && errno == EINTR);
 }
 
 static void
@@ -186,7 +175,7 @@ add_pool_entry (MonoCompile *cfg, ConstantPoolEntry *entry)
 			write_short (cfg, NUM_SUCCESSOR);
 			for (int i = 0; i < NUM_SUCCESSOR; i++) {
 				char *str = g_strdup ("successor1");
-				str[9] = '0' + i;
+				str[9] = '0' + GINT_TO_CHAR (i);
 				write_byte (cfg, 0);
 				write_pool (cfg, create_cp_entry (cfg, (void *) str, PT_STRING));
 			}

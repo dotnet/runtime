@@ -2,8 +2,10 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
+    <DefineConstants>$(DefineConstants);NETWORKINFORMATION_TEST</DefineConstants>
+    <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -41,6 +43,10 @@
     <Compile Include="ConnectionsParsingTests.cs" />
     <Compile Include="StatisticsParsingTests.cs" />
     <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)System\Net\Http\TestHelper.cs"
+             Link="Common\System\Net\Http\TestHelper.cs" />
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
+             Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Net\TestLogging.cs"
              Link="Common\System\Net\TestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs"

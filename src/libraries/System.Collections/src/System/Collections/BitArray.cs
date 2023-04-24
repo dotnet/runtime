@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
@@ -41,17 +42,14 @@ namespace System.Collections
         =========================================================================*/
         public BitArray(int length, bool defaultValue)
         {
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), length, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             m_array = new int[GetInt32ArrayLengthFromBitLength(length)];
             m_length = length;
 
             if (defaultValue)
             {
-                m_array.AsSpan().Fill(-1);
+                Array.Fill(m_array, -1);
 
                 // clear high bit values in the last int
                 Div32Rem(length, out int extraBits);
@@ -74,10 +72,7 @@ namespace System.Collections
         =========================================================================*/
         public BitArray(byte[] bytes)
         {
-            if (bytes == null)
-            {
-                throw new ArgumentNullException(nameof(bytes));
-            }
+            ArgumentNullException.ThrowIfNull(bytes);
 
             // this value is chosen to prevent overflow when computing m_length.
             // m_length is of type int32 and is exposed as a property, so
@@ -120,20 +115,13 @@ namespace System.Collections
             _version = 0;
         }
 
-        private static readonly Vector128<byte> s_bitMask128 = BitConverter.IsLittleEndian ?
-                                                Vector128.Create(0x80402010_08040201).AsByte() :
-                                                Vector128.Create(0x01020408_10204080).AsByte();
-
         private const uint Vector128ByteCount = 16;
         private const uint Vector128IntCount = 4;
         private const uint Vector256ByteCount = 32;
         private const uint Vector256IntCount = 8;
         public unsafe BitArray(bool[] values)
         {
-            if (values == null)
-            {
-                throw new ArgumentNullException(nameof(values));
-            }
+            ArgumentNullException.ThrowIfNull(values);
 
             m_array = new int[GetInt32ArrayLengthFromBitLength(values.Length)];
             m_length = values.Length;
@@ -149,77 +137,32 @@ namespace System.Collections
             // (true for any non-zero values, false for 0) - any values between 2-255 will be interpreted as false.
             // Instead, We compare with zeroes (== false) then negate the result to ensure compatibility.
 
-            if (Avx2.IsSupported)
+            ref byte value = ref Unsafe.As<bool, byte>(ref MemoryMarshal.GetArrayDataReference<bool>(values));
+
+            if (Vector256.IsHardwareAccelerated)
             {
-                // JIT does not support code hoisting for SIMD yet
-                Vector256<byte> zero = Vector256<byte>.Zero;
-                fixed (bool* ptr = values)
+                for (; (i + Vector256ByteCount) <= (uint)values.Length; i += Vector256ByteCount)
                 {
-                    for (; (i + Vector256ByteCount) <= (uint)values.Length; i += Vector256ByteCount)
-                    {
-                        Vector256<byte> vector = Avx.LoadVector256((byte*)ptr + i);
-                        Vector256<byte> isFalse = Avx2.CompareEqual(vector, zero);
-                        int result = Avx2.MoveMask(isFalse);
-                        m_array[i / 32u] = ~result;
-                    }
+                    Vector256<byte> vector = Vector256.LoadUnsafe(ref value, i);
+                    Vector256<byte> isFalse = Vector256.Equals(vector, Vector256<byte>.Zero);
+
+                    uint result = isFalse.ExtractMostSignificantBits();
+                    m_array[i / 32u] = (int)(~result);
                 }
             }
-            else if (Sse2.IsSupported)
+            else if (Vector128.IsHardwareAccelerated)
             {
-                // JIT does not support code hoisting for SIMD yet
-                Vector128<byte> zero = Vector128<byte>.Zero;
-                fixed (bool* ptr = values)
+                for (; (i + Vector128ByteCount * 2u) <= (uint)values.Length; i += Vector128ByteCount * 2u)
                 {
-                    for (; (i + Vector128ByteCount * 2u) <= (uint)values.Length; i += Vector128ByteCount * 2u)
-                    {
-                        Vector128<byte> lowerVector = Sse2.LoadVector128((byte*)ptr + i);
-                        Vector128<byte> lowerIsFalse = Sse2.CompareEqual(lowerVector, zero);
-                        int lowerPackedIsFalse = Sse2.MoveMask(lowerIsFalse);
+                    Vector128<byte> lowerVector = Vector128.LoadUnsafe(ref value, i);
+                    Vector128<byte> lowerIsFalse = Vector128.Equals(lowerVector, Vector128<byte>.Zero);
+                    uint lowerResult = lowerIsFalse.ExtractMostSignificantBits();
 
-                        Vector128<byte> upperVector = Sse2.LoadVector128((byte*)ptr + i + Vector128<byte>.Count);
-                        Vector128<byte> upperIsFalse = Sse2.CompareEqual(upperVector, zero);
-                        int upperPackedIsFalse = Sse2.MoveMask(upperIsFalse);
+                    Vector128<byte> upperVector = Vector128.LoadUnsafe(ref value, i + Vector128ByteCount);
+                    Vector128<byte> upperIsFalse = Vector128.Equals(upperVector, Vector128<byte>.Zero);
+                    uint upperResult = upperIsFalse.ExtractMostSignificantBits();
 
-                        m_array[i / 32u] = ~((upperPackedIsFalse << 16) | lowerPackedIsFalse);
-                    }
-                }
-            }
-            else if (AdvSimd.Arm64.IsSupported)
-            {
-                // JIT does not support code hoisting for SIMD yet
-                // However comparison against zero can be replaced to cmeq against zero (vceqzq_s8)
-                // See dotnet/runtime#33972 for details
-                Vector128<byte> zero = Vector128<byte>.Zero;
-                fixed (bool* ptr = values)
-                {
-                    for (; (i + Vector128ByteCount * 2u) <= (uint)values.Length; i += Vector128ByteCount * 2u)
-                    {
-                        // Same logic as SSE2 path, however we lack MoveMask (equivalent) instruction
-                        // As a workaround, mask out the relevant bit after comparison
-                        // and combine by ORing all of them together (In this case, adding all of them does the same thing)
-                        Vector128<byte> lowerVector = AdvSimd.LoadVector128((byte*)ptr + i);
-                        Vector128<byte> lowerIsFalse = AdvSimd.CompareEqual(lowerVector, zero);
-                        Vector128<byte> bitsExtracted1 = AdvSimd.And(lowerIsFalse, s_bitMask128);
-                        bitsExtracted1 = AdvSimd.Arm64.AddPairwise(bitsExtracted1, bitsExtracted1);
-                        bitsExtracted1 = AdvSimd.Arm64.AddPairwise(bitsExtracted1, bitsExtracted1);
-                        bitsExtracted1 = AdvSimd.Arm64.AddPairwise(bitsExtracted1, bitsExtracted1);
-                        Vector128<short> lowerPackedIsFalse = bitsExtracted1.AsInt16();
-
-                        Vector128<byte> upperVector = AdvSimd.LoadVector128((byte*)ptr + i + Vector128<byte>.Count);
-                        Vector128<byte> upperIsFalse = AdvSimd.CompareEqual(upperVector, zero);
-                        Vector128<byte> bitsExtracted2 = AdvSimd.And(upperIsFalse, s_bitMask128);
-                        bitsExtracted2 = AdvSimd.Arm64.AddPairwise(bitsExtracted2, bitsExtracted2);
-                        bitsExtracted2 = AdvSimd.Arm64.AddPairwise(bitsExtracted2, bitsExtracted2);
-                        bitsExtracted2 = AdvSimd.Arm64.AddPairwise(bitsExtracted2, bitsExtracted2);
-                        Vector128<short> upperPackedIsFalse = bitsExtracted2.AsInt16();
-
-                        int result = AdvSimd.Arm64.ZipLow(lowerPackedIsFalse, upperPackedIsFalse).AsInt32().ToScalar();
-                        if (!BitConverter.IsLittleEndian)
-                        {
-                            result = BinaryPrimitives.ReverseEndianness(result);
-                        }
-                        m_array[i / 32u] = ~result;
-                    }
+                    m_array[i / 32u] = (int)(~((upperResult << 16) | lowerResult));
                 }
             }
 
@@ -246,10 +189,7 @@ namespace System.Collections
         =========================================================================*/
         public BitArray(int[] values)
         {
-            if (values == null)
-            {
-                throw new ArgumentNullException(nameof(values));
-            }
+            ArgumentNullException.ThrowIfNull(values);
 
             // this value is chosen to prevent overflow when computing m_length
             if (values.Length > int.MaxValue / BitsPerInt32)
@@ -271,10 +211,7 @@ namespace System.Collections
         =========================================================================*/
         public BitArray(BitArray bits)
         {
-            if (bits == null)
-            {
-                throw new ArgumentNullException(nameof(bits));
-            }
+            ArgumentNullException.ThrowIfNull(bits);
 
             int arrayLength = GetInt32ArrayLengthFromBitLength(bits.m_length);
 
@@ -370,8 +307,7 @@ namespace System.Collections
         =========================================================================*/
         public unsafe BitArray And(BitArray value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             // This method uses unsafe code to manipulate data in the BitArrays.  To avoid issues with
             // buggy code concurrently mutating these instances in a way that could cause memory corruption,
@@ -400,43 +336,24 @@ namespace System.Collections
             }
 
             uint i = 0;
-            if (Avx2.IsSupported)
+
+            ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
+            ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
+
+            if (Vector256.IsHardwareAccelerated)
             {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
+                for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
                 {
-                    for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
-                    {
-                        Vector256<int> leftVec = Avx.LoadVector256(leftPtr + i);
-                        Vector256<int> rightVec = Avx.LoadVector256(rightPtr + i);
-                        Avx.Store(leftPtr + i, Avx2.And(leftVec, rightVec));
-                    }
+                    Vector256<int> result = Vector256.LoadUnsafe(ref left, i) & Vector256.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
                 }
             }
-            else if (Sse2.IsSupported)
+            else if (Vector128.IsHardwareAccelerated)
             {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
+                for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
                 {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = Sse2.LoadVector128(leftPtr + i);
-                        Vector128<int> rightVec = Sse2.LoadVector128(rightPtr + i);
-                        Sse2.Store(leftPtr + i, Sse2.And(leftVec, rightVec));
-                    }
-                }
-            }
-            else if (AdvSimd.IsSupported)
-            {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
-                {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
-                        Vector128<int> rightVec = AdvSimd.LoadVector128(rightPtr + i);
-                        AdvSimd.Store(leftPtr + i, AdvSimd.And(leftVec, rightVec));
-                    }
+                    Vector128<int> result = Vector128.LoadUnsafe(ref left, i) & Vector128.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
                 }
             }
 
@@ -456,8 +373,7 @@ namespace System.Collections
         =========================================================================*/
         public unsafe BitArray Or(BitArray value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             // This method uses unsafe code to manipulate data in the BitArrays.  To avoid issues with
             // buggy code concurrently mutating these instances in a way that could cause memory corruption,
@@ -486,43 +402,24 @@ namespace System.Collections
             }
 
             uint i = 0;
-            if (Avx2.IsSupported)
+
+            ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
+            ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
+
+            if (Vector256.IsHardwareAccelerated)
             {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
+                for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
                 {
-                    for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
-                    {
-                        Vector256<int> leftVec = Avx.LoadVector256(leftPtr + i);
-                        Vector256<int> rightVec = Avx.LoadVector256(rightPtr + i);
-                        Avx.Store(leftPtr + i, Avx2.Or(leftVec, rightVec));
-                    }
+                    Vector256<int> result = Vector256.LoadUnsafe(ref left, i) | Vector256.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
                 }
             }
-            else if (Sse2.IsSupported)
+            else if (Vector128.IsHardwareAccelerated)
             {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
+                for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
                 {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = Sse2.LoadVector128(leftPtr + i);
-                        Vector128<int> rightVec = Sse2.LoadVector128(rightPtr + i);
-                        Sse2.Store(leftPtr + i, Sse2.Or(leftVec, rightVec));
-                    }
-                }
-            }
-            else if (AdvSimd.IsSupported)
-            {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
-                {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
-                        Vector128<int> rightVec = AdvSimd.LoadVector128(rightPtr + i);
-                        AdvSimd.Store(leftPtr + i, AdvSimd.Or(leftVec, rightVec));
-                    }
+                    Vector128<int> result = Vector128.LoadUnsafe(ref left, i) | Vector128.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
                 }
             }
 
@@ -542,8 +439,7 @@ namespace System.Collections
         =========================================================================*/
         public unsafe BitArray Xor(BitArray value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             // This method uses unsafe code to manipulate data in the BitArrays.  To avoid issues with
             // buggy code concurrently mutating these instances in a way that could cause memory corruption,
@@ -572,43 +468,24 @@ namespace System.Collections
             }
 
             uint i = 0;
-            if (Avx2.IsSupported)
+
+            ref int left = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
+            ref int right = ref MemoryMarshal.GetArrayDataReference<int>(valueArray);
+
+            if (Vector256.IsHardwareAccelerated)
             {
-                fixed (int* leftPtr = m_array)
-                fixed (int* rightPtr = value.m_array)
+                for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
                 {
-                    for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
-                    {
-                        Vector256<int> leftVec = Avx.LoadVector256(leftPtr + i);
-                        Vector256<int> rightVec = Avx.LoadVector256(rightPtr + i);
-                        Avx.Store(leftPtr + i, Avx2.Xor(leftVec, rightVec));
-                    }
+                    Vector256<int> result = Vector256.LoadUnsafe(ref left, i) ^ Vector256.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
                 }
             }
-            else if (Sse2.IsSupported)
+            else if (Vector128.IsHardwareAccelerated)
             {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
+                for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
                 {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = Sse2.LoadVector128(leftPtr + i);
-                        Vector128<int> rightVec = Sse2.LoadVector128(rightPtr + i);
-                        Sse2.Store(leftPtr + i, Sse2.Xor(leftVec, rightVec));
-                    }
-                }
-            }
-            else if (AdvSimd.IsSupported)
-            {
-                fixed (int* leftPtr = thisArray)
-                fixed (int* rightPtr = valueArray)
-                {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
-                        Vector128<int> rightVec = AdvSimd.LoadVector128(rightPtr + i);
-                        AdvSimd.Store(leftPtr + i, AdvSimd.Xor(leftVec, rightVec));
-                    }
+                    Vector128<int> result = Vector128.LoadUnsafe(ref left, i) ^ Vector128.LoadUnsafe(ref right, i);
+                    result.StoreUnsafe(ref left, i);
                 }
             }
 
@@ -650,39 +527,23 @@ namespace System.Collections
             }
 
             uint i = 0;
-            if (Avx2.IsSupported)
+
+            ref int value = ref MemoryMarshal.GetArrayDataReference<int>(thisArray);
+
+            if (Vector256.IsHardwareAccelerated)
             {
-                Vector256<int> ones = Vector256.Create(-1);
-                fixed (int* ptr = thisArray)
+                for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
                 {
-                    for (; i < (uint)count - (Vector256IntCount - 1u); i += Vector256IntCount)
-                    {
-                        Vector256<int> vec = Avx.LoadVector256(ptr + i);
-                        Avx.Store(ptr + i, Avx2.Xor(vec, ones));
-                    }
+                    Vector256<int> result = ~Vector256.LoadUnsafe(ref value, i);
+                    result.StoreUnsafe(ref value, i);
                 }
             }
-            else if (Sse2.IsSupported)
+            else if (Vector128.IsHardwareAccelerated)
             {
-                Vector128<int> ones = Vector128.Create(-1);
-                fixed (int* ptr = thisArray)
+                for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
                 {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> vec = Sse2.LoadVector128(ptr + i);
-                        Sse2.Store(ptr + i, Sse2.Xor(vec, ones));
-                    }
-                }
-            }
-            else if (AdvSimd.IsSupported)
-            {
-                fixed (int* leftPtr = thisArray)
-                {
-                    for (; i < (uint)count - (Vector128IntCount - 1u); i += Vector128IntCount)
-                    {
-                        Vector128<int> leftVec = AdvSimd.LoadVector128(leftPtr + i);
-                        AdvSimd.Store(leftPtr + i, AdvSimd.Not(leftVec));
-                    }
+                    Vector128<int> result = ~Vector128.LoadUnsafe(ref value, i);
+                    result.StoreUnsafe(ref value, i);
                 }
             }
 
@@ -704,10 +565,7 @@ namespace System.Collections
         {
             if (count <= 0)
             {
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
 
                 _version++;
                 return this;
@@ -771,10 +629,7 @@ namespace System.Collections
         {
             if (count <= 0)
             {
-                if (count < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count), count, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(count);
 
                 _version++;
                 return this;
@@ -826,10 +681,7 @@ namespace System.Collections
             }
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedNonNegNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 int newints = GetInt32ArrayLengthFromBitLength(value);
                 if (newints > m_array.Length || newints + _ShrinkThreshold < m_array.Length)
@@ -857,19 +709,11 @@ namespace System.Collections
             }
         }
 
-        // The mask used when shuffling a single int into Vector128/256.
-        // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
-        // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
-        private static readonly Vector128<byte> s_lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
-        private static readonly Vector128<byte> s_upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
-
         public unsafe void CopyTo(Array array, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
 
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -953,9 +797,15 @@ namespace System.Collections
                 if (m_length < BitsPerInt32)
                     goto LessThan32;
 
+                // The mask used when shuffling a single int into Vector128/256.
+                // On little endian machines, the lower 8 bits of int belong in the first byte, next lower 8 in the second and so on.
+                // We place the bytes that contain the bits to its respective byte so that we can mask out only the relevant bits later.
+                Vector128<byte> lowerShuffleMask_CopyToBoolArray = Vector128.Create(0, 0x01010101_01010101).AsByte();
+                Vector128<byte> upperShuffleMask_CopyToBoolArray = Vector128.Create(0x02020202_02020202, 0x03030303_03030303).AsByte();
+
                 if (Avx2.IsSupported)
                 {
-                    Vector256<byte> shuffleMask = Vector256.Create(s_lowerShuffleMask_CopyToBoolArray, s_upperShuffleMask_CopyToBoolArray);
+                    Vector256<byte> shuffleMask = Vector256.Create(lowerShuffleMask_CopyToBoolArray, upperShuffleMask_CopyToBoolArray);
                     Vector256<byte> bitMask = Vector256.Create(0x80402010_08040201).AsByte();
                     Vector256<byte> ones = Vector256.Create((byte)1);
 
@@ -977,9 +827,12 @@ namespace System.Collections
                 }
                 else if (Ssse3.IsSupported)
                 {
-                    Vector128<byte> lowerShuffleMask = s_lowerShuffleMask_CopyToBoolArray;
-                    Vector128<byte> upperShuffleMask = s_upperShuffleMask_CopyToBoolArray;
+                    Vector128<byte> lowerShuffleMask = lowerShuffleMask_CopyToBoolArray;
+                    Vector128<byte> upperShuffleMask = upperShuffleMask_CopyToBoolArray;
                     Vector128<byte> ones = Vector128.Create((byte)1);
+                    Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
+                                                 Vector128.Create(0x80402010_08040201).AsByte() :
+                                                 Vector128.Create(0x01020408_10204080).AsByte();
 
                     fixed (bool* destination = &boolArray[index])
                     {
@@ -989,20 +842,24 @@ namespace System.Collections
                             Vector128<int> scalar = Vector128.CreateScalarUnsafe(bits);
 
                             Vector128<byte> shuffledLower = Ssse3.Shuffle(scalar.AsByte(), lowerShuffleMask);
-                            Vector128<byte> extractedLower = Sse2.And(shuffledLower, s_bitMask128);
+                            Vector128<byte> extractedLower = Sse2.And(shuffledLower, bitMask128);
                             Vector128<byte> normalizedLower = Sse2.Min(extractedLower, ones);
                             Sse2.Store((byte*)destination + i, normalizedLower);
 
                             Vector128<byte> shuffledHigher = Ssse3.Shuffle(scalar.AsByte(), upperShuffleMask);
-                            Vector128<byte> extractedHigher = Sse2.And(shuffledHigher, s_bitMask128);
+                            Vector128<byte> extractedHigher = Sse2.And(shuffledHigher, bitMask128);
                             Vector128<byte> normalizedHigher = Sse2.Min(extractedHigher, ones);
                             Sse2.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
                         }
                     }
                 }
-                else if (AdvSimd.IsSupported)
+                else if (AdvSimd.Arm64.IsSupported)
                 {
                     Vector128<byte> ones = Vector128.Create((byte)1);
+                    Vector128<byte> bitMask128 = BitConverter.IsLittleEndian ?
+                                                 Vector128.Create(0x80402010_08040201).AsByte() :
+                                                 Vector128.Create(0x01020408_10204080).AsByte();
+
                     fixed (bool* destination = &boolArray[index])
                     {
                         for (; (i + Vector128ByteCount * 2u) <= (uint)m_length; i += Vector128ByteCount * 2u)
@@ -1028,14 +885,14 @@ namespace System.Collections
                             vector = AdvSimd.Arm64.ZipLow(vector, vector);
 
                             Vector128<byte> shuffledLower = AdvSimd.Arm64.ZipLow(vector, vector);
-                            Vector128<byte> extractedLower = AdvSimd.And(shuffledLower, s_bitMask128);
+                            Vector128<byte> extractedLower = AdvSimd.And(shuffledLower, bitMask128);
                             Vector128<byte> normalizedLower = AdvSimd.Min(extractedLower, ones);
-                            AdvSimd.Store((byte*)destination + i, normalizedLower);
 
                             Vector128<byte> shuffledHigher = AdvSimd.Arm64.ZipHigh(vector, vector);
-                            Vector128<byte> extractedHigher = AdvSimd.And(shuffledHigher, s_bitMask128);
+                            Vector128<byte> extractedHigher = AdvSimd.And(shuffledHigher, bitMask128);
                             Vector128<byte> normalizedHigher = AdvSimd.Min(extractedHigher, ones);
-                            AdvSimd.Store((byte*)destination + i + Vector128<byte>.Count, normalizedHigher);
+
+                            AdvSimd.Arm64.StorePair((byte*)destination + i, normalizedLower, normalizedHigher);
                         }
                     }
                 }
@@ -1051,6 +908,66 @@ namespace System.Collections
             {
                 throw new ArgumentException(SR.Arg_BitArrayTypeUnsupported, nameof(array));
             }
+        }
+
+        /// <summary>
+        /// Determines whether all bits in the <see cref="BitArray"/> are set to <c>true</c>.
+        /// </summary>
+        /// <returns><c>true</c> if every bit in the <see cref="BitArray"/> is set to <c>true</c>, or if <see cref="BitArray"/> is empty; otherwise, <c>false</c>.</returns>
+        public bool HasAllSet()
+        {
+            Div32Rem(m_length, out int extraBits);
+            int intCount = GetInt32ArrayLengthFromBitLength(m_length);
+            if (extraBits != 0)
+            {
+                intCount--;
+            }
+
+            const int AllSetBits = -1; // 0xFF_FF_FF_FF
+            if (m_array.AsSpan(0, intCount).IndexOfAnyExcept(AllSetBits) >= 0)
+            {
+                return false;
+            }
+
+            if (extraBits == 0)
+            {
+                return true;
+            }
+
+            Debug.Assert(GetInt32ArrayLengthFromBitLength(m_length) > 0);
+            Debug.Assert(intCount == GetInt32ArrayLengthFromBitLength(m_length) - 1);
+
+            int mask = (1 << extraBits) - 1;
+            return (m_array[intCount] & mask) == mask;
+        }
+
+        /// <summary>
+        /// Determines whether any bit in the <see cref="BitArray"/> is set to <c>true</c>.
+        /// </summary>
+        /// <returns><c>true</c> if <see cref="BitArray"/> is not empty and at least one of its bit is set to <c>true</c>; otherwise, <c>false</c>.</returns>
+        public bool HasAnySet()
+        {
+            Div32Rem(m_length, out int extraBits);
+            int intCount = GetInt32ArrayLengthFromBitLength(m_length);
+            if (extraBits != 0)
+            {
+                intCount--;
+            }
+
+            if (m_array.AsSpan(0, intCount).IndexOfAnyExcept(0) >= 0)
+            {
+                return true;
+            }
+
+            if (extraBits == 0)
+            {
+                return false;
+            }
+
+            Debug.Assert(GetInt32ArrayLengthFromBitLength(m_length) > 0);
+            Debug.Assert(intCount == GetInt32ArrayLengthFromBitLength(m_length) - 1);
+
+            return (m_array[intCount] & (1 << extraBits) - 1) != 0;
         }
 
         public int Count => m_length;
@@ -1127,7 +1044,7 @@ namespace System.Collections
 
         private static void ThrowArgumentOutOfRangeException(int index)
         {
-            throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+            throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
         }
 
         private sealed class BitArrayEnumeratorSimple : IEnumerator, ICloneable

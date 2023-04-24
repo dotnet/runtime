@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
+
 namespace System
 {
     public partial struct Nullable<T>

@@ -7,28 +7,26 @@ namespace System.Reflection.Context.Virtual
     {
         protected abstract class PropertySetterBase : FuncPropertyAccessorBase
         {
-            private Type[] _parameterTypes;
+            private Type[]? _parameterTypes;
 
             protected PropertySetterBase(VirtualPropertyBase property)
                 : base(property)
             {
             }
 
-            public override sealed string Name
+            public sealed override string Name
             {
                 get { return "set_" + DeclaringProperty.Name; }
             }
 
-            public override sealed Type ReturnType
+            public sealed override Type ReturnType
             {
                 get { return DeclaringProperty.ReflectionContext.MapType(IntrospectionExtensions.GetTypeInfo(typeof(void))); }
             }
 
             protected override Type[] GetParameterTypes()
             {
-                return (_parameterTypes != null) ?
-                       _parameterTypes :
-                       _parameterTypes = new Type[1] { DeclaringProperty.PropertyType };
+                return _parameterTypes ??= new Type[1] { DeclaringProperty.PropertyType };
             }
         }
     }

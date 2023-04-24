@@ -147,7 +147,7 @@ struct ResourceNode
 
 #define RES_FILE_DUMP_ENABLED
 
-DWORD   DumpResourceToFile(__in __nullterminated WCHAR*   wzFileName)
+DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName)
 {
 
     BYTE*   pbResBase;
@@ -181,7 +181,7 @@ DWORD   DumpResourceToFile(__in __nullterminated WCHAR*   wzFileName)
             PIMAGE_RESOURCE_DIRECTORY pirdType = (PIMAGE_RESOURCE_DIRECTORY)pbResBase;
             PIMAGE_RESOURCE_DIRECTORY_ENTRY pirdeType = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(pbResBase+sizeof(IMAGE_RESOURCE_DIRECTORY));
             DWORD	dwTypeID;
-            unsigned short i = 0,N = pirdType->NumberOfNamedEntries+pirdType->NumberOfIdEntries;
+            unsigned i = 0,N = pirdType->NumberOfNamedEntries+pirdType->NumberOfIdEntries;
             PAL_CPP_TRY {
                 for(i=0; i < N; i++, pirdeType++)
                 {
@@ -192,7 +192,7 @@ DWORD   DumpResourceToFile(__in __nullterminated WCHAR*   wzFileName)
                         PIMAGE_RESOURCE_DIRECTORY pirdName = (PIMAGE_RESOURCE_DIRECTORY)pbNameBase;
                         PIMAGE_RESOURCE_DIRECTORY_ENTRY pirdeName = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(pbNameBase+sizeof(IMAGE_RESOURCE_DIRECTORY));
                         DWORD   dwNameID;
-                        unsigned short i,N = VAL16(pirdName->NumberOfNamedEntries)+VAL16(pirdName->NumberOfIdEntries);
+                        unsigned i,N = VAL16(pirdName->NumberOfNamedEntries)+VAL16(pirdName->NumberOfIdEntries);
 
                         for(i=0; i < N; i++, pirdeName++)
                         {
@@ -203,7 +203,7 @@ DWORD   DumpResourceToFile(__in __nullterminated WCHAR*   wzFileName)
                                 PIMAGE_RESOURCE_DIRECTORY pirdLang = (PIMAGE_RESOURCE_DIRECTORY)pbLangBase;
                                 PIMAGE_RESOURCE_DIRECTORY_ENTRY pirdeLang = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(pbLangBase+sizeof(IMAGE_RESOURCE_DIRECTORY));
                                 DWORD   dwLangID;
-                                unsigned short i,N = VAL16(pirdLang->NumberOfNamedEntries)+VAL16(pirdLang->NumberOfIdEntries);
+                                unsigned i,N = VAL16(pirdLang->NumberOfNamedEntries)+VAL16(pirdLang->NumberOfIdEntries);
 
                                 for(i=0; i < N; i++, pirdeLang++)
                                 {
@@ -279,11 +279,11 @@ DWORD   DumpResourceToFile(__in __nullterminated WCHAR*   wzFileName)
                 void* GUICookie = (void*)wzFileName;
                 BYTE* pbData;
                 printLine(GUICookie,"");
-                sprintf_s(szString, _countof(szString), "// ========== Win32 Resource Entries (%d) ========",ulNumResNodes);
+                sprintf_s(szString, ARRAY_SIZE(szString), "// ========== Win32 Resource Entries (%d) ========",ulNumResNodes);
                 for(i=0; i < ulNumResNodes; i++)
                 {
                     printLine(GUICookie,"");
-                    sprintf_s(szString, _countof(szString), "// Res.# %d Type=0x%X Name=0x%X Lang=0x%X DataOffset=0x%X DataLength=%d",
+                    sprintf_s(szString, ARRAY_SIZE(szString), "// Res.# %d Type=0x%X Name=0x%X Lang=0x%X DataOffset=0x%X DataLength=%d",
                         i+1,
                         g_prResNodePtr[i]->ResHdr.dwTypeID,
                         g_prResNodePtr[i]->ResHdr.dwNameID,

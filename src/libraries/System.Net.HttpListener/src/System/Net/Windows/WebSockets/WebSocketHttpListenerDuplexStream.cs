@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
+#pragma warning disable CA1844 // Memory-based Read/WriteAsync
+
 namespace System.Net.WebSockets
 {
     internal sealed class WebSocketHttpListenerDuplexStream : Stream, WebSocketBase.IWebSocketStream
@@ -189,11 +191,10 @@ namespace System.Net.WebSockets
         // true: async completion or error
         private unsafe bool ReadAsyncFast(HttpListenerAsyncEventArgs eventArgs)
         {
-            eventArgs.StartOperationCommon(this, _inputStream.InternalHttpContext.RequestQueueBoundHandle);
+            eventArgs.StartOperationCommon(_inputStream.InternalHttpContext.RequestQueueBoundHandle);
             eventArgs.StartOperationReceive();
 
-            uint statusCode = 0;
-            bool completedAsynchronouslyOrWithError = false;
+            bool completedAsynchronouslyOrWithError;
             try
             {
                 Debug.Assert(eventArgs.Buffer != null, "'BufferList' is not supported for read operations.");
@@ -240,7 +241,7 @@ namespace System.Net.WebSockets
 
                 uint flags = 0;
                 uint bytesReturned = 0;
-                statusCode =
+                uint statusCode =
                     Interop.HttpApi.HttpReceiveRequestEntityBody(
                         _inputStream.InternalHttpContext.RequestQueueHandle,
                         _inputStream.InternalHttpContext.RequestId,
@@ -439,11 +440,11 @@ namespace System.Net.WebSockets
         {
             Interop.HttpApi.HTTP_FLAGS flags = Interop.HttpApi.HTTP_FLAGS.NONE;
 
-            eventArgs.StartOperationCommon(this, _outputStream.InternalHttpContext.RequestQueueBoundHandle);
+            eventArgs.StartOperationCommon(_outputStream.InternalHttpContext.RequestQueueBoundHandle);
             eventArgs.StartOperationSend();
 
             uint statusCode;
-            bool completedAsynchronouslyOrWithError = false;
+            bool completedAsynchronouslyOrWithError;
             try
             {
                 if (_outputStream.Closed ||
@@ -475,7 +476,7 @@ namespace System.Net.WebSockets
                         eventArgs.EntityChunkCount,
                         (Interop.HttpApi.HTTP_DATA_CHUNK*)eventArgs.EntityChunks,
                         &bytesSent,
-                        SafeLocalAllocHandle.Zero,
+                        null,
                         0,
                         eventArgs.NativeOverlapped,
                         null);
@@ -596,22 +597,12 @@ namespace System.Net.WebSockets
         {
             if (disposing && Interlocked.Exchange(ref _cleanedUp, 1) == 0)
             {
-                if (_readTaskCompletionSource != null)
-                {
-                    _readTaskCompletionSource.TrySetCanceled();
-                }
+                _readTaskCompletionSource?.TrySetCanceled();
 
                 _writeTaskCompletionSource?.TrySetCanceled();
 
-                if (_readEventArgs != null)
-                {
-                    _readEventArgs.Dispose();
-                }
-
-                if (_writeEventArgs != null)
-                {
-                    _writeEventArgs.Dispose();
-                }
+                _readEventArgs?.Dispose();
+                _writeEventArgs?.Dispose();
 
                 try
                 {
@@ -936,17 +927,13 @@ namespace System.Net.WebSockets
 
             // Method called to prepare for a native async http.sys call.
             // This method performs the tasks common to all http.sys operations.
-            internal void StartOperationCommon(WebSocketHttpListenerDuplexStream currentStream, ThreadPoolBoundHandle boundHandle)
+            internal void StartOperationCommon(ThreadPoolBoundHandle boundHandle)
             {
                 // Change status to "in-use".
                 if (Interlocked.CompareExchange(ref _operating, InProgress, Free) != Free)
                 {
                     // If it was already "in-use" check if Dispose was called.
-                    if (_disposeCalled)
-                    {
-                        // Dispose was called - throw ObjectDisposed.
-                        throw new ObjectDisposedException(GetType().FullName);
-                    }
+                    ObjectDisposedException.ThrowIf(_disposeCalled, this);
 
                     Debug.Fail("Only one outstanding async operation is allowed per HttpListenerAsyncEventArgs instance.");
                     // Only one at a time.

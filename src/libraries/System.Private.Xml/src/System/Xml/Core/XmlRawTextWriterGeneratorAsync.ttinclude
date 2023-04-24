@@ -5,7 +5,6 @@
 // WARNING: This file is generated and should not be modified directly.
 // Instead, modify XmlRawTextWriterGeneratorAsync.ttinclude
 
-#nullable disable
 using System;
 using System.IO;
 using System.Xml;
@@ -133,7 +132,7 @@ namespace System.Xml
         }
 
         // Serialize the document type declaration.
-        public override async Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
+        public override async Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             CheckAsyncCall();
             Debug.Assert(name != null && name.Length > 0);<#
@@ -322,13 +321,18 @@ namespace System.Xml
 
 #><#= SetTextContentMark(3, false) #>
 
+            if (_attrEndPos == _bufPos)
+            {
+                <#= BufferName #>[_bufPos++] = (<#= BufferType #>)' ';
+            }
+
             if (prefix.Length == 0)
             {
-                await RawTextAsync(" xmlns=\"").ConfigureAwait(false);
+                await RawTextAsync("xmlns=\"").ConfigureAwait(false);
             }
             else
             {
-                await RawTextAsync(" xmlns:").ConfigureAwait(false);
+                await RawTextAsync("xmlns:").ConfigureAwait(false);
                 await RawTextAsync(prefix).ConfigureAwait(false);
                 <#= BufferName #>[_bufPos++] = (<#= BufferType #>)'=';
                 <#= BufferName #>[_bufPos++] = (<#= BufferType #>)'"';
@@ -1844,7 +1848,7 @@ namespace System.Xml
     // Same as base text writer class except that elements, attributes, comments, and pi's are indented.
     internal partial class <#= ClassNameIndent #> : <#= ClassName #>
     {
-        public override async Task WriteDocTypeAsync(string name, string pubid, string sysid, string subset)
+        public override async Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {
             CheckAsyncCall();
             // Add indentation
@@ -1918,6 +1922,19 @@ namespace System.Xml
             }
 
             await base.WriteStartAttributeAsync(prefix, localName, ns).ConfigureAwait(false);
+        }
+
+        // Same as base class, plus possible indentation.
+        internal override async Task WriteStartNamespaceDeclarationAsync(string prefix)
+        {
+            CheckAsyncCall();
+            // Add indentation
+            if (_newLineOnAttributes)
+            {
+                await WriteIndentAsync().ConfigureAwait(false);
+            }
+
+            await base.WriteStartNamespaceDeclarationAsync(prefix).ConfigureAwait(false);
         }
 
         public override Task WriteCDataAsync(string text)

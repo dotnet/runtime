@@ -339,7 +339,7 @@ namespace System.IO.Packaging
         /// </returns>
         public override string GetAttribute(int i)
         {
-            string? result = null;
+            string? result;
 
             if (_ignoredAttributeCount == 0)
             {
@@ -405,11 +405,11 @@ namespace System.IO.Packaging
         /// <returns>
         /// The value of the specified attribute. If the attribute is not found, a null reference is returned.
         /// </returns>
-        public override string? GetAttribute(string localName, string namespaceURI)
+        public override string? GetAttribute(string localName, string? namespaceURI)
         {
             string? result = null;
 
-            if (_ignoredAttributeCount == 0 || !ShouldIgnoreNamespace(namespaceURI))
+            if (_ignoredAttributeCount == 0 || !ShouldIgnoreNamespace(namespaceURI!))
             {
                 // if the current element does not have any attributes that should be ignored or
                 // the namespace provided is not ignorable, call Reader method
@@ -503,7 +503,7 @@ namespace System.IO.Packaging
         /// <returns>
         /// true if the attribute is found; otherwise, false. If false, the reader's position does not change.
         /// </returns>
-        public override bool MoveToAttribute(string localName, string namespaceURI)
+        public override bool MoveToAttribute(string localName, string? namespaceURI)
         {
             bool result;
 
@@ -518,7 +518,7 @@ namespace System.IO.Packaging
 
                 result = Reader.MoveToAttribute(localName, namespaceURI);
 
-                if (result && ShouldIgnoreNamespace(namespaceURI))
+                if (result && ShouldIgnoreNamespace(namespaceURI!))
                 {
                     result = false;
                     RestoreReaderPosition();
@@ -594,7 +594,7 @@ namespace System.IO.Packaging
         /// </returns>
         public override string? LookupNamespace(string prefix)
         {
-            string namespaceName = Reader.LookupNamespace(prefix);
+            string? namespaceName = Reader.LookupNamespace(prefix);
 
             if (namespaceName != null)
             {
@@ -613,6 +613,7 @@ namespace System.IO.Packaging
         /// for the xmlns attribute reflects all the
         /// compatibility (subsuming) rules.
         /// </summary>
+#pragma warning disable CS8764 // Nullability of return type doesn't match overridden member
         public override string? Value
         {
             get
@@ -631,6 +632,7 @@ namespace System.IO.Packaging
                 return Reader.Value;
             }
         }
+#pragma warning restore CS8764
 
         /// <summary>
         /// Gets the namespace URI (as defined in the W3C Namespace specification) of the node
@@ -693,7 +695,7 @@ namespace System.IO.Packaging
             // Restore reader state from SaveReaderPosition
             if (_inAttribute)
             {
-                Reader.MoveToAttribute(_currentName);
+                Reader.MoveToAttribute(_currentName!);
             }
             else
             {
@@ -720,11 +722,11 @@ namespace System.IO.Packaging
                 // if the namespace has not yet been mapped, map it
                 mappedNamespace = MapNewNamespace(namespaceName);
             }
-            else if (mappedNamespace == null)
+            else
             {
                 // if the mapped namespace is null, then the namespace was not supported, just return
                 // the given namespace
-                mappedNamespace = namespaceName;
+                mappedNamespace ??= namespaceName;
             }
 
             return mappedNamespace;
@@ -815,8 +817,7 @@ namespace System.IO.Packaging
         /// </param>
         private void AddSubsumingNamespace(string namespaceName)
         {
-            if (_subsumingNamespaces == null)
-                _subsumingNamespaces = new Dictionary<string, object?>();
+            _subsumingNamespaces ??= new Dictionary<string, object?>();
             _subsumingNamespaces[namespaceName] = null;
         }
 
@@ -842,8 +843,7 @@ namespace System.IO.Packaging
         /// </param>
         private void AddKnownNamespace(string namespaceName)
         {
-            if (_knownNamespaces == null)
-                _knownNamespaces = new Dictionary<string, object?>();
+            _knownNamespaces ??= new Dictionary<string, object?>();
             _knownNamespaces[namespaceName] = null;
         }
 
@@ -1141,7 +1141,7 @@ namespace System.IO.Packaging
                 Error(SR.XCRChoiceAfterFallback);
             }
 
-            string requiresValue = Reader.GetAttribute(Requires);
+            string? requiresValue = Reader.GetAttribute(Requires);
 
             if (requiresValue == null)
             {
@@ -1420,131 +1420,31 @@ namespace System.IO.Packaging
             }
         }
 
-        private string AlternateContent
-        {
-            get
-            {
-                if (_alternateContent == null)
-                {
-                    _alternateContent = Reader.NameTable.Add("AlternateContent");
-                }
-                return _alternateContent;
-            }
-        }
+        private string AlternateContent => _alternateContent ??= Reader.NameTable.Add("AlternateContent");
 
-        private string Choice
-        {
-            get
-            {
-                if (_choice == null)
-                {
-                    _choice = Reader.NameTable.Add("Choice");
-                }
-                return _choice;
-            }
-        }
+        private string Choice => _choice ??= Reader.NameTable.Add("Choice");
 
-        private string Fallback
-        {
-            get
-            {
-                if (_fallback == null)
-                {
-                    _fallback = Reader.NameTable.Add("Fallback");
-                }
-                return _fallback;
-            }
-        }
+        private string Fallback => _fallback ??= Reader.NameTable.Add("Fallback");
 
-        private string Requires
-        {
-            get
-            {
-                if (_requires == null)
-                {
-                    _requires = Reader.NameTable.Add("Requires");
-                }
-                return _requires;
-            }
-        }
+        private string Requires => _requires ??= Reader.NameTable.Add("Requires");
 
-        private string Ignorable
-        {
-            get
-            {
-                if (_ignorable == null)
-                {
-                    _ignorable = Reader.NameTable.Add("Ignorable");
-                }
-                return _ignorable;
-            }
-        }
+        private string Ignorable => _ignorable ??= Reader.NameTable.Add("Ignorable");
 
-        private string MustUnderstand
-        {
-            get
-            {
-                if (_mustUnderstand == null)
-                {
-                    _mustUnderstand = Reader.NameTable.Add("MustUnderstand");
-                }
-                return _mustUnderstand;
-            }
-        }
+        private string MustUnderstand => _mustUnderstand ??= Reader.NameTable.Add("MustUnderstand");
 
-        private string ProcessContent
-        {
-            get
-            {
-                if (_processContent == null)
-                {
-                    _processContent = Reader.NameTable.Add("ProcessContent");
-                }
-                return _processContent;
-            }
-        }
+        private string ProcessContent => _processContent ??= Reader.NameTable.Add("ProcessContent");
 
-        private string PreserveElements
-        {
-            get
-            {
-                if (_preserveElements == null)
-                {
-                    _preserveElements = Reader.NameTable.Add("PreserveElements");
-                }
-                return _preserveElements;
-            }
-        }
+        private string PreserveElements => _preserveElements ??= Reader.NameTable.Add("PreserveElements");
 
-        private string PreserveAttributes
-        {
-            get
-            {
-                if (_preserveAttributes == null)
-                {
-                    _preserveAttributes = Reader.NameTable.Add("PreserveAttributes");
-                }
-                return _preserveAttributes;
-            }
-        }
+        private string PreserveAttributes => _preserveAttributes ??= Reader.NameTable.Add("PreserveAttributes");
 
-        private string CompatibilityUri
-        {
-            get
-            {
-                if (_compatibilityUri == null)
-                {
-                    _compatibilityUri = Reader.NameTable.Add(MarkupCompatibilityURI);
-                }
-                return _compatibilityUri;
-            }
-        }
+        private string CompatibilityUri => _compatibilityUri ??= Reader.NameTable.Add(MarkupCompatibilityURI);
         #endregion Private Properties
         #region Nested Classes
-        private struct NamespaceElementPair
+        private readonly struct NamespaceElementPair
         {
-            public string namespaceName;
-            public string itemName;
+            public readonly string namespaceName;
+            public readonly string itemName;
 
             public NamespaceElementPair(string namespaceName, string itemName)
             {
@@ -1744,19 +1644,13 @@ namespace System.IO.Packaging
 
             public void Ignorable(string namespaceName)
             {
-                if (_ignorables == null)
-                {
-                    _ignorables = new Dictionary<string, object?>();
-                }
+                _ignorables ??= new Dictionary<string, object?>();
                 _ignorables[namespaceName] = null; // we don't care about value, just key
             }
 
             public void ProcessContent(string namespaceName, string elementName)
             {
-                if (_processContents == null)
-                {
-                    _processContents = new Dictionary<string, ProcessContentSet>();
-                }
+                _processContents ??= new Dictionary<string, ProcessContentSet>();
                 ProcessContentSet? processContentSet;
                 if (!_processContents.TryGetValue(namespaceName, out processContentSet))
                 {
@@ -1768,10 +1662,7 @@ namespace System.IO.Packaging
 
             public void PreserveElement(string namespaceName, string elementName)
             {
-                if (_preserveElements == null)
-                {
-                    _preserveElements = new Dictionary<string, PreserveItemSet>();
-                }
+                _preserveElements ??= new Dictionary<string, PreserveItemSet>();
                 PreserveItemSet? preserveElementSet;
                 if (!_preserveElements.TryGetValue(namespaceName, out preserveElementSet))
                 {
@@ -1783,10 +1674,7 @@ namespace System.IO.Packaging
 
             public void PreserveAttribute(string namespaceName, string attributeName)
             {
-                if (_preserveAttributes == null)
-                {
-                    _preserveAttributes = new Dictionary<string, PreserveItemSet>();
-                }
+                _preserveAttributes ??= new Dictionary<string, PreserveItemSet>();
                 PreserveItemSet? preserveAttributeSet;
                 if (!_preserveAttributes.TryGetValue(namespaceName, out preserveAttributeSet))
                 {
@@ -1879,11 +1767,7 @@ namespace System.IO.Packaging
                 }
                 else
                 {
-                    if (_names == null)
-                    {
-                        _names = new Dictionary<string, object?>();
-                    }
-
+                    _names ??= new Dictionary<string, object?>();
                     _names[elementName] = null; // we don't care about value, just key
                 }
             }
@@ -1934,11 +1818,7 @@ namespace System.IO.Packaging
                 }
                 else
                 {
-                    if (_names == null)
-                    {
-                        _names = new Dictionary<string, string>();
-                    }
-
+                    _names ??= new Dictionary<string, string>();
                     _names.Add(itemName, itemName);
                 }
             }

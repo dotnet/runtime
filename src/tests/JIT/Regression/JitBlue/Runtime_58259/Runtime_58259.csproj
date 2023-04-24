@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CLRTestPriority>1</CLRTestPriority> <!-- This is a regression test for a crossgen only scenario -->
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>

@@ -243,6 +243,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
     public class Test
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55117", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod(null));

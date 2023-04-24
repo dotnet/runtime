@@ -15,12 +15,10 @@
         other[3] IMPLICIT OtherCertificateFormat
     }
 
-    OtherCertificateFormat ::= SEQUENCE {
-        otherCertFormat OBJECT IDENTIFIER,
-        otherCert ANY DEFINED BY otherCertFormat
-    }
-
-    Except we only support public key certificates, so just trim the choice here.
   -->
   <asn:AnyValue name="Certificate" universalTagNumber="16" />
+  <asn:AnyValue name="ExtendedCertificate" implicitTag="0" />
+  <asn:AnyValue name="AttributeCertificateV1" implicitTag="1" />
+  <asn:AnyValue name="AttributeCertificateV2" implicitTag="2" />
+  <asn:AsnType name="OtherCertificateFormat" typeName="System.Security.Cryptography.Pkcs.Asn1.OtherCertificateFormat" implicitTag="3" />
 </asn:Choice>

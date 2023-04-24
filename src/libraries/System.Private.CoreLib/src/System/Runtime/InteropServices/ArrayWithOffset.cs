@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
-    public struct ArrayWithOffset
+    public readonly struct ArrayWithOffset : IEquatable<ArrayWithOffset>
     {
         private readonly object? m_array;
         private readonly int m_offset;
@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices
                     throw new ArgumentException(SR.ArgumentException_NotIsomorphic);
                 }
 
-                nuint nativeTotalSize = (nuint)arrayObj.LongLength * (nuint)arrayObj.GetElementSize();
+                nuint nativeTotalSize = arrayObj.NativeLength * (nuint)arrayObj.GetElementSize();
                 if (nativeTotalSize > MaxSizeForInterop)
                 {
                     throw new ArgumentException(SR.Argument_StructArrayTooLarge);
@@ -52,7 +52,7 @@ namespace System.Runtime.InteropServices
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is ArrayWithOffset && Equals((ArrayWithOffset)obj);
+            return obj is ArrayWithOffset awo && Equals(awo);
         }
 
         public bool Equals(ArrayWithOffset obj)

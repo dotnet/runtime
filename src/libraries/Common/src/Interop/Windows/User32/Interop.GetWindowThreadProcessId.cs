@@ -8,10 +8,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [DllImport(Libraries.User32, ExactSpelling = true)]
-        public static extern int GetWindowThreadProcessId(IntPtr handle, out int processId);
-
-        [DllImport(Libraries.User32, ExactSpelling = true)]
-        public static extern int GetWindowThreadProcessId(HandleRef handle, out int processId);
+        [LibraryImport(Libraries.User32)]
+        public static unsafe partial int GetWindowThreadProcessId(IntPtr handle, int* processId);
     }
 }

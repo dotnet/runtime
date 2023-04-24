@@ -15,21 +15,47 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
+#include "safemath.h"
+#include "clr_std/type_traits"
 #include "iallocator.h"
 #include "hostallocator.h"
 #include "cycletimer.h"
+#include "vartypesdef.h"
 
 // Needed for unreached()
 #include "error.h"
 
-#ifdef TARGET_64BIT
-#define BitScanForwardPtr BitScanForward64
-#else
-#define BitScanForwardPtr BitScanForward
-#endif
+#if defined(_MSC_VER)
+
+// Define wrappers over the non-underscore versions of the BitScan* APIs. The PAL defines these already.
+// We've #undef'ed the definitions in winnt.h for these names to avoid confusion.
+
+inline BOOLEAN BitScanForward(DWORD* Index, DWORD Mask)
+{
+    return ::_BitScanForward(Index, Mask);
+}
+
+inline BOOLEAN BitScanReverse(DWORD* Index, DWORD Mask)
+{
+    return ::_BitScanReverse(Index, Mask);
+}
+
+#if defined(HOST_64BIT)
+inline BOOLEAN BitScanForward64(DWORD* Index, DWORD64 Mask)
+{
+    return ::_BitScanForward64(Index, Mask);
+}
+
+inline BOOLEAN BitScanReverse64(DWORD* Index, DWORD64 Mask)
+{
+    return ::_BitScanReverse64(Index, Mask);
+}
+#endif // defined(HOST_64BIT)
+
+#endif // _MSC_VER
 
 template <typename T, int size>
-unsigned ArrLen(T (&)[size])
+inline constexpr unsigned ArrLen(T (&)[size])
 {
     return size;
 }
@@ -39,6 +65,18 @@ template <typename T>
 inline bool isPow2(T i)
 {
     return (i > 0 && ((i - 1) & i) == 0);
+}
+
+template <typename T>
+constexpr bool AreContiguous(T val1, T val2)
+{
+    return (val1 + 1) == val2;
+}
+
+template <typename T, typename... Ts>
+constexpr bool AreContiguous(T val1, T val2, Ts... rest)
+{
+    return ((val1 + 1) == val2) && AreContiguous(val2, rest...);
 }
 
 // Adapter for iterators to a type that is compatible with C++11
@@ -267,10 +305,10 @@ public:
  * returns -> number of bytes successfully written, not including the null
  *            terminator.  Calls NO_WAY on error.
  */
-int SimpleSprintf_s(__in_ecount(cbBufSize - (pWriteStart - pBufStart)) char* pWriteStart,
-                    __in_ecount(cbBufSize) char*                             pBufStart,
-                    size_t                                                   cbBufSize,
-                    __in_z const char*                                       fmt,
+int SimpleSprintf_s(_In_reads_(cbBufSize - (pWriteStart - pBufStart)) char* pWriteStart,
+                    _In_reads_(cbBufSize) char*                             pBufStart,
+                    size_t                                                  cbBufSize,
+                    _In_z_ const char*                                      fmt,
                     ...);
 
 #ifdef DEBUG
@@ -401,6 +439,16 @@ public:
         m_initialized = true;
 #endif // DEBUG
         m_value &= value;
+        return *this;
+    }
+
+    PhasedVar& operator|=(const T& value)
+    {
+#ifdef DEBUG
+        assert(m_writePhase);
+        m_initialized = true;
+#endif // DEBUG
+        m_value |= value;
         return *this;
     }
 
@@ -656,7 +704,7 @@ public:
  * Used when outputting strings.
  */
 unsigned CountDigits(unsigned num, unsigned base = 10);
-unsigned CountDigits(float num, unsigned base = 10);
+unsigned CountDigits(double num, unsigned base = 10);
 
 #endif // DEBUG
 
@@ -684,7 +732,83 @@ public:
 
     static bool hasPreciseReciprocal(float x);
 
+    static double infinite_double();
+
     static float infinite_float();
+
+    static bool isAllBitsSet(float val);
+
+    static bool isAllBitsSet(double val);
+
+    static bool isNegative(float val);
+
+    static bool isNegative(double val);
+
+    static bool isNaN(float val);
+
+    static bool isNaN(double val);
+
+    static bool isNegativeZero(double val);
+
+    static bool isPositiveZero(double val);
+
+    static double maximum(double val1, double val2);
+
+    static float maximum(float val1, float val2);
+
+    static double minimum(double val1, double val2);
+
+    static float minimum(float val1, float val2);
+
+    static double normalize(double x);
+};
+
+class BitOperations
+{
+public:
+    static uint32_t BitScanForward(uint32_t value);
+
+    static uint32_t BitScanForward(uint64_t value);
+
+    static uint32_t BitScanReverse(uint32_t value);
+
+    static uint32_t BitScanReverse(uint64_t value);
+
+    static uint64_t DoubleToUInt64Bits(double value);
+
+    static uint32_t LeadingZeroCount(uint32_t value);
+
+    static uint32_t LeadingZeroCount(uint64_t value);
+
+    static uint32_t Log2(uint32_t value);
+
+    static uint32_t Log2(uint64_t value);
+
+    static uint32_t PopCount(uint32_t value);
+
+    static uint32_t PopCount(uint64_t value);
+
+    static uint32_t ReverseBits(uint32_t value);
+
+    static uint64_t ReverseBits(uint64_t value);
+
+    static uint32_t RotateLeft(uint32_t value, uint32_t offset);
+
+    static uint64_t RotateLeft(uint64_t value, uint32_t offset);
+
+    static uint32_t RotateRight(uint32_t value, uint32_t offset);
+
+    static uint64_t RotateRight(uint64_t value, uint32_t offset);
+
+    static uint32_t SingleToUInt32Bits(float value);
+
+    static uint32_t TrailingZeroCount(uint32_t value);
+
+    static uint32_t TrailingZeroCount(uint64_t value);
+
+    static float UInt32BitsToSingle(uint32_t value);
+
+    static double UInt64BitsToDouble(uint64_t value);
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but
@@ -756,9 +880,11 @@ private:
 
 namespace MagicDivide
 {
-uint32_t GetUnsigned32Magic(uint32_t d, bool* add /*out*/, int* shift /*out*/);
+uint32_t GetUnsigned32Magic(
+    uint32_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits);
 #ifdef TARGET_64BIT
-uint64_t GetUnsigned64Magic(uint64_t d, bool* add /*out*/, int* shift /*out*/);
+uint64_t GetUnsigned64Magic(
+    uint64_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits);
 #endif
 int32_t GetSigned32Magic(int32_t d, int* shift /*out*/);
 #ifdef TARGET_64BIT
@@ -771,5 +897,101 @@ int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
 //
 
 double CachedCyclesPerSecond();
+
+template <typename T>
+bool FitsIn(var_types type, T value)
+{
+    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+                          std::is_same<T, size_t>::value || std::is_same<T, ssize_t>::value ||
+                          std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+
+    switch (type)
+    {
+        case TYP_BYTE:
+            return FitsIn<int8_t>(value);
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return FitsIn<uint8_t>(value);
+        case TYP_SHORT:
+            return FitsIn<int16_t>(value);
+        case TYP_USHORT:
+            return FitsIn<uint16_t>(value);
+        case TYP_INT:
+            return FitsIn<int32_t>(value);
+        case TYP_UINT:
+            return FitsIn<uint32_t>(value);
+        case TYP_LONG:
+            return FitsIn<int64_t>(value);
+        case TYP_ULONG:
+            return FitsIn<uint64_t>(value);
+        default:
+            unreached();
+    }
+}
+
+namespace CheckedOps
+{
+const bool Unsigned = true;
+const bool Signed   = false;
+
+// Important note: templated functions below must use dynamic "assert"s instead of "static_assert"s
+// because they can be instantiated on code paths that are not reachable at runtime, but visible
+// to the compiler. One example is VN's EvalOp<T> function, which can be instantiated with "size_t"
+// for some operators, and that's legal, but its callee EvalOpSpecialized<T> uses "assert(!AddOverflows(v1, v2))"
+// for VNF_ADD_OVF/UN, and would like to continue doing so without casts.
+
+template <class T>
+bool AddOverflows(T x, T y, bool unsignedAdd)
+{
+    typedef typename std::make_unsigned<T>::type UT;
+    assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value));
+
+    if (unsignedAdd)
+    {
+        return (ClrSafeInt<UT>(static_cast<UT>(x)) + ClrSafeInt<UT>(static_cast<UT>(y))).IsOverflow();
+    }
+    else
+    {
+        return (ClrSafeInt<T>(x) + ClrSafeInt<T>(y)).IsOverflow();
+    }
+}
+
+template <class T>
+bool SubOverflows(T x, T y, bool unsignedSub)
+{
+    typedef typename std::make_unsigned<T>::type UT;
+    assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value));
+
+    if (unsignedSub)
+    {
+        return (ClrSafeInt<UT>(static_cast<UT>(x)) - ClrSafeInt<UT>(static_cast<UT>(y))).IsOverflow();
+    }
+    else
+    {
+        return (ClrSafeInt<T>(x) - ClrSafeInt<T>(y)).IsOverflow();
+    }
+}
+
+template <class T>
+bool MulOverflows(T x, T y, bool unsignedMul)
+{
+    typedef typename std::make_unsigned<T>::type UT;
+    assert((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value));
+
+    if (unsignedMul)
+    {
+        return (ClrSafeInt<UT>(static_cast<UT>(x)) * ClrSafeInt<UT>(static_cast<UT>(y))).IsOverflow();
+    }
+    else
+    {
+        return (ClrSafeInt<T>(x) * ClrSafeInt<T>(y)).IsOverflow();
+    }
+}
+
+bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned);
+bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigned);
+bool CastFromFloatOverflows(float fromValue, var_types toType);
+bool CastFromDoubleOverflows(double fromValue, var_types toType);
+}
 
 #endif // _UTILS_H_

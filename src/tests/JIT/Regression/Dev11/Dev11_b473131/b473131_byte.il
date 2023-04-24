@@ -274,7 +274,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module b473131_byte.exe
+.assembly extern xunit.core {}
 // MVID: {93C4C3CC-5A75-464C-A0F3-61562010094F}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -295,7 +295,7 @@
   .field /*04000004*/ public static literal valuetype mynamespace.e_t/*02000002*/ three = uint8(0x02)
 } // end of class mynamespace.e_t
 
-.class /*02000003*/ private auto ansi beforefieldinit mynamespace.myclass
+.class /*02000003*/ public auto ansi beforefieldinit mynamespace.myclass
        extends [mscorlib/*23000001*/]System.Object/*01000002*/
 {
   .method /*06000001*/ public hidebysig static 
@@ -320,6 +320,9 @@
           int32 Main() cil managed
   // SIG: 00 00 01
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Method begins at RVA 0x2064
     // Code size       11 (0xb)

@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.Net;
+using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -10,8 +12,31 @@ namespace System.DirectoryServices.Protocols
     {
         private bool _setFQDNDone;
 
-        private void InternalInitConnectionHandle(string hostname)
+        private void InternalInitConnectionHandle()
         {
+            string hostname = null;
+            string[] servers = ((LdapDirectoryIdentifier)_directoryIdentifier)?.Servers;
+            if (servers != null && servers.Length != 0)
+            {
+                var temp = new StringBuilder(200);
+                for (int i = 0; i < servers.Length; i++)
+                {
+                    if (servers[i] != null)
+                    {
+                        temp.Append(servers[i]);
+                        if (i < servers.Length - 1)
+                        {
+                            temp.Append(' ');
+                        }
+                    }
+                }
+
+                if (temp.Length != 0)
+                {
+                    hostname = temp.ToString();
+                }
+            }
+
             LdapDirectoryIdentifier directoryIdentifier = _directoryIdentifier as LdapDirectoryIdentifier;
 
             // User wants to setup a connectionless session with server.
@@ -37,6 +62,6 @@ namespace System.DirectoryServices.Protocols
         }
 
         private int InternalBind(NetworkCredential tempCredential, SEC_WINNT_AUTH_IDENTITY_EX cred, BindMethod method)
-            => tempCredential == null && AuthType == AuthType.External ? Interop.Ldap.ldap_bind_s(_ldapHandle, null, null, method) : Interop.Ldap.ldap_bind_s(_ldapHandle, null, cred, method);
+            => tempCredential == null && AuthType == AuthType.External ? Interop.Ldap.ldap_bind_s(_ldapHandle, null, Unsafe.NullRef<SEC_WINNT_AUTH_IDENTITY_EX>(), method) : Interop.Ldap.ldap_bind_s(_ldapHandle, null, cred, method);
     }
 }

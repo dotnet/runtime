@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 interface IGen<T>
 {
@@ -17,8 +18,8 @@ class GenInt : IGen<int>
 	public virtual void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread24.Eval(typeof(U)!=null);
+		Interlocked.Increment(ref Test_thread24.Xcounter);
 	}
 	
 	public static void DelegateTest<U>()
@@ -28,8 +29,8 @@ class GenInt : IGen<int>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread24.Eval(Test_thread24.Xcounter==1);
+		Test_thread24.Xcounter = 0;
 	}
 }
 
@@ -40,8 +41,8 @@ class GenDouble : IGen<double>
 	public virtual void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread24.Eval(typeof(U)!=null);
+		Interlocked.Increment(ref Test_thread24.Xcounter);
 	}
 	
 	public static void DelegateTest<U>()
@@ -51,8 +52,8 @@ class GenDouble : IGen<double>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread24.Eval(Test_thread24.Xcounter==1);
+		Test_thread24.Xcounter = 0;
 	}
 }
 
@@ -63,8 +64,8 @@ class GenString : IGen<string>
 	public virtual void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread24.Eval(typeof(U)!=null);
+		Interlocked.Increment(ref Test_thread24.Xcounter);
 	}
 	
 	public static void DelegateTest<U>()
@@ -74,8 +75,8 @@ class GenString : IGen<string>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread24.Eval(Test_thread24.Xcounter==1);
+		Test_thread24.Xcounter = 0;
 	}
 }
 
@@ -86,8 +87,8 @@ class GenObject : IGen<object>
 	public virtual void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread24.Eval(typeof(U)!=null);
+		Interlocked.Increment(ref Test_thread24.Xcounter);
 	}
 	
 	public static void DelegateTest<U>()
@@ -97,8 +98,8 @@ class GenObject : IGen<object>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread24.Eval(Test_thread24.Xcounter==1);
+		Test_thread24.Xcounter = 0;
 	}
 }
 
@@ -109,8 +110,8 @@ class GenGuid : IGen<Guid>
 	public virtual void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread24.Eval(typeof(U)!=null);
+		Interlocked.Increment(ref Test_thread24.Xcounter);
 	}
 	
 	public static void DelegateTest<U>()
@@ -120,12 +121,12 @@ class GenGuid : IGen<Guid>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread24.Eval(Test_thread24.Xcounter==1);
+		Test_thread24.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread24
 {
 	public static int nThreads =50;
 	public static int counter = 0;
@@ -142,7 +143,8 @@ public class Test
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 	
 		GenInt.DelegateTest<int>();

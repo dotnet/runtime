@@ -1,11 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.DirectoryServices.AccountManagement.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
   </ItemGroup>
 </Project>

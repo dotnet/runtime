@@ -224,10 +224,7 @@ namespace System.Xml.Resolvers
 
         public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
         {
-            if (absoluteUri == null)
-            {
-                throw new ArgumentNullException(nameof(absoluteUri));
-            }
+            ArgumentNullException.ThrowIfNull(absoluteUri);
 
             PreloadedData? data;
             if (!_mappings.TryGetValue(absoluteUri, out data))
@@ -267,10 +264,7 @@ namespace System.Xml.Resolvers
 
         public override bool SupportsType(Uri absoluteUri, Type? type)
         {
-            if (absoluteUri == null)
-            {
-                throw new ArgumentNullException(nameof(absoluteUri));
-            }
+            ArgumentNullException.ThrowIfNull(absoluteUri);
 
             PreloadedData? data;
             if (!_mappings.TryGetValue(absoluteUri, out data))
@@ -287,89 +281,51 @@ namespace System.Xml.Resolvers
 
         public void Add(Uri uri, byte[] value)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(uri);
+            ArgumentNullException.ThrowIfNull(value);
 
             Add(uri, new ByteArrayChunk(value, 0, value.Length));
         }
 
         public void Add(Uri uri, byte[] value, int offset, int count)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (value.Length - offset < count)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentNullException.ThrowIfNull(uri);
+            ArgumentNullException.ThrowIfNull(value);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, value.Length - offset);
 
             Add(uri, new ByteArrayChunk(value, offset, count));
         }
 
         public void Add(Uri uri, Stream value)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(uri);
+            ArgumentNullException.ThrowIfNull(value);
+
             if (value.CanSeek)
             {
                 // stream of known length -> allocate the byte array and read all data into it
                 int size = checked((int)value.Length);
                 byte[] bytes = new byte[size];
-                value.Read(bytes, 0, size);
+                value.ReadExactly(bytes);
                 Add(uri, new ByteArrayChunk(bytes));
             }
             else
             {
                 // stream of unknown length -> read into memory stream and then get internal the byte array
                 MemoryStream ms = new MemoryStream();
-                byte[] buffer = new byte[4096];
-                int read;
-                while ((read = value.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    ms.Write(buffer, 0, read);
-                }
-                int size = checked((int)ms.Position);
-                byte[] bytes = new byte[size];
-                Array.Copy(ms.ToArray(), bytes, size);
-                Add(uri, new ByteArrayChunk(bytes));
+                value.CopyTo(ms);
+                Add(uri, new ByteArrayChunk(ms.GetBuffer(), 0, checked((int)ms.Position)));
             }
         }
 
         public void Add(Uri uri, string value)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(uri);
+            ArgumentNullException.ThrowIfNull(value);
+
             Add(uri, new StringData(value));
         }
 
@@ -384,10 +340,7 @@ namespace System.Xml.Resolvers
 
         public void Remove(Uri uri)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
+            ArgumentNullException.ThrowIfNull(uri);
             _mappings.Remove(uri);
         }
 

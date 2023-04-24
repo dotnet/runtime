@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-public class Test
+using Xunit;
+public class Test_test
 {
     private int _counter = 0;
 
@@ -43,9 +44,10 @@ public class Test
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
-        Test obj = new Test();
+        Test_test obj = new Test_test();
         int val = obj.func(1);
         if (val == 1)
         {

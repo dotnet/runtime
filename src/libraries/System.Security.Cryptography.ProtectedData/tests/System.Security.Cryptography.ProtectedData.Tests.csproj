@@ -1,17 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ProtectedDataTests.cs" />
+    <Compile Include="ProtectedDataUnsupportedTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.Cryptography.ProtectedData.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net461'))">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />
   </ItemGroup>
 </Project>

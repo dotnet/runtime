@@ -28,22 +28,22 @@ public class Ex {
 		} finally {
 			fin += 1;
 		}
-		
+
 		return res;
 	}
 	public static int Main () {
-		int catched = 0;
+		int caught = 0;
 		try {
 			test (1);
 		} catch (MyEx ex) {
-			catched = 1;
+			caught = 1;
 		}
-		if (catched != 1)
+		if (caught != 1)
 			return 2;
 
 		if (fin != 2)
 			return 3;
-		
+
 		if (test(0) != 34)
 			return 4;
 		return 0;

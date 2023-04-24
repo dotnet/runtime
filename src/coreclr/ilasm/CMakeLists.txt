@@ -74,7 +74,6 @@ set(ILASM_LINK_LIBRARIES
   utilcodestaticnohost
   mscorpe
   ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
-  mdhotdata_ppdb
   mdcompiler_ppdb
   mdruntime_ppdb
   mdruntimerw_ppdb
@@ -110,6 +109,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
   target_link_libraries(ilasm
+    PRIVATE
     ${ILASM_LINK_LIBRARIES}
     utilcodestaticnohost
     mscorrc
@@ -119,6 +119,7 @@ if(CLR_CMAKE_HOST_UNIX)
   )
 else()
   target_link_libraries(ilasm
+    PRIVATE
     ${ILASM_LINK_LIBRARIES}
     ole32
     oleaut32

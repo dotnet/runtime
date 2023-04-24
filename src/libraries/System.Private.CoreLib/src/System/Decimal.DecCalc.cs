@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
+
 using X86 = System.Runtime.Intrinsics.X86;
 
 namespace System
@@ -17,11 +17,7 @@ namespace System
         internal uint Low => (uint)_lo64;
         internal uint Mid => (uint)(_lo64 >> 32);
 
-        internal bool IsNegative => _flags < 0;
-
-        internal int Scale => (byte)(_flags >> ScaleShift);
-
-        private ulong Low64 => _lo64;
+        internal ulong Low64 => _lo64;
 
         private static ref DecCalc AsMutable(ref decimal d) => ref Unsafe.As<decimal, DecCalc>(ref d);
 
@@ -105,7 +101,7 @@ namespace System
             private const int MaxInt64Scale = 19;
 
             // Fast access for 10^n where n is 0-9
-            private static readonly uint[] s_powers10 = new uint[] {
+            private static ReadOnlySpan<uint> UInt32Powers10 => new uint[] {
                 1,
                 10,
                 100,
@@ -119,7 +115,7 @@ namespace System
             };
 
             // Fast access for 10^n where n is 1-19
-            private static readonly ulong[] s_ulongPowers10 = new ulong[] {
+            private static ReadOnlySpan<ulong> UInt64Powers10 => new ulong[] {
                 10,
                 100,
                 1000,
@@ -141,7 +137,7 @@ namespace System
                 10000000000000000000,
             };
 
-            private static readonly double[] s_doublePowers10 = new double[] {
+            private static ReadOnlySpan<double> DoublePowers10 => new double[] {
                 1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9,
                 1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
                 1e20, 1e21, 1e22, 1e23, 1e24, 1e25, 1e26, 1e27, 1e28, 1e29,
@@ -152,13 +148,6 @@ namespace System
                 1e70, 1e71, 1e72, 1e73, 1e74, 1e75, 1e76, 1e77, 1e78, 1e79,
                 1e80
             };
-
-            // Used to fill uninitialized stack variables with non-zero pattern in debug builds
-            [Conditional("DEBUG")]
-            private static unsafe void DebugPoison<T>(ref T s) where T : unmanaged
-            {
-                MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref s, 1)).Fill(0xCD);
-            }
 
 #region Decimal Math Helpers
 
@@ -171,7 +160,7 @@ namespace System
                 //    ULONG sign:1;
                 // } SNGSTRUCT;
 
-                return (byte)(*(uint*)&f >> 23);
+                return (byte)(BitConverter.SingleToUInt32Bits(f) >> 23);
             }
 
             private static unsafe uint GetExponent(double d)
@@ -182,7 +171,7 @@ namespace System
                 //   DWORDLONG signexp:12;
                 // } DBLSTRUCT;
 
-                return (uint)(*(ulong*)&d >> 52) & 0x7FFu;
+                return (uint)(BitConverter.DoubleToUInt64Bits(d) >> 52) & 0x7FFu;
             }
 
             private static ulong UInt32x32To64(uint a, uint b)
@@ -942,7 +931,7 @@ ThrowOverflow:
                             {
                                 if (scale <= MaxInt32Scale)
                                 {
-                                    low64 = UInt32x32To64((uint)low64, s_powers10[scale]);
+                                    low64 = UInt32x32To64((uint)low64, UInt32Powers10[scale]);
                                     goto AlignedAdd;
                                 }
                                 scale -= MaxInt32Scale;
@@ -954,7 +943,7 @@ ThrowOverflow:
                         {
                             power = TenToPowerNine;
                             if (scale < MaxInt32Scale)
-                                power = s_powers10[scale];
+                                power = UInt32Powers10[scale];
                             tmpLow = UInt32x32To64((uint)low64, power);
                             tmp64 = UInt32x32To64((uint)(low64 >> 32), power) + (tmpLow >> 32);
                             low64 = (uint)tmpLow + (tmp64 << 32);
@@ -970,7 +959,7 @@ ThrowOverflow:
                         //
                         power = TenToPowerNine;
                         if (scale < MaxInt32Scale)
-                            power = s_powers10[scale];
+                            power = UInt32Powers10[scale];
                         tmpLow = UInt32x32To64((uint)low64, power);
                         tmp64 = UInt32x32To64((uint)(low64 >> 32), power) + (tmpLow >> 32);
                         low64 = (uint)tmpLow + (tmp64 << 32);
@@ -990,7 +979,6 @@ ThrowOverflow:
                     // Have to scale by a bunch. Move the number to a buffer where it has room to grow as it's scaled.
                     //
                     Unsafe.SkipInit(out Buf24 bufNum);
-                    DebugPoison(ref bufNum);
 
                     bufNum.Low64 = low64;
                     bufNum.Mid64 = tmp64;
@@ -1002,7 +990,7 @@ ThrowOverflow:
                     {
                         power = TenToPowerNine;
                         if (scale < MaxInt32Scale)
-                            power = s_powers10[scale];
+                            power = UInt32Powers10[scale];
                         tmp64 = 0;
                         uint* rgulNum = (uint*)&bufNum;
                         for (uint cur = 0; ;)
@@ -1210,7 +1198,7 @@ ReturnResult:
                 {
                     if (pdecIn.High != 0)
                         goto ThrowOverflow;
-                    uint pwr = s_powers10[-scale];
+                    uint pwr = UInt32Powers10[-scale];
                     ulong high = UInt32x32To64(pwr, pdecIn.Mid);
                     if (high > uint.MaxValue)
                         goto ThrowOverflow;
@@ -1298,7 +1286,7 @@ ThrowOverflow:
                     // Scaling loop, up to 10^9 at a time.
                     do
                     {
-                        uint power = scale >= MaxInt32Scale ? TenToPowerNine : s_powers10[scale];
+                        uint power = scale >= MaxInt32Scale ? TenToPowerNine : UInt32Powers10[scale];
                         ulong tmpLow = UInt32x32To64((uint)low64, power);
                         ulong tmp = UInt32x32To64((uint)(low64 >> 32), power) + (tmpLow >> 32);
                         low64 = (uint)tmpLow + (tmp << 32);
@@ -1339,7 +1327,6 @@ ThrowOverflow:
                 ulong tmp;
                 uint hiProd;
                 Unsafe.SkipInit(out Buf24 bufProd);
-                DebugPoison(ref bufProd);
 
                 if ((d1.High | d1.Mid) == 0)
                 {
@@ -1358,7 +1345,7 @@ ThrowOverflow:
                                 goto ReturnZero;
 
                             scale -= DEC_SCALE_MAX + 1;
-                            ulong power = s_ulongPowers10[scale];
+                            ulong power = UInt64Powers10[scale];
 
                             // TODO: https://github.com/dotnet/runtime/issues/5213
                             tmp = low64 / power;
@@ -1575,12 +1562,12 @@ ReturnZero:
                     if (power > DEC_SCALE_MAX)
                         power = DEC_SCALE_MAX;
 
-                    dbl *= s_doublePowers10[power];
+                    dbl *= DoublePowers10[power];
                 }
                 else
                 {
                     if (power != -1 || dbl >= 1E7)
-                        dbl /= s_doublePowers10[-power];
+                        dbl /= DoublePowers10[-power];
                     else
                         power = 0; // didn't scale it
                 }
@@ -1617,7 +1604,7 @@ ReturnZero:
                     power = -power;
                     if (power < 10)
                     {
-                        result.Low64 = UInt32x32To64(mant, s_powers10[power]);
+                        result.Low64 = UInt32x32To64(mant, UInt32Powers10[power]);
                     }
                     else
                     {
@@ -1625,12 +1612,12 @@ ReturnZero:
                         //
                         if (power > 18)
                         {
-                            ulong low64 = UInt32x32To64(mant, s_powers10[power - 18]);
+                            ulong low64 = UInt32x32To64(mant, UInt32Powers10[power - 18]);
                             UInt64x64To128(low64, TenToPowerEighteen, ref result);
                         }
                         else
                         {
-                            ulong low64 = UInt32x32To64(mant, s_powers10[power - 9]);
+                            ulong low64 = UInt32x32To64(mant, UInt32Powers10[power - 9]);
                             ulong hi64 = UInt32x32To64(TenToPowerNine, (uint)(low64 >> 32));
                             low64 = UInt32x32To64(TenToPowerNine, (uint)low64);
                             result.Low = (uint)low64;
@@ -1742,12 +1729,12 @@ ReturnZero:
                     if (power > DEC_SCALE_MAX)
                         power = DEC_SCALE_MAX;
 
-                    dbl *= s_doublePowers10[power];
+                    dbl *= DoublePowers10[power];
                 }
                 else
                 {
                     if (power != -1 || dbl >= 1E15)
-                        dbl /= s_doublePowers10[-power];
+                        dbl /= DoublePowers10[-power];
                     else
                         power = 0; // didn't scale it
                 }
@@ -1784,7 +1771,7 @@ ReturnZero:
                     power = -power;
                     if (power < 10)
                     {
-                        uint pow10 = s_powers10[power];
+                        uint pow10 = UInt32Powers10[power];
                         ulong low64 = UInt32x32To64((uint)mant, pow10);
                         ulong hi64 = UInt32x32To64((uint)(mant >> 32), pow10);
                         result.Low = (uint)low64;
@@ -1798,7 +1785,7 @@ ReturnZero:
                         // Have a big power of 10.
                         //
                         Debug.Assert(power <= 14);
-                        UInt64x64To128(mant, s_ulongPowers10[power - 1], ref result);
+                        UInt64x64To128(mant, UInt64Powers10[power - 1], ref result);
                     }
                 }
                 else
@@ -1886,9 +1873,9 @@ ReturnZero:
                 const double ds2to64 = 1.8446744073709552e+019;
 
                 double dbl = ((double)value.Low64 +
-                    (double)value.High * ds2to64) / s_doublePowers10[value.Scale];
+                    (double)value.High * ds2to64) / DoublePowers10[value.Scale];
 
-                if (value.IsNegative)
+                if (decimal.IsNegative(value))
                     dbl = -dbl;
 
                 return dbl;
@@ -1920,7 +1907,6 @@ ReturnZero:
             internal static unsafe void VarDecDiv(ref DecCalc d1, ref DecCalc d2)
             {
                 Unsafe.SkipInit(out Buf12 bufQuo);
-                DebugPoison(ref bufQuo);
 
                 uint power;
                 int curScale;
@@ -1985,7 +1971,7 @@ ReturnZero:
                         }
 
                         HaveScale:
-                        power = s_powers10[curScale];
+                        power = UInt32Powers10[curScale];
                         scale += curScale;
 
                         if (IncreaseScale(ref bufQuo, power) != 0)
@@ -2021,7 +2007,6 @@ ReturnZero:
                     // Shift both dividend and divisor left by curScale.
                     //
                     Unsafe.SkipInit(out Buf16 bufRem);
-                    DebugPoison(ref bufRem);
 
                     bufRem.Low64 = d1.Low64 << curScale;
                     bufRem.High64 = (d1.Mid + ((ulong)d1.High << 32)) >> (32 - curScale);
@@ -2068,7 +2053,7 @@ ReturnZero:
                             }
 
                             HaveScale64:
-                            power = s_powers10[curScale];
+                            power = UInt32Powers10[curScale];
                             scale += curScale;
 
                             if (IncreaseScale(ref bufQuo, power) != 0)
@@ -2090,7 +2075,6 @@ ReturnZero:
                         // Start by finishing the shift left by curScale.
                         //
                         Unsafe.SkipInit(out Buf12 bufDivisor);
-                        DebugPoison(ref bufDivisor);
 
                         bufDivisor.Low64 = divisor;
                         bufDivisor.U2 = (uint)((d2.Mid + ((ulong)d2.High << 32)) >> (32 - curScale));
@@ -2140,7 +2124,7 @@ ReturnZero:
                             }
 
                             HaveScale96:
-                            power = s_powers10[curScale];
+                            power = UInt32Powers10[curScale];
                             scale += curScale;
 
                             if (IncreaseScale(ref bufQuo, power) != 0)
@@ -2225,7 +2209,7 @@ ThrowOverflow:
                     // Divisor scale can always be increased to dividend scale for remainder calculation.
                     do
                     {
-                        uint power = scale >= MaxInt32Scale ? TenToPowerNine : s_powers10[scale];
+                        uint power = scale >= MaxInt32Scale ? TenToPowerNine : UInt32Powers10[scale];
                         ulong tmp = UInt32x32To64(d2.Low, power);
                         d2.Low = (uint)tmp;
                         tmp >>= 32;
@@ -2243,7 +2227,6 @@ ThrowOverflow:
                         d1.uflags = d2.uflags;
                         // Try to scale up dividend to match divisor.
                         Unsafe.SkipInit(out Buf12 bufQuo);
-                        DebugPoison(ref bufQuo);
 
                         bufQuo.Low64 = d1.Low64;
                         bufQuo.U2 = d1.High;
@@ -2252,7 +2235,7 @@ ThrowOverflow:
                             int iCurScale = SearchScale(ref bufQuo, DEC_SCALE_MAX + scale);
                             if (iCurScale == 0)
                                 break;
-                            uint power = iCurScale >= MaxInt32Scale ? TenToPowerNine : s_powers10[iCurScale];
+                            uint power = iCurScale >= MaxInt32Scale ? TenToPowerNine : UInt32Powers10[iCurScale];
                             scale += iCurScale;
                             ulong tmp = UInt32x32To64(bufQuo.U0, power);
                             bufQuo.U0 = (uint)tmp;
@@ -2303,7 +2286,6 @@ ThrowOverflow:
                 int shift = BitOperations.LeadingZeroCount(tmp);
 
                 Unsafe.SkipInit(out Buf28 b);
-                DebugPoison(ref b);
 
                 b.Buf24.Low64 = d1.Low64 << shift;
                 b.Buf24.Mid64 = (d1.Mid + ((ulong)d1.High << 32)) >> (32 - shift);
@@ -2314,7 +2296,7 @@ ThrowOverflow:
                 uint high = 3;
                 while (scale < 0)
                 {
-                    uint power = scale <= -MaxInt32Scale ? TenToPowerNine : s_powers10[-scale];
+                    uint power = scale <= -MaxInt32Scale ? TenToPowerNine : UInt32Powers10[-scale];
                     uint* buf = (uint*)&b;
                     ulong tmp64 = UInt32x32To64(b.Buf24.U0, power);
                     b.Buf24.U0 = (uint)tmp64;
@@ -2358,7 +2340,6 @@ ThrowOverflow:
                 else
                 {
                     Unsafe.SkipInit(out Buf12 bufDivisor);
-                    DebugPoison(ref bufDivisor);
 
                     bufDivisor.Low64 = d2.Low64 << shift;
                     bufDivisor.U2 = (uint)((d2.Mid + ((ulong)d2.High << 32)) >> (32 - shift));
@@ -2428,7 +2409,7 @@ ThrowOverflow:
                 }
 
                 {
-                    power = s_powers10[scale];
+                    power = UInt32Powers10[(int)scale];
                     // TODO: https://github.com/dotnet/runtime/issues/5213
                     uint n = d.uhi;
                     if (n == 0)
@@ -2516,7 +2497,7 @@ done:
                 return (uint)num - div * TenToPowerNine;
             }
 
-            private struct PowerOvfl
+            private readonly struct PowerOvfl
             {
                 public readonly uint Hi;
                 public readonly ulong MidLo;

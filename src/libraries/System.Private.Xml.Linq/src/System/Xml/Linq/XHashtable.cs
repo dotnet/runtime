@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Threading;
 using Debug = System.Diagnostics.Debug;
 using Interlocked = System.Threading.Interlocked;
@@ -143,7 +144,7 @@ namespace System.Xml.Linq
             /// </summary>
             public XHashtableState(ExtractKeyDelegate extractKey, int capacity)
             {
-                Debug.Assert((capacity & (capacity - 1)) == 0, "capacity must be a power of 2");
+                Debug.Assert(BitOperations.IsPow2(capacity), "capacity must be a power of 2");
                 Debug.Assert(extractKey != null, "extractKey may not be null");
 
                 // Initialize hash table data structures, with specified maximum capacity
@@ -221,11 +222,10 @@ namespace System.Xml.Linq
                 for (int bucketIdx = 0; bucketIdx < _buckets.Length; bucketIdx++)
                 {
                     int entryIdx = _buckets[bucketIdx];
-                    TValue newValue;
 
                     while (entryIdx > EndOfList)
                     {
-                        newHashtable.TryAdd(_entries[entryIdx].Value, out newValue);
+                        newHashtable.TryAdd(_entries[entryIdx].Value, out _);
 
                         entryIdx = _entries[entryIdx].Next;
                     }

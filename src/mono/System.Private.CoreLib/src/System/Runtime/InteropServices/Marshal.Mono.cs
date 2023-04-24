@@ -1,42 +1,56 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Collections.Generic;
 
 namespace System.Runtime.InteropServices
 {
     public partial class Marshal
     {
+        /// <summary>
+        /// Get the last platform invoke error on the current thread
+        /// </summary>
+        /// <returns>The last platform invoke error</returns>
+        /// <remarks>
+        /// The last platform invoke error corresponds to the error set by either the most recent platform
+        /// invoke that was configured to set the last error or a call to <see cref="SetLastPInvokeError(int)" />.
+        /// </remarks>
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern int GetLastWin32Error();
+        public static extern int GetLastPInvokeError();
 
+        /// <summary>
+        /// Set the last platform invoke error on the current thread
+        /// </summary>
+        /// <param name="error">Error to set</param>
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern void SetLastPInvokeError(int error);
+
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the DestroyStructure<T> overload instead.")]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern IntPtr OffsetOf(Type t, string fieldName);
 
+        [RequiresDynamicCode("Marshalling code for the object might not be available. Use the StructureToPtr<T> overload instead.")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool IsPinnableType(Type type);
 
         internal static bool IsPinnable(object? obj)
         {
             if (obj == null || obj is string)
                 return true;
-            return IsPinnableType(obj.GetType());
-            //Type type = obj.GetType ();
-            //return !type.IsValueType || RuntimeTypeHandle.HasReferences (type as RuntimeType);
+            var type = (obj.GetType() as RuntimeType)!;
+            return !RuntimeTypeHandle.HasReferences (type);
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetLastWin32Error(int error);
 
         private static void PrelinkCore(MethodInfo m)
         {
@@ -53,31 +67,36 @@ namespace System.Runtime.InteropServices
 
         private static void PtrToStructureHelper(IntPtr ptr, object? structure, bool allowValueClasses)
         {
-            if (structure == null)
-                throw new ArgumentNullException(nameof(structure));
+            ArgumentNullException.ThrowIfNull(structure);
+            ArgumentNullException.ThrowIfNull(ptr);
             PtrToStructureInternal(ptr, structure, allowValueClasses);
         }
 
-        private static object PtrToStructureHelper(IntPtr ptr,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-            Type structureType)
-        {
-            object obj = Activator.CreateInstance(structureType)!;
-            PtrToStructureHelper(ptr, obj, true);
-            return obj;
-        }
-
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t);
+        private static extern void GetDelegateForFunctionPointerInternal(QCallTypeHandle t, IntPtr ptr, ObjectHandleOnStack res);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern IntPtr GetFunctionPointerForDelegateInternal(Delegate d);
+
+        private static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, Type t)
+        {
+            RuntimeType rttype = (RuntimeType)t;
+            Delegate? res = null;
+            GetDelegateForFunctionPointerInternal(new QCallTypeHandle(ref rttype), ptr, ObjectHandleOnStack.Create(ref res));
+            return res!;
+        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void PrelinkInternal(MethodInfo m);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int SizeOfHelper(Type t, bool throwIfNotMarshalable);
+        private static extern int SizeOfHelper(QCallTypeHandle t, bool throwIfNotMarshalable);
+
+        private static int SizeOfHelper(Type t, bool throwIfNotMarshalable)
+        {
+            RuntimeType rttype = (RuntimeType)t;
+            return SizeOfHelper(new QCallTypeHandle(ref rttype), throwIfNotMarshalable);
+        }
 
         public static IntPtr GetExceptionPointers()
         {
@@ -99,9 +118,19 @@ namespace System.Runtime.InteropServices
 
         private static Dictionary<(Type, string), ICustomMarshaler>? MarshalerInstanceCache;
 
+#pragma warning disable 8500
+#pragma warning disable 9080
+        private static unsafe void SetInvokeArgs(ref string cookie, IntPtr *params_byref)
+        {
+            ByReference objRef = ByReference.Create(ref cookie);
+            *(ByReference*)params_byref = objRef;
+        }
+#pragma warning restore 9080
+#pragma warning restore 8500
+
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Implementation detail of MarshalAs.CustomMarshaler")]
-        internal static ICustomMarshaler? GetCustomMarshalerInstance(Type type, string cookie)
+        internal static unsafe ICustomMarshaler? GetCustomMarshalerInstance(Type type, string cookie)
         {
             var key = (type, cookie);
 
@@ -127,19 +156,27 @@ namespace System.Runtime.InteropServices
                 }
                 catch (AmbiguousMatchException)
                 {
-                    throw new ApplicationException($"Custom marshaler '{type.FullName}' implements multiple static GetInstance methods that take a single string parameter.");
+                    throw new ApplicationException(SR.Format(SR.CustomMarshaler_MultipleGetInstanceMethods, type.FullName));
                 }
 
                 if ((getInstanceMethod == null) ||
                     (getInstanceMethod.ReturnType != typeof(ICustomMarshaler)))
                 {
-                    throw new ApplicationException($"Custom marshaler '{type.FullName}' does not implement a static GetInstance method that takes a single string parameter and returns an ICustomMarshaler.");
+                    throw new ApplicationException(SR.Format(SR.CustomMarshaler_NoGetInstanceMethod, type.FullName));
+                }
+
+                if (getInstanceMethod.ContainsGenericParameters)
+                {
+                    throw new System.TypeLoadException(SR.Format(SR.CustomMarshaler_UnassignedGenericParams, type.FullName));
                 }
 
                 Exception? exc;
                 try
                 {
-                    result = (ICustomMarshaler?)getInstanceMethod.InternalInvoke(null, new object[] { cookie }, out exc);
+                    IntPtr byrefStorage = default;
+                    IntPtr *pbyrefStorage = &byrefStorage;
+                    SetInvokeArgs(ref cookie, pbyrefStorage);
+                    result = (ICustomMarshaler?)getInstanceMethod.InternalInvoke(null, pbyrefStorage, out exc);
                 }
                 catch (Exception e)
                 {
@@ -156,7 +193,7 @@ namespace System.Runtime.InteropServices
                 }
 
                 if (result == null)
-                    throw new ApplicationException($"A call to GetInstance() for custom marshaler '{type.FullName}' returned null, which is not allowed.");
+                    throw new ApplicationException(SR.Format(SR.CustomMarshaler_NullReturnForGetInstance, type.FullName));
 
                 lock (cache)
                     cache[key] = result;
@@ -167,57 +204,74 @@ namespace System.Runtime.InteropServices
 
         #region PlatformNotSupported
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("GetExceptionCode() may be unavailable in future releases.")]
         public static int GetExceptionCode()
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadByte(Object, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static byte ReadByte(object ptr, int ofs)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadInt16(Object, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static short ReadInt16(object ptr, int ofs)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadInt32(Object, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static int ReadInt32(object ptr, int ofs)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("ReadInt64(Object, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static long ReadInt64(object ptr, int ofs)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteByte(Object, Int32, Byte) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteByte(object ptr, int ofs, byte val)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteInt16(Object, Int32, Int16) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt16(object ptr, int ofs, short val)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteInt32(Object, Int32, Int32) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt32(object ptr, int ofs, int val)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("WriteInt64(Object, Int32, Int64) may be unavailable in future releases.")]
+        [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt64(object ptr, int ofs, long val)
         {
-            // Obsolete
             throw new PlatformNotSupportedException();
         }
 

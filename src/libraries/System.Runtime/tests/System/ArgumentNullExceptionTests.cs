@@ -47,5 +47,39 @@ namespace System.Tests
             Assert.Contains(message, exception.Message);
             Assert.Contains(argumentName, exception.Message);
         }
+
+        [Fact]
+        public static unsafe void ThrowIfNull_NonNull_DoesntThrow()
+        {
+            foreach (object o in new[] { new object(), "", "argument" })
+            {
+                ArgumentNullException.ThrowIfNull(o);
+                ArgumentNullException.ThrowIfNull(o, "paramName");
+            }
+
+            int i = 0;
+            ArgumentNullException.ThrowIfNull(&i);
+            ArgumentNullException.ThrowIfNull(&i, "paramName");
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("name")]
+        public static unsafe void ThrowIfNull_Null_ThrowsArgumentNullException(string paramName)
+        {
+            AssertExtensions.Throws<ArgumentNullException>(paramName, () => ArgumentNullException.ThrowIfNull((object)null, paramName));
+            AssertExtensions.Throws<ArgumentNullException>(paramName, () => ArgumentNullException.ThrowIfNull((void*)null, paramName));
+        }
+
+        [Fact]
+        public static unsafe void ThrowIfNull_UsesArgumentExpression()
+        {
+            object someObject = null;
+            AssertExtensions.Throws<ArgumentNullException>(nameof(someObject), () => ArgumentNullException.ThrowIfNull(someObject));
+
+            byte* somePointer = null;
+            AssertExtensions.Throws<ArgumentNullException>(nameof(somePointer), () => ArgumentNullException.ThrowIfNull(somePointer));
+        }
     }
 }

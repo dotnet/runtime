@@ -10,6 +10,8 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
+namespace Microsoft.WebAssembly.Build.Tasks;
+
 public class WasmLoadAssembliesAndReferences : Task
 {
     [Required]
@@ -76,7 +78,7 @@ public class WasmLoadAssembliesAndReferences : Task
             {
                 if (SkipMissingAssemblies)
                 {
-                    Log.LogWarning($"Loading assembly reference '{aname}' for '{assembly.GetName()}' failed: {ex.Message} Skipping.");
+                    Log.LogWarning(null, "WASM0004", "", "", 0, 0, 0, 0, $"Loading assembly reference '{aname}' for '{assembly.GetName()}' failed: {ex.Message} Skipping.");
                 }
                 else
                 {
@@ -90,7 +92,7 @@ public class WasmLoadAssembliesAndReferences : Task
     }
 }
 
-internal class SearchPathsAssemblyResolver : MetadataAssemblyResolver
+internal sealed class SearchPathsAssemblyResolver : MetadataAssemblyResolver
 {
     private readonly string[] _searchPaths;
 

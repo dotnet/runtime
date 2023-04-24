@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
@@ -59,10 +61,7 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 _extendedProtectionSelectorDelegate = value;
             }
@@ -84,10 +83,7 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.CustomChannelBinding != null)
                 {
                     throw new ArgumentException(SR.net_listener_cannot_set_custom_cbt, nameof(value));
@@ -110,13 +106,11 @@ namespace System.Net
 
         internal void AddPrefix(string uriPrefix)
         {
-            string? registeredPrefix = null;
+            ArgumentNullException.ThrowIfNull(uriPrefix);
+
+            string? registeredPrefix;
             try
             {
-                if (uriPrefix == null)
-                {
-                    throw new ArgumentNullException(nameof(uriPrefix));
-                }
                 CheckDisposed();
                 int i;
                 if (string.Compare(uriPrefix, 0, "http://", 0, 7, StringComparison.OrdinalIgnoreCase) == 0)
@@ -154,26 +148,11 @@ namespace System.Net
                 {
                     throw new ArgumentException(SR.net_listener_host, nameof(uriPrefix));
                 }
-                if (uriPrefix[uriPrefix.Length - 1] != '/')
+                if (!uriPrefix.EndsWith('/'))
                 {
                     throw new ArgumentException(SR.net_listener_slash, nameof(uriPrefix));
                 }
-                StringBuilder registeredPrefixBuilder = new StringBuilder();
-                if (uriPrefix[j] == ':')
-                {
-                    registeredPrefixBuilder.Append(uriPrefix);
-                }
-                else
-                {
-                    registeredPrefixBuilder.Append(uriPrefix, 0, j);
-                    registeredPrefixBuilder.Append(i == 7 ? ":80" : ":443");
-                    registeredPrefixBuilder.Append(uriPrefix, j, uriPrefix.Length - j);
-                }
-                for (i = 0; registeredPrefixBuilder[i] != ':'; i++)
-                {
-                    registeredPrefixBuilder[i] = (char)CaseInsensitiveAscii.AsciiToLower[(byte)registeredPrefixBuilder[i]];
-                }
-                registeredPrefix = registeredPrefixBuilder.ToString();
+                registeredPrefix = CreateRegisteredPrefix(uriPrefix, j, i);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"mapped uriPrefix: {uriPrefix} to registeredPrefix: {registeredPrefix}");
                 if (_state == State.Started)
                 {
@@ -187,6 +166,50 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                 throw;
             }
+
+            static string CreateRegisteredPrefix(string uriPrefix, int j, int i)
+            {
+                int length = uriPrefix.Length;
+                if (uriPrefix[j] != ':')
+                {
+                    length += i == 7 ? ":80".Length : ":443".Length;
+                }
+
+                return string.Create(length, (uriPrefix, j, i), static (destination, state) =>
+                {
+                    if (state.uriPrefix[state.j] == ':')
+                    {
+                        state.uriPrefix.CopyTo(destination);
+                    }
+                    else
+                    {
+                        int indexOfNextCopy = state.j;
+                        state.uriPrefix.AsSpan(0, indexOfNextCopy).CopyTo(destination);
+
+                        if (state.i == 7)
+                        {
+                            ":80".CopyTo(destination.Slice(indexOfNextCopy));
+                            indexOfNextCopy += 3;
+                        }
+                        else
+                        {
+                            ":443".CopyTo(destination.Slice(indexOfNextCopy));
+                            indexOfNextCopy += 4;
+                        }
+
+                        state.uriPrefix.AsSpan(state.j).CopyTo(destination.Slice(indexOfNextCopy));
+                    }
+
+                    int toLowerLength = destination.IndexOf(':');
+                    if (toLowerLength < 0)
+                    {
+                        toLowerLength = destination.Length;
+                    }
+
+                    OperationStatus operationStatus = Ascii.ToLowerInPlace(destination.Slice(0, toLowerLength), out _);
+                    Debug.Assert(operationStatus == OperationStatus.Done);
+                });
+            }
         }
 
         internal bool ContainsPrefix(string uriPrefix) => _uriPrefixes.Contains(uriPrefix);
@@ -197,10 +220,7 @@ namespace System.Net
             {
                 CheckDisposed();
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"uriPrefix: {uriPrefix}");
-                if (uriPrefix == null)
-                {
-                    throw new ArgumentNullException(nameof(uriPrefix));
-                }
+                ArgumentNullException.ThrowIfNull(uriPrefix);
 
                 if (!_uriPrefixes.Contains(uriPrefix))
                 {
@@ -291,10 +311,7 @@ namespace System.Net
 
         internal void CheckDisposed()
         {
-            if (_state == State.Closed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_state == State.Closed, this);
         }
 
         private enum State

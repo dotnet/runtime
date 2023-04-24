@@ -7,11 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     /// <summary>
     /// TraceLogging: Constants and utility functions.
@@ -358,7 +354,9 @@ namespace System.Diagnostics.Tracing
             return result;
         }
 
-        public static Type? FindEnumerableElementType(Type type)
+        public static Type? FindEnumerableElementType(
+            [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.Interfaces)]
+            Type type)
         {
             Type? elementType = null;
 
@@ -391,9 +389,7 @@ namespace System.Diagnostics.Tracing
             return type.IsGenericType && type.GetGenericTypeDefinition() == (Type?)openType;
         }
 
-#if !ES_BUILD_STANDALONE
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource WriteEvent will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
-#endif
         public static TraceLoggingTypeInfo CreateDefaultTypeInfo(
             Type dataType,
             List<Type> recursionCheck)

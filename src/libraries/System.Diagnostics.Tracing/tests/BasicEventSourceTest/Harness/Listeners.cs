@@ -62,11 +62,7 @@ namespace BasicEventSourceTests
         public EventLevel Level;
         public IDictionary<string, string> Args;
 
-        public override string ToString()
-        {
-            return string.Format("<Options Keywords='{0}' Level'{1}' ArgsCount='{2}'",
-                ((ulong)Keywords).ToString("x"), Level, Args.Count);
-        }
+        public override string ToString() => $"<Options Keywords='{(ulong)Keywords:x}' Level'{Level}' ArgsCount='{Args.Count}'";
     }
 
     /// <summary>
@@ -235,7 +231,7 @@ namespace BasicEventSourceTests
 
         private void mListenerEventWritten(object sender, EventWrittenEventArgs eventData)
         {
-            OnEvent(new EventListenerEvent(eventData));
+            OnEvent?.Invoke(new EventListenerEvent(eventData));
         }
 
         private class HelperEventListener : EventListener

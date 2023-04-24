@@ -437,27 +437,6 @@ CONTEXT * GetManagedStoppedCtx(Thread * pThread);
 // Never NULL.
 CONTEXT * GetManagedLiveCtx(Thread * pThread);
 
-
-#undef UtilMessageBoxCatastrophic
-#undef UtilMessageBoxCatastrophicNonLocalized
-#undef UtilMessageBoxCatastrophicVA
-#undef UtilMessageBoxCatastrophicNonLocalizedVA
-#undef UtilMessageBox
-#undef UtilMessageBoxNonLocalized
-#undef UtilMessageBoxVA
-#undef UtilMessageBoxNonLocalizedVA
-#undef WszMessageBox
-#define UtilMessageBoxCatastrophic __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicNonLocalized __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicNonLocalizedVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBox __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxNonLocalized __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxNonLocalizedVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define WszMessageBox __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-
-
 /* ------------------------------------------------------------------------ *
  * Module classes
  * ------------------------------------------------------------------------ */
@@ -472,7 +451,7 @@ typedef DPTR(class DebuggerModule) PTR_DebuggerModule;
 class DebuggerModule
 {
   public:
-    DebuggerModule(Module * pRuntimeModule, DomainFile * pDomainFile, AppDomain * pAppDomain);
+    DebuggerModule(Module * pRuntimeModule, DomainAssembly * pDomainAssembly, AppDomain * pAppDomain);
 
     // Do we have any optimized code in the module?
     // JMC-probes aren't emitted in optimized code,
@@ -504,16 +483,16 @@ class DebuggerModule
     // If the Runtime module is shared, then this gives a common DM.
     // If the runtime module is not shared, then this is an identity function.
     //
-    // The runtime has the notion of "DomainFile", which is 1:1 with DebuggerModule
+    // The runtime has the notion of "DomainAssembly", which is 1:1 with DebuggerModule
     // and thus 1:1 with CordbModule.  The CordbModule hash table on the RS now uses
-    // the DomainFile as the key instead of DebuggerModule.  This is a temporary
+    // the DomainAssembly as the key instead of DebuggerModule.  This is a temporary
     // workaround to facilitate the removal of DebuggerModule.
     // </TODO>
     DebuggerModule * GetPrimaryModule();
-    DomainFile * GetDomainFile()
+    DomainAssembly * GetDomainAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pRuntimeDomainFile;
+        return m_pRuntimeDomainAssembly;
     }
 
     // Called by DebuggerModuleTable to set our primary module
@@ -528,7 +507,7 @@ class DebuggerModule
     DebuggerModule* m_pPrimaryModule;
 
     PTR_Module     m_pRuntimeModule;
-    PTR_DomainFile m_pRuntimeDomainFile;
+    PTR_DomainAssembly m_pRuntimeDomainAssembly;
 
     AppDomain*     m_pAppDomain;
 
@@ -650,7 +629,7 @@ protected:
     // The "debugger data lock" is a very small leaf lock used to protect debugger internal data structures (such
     // as DJIs, DMIs, module table). It is a GC-unsafe-anymode lock and so it can't trigger a GC while being held.
     // It also can't issue any callbacks into the EE or anycode that it does not directly control.
-    // This is a separate lock from the the larger Debugger-lock / Controller lock, which allows regions under those
+    // This is a separate lock from the larger Debugger-lock / Controller lock, which allows regions under those
     // locks to access debugger datastructures w/o blocking each other.
     Crst                  m_DebuggerDataLock;
     HANDLE                m_CtrlCMutex;
@@ -1047,7 +1026,14 @@ protected:
 //     different part of the address space (not on the heap).
 // ------------------------------------------------------------------------ */
 
-#define DBG_MAX_EXECUTABLE_ALLOC_SIZE 48
+constexpr uint64_t DBG_MAX_EXECUTABLE_ALLOC_SIZE=112;
+constexpr uint64_t EXPECTED_CHUNKSIZE=128;
+constexpr uint64_t DEBUGGERHEAP_PAGESIZE=4096;
+constexpr uint64_t CHUNKS_PER_DEBUGGERHEAP=(DEBUGGERHEAP_PAGESIZE / EXPECTED_CHUNKSIZE);
+constexpr uint64_t MAX_CHUNK_MASK=((1ull << CHUNKS_PER_DEBUGGERHEAP) - 1);
+constexpr uint64_t BOOKKEEPING_CHUNK_MASK (1ull << (CHUNKS_PER_DEBUGGERHEAP - 1));
+
+#ifndef DACCESS_COMPILE
 
 // Forward declaration
 struct DebuggerHeapExecutableMemoryPage;
@@ -1060,7 +1046,7 @@ struct DebuggerHeapExecutableMemoryPage;
 // for the page, and the remaining ones are DataChunks and are handed out
 // by the allocator when it allocates memory.
 // ------------------------------------------------------------------------ */
-union DECLSPEC_ALIGN(64) DebuggerHeapExecutableMemoryChunk {
+union DECLSPEC_ALIGN(EXPECTED_CHUNKSIZE) DebuggerHeapExecutableMemoryChunk {
 
     struct DataChunk
     {
@@ -1078,13 +1064,14 @@ union DECLSPEC_ALIGN(64) DebuggerHeapExecutableMemoryChunk {
         DebuggerHeapExecutableMemoryPage *nextPage;
 
         uint64_t pageOccupancy;
+        static_assert(CHUNKS_PER_DEBUGGERHEAP <= sizeof(pageOccupancy) * 8,
+            "Our interfaces assume the chunks in a page can be masken on this field");
 
     } bookkeeping;
 
-    char _alignpad[64];
+    char _alignpad[EXPECTED_CHUNKSIZE];
 };
-
-static_assert(sizeof(DebuggerHeapExecutableMemoryChunk) == 64, "DebuggerHeapExecutableMemoryChunk is expect to be 64 bytes.");
+static_assert(sizeof(DebuggerHeapExecutableMemoryChunk) == EXPECTED_CHUNKSIZE, "DebuggerHeapExecutableMemoryChunk is expect to be EXPECTED_CHUNKSIZE bytes.");
 
 // ------------------------------------------------------------------------ */
 // DebuggerHeapExecutableMemoryPage
@@ -1095,7 +1082,7 @@ static_assert(sizeof(DebuggerHeapExecutableMemoryChunk) == 64, "DebuggerHeapExec
 // about which of the other chunks are used/free as well as a pointer to
 // the next page.
 // ------------------------------------------------------------------------ */
-struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
+struct DECLSPEC_ALIGN(DEBUGGERHEAP_PAGESIZE) DebuggerHeapExecutableMemoryPage
 {
     inline DebuggerHeapExecutableMemoryPage* GetNextPage()
     {
@@ -1105,10 +1092,12 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
     inline void SetNextPage(DebuggerHeapExecutableMemoryPage* nextPage)
     {
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-        chunks[0].bookkeeping.nextPage = nextPage;
+        ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = debuggerHeapPageWriterHolder.GetRW();
+#else
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = this;
+#endif
+        pHeapPageRW->chunks[0].bookkeeping.nextPage = nextPage;
     }
 
     inline uint64_t GetPageOccupancy() const
@@ -1118,46 +1107,56 @@ struct DECLSPEC_ALIGN(4096) DebuggerHeapExecutableMemoryPage
 
     inline void SetPageOccupancy(uint64_t newOccupancy)
     {
+        // Can't unset the bookmark chunk!
+        ASSERT((newOccupancy & BOOKKEEPING_CHUNK_MASK) != 0);
+        ASSERT(newOccupancy <= MAX_CHUNK_MASK);
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-        // Can't unset first bit of occupancy!
-        ASSERT((newOccupancy & 0x8000000000000000) != 0);
-
-        chunks[0].bookkeeping.pageOccupancy = newOccupancy;
+        ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = debuggerHeapPageWriterHolder.GetRW();
+#else
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = this;
+#endif
+        pHeapPageRW->chunks[0].bookkeeping.pageOccupancy = newOccupancy;
     }
 
     inline void* GetPointerToChunk(int chunkNum) const
     {
+        ASSERT(chunkNum >= 0 && (uint)chunkNum < CHUNKS_PER_DEBUGGERHEAP);
         return (char*)this + chunkNum * sizeof(DebuggerHeapExecutableMemoryChunk);
     }
 
     DebuggerHeapExecutableMemoryPage()
     {
+        SetPageOccupancy(BOOKKEEPING_CHUNK_MASK); // only the first bit is set.
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-        SetPageOccupancy(0x8000000000000000); // only the first bit is set.
-        for (uint8_t i = 1; i < sizeof(chunks)/sizeof(chunks[0]); i++)
+        ExecutableWriterHolder<DebuggerHeapExecutableMemoryPage> debuggerHeapPageWriterHolder(this, sizeof(DebuggerHeapExecutableMemoryPage));
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = debuggerHeapPageWriterHolder.GetRW();
+#else
+        DebuggerHeapExecutableMemoryPage *pHeapPageRW = this;
+#endif
+        for (uint8_t i = 1; i < CHUNKS_PER_DEBUGGERHEAP; i++)
         {
             ASSERT(i != 0);
-            chunks[i].data.startOfPage = this;
-            chunks[i].data.chunkNumber = i;
+            pHeapPageRW->chunks[i].data.startOfPage = this;
+            pHeapPageRW->chunks[i].data.chunkNumber = i;
         }
     }
 
 private:
-    DebuggerHeapExecutableMemoryChunk chunks[64];
+    DebuggerHeapExecutableMemoryChunk chunks[CHUNKS_PER_DEBUGGERHEAP];
+    static_assert(sizeof(chunks) == DEBUGGERHEAP_PAGESIZE,
+        "Expected DebuggerHeapExecutableMemoryPage to have DEBUGGERHEAP_PAGESIZE bytes worth of chunks.");
+
 };
+static_assert(sizeof(DebuggerHeapExecutableMemoryPage) == DEBUGGERHEAP_PAGESIZE,
+    "DebuggerHeapExecutableMemoryPage exceeded the expected size.");
 
 // ------------------------------------------------------------------------ */
 // DebuggerHeapExecutableMemoryAllocator class
 // Handles allocation and freeing (and all necessary bookkeeping) for
 // executable memory that the DebuggerHeap class needs. This is especially
 // useful on systems (like SELinux) where having executable code on the
-// heap is explicity disallowed for security reasons.
+// heap is explicitly disallowed for security reasons.
 // ------------------------------------------------------------------------ */
 
 class DebuggerHeapExecutableMemoryAllocator
@@ -1178,13 +1177,15 @@ private:
 
     DebuggerHeapExecutableMemoryPage* AddNewPage();
     bool CheckPageForAvailability(DebuggerHeapExecutableMemoryPage* page, /* _Out_ */ int* chunkToUse);
-    void* ChangePageUsage(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action);
+    void* GetPointerToChunkWithUsageUpdate(DebuggerHeapExecutableMemoryPage* page, int chunkNumber, ChangePageUsageAction action);
 
 private:
     // Linked list of pages that have been allocated
     DebuggerHeapExecutableMemoryPage* m_pages;
     Crst m_execMemAllocMutex;
 };
+
+#endif // DACCESS_COMPILE
 
 // ------------------------------------------------------------------------ *
 // DebuggerHeap class
@@ -1196,6 +1197,8 @@ private:
 #ifdef FEATURE_INTEROP_DEBUGGING
     #define USE_INTEROPSAFE_HEAP
 #endif
+
+class DebuggerHeapExecutableMemoryAllocator;
 
 class DebuggerHeap
 {
@@ -1373,7 +1376,7 @@ private:
 //
 // DebuggerILToNativeMap* m_sequenceMap:   This is the sequence map, which
 //      is actually a collection of IL-Native pairs, where each IL corresponds
-//      to a line of source code.  Each pair is refered to as a sequence map point.
+//      to a line of source code.  Each pair is referred to as a sequence map point.
 //
 // SIZE_T m_lastIL:   last nonEPILOG instruction
 //
@@ -1580,10 +1583,6 @@ public:
                               DWORD *which,
                               BOOL skipPrologs=FALSE);
 
-    // If a method has multiple copies of code (because of EnC or code-pitching),
-    // this returns the DJI corresponding to 'pbAddr'
-    DebuggerJitInfo *GetJitInfoByAddress(const BYTE *pbAddr );
-
     void Init(TADDR newAddress);
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -1752,6 +1751,13 @@ extern "C" void __stdcall SignalHijackCompleteFlare(void);
 extern "C" void __stdcall ExceptionNotForRuntimeFlare(void);
 extern "C" void __stdcall NotifyRightSideOfSyncCompleteFlare(void);
 extern "C" void __stdcall NotifySecondChanceReadyForDataFlare(void);
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, TADDR Rip, TADDR Rsp);
+#else
+#error Platform not supported
+#endif
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 /* ------------------------------------------------------------------------ *
  * Debugger class
@@ -1836,17 +1842,6 @@ public:
     // Send a raw managed debug event over the managed pipeline.
     void SendRawEvent(const DebuggerIPCEvent * pManagedEvent);
 
-    // Message box API for the left side of the debugger. This API handles calls from the
-    // debugger helper thread as well as from normal EE threads. It is the only one that
-    // should be used from inside the debugger left side.
-    int MessageBox(
-                UINT uText,       // Resource Identifier for Text message
-                UINT uCaption,    // Resource Identifier for Caption
-                UINT uType,       // Style of MessageBox
-                BOOL displayForNonInteractive,      // Display even if the process is running non interactive
-                BOOL showFileNameInTitle,           // Flag to show FileName in Caption
-                ...);             // Additional Arguments
-
     void SetEEInterface(EEDebugInterface* i);
     void StopDebugger(void);
     BOOL IsStopped(void)
@@ -1869,10 +1864,9 @@ public:
                     DWORD dwModuleName,
                     Assembly *pAssembly,
                     AppDomain *pAppDomain,
-                    DomainFile * pDomainFile,
+                    DomainAssembly * pDomainAssembly,
                     BOOL fAttaching);
-    void LoadModuleFinished(Module* pRuntimeModule, AppDomain * pAppDomain);
-    DebuggerModule * AddDebuggerModule(DomainFile * pDomainFile);
+    DebuggerModule * AddDebuggerModule(DomainAssembly * pDomainAssembly);
 
 
     void UnloadModule(Module* pRuntimeModule,
@@ -1913,7 +1907,8 @@ public:
     bool FirstChanceNativeException(EXCEPTION_RECORD *exception,
                                T_CONTEXT *context,
                                DWORD code,
-                               Thread *thread);
+                               Thread *thread,
+                               BOOL fIsVEH = TRUE);
 
     bool IsJMCMethod(Module* pModule, mdMethodDef tkMethod);
 
@@ -1973,7 +1968,7 @@ public:
                              unsigned int *cILOffsets, DWORD **pILOffsets);
     void getBoundaries(MethodDesc * ftn,
                        unsigned int *cILOffsets, DWORD **pILOffsets,
-                       ICorDebugInfo::BoundaryTypes* implictBoundaries);
+                       ICorDebugInfo::BoundaryTypes* implicitBoundaries);
 
     void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
@@ -2045,8 +2040,8 @@ public:
 
     bool HandleIPCEvent(DebuggerIPCEvent* event);
 
-    DebuggerModule * LookupOrCreateModule(VMPTR_DomainFile vmDomainFile);
-    DebuggerModule * LookupOrCreateModule(DomainFile * pDomainFile);
+    DebuggerModule * LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly);
+    DebuggerModule * LookupOrCreateModule(DomainAssembly * pDomainAssembly);
     DebuggerModule * LookupOrCreateModule(Module * pModule, AppDomain * pAppDomain);
 
     HRESULT GetAndSendInterceptCommand(DebuggerIPCEvent *event);
@@ -2178,7 +2173,7 @@ public:
     void SendInterceptExceptionComplete(Thread *thread);
 
     HRESULT AttachDebuggerForBreakpoint(Thread *thread,
-                                        __in_opt WCHAR *wszLaunchReason);
+                                        _In_opt_ WCHAR *wszLaunchReason);
 
 
     void ThreadIsSafe(Thread *thread);
@@ -2261,13 +2256,6 @@ private:
     // Helper to serialize metadata that has been updated by the profiler into
     // a buffer so that it can be read out-of-proc
     BYTE* SerializeModuleMetaData(Module * pModule, DWORD * countBytes);
-
-    /// Wrapps fusion Module FusionCopyPDBs.
-    HRESULT CopyModulePdb(Module* pRuntimeModule);
-
-    // When attaching to a process, this is called to enumerate all of the
-    // AppDomains currently in the process and allow modules pdbs to be copied over to the shadow dir maintaining out V2 in-proc behaviour.
-    HRESULT IterateAppDomainsForPdbs();
 
 #ifndef DACCESS_COMPILE
 public:
@@ -2359,7 +2347,8 @@ public:
 
     LONG FirstChanceSuspendHijackWorker(
                              T_CONTEXT *pContext,
-                             EXCEPTION_RECORD *pExceptionRecord);
+                             EXCEPTION_RECORD *pExceptionRecord,
+                             BOOL fIsVEH = TRUE);
     static void GenericHijackFunc(void);
     static void SecondChanceHijackFunc(void);
     static void SecondChanceHijackFuncWorker(void);
@@ -2401,8 +2390,8 @@ public:
 
     void SendLogSwitchSetting (int iLevel,
                                int iReason,
-                               __in_z LPCWSTR pLogSwitchName,
-                               __in_z LPCWSTR pParentSwitchName);
+                               _In_z_ LPCWSTR pLogSwitchName,
+                               _In_z_ LPCWSTR pParentSwitchName);
 
     bool IsLoggingEnabled (void)
     {
@@ -2414,7 +2403,7 @@ public:
     }
 
     // send a custom debugger notification to the RS
-    void SendCustomDebuggerNotification(Thread * pThread, DomainFile * pDomain, mdTypeDef classToken);
+    void SendCustomDebuggerNotification(Thread * pThread, DomainAssembly * pDomain, mdTypeDef classToken);
 
     // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
     void SendMDANotification(
@@ -2481,10 +2470,10 @@ public:
                                  SIZE_T                     *rgVal2,
                                  BYTE                      **rgpVCs);
 
-    BOOL IsThreadContextInvalid(Thread *pThread);
+    BOOL IsThreadContextInvalid(Thread *pThread, T_CONTEXT *pCtx);
 
     // notification for SQL fiber debugging support
-    void CreateConnection(CONNID dwConnectionId, __in_z WCHAR *wzName);
+    void CreateConnection(CONNID dwConnectionId, _In_z_ WCHAR *wzName);
     void DestroyConnection(CONNID dwConnectionId);
     void ChangeConnection(CONNID dwConnectionId);
 
@@ -2851,6 +2840,9 @@ private:
 #if defined(HAVE_GCCOVER) && defined(TARGET_AMD64)
         kRedirectedForGCStress,
 #endif // HAVE_GCCOVER && TARGET_AMD64
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+        kRedirectedForApcActivation,
+#endif // FEATURE_SPECIAL_USER_MODE_APC
         kMaxHijackFunctions,
     };
 
@@ -2927,6 +2919,11 @@ public:
 private:
     HANDLE GetGarbageCollectionBlockerEvent() { return  GetLazyData()->m_garbageCollectionBlockerEvent; }
 
+private:
+    BOOL m_fOutOfProcessSetContextEnabled;
+public:
+    void SendSetThreadContextNeeded(CONTEXT *context);
+    BOOL IsOutOfProcessSetContextEnabled();
 };
 
 
@@ -2948,10 +2945,15 @@ void RedirectedHandledJITCaseForDbgThreadControl_StubEnd();
 void RedirectedHandledJITCaseForUserSuspend_Stub();
 void RedirectedHandledJITCaseForUserSuspend_StubEnd();
 
-#if defined(HAVE_GCCOVER) && defined(TARGET_AMD64)
+#if defined(HAVE_GCCOVER) && defined(TARGET_AMD64) && defined(USE_REDIRECT_FOR_GCSTRESS)
 void RedirectedHandledJITCaseForGCStress_Stub();
 void RedirectedHandledJITCaseForGCStress_StubEnd();
 #endif // HAVE_GCCOVER && TARGET_AMD64
+
+#ifdef FEATURE_SPECIAL_USER_MODE_APC
+void NTAPI ApcActivationCallbackStub(ULONG_PTR Parameter);
+void ApcActivationCallbackStubEnd();
+#endif // FEATURE_SPECIAL_USER_MODE_APC
 };
 
 
@@ -3245,7 +3247,7 @@ struct DebuggerMethodInfoEntry
 };
 
 // class DebuggerMethodInfoTable:   Hash table to hold all the non-JIT related
-// info for each method we see.  The JIT infos live in a seperate table
+// info for each method we see.  The JIT infos live in a separate table
 // keyed by MethodDescs - there may be multiple
 // JITted realizations of each MethodDef, e.g. under different generic
 // assumptions.  Hangs off of the Debugger object.
@@ -3420,7 +3422,7 @@ public:
     TypeHandle                         m_ownerTypeHandle;
     DebuggerEvalBreakpointInfoSegment* m_bpInfoSegment;
 
-    DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException);
+    DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX);
 
     bool Init()
     {
@@ -3485,9 +3487,6 @@ public:
 
 class InteropSafe {};
 extern InteropSafe interopsafe;
-
-class InteropSafeExecutable {};
-extern InteropSafeExecutable interopsafeEXEC;
 
 #ifndef DACCESS_COMPILE
 inline void * __cdecl operator new(size_t n, const InteropSafe&)
@@ -3631,62 +3630,6 @@ template<class T> void DeleteInteropSafe(T *p)
     }
 }
 
-inline void * __cdecl operator new(size_t n, const InteropSafeExecutable&)
-{
-    CONTRACTL
-    {
-        THROWS; // throw on OOM
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(g_pDebugger != NULL);
-    void *result = g_pDebugger->GetInteropSafeExecutableHeap()->Alloc((DWORD)n);
-    if (result == NULL) {
-        ThrowOutOfMemory();
-    }
-    return result;
-}
-
-inline void * __cdecl operator new(size_t n, const InteropSafeExecutable&, const NoThrow&) throw()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(g_pDebugger != NULL);
-    DebuggerHeap * pHeap = g_pDebugger->GetInteropSafeExecutableHeap_NoThrow();
-    if (pHeap == NULL)
-    {
-        return NULL;
-    }
-    void *result = pHeap->Alloc((DWORD)n);
-    return result;
-}
-
-// Note: there is no C++ syntax for manually invoking this, but if a constructor throws an exception I understand that
-// this delete operator will be invoked automatically to destroy the object.
-inline void __cdecl operator delete(void *p, const InteropSafeExecutable&)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (p != NULL)
-    {
-        _ASSERTE(g_pDebugger != NULL);
-        DebuggerHeap * pHeap = g_pDebugger->GetInteropSafeExecutableHeap_NoThrow();
-        _ASSERTE(pHeap != NULL); // should have had heap around if we're deleting
-        pHeap->Free(p);
-    }
-}
-
 //
 // Interop safe delete to match the interop safe new's above. There is no C++ syntax for actually invoking those interop
 // safe delete operators above, so we use this method to accomplish the same thing.
@@ -3732,9 +3675,6 @@ void DbgLogHelper(DebuggerIPCEventType event);
 // Helpers for cleanup
 // These are various utility functions, mainly where we factor out code.
 //-----------------------------------------------------------------------------
-void GetPidDecoratedName(__out_ecount(cBufSizeInChars) WCHAR * pBuf,
-                         int cBufSizeInChars,
-                         const WCHAR * pPrefix);
 
 // Specify type of Win32 event
 enum EEventResetType {
@@ -3925,7 +3865,7 @@ HANDLE OpenWin32EventOrThrow(
 bool DbgIsSpecialILOffset(DWORD offset);
 
 #if !defined(TARGET_X86)
-void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, T_CONTEXT* pOriginalContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
+void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
 #endif
 
 #endif /* DEBUGGER_H_ */

@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -14,6 +13,8 @@ namespace System.Linq.Expressions.Compiler
 {
     internal sealed partial class LambdaCompiler
     {
+        private static readonly FieldInfo s_callSiteTargetField = typeof(CallSite<>).GetField("Target")!;
+
         [Flags]
         internal enum CompilationFlags
         {
@@ -528,10 +529,7 @@ namespace System.Linq.Expressions.Compiler
                     WriteBack? wb = EmitAddressWriteBack(argument, type);
                     if (wb != null)
                     {
-                        if (writeBacks == null)
-                        {
-                            writeBacks = new List<WriteBack>();
-                        }
+                        writeBacks ??= new List<WriteBack>();
 
                         writeBacks.Add(wb);
                     }
@@ -613,13 +611,10 @@ namespace System.Linq.Expressions.Compiler
             EmitWriteBack(wb);
         }
 
-        [DynamicDependency("Target", typeof(CallSite<>))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The 'Target' field will be preserved by the DynamicDependency.")]
         private static FieldInfo GetCallSiteTargetField(Type siteType)
         {
             Debug.Assert(siteType.IsGenericType && siteType.GetGenericTypeDefinition() == typeof(CallSite<>));
-            return siteType.GetField("Target")!;
+            return (FieldInfo)siteType.GetMemberWithSameMetadataDefinitionAs(s_callSiteTargetField);
         }
 
         private void EmitNewExpression(Expression expr)
@@ -931,11 +926,6 @@ namespace System.Linq.Expressions.Compiler
             }
         }
 
-        private void EmitDebugInfoExpression(Expression expr)
-        {
-            return;
-        }
-
         #region ListInit, MemberInit
 
         private void EmitListInitExpression(Expression expr)
@@ -1171,7 +1161,7 @@ namespace System.Linq.Expressions.Compiler
                         EmitMethodCallExpression(mc);
                         if (resultType.IsNullableType() && !TypeUtils.AreEquivalent(resultType, mc.Type))
                         {
-                            ConstructorInfo ci = TypeUtils.GetNullableConstructor(resultType, mc.Type);
+                            ConstructorInfo ci = TypeUtils.GetNullableConstructor(resultType);
                             _ilg.Emit(OpCodes.Newobj, ci);
                         }
                         _ilg.Emit(OpCodes.Br_S, exit);
@@ -1275,7 +1265,7 @@ namespace System.Linq.Expressions.Compiler
                         EmitMethodCallExpression(mc);
                         if (resultType.IsNullableType() && !TypeUtils.AreEquivalent(resultType, mc.Type))
                         {
-                            ConstructorInfo ci = TypeUtils.GetNullableConstructor(resultType, mc.Type);
+                            ConstructorInfo ci = TypeUtils.GetNullableConstructor(resultType);
                             _ilg.Emit(OpCodes.Newobj, ci);
                         }
                         _ilg.Emit(OpCodes.Br_S, exit);

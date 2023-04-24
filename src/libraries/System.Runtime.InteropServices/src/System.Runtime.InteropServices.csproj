@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Runtime\CompilerServices\IDispatchConstantAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\IUnknownConstantAttribute.cs" />
@@ -28,15 +29,34 @@
     <Compile Include="System\Runtime\InteropServices\ComUnregisterFunctionAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ExporterEventKind.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
-    <Compile Include="System\Runtime\InteropServices\IDispatchImplAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\IDispatchImplType.cs" />
     <Compile Include="System\Runtime\InteropServices\ImportedFromTypeLibAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ManagedToNativeComInteropStubAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\ComExposedClassAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\ComObject.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\DefaultCaching.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\DefaultIUnknownInterfaceDetailsStrategy.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\ExceptionAsDefaultMarshaller.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\ExceptionAsHResultMarshaller.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\ExceptionAsNaNMarshaller.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\ExceptionAsVoidMarshaller.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\FreeThreadedStrategy.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\GeneratedComClassAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\GeneratedComInterfaceAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\IComExposedClass.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\IComExposedDetails.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\IIUnknownCacheStrategy.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\IIUnknownDerivedDetails.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\IIUnknownInterfaceDetailsStrategy.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\IIUnknownInterfaceType.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\IIUnknownStrategy.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\IUnknownDerivedAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\IUnmanagedVirtualMethodTableProvider.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\StrategyBasedComWrappers.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\VirtualMethodTableInfo.cs" />
     <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationClassContext.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationConnectionType.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironment.cs" />
-    <Compile Include="System\Runtime\InteropServices\SetWin32ContextInIDispatchAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibFuncAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibFuncFlags.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibImportClassAttribute.cs" />
@@ -46,8 +66,12 @@
     <Compile Include="System\Runtime\InteropServices\TypeLibVarFlags.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibVersionAttribute.cs" />
     <Compile Include="System\Security\SecureStringMarshal.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
   </ItemGroup>
+
 </Project>

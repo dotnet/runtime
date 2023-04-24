@@ -81,12 +81,6 @@ typedef target_mword SgenDescriptor;
 //#define SGEN_CHECK_UPDATE_REFERENCE
 
 /*
- * Define this and use the "xdomain-checks" MONO_GC_DEBUG option to
- * have cross-domain checks in the write barrier.
- */
-//#define XDOMAIN_CHECKS_IN_WBARRIER
-
-/*
  * Define this to get number of objects marked information in the
  * concurrent GC DTrace probes.  Has a small performance impact, so
  * it's disabled by default.
@@ -105,13 +99,11 @@ typedef target_mword SgenDescriptor;
 #ifndef SGEN_HEAVY_BINARY_PROTOCOL
 #ifndef HEAVY_STATISTICS
 #define MANAGED_ALLOCATION
-#ifndef XDOMAIN_CHECKS_IN_WBARRIER
 #define MANAGED_WBARRIER
 #endif
 #endif
-#endif
 
-#if defined (HOST_WASM)
+#if defined (HOST_WASM) || defined(TARGET_WASM)
 #define DEFAULT_MAJOR SGEN_MAJOR_SERIAL
 #define DEFAULT_SWEEP_MODE SGEN_SWEEP_SERIAL
 #elif defined(HAVE_CONC_GC_AS_DEFAULT)
@@ -175,7 +167,7 @@ typedef target_mword SgenDescriptor;
  *
  * Increasing this value speeds up allocation but will cause more frequent nursery collections as less space will be used.
  * Descreasing this value will cause allocation to be slower since we'll have to cycle thru more fragments.
- * 512 annedoctally keeps wastage under control and doesn't impact allocation performance too much. 
+ * 512 annedoctally keeps wastage under control and doesn't impact allocation performance too much.
 */
 #define SGEN_MAX_NURSERY_WASTE 512
 
@@ -209,7 +201,7 @@ typedef target_mword SgenDescriptor;
 #define SGEN_DEFAULT_ALLOWANCE_HEAP_SIZE_RATIO 0.33
 
 /*
- * Default ratio of memory we want to release in a major collection in relation to the the current heap size.
+ * Default ratio of memory we want to release in a major collection in relation to the current heap size.
  *
  * A major collection target is to free a given amount of memory. This amount is a ratio of the major heap size.
  *

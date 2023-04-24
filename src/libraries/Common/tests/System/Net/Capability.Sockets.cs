@@ -25,7 +25,7 @@ namespace System.Net.Test.Common
 
         public static bool? SocketsReuseUnicastPortSupport()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 RTL_OSVERSIONINFOW v = default(RTL_OSVERSIONINFOW);
                 v.dwOSVersionInfoSize = (uint)Marshal.SizeOf<RTL_OSVERSIONINFOW>();

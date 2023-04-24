@@ -14,16 +14,19 @@
 .assembly extern Microsoft.VisualBasic
 {
 }
-.assembly 'test'
+.assembly 'b46292'
 {
 }
-.module 'test.exe'
+.assembly extern xunit.core {}
 // MVID: {74C704CE-5E25-4072-A5C7-A9DD14614D82}
 .class private auto ansi Mod1
        extends [mscorlib]System.Object
 {
   .method public static void Main() il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     // Code size       26 (0x1a)
     .maxstack  1
     .locals init (class c1 V_0)
@@ -72,11 +75,14 @@
 
 } // end of class 'c1'
 
-.class private auto ansi _vbProject
+.class public auto ansi _vbProject
        extends [mscorlib]System.Object
 {
-  .method public static int32  _main(class [mscorlib]System.String[] _s) il managed
+  .method public static int32  _main() il managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       6 (0x6)
     .maxstack  8

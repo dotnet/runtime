@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace System.Net.NetworkInformation
 {
@@ -15,7 +16,7 @@ namespace System.Net.NetworkInformation
         private readonly IPInterfaceStatisticsTable _table;
 
         // From /sys/class/net/<interface>/tx_queue_len
-        private int _transmitQueueLength;
+        private readonly int _transmitQueueLength;
 
         public LinuxIPInterfaceStatistics(string name)
         {
@@ -35,10 +36,12 @@ namespace System.Net.NetworkInformation
 
         public override long IncomingPacketsWithErrors { get { return _table.ErrorsReceived; } }
 
+        [UnsupportedOSPlatform("linux")]
         public override long IncomingUnknownProtocolPackets { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long NonUnicastPacketsReceived { get { return _table.MulticastFramesReceived; } }
 
+        [UnsupportedOSPlatform("linux")]
         public override long NonUnicastPacketsSent { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long OutgoingPacketsDiscarded { get { return _table.OutgoingPacketsDropped; } }

@@ -82,8 +82,8 @@ namespace System.Runtime.CompilerServices
         /// <returns>The new CallSite.</returns>
         public static CallSite Create(Type delegateType, CallSiteBinder binder)
         {
-            ContractUtils.RequiresNotNull(delegateType, nameof(delegateType));
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(delegateType);
+            ArgumentNullException.ThrowIfNull(binder);
             if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw System.Linq.Expressions.Error.TypeMustBeDerivedFromSystemDelegate();
 
             CacheDict<Type, Func<CallSiteBinder, CallSite>>? ctors = s_siteCtors;
@@ -171,7 +171,7 @@ namespace System.Runtime.CompilerServices
         {
         }
 
-        internal CallSite<T> CreateMatchMaker()
+        internal static CallSite<T> CreateMatchMaker()
         {
             return new CallSite<T>();
         }
@@ -209,7 +209,7 @@ namespace System.Runtime.CompilerServices
         public static CallSite<T> Create(CallSiteBinder binder)
         {
             if (!typeof(T).IsSubclassOf(typeof(MulticastDelegate))) throw System.Linq.Expressions.Error.TypeMustBeDerivedFromSystemDelegate();
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            ArgumentNullException.ThrowIfNull(binder);
             return new CallSite<T>(binder);
         }
 
@@ -221,18 +221,11 @@ namespace System.Runtime.CompilerServices
             return GetUpdateDelegate(ref s_cachedUpdate);
         }
 
-        private T GetUpdateDelegate(ref T? addr)
-        {
-            if (addr == null)
-            {
-                // reduce creation cost by not using Interlocked.CompareExchange.  Calling I.CE causes
-                // us to spend 25% of our creation time in JIT_GenericHandle.  Instead we'll rarely
-                // create 2 delegates with no other harm caused.
-                addr = MakeUpdateDelegate();
-            }
-            return addr;
-        }
-
+        private T GetUpdateDelegate(ref T? addr) =>
+            // reduce creation cost by not using Interlocked.CompareExchange.  Calling I.CE causes
+            // us to spend 25% of our creation time in JIT_GenericHandle.  Instead we'll rarely
+            // create 2 delegates with no other harm caused.
+            addr ??= MakeUpdateDelegate();
 
         private const int MaxRules = 10;
 
@@ -279,24 +272,24 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-#if FEATURE_COMPILE
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-            Justification = "UpdateDelegates methods don't have ILLink annotations.")]
-#endif
         internal T MakeUpdateDelegate()
         {
-#if !FEATURE_COMPILE
             Type target = typeof(T);
             MethodInfo invoke = target.GetInvokeMethod();
+
+            if (System.Linq.Expressions.LambdaExpression.CanCompileToIL
+                && target.IsGenericType && IsSimpleSignature(invoke, out Type[] args))
+            {
+                return MakeUpdateDelegateWhenCanCompileToIL();
+            }
 
             s_cachedNoMatch = CreateCustomNoMatchDelegate(invoke);
             return CreateCustomUpdateDelegate(invoke);
-#else
-            Type target = typeof(T);
-            Type[] args;
-            MethodInfo invoke = target.GetInvokeMethod();
 
-            if (target.IsGenericType && IsSimpleSignature(invoke, out args))
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+                Justification = "UpdateDelegates methods don't have ILLink annotations.")]
+            T MakeUpdateDelegateWhenCanCompileToIL()
             {
                 MethodInfo? method = null;
                 MethodInfo? noMatchMethod = null;
@@ -322,14 +315,12 @@ namespace System.Runtime.CompilerServices
                     s_cachedNoMatch = (T)(object)noMatchMethod!.MakeGenericMethod(args).CreateDelegate(target);
                     return (T)(object)method.MakeGenericMethod(args).CreateDelegate(target);
                 }
-            }
 
-            s_cachedNoMatch = CreateCustomNoMatchDelegate(invoke);
-            return CreateCustomUpdateDelegate(invoke);
-#endif
+                s_cachedNoMatch = CreateCustomNoMatchDelegate(invoke);
+                return CreateCustomUpdateDelegate(invoke);
+            }
         }
 
-#if FEATURE_COMPILE
         private static bool IsSimpleSignature(MethodInfo invoke, out Type[] sig)
         {
             ParameterInfo[] pis = invoke.GetParametersCached();
@@ -354,7 +345,6 @@ namespace System.Runtime.CompilerServices
             sig = args;
             return supported;
         }
-#endif
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
             Justification = "CallSiteOps methods don't have trimming annotations.")]

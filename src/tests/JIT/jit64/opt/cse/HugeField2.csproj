@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <GCStressIncompatible>true</GCStressIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- ilasm round-trip test failure, see https://github.com/dotnet/runtime/issues/38529 -->
-    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Full</DebugType>

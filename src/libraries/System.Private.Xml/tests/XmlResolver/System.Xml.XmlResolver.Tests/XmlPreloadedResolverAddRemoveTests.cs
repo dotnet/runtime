@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml.Resolvers;
-using System.Text;
 using System.IO;
+using System.Xml.Resolvers;
 using Xunit;
 
-namespace System.Xml.XmlResolver.Tests
+namespace System.Xml.XmlResolverTests
 {
     public class XmlPreloadedResolverAddRemoveTests
     {
@@ -40,7 +39,7 @@ namespace System.Xml.XmlResolver.Tests
         {
             var xmlResolver = new XmlPreloadedResolver(XmlKnownDtds.Xhtml10);
 
-            byte[] data = Encoding.ASCII.GetBytes("hello world");
+            byte[] data = "hello world"u8.ToArray();
             MemoryStream stream = new MemoryStream(data);
             xmlResolver.Add(new Uri("-//Sample//URI//For Testing", UriKind.RelativeOrAbsolute), stream);
             Stream result = xmlResolver.GetEntity(new Uri("-//Sample//URI//For Testing", UriKind.RelativeOrAbsolute),
@@ -70,7 +69,7 @@ namespace System.Xml.XmlResolver.Tests
         public void XmlResolverRemoveWithValidData()
         {
             var xmlResolver = new XmlPreloadedResolver(XmlKnownDtds.Xhtml10);
-            byte[] data = Encoding.ASCII.GetBytes("hello world");
+            byte[] data = "hello world"u8.ToArray();
             MemoryStream stream = new MemoryStream(data);
             xmlResolver.Add(new Uri("-//W3C//DTD XHTML 1.0 Transitional//EN", UriKind.RelativeOrAbsolute), stream);
             xmlResolver.Remove(new Uri("-//W3C//DTD XHTML 1.0 Transitional//EN", UriKind.RelativeOrAbsolute));

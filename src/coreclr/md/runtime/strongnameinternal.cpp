@@ -19,7 +19,7 @@
 //   cbKey - size in bytes of pbKey
 //
 
-bool StrongNameIsEcmaKey(__in_ecount(cbKey) const BYTE *pbKey, DWORD cbKey)
+bool StrongNameIsEcmaKey(_In_reads_(cbKey) const BYTE *pbKey, DWORD cbKey)
 {
     CONTRACTL
     {
@@ -68,7 +68,7 @@ bool StrongNameIsEcmaKey(const PublicKeyBlob &keyPublicKey)
 //   cbBuffer     - size of pbBuffer
 //
 
-bool StrongNameIsValidPublicKey(__in_ecount(cbBuffer) const BYTE *pbBuffer, DWORD cbBuffer)
+bool StrongNameIsValidPublicKey(_In_reads_(cbBuffer) const BYTE *pbBuffer, DWORD cbBuffer)
 {
     CONTRACTL
     {
@@ -181,7 +181,7 @@ DWORD StrongNameSizeOfPublicKey(const PublicKeyBlob &keyPublicKey)
 // We allow a special abbreviated form of the Microsoft public key (16 bytes
 // long: 0 for both alg ids, 4 for key length and 4 bytes of 0 for the key
 // itself). This allows us to build references to system libraries that are
-// platform neutral (so a 3rd party can build mscorlib replacements). The
+// platform neutral (so a 3rd party can build SPCL replacements). The
 // special zero PK is just shorthand for the local runtime's real system PK,
 // which is always used to perform the signature verification, so no security
 // hole is opened by this. Therefore we need to store a copy of the real PK (for
@@ -290,7 +290,7 @@ HRESULT StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] pu
     // Check that the blob type is PUBLICKEYBLOB.
     pPublicKey = (PublicKeyBlob*) pbPublicKeyBlob;
 
-    if (pPublicKey->PublicKey + GET_UNALIGNED_VAL32(&pPublicKey->cbPublicKey) < pPublicKey->PublicKey) {
+    if (GET_UNALIGNED_VAL32(&pPublicKey->cbPublicKey) > cbPublicKeyBlob) {
         hr = CORSEC_E_INVALID_PUBLICKEY;
         goto Error;
     }

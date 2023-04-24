@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Numerics.Vectors { }
 .assembly GitHub_21761 { }
+.assembly extern xunit.core {}
 
 // Some basic tests to ensure that the JIT handles non-zero
 // initialization correctly.
@@ -170,7 +171,7 @@ FAIL:
     .field public float32 Z
 }
 
-// Make sure that the JIT produces an appropiate floating point constant.
+// Make sure that the JIT produces an appropriate floating point constant.
 // JIT's internal representation uses doubles to store constants, even
 // when constants are float-typed. This means that the JIT should first
 // create a float value having the required bit pattern and then convert
@@ -245,7 +246,7 @@ FAIL:
 // Non-zero SIMD constants are not supported so field by field initialization
 // should not be attempted.
 
-.class sequential sealed Wrapper extends [System.Runtime]System.ValueType
+.class public sequential sealed Wrapper extends [System.Runtime]System.ValueType
 {
     .field public valuetype [System.Numerics.Vectors]System.Numerics.Vector4 Value
 }
@@ -275,8 +276,13 @@ FAIL:
     ret
 }
 
-.method hidebysig static int32 Main() cil managed
+.class public auto ansi Test
 {
+.method public hidebysig static int32 Main() cil managed
+{
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (valuetype Point a)
 
@@ -306,7 +312,7 @@ FAIL:
 
     call bool ObjRefInitBlk()
     brfalse FAIL
-    
+
     call bool SimdInitBlk()
     brfalse FAIL
 
@@ -315,4 +321,5 @@ FAIL:
  FAIL:
     ldc.i4 1
     ret
+}
 }

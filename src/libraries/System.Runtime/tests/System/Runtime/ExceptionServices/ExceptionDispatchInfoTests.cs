@@ -24,7 +24,7 @@ namespace System.Runtime.ExceptionServices.Tests
             for (int i = 0; i < 3; i++)
             {
                 Assert.Same(e, Assert.Throws<FormatException>(() => ExceptionDispatchInfo.Throw(e)));
-                Assert.Equal(i, Regex.Matches(e.StackTrace, RethrowMessageSubstring).Count);
+                Assert.Equal(i, Regex.Count(e.StackTrace, RethrowMessageSubstring));
             }
         }
 
@@ -53,6 +53,7 @@ namespace System.Runtime.ExceptionServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public static void SetCurrentStackTrace_IncludedInExceptionStackTrace()
         {
             Exception e;

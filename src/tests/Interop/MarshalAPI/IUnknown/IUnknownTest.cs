@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Security;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
-using TestLibrary;
+using Xunit;
 
 #pragma warning disable 618
 
@@ -213,7 +213,7 @@ public class IUnknownMarshalingTest
         return true;
     }
 
-    public static int Main(String[] unusedArgs)
+    public static int Main()
     {
         IUnknownMarshalingTest testObj = new IUnknownMarshalingTest(); 
         testObj.Initialize();

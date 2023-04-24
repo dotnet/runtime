@@ -3,12 +3,14 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Security.Tests
 {
@@ -18,9 +20,10 @@ namespace System.Net.Security.Tests
     {
         [Theory]
         [MemberData(nameof(HostNameData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
         {
-            X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
+            using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
             await WithVirtualConnection(async (server, client) =>
                 {
@@ -54,7 +57,7 @@ namespace System.Net.Security.Tests
         [MemberData(nameof(HostNameData))]
         public async Task SslStream_ServerCallbackAndLocalCertificateSelectionSet_Throws(string hostName)
         {
-            X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
+            using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
             int timesCallbackCalled = 0;
 
@@ -93,11 +96,14 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(HostNameData))]
         public async Task SslStream_ServerCallbackNotSet_UsesLocalCertificateSelection(string hostName)
         {
-            X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
+            if (PlatformDetection.IsAndroid && hostName.ToCharArray().Any(c => !char.IsAscii(c)))
+                throw new SkipTestException("Android does not support non-ASCII host names");
+
+            using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
 
             int timesCallbackCalled = 0;
 
@@ -133,7 +139,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", RuntimeConfiguration.Checked)]
+        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", ~RuntimeConfiguration.Release)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/131", TestRuntimes.Mono)] // System.Net.Tests are flaky and/or long running
         public async Task SslStream_NoSniFromClient_CallbackReturnsNull()
         {
@@ -169,6 +175,113 @@ namespace System.Net.Security.Tests
             {
                 return true;
             });
+        }
+        [Theory]
+        [InlineData("127.0.0.1")]
+        [InlineData("::1")]
+        [InlineData("2001:11:22::1")]
+        [InlineData("fe80::9c3a:b64d:6249:1de8%2")]
+        [InlineData("fe80::9c3a:b64d:6249:1de8")]
+        public async Task SslStream_IpLiteral_NotSend(string target)
+        {
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+            {
+                    TargetHost = target,
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true,
+            };
+            SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
+            {
+                ServerCertificate = Configuration.Certificates.GetServerCertificate(),
+            };
+
+            await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions, default),
+                        server.AuthenticateAsServerAsync(serverOptions, default));
+
+            Assert.Equal(string.Empty, server.TargetHostName);
+        }
+
+        [Theory]
+        [InlineData("\u00E1b\u00E7d\u00EB.com")]
+        [InlineData("\u05D1\u05F1.com")]
+        [InlineData("\u30B6\u30C7\u30D8.com")]
+        public async Task SslStream_ValidIdn_Success(string name)
+        {
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = name,
+                    CertificateChainPolicy = new X509ChainPolicy() { VerificationFlags = X509VerificationFlags.IgnoreInvalidName },
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true
+                };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, default),
+                                server.AuthenticateAsServerAsync(serverOptions, default));
+
+                await TestHelper.PingPong(client, server, default);
+                Assert.Equal(name, server.TargetHostName);
+            }
+        }
+
+        [Theory]
+        [InlineData("www-.volal.cz")]
+        [InlineData("www-.colorhexa.com")]
+        [InlineData("xn--www-7m0a.thegratuit.com")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        public async Task SslStream_SafeInvalidIdn_Success(string name)
+        {
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = name,
+                    CertificateChainPolicy = new X509ChainPolicy() { VerificationFlags = X509VerificationFlags.IgnoreInvalidName },
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true
+                };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, default),
+                                server.AuthenticateAsServerAsync(serverOptions, default));
+
+                await TestHelper.PingPong(client, server, default);
+                Assert.Equal(name, server.TargetHostName);
+            }
+        }
+
+        [Theory]
+        [InlineData("\u0000\u00E7d\u00EB.com")]
+        public async Task SslStream_UnsafeInvalidIdn_Throws(string name)
+        {
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = name,
+                    CertificateChainPolicy = new X509ChainPolicy() { VerificationFlags = X509VerificationFlags.IgnoreInvalidName },
+                    RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true
+                };
+
+                await Assert.ThrowsAsync<ArgumentException>(() => client.AuthenticateAsClientAsync(clientOptions, default));
+            }
         }
 
         private static Func<Task> WithAggregateExceptionUnwrapping(Func<Task> a)

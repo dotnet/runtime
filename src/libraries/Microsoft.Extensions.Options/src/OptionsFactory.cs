@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 
 namespace Microsoft.Extensions.Options
 {
@@ -36,14 +35,23 @@ namespace Microsoft.Extensions.Options
         /// <param name="validations">The validations to run.</param>
         public OptionsFactory(IEnumerable<IConfigureOptions<TOptions>> setups, IEnumerable<IPostConfigureOptions<TOptions>> postConfigures, IEnumerable<IValidateOptions<TOptions>> validations)
         {
-            _setups = setups as IConfigureOptions<TOptions>[] ?? setups.ToArray();
-            _postConfigures = postConfigures as IPostConfigureOptions<TOptions>[] ?? postConfigures.ToArray();
-            _validations = validations as IValidateOptions<TOptions>[] ?? validations.ToArray();
+            // The default DI container uses arrays under the covers. Take advantage of this knowledge
+            // by checking for an array and enumerate over that, so we don't need to allocate an enumerator.
+            // When it isn't already an array, convert it to one, but don't use System.Linq to avoid pulling Linq in to
+            // small trimmed applications.
+
+            _setups = setups as IConfigureOptions<TOptions>[] ?? new List<IConfigureOptions<TOptions>>(setups).ToArray();
+            _postConfigures = postConfigures as IPostConfigureOptions<TOptions>[] ?? new List<IPostConfigureOptions<TOptions>>(postConfigures).ToArray();
+            _validations = validations as IValidateOptions<TOptions>[] ?? new List<IValidateOptions<TOptions>>(validations).ToArray();
         }
 
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
+        /// <param name="name">The name of the <typeparamref name="TOptions"/> instance to create.</param>
+        /// <returns>The created <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.</returns>
+        /// <exception cref="OptionsValidationException">One or more <see cref="IValidateOptions{TOptions}"/> return failed <see cref="ValidateOptionsResult"/> when validating the <typeparamref name="TOptions"/> instance been created.</exception>
+        /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
         public TOptions Create(string name)
         {
             TOptions options = CreateInstance(name);
@@ -63,7 +71,7 @@ namespace Microsoft.Extensions.Options
                 post.PostConfigure(name, options);
             }
 
-            if (_validations != null)
+            if (_validations.Length > 0)
             {
                 var failures = new List<string>();
                 foreach (IValidateOptions<TOptions> validate in _validations)
@@ -84,8 +92,11 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Creates a new instance of options type
+        /// Creates a new instance of options type.
         /// </summary>
+        /// <param name="name">The name of the <typeparamref name="TOptions"/> instance to create.</param>
+        /// <returns>The created <typeparamref name="TOptions"/> instance.</returns>
+        /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
         protected virtual TOptions CreateInstance(string name)
         {
             return Activator.CreateInstance<TOptions>();

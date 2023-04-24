@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
-    internal class AssemblyWrapper : Assembly
+    internal sealed class AssemblyWrapper : Assembly
     {
         private readonly MetadataLoadContextInternal _metadataLoadContext;
 

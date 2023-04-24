@@ -22,10 +22,7 @@ namespace System.Net.Http
 
         public HttpMessageInvoker(HttpMessageHandler handler, bool disposeHandler)
         {
-            if (handler == null)
-            {
-                throw new ArgumentNullException(nameof(handler));
-            }
+            ArgumentNullException.ThrowIfNull(handler);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, handler);
 
@@ -34,31 +31,30 @@ namespace System.Net.Http
         }
 
         [UnsupportedOSPlatformAttribute("browser")]
-        public virtual HttpResponseMessage Send(HttpRequestMessage request,
-            CancellationToken cancellationToken)
+        public virtual HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-            CheckDisposed();
+            ArgumentNullException.ThrowIfNull(request);
 
-            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient() && request.RequestUri != null)
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            if (ShouldSendWithTelemetry(request))
             {
                 HttpTelemetry.Log.RequestStart(request);
 
+                HttpResponseMessage? response = null;
                 try
                 {
-                    return _handler.Send(request, cancellationToken);
+                    response = _handler.Send(request, cancellationToken);
+                    return response;
                 }
-                catch when (LogRequestFailed(telemetryStarted: true))
+                catch (Exception ex) when (LogRequestFailed(ex, telemetryStarted: true))
                 {
                     // Unreachable as LogRequestFailed will return false
                     throw;
                 }
                 finally
                 {
-                    HttpTelemetry.Log.RequestStop();
+                    HttpTelemetry.Log.RequestStop(response);
                 }
             }
             else
@@ -67,16 +63,13 @@ namespace System.Net.Http
             }
         }
 
-        public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
-            CancellationToken cancellationToken)
+        public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-            CheckDisposed();
+            ArgumentNullException.ThrowIfNull(request);
 
-            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient() && request.RequestUri != null)
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            if (ShouldSendWithTelemetry(request))
             {
                 return SendAsyncWithTelemetry(_handler, request, cancellationToken);
             }
@@ -87,27 +80,35 @@ namespace System.Net.Http
             {
                 HttpTelemetry.Log.RequestStart(request);
 
+                HttpResponseMessage? response = null;
                 try
                 {
-                    return await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    response = await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    return response;
                 }
-                catch when (LogRequestFailed(telemetryStarted: true))
+                catch (Exception ex) when (LogRequestFailed(ex, telemetryStarted: true))
                 {
                     // Unreachable as LogRequestFailed will return false
                     throw;
                 }
                 finally
                 {
-                    HttpTelemetry.Log.RequestStop();
+                    HttpTelemetry.Log.RequestStop(response);
                 }
             }
         }
 
-        internal static bool LogRequestFailed(bool telemetryStarted)
+        private static bool ShouldSendWithTelemetry(HttpRequestMessage request) =>
+            HttpTelemetry.Log.IsEnabled() &&
+            !request.WasSentByHttpClient() &&
+            request.RequestUri is Uri requestUri &&
+            requestUri.IsAbsoluteUri;
+
+        internal static bool LogRequestFailed(Exception exception, bool telemetryStarted)
         {
             if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
             {
-                HttpTelemetry.Log.RequestFailed();
+                HttpTelemetry.Log.RequestFailed(exception);
             }
             return false;
         }
@@ -128,14 +129,6 @@ namespace System.Net.Http
                 {
                     _handler.Dispose();
                 }
-            }
-        }
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
             }
         }
     }

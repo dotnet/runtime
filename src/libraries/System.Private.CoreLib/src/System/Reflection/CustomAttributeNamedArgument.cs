@@ -1,48 +1,44 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Reflection
 {
-    public readonly partial struct CustomAttributeNamedArgument
+    public readonly partial struct CustomAttributeNamedArgument : IEquatable<CustomAttributeNamedArgument>
     {
         public static bool operator ==(CustomAttributeNamedArgument left, CustomAttributeNamedArgument right) => left.Equals(right);
         public static bool operator !=(CustomAttributeNamedArgument left, CustomAttributeNamedArgument right) => !left.Equals(right);
 
-        private readonly MemberInfo m_memberInfo;
-        private readonly CustomAttributeTypedArgument m_value;
+        private readonly MemberInfo _memberInfo;
+        private readonly CustomAttributeTypedArgument _value;
 
         public CustomAttributeNamedArgument(MemberInfo memberInfo, object? value)
         {
-            if (memberInfo == null)
-                throw new ArgumentNullException(nameof(memberInfo));
+            ArgumentNullException.ThrowIfNull(memberInfo);
 
-            Type type;
-            if (memberInfo is FieldInfo field)
+            Type type = memberInfo switch
             {
-                type = field.FieldType;
-            }
-            else if (memberInfo is PropertyInfo property)
-            {
-                type = property.PropertyType;
-            }
-            else
-            {
-                throw new ArgumentException(SR.Argument_InvalidMemberForNamedArgument);
-            }
+                FieldInfo field => field.FieldType,
+                PropertyInfo property => property.PropertyType,
+                _ => throw new ArgumentException(SR.Argument_InvalidMemberForNamedArgument)
+            };
 
-            m_memberInfo = memberInfo;
-            m_value = new CustomAttributeTypedArgument(type, value);
+            _memberInfo = memberInfo;
+            _value = new CustomAttributeTypedArgument(type, value);
         }
 
         public CustomAttributeNamedArgument(MemberInfo memberInfo, CustomAttributeTypedArgument typedArgument)
         {
-            m_memberInfo = memberInfo ?? throw new ArgumentNullException(nameof(memberInfo));
-            m_value = typedArgument;
+            ArgumentNullException.ThrowIfNull(memberInfo);
+
+            _memberInfo = memberInfo;
+            _value = typedArgument;
         }
 
         public override string ToString()
         {
-            if (m_memberInfo == null)
+            if (_memberInfo is null)
                 return base.ToString()!;
 
             return $"{MemberInfo.Name} = {TypedValue.ToString(ArgumentType != typeof(object))}";
@@ -53,18 +49,23 @@ namespace System.Reflection
             return base.GetHashCode();
         }
 
-        public override bool Equals(object? obj)
-        {
-            return obj == (object)this;
-        }
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is CustomAttributeNamedArgument other && Equals(other);
+
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(CustomAttributeNamedArgument other) =>
+            _memberInfo == other._memberInfo &&
+            _value == other._value;
 
         internal Type ArgumentType =>
-            m_memberInfo is FieldInfo ?
-                ((FieldInfo)m_memberInfo).FieldType :
-                ((PropertyInfo)m_memberInfo).PropertyType;
+            _memberInfo is FieldInfo fi ?
+                fi.FieldType :
+                ((PropertyInfo)_memberInfo).PropertyType;
 
-        public MemberInfo MemberInfo => m_memberInfo;
-        public CustomAttributeTypedArgument TypedValue => m_value;
+        public MemberInfo MemberInfo => _memberInfo;
+        public CustomAttributeTypedArgument TypedValue => _value;
         public string MemberName => MemberInfo.Name;
         public bool IsField => MemberInfo is FieldInfo;
     }

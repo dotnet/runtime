@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -10,12 +11,12 @@ namespace System.Security.Cryptography
 {
     internal static partial class ECDsaImplementation
     {
-        public sealed partial class ECDsaAndroid : ECDsa
+        public sealed partial class ECDsaAndroid : ECDsa, IRuntimeAlgorithm
         {
             // secp521r1 maxes out at 139 bytes, so 256 should always be enough
             private const int SignatureStackBufSize = 256;
 
-            private ECAndroid _key;
+            private ECAndroid? _key;
 
             /// <summary>
             /// Create an ECDsaAndroid algorithm with a named curve.
@@ -67,22 +68,12 @@ namespace System.Security.Cryptography
                 KeySizeValue = newKeySize;
             }
 
-            public override KeySizes[] LegalKeySizes
-            {
-                get
-                {
-                    // Return the three sizes that can be explicitly set (for backwards compatibility)
-                    return new[] {
-                        new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
-                        new KeySizes(minSize: 521, maxSize: 521, skipSize: 0),
-                    };
-                }
-            }
+            // Return the three sizes that can be explicitly set (for backwards compatibility)
+            public override KeySizes[] LegalKeySizes => s_defaultKeySizes.CloneKeySizesArray();
 
             public override byte[] SignHash(byte[] hash)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
+                ArgumentNullException.ThrowIfNull(hash);
 
                 ThrowIfDisposed();
                 SafeEcKeyHandle key = _key.Value;
@@ -189,10 +180,8 @@ namespace System.Security.Cryptography
 
             public override bool VerifyHash(byte[] hash, byte[] signature)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
-                if (signature == null)
-                    throw new ArgumentNullException(nameof(signature));
+                ArgumentNullException.ThrowIfNull(hash);
+                ArgumentNullException.ThrowIfNull(signature);
 
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
@@ -248,21 +237,12 @@ namespace System.Security.Cryptography
                 return verifyResult == 1;
             }
 
-            protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-                AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
-
-            protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
-
-            protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
-
             protected override void Dispose(bool disposing)
             {
                 if (disposing)
                 {
                     _key?.Dispose();
-                    _key = null!;
+                    _key = null;
                 }
 
                 base.Dispose(disposing);
@@ -335,14 +315,16 @@ namespace System.Security.Cryptography
                 base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
             }
 
-            internal SafeEcKeyHandle DuplicateKeyHandle() => _key.UpRefKeyHandle();
+            internal SafeEcKeyHandle DuplicateKeyHandle()
+            {
+                ThrowIfDisposed();
+                return _key.UpRefKeyHandle();
+            }
 
+            [MemberNotNull(nameof(_key))]
             private void ThrowIfDisposed()
             {
-                if (_key == null)
-                {
-                    throw new ObjectDisposedException(nameof(ECDsa));
-                }
+                ObjectDisposedException.ThrowIf(_key is null, this);
             }
         }
     }

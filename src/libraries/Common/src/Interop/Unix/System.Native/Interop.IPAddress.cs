@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Text;
 
 internal static partial class Interop
 {
@@ -33,6 +32,16 @@ internal static partial class Interop
             private  uint _isIPv6;                             // Non-zero if this is an IPv6 address; zero for IPv4.
             internal uint ScopeId;                             // Scope ID (IPv6 only)
 
+            public override unsafe int GetHashCode()
+            {
+                HashCode h = default;
+                h.AddBytes(MemoryMarshal.CreateReadOnlySpan(ref Address[0], IsIPv6 ? IPv6AddressBytes : IPv4AddressBytes));
+                return h.ToHashCode();
+            }
+
+            public override bool Equals([NotNullWhen(true)] object? obj) =>
+                obj is IPAddress other && Equals(other);
+
             public bool Equals(IPAddress other)
             {
                 int addressByteCount;
@@ -59,18 +68,8 @@ internal static partial class Interop
                     addressByteCount = IPv4AddressBytes;
                 }
 
-                fixed (byte* thisAddress = Address)
-                {
-                    for (int i = 0; i < addressByteCount; i++)
-                    {
-                        if (thisAddress[i] != other.Address[i])
-                        {
-                            return false;
-                        }
-                    }
-                }
-
-                return true;
+                return MemoryMarshal.CreateReadOnlySpan(ref Address[0], addressByteCount).SequenceEqual(
+                       new ReadOnlySpan<byte>(other.Address, addressByteCount));
             }
         }
     }

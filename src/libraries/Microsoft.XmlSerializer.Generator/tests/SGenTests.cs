@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 using Xunit;
 using Microsoft.XmlSerializer.Generator;
 using System.IO;
@@ -15,8 +14,22 @@ namespace Microsoft.XmlSerializer.Generator.Tests
         [Fact]
         public static void SgenCommandTest()
         {
+            /*
+             * The intent of this test is to verify that we have not inadvertently changed the
+             * code output of Microsoft.XmlSerializer.Generator. To do this, we generate
+             * code output using the current Microsoft.XmlSerializer.Generator and compare it
+             * to code output from a previous version of Microsoft.XmlSerializer.Generator.
+             * 
+             * There are times when we intentionally update the code output however. If the
+             * change in code output is intentional - and correct - then update the
+             * 'Expected.SerializableAssembly.XmlSerializers.cs' file with the new code output
+             * to use for comparison.
+             * 
+             * [dotnet.exe $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)SerializableAssembly.dll --force --quiet]
+             */
+
             const string CodeFile = "SerializableAssembly.XmlSerializers.cs";
-            const string LKGCodeFile = "LKG." + CodeFile;
+            const string LKGCodeFile = "Expected.SerializableAssembly.XmlSerializers.cs";
 
             var type = Type.GetType("Microsoft.XmlSerializer.Generator.Sgen, dotnet-Microsoft.XmlSerializer.Generator");
             MethodInfo md = type.GetMethod("Main", BindingFlags.Static | BindingFlags.Public);
@@ -27,7 +40,7 @@ namespace Microsoft.XmlSerializer.Generator.Tests
             Assert.True(File.Exists(CodeFile), string.Format("Fail to generate {0}.", CodeFile));
             // Compare the generated CodeFiles from the LKG with the live built shared framework one.
             // Not comparing byte per byte as the generated output isn't deterministic.
-            Assert.Equal(new System.IO.FileInfo(LKGCodeFile).Length, new System.IO.FileInfo(CodeFile).Length);
+            Assert.Equal(LineEndingsHelper.Normalize(File.ReadAllText(LKGCodeFile)).Length, File.ReadAllText(CodeFile).Length);
         }
     }
 }

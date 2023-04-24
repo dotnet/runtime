@@ -8,7 +8,7 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler
 {
     /// <summary>
-    /// Represents an algorithm that adds a target pointer of space at the beggining of all types
+    /// Represents an algorithm that adds a target pointer of space at the beginning of all types
     /// deriving from System.Object used for the MethodTable pointer in the CoreCLR runtime.
     /// </summary>
     internal class SystemObjectFieldLayoutAlgorithm : FieldLayoutAlgorithm
@@ -25,7 +25,7 @@ namespace ILCompiler
             TargetDetails targetDetails = defType.Context.Target;
             ComputedInstanceFieldLayout layoutFromMetadata = _fallbackAlgorithm.ComputeInstanceLayout(defType, layoutKind);
 
-            // System.Object has an EEType field in the standard AOT version used in this repo.
+            // System.Object has an MethodTable field in the standard AOT version used in this repo.
             // Make sure that we always use the CoreCLR version which (currently) has no fields.
             Debug.Assert(0 == layoutFromMetadata.Offsets.Length, "Incompatible system library. The CoreCLR System.Private.CoreLib must be used when compiling in ready-to-run mode.");
 
@@ -46,6 +46,11 @@ namespace ILCompiler
         }
 
         public override bool ComputeContainsGCPointers(DefType type)
+        {
+            return false;
+        }
+
+        public override bool ComputeIsUnsafeValueType(DefType type)
         {
             return false;
         }

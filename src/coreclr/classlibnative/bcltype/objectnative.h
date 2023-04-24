@@ -30,6 +30,7 @@ public:
     //  If the Class object doesn't exist then you must call the GetClass() method.
     static FCDECL1(Object*, GetObjectValue, Object* vThisRef);
     static FCDECL1(INT32, GetHashCode, Object* vThisRef);
+    static FCDECL1(INT32, TryGetHashCode, Object* vThisRef);
     static FCDECL2(FC_BOOL_RET, Equals, Object *pThisRef, Object *pCompareRef);
     static FCDECL1(Object*, AllocateUninitializedClone, Object* pObjUNSAFE);
     static FCDECL1(Object*, GetClass, Object* pThis);
@@ -37,7 +38,7 @@ public:
     static FCDECL1(void, Pulse, Object* pThisUNSAFE);
     static FCDECL1(void, PulseAll, Object* pThisUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsLockHeld, Object* pThisUNSAFE);
-    static INT64 QCALLTYPE GetMonitorLockContentionCount();
 };
 
+extern "C" INT64 QCALLTYPE ObjectNative_GetMonitorLockContentionCount();
 #endif // _OBJECTNATIVE_H_

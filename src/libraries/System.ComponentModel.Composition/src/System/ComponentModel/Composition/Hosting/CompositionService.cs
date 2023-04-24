@@ -19,10 +19,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal CompositionService(ComposablePartCatalog composablePartCatalog)
         {
-            if (composablePartCatalog == null)
-            {
-                throw new ArgumentNullException(nameof(composablePartCatalog));
-            }
+            ArgumentNullException.ThrowIfNull(composablePartCatalog);
 
             _notifyCatalog = composablePartCatalog as INotifyComposablePartCatalogChanged;
             try

@@ -83,10 +83,10 @@ internal static partial class Interop
 
         internal const uint TIME_ZONE_ID_INVALID = unchecked((uint)-1);
 
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
-        internal static extern uint GetDynamicTimeZoneInformation(out TIME_DYNAMIC_ZONE_INFORMATION pTimeZoneInformation);
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        internal static partial uint GetDynamicTimeZoneInformation(out TIME_DYNAMIC_ZONE_INFORMATION pTimeZoneInformation);
 
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
-        internal static extern uint GetTimeZoneInformation(out TIME_ZONE_INFORMATION lpTimeZoneInformation);
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        internal static partial uint GetTimeZoneInformation(out TIME_ZONE_INFORMATION lpTimeZoneInformation);
     }
 }

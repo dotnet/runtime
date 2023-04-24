@@ -8,11 +8,11 @@ internal static partial class Interop
 {
     internal static partial class Normaliz
     {
-        [DllImport("Normaliz.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern unsafe BOOL IsNormalizedString(NormalizationForm normForm, char* source, int length);
+        [LibraryImport("Normaliz.dll",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial BOOL IsNormalizedString(NormalizationForm normForm, char* source, int length);
 
-        [DllImport("Normaliz.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern unsafe int NormalizeString(
+        [LibraryImport("Normaliz.dll",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial int NormalizeString(
                                         NormalizationForm normForm,
                                         char* source,
                                         int sourceLength,

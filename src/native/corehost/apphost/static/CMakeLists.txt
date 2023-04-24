@@ -9,7 +9,7 @@ set(DOTNET_PROJECT_NAME "singlefilehost")
 # dependencies is not possible for some reason.
 # This cannot be enabled for MacOS (Darwin) since its RPATH works in a different way,
 # doesn't apply to libraries loaded via dlopen and most importantly, it is not transitive.
-if (NOT CLR_CMAKE_TARGET_OSX)
+if (NOT CLR_CMAKE_TARGET_APPLE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH "\$ORIGIN/netcoredeps")
 endif()
@@ -18,11 +18,8 @@ set(SKIP_VERSIONING 1)
 
 include_directories(..)
 include_directories(../../json)
-
-include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/AnyOS/zlib)
-if(NOT CLR_CMAKE_TARGET_WIN32)
-    include_directories(${CLR_SRC_LIBS_NATIVE_DIR}/Unix/Common)
-endif()
+include_directories(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native)
+include_directories(${CLR_SRC_NATIVE_DIR}/libs/Common)
 
 set(SOURCES
     ../bundle_marker.cpp
@@ -48,11 +45,6 @@ include(../../hostpolicy/files.cmake)
 include(../../hostcommon/files.cmake)
 
 if(MSVC)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4996>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4267>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4018>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4200>)
-    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4244>)
     # Host components don't try to handle asynchronous exceptions
     add_compile_options(/EHsc)
 elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
@@ -62,6 +54,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES GNU)
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
+    add_definitions(-DUNICODE)
     list(APPEND SOURCES
         ../apphost.windows.cpp)
 
@@ -73,8 +66,8 @@ if(CLR_CMAKE_TARGET_WIN32)
     add_linker_flag("/DEF:${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost.def")
 
 else()
-    if(CLR_CMAKE_TARGET_OSX)
-        set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_OSXexports.src)
+    if(CLR_CMAKE_TARGET_FREEBSD)
+        set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_freebsdexports.src)
     else()
         set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/singlefilehost_unixexports.src)
     endif()
@@ -110,6 +103,9 @@ if(CLR_CMAKE_TARGET_WIN32)
     # Incremental linking results in the linker inserting extra padding and routing function calls via thunks that can break the
     # invariants (e.g. size of region between Jit_PatchedCodeLast-Jit_PatchCodeStart needs to fit in a page).
     add_linker_flag("/INCREMENTAL:NO")
+
+    # Delay load libraries required for WinRT as that is not supported on all platforms
+    add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -130,6 +126,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         shell32.lib
         bcrypt.lib
         RuntimeObject.lib
+        delayimp.lib
     )
 
     set(RUNTIMEINFO_LIB runtimeinfo)
@@ -151,39 +148,43 @@ else()
     )
 
     # additional requirements for System.IO.Compression.Native
-    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.IO.Compression.Native/extra_libs.cmake)
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.IO.Compression.Native/extra_libs.cmake)
     append_extra_compression_libs(NATIVE_LIBS)
 
-    # Additional requirements for System.Net.Security.Native
-    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Net.Security.Native/extra_libs.cmake)
-    append_extra_security_libs(NATIVE_LIBS)
+    if (NOT CLR_CMAKE_TARGET_TVOS) # no gssapi on tvOS, see https://developer.apple.com/documentation/gss
+        # Additional requirements for System.Net.Security.Native
+        include(${CLR_SRC_NATIVE_DIR}/libs/System.Net.Security.Native/extra_libs.cmake)
+        append_extra_security_libs(NATIVE_LIBS)
+    endif()
 
     # Additional requirements for System.Native
-    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Native/extra_libs.cmake)
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.Native/extra_libs.cmake)
     append_extra_system_libs(NATIVE_LIBS)
 
-    # Additional requirements for System.Security.Cryptography.Native.OpenSsl
-    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native/extra_libs.cmake)
-    append_extra_cryptography_libs(NATIVE_LIBS)
+    if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+        # Additional requirements for System.Security.Cryptography.Native.OpenSsl
+        include(${CLR_SRC_NATIVE_DIR}/libs/System.Security.Cryptography.Native/extra_libs.cmake)
+        append_extra_cryptography_libs(NATIVE_LIBS)
+    endif()
 
     set(RUNTIMEINFO_LIB runtimeinfo)
 
 endif()
 
-if(CLR_CMAKE_TARGET_OSX)
+if(CLR_CMAKE_TARGET_APPLE)
     LIST(APPEND NATIVE_LIBS
         System.Security.Cryptography.Native.Apple-Static
     )
 
     # Additional requirements for System.Security.Cryptography.Native.Apple
-    include(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Security.Cryptography.Native.Apple/extra_libs.cmake)
+    include(${CLR_SRC_NATIVE_DIR}/libs/System.Security.Cryptography.Native.Apple/extra_libs.cmake)
     append_extra_cryptography_apple_libs(NATIVE_LIBS)
 endif()
 
 #
 # Additional requirements for coreclr
 #
-if(CLR_CMAKE_TARGET_OSX)
+if(CLR_CMAKE_TARGET_APPLE)
    find_library(COREFOUNDATION CoreFoundation)
    find_library(CORESERVICES CoreServices)
    find_library(SECURITY Security)
@@ -205,14 +206,14 @@ elseif (CLR_CMAKE_TARGET_SUNOS)
      LIST(APPEND NATIVE_LIBS
          socket
      )
-endif(CLR_CMAKE_TARGET_OSX)
+endif(CLR_CMAKE_TARGET_APPLE)
 
 # On *BSD, we always use the libunwind that's part of the OS
 if(CLR_CMAKE_TARGET_FREEBSD)
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
 endif()
 
-if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND AND NOT CLR_CMAKE_TARGET_APPLE)
     find_unwind_libs(UNWIND_LIBS)
 
     LIST(APPEND NATIVE_LIBS
@@ -226,16 +227,17 @@ if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD
     set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
 endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD OR CLR_CMAKE_TARGET_SUNOS)
 
-if(CLR_CMAKE_TARGET_OSX)
+if(CLR_CMAKE_TARGET_APPLE)
     # These options are used to force every object to be included even if it's unused.
     set(START_WHOLE_ARCHIVE -force_load)
     set(END_WHOLE_ARCHIVE )
-endif(CLR_CMAKE_TARGET_OSX)
+endif(CLR_CMAKE_TARGET_APPLE)
 
 set_property(TARGET singlefilehost PROPERTY ENABLE_EXPORTS 1)
 
 target_link_libraries(
     singlefilehost
+    PRIVATE
     ${NATIVE_LIBS}
 
     ${START_WHOLE_ARCHIVE}

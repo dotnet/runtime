@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
+    <WasmMainJSPath>$(MonoProjectRoot)\wasm\test-main.js</WasmMainJSPath>
+    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <WasmNativeStrip>false</WasmNativeStrip>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SignAssembly>False</SignAssembly>
+  </PropertyGroup>
+
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithV8" />
+
+  <ItemGroup>
+    <Compile Include="../*.cs" />
+    <Compile Remove="../Browser.cs" />
+    <PackageReference Include="Mono.Options" Version="6.12.0.148" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\libraries\System.Text.Json\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer" />
+  </ItemGroup>
+</Project>

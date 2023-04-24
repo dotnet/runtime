@@ -3,7 +3,7 @@ Param(
     [string] $CoreRootDirectory,
     [string] $BaselineCoreRootDirectory,
     [string] $Architecture="x64",
-    [string] $Framework="net5.0",
+    [string] $Framework,
     [string] $CompilationMode="Tiered",
     [string] $Repository=$env:BUILD_REPOSITORY_NAME,
     [string] $Branch=$env:BUILD_SOURCEBRANCH,
@@ -20,7 +20,14 @@ Param(
     [string] $MonoDotnet="",
     [string] $Configurations="CompilationMode=$CompilationMode RunKind=$Kind",
     [string] $LogicalMachine="",
-    [switch] $AndroidMono
+    [switch] $AndroidMono,
+    [switch] $iOSMono,
+    [switch] $NoPGO,
+    [switch] $DynamicPGO,
+    [switch] $FullPGO,
+    [switch] $iOSLlvmBuild,
+    [string] $MauiVersion,
+    [switch] $UseLocalCommitTime
 )
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
@@ -43,6 +50,8 @@ if ($Internal) {
         "perfowl" { $Queue = "Windows.10.Amd64.20H2.Owl.Perf"  }
         "perfsurf" { $Queue = "Windows.10.Arm64.Perf.Surf"  }
         "perfpixel4a" { $Queue = "Windows.10.Amd64.Pixel.Perf" }
+        "perfampere" { $Queue = "Windows.Server.Arm64.Perf" }
+        "cloudvm" { $Queue = "Windows.10.Amd64" }
         Default { $Queue = "Windows.10.Amd64.19H1.Tiger.Perf" }
     }
     $PerfLabArguments = "--upload-to-perflab-container"
@@ -74,10 +83,50 @@ if($MonoDotnet -ne "")
     }
 }
 
+if($NoPGO)
+{
+    $Configurations += " PGOType=nopgo"
+}
+elseif($DynamicPGO)
+{
+    $Configurations += " PGOType=dynamicpgo"
+}
+elseif($FullPGO)
+{
+    $Configurations += " PGOType=fullpgo"
+}
+
+if ($iOSMono) {
+    $Configurations += " iOSLlvmBuild=$iOSLlvmBuild"
+}
+
 # FIX ME: This is a workaround until we get this from the actual pipeline
-$CommonSetupArguments="--channel master --queue $Queue --build-number $BuildNumber --build-configs $Configurations --architecture $Architecture"
+$CleanedBranchName = "main"
+if($Branch.Contains("refs/heads/release"))
+{
+    $CleanedBranchName = $Branch.replace('refs/heads/', '')
+}
+$CommonSetupArguments="--channel $CleanedBranchName --queue $Queue --build-number $BuildNumber --build-configs $Configurations --architecture $Architecture"
 $SetupArguments = "--repository https://github.com/$Repository --branch $Branch --get-perf-hash --commit-sha $CommitSha $CommonSetupArguments"
 
+if($NoPGO)
+{
+    $SetupArguments = "$SetupArguments --no-pgo"
+}
+elseif($DynamicPGO)
+{
+    $SetupArguments = "$SetupArguments --dynamic-pgo"
+}
+elseif($FullPGO)
+{
+    $SetupArguments = "$SetupArguments --full-pgo"
+}
+
+if($UseLocalCommitTime)
+{
+    $LocalCommitTime = (git show -s --format=%ci $CommitSha)
+    $SetupArguments = "$SetupArguments --commit-time `"$LocalCommitTime`""
+}
 
 if ($RunFromPerformanceRepo) {
     $SetupArguments = "--perf-hash $CommitSha $CommonSetupArguments"
@@ -104,12 +153,17 @@ if ($UseBaselineCoreRun) {
     Move-Item -Path $BaselineCoreRootDirectory -Destination $NewBaselineCoreRoot
 }
 
+if($MauiVersion -ne "")
+{
+    $SetupArguments = "$SetupArguments --maui-version $MauiVersion"
+}
+
 if ($AndroidMono) {
     if(!(Test-Path $WorkItemDirectory))
     {
         mkdir $WorkItemDirectory
     }
-    Copy-Item -path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
+    Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory -Verbose
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 
@@ -140,6 +194,7 @@ Write-PipelineSetVariable -Name 'UseBaselineCoreRun' -Value "$UseBaselineCoreRun
 Write-PipelineSetVariable -Name 'RunFromPerfRepo' -Value "$RunFromPerformanceRepo" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'Compare' -Value "$Compare" -IsMultiJobVariable $false
 Write-PipelineSetVariable -Name 'MonoDotnet' -Value "$UsingMono" -IsMultiJobVariable $false
+Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iOSLlvmBuild" -IsMultiJobVariable $false
 
 # Helix Arguments
 Write-PipelineSetVariable -Name 'Creator' -Value "$Creator" -IsMultiJobVariable $false

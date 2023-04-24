@@ -62,8 +62,10 @@ namespace System.Threading.Tasks.Dataflow
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
         public WriteOnceBlock(Func<T, T>? cloningFunction, DataflowBlockOptions dataflowBlockOptions)
         {
-            // Validate arguments
-            if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            if (dataflowBlockOptions is null)
+            {
+                throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            }
 
             // Store the option
             _cloningFunction = cloningFunction;
@@ -78,7 +80,7 @@ namespace System.Threading.Tasks.Dataflow
             // we need to initialize the completion task's TCS now.
             if (dataflowBlockOptions.CancellationToken.CanBeCanceled)
             {
-                _lazyCompletionTaskSource = new TaskCompletionSource<VoidResult>();
+                _lazyCompletionTaskSource = new TaskCompletionSource<VoidResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 // If we've already had cancellation requested, do as little work as we have to
                 // in order to be done.
@@ -87,22 +89,20 @@ namespace System.Threading.Tasks.Dataflow
                     _completionReserved = _decliningPermanently = true;
 
                     // Cancel the completion task's TCS
-                    _lazyCompletionTaskSource.SetCanceled();
+                    _lazyCompletionTaskSource.TrySetCanceled(dataflowBlockOptions.CancellationToken);
                 }
                 else
                 {
                     // Handle async cancellation requests by declining on the target
                     Common.WireCancellationToComplete(
-                        dataflowBlockOptions.CancellationToken, _lazyCompletionTaskSource.Task, state => ((WriteOnceBlock<T>)state!).Complete(), this);
+                        dataflowBlockOptions.CancellationToken, _lazyCompletionTaskSource.Task, static (state, _) => ((WriteOnceBlock<T>)state!).Complete(), this);
                 }
             }
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
             }
-#endif
         }
 
         /// <summary>Asynchronously completes the block on another task.</summary>
@@ -120,17 +120,15 @@ namespace System.Threading.Tasks.Dataflow
             if (exceptions == null)
             {
                 // Offer the message to any linked targets and complete the block asynchronously to avoid blocking the caller
-                var taskForOutputProcessing = new Task(state => ((WriteOnceBlock<T>)state!).OfferToTargetsAndCompleteBlock(), this,
+                var taskForOutputProcessing = new Task(static state => ((WriteOnceBlock<T>)state!).OfferToTargetsAndCompleteBlock(), this,
                                                         Common.GetCreationOptionsForTask());
 
-#if FEATURE_TRACING
                 DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
                     etwLog.TaskLaunchedForMessageHandling(
                         this, taskForOutputProcessing, DataflowEtwProvider.TaskLaunchedReason.OfferingOutputMessages, _header.IsValid ? 1 : 0);
                 }
-#endif
 
                 // Start the task handling scheduling exceptions
                 Exception? exception = Common.StartTaskSafe(taskForOutputProcessing, _dataflowBlockOptions.TaskScheduler);
@@ -139,7 +137,7 @@ namespace System.Threading.Tasks.Dataflow
             else
             {
                 // Complete the block asynchronously to avoid blocking the caller
-                Task.Factory.StartNew(state =>
+                Task.Factory.StartNew(static state =>
                 {
                     Tuple<WriteOnceBlock<T>, IList<Exception>> blockAndList = (Tuple<WriteOnceBlock<T>, IList<Exception>>)state!;
                     blockAndList.Item1.CompleteBlock(blockAndList.Item2);
@@ -184,7 +182,7 @@ namespace System.Threading.Tasks.Dataflow
             }
             else if (_dataflowBlockOptions.CancellationToken.IsCancellationRequested)
             {
-                CompletionTaskSource.TrySetCanceled();
+                CompletionTaskSource.TrySetCanceled(_dataflowBlockOptions.CancellationToken);
             }
             else
             {
@@ -200,19 +198,20 @@ namespace System.Threading.Tasks.Dataflow
 
             // Now that the completion task is completed, we may propagate completion to the linked targets
             _targetRegistry.PropagateCompletion(linkedTargets);
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCompleted(this);
             }
-#endif
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
         void IDataflowBlock.Fault(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
 
             CompleteCore(exception, storeExceptionEvenIfAlreadyCompleting: false);
         }
@@ -303,9 +302,14 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
         public IDisposable LinkTo(ITargetBlock<T> target, DataflowLinkOptions linkOptions)
         {
-            // Validate arguments
-            if (target == null) throw new ArgumentNullException(nameof(target));
-            if (linkOptions == null) throw new ArgumentNullException(nameof(linkOptions));
+            if (target is null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+            if (linkOptions is null)
+            {
+                throw new ArgumentNullException(nameof(linkOptions));
+            }
 
             bool hasValue;
             bool isCompleted;
@@ -495,7 +499,7 @@ namespace System.Threading.Tasks.Dataflow
                 // it remains the block's completion task.
                 if (_lazyCompletionTaskSource == null)
                 {
-                    Interlocked.CompareExchange(ref _lazyCompletionTaskSource, new TaskCompletionSource<VoidResult>(), null);
+                    Interlocked.CompareExchange(ref _lazyCompletionTaskSource, new TaskCompletionSource<VoidResult>(TaskCreationOptions.RunContinuationsAsynchronously), null);
                 }
 
                 return _lazyCompletionTaskSource;

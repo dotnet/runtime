@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Finalize in different assembly from Dispose, tries to load the assembly with Dispose after the ALC unload started -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />
@@ -14,6 +15,19 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
-    <ProjectReference Include="../NativeLibraryToLoad/CMakeLists.txt" />
+    <CMakeProjectReference Include="../NativeLibraryToLoad/CMakeLists.txt" />
   </ItemGroup>
+
+  <Target Name="SetUpSubdirectory" AfterTargets="CopyNativeProjectBinaries">
+    <PropertyGroup>
+      <NativeLibrarySubdirectory>$(OutDir)/subdirectory</NativeLibrarySubdirectory>
+      <FileNameSuffix>-in-subdirectory</FileNameSuffix>
+    </PropertyGroup>
+    <ItemGroup>
+      <AssembliesToCopy Include="$(OutDir)/libNativeLibrary.*" />
+      <AssembliesToCopy Include="$(OutDir)/NativeLibrary.*" />
+      <AssembliesToCopy Include="$(OutDir)/$(TargetName).dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AssembliesToCopy)" DestinationFiles="@(AssembliesToCopy -> '$(NativeLibrarySubdirectory)/%(Filename)$(FileNameSuffix)%(Extension)')" />
+  </Target>
 </Project>

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 #ifndef __GCENV_H__
 #define __GCENV_H__
 
@@ -42,11 +43,11 @@
 
 #define STRESS_LOG
 #ifdef STRESS_LOG
-/*  STRESS_LOG_VA was added to allow sendign GC trace output to the stress log. msg must be enclosed
-      in ()'s and contain a format string followed by 0 - 4 arguments.  The arguments must be numbers or
-      string literals.  LogMsgOL is overloaded so that all of the possible sets of parameters are covered.
-      This was done becasue GC Trace uses dprintf which dosen't contain info on how many arguments are
-      getting passed in and using va_args would require parsing the format string during the GC
+/*  STRESS_LOG_VA was added to allow sending GC trace output to the stress log. msg must be enclosed
+    in ()'s and contain a format string followed by 0 to 12 arguments. The arguments must be numbers
+     or string literals. This was done because GC Trace uses dprintf which doesn't contain info on
+    how many arguments are getting passed in and using va_args would require parsing the format
+    string during the GC
 */
 #define STRESS_LOG_VA(level, msg) do {                                        \
             if (StressLog::LogOn(LF_GC, LL_ALWAYS))                           \
@@ -139,12 +140,12 @@ enum LogLevel
     LL_FATALERROR,
     LL_ERROR,
     LL_WARNING,
-    LL_INFO10,       // can be expected to generate 10 logs per small but not trival run
-    LL_INFO100,      // can be expected to generate 100 logs per small but not trival run
-    LL_INFO1000,     // can be expected to generate 1,000 logs per small but not trival run
-    LL_INFO10000,    // can be expected to generate 10,000 logs per small but not trival run
-    LL_INFO100000,   // can be expected to generate 100,000 logs per small but not trival run
-    LL_INFO1000000,  // can be expected to generate 1,000,000 logs per small but not trival run
+    LL_INFO10,       // can be expected to generate 10 logs per small but not trivial run
+    LL_INFO100,      // can be expected to generate 100 logs per small but not trivial run
+    LL_INFO1000,     // can be expected to generate 1,000 logs per small but not trivial run
+    LL_INFO10000,    // can be expected to generate 10,000 logs per small but not trivial run
+    LL_INFO100000,   // can be expected to generate 100,000 logs per small but not trivial run
+    LL_INFO1000000,  // can be expected to generate 1,000,000 logs per small but not trivial run
     LL_EVERYTHING,
 };
 
@@ -195,131 +196,7 @@ enum LogLevel
 class ThreadStressLog
 {
 public:
-    static const char* gcStartMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "{ =========== BEGINGC %d, (requested generation = %lu, collect_classes = %lu) ==========\n";
-    }
-
-    static const char* gcEndMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "========== ENDGC %d (gen = %lu, collect_classes = %lu) ===========}\n";
-    }
-
-    static const char* gcRootMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "    GC Root %p RELOCATED %p -> %p  MT = %pT\n";
-    }
-
-    static const char* gcRootPromoteMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "    IGCHeap::Promote: Promote GC Root *%p = %p MT = %pT\n";
-    }
-
-    static const char* gcPlugMoveMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "GC_HEAP RELOCATING Objects in heap within range [%p %p) by -0x%x bytes\n";
-    }
-
-    static const char* gcServerThread0StartMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "%d gc thread waiting...";
-    }
-
-    static const char* gcServerThreadNStartMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "%d gc thread waiting... Done";
-    }
-
-    static const char* gcDetailedStartMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "*GC* %d(gen0:%d)(%d)(alloc: %Id)(%s)(%d)";
-    }
-
-    static const char* gcDetailedEndMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "*EGC* %Id(gen0:%Id)(%Id)(%d)(%s)(%s)(%s)(ml: %d->%d)";
-    }
-
-    static const char* gcStartMarkMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "---- Mark Phase on heap %d condemning %d ----";
-    }
-
-    static const char* gcStartPlanMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "---- Plan Phase on heap %d ---- Condemned generation %d, promotion: %d";
-    }
-
-    static const char* gcStartRelocateMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "---- Relocate phase on heap %d -----";
-    }
-
-    static const char* gcEndRelocateMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "---- End of Relocate phase on heap %d ----";
-    }
-
-    static const char* gcStartCompactMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "---- Compact Phase on heap %d: %Ix(%Ix)----";
-    }
-
-    static const char* gcEndCompactMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "---- End of Compact phase on heap %d ----";
-    }
-
-    static const char* gcMemCopyMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return " mc: [%Ix->%Ix, %Ix->%Ix[";
-    }
-
-    static const char* gcPlanPlugMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "(%Ix)[%Ix->%Ix, NA: [%Ix(%Id), %Ix[: %Ix(%d), x: %Ix (%s)";
-    }
-
-    static const char* gcPlanPinnedPlugMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "(%Ix)PP: [%Ix, %Ix[%Ix](m:%d)";
-    }
-
-    static const char* gcDesiredNewAllocationMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "h%d g%d surv: %Id current: %Id alloc: %Id (%d%%) f: %d%% new-size: %Id new-alloc: %Id";
-    }
-
-    static const char* gcMakeUnusedArrayMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "Making unused array [%Ix, %Ix[";
-    }
-
-    static const char* gcStartBgcThread()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "beginning of bgc on heap %d: gen2 FL: %d, FO: %d, frag: %d";
-    }
+    #include "../../inc/gcmsg.inl"
 };
 
 struct StressLogMsg

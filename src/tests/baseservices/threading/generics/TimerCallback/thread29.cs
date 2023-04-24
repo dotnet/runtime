@@ -2,21 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 class Gen
 {
 	public static void Target<U>(object p)
 	{			
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=p.GetType());
-		if (Test.Xcounter>=Test.nThreads)
+		Test_thread29.Eval(typeof(U)!=p.GetType());
+		if (Test_thread29.Xcounter>=Test_thread29.nThreads)
 		{
 			ManualResetEvent evt = (ManualResetEvent) p;	
 			evt.Set();
 		}
 		else
 		{
-			Interlocked.Increment(ref Test.Xcounter);	
+			Interlocked.Increment(ref Test_thread29.Xcounter);	
 		}
 	}
 	
@@ -25,16 +26,16 @@ class Gen
 		ManualResetEvent evt = new ManualResetEvent(false);		
 
 		TimerCallback tcb = new TimerCallback(Gen.Target<U>);
-		Timer timer = new Timer(tcb,evt,Test.delay,Test.period);
+		Timer timer = new Timer(tcb,evt,Test_thread29.delay,Test_thread29.period);
 	
 		evt.WaitOne();
 		timer.Dispose();
-		Test.Eval(Test.Xcounter>=Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread29.Eval(Test_thread29.Xcounter>=Test_thread29.nThreads);
+		Test_thread29.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread29
 {
 	public static int delay = 0;
 	public static int period = 2;
@@ -53,7 +54,8 @@ public class Test
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Gen.ThreadPoolTest<object>();
 		Gen.ThreadPoolTest<string>();

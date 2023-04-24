@@ -26,7 +26,7 @@ bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
         return false;
 
     path.resize(dwModuleFileName);
-    *recv = path;
+    recv->assign(path);
     return true;
 }
 
@@ -38,13 +38,6 @@ bool GetModuleHandleFromAddress(void *addr, HMODULE *hModule)
         hModule);
 
     return (res != FALSE);
-}
-
-pal::string_t pal::to_lower(const pal::string_t& in)
-{
-    pal::string_t ret = in;
-    std::transform(ret.begin(), ret.end(), ret.begin(), ::towlower);
-    return ret;
 }
 
 pal::string_t pal::get_timestamp()
@@ -272,6 +265,27 @@ bool pal::get_default_servicing_directory(string_t* recv)
     return true;
 }
 
+namespace
+{
+    bool is_supported_multi_arch_install(pal::architecture arch)
+    {
+#if defined(TARGET_AMD64)
+        // x64, looking for x86 install or emulating x64, looking for arm64 install
+        return arch == pal::architecture::x86
+            || (arch == pal::architecture::arm64 && pal::is_emulating_x64());
+#elif defined(TARGET_ARM64)
+        // arm64, looking for x64 install
+        return arch == pal::architecture::x64;
+#elif defined(TARGET_X86)
+        // x86 running in WoW64, looking for x64 install
+        return arch == pal::architecture::x64 && pal::is_running_in_wow64();
+#else
+        // Others do not support default install locations on a different architecture
+        return false;
+#endif
+    }
+}
+
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
     //  ***Used only for testing***
@@ -283,11 +297,30 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
     //  ***************************
 
+    return get_default_installation_dir_for_arch(get_current_arch(), recv);
+}
+
+bool pal::get_default_installation_dir_for_arch(pal::architecture arch, pal::string_t* recv)
+{
+    bool is_current_arch = arch == get_current_arch();
+
+    // Bail out early for unsupported requests for different architectures
+    if (!is_current_arch && !is_supported_multi_arch_install(arch))
+        return false;
+
     const pal::char_t* program_files_dir;
-    if (pal::is_running_in_wow64())
+    if (is_current_arch && pal::is_running_in_wow64())
     {
+        // Running x86 on x64, looking for x86 install
         program_files_dir = _X("ProgramFiles(x86)");
     }
+#if defined(TARGET_AMD64)
+    else if (!is_current_arch && arch == pal::architecture::x86)
+    {
+        // Running x64, looking for x86 install
+        program_files_dir = _X("ProgramFiles(x86)");
+    }
+#endif
     else
     {
         program_files_dir = _X("ProgramFiles");
@@ -299,13 +332,26 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
 
     append_path(recv, _X("dotnet"));
+    if (is_current_arch && pal::is_emulating_x64())
+    {
+        // Install location for emulated x64 should be %ProgramFiles%\dotnet\x64.
+        append_path(recv, get_arch_name(arch));
+    }
+#if defined(TARGET_ARM64)
+    else if (!is_current_arch)
+    {
+        // Running arm64, looking for x64 install
+        assert(arch == pal::architecture::x64);
+        append_path(recv, get_arch_name(arch));
+    }
+#endif
 
     return true;
 }
 
 namespace
 {
-    void get_dotnet_install_location_registry_path(HKEY * key_hive, pal::string_t * sub_key, const pal::char_t ** value)
+    void get_dotnet_install_location_registry_path(pal::architecture arch, HKEY * key_hive, pal::string_t * sub_key, const pal::char_t ** value)
     {
         *key_hive = HKEY_LOCAL_MACHINE;
         // The registry search occurs in the 32-bit registry in all cases.
@@ -324,34 +370,29 @@ namespace
             dotnet_key_path = environmentRegistryPathOverride;
         }
 
-        *sub_key = dotnet_key_path + pal::string_t(_X("\\Setup\\InstalledVersions\\")) + get_arch();
+        *sub_key = dotnet_key_path + pal::string_t(_X("\\Setup\\InstalledVersions\\")) + get_arch_name(arch);
         *value = _X("InstallLocation");
+    }
+
+    pal::string_t registry_path_as_string(const HKEY& key_hive, const pal::string_t& sub_key, const pal::char_t* value)
+    {
+        assert(key_hive == HKEY_CURRENT_USER || key_hive == HKEY_LOCAL_MACHINE);
+        return (key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value;
     }
 }
 
-bool pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
+pal::string_t pal::get_dotnet_self_registered_config_location(pal::architecture arch)
 {
-#if !defined(TARGET_AMD64) && !defined(TARGET_X86)
-    return false;
-#else
     HKEY key_hive;
     pal::string_t sub_key;
     const pal::char_t* value;
-    get_dotnet_install_location_registry_path(&key_hive, &sub_key, &value);
+    get_dotnet_install_location_registry_path(arch, &key_hive, &sub_key, &value);
 
-    *recv = (key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value;
-    return true;
-#endif
+    return registry_path_as_string(key_hive, sub_key, value);
 }
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
-#if !defined(TARGET_AMD64) && !defined(TARGET_X86)
-    //  Self-registered SDK installation directory is only supported for x64 and x86 architectures.
-    return false;
-#else
-    recv->clear();
-
     //  ***Used only for testing***
     pal::string_t environmentOverride;
     if (test_only_getenv(_X("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH"), &environmentOverride))
@@ -361,10 +402,20 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     }
     //  ***************************
 
+    return get_dotnet_self_registered_dir_for_arch(get_current_arch(), recv);
+}
+
+bool pal::get_dotnet_self_registered_dir_for_arch(pal::architecture arch, pal::string_t* recv)
+{
+    recv->clear();
+
     HKEY hkeyHive;
     pal::string_t sub_key;
     const pal::char_t* value;
-    get_dotnet_install_location_registry_path(&hkeyHive, &sub_key, &value);
+    get_dotnet_install_location_registry_path(arch, &hkeyHive, &sub_key, &value);
+
+    if (trace::is_enabled())
+        trace::verbose(_X("Looking for architecture-specific registry value in '%s'."), registry_path_as_string(hkeyHive, sub_key, value).c_str());
 
     // Must use RegOpenKeyEx to be able to specify KEY_WOW64_32KEY to access the 32-bit registry in all cases.
     // The RegGetValue has this option available only on Win10.
@@ -372,7 +423,15 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     LSTATUS result = ::RegOpenKeyExW(hkeyHive, sub_key.c_str(), 0, KEY_READ | KEY_WOW64_32KEY, &hkey);
     if (result != ERROR_SUCCESS)
     {
-        trace::verbose(_X("Can't open the SDK installed location registry key, result: 0x%X"), result);
+        if (result == ERROR_FILE_NOT_FOUND)
+        {
+            trace::verbose(_X("The registry key ['%s'] does not exist."), sub_key.c_str());
+        }
+        else
+        {
+            trace::verbose(_X("Failed to open the registry key. Error code: 0x%X"), result);
+        }
+
         return false;
     }
 
@@ -381,7 +440,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     result = ::RegGetValueW(hkey, nullptr, value, RRF_RT_REG_SZ, nullptr, nullptr, &size);
     if (result != ERROR_SUCCESS || size == 0)
     {
-        trace::verbose(_X("Can't get the size of the SDK location registry value or it's empty, result: 0x%X"), result);
+        trace::verbose(_X("Failed to get the size of the install location registry value or it's empty. Error code: 0x%X"), result);
         ::RegCloseKey(hkey);
         return false;
     }
@@ -391,15 +450,15 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     result = ::RegGetValueW(hkey, nullptr, value, RRF_RT_REG_SZ, nullptr, &buffer[0], &size);
     if (result != ERROR_SUCCESS)
     {
-        trace::verbose(_X("Can't get the value of the SDK location registry value, result: 0x%X"), result);
+        trace::verbose(_X("Failed to get the value of the install location registry value. Error code: 0x%X"), result);
         ::RegCloseKey(hkey);
         return false;
     }
 
     recv->assign(buffer.data());
     ::RegCloseKey(hkey);
+    trace::verbose(_X("Found registered install location '%s'."), recv->c_str());
     return true;
-#endif
 }
 
 bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
@@ -409,11 +468,14 @@ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
     bool dir_found = false;
     if (pal::get_dotnet_self_registered_dir(&custom_dir))
     {
+        remove_trailing_dir_separator(&custom_dir);
         dirs->push_back(custom_dir);
         dir_found = true;
     }
     if (get_default_installation_dir(&default_dir))
     {
+        remove_trailing_dir_separator(&default_dir);
+
         // Avoid duplicate global dirs.
         if (!dir_found || !are_paths_equal_with_normalized_casing(custom_dir, default_dir))
         {
@@ -508,14 +570,18 @@ bool pal::getenv(const char_t* name, string_t* recv)
         auto err = GetLastError();
         if (err != ERROR_ENVVAR_NOT_FOUND)
         {
-            trace::error(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
+            trace::warning(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(err));
         }
         return false;
     }
     auto buf = new char_t[length];
     if (::GetEnvironmentVariableW(name, buf, length) == 0)
     {
-        trace::error(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
+        auto err = GetLastError();
+        if (err != ERROR_ENVVAR_NOT_FOUND)
+        {
+            trace::warning(_X("Failed to read environment variable [%s], HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(err));
+        }
         return false;
     }
 
@@ -569,7 +635,7 @@ bool pal::get_module_path(dll_t mod, string_t* recv)
     return GetModuleFileNameWrapper(mod, recv);
 }
 
-bool pal::get_temp_directory(pal::string_t& tmp_dir)
+bool get_extraction_base_parent_directory(pal::string_t& directory)
 {
     const size_t max_len = MAX_PATH + 1;
     pal::char_t temp_path[max_len];
@@ -581,15 +647,16 @@ bool pal::get_temp_directory(pal::string_t& tmp_dir)
     }
 
     assert(len < max_len);
-    tmp_dir.assign(temp_path);
+    directory.assign(temp_path);
 
-    return realpath(&tmp_dir);
+    return pal::realpath(&directory);
 }
 
 bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
 {
-    if (!get_temp_directory(extraction_dir))
+    if (!get_extraction_base_parent_directory(extraction_dir))
     {
+        trace::error(_X("Failed to determine default extraction location. Check if 'TMP' or 'TEMP' points to existing path."));
         return false;
     }
 
@@ -605,6 +672,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     if (CreateDirectoryW(extraction_dir.c_str(), NULL) == 0 &&
         GetLastError() != ERROR_ALREADY_EXISTS)
     {
+        trace::error(_X("Failed to create default extraction directory [%s]. %s, error code: %d"), extraction_dir.c_str(), pal::strerror(errno).c_str(), GetLastError());
         return false;
     }
 
@@ -623,6 +691,17 @@ static bool wchar_convert_helper(DWORD code_page, const char* cstr, size_t len, 
     }
     out->resize(size, '\0');
     return ::MultiByteToWideChar(code_page, 0, cstr, static_cast<uint32_t>(len), &(*out)[0], static_cast<uint32_t>(out->size())) != 0;
+}
+
+size_t pal::pal_utf8string(const pal::string_t& str, char* out_buffer, size_t len)
+{
+    // Pass -1 as we want explicit null termination in the char buffer.
+    size_t size = ::WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, nullptr, 0, nullptr, nullptr);
+    if (size == 0 || size > len)
+        return size;
+
+    // Pass -1 as we want explicit null termination in the char buffer.
+    return ::WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, out_buffer, static_cast<uint32_t>(len), nullptr, nullptr);
 }
 
 bool pal::pal_utf8string(const pal::string_t& str, std::vector<char>* out)
@@ -652,11 +731,15 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 // Return if path is valid and file exists, return true and adjust path as appropriate.
 bool pal::realpath(string_t* path, bool skip_error_logging)
 {
+    if (path->empty())
+    {
+        return false;
+    }
+
     if (LongFile::IsNormalized(*path))
     {
         WIN32_FILE_ATTRIBUTE_DATA data;
-        if (path->empty() // An empty path doesn't exist
-            || GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
+        if (GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
         {
             return true;
         }
@@ -720,11 +803,6 @@ bool pal::realpath(string_t* path, bool skip_error_logging)
 
 bool pal::file_exists(const string_t& path)
 {
-    if (path.empty())
-    {
-        return false;
-    }
-
     string_t tmp(path);
     return pal::realpath(&tmp, true);
 }
@@ -796,6 +874,46 @@ bool pal::is_running_in_wow64()
         return false;
     }
     return (fWow64Process != FALSE);
+}
+
+typedef BOOL (WINAPI* is_wow64_process2)(
+    HANDLE hProcess,
+    USHORT *pProcessMachine,
+    USHORT *pNativeMachine
+);
+
+bool pal::is_emulating_x64()
+{
+#if defined(TARGET_AMD64)
+    auto kernel32 = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (kernel32 == nullptr)
+    {
+        // Loading kernel32.dll failed, log the error and continue.
+        trace::info(_X("Could not load 'kernel32.dll': %u"), GetLastError());
+        return false;
+    }
+
+    is_wow64_process2 is_wow64_process2_func = (is_wow64_process2)::GetProcAddress(kernel32, "IsWow64Process2");
+    if (is_wow64_process2_func == nullptr)
+    {
+        // Could not find IsWow64Process2.
+        return false;
+    }
+
+    USHORT process_machine;
+    USHORT native_machine;
+    if (!is_wow64_process2_func(GetCurrentProcess(), &process_machine, &native_machine))
+    {
+        // IsWow64Process2 failed. Log the error and continue.
+        trace::info(_X("Call to IsWow64Process2 failed: %u"), GetLastError());
+        return false;
+    }
+
+    // If we are running targeting x64 on a non-x64 machine, we are emulating
+    return native_machine != IMAGE_FILE_MACHINE_AMD64;
+#else
+    return false;
+#endif
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)

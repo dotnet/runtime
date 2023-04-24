@@ -26,7 +26,7 @@ namespace ILCompiler.PEWriter
         /// Index of the section holding the symbol target.
         /// </summary>
         public readonly int SectionIndex;
-        
+
         /// <summary>
         /// Offset of the symbol within the section.
         /// </summary>
@@ -46,7 +46,7 @@ namespace ILCompiler.PEWriter
             Size = size;
         }
     }
-    
+
     /// <summary>
     /// After placing an ObjectData within a section, we use this helper structure to record
     /// its relocation information for the final relocation pass.
@@ -118,7 +118,7 @@ namespace ILCompiler.PEWriter
         /// the output code section).
         /// </summary>
         public readonly int Alignment;
-        
+
         /// <summary>
         /// Blob builder representing the section content.
         /// </summary>
@@ -313,6 +313,10 @@ namespace ILCompiler.PEWriter
                     _codePadding = 0xD43E0000u;
                     break;
 
+                case TargetArchitecture.LoongArch64:
+                    _codePadding = 0x002A0005u;
+                    break;
+
                 default:
                     throw new NotImplementedException();
             }
@@ -359,7 +363,7 @@ namespace ILCompiler.PEWriter
         /// Look up final file position for a given symbol. This assumes the section have already been placed.
         /// </summary>
         /// <param name="symbol">Symbol to look up</param>
-        /// <returns>File position of the symbol, from the begining of the emitted image</returns>
+        /// <returns>File position of the symbol, from the beginning of the emitted image</returns>
         public int GetSymbolFilePosition(ISymbolNode symbol)
         {
             SymbolTarget symbolTarget = _symbolMap[symbol];
@@ -418,14 +422,14 @@ namespace ILCompiler.PEWriter
             _win32ResourcesSize = resourcesSize;
         }
 
-        private CoreRTNameMangler _nameMangler;
-        
+        private NativeAotNameMangler _nameMangler;
+
         private NameMangler GetNameMangler()
         {
             if (_nameMangler == null)
             {
                 // TODO-REFACTOR: why do we have two name manglers?
-                _nameMangler = new CoreRTNameMangler();
+                _nameMangler = new NativeAotNameMangler();
                 _nameMangler.CompilationUnitPrefix = "";
             }
             return _nameMangler;
@@ -572,7 +576,7 @@ namespace ILCompiler.PEWriter
             {
                 return SerializeRelocationSection(sectionLocation);
             }
-            
+
             if (name == R2RPEBuilder.ExportDataSectionName)
             {
                 return SerializeExportSection(sectionLocation);
@@ -637,7 +641,7 @@ namespace ILCompiler.PEWriter
             // Even though the format doesn't dictate it, it seems customary
             // to align the base RVA's on 4K boundaries.
             const int BaseRVAAlignment = 1 << RelocationTypeShift;
-            
+
             BlobBuilder builder = new BlobBuilder();
             int baseRVA = 0;
             List<ushort> offsetsAndTypes = null;
@@ -703,6 +707,13 @@ namespace ILCompiler.PEWriter
         /// <param name="offsetsAndTypes">16-bit entries encoding offset relative to the base RVA (low 12 bits) and relocation type (top 4 bite)</param>
         private static void FlushRelocationBlock(BlobBuilder builder, int baseRVA, List<ushort> offsetsAndTypes)
         {
+            // Ensure blocks are 4-byte aligned. This is required by kernel memory manager
+            // on Windows 8.1 and earlier.
+            if ((offsetsAndTypes.Count & 1) == 1)
+            {
+                offsetsAndTypes.Add(0);
+            }
+
             // First, emit the block header: 4 bytes starting RVA,
             builder.WriteInt32(baseRVA);
             // followed by the total block size comprising this header
@@ -722,7 +733,7 @@ namespace ILCompiler.PEWriter
         private BlobBuilder SerializeExportSection(SectionLocation sectionLocation)
         {
             _exportSymbols.MergeSort((es1, es2) => StringComparer.Ordinal.Compare(es1.Name, es2.Name));
-            
+
             BlobBuilder builder = new BlobBuilder();
 
             int minOrdinal = int.MaxValue;
@@ -735,7 +746,7 @@ namespace ILCompiler.PEWriter
                 symbol.NameRVAWhenPlaced = sectionLocation.RelativeVirtualAddress + builder.Count;
                 builder.WriteUTF8(symbol.Name);
                 builder.WriteByte(0);
-                
+
                 if (symbol.Ordinal < minOrdinal)
                 {
                     minOrdinal = symbol.Ordinal;
@@ -781,7 +792,7 @@ namespace ILCompiler.PEWriter
             {
                 builder.WriteInt32(addressTableEntry);
             }
-            
+
             // Emit the export directory table
             builder.Align(4);
             int exportDirectoryTableRVA = sectionLocation.RelativeVirtualAddress + builder.Count;
@@ -810,7 +821,7 @@ namespace ILCompiler.PEWriter
             int exportDirectorySize = sectionLocation.RelativeVirtualAddress + builder.Count - exportDirectoryTableRVA;
 
             _exportDirectoryEntry = new DirectoryEntry(relativeVirtualAddress: exportDirectoryTableRVA, size: exportDirectorySize);
-            
+
             return builder;
         }
 
@@ -835,7 +846,7 @@ namespace ILCompiler.PEWriter
                 Section section = _sections[symbolTarget.SectionIndex];
                 Debug.Assert(section.RVAWhenPlaced != 0);
 
-                // Windows has a bug in its resource processing logic that occurs when 
+                // Windows has a bug in its resource processing logic that occurs when
                 // 1. A PE file is loaded as a data file
                 // 2. The resource data found in the resources has an RVA which has a magnitude greater than the size of the section which holds the resources
                 // 3. The offset of the start of the resource data from the start of the section is not zero.
@@ -851,7 +862,7 @@ namespace ILCompiler.PEWriter
             {
                 directoriesBuilder.ExportTable = _exportDirectoryEntry;
             }
-            
+
             int relocationTableRVA = directoriesBuilder.BaseRelocationTable.RelativeVirtualAddress;
             if (relocationTableRVA == 0)
             {

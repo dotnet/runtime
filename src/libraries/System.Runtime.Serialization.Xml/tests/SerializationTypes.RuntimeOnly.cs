@@ -6,17 +6,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
+using System.Text;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.IO;
-using System.Text;
-using System.Reflection;
-using System.Threading.Tasks;
-using System.Runtime.Serialization.Json;
 
 namespace SerializationTypes
 {
@@ -767,6 +766,19 @@ namespace SerializationTypes
         }
     }
 
+    public class WithXmlElement
+    {
+        public XmlElement xml;
+
+        public WithXmlElement() { }
+
+        public WithXmlElement(bool init)
+        {
+            var doc = new XmlDocument();
+            xml = doc.CreateElement("Element1");
+        }
+    }
+
     public class WithXElementWithNestedXElement
     {
         public XElement e1;
@@ -837,6 +849,8 @@ namespace SerializationTypes
         public string @Name5 { get; set; }
 
         public virtual string Name6 { get; set; }
+
+        public virtual string Name7 { get; set; }
     }
 
     public class DerivedTypeWithDifferentOverrides : BaseType
@@ -852,6 +866,8 @@ namespace SerializationTypes
         public new string Name5 { get; set; }
 
         public override string Name6 { get; set; }
+
+        public override string Name7 { set { base.Name7 = value; } }
     }
 
     public class DerivedTypeWithDifferentOverrides2 : DerivedTypeWithDifferentOverrides
@@ -1726,13 +1742,13 @@ namespace SerializationTypes
         public string Name { get; set; }
     }
 
-    public class SimpleTypeWihtMoreProperties
+    public class SimpleTypeWithMoreProperties
     {
         public string StringProperty { get; set; }
         public int IntProperty { get; set; }
         public MyEnum EnumProperty { get; set; }
         public List<string> CollectionProperty { get; set; }
-        public List<SimpleTypeWihtMoreProperties> SimpleTypeList { get; set; }
+        public List<SimpleTypeWithMoreProperties> SimpleTypeList { get; set; }
     }
 
     public class TypeWith2DArrayProperty1
@@ -1985,6 +2001,13 @@ namespace SerializationTypes
     {
         [XmlAttribute(Form = XmlSchemaForm.Qualified)]
         public byte[] XmlAttributeForms;
+    }
+
+    [XmlType(TypeName = "MyXmlType")]
+    public class TypeWithNullableByteArray
+    {
+        [XmlElement(DataType = "base64Binary", IsNullable = true)]
+        public byte[] XmlAttributeForms { get; set; }
     }
 
     [XmlType(TypeName = "MyXmlType")]
@@ -2376,7 +2399,7 @@ public class Family
         sb.AppendLine("Family members:");
         foreach (var member in this.Members)
         {
-            sb.AppendLine("  " + member);
+            sb.AppendLine($"  {member}");
         }
 
         return sb.ToString();
@@ -2393,7 +2416,7 @@ public class FamilyForStress
         sb.AppendLine("Family members:");
         foreach (var member in this.Members)
         {
-            sb.AppendLine("  " + member);
+            sb.AppendLine($"  {member}");
         }
 
         return sb.ToString();
@@ -3174,7 +3197,7 @@ public class TypeWithSerializableEnum
 }
 
 [DataContract]
-public class Poseesions
+public class Posessions
 {
     [DataMember]
     public string ItemName;
@@ -4122,6 +4145,9 @@ public class MyArgumentException : Exception, ISerializable
         _paramName = paramName;
     }
 
+#if NET8_0_OR_GREATER
+    [Obsolete("Exception..ctor(SerializationInfo, StreamingContext) is obsolete.", DiagnosticId = "SYSLIB0051")]
+#endif
     protected MyArgumentException(SerializationInfo info, StreamingContext context) : base(info, context) {
         _paramName = info.GetString("ParamName");
     }
@@ -4138,6 +4164,9 @@ public class MyArgumentException : Exception, ISerializable
         }
     }
 
+#if NET8_0_OR_GREATER
+    [Obsolete("Exception.GetObjectData is obsolete.", DiagnosticId = "SYSLIB0051")]
+#endif
     public override void GetObjectData(SerializationInfo info, StreamingContext context)
     {
         if (info == null)
@@ -4321,6 +4350,29 @@ public class NativeJsonTestData
 
     public Type Type { get; set; }
     public Func<object> Instantiate { get; set; }
+}
+
+[DataContract]
+public class ContractGeneric : IExtensibleDataObject
+{
+    public ExtensionDataObject ExtensionData { get; set; }
+}
+
+[DataContract(Name = "ContractGeneric")]
+public class ContractExtended
+{
+    [DataMember(Name = "item", Order = 1)]
+    public Item Item;
+}
+
+[DataContract]
+public class Item
+{
+    [DataMember(Name = "id", Order = 1, EmitDefaultValue = false)]
+    public long? Id;
+
+    [DataMember(Name = "code", Order = 2, EmitDefaultValue = false)]
+    public long? Code;
 }
 
 public class TypeWithCollectionAndDateTimeOffset

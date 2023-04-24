@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace bug
 {
-    class Program
+    public class Program
     {
         static int Pass = 100;
         static int Fail = -1;
@@ -15,7 +16,8 @@ namespace bug
         // 'test' instruction incorrectly, because shift
         // operations on xarch don't modify flags if the
         // shift count is zero.
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             // Absolute bits
             int bitCount = 0;

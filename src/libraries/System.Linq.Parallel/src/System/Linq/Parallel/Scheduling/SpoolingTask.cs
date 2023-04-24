@@ -82,6 +82,7 @@ namespace System.Linq.Parallel
         //     taskScheduler   - the task manager on which to execute
         //
 
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         internal static void SpoolPipeline<TInputOutput, TIgnoreKey>(
             QueryTaskGroupState groupState, PartitionedStream<TInputOutput, TIgnoreKey> partitions,
             AsynchronousChannel<TInputOutput>[] channels, TaskScheduler taskScheduler)
@@ -245,10 +246,7 @@ namespace System.Linq.Parallel
             base.SpoolingFinally();
 
             // Signal that we are done, in the case of asynchronous consumption.
-            if (_destination != null)
-            {
-                _destination.SetDone();
-            }
+            _destination?.SetDone();
 
             // Dispose of the source enumerator *after* signaling that the task is done.
             // We call Dispose() last to ensure that if it throws an exception, we will not cause a deadlock.
@@ -264,6 +262,7 @@ namespace System.Linq.Parallel
     /// </summary>
     /// <typeparam name="TInputOutput"></typeparam>
     /// <typeparam name="TIgnoreKey"></typeparam>
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     internal sealed class PipelineSpoolingTask<TInputOutput, TIgnoreKey> : SpoolingTaskBase
     {
         // The data source from which to pull data.
@@ -336,10 +335,7 @@ namespace System.Linq.Parallel
             base.SpoolingFinally();
 
             // Signal that we are done, in the case of asynchronous consumption.
-            if (_destination != null)
-            {
-                _destination.SetDone();
-            }
+            _destination?.SetDone();
 
             // Dispose of the source enumerator *after* signaling that the task is done.
             // We call Dispose() last to ensure that if it throws an exception, we will not cause a deadlock.

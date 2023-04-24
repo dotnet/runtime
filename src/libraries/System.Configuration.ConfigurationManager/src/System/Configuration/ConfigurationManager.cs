@@ -224,7 +224,7 @@ namespace System.Configuration
             if (null == configuration) return;
 
             // Preload root-level sections.
-            foreach (ConfigurationSection section in configuration.Sections) { }
+            foreach (ConfigurationSection _ in configuration.Sections) { }
 
             // Recursively preload all section groups and sections.
             foreach (ConfigurationSectionGroup sectionGroup in configuration.SectionGroups)
@@ -236,7 +236,7 @@ namespace System.Configuration
             if (null == sectionGroup) return;
 
             // Preload sections just by iterating.
-            foreach (ConfigurationSection section in sectionGroup.Sections) { }
+            foreach (ConfigurationSection _ in sectionGroup.Sections) { }
 
             // Load child section groups.
             foreach (ConfigurationSectionGroup childSectionGroup in sectionGroup.SectionGroups)

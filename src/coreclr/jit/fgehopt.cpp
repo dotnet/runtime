@@ -37,8 +37,8 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgPredsComputed);
 
     if (compHndBBtabCount == 0)
     {
@@ -99,10 +99,18 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
             continue;
         }
 
+        // If the finally's block jumps back to itself, then it is not empty.
+        if ((firstBlock->bbJumpKind == BBJ_ALWAYS) && firstBlock->bbJumpDest == firstBlock)
+        {
+            JITDUMP("EH#%u finally has basic block that jumps to itself; skipping.\n", XTnum);
+            XTnum++;
+            continue;
+        }
+
         // Limit for now to finallys that contain only a GT_RETFILT.
         bool isEmpty = true;
 
-        for (Statement* stmt : firstBlock->Statements())
+        for (Statement* const stmt : firstBlock->Statements())
         {
             GenTree* stmtExpr = stmt->GetRootNode();
 
@@ -159,15 +167,15 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
 
                 // Ref count updates.
                 fgAddRefPred(postTryFinallyBlock, currentBlock);
-                // fgRemoveRefPred(firstBlock, currentBlock);
+                fgRemoveRefPred(firstBlock, currentBlock);
 
                 // Delete the leave block, which should be marked as
-                // keep always.
+                // keep always and have the sole finally block as a pred.
                 assert((leaveBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
                 nextBlock = leaveBlock->bbNext;
-
+                fgRemoveRefPred(leaveBlock, firstBlock);
                 leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
-                fgRemoveBlock(leaveBlock, true);
+                fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                 // Cleanup the postTryFinallyBlock
                 fgCleanupContinuation(postTryFinallyBlock);
@@ -186,8 +194,8 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         firstBlock->bbRefs = 0;
 
         // Remove the handler block.
-        const bool unreachable = true;
         firstBlock->bbFlags &= ~BBF_DONT_REMOVE;
+        constexpr bool unreachable = true;
         fgRemoveBlock(firstBlock, unreachable);
 
         // Find enclosing try region for the try, if any, and update
@@ -197,7 +205,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() == XTnum);
 
-        for (BasicBlock* block = firstTryBlock; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstTryBlock))
         {
             // Look for blocks directly contained in this try, and
             // update the try region appropriately.
@@ -284,8 +292,8 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgPredsComputed);
 
     bool enableRemoveEmptyTry = true;
 
@@ -349,7 +357,6 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         BasicBlock* const lastTryBlock      = HBtab->ebdTryLast;
         BasicBlock* const firstHandlerBlock = HBtab->ebdHndBeg;
         BasicBlock* const lastHandlerBlock  = HBtab->ebdHndLast;
-        BasicBlock* const endHandlerBlock   = lastHandlerBlock->bbNext;
 
         assert(firstTryBlock->getTryIndex() == XTnum);
 
@@ -436,7 +443,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
                 if (block != callFinally)
                 {
-                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n");
+                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n", XTnum, block->bbNum);
                     verifiedSingleCallfinally = false;
                     break;
                 }
@@ -447,7 +454,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
         if (!verifiedSingleCallfinally)
         {
-            JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n");
+            JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n", XTnum);
             XTnum++;
             assert(verifiedSingleCallfinally);
             continue;
@@ -474,7 +481,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // handler region (if any) won't change.
         //
         // Kind of overkill to loop here, but hey.
-        for (BasicBlock* block = firstTryBlock; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstTryBlock))
         {
             // Look for blocks directly contained in this try, and
             // update the try region appropriately.
@@ -511,7 +518,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // remove the EH table entry.  Change handler exits to jump to
         // the continuation.  Clear catch type on handler entry.
         // Decrement nesting level of enclosed GT_END_LFINs.
-        for (BasicBlock* block = firstHandlerBlock; block != endHandlerBlock; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstHandlerBlock, lastHandlerBlock))
         {
             if (block == firstHandlerBlock)
             {
@@ -538,6 +545,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
                     block->bbJumpKind = BBJ_ALWAYS;
                     block->bbJumpDest = continuation;
                     fgAddRefPred(continuation, block);
+                    fgRemoveRefPred(leave, block);
                 }
             }
 
@@ -545,7 +553,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
             // If we're in a non-funclet model, decrement the nesting
             // level of any GT_END_LFIN we find in the handler region,
             // since we're removing the enclosing handler.
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 GenTree* expr = stmt->GetRootNode();
                 if (expr->gtOper == GT_END_LFIN)
@@ -562,6 +570,13 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
         // EH table so XTnum now points at the next entry and will update
         // the EH region indices of any nested EH in the (former) handler.
         fgRemoveEHTableEntry(XTnum);
+
+        // (7) The handler entry has an artificial extra ref count. Remove it.
+        // There also should be one normal ref, from the try, and the handler
+        // may contain internal branches back to its start. So the ref count
+        // should currently be at least 2.
+        assert(firstHandlerBlock->bbRefs >= 2);
+        firstHandlerBlock->bbRefs -= 1;
 
         // Another one bites the dust...
         emptyCount++;
@@ -614,8 +629,8 @@ PhaseStatus Compiler::fgCloneFinally()
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgPredsComputed);
 
     bool enableCloning = true;
 
@@ -733,7 +748,7 @@ PhaseStatus Compiler::fgCloneFinally()
 
             // Should we compute statement cost here, or is it
             // premature...? For now just count statements I guess.
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 regionStmtCount++;
             }
@@ -791,12 +806,12 @@ PhaseStatus Compiler::fgCloneFinally()
         assert(bbInTryRegions(XTnum, lastTryBlock));
         BasicBlock* const beforeTryBlock = firstTryBlock->bbPrev;
 
-        BasicBlock*          normalCallFinallyBlock   = nullptr;
-        BasicBlock*          normalCallFinallyReturn  = nullptr;
-        BasicBlock*          cloneInsertAfter         = HBtab->ebdTryLast;
-        bool                 tryToRelocateCallFinally = false;
-        const bool           usingProfileWeights      = fgIsUsingProfileWeights();
-        BasicBlock::weight_t currentWeight            = BB_ZERO_WEIGHT;
+        BasicBlock* normalCallFinallyBlock   = nullptr;
+        BasicBlock* normalCallFinallyReturn  = nullptr;
+        BasicBlock* cloneInsertAfter         = HBtab->ebdTryLast;
+        bool        tryToRelocateCallFinally = false;
+        const bool  usingProfileWeights      = fgIsUsingProfileWeights();
+        weight_t    currentWeight            = BB_ZERO_WEIGHT;
 
         for (BasicBlock* block = lastTryBlock; block != beforeTryBlock; block = block->bbPrev)
         {
@@ -1015,24 +1030,27 @@ PhaseStatus Compiler::fgCloneFinally()
         //  try { } catch { } finally { }
         //
         // will have two call finally blocks, one for the normal exit
-        // from the try, and the the other for the exit from the
+        // from the try, and the other for the exit from the
         // catch. They'll both pass the same return point which is the
         // statement after the finally, so they can share the clone.
         //
         // Clone the finally body, and splice it into the flow graph
-        // within in the parent region of the try.
+        // within the parent region of the try.
         //
-        const unsigned             finallyTryIndex = firstBlock->bbTryIndex;
-        BasicBlock*                insertAfter     = nullptr;
-        BlockToBlockMap            blockMap(getAllocator());
-        bool                       clonedOk     = true;
-        unsigned                   cloneBBCount = 0;
-        BasicBlock::weight_t const originalWeight =
-            firstBlock->hasProfileWeight() ? firstBlock->bbWeight : BB_ZERO_WEIGHT;
+        const unsigned  finallyTryIndex = firstBlock->bbTryIndex;
+        BasicBlock*     insertAfter     = nullptr;
+        BlockToBlockMap blockMap(getAllocator());
+        bool            clonedOk       = true;
+        unsigned        cloneBBCount   = 0;
+        weight_t const  originalWeight = firstBlock->hasProfileWeight() ? firstBlock->bbWeight : BB_ZERO_WEIGHT;
 
         for (BasicBlock* block = firstBlock; block != nextBlock; block = block->bbNext)
         {
             BasicBlock* newBlock;
+
+            // Avoid asserts when `fgNewBBinRegion` verifies the handler table, by mapping any cloned finally
+            // return blocks to BBJ_ALWAYS (which we would do below if we didn't do it here).
+            BBjumpKinds bbNewJumpKind = (block->bbJumpKind == BBJ_EHFINALLYRET) ? BBJ_ALWAYS : block->bbJumpKind;
 
             if (block == firstBlock)
             {
@@ -1041,7 +1059,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 // callfinallys, depending on the EH implementation.
                 const unsigned    hndIndex = 0;
                 BasicBlock* const nearBlk  = cloneInsertAfter;
-                newBlock                   = fgNewBBinRegion(block->bbJumpKind, finallyTryIndex, hndIndex, nearBlk);
+                newBlock                   = fgNewBBinRegion(bbNewJumpKind, finallyTryIndex, hndIndex, nearBlk);
 
                 // If the clone ends up just after the finally, adjust
                 // the stopping point for finally traversal.
@@ -1055,7 +1073,7 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 // Put subsequent blocks in the same region...
                 const bool extendRegion = true;
-                newBlock                = fgNewBBafter(block->bbJumpKind, insertAfter, extendRegion);
+                newBlock                = fgNewBBafter(bbNewJumpKind, insertAfter, extendRegion);
             }
 
             cloneBBCount++;
@@ -1107,7 +1125,7 @@ PhaseStatus Compiler::fgCloneFinally()
         JITDUMP("Cloned finally blocks are: " FMT_BB " ... " FMT_BB "\n", blockMap[firstBlock]->bbNum,
                 blockMap[lastBlock]->bbNum);
 
-        // Redirect redirect any branches within the newly-cloned
+        // Redirect any branches within the newly-cloned
         // finally, and any finally returns to jump to the return
         // point.
         for (BasicBlock* block = firstBlock; block != nextBlock; block = block->bbNext)
@@ -1120,7 +1138,7 @@ PhaseStatus Compiler::fgCloneFinally()
                 GenTree*   finallyRetExpr = finallyRet->GetRootNode();
                 assert(finallyRetExpr->gtOper == GT_RETFILT);
                 fgRemoveStmt(newBlock, finallyRet);
-                newBlock->bbJumpKind = BBJ_ALWAYS;
+                assert(newBlock->bbJumpKind == BBJ_ALWAYS); // we mapped this above already
                 newBlock->bbJumpDest = normalCallFinallyReturn;
 
                 fgAddRefPred(normalCallFinallyReturn, newBlock);
@@ -1128,17 +1146,17 @@ PhaseStatus Compiler::fgCloneFinally()
             else
             {
                 optCopyBlkDest(block, newBlock);
-                optRedirectBlock(newBlock, &blockMap);
+                optRedirectBlock(newBlock, &blockMap, RedirectBlockOption::AddToPredLists);
             }
         }
 
         // Modify the targeting call finallys to branch to the cloned
         // finally. Make a note if we see some calls that can't be
         // retargeted (since they want to return to other places).
-        BasicBlock* const    firstCloneBlock    = blockMap[firstBlock];
-        bool                 retargetedAllCalls = true;
-        BasicBlock*          currentBlock       = firstCallFinallyRangeBlock;
-        BasicBlock::weight_t retargetedWeight   = BB_ZERO_WEIGHT;
+        BasicBlock* const firstCloneBlock    = blockMap[firstBlock];
+        bool              retargetedAllCalls = true;
+        BasicBlock*       currentBlock       = firstCallFinallyRangeBlock;
+        weight_t          retargetedWeight   = BB_ZERO_WEIGHT;
 
         while (currentBlock != endCallFinallyRangeBlock)
         {
@@ -1167,15 +1185,24 @@ PhaseStatus Compiler::fgCloneFinally()
 
                         // Ref count updates.
                         fgAddRefPred(firstCloneBlock, currentBlock);
-                        // fgRemoveRefPred(firstBlock, currentBlock);
+                        fgRemoveRefPred(firstBlock, currentBlock);
 
                         // Delete the leave block, which should be marked as
                         // keep always.
                         assert((leaveBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0);
                         nextBlock = leaveBlock->bbNext;
 
+                        // All preds should be BBJ_EHFINALLYRETs from the finally.
+                        for (BasicBlock* const leavePred : leaveBlock->PredBlocks())
+                        {
+                            assert(leavePred->bbJumpKind == BBJ_EHFINALLYRET);
+                            assert(leavePred->getHndIndex() == XTnum);
+                        }
+
+                        leaveBlock->bbRefs  = 0;
+                        leaveBlock->bbPreds = nullptr;
                         leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
-                        fgRemoveBlock(leaveBlock, true);
+                        fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                         // Make sure iteration isn't going off the deep end.
                         assert(leaveBlock != endCallFinallyRangeBlock);
@@ -1208,6 +1235,17 @@ PhaseStatus Compiler::fgCloneFinally()
             JITDUMP("All callfinallys retargeted; changing finally to fault.\n");
             HBtab->ebdHandlerType  = EH_HANDLER_FAULT_WAS_FINALLY;
             firstBlock->bbCatchTyp = BBCT_FAULT;
+
+            // Change all BBJ_EHFINALLYRET to BBJ_EHFAULTRET in the now-fault region.
+            BasicBlock* const hndBegIter = HBtab->ebdHndBeg;
+            BasicBlock* const hndEndIter = HBtab->ebdHndLast->bbNext;
+            for (BasicBlock* block = hndBegIter; block != hndEndIter; block = block->bbNext)
+            {
+                if (block->bbJumpKind == BBJ_EHFINALLYRET)
+                {
+                    block->bbJumpKind = BBJ_EHFAULTRET;
+                }
+            }
         }
         else
         {
@@ -1235,20 +1273,19 @@ PhaseStatus Compiler::fgCloneFinally()
         if (usingProfileWeights && (originalWeight > BB_ZERO_WEIGHT))
         {
             // We can't leave the finally more often than we enter.
-            // So cap cloned scale at 1.0f
+            // So cap cloned scale at 1.0
             //
-            BasicBlock::weight_t const clonedScale =
-                retargetedWeight < originalWeight ? (retargetedWeight / originalWeight) : 1.0f;
-            BasicBlock::weight_t const originalScale = 1.0f - clonedScale;
+            weight_t const clonedScale = retargetedWeight < originalWeight ? (retargetedWeight / originalWeight) : 1.0;
+            weight_t const originalScale = 1.0 - clonedScale;
 
             JITDUMP("Profile scale factor (" FMT_WT "/" FMT_WT ") => clone " FMT_WT " / original " FMT_WT "\n",
                     retargetedWeight, originalWeight, clonedScale, originalScale);
 
-            for (BasicBlock* block = firstBlock; block != lastBlock->bbNext; block = block->bbNext)
+            for (BasicBlock* const block : Blocks(firstBlock, lastBlock))
             {
                 if (block->hasProfileWeight())
                 {
-                    BasicBlock::weight_t const blockWeight = block->bbWeight;
+                    weight_t const blockWeight = block->bbWeight;
                     block->setBBProfileWeight(blockWeight * originalScale);
                     JITDUMP("Set weight of " FMT_BB " to " FMT_WT "\n", block->bbNum, block->bbWeight);
 
@@ -1343,10 +1380,9 @@ void Compiler::fgDebugCheckTryFinallyExits()
         BasicBlock* const lastTryBlock  = HBtab->ebdTryLast;
         assert(firstTryBlock->getTryIndex() <= XTnum);
         assert(lastTryBlock->getTryIndex() <= XTnum);
-        BasicBlock* const afterTryBlock = lastTryBlock->bbNext;
-        BasicBlock* const finallyBlock  = isFinally ? HBtab->ebdHndBeg : nullptr;
+        BasicBlock* const finallyBlock = isFinally ? HBtab->ebdHndBeg : nullptr;
 
-        for (BasicBlock* block = firstTryBlock; block != afterTryBlock; block = block->bbNext)
+        for (BasicBlock* const block : Blocks(firstTryBlock, lastTryBlock))
         {
             // Only check the directly contained blocks.
             assert(block->hasTryIndex());
@@ -1357,12 +1393,8 @@ void Compiler::fgDebugCheckTryFinallyExits()
             }
 
             // Look at each of the normal control flow possibilities.
-            const unsigned numSuccs = block->NumSucc();
-
-            for (unsigned i = 0; i < numSuccs; i++)
+            for (BasicBlock* const succBlock : block->Succs())
             {
-                BasicBlock* const succBlock = block->GetSucc(i);
-
                 if (succBlock->hasTryIndex() && succBlock->getTryIndex() <= XTnum)
                 {
                     // Successor does not exit this try region.
@@ -1514,7 +1546,7 @@ void Compiler::fgCleanupContinuation(BasicBlock* continuation)
     // Remove the GT_END_LFIN from the continuation,
     // Note we only expect to see one such statement.
     bool foundEndLFin = false;
-    for (Statement* stmt : continuation->Statements())
+    for (Statement* const stmt : continuation->Statements())
     {
         GenTree* expr = stmt->GetRootNode();
         if (expr->gtOper == GT_END_LFIN)
@@ -1566,7 +1598,7 @@ void Compiler::fgClearAllFinallyTargetBits()
     // in case bits are left over from EH clauses being deleted.
 
     // Walk all blocks, and reset the target bits.
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbFlags &= ~BBF_FINALLY_TARGET;
     }
@@ -1585,7 +1617,7 @@ void Compiler::fgAddFinallyTargetFlags()
         return;
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->isBBCallAlwaysPair())
         {
@@ -1603,6 +1635,32 @@ void Compiler::fgAddFinallyTargetFlags()
     }
 }
 
+//------------------------------------------------------------------------
+// fgFixFinallyTargetFlags: Update BBF_FINALLY_TARGET bits after redirecting flow
+//
+// Arguments:
+//   pred - source of flow
+//   succ - original target of flow from pred
+//   newSucc - new target of flow from pred
+//
+void Compiler::fgFixFinallyTargetFlags(BasicBlock* pred, BasicBlock* succ, BasicBlock* newSucc)
+{
+    if (pred->isBBCallAlwaysPairTail())
+    {
+        assert(succ->bbFlags & BBF_FINALLY_TARGET);
+        newSucc->bbFlags |= BBF_FINALLY_TARGET;
+        succ->bbFlags &= ~BBF_FINALLY_TARGET;
+
+        for (BasicBlock* const pred : succ->PredBlocks())
+        {
+            if (pred->isBBCallAlwaysPairTail())
+            {
+                succ->bbFlags |= BBF_FINALLY_TARGET;
+                break;
+            }
+        }
+    }
+}
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 //------------------------------------------------------------------------
@@ -1625,8 +1683,8 @@ PhaseStatus Compiler::fgMergeFinallyChains()
     assert(!fgFuncletsCreated);
 #endif // FEATURE_EH_FUNCLETS
 
-    // Assume we don't need to update the bbPreds lists.
-    assert(!fgComputePredsDone);
+    // We need to update the bbPreds lists.
+    assert(fgPredsComputed);
 
     if (compHndBBtabCount == 0)
     {
@@ -1682,10 +1740,8 @@ PhaseStatus Compiler::fgMergeFinallyChains()
 
     // Look for finallys.
     bool hasFinally = false;
-    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
-        EHblkDsc* const HBtab = &compHndBBtab[XTnum];
-
         // Check if this is a try/finally.
         if (HBtab->HasFinallyHandler())
         {
@@ -1741,7 +1797,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
             {
                 // The callfinally must be empty, so that we can
                 // safely retarget anything that branches here to
-                // another callfinally with the same contiuation.
+                // another callfinally with the same continuation.
                 assert(currentBlock->isEmpty());
 
                 // This callfinally invokes the finally for this try.
@@ -1873,7 +1929,7 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     BasicBlock* const canonicalCallFinally = continuationMap[continuationBlock];
     assert(canonicalCallFinally != nullptr);
 
-    // If the block already jumps to the canoncial call finally, no work needed.
+    // If the block already jumps to the canonical call finally, no work needed.
     if (block->bbJumpDest == canonicalCallFinally)
     {
         JITDUMP(FMT_BB " already canonical\n", block->bbNum);
@@ -1895,17 +1951,17 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     {
         // Add weight to the canonical call finally pair.
         //
-        BasicBlock::weight_t const canonicalWeight =
+        weight_t const canonicalWeight =
             canonicalCallFinally->hasProfileWeight() ? canonicalCallFinally->bbWeight : BB_ZERO_WEIGHT;
-        BasicBlock::weight_t const newCanonicalWeight = block->bbWeight + canonicalWeight;
+        weight_t const newCanonicalWeight = block->bbWeight + canonicalWeight;
 
         canonicalCallFinally->setBBProfileWeight(newCanonicalWeight);
 
         BasicBlock* const canonicalLeaveBlock = canonicalCallFinally->bbNext;
 
-        BasicBlock::weight_t const canonicalLeaveWeight =
+        weight_t const canonicalLeaveWeight =
             canonicalLeaveBlock->hasProfileWeight() ? canonicalLeaveBlock->bbWeight : BB_ZERO_WEIGHT;
-        BasicBlock::weight_t const newLeaveWeight = block->bbWeight + canonicalLeaveWeight;
+        weight_t const newLeaveWeight = block->bbWeight + canonicalLeaveWeight;
 
         canonicalLeaveBlock->setBBProfileWeight(newLeaveWeight);
 
@@ -1913,14 +1969,14 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
         //
         if (callFinally->hasProfileWeight())
         {
-            BasicBlock::weight_t const newCallFinallyWeight =
+            weight_t const newCallFinallyWeight =
                 callFinally->bbWeight > block->bbWeight ? callFinally->bbWeight - block->bbWeight : BB_ZERO_WEIGHT;
             callFinally->setBBProfileWeight(newCallFinallyWeight);
         }
 
         if (leaveBlock->hasProfileWeight())
         {
-            BasicBlock::weight_t const newLeaveWeight =
+            weight_t const newLeaveWeight =
                 leaveBlock->bbWeight > block->bbWeight ? leaveBlock->bbWeight - block->bbWeight : BB_ZERO_WEIGHT;
             leaveBlock->setBBProfileWeight(newLeaveWeight);
         }
@@ -1992,7 +2048,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 
     // This transformation requires block pred lists to be built
     // so that flow can be safely updated.
-    assert(fgComputePredsDone);
+    assert(fgPredsComputed);
 
     struct ThrowHelper
     {
@@ -2007,7 +2063,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
         {
         }
 
-        static bool Equals(const ThrowHelper x, const ThrowHelper& y)
+        static bool Equals(const ThrowHelper& x, const ThrowHelper& y)
         {
             return BasicBlock::sameEHRegion(x.m_block, y.m_block) && GenTreeCall::Equals(x.m_call, y.m_call);
         }
@@ -2123,23 +2179,21 @@ PhaseStatus Compiler::fgTailMergeThrows()
     // Second pass.
     //
     // We walk the map rather than the block list, to save a bit of time.
-    BlockToBlockMap::KeyIterator iter(blockMap.Begin());
-    BlockToBlockMap::KeyIterator end(blockMap.End());
-    unsigned                     updateCount = 0;
+    unsigned updateCount = 0;
 
-    for (; !iter.Equal(end); iter++)
+    for (BlockToBlockMap::Node* const iter : BlockToBlockMap::KeyValueIteration(&blockMap))
     {
-        BasicBlock* const nonCanonicalBlock = iter.Get();
-        BasicBlock* const canonicalBlock    = iter.GetValue();
-        flowList*         nextPredEdge      = nullptr;
+        BasicBlock* const nonCanonicalBlock = iter->GetKey();
+        BasicBlock* const canonicalBlock    = iter->GetValue();
+        FlowEdge*         nextPredEdge      = nullptr;
         bool              updated           = false;
 
         // Walk pred list of the non canonical block, updating flow to target
         // the canonical block instead.
-        for (flowList* predEdge = nonCanonicalBlock->bbPreds; predEdge != nullptr; predEdge = nextPredEdge)
+        for (FlowEdge* predEdge = nonCanonicalBlock->bbPreds; predEdge != nullptr; predEdge = nextPredEdge)
         {
-            BasicBlock* const predBlock = predEdge->getBlock();
-            nextPredEdge                = predEdge->flNext;
+            BasicBlock* const predBlock = predEdge->getSourceBlock();
+            nextPredEdge                = predEdge->getNextPredEdge();
 
             switch (predBlock->bbJumpKind)
             {
@@ -2217,7 +2271,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 }
 
 //------------------------------------------------------------------------
-// fgTailMergeThrowsFallThroughHelper: fixup flow for fall throughs to mergable throws
+// fgTailMergeThrowsFallThroughHelper: fixup flow for fall throughs to mergeable throws
 //
 // Arguments:
 //    predBlock - block falling through to the throw helper
@@ -2234,7 +2288,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
                                                   BasicBlock* nonCanonicalBlock,
                                                   BasicBlock* canonicalBlock,
-                                                  flowList*   predEdge)
+                                                  FlowEdge*   predEdge)
 {
     assert(predBlock->bbNext == nonCanonicalBlock);
 
@@ -2263,7 +2317,7 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
 }
 
 //------------------------------------------------------------------------
-// fgTailMergeThrowsJumpToHelper: fixup flow for jumps to mergable throws
+// fgTailMergeThrowsJumpToHelper: fixup flow for jumps to mergeable throws
 //
 // Arguments:
 //    predBlock - block jumping to the throw helper
@@ -2277,7 +2331,7 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
 void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
                                              BasicBlock* nonCanonicalBlock,
                                              BasicBlock* canonicalBlock,
-                                             flowList*   predEdge)
+                                             FlowEdge*   predEdge)
 {
     assert(predBlock->bbJumpDest == nonCanonicalBlock);
 

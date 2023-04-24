@@ -16,26 +16,17 @@ namespace Microsoft.NET.HostModel.Tests
     {
         private SharedTestState sharedTestState;
 
-        private void CreateSymbolicLink(string source, string target)
-        {
-            if (!SymbolicLinking.MakeSymbolicLink(source, target, out var errorString))
-                throw new Exception($"Failed to create symbolic link '{source}' targeting: '{target}': {errorString}");
-        }
-
         public AppHostUsedWithSymbolicLinks(AppHostUsedWithSymbolicLinks.SharedTestState fixture)
         {
             sharedTestState = fixture;
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         [InlineData ("a/b/SymlinkToApphost")]
         [InlineData ("a/SymlinkToApphost")]
         public void Run_apphost_behind_symlink(string symlinkRelativePath)
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -44,7 +35,7 @@ namespace Microsoft.NET.HostModel.Tests
             Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(symlinkRelativePath)));
             var symlinkFullPath = Path.Combine(testDir, symlinkRelativePath);
 
-            CreateSymbolicLink(symlinkFullPath, appExe);
+            using var symlink = new SymLink(symlinkFullPath, appExe);
             Command.Create(symlinkFullPath)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -54,33 +45,30 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Theory]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         [InlineData ("a/b/FirstSymlink", "c/d/SecondSymlink")]
         [InlineData ("a/b/FirstSymlink", "c/SecondSymlink")]
         [InlineData ("a/FirstSymlink", "c/d/SecondSymlink")]
         [InlineData ("a/FirstSymlink", "c/SecondSymlink")]
         public void Run_apphost_behind_transitive_symlinks(string firstSymlinkRelativePath, string secondSymlinkRelativePath)
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
-            
+
             var appExe = fixture.TestProject.AppExe;
             var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
 
             // second symlink -> apphost
-            string secondSymbolicLink = Path.Combine(testDir, secondSymlinkRelativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(secondSymbolicLink));
-            CreateSymbolicLink(secondSymbolicLink, appExe);
+            string symlink2Path = Path.Combine(testDir, secondSymlinkRelativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(symlink2Path));
+            using var symlink2 = new SymLink(symlink2Path, appExe);
 
             // first symlink -> second symlink
-            string firstSymbolicLink = Path.Combine(testDir, firstSymlinkRelativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(firstSymbolicLink));
-            CreateSymbolicLink(firstSymbolicLink, secondSymbolicLink);
+            string symlink1Path = Path.Combine(testDir, firstSymlinkRelativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(symlink1Path));
+            using var symlink1 = new SymLink(symlink1Path, symlink2Path);
 
-            Command.Create(firstSymbolicLink)
+            Command.Create(symlink1.SrcPath)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -93,13 +81,10 @@ namespace Microsoft.NET.HostModel.Tests
         //[InlineData("a/SymlinkToFrameworkDependentApp")]
         [Fact(Skip = "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
             "CI failing to use stat on symbolic links on Linux (permission denied).")]
-        public void Run_framework_dependent_app_behind_symlink(/* string symlinkRelativePath */)
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
+        public void Run_framework_dependent_app_behind_symlink(/*string symlinkRelativePath*/)
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
-            string symlinkRelativePath = string.Empty;
+            var symlinkRelativePath = string.Empty;
 
             var fixture = sharedTestState.FrameworkDependentAppFixture_Published
                 .Copy();
@@ -108,10 +93,9 @@ namespace Microsoft.NET.HostModel.Tests
             var builtDotnet = fixture.BuiltDotnet.BinPath;
             var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
             Directory.CreateDirectory(Path.Combine(testDir, Path.GetDirectoryName(symlinkRelativePath)));
-            var symlinkFullPath = Path.Combine(testDir, symlinkRelativePath);
 
-            CreateSymbolicLink(symlinkFullPath, appExe);
-            Command.Create(symlinkFullPath)
+            using var symlink = new SymLink(Path.Combine(testDir, symlinkRelativePath), appExe);
+            Command.Create(symlink.SrcPath)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable("DOTNET_ROOT", builtDotnet)
@@ -122,13 +106,10 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact(Skip = "Currently failing in OSX with \"No such file or directory\" when running Command.Create. " +
-            "CI failing to use stat on symbolic links on Linux (permission denied).")]
+                     "CI failing to use stat on symbolic links on Linux (permission denied).")]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Run_framework_dependent_app_with_runtime_behind_symlink()
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.FrameworkDependentAppFixture_Published
                 .Copy();
 
@@ -137,9 +118,9 @@ namespace Microsoft.NET.HostModel.Tests
             var dotnetSymlink = Path.Combine(testDir, "dotnet");
             var dotnetDir = fixture.BuiltDotnet.BinPath;
 
-            CreateSymbolicLink(dotnetSymlink, dotnetDir);
+            using var symlink = new SymLink(dotnetSymlink, dotnetDir);
             Command.Create(appExe)
-                .EnvironmentVariable("DOTNET_ROOT", dotnetSymlink)
+                .EnvironmentVariable("DOTNET_ROOT", symlink.SrcPath)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -148,12 +129,9 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_app_directory_behind_symlink()
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -162,7 +140,7 @@ namespace Microsoft.NET.HostModel.Tests
             var binDirNewPath = Path.Combine(Directory.GetParent(fixture.TestProject.Location).ToString(), "PutTheBinDirSomewhereElse");
             Directory.Move(binDir, binDirNewPath);
 
-            CreateSymbolicLink(binDir, binDirNewPath);
+            using var symlink = new SymLink(binDir, binDirNewPath);
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -172,12 +150,9 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_dotnet_behind_symlink()
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -186,8 +161,8 @@ namespace Microsoft.NET.HostModel.Tests
             var testDir = Directory.GetParent(fixture.TestProject.Location).ToString();
             var dotnetSymlink = Path.Combine(testDir, "dotnet");
 
-            CreateSymbolicLink(dotnetSymlink, dotnetExe);
-            Command.Create(dotnetSymlink, fixture.TestProject.AppDll)
+            using var symlink = new SymLink(dotnetSymlink, dotnetExe);
+            Command.Create(symlink.SrcPath, fixture.TestProject.AppDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -196,12 +171,9 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_app_directory_behind_symlink_and_use_dotnet()
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.StandaloneAppFixture_Published
                 .Copy();
 
@@ -210,7 +182,7 @@ namespace Microsoft.NET.HostModel.Tests
             var binDirNewPath = Path.Combine(Directory.GetParent(fixture.TestProject.Location).ToString(), "PutTheBinDirSomewhereElse");
             Directory.Move(binDir, binDirNewPath);
 
-            CreateSymbolicLink(binDir, binDirNewPath);
+            using var symlink = new SymLink(binDir, binDirNewPath);
             dotnet.Exec(fixture.TestProject.AppDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -220,39 +192,10 @@ namespace Microsoft.NET.HostModel.Tests
         }
 
         [Fact]
-        public void Put_app_directory_behind_symlink_and_use_dotnet_run()
-        {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
-            var fixture = sharedTestState.StandaloneAppFixture_Published
-                .Copy();
-
-            var dotnet = fixture.SdkDotnet;
-            var binDir = fixture.TestProject.OutputDirectory;
-            var binDirNewPath = Path.Combine(Directory.GetParent(fixture.TestProject.Location).ToString(), "PutTheBinDirSomewhereElse"); 
-            Directory.Move(binDir, binDirNewPath);
-
-            CreateSymbolicLink(binDir, binDirNewPath);
-            dotnet.Exec("run")
-                .WorkingDirectory(fixture.TestProject.Location)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World");
-        }
-
-        [Fact]
+        // If enabled, this tests will need to set the console code page to output unicode characters: Command.Create("chcp 65001").Execute();
+        [SkipOnPlatform(TestPlatforms.Windows, "Creating symbolic links requires administrative privilege on Windows, so skip test.")]
         public void Put_satellite_assembly_behind_symlink()
         {
-            // Creating symbolic links requires administrative privilege on Windows, so skip test.
-            // If enabled, this tests will need to set the console code page to output unicode characters:
-            // Command.Create("chcp 65001").Execute();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                return;
-
             var fixture = sharedTestState.StandaloneAppFixture_Localized
                 .Copy();
 
@@ -264,19 +207,19 @@ namespace Microsoft.NET.HostModel.Tests
             var firstSatelliteDir = Directory.GetDirectories(binDir).Single(dir => dir.Contains("kn-IN"));
             var firstSatelliteNewDir = Path.Combine(satellitesDir, "kn-IN");
             Directory.Move(firstSatelliteDir, firstSatelliteNewDir);
-            CreateSymbolicLink(firstSatelliteDir, firstSatelliteNewDir);
+            using var symlink1 = new SymLink(firstSatelliteDir, firstSatelliteNewDir);
 
             var secondSatelliteDir = Directory.GetDirectories(binDir).Single(dir => dir.Contains("ta-IN"));
             var secondSatelliteNewDir = Path.Combine(satellitesDir, "ta-IN");
             Directory.Move(secondSatelliteDir, secondSatelliteNewDir);
-            CreateSymbolicLink(secondSatelliteDir, secondSatelliteNewDir);
+            using var symlink2 = new SymLink(secondSatelliteDir, secondSatelliteNewDir);
 
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("ನಮಸ್ಕಾರ! வணக்கம்! Hello!");
+                .And.HaveStdOutContaining("\u0CA8\u0CAE\u0CB8\u0CCD\u0C95\u0CBE\u0CB0! \u0BB5\u0BA3\u0B95\u0BCD\u0B95\u0BAE\u0BCD! Hello!");
         }
 
         public class SharedTestState : IDisposable

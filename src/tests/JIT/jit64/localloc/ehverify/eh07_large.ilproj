@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <RestorePackages>true</RestorePackages>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
@@ -11,6 +11,6 @@
     <Compile Include="eh07_large.il" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\common\common.ilproj" />
+    <ProjectReference Include="..\..\..\common\localloc_common.ilproj" />
   </ItemGroup>
 </Project>

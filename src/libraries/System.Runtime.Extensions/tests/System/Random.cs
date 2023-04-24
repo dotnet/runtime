@@ -259,6 +259,40 @@ namespace System.Tests
             }
         }
 
+        [Fact]
+        public void ExpectedValues_DerivedSeededMatchesBaseSeeded()
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                int seed = Random.Shared.Next();
+
+                var baseSeeded = new Random(seed);
+                var derivedSeeded = new SubRandom(seed);
+
+                byte[] baseBuffer = new byte[42];
+                byte[] derivedBuffer = new byte[42];
+
+                Assert.Equal(baseSeeded.Next(), derivedSeeded.Next());
+                Assert.Equal(baseSeeded.Next(42), derivedSeeded.Next(42));
+                Assert.Equal(baseSeeded.Next(1, 42), derivedSeeded.Next(1, 42));
+
+                Assert.Equal(baseSeeded.NextInt64(), derivedSeeded.NextInt64());
+                Assert.Equal(baseSeeded.NextInt64(42), derivedSeeded.NextInt64(42));
+                Assert.Equal(baseSeeded.NextInt64(int.MaxValue, long.MaxValue), derivedSeeded.NextInt64(int.MaxValue, long.MaxValue));
+
+                Assert.Equal(baseSeeded.NextDouble(), derivedSeeded.NextDouble());
+                Assert.Equal(baseSeeded.NextSingle(), derivedSeeded.NextSingle());
+
+                baseSeeded.NextBytes(baseBuffer);
+                derivedSeeded.NextBytes(derivedBuffer);
+                AssertExtensions.SequenceEqual(baseBuffer, derivedBuffer);
+
+                baseSeeded.NextBytes((Span<byte>)baseBuffer);
+                derivedSeeded.NextBytes((Span<byte>)derivedBuffer);
+                AssertExtensions.SequenceEqual(baseBuffer, derivedBuffer);
+            }
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -297,6 +331,45 @@ namespace System.Tests
                 for (int i = 0; i < expectedValues[seed].Length; i++)
                 {
                     Assert.Equal(expectedValues[seed][i], r.Next());
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ExpectedValues_Next64(bool derived)
+        {
+            long[][] expectedValues = new long[][]
+            {
+                new long[] { 7083764782846131554, 5154802594370149492, 9016307100457696812, 4310211293818176047, 9058748489721462462, 9180463484486351044, 7534648089071954807, 300923067154768701, 8614801378171577836, 748103725286293756, },
+                new long[] { 4307412542716114199, 3991716777541808379, 934021439863608487, 2287661736829161214, 6291475812869357143, 5675567160283690199, 8760158359188310330, 3523056573073259785, 7321359148939577545, 8176239586367362256, },
+                new long[] { 1531069098683313357, 2828622164618347905, 2075099020033370914, 265112179838049230, 3524203136017251824, 2170679632171954410, 762296592449890045, 6745207671181989590, 6027925715800599462, 6380994614502729892, },
+                new long[] { 7978097691503191170, 1665536347787909639, 3216194192387080605, 7465934659703810205, 756930459165146506, 7889164140914994429, 1987815658659267775, 743986732433846434, 4734483486568599171, 4585758438729022584, },
+                new long[] { 5201754247470390327, 502450530957471373, 4357271772556843032, 5443376306619676012, 7213038615260839203, 4384276612803258641, 3213334724868645506, 3966129034447456878, 3441041257334501728, 2790513466864390220, },
+                new long[] { 2425402007342470124, 8562736750981808916, 5498366944908455571, 3420835545721586235, 4445757142315711677, 879397880784545060, 4438844994985001029, 7188280132554089531, 2147607824197620797, 995277291092780064, },
+                new long[] { 8872430600164445090, 7399650934153467802, 6639444525078217998, 1398277192639549194, 1678493261558725718, 6597873593434562871, 5664364061194378760, 1187050397712924167, 854156798872598297, 8423404356080826356, },
+                new long[] { 6096087156129547095, 6236565117320932384, 7780530901338905481, 8599090876412287961, 8134592621559299055, 3092986065322827082, 6889874331310734282, 4409192699726534611, 8784086606495373814, 6628168180309216200, },
+                new long[] { 3319734916003724044, 5073479300492591271, 8921617277601690116, 6576541319421175976, 5367319944707193737, 8811470574065867102, 8115384601427089805, 7631343797835264416, 7490653173356395731, 4832923208444583836, },
+                new long[] { 543391471966728898, 3910384687569130797, 839331617009698943, 4553991762430063991, 2600047267857185570, 5306583045956228465, 117531630781691728, 1630122859085024108, 6197210944124395440, 3037678236577854320, },
+                new long[] { 6990420064788703863, 2747298870740789683, 1980409197177364218, 2531442205441049158, 9056155423952878267, 1801695517842395524, 1343041900898047250, 4852273957193753912, 4903777510985417357, 1242442060806244164, },
+                new long[] { 4214067824660783660, 1584213053910351417, 3121504369533171061, 508883852356914965, 6288873951005653589, 7520180026587532695, 2568560967107424981, 8074416259207364357, 3610335281753417066, 8670577921889409817, },
+                new long[] { 1437724380627982818, 421127237079913152, 4262581949700836336, 7709706332222675941, 3521610070248667630, 4015301294568819115, 3794080033314705560, 2073186524366198993, 2316893052521416775, 6875332950022680301, },
+                new long[] { 7884752973447860631, 8481404661011228486, 5403668325963620971, 5687156775231563956, 754337393396562311, 510404970364061118, 5019590303431061083, 5295337622472831645, 1023459619382438692, 5080087978158047937, },
+                new long[] { 5108409529412962636, 7318318844180790220, 6544754702222211302, 3664607218240451971, 7210445549492255009, 6228889479107101137, 6245109369640438813, 8517479924486442090, 8953389427003117057, 3284851802384340629, },
+                new long[] { 2332057289287139585, 6155241823445471314, 7685841078484995937, 1642048865158414930, 4443164076547127482, 2724001950995365348, 7470610843663772128, 2516258985740396086, 7659947197771116765, 1489615626614827625, },
+                new long[] { 8779085882107017399, 4992147210522010841, 8826927454745683420, 8842862548929056545, 1675900195788044372, 8442486459738405368, 8696129909873149859, 5738410083847028739, 6366513764632138682, 8917742691602873917, },
+                new long[] { 6002742438074216556, 3829061393691572575, 744641794153692247, 6820321788033063920, 8131999555790714861, 4937598931626669579, 698276939227751781, 8960552385858542031, 5073062739307116183, 7122497719736144401, },
+                new long[] { 3226390197944199201, 2665966780768112101, 1885719374323454674, 4797763434951026879, 5364726878938609542, 1432711403514933790, 1923787209344107304, 2959322651019473819, 3779620510077213044, 5327261543966631397, },
+                new long[] { 450046753911398359, 1502889760032793195, 3026814546677164365, 2775213877957817742, 2597454202086504224, 7151195912260070961, 3149306275553485035, 6181473749126106472, 2486187076938234961, 3532016572099901881, },
+            };
+
+            for (int seed = 0; seed < expectedValues.Length; seed++)
+            {
+                Random r = derived ? new SubRandom(seed) : new Random(seed);
+                for (int i = 0; i < expectedValues[seed].Length; i++)
+                {
+                    Assert.Equal(expectedValues[seed][i], r.NextInt64());
                 }
             }
         }
@@ -367,10 +440,12 @@ namespace System.Tests
         [InlineData(true)]
         public void SampleOrNext_DerivedOverrideCalledWhereExpected(bool seeded)
         {
-            SubRandom r;
-
-            r = seeded ? new SubRandom(42) : new SubRandom();
+            // Validate our test Called state starts as false
+            SubRandom r = seeded ? new SubRandom(42) : new SubRandom();
             Assert.False(r.SampleCalled);
+            Assert.False(r.NextCalled);
+
+            // Validate the right Called is true where expected
 
             foreach (int maxValue in new[] { 0, 1, 42 })
             {
@@ -390,14 +465,14 @@ namespace System.Tests
             {
                 r = seeded ? new SubRandom(42) : new SubRandom();
                 r.NextInt64(maxValue);
-                Assert.True(r.NextCalled);
+                Assert.True(r.SampleCalled);
             }
 
             foreach ((long minValue, long maxValue) in new[] { (42L, 47L), ((long)int.MaxValue + 1, long.MaxValue) })
             {
                 r = seeded ? new SubRandom(42) : new SubRandom();
                 r.NextInt64(minValue, maxValue);
-                Assert.True(r.NextCalled);
+                Assert.True(r.SampleCalled);
             }
 
             r = seeded ? new SubRandom(42) : new SubRandom();
@@ -413,17 +488,9 @@ namespace System.Tests
             Assert.True(r.NextCalled);
 
             // Next was changed to not call Sample in .NET Framework 2.0.
-            // NextBytes(byte[]) just uses Next.
-            // And NextInt64 uses NextBytes(byte[]).
-            // NextInt64(long{, long}) will use Next, but not if the range is such that the min will always be returned.
-
+            // NextBytes((Span<byte>)) just uses Next().
             r = seeded ? new SubRandom(42) : new SubRandom();
             r.Next();
-            r.NextInt64();
-            r.NextInt64(0);
-            r.NextInt64(1);
-            r.NextInt64(0, 0);
-            r.NextInt64(0, 1);
             r.NextBytes((Span<byte>)new byte[1]);
             Assert.False(r.SampleCalled);
         }
@@ -470,11 +537,11 @@ namespace System.Tests
                     Assert.InRange(Random.Shared.NextSingle(), 0.0f, 1.0f);
                     Assert.InRange(Random.Shared.NextDouble(), 0.0, 1.0);
 
-                    Array.Clear(buffer, 0, buffer.Length);
+                    Array.Clear(buffer);
                     Random.Shared.NextBytes(buffer);
                     Assert.Contains(buffer, b => b != 0);
 
-                    Array.Clear(buffer, 0, buffer.Length);
+                    Array.Clear(buffer);
                     Random.Shared.NextBytes((Span<byte>)buffer);
                     Assert.Contains(buffer, b => b != 0);
                 }
@@ -544,38 +611,38 @@ namespace System.Tests
                 Assert.Equal(0, randOuter.Next(0));
                 Assert.Equal(0, randOuter.Next(1));
 
-                Assert.Equal(11, randOuter.Next(42));
-                Assert.Equal(1865324524, randOuter.Next(int.MaxValue));
+                Assert.Equal(36, randOuter.Next(42));
+                Assert.Equal(414373255, randOuter.Next(int.MaxValue));
 
                 Assert.Equal(0, randOuter.Next(0, 0));
                 Assert.Equal(1, randOuter.Next(1, 2));
-                Assert.Equal(12, randOuter.Next(0, 42));
-                Assert.Equal(7234, randOuter.Next(42, 12345));
-                Assert.Equal(2147483642, randOuter.Next(int.MaxValue - 5, int.MaxValue));
-                Assert.Equal(-1236260882, randOuter.Next(int.MinValue, int.MaxValue));
+                Assert.Equal(8, randOuter.Next(0, 42));
+                Assert.Equal(4903, randOuter.Next(42, 12345));
+                Assert.Equal(2147483643, randOuter.Next(int.MaxValue - 5, int.MaxValue));
+                Assert.Equal(241160533, randOuter.Next(int.MinValue, int.MaxValue));
 
-                Assert.Equal(3644728249650840822, randOuter.NextInt64());
-                Assert.Equal(2809750975933744783, randOuter.NextInt64());
+                Assert.Equal(7986543274318426717, randOuter.NextInt64());
+                Assert.Equal(2184762751940478242, randOuter.NextInt64());
 
                 Assert.Equal(0, randOuter.NextInt64(0));
                 Assert.Equal(0, randOuter.NextInt64(1));
-                Assert.Equal(35, randOuter.NextInt64(42));
-                Assert.Equal(7986543274318426717, randOuter.NextInt64(long.MaxValue));
+                Assert.Equal(8, randOuter.NextInt64(42));
+                Assert.Equal(4799330244130288536, randOuter.NextInt64(long.MaxValue));
 
                 Assert.Equal(0, randOuter.NextInt64(0, 0));
                 Assert.Equal(1, randOuter.NextInt64(1, 2));
-                Assert.Equal(15, randOuter.NextInt64(0, 42));
-                Assert.Equal(4155, randOuter.NextInt64(42, 12345));
-                Assert.Equal(9223372036854775803, randOuter.NextInt64(long.MaxValue - 5, long.MaxValue));
-                Assert.Equal(375288451405801266, randOuter.NextInt64(long.MinValue, long.MaxValue));
+                Assert.Equal(29, randOuter.NextInt64(0, 42));
+                Assert.Equal(9575, randOuter.NextInt64(42, 12345));
+                Assert.Equal(9223372036854775802, randOuter.NextInt64(long.MaxValue - 5, long.MaxValue));
+                Assert.Equal(-8248911992647668710, randOuter.NextInt64(long.MinValue, long.MaxValue));
 
-                Assert.Equal(0.2885307561293763, randOuter.NextDouble());
-                Assert.Equal(0.8319616593420064, randOuter.NextDouble());
-                Assert.Equal(0.694751074593599, randOuter.NextDouble());
+                Assert.Equal(0.4319359955262648, randOuter.NextDouble());
+                Assert.Equal(0.00939284326802925, randOuter.NextDouble());
+                Assert.Equal(0.4631264615107299, randOuter.NextDouble());
 
-                Assert.Equal(0.7749006f, randOuter.NextSingle());
-                Assert.Equal(0.13424736f, randOuter.NextSingle());
-                Assert.Equal(0.05282557f, randOuter.NextSingle());
+                Assert.Equal(0.33326554f, randOuter.NextSingle());
+                Assert.Equal(0.85681933f, randOuter.NextSingle());
+                Assert.Equal(0.6594592f, randOuter.NextSingle());
             }
             else
             {
@@ -604,38 +671,163 @@ namespace System.Tests
                 Assert.Equal(0, randOuter.Next(1));
 
                 Assert.Equal(23, randOuter.Next(42));
-                Assert.Equal(1207874445, randOuter.Next(int.MaxValue));
+                Assert.Equal(1109044164, randOuter.Next(int.MaxValue));
 
                 Assert.Equal(0, randOuter.Next(0, 0));
                 Assert.Equal(1, randOuter.Next(1, 2));
-                Assert.Equal(33, randOuter.Next(0, 42));
-                Assert.Equal(2525, randOuter.Next(42, 12345));
-                Assert.Equal(2147483646, randOuter.Next(int.MaxValue - 5, int.MaxValue));
-                Assert.Equal(-1841045958, randOuter.Next(int.MinValue, int.MaxValue));
+                Assert.Equal(2, randOuter.Next(0, 42));
+                Assert.Equal(528, randOuter.Next(42, 12345));
+                Assert.Equal(2147483643, randOuter.Next(int.MaxValue - 5, int.MaxValue));
+                Assert.Equal(-246770113, randOuter.Next(int.MinValue, int.MaxValue));
 
-                Assert.Equal(364988307769675967, randOuter.NextInt64());
-                Assert.Equal(4081751239945971648, randOuter.NextInt64());
+                Assert.Equal(7961633792735929777, randOuter.NextInt64());
+                Assert.Equal(1188783949680720902, randOuter.NextInt64());
 
                 Assert.Equal(0, randOuter.NextInt64(0));
                 Assert.Equal(0, randOuter.NextInt64(1));
-                Assert.Equal(8, randOuter.NextInt64(42));
-                Assert.Equal(3127675200855610302, randOuter.NextInt64(long.MaxValue));
+                Assert.Equal(1, randOuter.NextInt64(42));
+                Assert.Equal(3659990215800279771, randOuter.NextInt64(long.MaxValue));
 
                 Assert.Equal(0, randOuter.NextInt64(0, 0));
                 Assert.Equal(1, randOuter.NextInt64(1, 2));
-                Assert.Equal(25, randOuter.NextInt64(0, 42));
-                Assert.Equal(593, randOuter.NextInt64(42, 12345));
+                Assert.Equal(5, randOuter.NextInt64(0, 42));
+                Assert.Equal(9391, randOuter.NextInt64(42, 12345));
                 Assert.Equal(9223372036854775805, randOuter.NextInt64(long.MaxValue - 5, long.MaxValue));
-                Assert.Equal(-1415073976784572606, randOuter.NextInt64(long.MinValue, long.MaxValue));
+                Assert.Equal(7588547406678852723, randOuter.NextInt64(long.MinValue, long.MaxValue));
 
-                Assert.Equal(0.054582986776168796, randOuter.NextDouble());
-                Assert.Equal(0.7599686772523376, randOuter.NextDouble());
-                Assert.Equal(0.9113759792165226, randOuter.NextDouble());
+                Assert.Equal(0.3010761548802774, randOuter.NextDouble());
+                Assert.Equal(0.5866389350236931, randOuter.NextDouble());
+                Assert.Equal(0.4726054469222304, randOuter.NextDouble());
 
-                Assert.Equal(0.3010761f, randOuter.NextSingle());
-                Assert.Equal(0.8162224f, randOuter.NextSingle());
-                Assert.Equal(0.5866389f, randOuter.NextSingle());
+                Assert.Equal(0.35996222f, randOuter.NextSingle());
+                Assert.Equal(0.929421f, randOuter.NextSingle());
+                Assert.Equal(0.5790618f, randOuter.NextSingle());
             }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void Shuffle_Array_Seeded(bool emptyShuffle)
+        {
+            Random random = new Random(0x70636A61);
+            int[] items = new int[] { 1, 2, 3, 4 };
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 4, 2, 1, 3 }, items);
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 2, 3, 4, 1 }, items);
+
+            if (emptyShuffle)
+            {
+                // Empty shuffle should have no observable effect.
+                random.Shuffle(Span<int>.Empty);
+            }
+
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 1, 4, 3, 2 }, items);
+        }
+
+        [Fact]
+        public static void Shuffle_Array_ArgValidation()
+        {
+            Random random = new Random(0x70636A61);
+            AssertExtensions.Throws<ArgumentNullException>("values", () => random.Shuffle((int[])null));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void Shuffle_Span_Seeded(bool emptyShuffle)
+        {
+            Random random = new Random(0x70636A61);
+            Span<int> items = new int[] { 1, 2, 3, 4 };
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 4, 2, 1, 3 }, items);
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 2, 3, 4, 1 }, items);
+
+            if (emptyShuffle)
+            {
+                // Empty shuffle should have no observable effect.
+                random.Shuffle(Array.Empty<int>());
+            }
+
+            random.Shuffle(items);
+            AssertExtensions.SequenceEqual(stackalloc int[] { 1, 4, 3, 2 }, items);
+        }
+
+        [Fact]
+        public static void GetItems_Span_ArgValidation()
+        {
+            Random random = new Random(0x70636A61);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => random.GetItems<int>(stackalloc int[1], length: -1));
+            AssertExtensions.Throws<ArgumentException>("choices", () => random.GetItems<int>(ReadOnlySpan<int>.Empty, length: 1));
+        }
+
+        [Fact]
+        public static void GetItems_Array_Allocating_ArgValidation()
+        {
+            Random random = new Random(0x70636A61);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => random.GetItems(new int[1], length: -1));
+            AssertExtensions.Throws<ArgumentNullException>("choices", () => random.GetItems((int[])null, length: 1));
+            AssertExtensions.Throws<ArgumentException>("choices", () => random.GetItems<int>(Array.Empty<int>(), length: 1));
+        }
+
+        [Fact]
+        public static void GetItems_Buffer_ArgValidation()
+        {
+            Random random = new Random(0x70636A61);
+            int[] destination = new int[1];
+            AssertExtensions.Throws<ArgumentException>("choices", () => random.GetItems<int>(ReadOnlySpan<int>.Empty, destination));
+        }
+
+        [Fact]
+        public static void GetItems_Allocating_Array_Seeded()
+        {
+            Random random = new Random(0x70636A61);
+            byte[] items = new byte[] { 1, 2, 3 };
+
+            byte[] result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 3, 1, 3, 2, 3, 3, 3 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 2, 1, 2, 1, 2, 3, 1 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, result);
+        }
+
+        [Fact]
+        public static void GetItems_Allocating_Span_Seeded()
+        {
+            Random random = new Random(0x70636A61);
+            ReadOnlySpan<byte> items = new byte[] { 1, 2, 3 };
+
+            byte[] result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 3, 1, 3, 2, 3, 3, 3 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 2, 1, 2, 1, 2, 3, 1 }, result);
+
+            result = random.GetItems(items, length: 7);
+            Assert.Equal(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, result);
+        }
+
+        [Fact]
+        public static void GetItems_Buffer_Seeded()
+        {
+            Random random = new Random(0x70636A61);
+            ReadOnlySpan<byte> items = new byte[] { 1, 2, 3 };
+
+            Span<byte> buffer = stackalloc byte[7];
+            random.GetItems(items, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 3, 1, 3, 2, 3, 3, 3 }, buffer);
+
+            random.GetItems(items, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 2, 1, 2, 1, 2, 3, 1 }, buffer);
+
+            random.GetItems(items, buffer);
+            AssertExtensions.SequenceEqual(new byte[] { 1, 1, 3, 1, 3, 2, 2 }, buffer);
         }
 
         private static Random Create(bool derived, bool seeded, int seed = 42) =>

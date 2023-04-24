@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Globalization;
@@ -45,17 +46,20 @@ namespace System.Net
             }
         }
 
-        [Obsolete("Serialization is obsoleted for this type. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Serialization has been deprecated for FileWebResponse.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected FileWebResponse(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for FileWebResponse.")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for FileWebResponse.")]
         protected override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
@@ -101,10 +105,7 @@ namespace System.Net
 
         private void CheckDisposed()
         {
-            if (_closed)
-            {
-                throw new ObjectDisposedException(this.GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_closed, this);
         }
 
         public override void Close()

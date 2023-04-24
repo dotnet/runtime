@@ -5,8 +5,11 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
+  <PropertyGroup>
+    <RuntimeComponents Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android'">diagnostics_tracing;marshal-ilgen</RuntimeComponents>
+  </PropertyGroup>
   <!-- Windows only files -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="BasicEventSourceTest\Harness\EtwListener.cs" />
     <Compile Include="BasicEventSourceTest\TestEventCounter.Etw.cs" />
     <Compile Include="BasicEventSourceTest\TestsWrite.Etw.cs" />
@@ -17,6 +20,7 @@
     <Compile Include="BasicEventSourceTest\TestsManifestGeneration.Etw.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BasicEventSourceTest\ActivityTracking.cs" />
     <Compile Include="BasicEventSourceTest\Harness\EventTestHarness.cs" />
     <Compile Include="BasicEventSourceTest\FuzzyTests.cs" />
     <Compile Include="BasicEventSourceTest\Harness\Listeners.cs" />

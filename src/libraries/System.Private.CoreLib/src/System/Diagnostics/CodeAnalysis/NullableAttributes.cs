@@ -3,6 +3,7 @@
 
 namespace System.Diagnostics.CodeAnalysis
 {
+#if !NETSTANDARD2_1
     /// <summary>Specifies that null is allowed as an input even if the corresponding type disallows it.</summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property, Inherited = false)]
 #if SYSTEM_PRIVATE_CORELIB
@@ -124,6 +125,7 @@ namespace System.Diagnostics.CodeAnalysis
         /// <summary>Gets the condition parameter value.</summary>
         public bool ParameterValue { get; }
     }
+#endif
 
     /// <summary>Specifies that the method or property will ensure that the listed field and property members have not-null values.</summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property, Inherited = false, AllowMultiple = true)]

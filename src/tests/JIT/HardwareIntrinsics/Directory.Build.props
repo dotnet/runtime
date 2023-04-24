@@ -1,7 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project>
+  <Import Project="..\..\Directory.Merged.props" />
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <ItemGroup>
-    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <RunAnalyzers>true</RunAnalyzers>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+  </PropertyGroup>
 </Project>

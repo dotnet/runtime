@@ -41,7 +41,7 @@ namespace System.Data.Odbc
         private int _row = -1;
         private int _column = -1;
 
-        // used to track position in field for sucessive reads in case of Sequential Access
+        // used to track position in field for successive reads in case of Sequential Access
         private long _sequentialBytesRead;
 
         private static int s_objectTypeCount; // Bid counter
@@ -174,9 +174,8 @@ namespace System.Data.Odbc
                 }
                 if (null == _dataCache)
                 {
-                    short cColsAffected;
-                    ODBC32.RetCode retcode = this.FieldCountNoThrow(out cColsAffected);
-                    if (retcode != ODBC32.RetCode.SUCCESS)
+                    ODBC32.SQLRETURN retcode = this.FieldCountNoThrow(out _);
+                    if (retcode != ODBC32.SQLRETURN.SUCCESS)
                     {
                         Connection!.HandleError(StatementHandle, retcode);
                     }
@@ -187,7 +186,7 @@ namespace System.Data.Odbc
 
         // HasRows
         //
-        // Use to detect wheter there are one ore more rows in the result without going through Read
+        // Use to detect whether there are one ore more rows in the result without going through Read
         // May be called at any time
         // Basically it calls Read and sets a flag so that the actual Read call will be skipped once
         //
@@ -208,16 +207,16 @@ namespace System.Data.Odbc
             }
         }
 
-        internal ODBC32.RetCode FieldCountNoThrow(out short cColsAffected)
+        internal ODBC32.SQLRETURN FieldCountNoThrow(out short cColsAffected)
         {
             if (IsCancelingCommand)
             {
                 cColsAffected = 0;
-                return ODBC32.RetCode.ERROR;
+                return ODBC32.SQLRETURN.ERROR;
             }
 
-            ODBC32.RetCode retcode = StatementHandle.NumberOfResultColumns(out cColsAffected);
-            if (retcode == ODBC32.RetCode.SUCCESS)
+            ODBC32.SQLRETURN retcode = StatementHandle.NumberOfResultColumns(out cColsAffected);
+            if (retcode == ODBC32.SQLRETURN.SUCCESS)
             {
                 _hiddenColumns = 0;
                 if (IsCommandBehavior(CommandBehavior.KeyInfo))
@@ -260,8 +259,8 @@ namespace System.Data.Odbc
             if (!IsClosed)
             {
                 SQLLEN cRowsAffected;
-                ODBC32.RetCode retcode = StatementHandle.RowCount(out cRowsAffected);
-                if (ODBC32.RetCode.SUCCESS == retcode || ODBC32.RetCode.SUCCESS_WITH_INFO == retcode)
+                ODBC32.SQLRETURN retcode = StatementHandle.RowCount(out cRowsAffected);
+                if (ODBC32.SQLRETURN.SUCCESS == retcode || ODBC32.SQLRETURN.SUCCESS_WITH_INFO == retcode)
                 {
                     return cRowsAffected;
                 }
@@ -362,9 +361,9 @@ namespace System.Data.Odbc
                     Connection.Close();
                 }
             }
-            else if (null != wrapper)
+            else
             {
-                wrapper.Dispose();
+                wrapper?.Dispose();
             }
 
             _command = null;
@@ -403,11 +402,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._typename == null)
-                {
-                    info._typename = GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW)!;
-                }
-                return info._typename;
+                return info._typename ??= GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW)!;
             }
             throw ADP.DataReaderNoData();
         }
@@ -422,11 +417,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._type == null)
-                {
-                    info._type = GetSqlType(i)._type;
-                }
-                return info._type;
+                return info._type ??= GetSqlType(i)._type;
             }
             throw ADP.DataReaderNoData();
         }
@@ -436,15 +427,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._name == null)
-                {
-                    info._name = GetColAttributeStr(i, ODBC32.SQL_DESC.NAME, ODBC32.SQL_COLUMN.NAME, ODBC32.HANDLER.THROW);
-                    if (null == info._name)
-                    { // MDAC 66681
-                        info._name = "";
-                    }
-                }
-                return info._name;
+                return info._name ??= GetColAttributeStr(i, ODBC32.SQL_DESC.NAME, ODBC32.SQL_COLUMN.NAME, ODBC32.HANDLER.THROW) ?? "";
             }
             throw ADP.DataReaderNoData();
         }
@@ -547,8 +530,7 @@ namespace System.Data.Odbc
                     {
                         if (_dataCache!.AccessIndex(i) == null)
                         {
-                            int dummy;
-                            bool isNotDbNull = QueryFieldInfo(i, ODBC32.SQL_C.BINARY, out dummy);
+                            bool isNotDbNull = QueryFieldInfo(i, ODBC32.SQL_C.BINARY, out _);
                             // if the value is DBNull, QueryFieldInfo will cache it
                             if (isNotDbNull)
                             {
@@ -606,7 +588,7 @@ namespace System.Data.Odbc
             {
                 info._dbtype = unchecked((ODBC32.SQL_TYPE)(int)GetColAttribute(i, ODBC32.SQL_DESC.CONCISE_TYPE, ODBC32.SQL_COLUMN.TYPE, ODBC32.HANDLER.THROW));
                 typeMap = TypeMap.FromSqlType(info._dbtype.Value);
-                if (typeMap._signType == true)
+                if (typeMap._signType)
                 {
                     bool sign = (GetColAttribute(i, ODBC32.SQL_DESC.UNSIGNED, ODBC32.SQL_COLUMN.UNSIGNED, ODBC32.HANDLER.THROW).ToInt64() != 0);
                     typeMap = TypeMap.UpgradeSignedType(typeMap, sign);
@@ -672,8 +654,7 @@ namespace System.Data.Odbc
                 // case 3 - the data has variable-length type, read zero-length data to query for null
                 // QueryFieldInfo will return false only if the object cached as DbNull
                 // QueryFieldInfo will put DbNull in cache only if the SQLGetData returns SQL_NULL_DATA, otherwise it does not change it
-                int dummy;
-                return !QueryFieldInfo(i, typeMap._sql_c, out dummy);
+                return !QueryFieldInfo(i, typeMap._sql_c, out _);
             }
         }
 
@@ -1133,7 +1114,7 @@ namespace System.Data.Odbc
             //                       use the cache - preserve the original behavior to minimize regression risk
             // 4. sequential access, no cache: (fixed now) user reads the bytes/chars in sequential order (no cache)
 
-            object? cachedObj = null;                 // The cached object (if there is one)
+            object? cachedObj;                 // The cached object (if there is one)
 
             // Get cached object, ensure the correct type using explicit cast, to preserve same behavior as before
             if (isCharsBuffer)
@@ -1270,7 +1251,7 @@ namespace System.Data.Odbc
                         // SQLBU 266054:
                         // If cbLengthOrIndicator is SQL_NO_TOTAL (-4), this call returns -4 or -2, depending on the type (GetChars=>-2, GetBytes=>-4).
                         // This is the Orcas RTM and SP1 behavior, changing this would be a breaking change.
-                        // SQL_NO_TOTAL means that the driver does not know what is the remained lenght of the data, so we cannot really guess the value here.
+                        // SQL_NO_TOTAL means that the driver does not know what is the remained length of the data, so we cannot really guess the value here.
                         // Reason: while returning different negative values depending on the type seems inconsistent,
                         // this is what we did in Orcas RTM and SP1 and user code might rely on this behavior => changing it would be a breaking change.
                         if (isCharsBuffer)
@@ -1335,8 +1316,7 @@ namespace System.Data.Odbc
                         {
                             // for GetChars, ensure data is not null
                             // 2 bytes for '\0' termination, no data is actually read from the driver
-                            int cbLengthOrIndicator;
-                            bool isDbNull = !QueryFieldInfo(i, ODBC32.SQL_C.WCHAR, out cbLengthOrIndicator);
+                            bool isDbNull = !QueryFieldInfo(i, ODBC32.SQL_C.WCHAR, out _);
                             if (isDbNull)
                             {
                                 throw ADP.InvalidCast();
@@ -1550,9 +1530,8 @@ namespace System.Data.Odbc
         //
         private SQLLEN GetColAttribute(int iColumn, ODBC32.SQL_DESC v3FieldId, ODBC32.SQL_COLUMN v2FieldId, ODBC32.HANDLER handler)
         {
-            short cchNameLength = 0;
             SQLLEN numericAttribute;
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
 
             // protect against dead connection, dead or canceling command.
             if ((Connection == null) || _cmdWrapper!.Canceling)
@@ -1564,19 +1543,19 @@ namespace System.Data.Odbc
             OdbcStatementHandle stmt = StatementHandle;
             if (Connection.IsV3Driver)
             {
-                retcode = stmt.ColumnAttribute(iColumn + 1, (short)v3FieldId, Buffer, out cchNameLength, out numericAttribute);
+                retcode = stmt.ColumnAttribute(iColumn + 1, (short)v3FieldId, Buffer, out _, out numericAttribute);
             }
             else if (v2FieldId != (ODBC32.SQL_COLUMN)(-1))
             {
-                retcode = stmt.ColumnAttribute(iColumn + 1, (short)v2FieldId, Buffer, out cchNameLength, out numericAttribute);
+                retcode = stmt.ColumnAttribute(iColumn + 1, (short)v2FieldId, Buffer, out _, out numericAttribute);
             }
             else
             {
                 return 0;
             }
-            if (retcode != ODBC32.RetCode.SUCCESS)
+            if (retcode != ODBC32.SQLRETURN.SUCCESS)
             {
-                if (retcode == ODBC32.RetCode.ERROR)
+                if (retcode == ODBC32.SQLRETURN.ERROR)
                 {
                     if ("HY091" == Command!.GetDiagSqlState())
                     {
@@ -1603,9 +1582,8 @@ namespace System.Data.Odbc
         //
         private string? GetColAttributeStr(int i, ODBC32.SQL_DESC v3FieldId, ODBC32.SQL_COLUMN v2FieldId, ODBC32.HANDLER handler)
         {
-            ODBC32.RetCode retcode;
-            short cchNameLength = 0;
-            SQLLEN numericAttribute;
+            ODBC32.SQLRETURN retcode;
+            short cchNameLength;
             CNativeBuffer buffer = Buffer;
             buffer.WriteInt16(0, 0);
 
@@ -1619,19 +1597,19 @@ namespace System.Data.Odbc
 
             if (Connection.IsV3Driver)
             {
-                retcode = stmt.ColumnAttribute(i + 1, (short)v3FieldId, buffer, out cchNameLength, out numericAttribute);
+                retcode = stmt.ColumnAttribute(i + 1, (short)v3FieldId, buffer, out cchNameLength, out _);
             }
             else if (v2FieldId != (ODBC32.SQL_COLUMN)(-1))
             {
-                retcode = stmt.ColumnAttribute(i + 1, (short)v2FieldId, buffer, out cchNameLength, out numericAttribute);
+                retcode = stmt.ColumnAttribute(i + 1, (short)v2FieldId, buffer, out cchNameLength, out _);
             }
             else
             {
                 return null;
             }
-            if ((retcode != ODBC32.RetCode.SUCCESS) || (cchNameLength == 0))
+            if ((retcode != ODBC32.SQLRETURN.SUCCESS) || (cchNameLength == 0))
             {
-                if (retcode == ODBC32.RetCode.ERROR)
+                if (retcode == ODBC32.SQLRETURN.ERROR)
                 {
                     if ("HY091" == Command!.GetDiagSqlState())
                     {
@@ -1668,7 +1646,7 @@ namespace System.Data.Odbc
                 return null;
             }
 
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
             CNativeBuffer buffer = Buffer;
 
             // Need to set the APP_PARAM_DESC values here
@@ -1680,9 +1658,9 @@ namespace System.Data.Odbc
                 //Since there are many attributes (column, statement, etc), that may or may not be
                 //supported, we don't want to throw (which obtains all errorinfo, marshals strings,
                 //builds exceptions, etc), in common cases, unless we absolutely need this info...
-                if ((retcode != ODBC32.RetCode.SUCCESS) || (numericAttribute == 0))
+                if ((retcode != ODBC32.SQLRETURN.SUCCESS) || (numericAttribute == 0))
                 {
-                    if (retcode == ODBC32.RetCode.ERROR)
+                    if (retcode == ODBC32.SQLRETURN.ERROR)
                     {
                         if ("HY091" == Command!.GetDiagSqlState())
                         {
@@ -1720,8 +1698,7 @@ namespace System.Data.Odbc
         {
             // Never call GetData with anything larger than _buffer.Length-2.
             // We keep reallocating native buffers and it kills performance!!!
-            int dummy;
-            return GetData(i, sqlctype, Buffer.Length - 4, out dummy);
+            return GetData(i, sqlctype, Buffer.Length - 4, out _);
         }
 
         /// <summary>
@@ -1739,7 +1716,7 @@ namespace System.Data.Odbc
         /// <returns>false if value is DbNull, true otherwise</returns>
         private bool GetData(int i, ODBC32.SQL_C sqlctype, int cb, out int cbLengthOrIndicator)
         {
-            IntPtr cbActual = IntPtr.Zero;  // Length or an indicator value
+            nint cbActual;  // Length or an indicator value
 
             if (IsCancelingCommand)
             {
@@ -1757,7 +1734,7 @@ namespace System.Data.Odbc
 
             // SQLGetData
             CNativeBuffer buffer = Buffer;
-            ODBC32.RetCode retcode = StatementHandle.GetData(
+            ODBC32.SQLRETURN retcode = StatementHandle.GetData(
                (i + 1),    // Column ordinals start at 1 in odbc
                sqlctype,
                buffer,
@@ -1766,9 +1743,9 @@ namespace System.Data.Odbc
 
             switch (retcode)
             {
-                case ODBC32.RetCode.SUCCESS:
+                case ODBC32.SQLRETURN.SUCCESS:
                     break;
-                case ODBC32.RetCode.SUCCESS_WITH_INFO:
+                case ODBC32.SQLRETURN.SUCCESS_WITH_INFO:
                     if ((int)cbActual == ODBC32.SQL_NO_TOTAL)
                     {
                         break;
@@ -1776,7 +1753,7 @@ namespace System.Data.Odbc
                     // devnote: don't we want to fire an event?
                     break;
 
-                case ODBC32.RetCode.NO_DATA:
+                case ODBC32.SQLRETURN.NO_DATA:
                     // SQLBU 266054: System.Data.Odbc: Fails with truncated error when we pass BufferLength  as 0
                     // NO_DATA return value is success value - it means that the driver has fully consumed the current column value
                     // but did not move to the next column yet.
@@ -1792,7 +1769,7 @@ namespace System.Data.Odbc
                     if (cbActual == (IntPtr)ODBC32.SQL_NO_TOTAL)
                     {
                         // ensure SQL_NO_TOTAL value gets replaced with zero if the driver has fully consumed the current column
-                        cbActual = (IntPtr)0;
+                        cbActual = 0;
                     }
                     break;
 
@@ -1852,7 +1829,7 @@ namespace System.Data.Odbc
                 return false;
             }
 
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
 
             //SQLFetch is only valid to call for row returning queries
             //We get: [24000]Invalid cursor state.  So we could either check the count
@@ -1863,16 +1840,16 @@ namespace System.Data.Odbc
 
             switch (retcode)
             {
-                case ODBC32.RetCode.SUCCESS_WITH_INFO:
+                case ODBC32.SQLRETURN.SUCCESS_WITH_INFO:
                     Connection!.HandleErrorNoThrow(StatementHandle, retcode);
                     _hasRows = HasRowsStatus.HasRows;
                     _isRead = true;
                     break;
-                case ODBC32.RetCode.SUCCESS:
+                case ODBC32.SQLRETURN.SUCCESS:
                     _hasRows = HasRowsStatus.HasRows;
                     _isRead = true;
                     break;
-                case ODBC32.RetCode.NO_DATA:
+                case ODBC32.SQLRETURN.NO_DATA:
                     _isRead = false;
                     if (_hasRows == HasRowsStatus.DontKnow)
                     {
@@ -1910,8 +1887,8 @@ namespace System.Data.Odbc
             cRowsAffected = GetRowCount();              // get rowcount of the current resultset (if any)
             CalculateRecordsAffected(cRowsAffected);    // update recordsaffected
 
-            ODBC32.RetCode retcode = FieldCountNoThrow(out cCols);
-            if ((retcode == ODBC32.RetCode.SUCCESS) && (cCols == 0))
+            ODBC32.SQLRETURN retcode = FieldCountNoThrow(out cCols);
+            if ((retcode == ODBC32.SQLRETURN.SUCCESS) && (cCols == 0))
             {
                 NextResult();
             }
@@ -1936,7 +1913,7 @@ namespace System.Data.Odbc
 
             SQLLEN cRowsAffected;
             short cColsAffected;
-            ODBC32.RetCode retcode, firstRetCode = ODBC32.RetCode.SUCCESS;
+            ODBC32.SQLRETURN retcode, firstRetCode = ODBC32.SQLRETURN.SUCCESS;
             bool hasMoreResults;
             bool hasColumns = false;
             bool singleResult = IsCommandBehavior(CommandBehavior.SingleResult);
@@ -1966,14 +1943,14 @@ namespace System.Data.Odbc
             {
                 _isValidResult = false;
                 retcode = StatementHandle.MoreResults();
-                hasMoreResults = ((retcode == ODBC32.RetCode.SUCCESS)
-                                || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO));
+                hasMoreResults = ((retcode == ODBC32.SQLRETURN.SUCCESS)
+                                || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO));
 
-                if (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO)
+                if (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO)
                 {
                     Connection!.HandleErrorNoThrow(StatementHandle, retcode);
                 }
-                else if (!disposing && (retcode != ODBC32.RetCode.NO_DATA) && (ODBC32.RetCode.SUCCESS != retcode))
+                else if (!disposing && (retcode != ODBC32.SQLRETURN.NO_DATA) && (ODBC32.SQLRETURN.SUCCESS != retcode))
                 {
                     // allow for building comulative error messages.
                     if (null == errors)
@@ -1999,10 +1976,10 @@ namespace System.Data.Odbc
                     }
                 }
             } while ((!singleResult && hasMoreResults && !hasColumns)  // repeat for results with no columns
-                     || ((ODBC32.RetCode.NO_DATA != retcode) && allresults && (loop < MaxConsecutiveFailure)) // or process all results until done
+                     || ((ODBC32.SQLRETURN.NO_DATA != retcode) && allresults && (loop < MaxConsecutiveFailure)) // or process all results until done
                      || (singleResult && hasMoreResults));           // or for any result in singelResult mode
 
-            if (retcode == ODBC32.RetCode.NO_DATA)
+            if (retcode == ODBC32.SQLRETURN.NO_DATA)
             {
                 _dataCache = null;
                 _noMoreResults = true;
@@ -2047,7 +2024,7 @@ namespace System.Data.Odbc
                 // furthermore size needs to be special cased for wchar types
                 //
                 typeMap = TypeMap.FromSqlType((ODBC32.SQL_TYPE)unchecked((int)GetColAttribute(i, ODBC32.SQL_DESC.CONCISE_TYPE, ODBC32.SQL_COLUMN.TYPE, ODBC32.HANDLER.THROW)));
-                if (typeMap._signType == true)
+                if (typeMap._signType)
                 {
                     bool sign = (GetColAttribute(i, ODBC32.SQL_DESC.UNSIGNED, ODBC32.SQL_COLUMN.UNSIGNED, ODBC32.HANDLER.THROW).ToInt64() != 0);
                     // sign = true if the column is unsigned
@@ -2330,11 +2307,11 @@ namespace System.Data.Odbc
         {
             Debug.Assert(_metadata != null);
 
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
             string columnname;
             int ordinal;
             int keyColumns = 0;
-            IntPtr cbActual = IntPtr.Zero;
+            nint cbActual;
 
             if (IsClosed || (_cmdWrapper == null))
             {
@@ -2360,7 +2337,7 @@ namespace System.Data.Odbc
                                     qualifiedTableName.Schema,
                                     qualifiedTableName.GetTable(quoted)!);
 
-                        if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
+                        if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
                         {
                             bool noUniqueKey = false;
 
@@ -2372,7 +2349,7 @@ namespace System.Data.Odbc
                                            buffer.PtrOffset(0, 256),
                                            (IntPtr)256,
                                            buffer.PtrOffset(256, IntPtr.Size).Handle);
-                            while (ODBC32.RetCode.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
+                            while (ODBC32.SQLRETURN.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
                             {
                                 cbActual = buffer.ReadIntPtr(256);
                                 columnname = buffer.PtrToStringUni(0, (int)cbActual / 2/*cch*/);
@@ -2385,10 +2362,7 @@ namespace System.Data.Odbc
                                     _metadata[ordinal].isNullable = false;
                                     _metadata[ordinal].baseTableName = qualifiedTableName.Table;
 
-                                    if (_metadata[ordinal].baseColumnName == null)
-                                    {
-                                        _metadata[ordinal].baseColumnName = columnname;
-                                    }
+                                    _metadata[ordinal].baseColumnName ??= columnname;
                                 }
                                 else
                                 {
@@ -2440,7 +2414,7 @@ namespace System.Data.Odbc
                 // Get the special columns for version
                 retcode = KeyInfoStatementHandle.SpecialColumns(qualifiedTableName.GetTable(quoted)!);
 
-                if ((retcode == ODBC32.RetCode.SUCCESS) || (retcode == ODBC32.RetCode.SUCCESS_WITH_INFO))
+                if ((retcode == ODBC32.SQLRETURN.SUCCESS) || (retcode == ODBC32.SQLRETURN.SUCCESS_WITH_INFO))
                 {
                     // We are only interested in column name
                     cbActual = IntPtr.Zero;
@@ -2452,7 +2426,7 @@ namespace System.Data.Odbc
                                    (IntPtr)256,
                                    buffer.PtrOffset(256, IntPtr.Size).Handle);
 
-                    while (ODBC32.RetCode.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
+                    while (ODBC32.SQLRETURN.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
                     {
                         cbActual = buffer.ReadIntPtr(256);
                         columnname = buffer.PtrToStringUni(0, (int)cbActual / 2/*cch*/);
@@ -2460,10 +2434,7 @@ namespace System.Data.Odbc
                         if (ordinal != -1)
                         {
                             _metadata[ordinal].isRowVersion = true;
-                            if (_metadata[ordinal].baseColumnName == null)
-                            {
-                                _metadata[ordinal].baseColumnName = columnname;
-                            }
+                            _metadata[ordinal].baseColumnName ??= columnname;
                         }
                     }
                     // Unbind the column
@@ -2500,9 +2471,9 @@ namespace System.Data.Odbc
         {
             Debug.Assert(_metadata != null);
 
-            ODBC32.RetCode retcode;
+            ODBC32.SQLRETURN retcode;
             string columnname = string.Empty;
-            string indexname = string.Empty;
+            string indexname;
             string currentindexname = string.Empty;
             int[] indexcolumnordinals = new int[16];
             int[] pkcolumnordinals = new int[16];
@@ -2511,8 +2482,8 @@ namespace System.Data.Odbc
             bool partialcolumnset = false;
             int ordinal;
             int indexordinal;
-            IntPtr cbIndexLen = IntPtr.Zero;
-            IntPtr cbColnameLen = IntPtr.Zero;
+            nint cbIndexLen;
+            nint cbColnameLen;
             int keyColumns = 0;
 
             // devnote: this test is already done by calling method ...
@@ -2523,7 +2494,7 @@ namespace System.Data.Odbc
             // Select only unique indexes
             retcode = KeyInfoStatementHandle.Statistics(tablename1);
 
-            if (retcode != ODBC32.RetCode.SUCCESS)
+            if (retcode != ODBC32.SQLRETURN.SUCCESS)
             {
                 // We give up at this point
                 return 0;
@@ -2574,7 +2545,7 @@ namespace System.Data.Odbc
                             colnameActual);
                 // Find the best unique index on the table, use the ones whose columns are
                 // completely covered by the query.
-                while (ODBC32.RetCode.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
+                while (ODBC32.SQLRETURN.SUCCESS == (retcode = KeyInfoStatementHandle.Fetch()))
                 {
                     cbColnameLen = buffer.ReadIntPtr(colnameActualOffset);
                     cbIndexLen = buffer.ReadIntPtr(indexActualOffset);
@@ -2663,14 +2634,8 @@ namespace System.Data.Odbc
                         // test test test - we don't know if this is nulalble or not so why do we want to set it to a value?
                         _metadata[indexordinal].isNullable = false;
                         _metadata[indexordinal].isUnique = true;
-                        if (_metadata[indexordinal].baseTableName == null)
-                        {
-                            _metadata[indexordinal].baseTableName = qualifiedTableName.Table;
-                        }
-                        if (_metadata[indexordinal].baseColumnName == null)
-                        {
-                            _metadata[indexordinal].baseColumnName = columnname;
-                        }
+                        _metadata[indexordinal].baseTableName ??= qualifiedTableName.Table;
+                        _metadata[indexordinal].baseColumnName ??= columnname;
                     }
                 }
                 // Unbind the columns
@@ -2686,7 +2651,7 @@ namespace System.Data.Odbc
             return keyColumns;
         }
 
-        internal bool SameIndexColumn(string currentindexname, string indexname, int ordinal, int ncols)
+        internal static bool SameIndexColumn(string currentindexname, string indexname, int ordinal, int ncols)
         {
             if (string.IsNullOrEmpty(currentindexname))
             {
@@ -2756,16 +2721,16 @@ namespace System.Data.Odbc
             int idx;
             CStringTokenizer tokenstmt = new CStringTokenizer(localcmdtext, Connection!.QuoteChar(ADP.GetSchemaTable)[0], Connection.EscapeChar(ADP.GetSchemaTable));
 
-            if (tokenstmt.StartsWith("select") == true)
+            if (tokenstmt.StartsWith("select"))
             {
                 // select command, search for from clause
                 idx = tokenstmt.FindTokenIndex("from");
             }
             else
             {
-                if ((tokenstmt.StartsWith("insert") == true) ||
-                    (tokenstmt.StartsWith("update") == true) ||
-                    (tokenstmt.StartsWith("delete") == true))
+                if (tokenstmt.StartsWith("insert") ||
+                    tokenstmt.StartsWith("update") ||
+                    tokenstmt.StartsWith("delete"))
                 {
                     // Get the following word
                     idx = tokenstmt.CurrentPosition;
@@ -2788,7 +2753,7 @@ namespace System.Data.Odbc
                 ((localcmdtext[1] == 's') || (localcmdtext[1] == 'S')))
             {
                 // aliased table, skip the alias name
-                localcmdtext = tokenstmt.NextToken();
+                tokenstmt.NextToken();
                 localcmdtext = tokenstmt.NextToken();
                 if ((localcmdtext.Length > 0) && (localcmdtext[0] == ','))
                 {

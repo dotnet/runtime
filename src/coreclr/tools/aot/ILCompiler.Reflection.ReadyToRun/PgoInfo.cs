@@ -31,7 +31,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         PgoSchemaElem[] _pgoData;
         int _size;
 
-        class PgoDataLoader : IPgoSchemaDataLoader<string>
+        class PgoDataLoader : IPgoSchemaDataLoader<string, string>
         {
             ReadyToRunReader _r2rReader;
             SignatureFormattingOptions _formatOptions;
@@ -42,13 +42,27 @@ namespace ILCompiler.Reflection.ReadyToRun
                 _r2rReader = r2rReader;
             }
 
-            string IPgoSchemaDataLoader<string>.TypeFromLong(long input)
+            string IPgoSchemaDataLoader<string, string>.TypeFromLong(long input)
             {
                 int tableIndex = checked((int)(input & 0xF));
                 int fixupIndex = checked((int)(input >> 4));
                 if (tableIndex == 0xF)
                 {
                     return $"Unknown type {fixupIndex}";
+                }
+                else
+                {
+                    return _r2rReader.ImportSections[tableIndex].Entries[fixupIndex].Signature.ToString(_formatOptions);
+                }
+            }
+
+            string IPgoSchemaDataLoader<string, string>.MethodFromLong(long input)
+            {
+                int tableIndex = checked((int)(input & 0xF));
+                int fixupIndex = checked((int)(input >> 4));
+                if (tableIndex == 0xF)
+                {
+                    return $"Unknown method {fixupIndex}";
                 }
                 else
                 {
@@ -72,7 +86,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                     SignatureFormattingOptions formattingOptions = new SignatureFormattingOptions();
 
-                    _pgoData = PgoProcessor.ParsePgoData<string>(new PgoDataLoader(_r2rReader, formattingOptions), compressedIntParser, true).ToArray();
+                    _pgoData = PgoProcessor.ParsePgoData<string, string>(new PgoDataLoader(_r2rReader, formattingOptions), compressedIntParser, true).ToArray();
                     _size = compressedIntParser.Offset - Offset;
                 }
             }

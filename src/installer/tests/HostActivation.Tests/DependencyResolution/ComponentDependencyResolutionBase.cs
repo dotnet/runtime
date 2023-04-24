@@ -26,19 +26,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             public ComponentSharedTestStateBase()
             {
-                DotNetWithNetCoreApp = DotNet("WithNetCoreApp")
-                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr("4.0.0", builder => CustomizeDotNetWithNetCoreAppMicrosoftNETCoreApp(builder))
-                    .Build();
+                var dotNetBuilder = DotNet("WithNetCoreApp")
+                    .AddMicrosoftNETCoreAppFrameworkMockCoreClr("4.0.0", builder => CustomizeDotNetWithNetCoreAppMicrosoftNETCoreApp(builder));
+                CustomizeDotNetWithNetCoreApp(dotNetBuilder);
+                DotNetWithNetCoreApp = dotNetBuilder.Build();
 
-                TestApp app = CreateFrameworkReferenceApp(MicrosoftNETCoreApp, "4.0.0");
-                FrameworkReferenceApp = NetCoreAppBuilder.PortableForNETCoreApp(app)
-                    .WithProject(p => p.WithAssemblyGroup(null, g => g.WithMainAssembly()))
-                    .Build(app);
+                FrameworkReferenceApp = CreateTestFrameworkReferenceApp();
 
                 _nativeHostingState = new NativeHosting.SharedTestStateBase();
             }
 
+            protected virtual TestApp CreateTestFrameworkReferenceApp() => CreateFrameworkReferenceApp(MicrosoftNETCoreApp, "4.0.0");
+
             protected virtual void CustomizeDotNetWithNetCoreAppMicrosoftNETCoreApp(NetCoreAppBuilder builder)
+            {
+            }
+
+            protected virtual void CustomizeDotNetWithNetCoreApp(DotNetBuilder builder)
             {
             }
 
@@ -53,7 +57,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 {
                     resolve_component_dependencies,
                     run_app_and_resolve,
-                    Path.Combine(hostFxrFolder, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")),
+                    Path.Combine(hostFxrFolder, Binaries.HostFxr.FileName),
                     hostApp.AppDll,
                     componentPath
                 };
@@ -78,7 +82,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 {
                     resolve_component_dependencies,
                     run_app_and_resolve_multithreaded,
-                    Path.Combine(hostFxrFolder, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")),
+                    Path.Combine(hostFxrFolder, Binaries.HostFxr.FileName),
                     hostApp.AppDll,
                     componentOnePath,
                     componentTwoPath

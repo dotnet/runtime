@@ -1,18 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.Formats.Cbor
 {
-    /// <summary>
-    ///   The exception that is thrown when a CBOR encoding is invalid.
-    /// </summary>
+    /// <summary>The exception that's thrown when CBOR data is invalid.</summary>
     [Serializable]
     public class CborContentException : Exception
     {
         /// <summary>
-        ///  Initializes a new instance of the <see cref="System.Formats.Cbor.CborContentException" /> class, using the provided message.
+        /// Initializes a new instance of the <see cref="CborContentException" /> class using the provided message.
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         public CborContentException(string? message)
@@ -22,8 +21,8 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///  Initializes a new instance of the <see cref="System.Formats.Cbor.CborContentException" /> class,
-        ///  using the provided message and exception that is the cause of this exception.
+        /// Initializes a new instance of the <see cref="CborContentException" /> class,
+        /// using the provided message and exception that is the cause of this exception.
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
         /// <param name="inner">The exception that is the cause of the current exception.</param>
@@ -34,10 +33,14 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>
-        ///   Initializes a new instance of the <see cref="System.Formats.Cbor.CborContentException" /> class with serialized data.
+        /// Initializes a new instance of the <see cref="CborContentException" /> class with serialized data.
         /// </summary>
         /// <param name="info">The object that holds the serialized object data.</param>
         /// <param name="context">The contextual information about the source or destination.</param>
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected CborContentException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

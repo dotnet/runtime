@@ -17,7 +17,7 @@ namespace System
         private static string CurrentDirectoryCore
         {
             get => Interop.Sys.GetCwd();
-            set => Interop.CheckIo(Interop.Sys.ChDir(value), value, isDirectory: true);
+            set => Interop.CheckIo(Interop.Sys.ChDir(value), value, isDirError: true);
         }
 
         private static string ExpandEnvironmentVariablesCore(string name)
@@ -52,7 +52,7 @@ namespace System
 
         public static string SystemDirectory => GetFolderPathCore(SpecialFolder.System, SpecialFolderOption.None);
 
-        public static int SystemPageSize => CheckedSysConf(Interop.Sys.SysConfName._SC_PAGESIZE);
+        private static int GetSystemPageSize() => CheckedSysConf(Interop.Sys.SysConfName._SC_PAGESIZE);
 
         public static string UserDomainName => MachineName;
 

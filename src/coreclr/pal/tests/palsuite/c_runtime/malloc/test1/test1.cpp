@@ -5,7 +5,7 @@
 **
 ** Source:  test1.c
 **
-** Purpose: Test that malloc returns useable memory
+** Purpose: Test that malloc returns usable memory
 **
 **
 **==========================================================================*/

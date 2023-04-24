@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
+using System.ComponentModel;
 using System.Linq;
-using System.Reflection;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public class ProcessModuleTests : ProcessTestBase
+    public partial class ProcessModuleTests : ProcessTestBase
     {
         [Fact]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void TestModuleProperties()
         {
             ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;
@@ -30,14 +30,16 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void Modules_Get_ContainsHostFileName()
         {
             ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;
             Assert.Contains(modules.Cast<ProcessModule>(), m => m.FileName.Contains(RemoteExecutor.HostRunnerName));
         }
 
-        [Fact]
+        // Single-file executables don't have libcoreclr or libSystem.Native
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
         [PlatformSpecific(TestPlatforms.Linux)] // OSX only includes the main module
         public void TestModulesContainsUnixNativeLibs()
         {
@@ -72,12 +74,19 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void ModulesAreDisposedWhenProcessIsDisposed()
         {
             Process process = CreateDefaultProcess();
 
-            ProcessModuleCollection modulesCollection = process.Modules;
+            // Very rarely, this call will fail with ERROR_PARTIAL_COPY; it only happened
+            // so far on this particular test, the only one that creates a new process.
+            // Assumption is that we need to give a little extra time.
+            ProcessModuleCollection modulesCollection = null;
+            RetryHelper.Execute(() =>
+            {
+                modulesCollection = process.Modules;
+            }, maxAttempts: 5, backoffFunc: null, retryWhen: e => e.GetType() == typeof(Win32Exception));
+
             int expectedCount = 0;
             int disposedCount = 0;
             foreach (ProcessModule processModule in modulesCollection)
@@ -91,34 +100,6 @@ namespace System.Diagnostics.Tests
 
             process.Dispose();
             Assert.Equal(expectedCount, disposedCount);
-        }
-
-        [ActiveIssue("https://github.com/dotnet/runtime/pull/335059")]
-        [ConditionalFact(typeof(PathFeatures), nameof(PathFeatures.AreAllLongPathsAvailable))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void LongModuleFileNamesAreSupported()
-        {
-            // To be able to test Long Path support for ProcessModule.FileName we need a .dll that has a path >= 260 chars.
-            // Since Long Paths support can be disabled (see the ConditionalFact attribute usage above),
-            // we just copy "LongName.dll" from bin to a temp directory with a long name and load it from there.
-            // Loading from new path is possible because the type exposed by the assembly is not referenced in any explicit way.
-            const string libraryName = "LongPath.dll";
-
-            string testBinPath = Path.GetDirectoryName(typeof(ProcessModuleTests).Assembly.Location);
-            string libraryToCopy = Path.Combine(testBinPath, libraryName);
-            Assert.True(File.Exists(libraryToCopy), $"{libraryName} was not present in bin folder '{testBinPath}'");
-
-            string directoryWithLongName = Path.Combine(TestDirectory, new string('a', Math.Max(1, 261 - TestDirectory.Length)));
-            Directory.CreateDirectory(directoryWithLongName);
-
-            string longNamePath = Path.Combine(directoryWithLongName, libraryName);
-            Assert.True(longNamePath.Length > 260);
-
-            File.Copy(libraryToCopy, longNamePath);
-
-            Assembly loaded = Assembly.LoadFile(longNamePath);
-
-            Assert.Contains(Process.GetCurrentProcess().Modules.Cast<ProcessModule>(), module => module.FileName == longNamePath);
         }
     }
 }

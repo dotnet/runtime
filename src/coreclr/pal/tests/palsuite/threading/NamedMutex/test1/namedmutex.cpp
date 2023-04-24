@@ -7,10 +7,6 @@
 
 #include <palsuite.h>
 
-#ifndef _countof
-#define _countof(a) (sizeof(a) / sizeof(a[0]))
-#endif // !_countof
-
 const char *const SessionPrefix = "Local\\";
 const char *const GlobalPrefix = "Global\\";
 
@@ -26,20 +22,21 @@ const char *const ChildRunningEventNamePrefix = "paltest_namedmutex_test1_cr_";
 
 const char *const GlobalShmFilePathPrefix = "/tmp/.dotnet/shm/global/";
 
-#define MaxPathSize (200)
+#define MaxPathSize 200
 const DWORD PollLoopSleepMilliseconds = 100;
 const DWORD FailTimeoutMilliseconds = 30000;
 DWORD g_expectedTimeoutMilliseconds = 500;
 
 bool g_isParent = true;
 bool g_isStress = false;
-char g_processPath[4096], g_processCommandLinePath[4096];
+#define MaxProcessPathSize 4096
+char g_processPath[MaxProcessPathSize], g_processCommandLinePath[MaxProcessPathSize];
 DWORD g_parentPid = static_cast<DWORD>(-1);
 
 extern char *(*test_strcpy)(char *dest, const char *src);
 extern int (*test_strcmp)(const char *s1, const char *s2);
 extern size_t (*test_strlen)(const char *s);
-extern int (*test_sprintf)(char *str, const char *format, ...);
+extern int (*test_snprintf)(char *str, size_t size, const char *format, ...);
 extern int (*test_sscanf)(const char *str, const char *format, ...);
 extern int(*test_close)(int fd);
 extern int (*test_unlink)(const char *pathname);
@@ -88,11 +85,11 @@ char *BuildName(const char *testName, char *buffer, const char *prefix0, const c
     if (g_isStress)
     {
         // Append the test name so that tests can run in parallel
-        nameLength += test_sprintf(&buffer[nameLength], "%s", testName);
+        nameLength += test_snprintf(&buffer[nameLength], MaxPathSize - nameLength, "%s", testName);
         buffer[nameLength++] = '_';
     }
 
-    nameLength += test_sprintf(&buffer[nameLength], "%u", g_parentPid);
+    nameLength += test_snprintf(&buffer[nameLength], MaxPathSize - nameLength, "%u", g_parentPid);
     return buffer;
 }
 
@@ -107,11 +104,11 @@ char *BuildGlobalShmFilePath(const char *testName, char *buffer, const char *nam
     if (g_isStress)
     {
         // Append the test name so that tests can run in parallel
-        pathLength += test_sprintf(&buffer[pathLength], "%s", testName);
+        pathLength += test_snprintf(&buffer[pathLength], MaxPathSize - pathLength, "%s", testName);
         buffer[pathLength++] = '_';
     }
 
-    pathLength += test_sprintf(&buffer[pathLength], "%u", g_parentPid);
+    pathLength += test_snprintf(&buffer[pathLength], MaxPathSize - pathLength, "%u", g_parentPid);
     return buffer;
 }
 
@@ -197,9 +194,9 @@ bool StartProcess(const char *funcName)
     processCommandLinePathLength += test_strlen(g_processPath);
     g_processCommandLinePath[processCommandLinePathLength++] = '\"';
     g_processCommandLinePath[processCommandLinePathLength++] = ' ';
-    processCommandLinePathLength += test_sprintf(&g_processCommandLinePath[processCommandLinePathLength], "%s ", "threading/NamedMutex/test1/paltest_namedmutex_test1");
-
-    processCommandLinePathLength += test_sprintf(&g_processCommandLinePath[processCommandLinePathLength], "%u", g_parentPid);
+    const char* testname = "threading/NamedMutex/test1/paltest_namedmutex_test1";
+    processCommandLinePathLength += test_snprintf(&g_processCommandLinePath[processCommandLinePathLength], MaxProcessPathSize - processCommandLinePathLength, "%s ", testname);
+    processCommandLinePathLength += test_snprintf(&g_processCommandLinePath[processCommandLinePathLength], MaxProcessPathSize - processCommandLinePathLength, "%u", g_parentPid);
     g_processCommandLinePath[processCommandLinePathLength++] = ' ';
     test_strcpy(&g_processCommandLinePath[processCommandLinePathLength], funcName);
     processCommandLinePathLength += test_strlen(funcName);
@@ -207,7 +204,7 @@ bool StartProcess(const char *funcName)
     if (g_isStress)
     {
         test_strcpy(&g_processCommandLinePath[processCommandLinePathLength], " stress");
-        processCommandLinePathLength += _countof("stress") - 1;
+        processCommandLinePathLength += STRING_LENGTH("stress");
     }
 
     STARTUPINFO si;
@@ -357,7 +354,7 @@ bool UninitializeChild(
     AutoCloseMutexHandle childEvents[2])
 {
     // Release and close 'parentEvents' and 'childEvents' before releasing 'childRunningEvent' to avoid races, see
-    // UnitializeParent() for more info
+    // UninitializeParent() for more info
     TestAssert(childEvents[0].Release());
     TestAssert(childEvents[1].Release());
     childEvents[0].Close();
@@ -416,8 +413,8 @@ bool NameTests()
     // Name too long. The maximum allowed length depends on the file system, so we're not checking for that.
     {
         char name[257];
-        memset(name, 'a', _countof(name) - 1);
-        name[_countof(name) - 1] = '\0';
+        memset(name, 'a', STRING_LENGTH(name));
+        name[STRING_LENGTH(name)] = '\0';
         TestCreateMutex(m, name);
         TestAssert(m == nullptr);
         TestAssert(GetLastError() == ERROR_FILENAME_EXCED_RANGE);
@@ -579,7 +576,7 @@ bool MutualExclusionTests()
         HANDLE waitHandles[] = {m2.GetHandle(), m.GetHandle()};
         TestAssert(
             WaitForMultipleObjects(
-                _countof(waitHandles),
+                ARRAY_SIZE(waitHandles),
                 waitHandles,
                 false /* waitAll */,
                 FailTimeoutMilliseconds) ==
@@ -587,7 +584,7 @@ bool MutualExclusionTests()
         TestAssert(GetLastError() == ERROR_NOT_SUPPORTED);
         TestAssert(
             WaitForMultipleObjects(
-                _countof(waitHandles),
+                ARRAY_SIZE(waitHandles),
                 waitHandles,
                 true /* waitAll */,
                 FailTimeoutMilliseconds) ==
@@ -1114,7 +1111,7 @@ bool (*const TestList[])() =
 bool RunTests()
 {
     bool allPassed = true;
-    for (SIZE_T i = 0; i < _countof(TestList); ++i)
+    for (SIZE_T i = 0; i < ARRAY_SIZE(TestList); ++i)
     {
         if (!TestList[i]())
         {
@@ -1125,7 +1122,7 @@ bool RunTests()
 }
 
 DWORD g_stressDurationMilliseconds = 0;
-LONG g_stressTestCounts[_countof(TestList)] = {0};
+LONG g_stressTestCounts[ARRAY_SIZE(TestList)] = {0};
 LONG g_stressResult = true;
 
 DWORD PALAPI StressTest(void *arg)
@@ -1154,8 +1151,8 @@ bool StressTests(DWORD durationMinutes)
     g_stressDurationMilliseconds = durationMinutes * (60 * 1000);
 
     // Start a thread for each test
-    HANDLE threadHandles[_countof(TestList)];
-    for (SIZE_T i = 0; i < _countof(threadHandles); ++i)
+    HANDLE threadHandles[ARRAY_SIZE(TestList)];
+    for (SIZE_T i = 0; i < ARRAY_SIZE(threadHandles); ++i)
     {
         TestAssert(StartThread(StressTest, reinterpret_cast<void *>(i), &threadHandles[i]));
     }
@@ -1163,7 +1160,7 @@ bool StressTests(DWORD durationMinutes)
     while (true)
     {
         DWORD waitResult =
-            WaitForMultipleObjects(_countof(threadHandles), threadHandles, true /* bWaitAll */, 10 * 1000 /* dwMilliseconds */);
+            WaitForMultipleObjects(ARRAY_SIZE(threadHandles), threadHandles, true /* bWaitAll */, 10 * 1000 /* dwMilliseconds */);
         TestAssert(waitResult == WAIT_OBJECT_0 || waitResult == WAIT_TIMEOUT);
         if (waitResult == WAIT_OBJECT_0)
         {
@@ -1171,7 +1168,7 @@ bool StressTests(DWORD durationMinutes)
         }
 
         Trace("'paltest_namedmutex_test1' stress test counts: ");
-        for (SIZE_T i = 0; i < _countof(g_stressTestCounts); ++i)
+        for (SIZE_T i = 0; i < ARRAY_SIZE(g_stressTestCounts); ++i)
         {
             if (i != 0)
             {
@@ -1183,7 +1180,7 @@ bool StressTests(DWORD durationMinutes)
         fflush(stdout);
     }
 
-    for (SIZE_T i = 0; i < _countof(threadHandles); ++i)
+    for (SIZE_T i = 0; i < ARRAY_SIZE(threadHandles); ++i)
     {
         CloseHandle(threadHandles[i]);
     }

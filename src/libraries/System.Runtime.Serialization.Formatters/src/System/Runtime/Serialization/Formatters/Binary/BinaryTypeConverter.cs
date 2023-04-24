@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 switch (primitiveTypeEnum)
                 {
                     case InternalPrimitiveTypeE.Invalid:
-                        string? assembly = null;
+                        string? assembly;
                         if (objectInfo == null)
                         {
                             assembly = type.Assembly.FullName;

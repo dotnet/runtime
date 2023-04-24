@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
+using System.Buffers.Text;
 using System.Diagnostics;
-using System.Text;
-using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -16,8 +18,8 @@ namespace System
     // specified component.
 
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class Version : ICloneable, IComparable, IComparable<Version?>, IEquatable<Version?>, ISpanFormattable
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public sealed class Version : ICloneable, IComparable, IComparable<Version?>, IEquatable<Version?>, ISpanFormattable, IUtf8SpanFormattable
     {
         // AssemblyName depends on the order staying the same
         private readonly int _Major; // Do not rename (binary serialization)
@@ -27,17 +29,10 @@ namespace System
 
         public Version(int major, int minor, int build, int revision)
         {
-            if (major < 0)
-                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
-
-            if (minor < 0)
-                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
-
-            if (build < 0)
-                throw new ArgumentOutOfRangeException(nameof(build), SR.ArgumentOutOfRange_Version);
-
-            if (revision < 0)
-                throw new ArgumentOutOfRangeException(nameof(revision), SR.ArgumentOutOfRange_Version);
+            ArgumentOutOfRangeException.ThrowIfNegative(major);
+            ArgumentOutOfRangeException.ThrowIfNegative(minor);
+            ArgumentOutOfRangeException.ThrowIfNegative(build);
+            ArgumentOutOfRangeException.ThrowIfNegative(revision);
 
             _Major = major;
             _Minor = minor;
@@ -47,14 +42,9 @@ namespace System
 
         public Version(int major, int minor, int build)
         {
-            if (major < 0)
-                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
-
-            if (minor < 0)
-                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
-
-            if (build < 0)
-                throw new ArgumentOutOfRangeException(nameof(build), SR.ArgumentOutOfRange_Version);
+            ArgumentOutOfRangeException.ThrowIfNegative(major);
+            ArgumentOutOfRangeException.ThrowIfNegative(minor);
+            ArgumentOutOfRangeException.ThrowIfNegative(build);
 
             _Major = major;
             _Minor = minor;
@@ -64,11 +54,8 @@ namespace System
 
         public Version(int major, int minor)
         {
-            if (major < 0)
-                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
-
-            if (minor < 0)
-                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
+            ArgumentOutOfRangeException.ThrowIfNegative(major);
+            ArgumentOutOfRangeException.ThrowIfNegative(minor);
 
             _Major = major;
             _Minor = minor;
@@ -193,20 +180,46 @@ namespace System
             ToString();
 
         public bool TryFormat(Span<char> destination, out int charsWritten) =>
-            TryFormat(destination, DefaultFormatFieldCount, out charsWritten);
+            TryFormatCore(destination, DefaultFormatFieldCount, out charsWritten);
 
-        public bool TryFormat(Span<char> destination, int fieldCount, out int charsWritten)
+        public bool TryFormat(Span<char> destination, int fieldCount, out int charsWritten) =>
+            TryFormatCore(destination, fieldCount, out charsWritten);
+
+        /// <summary>Tries to format this version instance into a span of bytes.</summary>
+        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF8 bytes.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="utf8Destination"/>.</param>
+        /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten) =>
+            TryFormatCore(utf8Destination, DefaultFormatFieldCount, out bytesWritten);
+
+        /// <summary>Tries to format this version instance into a span of bytes.</summary>
+        /// <param name="utf8Destination">The span in which to write this instance's value formatted as a span of UTF8 bytes.</param>
+        /// <param name="fieldCount">The number of components to return. This value ranges from 0 to 4.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written in <paramref name="utf8Destination"/>.</param>
+        /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/>.</returns>
+        public bool TryFormat(Span<byte> utf8Destination, int fieldCount, out int bytesWritten) =>
+            TryFormatCore(utf8Destination, fieldCount, out bytesWritten);
+
+        private bool TryFormatCore<TChar>(Span<TChar> destination, int fieldCount, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
-            string? failureUpperBound = (uint)fieldCount switch
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            switch ((uint)fieldCount)
             {
-                > 4 => "4",
-                >= 3 when _Build == -1 => "2",
-                4 when _Revision == -1 => "3",
-                _ => null
-            };
-            if (failureUpperBound is not null)
-            {
-                throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", failureUpperBound), nameof(fieldCount));
+                case > 4:
+                    ThrowArgumentException("4");
+                    break;
+
+                case >= 3 when _Build == -1:
+                    ThrowArgumentException("2");
+                    break;
+
+                case 4 when _Revision == -1:
+                    ThrowArgumentException("3");
+                    break;
+
+                static void ThrowArgumentException(string failureUpperBound) =>
+                    throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", failureUpperBound), nameof(fieldCount));
             }
 
             int totalCharsWritten = 0;
@@ -221,7 +234,7 @@ namespace System
                         return false;
                     }
 
-                    destination[0] = '.';
+                    destination[0] = TChar.CastFrom('.');
                     destination = destination.Slice(1);
                     totalCharsWritten++;
                 }
@@ -234,7 +247,12 @@ namespace System
                     _ => _Revision
                 };
 
-                if (!value.TryFormat(destination, out int valueCharsWritten))
+                int valueCharsWritten;
+                bool formatted = typeof(TChar) == typeof(char) ?
+                    ((uint)value).TryFormat(MemoryMarshal.Cast<TChar, char>(destination), out valueCharsWritten) :
+                    ((uint)value).TryFormat(MemoryMarshal.Cast<TChar, byte>(destination), out valueCharsWritten, default, CultureInfo.InvariantCulture);
+
+                if (!formatted)
                 {
                     charsWritten = 0;
                     return false;
@@ -250,7 +268,12 @@ namespace System
 
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             // format and provider are ignored.
-            TryFormat(destination, DefaultFormatFieldCount, out charsWritten);
+            TryFormatCore(destination, DefaultFormatFieldCount, out charsWritten);
+
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            // format and provider are ignored.
+            TryFormatCore(utf8Destination, DefaultFormatFieldCount, out bytesWritten);
 
         private int DefaultFormatFieldCount =>
             _Build == -1 ? 2 :
@@ -259,10 +282,7 @@ namespace System
 
         public static Version Parse(string input)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             return ParseVersion(input.AsSpan(), throwOnFailure: true)!;
         }
@@ -298,11 +318,11 @@ namespace System
             // We musn't have any separators after build.
             int buildEnd = -1;
             int minorEnd = input.Slice(majorEnd + 1).IndexOf('.');
-            if (minorEnd != -1)
+            if (minorEnd >= 0)
             {
                 minorEnd += (majorEnd + 1);
                 buildEnd = input.Slice(minorEnd + 1).IndexOf('.');
-                if (buildEnd != -1)
+                if (buildEnd >= 0)
                 {
                     buildEnd += (minorEnd + 1);
                     if (input.Slice(buildEnd + 1).Contains('.'))
@@ -359,17 +379,14 @@ namespace System
         {
             if (throwOnFailure)
             {
-                if ((parsedComponent = int.Parse(component, NumberStyles.Integer, CultureInfo.InvariantCulture)) < 0)
-                {
-                    throw new ArgumentOutOfRangeException(componentName, SR.ArgumentOutOfRange_Version);
-                }
+                parsedComponent = int.Parse(component, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                ArgumentOutOfRangeException.ThrowIfNegative(parsedComponent, componentName);
                 return true;
             }
 
             return int.TryParse(component, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsedComponent) && parsedComponent >= 0;
         }
 
-        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Version? v1, Version? v2)
         {
@@ -377,8 +394,7 @@ namespace System
             // so it can become a simple test
             if (v2 is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (v1 is null) ? true : false;
+                return v1 is null;
             }
 
             // Quick reference equality test prior to calling the virtual Equality

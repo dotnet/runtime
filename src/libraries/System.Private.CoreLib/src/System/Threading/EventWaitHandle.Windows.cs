@@ -18,7 +18,7 @@ namespace System.Threading
 
         private void CreateEventCore(bool initialState, EventResetMode mode, string? name, out bool createdNew)
         {
-#if TARGET_UNIX || TARGET_BROWSER
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
             if (name != null)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #endif
@@ -28,7 +28,7 @@ namespace System.Threading
 
             SafeWaitHandle handle = Interop.Kernel32.CreateEventEx(IntPtr.Zero, name, eventFlags, AccessRights);
 
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
             if (handle.IsInvalid)
             {
                 handle.SetHandleAsInvalid();
@@ -44,17 +44,16 @@ namespace System.Threading
         private static OpenExistingResult OpenExistingWorker(string name, out EventWaitHandle? result)
         {
 #if TARGET_WINDOWS
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (name.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             result = null;
             SafeWaitHandle myHandle = Interop.Kernel32.OpenEvent(AccessRights, false, name);
 
             if (myHandle.IsInvalid)
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
+
+                myHandle.Dispose();
 
                 if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND || errorCode == Interop.Errors.ERROR_INVALID_NAME)
                     return OpenExistingResult.NameNotFound;

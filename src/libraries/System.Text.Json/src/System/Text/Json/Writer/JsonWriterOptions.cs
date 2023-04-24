@@ -13,6 +13,9 @@ namespace System.Text.Json
     /// </summary>
     public struct JsonWriterOptions
     {
+        internal const int DefaultMaxDepth = 1000;
+
+        private int _maxDepth;
         private int _optionsMask;
 
         /// <summary>
@@ -37,6 +40,29 @@ namespace System.Text.Json
                     _optionsMask |= IndentBit;
                 else
                     _optionsMask &= ~IndentBit;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the maximum depth allowed when writing JSON, with the default (i.e. 0) indicating a max depth of 1000.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when the max depth is set to a negative value.
+        /// </exception>
+        /// <remarks>
+        /// Reading past this depth will throw a <exception cref="JsonException"/>.
+        /// </remarks>
+        public int MaxDepth
+        {
+            readonly get => _maxDepth;
+            set
+            {
+                if (value < 0)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException_MaxDepthMustBePositive(nameof(value));
+                }
+
+                _maxDepth = value;
             }
         }
 

@@ -15,7 +15,7 @@ namespace System.Reflection.Context.Custom
             if (!inherit)
                 return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);
 
-            CustomType baseMember = type.BaseType as CustomType;
+            CustomType? baseMember = type.BaseType as CustomType;
 
             if (baseMember == null)
                 return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);
@@ -55,7 +55,7 @@ namespace System.Reflection.Context.Custom
             if (!inherit)
                 return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);
 
-            CustomMethodInfo baseMember = method.GetBaseDefinition() as CustomMethodInfo;
+            CustomMethodInfo? baseMember = method.GetBaseDefinition() as CustomMethodInfo;
 
             if (baseMember == null || baseMember.Equals(method))
                 return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);
@@ -88,7 +88,7 @@ namespace System.Reflection.Context.Custom
             return CollectionServices.ConvertListToArray(results, attributeFilterType);
         }
 
-        public static object[] GetCustomAttributes(CustomReflectionContext context, CustomConstructorInfo constructor, Type attributeFilterType, bool inherit)
+        public static object[] GetCustomAttributes(CustomReflectionContext context, CustomConstructorInfo constructor, Type attributeFilterType)
         {
             ConstructorInfo provider = constructor.UnderlyingConstructor;
             IEnumerable<object> attributes = GetFilteredAttributes(context, provider, attributeFilterType);
@@ -96,7 +96,7 @@ namespace System.Reflection.Context.Custom
             return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);
         }
 
-        public static object[] GetCustomAttributes(CustomReflectionContext context, CustomPropertyInfo property, Type attributeFilterType, bool inherit)
+        public static object[] GetCustomAttributes(CustomReflectionContext context, CustomPropertyInfo property, Type attributeFilterType)
         {
             PropertyInfo provider = property.UnderlyingProperty;
             IEnumerable<object> attributes = GetFilteredAttributes(context, provider, attributeFilterType);
@@ -104,7 +104,7 @@ namespace System.Reflection.Context.Custom
             return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);
         }
 
-        public static object[] GetCustomAttributes(CustomReflectionContext context, CustomEventInfo evnt, Type attributeFilterType, bool inherit)
+        public static object[] GetCustomAttributes(CustomReflectionContext context, CustomEventInfo evnt, Type attributeFilterType)
         {
             EventInfo provider = evnt.UnderlyingEvent;
             IEnumerable<object> attributes = GetFilteredAttributes(context, provider, attributeFilterType);
@@ -112,7 +112,7 @@ namespace System.Reflection.Context.Custom
             return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);
         }
 
-        public static object[] GetCustomAttributes(CustomReflectionContext context, CustomFieldInfo field, Type attributeFilterType, bool inherit)
+        public static object[] GetCustomAttributes(CustomReflectionContext context, CustomFieldInfo field, Type attributeFilterType)
         {
             FieldInfo provider = field.UnderlyingField;
             IEnumerable<object> attributes = GetFilteredAttributes(context, provider, attributeFilterType);
@@ -120,7 +120,7 @@ namespace System.Reflection.Context.Custom
             return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);
         }
 
-        public static object[] GetCustomAttributes(CustomReflectionContext context, CustomParameterInfo parameter, Type attributeFilterType, bool inherit)
+        public static object[] GetCustomAttributes(CustomReflectionContext context, CustomParameterInfo parameter, Type attributeFilterType)
         {
             ParameterInfo provider = parameter.UnderlyingParameter;
             IEnumerable<object> attributes = GetFilteredAttributes(context, provider, attributeFilterType);

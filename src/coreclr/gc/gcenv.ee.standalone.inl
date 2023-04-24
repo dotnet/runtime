@@ -8,8 +8,11 @@
 #include "env/gcenv.ee.h"
 
 // The singular interface instance. All calls in GCToEEInterface
-// will be fowarded to this interface instance.
+// will be forwarded to this interface instance.
 extern IGCToCLR* g_theGCToCLR;
+
+// GC version that the current runtime supports
+extern VersionInfo g_runtimeSupportedVersion;
 
 struct StressLogMsg;
 
@@ -42,16 +45,16 @@ inline void GCToEEInterface::GcStartWork(int condemned, int max_gen)
     g_theGCToCLR->GcStartWork(condemned, max_gen);
 }
 
+inline void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
+{
+    assert(g_theGCToCLR != nullptr);
+    g_theGCToCLR->BeforeGcScanRoots(condemned, is_bgc, is_concurrent);
+}
+
 inline void GCToEEInterface::AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc)
 {
     assert(g_theGCToCLR != nullptr);
     g_theGCToCLR->AfterGcScanRoots(condemned, max_gen, sc);
-}
-
-inline void GCToEEInterface::GcBeforeBGCSweepWork()
-{
-    assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->GcBeforeBGCSweepWork();
 }
 
 inline void GCToEEInterface::GcDone(int condemned)
@@ -299,6 +302,24 @@ inline void GCToEEInterface::UpdateGCEventStatus(int publicLevel, int publicKeyw
 inline void GCToEEInterface::LogStressMsg(unsigned level, unsigned facility, const StressLogMsg & msg)
 {
     g_theGCToCLR->LogStressMsg(level, facility, msg);
+}
+
+inline uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
+{
+    return g_theGCToCLR->GetCurrentProcessCpuCount();
+}
+
+inline void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
+{
+    g_theGCToCLR->DiagAddNewRegion(generation, rangeStart, rangeEnd, rangeEndReserved);
+}
+
+inline void GCToEEInterface::LogErrorToHost(const char *message)
+{
+    if (g_runtimeSupportedVersion.MajorVersion >= 1)
+    {
+        g_theGCToCLR->LogErrorToHost(message);
+    }
 }
 
 #endif // __GCTOENV_EE_STANDALONE_INL__

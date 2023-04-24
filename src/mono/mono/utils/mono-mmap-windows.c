@@ -15,12 +15,9 @@
 #if defined(HOST_WIN32)
 #include <io.h>
 #include <windows.h>
-#include <mono/utils/mono-counters.h>
 #include "mono/utils/mono-mmap.h"
 #include "mono/utils/mono-mmap-internals.h"
 #include <mono/utils/w32subset.h>
-
-static void *malloced_shared_area;
 
 int
 mono_pagesize (void)
@@ -113,7 +110,10 @@ mono_valloc_aligned (size_t length, size_t alignment, int flags, MonoMemAccountT
 	aligned = mono_aligned_address (mem, length, alignment);
 
 	aligned = (char*)VirtualAlloc (aligned, length, MEM_COMMIT, prot);
-	g_assert (aligned);
+	if (!aligned) {
+		VirtualFree (mem, 0, MEM_RELEASE);
+		return NULL;
+	}
 
 	mono_account_mem (type, (ssize_t)length);
 
@@ -123,19 +123,11 @@ mono_valloc_aligned (size_t length, size_t alignment, int flags, MonoMemAccountT
 int
 mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 {
+	int res;
 	MEMORY_BASIC_INFORMATION mbi;
-	SIZE_T query_result = VirtualQuery (addr, &mbi, sizeof (mbi));
-	BOOL res;
-
-	g_assert (query_result);
-
-	res = VirtualFree (mbi.AllocationBase, 0, MEM_RELEASE);
-
-	g_assert (res);
-
+	res = (VirtualQuery (addr, &mbi, sizeof (mbi)) != 0 && VirtualFree (mbi.AllocationBase, 0, MEM_RELEASE) != 0) ? 0 : -1;
 	mono_account_mem (type, -(ssize_t)length);
-
-	return 0;
+	return res;
 }
 
 #if HAVE_API_SUPPORT_WIN32_FILE_MAPPING || HAVE_API_SUPPORT_WIN32_FILE_MAPPING_FROM_APP
@@ -165,7 +157,7 @@ format_win32_error_string (gint32 win32_error)
 #else
 	WCHAR local_buf [1024];
 	if (!FormatMessageW (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-		win32_error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), local_buf, G_N_ELEMENTS (local_buf) - 1, NULL) )
+		win32_error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), local_buf, STRING_LENGTH (local_buf), NULL) )
 		local_buf [0] = TEXT('\0');
 
 	ret = u16to8 (local_buf)
@@ -250,7 +242,7 @@ exit:
 			CloseHandle (mapping);
 		if (error_message) {
 			gchar *win32_error_string = format_win32_error_string (win32_error);
-			*error_message = g_strdup_printf ("%s failed file:%s length:0x%IX offset:0x%I64X function:%s error:%s(0x%X)\n",
+			*error_message = g_strdup_printf ("%s failed file:%s length:0x%zX offset:0x%llX function:%s error:%s(0x%X)\n",
 				__func__, filepath ? filepath : "", length, offset, failed_function, win32_error_string, win32_error);
 			g_free (win32_error_string);
 		}
@@ -306,40 +298,6 @@ mono_mprotect (void *addr, size_t length, int flags)
 		return 0;
 	}
 	return VirtualProtect (addr, length, prot, &oldprot) == 0;
-}
-
-void*
-mono_shared_area (void)
-{
-	if (!malloced_shared_area)
-		malloced_shared_area = mono_malloc_shared_area (0);
-	/* get the pid here */
-	return malloced_shared_area;
-}
-
-void
-mono_shared_area_remove (void)
-{
-	if (malloced_shared_area)
-		g_free (malloced_shared_area);
-	malloced_shared_area = NULL;
-}
-
-void*
-mono_shared_area_for_pid (void *pid)
-{
-	return NULL;
-}
-
-void
-mono_shared_area_unload (void *area)
-{
-}
-
-int
-mono_shared_area_instances (void **array, int count)
-{
-	return 0;
 }
 
 #else

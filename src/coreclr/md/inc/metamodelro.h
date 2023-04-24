@@ -61,27 +61,10 @@ public:
         return m_UserStringHeap.GetBlob(nIndex, pData);
     }
 
-#ifdef FEATURE_PREJIT
-    void DisableHotDataUsage()
-    {
-        MetaData::HotHeap emptyHotHeap;
-        // Initialize hot data again with empty heap to disable their usage
-        m_StringHeap.InitializeHotData(emptyHotHeap);
-        m_BlobHeap.InitializeHotData(emptyHotHeap);
-        m_UserStringHeap.InitializeHotData(emptyHotHeap);
-        m_GuidHeap.InitializeHotData(emptyHotHeap);
-        // Disable usage of hot table data (throw it away)
-        m_pHotTablesDirectory = NULL;
-    }
-#endif //FEATURE_PREJIT
-
 protected:
     DAC_ALIGNAS(CMiniMdTemplate<CMiniMd>) // Align the first member to the alignment of the base class
     // Table info.
     MetaData::TableRO m_Tables[TBL_COUNT];
-#ifdef FEATURE_PREJIT
-    struct MetaData::HotTablesDirectory * m_pHotTablesDirectory;
-#endif //FEATURE_PREJIT
 
     __checkReturn
     HRESULT InitializeTables(MetaData::DataBlob tablesData);
@@ -102,7 +85,7 @@ protected:
     //*************************************************************************
     // Overridables -- must be provided in derived classes.
     __checkReturn
-    FORCEINLINE HRESULT Impl_GetString(UINT32 nIndex, __out LPCSTR *pszString)
+    FORCEINLINE HRESULT Impl_GetString(UINT32 nIndex, _Out_ LPCSTR *pszString)
     { return m_StringHeap.GetString(nIndex, pszString); }
     __checkReturn
     HRESULT Impl_GetStringW(ULONG ix, __inout_ecount (cchBuffer) LPWSTR szOut, ULONG cchBuffer, ULONG *pcchBuffer);
@@ -120,14 +103,14 @@ protected:
         return S_OK;
     }
     __checkReturn
-    FORCEINLINE HRESULT Impl_GetBlob(UINT32 nIndex, __out MetaData::DataBlob *pData)
+    FORCEINLINE HRESULT Impl_GetBlob(UINT32 nIndex, _Out_ MetaData::DataBlob *pData)
     { return m_BlobHeap.GetBlob(nIndex, pData); }
 
     __checkReturn
     FORCEINLINE HRESULT Impl_GetRow(
                         UINT32 nTableIndex,
                         UINT32 nRowIndex,
-        __deref_out_opt BYTE **ppRecord)
+        _Outptr_opt_ BYTE **ppRecord)
     {
         _ASSERTE(nTableIndex < TBL_COUNT);
         return m_Tables[nTableIndex].GetRecord(
@@ -135,9 +118,6 @@ protected:
             ppRecord,
             m_TableDefs[nTableIndex].m_cbRec,
             m_Schema.m_cRecs[nTableIndex],
-#ifdef FEATURE_PREJIT
-            m_pHotTablesDirectory,
-#endif //FEATURE_PREJIT
             nTableIndex);
     }
 

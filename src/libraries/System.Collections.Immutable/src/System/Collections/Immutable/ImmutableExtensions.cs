@@ -45,14 +45,12 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(sequence, nameof(sequence));
 
-            var orderedCollection = sequence as IOrderedCollection<T>;
-            if (orderedCollection != null)
+            if (sequence is IOrderedCollection<T> orderedCollection)
             {
                 return orderedCollection;
             }
 
-            var listOfT = sequence as IList<T>;
-            if (listOfT != null)
+            if (sequence is IList<T> listOfT)
             {
                 return new ListOfTWrapper<T>(listOfT);
             }
@@ -64,9 +62,9 @@ namespace System.Collections.Immutable
 
         /// <summary>
         /// Clears the specified stack.  For empty stacks, it avoids the call to <see cref="Stack{T}.Clear"/>, which
-        /// avoids a call into the runtime's implementation of <see cref="Array.Clear"/>, helping performance,
+        /// avoids a call into the runtime's implementation of <see cref="Array.Clear(Array, int, int)"/>, helping performance,
         /// in particular around inlining.  <see cref="Stack{T}.Count"/> typically gets inlined by today's JIT, while
-        /// <see cref="Stack{T}.Clear"/> and <see cref="Array.Clear"/> typically don't.
+        /// <see cref="Stack{T}.Clear"/> and <see cref="Array.Clear(Array, int, int)"/> typically don't.
         /// </summary>
         /// <typeparam name="T">Specifies the type of data in the stack to be cleared.</typeparam>
         /// <param name="stack">The stack to clear.</param>
@@ -91,8 +89,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(enumerable, nameof(enumerable));
 
-            var strongEnumerable = enumerable as IStrongEnumerable<T, TEnumerator>;
-            if (strongEnumerable != null)
+            if (enumerable is IStrongEnumerable<T, TEnumerator> strongEnumerable)
             {
                 return new DisposableEnumeratorAdapter<T, TEnumerator>(strongEnumerable.GetEnumerator());
             }
@@ -219,10 +216,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    if (_collection == null)
-                    {
-                        _collection = _sequence.ToArray();
-                    }
+                    _collection ??= _sequence.ToArray();
 
                     return _collection[index];
                 }

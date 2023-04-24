@@ -1,14 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn);nullable</NoWarn>
+    <NoWarn>$(NoWarn);nullable;CA1859</NoWarn>
   </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <EnableComBinder Condition="'$(TargetsWindows)'=='true'">true</EnableComBinder>
-    <DefineConstants Condition="'$(EnableComBinder)'=='true'">$(DefineConstants);ENABLECOMBINDER</DefineConstants>
-    <AllowUnsafeBlocks Condition="'$(EnableComBinder)'=='true'">true</AllowUnsafeBlocks>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <EnableComBinder Condition="'$(TargetPlatformIdentifier)' == 'windows'">true</EnableComBinder>
+    <DefineConstants Condition="'$(EnableComBinder)' == 'true'">$(DefineConstants);ENABLECOMBINDER</DefineConstants>
+    <AllowUnsafeBlocks Condition="'$(EnableComBinder)' == 'true'">true</AllowUnsafeBlocks>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
   </PropertyGroup>
+  <ItemGroup>
+    <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.Shared.xml" />
+    <ILLinkDescriptorsXmls Condition="'$(TargetPlatformIdentifier)' == 'windows'" Include="$(ILLinkDirectory)ILLink.Descriptors.Windows.xml" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Binder.cs" />
@@ -162,6 +168,8 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\TokenKind.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
              Link="Common\System\Collections\HashHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(EnableComBinder)'=='true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
@@ -234,20 +242,15 @@
     <Reference Include="System.Reflection.Emit.ILGeneration" />
     <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Reflection" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
   </ItemGroup>

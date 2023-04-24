@@ -159,7 +159,7 @@ struct NativeTypeParamInfo
 
     BOOL                    m_SizeIsSpecified;  // used to do some validation
     UINT16                  m_CountParamIdx;    // index of "sizeis" parameter
-    UINT32                  m_Multiplier;       // multipler for "sizeis"
+    UINT32                  m_Multiplier;       // multiplier for "sizeis"
     UINT32                  m_Additive;         // additive for 'sizeis"
 
     // For NT_CUSTOMMARSHALER only.
@@ -181,8 +181,6 @@ struct NativeTypeParamInfo
     DWORD                   m_cInterfaceTypeNameBytes;
 #endif // FEATURE_COMINTEROP
 };
-
-HRESULT CheckForCompressedData(PCCOR_SIGNATURE pvNativeTypeStart, PCCOR_SIGNATURE pvNativeType, ULONG cbNativeType);
 
 BOOL ParseNativeTypeInfo(mdToken                    token,
                          IMDInternalImport*         pScope,
@@ -242,6 +240,26 @@ public:
     void *operator new(size_t size, LoaderHeap *pHeap);
     void operator delete(void *pMem);
 
+#ifndef DACCESS_COMPILE
+    MethodDesc* LookupStructILStubSpeculative(MethodTable* pMT)
+    {
+        WRAPPER_NO_CONTRACT;
+        HashDatum res = 0;
+        m_structILStubCache.GetValueSpeculative(pMT, &res);
+        return (MethodDesc*)res;
+    }
+
+    MethodDesc* LookupStructILStub(MethodTable* pMT)
+    {
+        WRAPPER_NO_CONTRACT;
+        HashDatum res = 0;
+        m_structILStubCache.GetValue(pMT, &res);
+        return (MethodDesc*)res;
+    }
+
+    void CacheStructILStub(MethodTable* pMT, MethodDesc* pStubMD);
+#endif
+
     // This method returns the custom marshaling helper associated with the name cookie pair. If the
     // CM info has not been created yet for this pair then it will be created and returned.
     CustomMarshalerHelper *GetCustomMarshalerHelper(Assembly *pAssembly, TypeHandle hndManagedType, LPCUTF8 strMarshalerTypeName, DWORD cMarshalerTypeNameBytes, LPCUTF8 strCookie, DWORD cCookieStrBytes);
@@ -252,15 +270,12 @@ public:
 #ifdef FEATURE_COMINTEROP
     // This method retrieves OLE_COLOR marshaling info.
     OleColorMarshalingInfo *GetOleColorMarshalingInfo();
-
-
 #endif // FEATURE_COMINTEROP
 
 private:
-#ifndef CROSSGEN_COMPILE
+    EEPtrHashTable                      m_structILStubCache;
     EECMHelperHashTable                 m_CMHelperHashtable;
     EEPtrHashTable                      m_SharedCMHelperToCMInfoMap;
-#endif // CROSSGEN_COMPILE
     LoaderAllocator*                    m_pAllocator;
     LoaderHeap*                         m_pHeap;
     CMINFOLIST                          m_pCMInfoList;
@@ -460,10 +475,6 @@ public:
 
     // Helper functions used to map the specified type to its interface marshalling info.
     static void GetItfMarshalInfo(TypeHandle th, BOOL fDispItf, MarshalScenario ms, ItfMarshalInfo *pInfo);
-    static HRESULT TryGetItfMarshalInfo(TypeHandle th, BOOL fDispItf, ItfMarshalInfo *pInfo);
-
-    VOID MarshalTypeToString(SString& strMarshalType, BOOL fSizeIsSpecified);
-    static VOID VarTypeToString(VARTYPE vt, SString& strVarType);
 
     // Returns true if the specified marshaler requires COM to have been started.
     bool MarshalerRequiresCOM();
@@ -484,6 +495,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_ms == MarshalInfo::MARSHAL_SCENARIO_FIELD;
+    }
+
+    UINT GetErrorResourceId()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_resID;
     }
 
 private:
@@ -513,7 +530,7 @@ private:
     BOOL            m_nolowerbounds;  // if managed type is SZARRAY, don't allow lower bounds
 
     // for NT_ARRAY only
-    UINT32          m_multiplier;     // multipler for "sizeis"
+    UINT32          m_multiplier;     // multiplier for "sizeis"
     UINT32          m_additive;       // additive for 'sizeis"
     UINT16          m_countParamIdx;  // index of "sizeis" parameter
 
@@ -700,9 +717,6 @@ VOID ThrowInteropParamException(UINT resID, UINT paramIdx);
 
 VOID CollateParamTokens(IMDInternalImport *pInternalImport, mdMethodDef md, ULONG numargs, mdParamDef *aParams);
 bool IsUnsupportedTypedrefReturn(MetaSig& msig);
-
-void FindCopyCtor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut);
-void FindDtor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut);
 
 // We'll cap the total native size at a (somewhat) arbitrary limit to ensure
 // that we don't expose some overflow bug later on.

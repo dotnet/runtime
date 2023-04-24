@@ -128,7 +128,7 @@ namespace System.Text.Json.Tests
                 Assert.Equal(expectedDepth, bitStack.CurrentDepth);
             }
 
-            Assert.Equal(expectedDepth, IterationCapacity * 2);
+            Assert.Equal(IterationCapacity * 2, expectedDepth);
 
             // Loop backwards when popping.
             for (int i = bitLength - 1; i >= bitLength - IterationCapacity; i--)

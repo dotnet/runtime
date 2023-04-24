@@ -112,7 +112,6 @@ namespace System.Collections.Immutable
             return _head!;
         }
 
-#if !NETSTANDARD1_0
         /// <summary>
         /// Gets a read-only reference to the element on the top of the stack.
         /// </summary>
@@ -129,7 +128,6 @@ namespace System.Collections.Immutable
 
             return ref _head!;
         }
-#endif
 
         /// <summary>
         /// Pushes an element onto a stack and returns the new stack.
@@ -231,7 +229,7 @@ namespace System.Collections.Immutable
         /// <returns>The reversed stack.</returns>
         internal ImmutableStack<T> Reverse()
         {
-            var r = this.Clear();
+            ImmutableStack<T> r = this.Clear();
             for (ImmutableStack<T> f = this; !f.IsEmpty; f = f.Pop())
             {
                 r = r.Push(f.Peek());

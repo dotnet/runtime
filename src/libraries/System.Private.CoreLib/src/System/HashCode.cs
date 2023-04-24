@@ -42,8 +42,12 @@ https://raw.githubusercontent.com/Cyan4973/xxHash/5c174cfa4e45a42f94082dc0d4539b
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+#pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
 
 namespace System
 {
@@ -303,6 +307,86 @@ namespace System
         public void Add<T>(T value, IEqualityComparer<T>? comparer)
         {
             Add(value is null ? 0 : (comparer?.GetHashCode(value) ?? value.GetHashCode()));
+        }
+
+        /// <summary>Adds a span of bytes to the hash code.</summary>
+        /// <param name="value">The span.</param>
+        /// <remarks>
+        /// This method does not guarantee that the result of adding a span of bytes will match
+        /// the result of adding the same bytes individually.
+        /// </remarks>
+        public void AddBytes(ReadOnlySpan<byte> value)
+        {
+            ref byte pos = ref MemoryMarshal.GetReference(value);
+            ref byte end = ref Unsafe.Add(ref pos, value.Length);
+
+            if (value.Length < (sizeof(int) * 4))
+            {
+                goto Small;
+            }
+
+            // Usually Add calls Initialize but if we haven't used HashCode before it won't have been called.
+            if (_length == 0)
+            {
+                Initialize(out _v1, out _v2, out _v3, out _v4);
+            }
+            else
+            {
+                // If we have at least 16 bytes to hash, we can add them in 16-byte batches,
+                // but we first have to add enough data to flush any queued values.
+                switch (_length % 4)
+                {
+                    case 1:
+                        Debug.Assert(Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int));
+                        Add(Unsafe.ReadUnaligned<int>(ref pos));
+                        pos = ref Unsafe.Add(ref pos, sizeof(int));
+                        goto case 2;
+                    case 2:
+                        Debug.Assert(Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int));
+                        Add(Unsafe.ReadUnaligned<int>(ref pos));
+                        pos = ref Unsafe.Add(ref pos, sizeof(int));
+                        goto case 3;
+                    case 3:
+                        Debug.Assert(Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int));
+                        Add(Unsafe.ReadUnaligned<int>(ref pos));
+                        pos = ref Unsafe.Add(ref pos, sizeof(int));
+                        break;
+                }
+            }
+
+            // With the queue clear, we add sixteen bytes at a time until the input has fewer than sixteen bytes remaining.
+            // We first have to round the end pointer to the nearest 16-byte block from the offset. This makes the loop's condition simpler.
+            ref byte blockEnd = ref Unsafe.Subtract(ref end, Unsafe.ByteOffset(ref pos, ref end) % (sizeof(int) * 4));
+            while (Unsafe.IsAddressLessThan(ref pos, ref blockEnd))
+            {
+                Debug.Assert(Unsafe.ByteOffset(ref pos, ref blockEnd) >= (sizeof(int) * 4));
+                uint v1 = Unsafe.ReadUnaligned<uint>(ref pos);
+                _v1 = Round(_v1, v1);
+                uint v2 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pos, sizeof(int) * 1));
+                _v2 = Round(_v2, v2);
+                uint v3 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pos, sizeof(int) * 2));
+                _v3 = Round(_v3, v3);
+                uint v4 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pos, sizeof(int) * 3));
+                _v4 = Round(_v4, v4);
+
+                _length += 4;
+                pos = ref Unsafe.Add(ref pos, sizeof(int) * 4);
+            }
+
+        Small:
+            // Add four bytes at a time until the input has fewer than four bytes remaining.
+            while (Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int))
+            {
+                Add(Unsafe.ReadUnaligned<int>(ref pos));
+                pos = ref Unsafe.Add(ref pos, sizeof(int));
+            }
+
+            // Add the remaining bytes a single byte at a time.
+            while (Unsafe.IsAddressLessThan(ref pos, ref end))
+            {
+                Add((int)pos);
+                pos = ref Unsafe.Add(ref pos, 1);
+            }
         }
 
         private void Add(int value)

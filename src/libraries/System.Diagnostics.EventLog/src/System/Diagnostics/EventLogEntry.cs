@@ -117,7 +117,7 @@ namespace System.Diagnostics
         /// <summary>
         /// The number identifying the message for this source.
         /// </summary>
-        [Obsolete("This property has been deprecated.  Please use System.Diagnostics.EventLogEntry.InstanceId instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("EventLogEntry.EventID has been deprecated. Use System.Diagnostics.EventLogEntry.InstanceId instead.")]
         public int EventID
         {
             get
@@ -293,7 +293,7 @@ namespace System.Diagnostics
             }
         }
 
-        private char CharFrom(byte[] buf, int offset)
+        private static char CharFrom(byte[] buf, int offset)
         {
             return (char)ShortFrom(buf, offset);
         }
@@ -320,7 +320,7 @@ namespace System.Diagnostics
             return true;
         }
 
-        private int IntFrom(byte[] buf, int offset)
+        private static int IntFrom(byte[] buf, int offset)
         {
             // assumes Little Endian byte order.
             return (unchecked((int)0xFF000000) & (buf[offset + 3] << 24)) | (0xFF0000 & (buf[offset + 2] << 16)) |
@@ -442,7 +442,7 @@ namespace System.Diagnostics
             }
         }
 
-        private short ShortFrom(byte[] buf, int offset)
+        private static short ShortFrom(byte[] buf, int offset)
         {
             // assumes little Endian byte order.
             return (short)((0xFF00 & (buf[offset + 1] << 8)) | (0xFF & buf[offset]));

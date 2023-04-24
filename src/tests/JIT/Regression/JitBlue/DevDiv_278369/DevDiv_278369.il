@@ -12,9 +12,10 @@
 
 .assembly extern mscorlib {}
 
-.assembly r {}
+.assembly 'DevDiv_278369' {}
+.assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit C extends [mscorlib]System.Object
+.class public auto ansi beforefieldinit C extends [mscorlib]System.Object
 {
     .method private hidebysig static int32 N(object o) cil managed noinlining
     {
@@ -39,8 +40,11 @@ label:
         ret
     }
 
-    .method private hidebysig static int32 Main(string[] args) cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
 
         newobj instance void C::.ctor()

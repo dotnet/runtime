@@ -6,6 +6,7 @@ parameters:
   name: ''
   helixType: '(unspecified)'
   container: ''
+  crossBuild: false
   liveLibrariesBuildConfig: ''
   strategy: ''
   pool: ''
@@ -34,6 +35,7 @@ jobs:
     name: ${{ parameters.name }}
     helixType: ${{ parameters.helixType }}
     container: ${{ parameters.container }}
+    crossBuild: ${{ parameters.crossBuild }}
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
@@ -58,6 +60,15 @@ jobs:
     - name: buildProductArtifactName
       value: 'MonoProduct__${{ parameters.runtimeVariant }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
+    # minijit and monointerpreter do not use separate product builds.
+    - ${{ if or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')) }}:
+      - name : buildProductArtifactName
+        value : 'MonoProduct___$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
+    - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
+      - name : buildProductArtifactName
+        value : 'MonoProduct__llvmaot_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+
     - name: binTestsPath
       value: '$(Build.SourcesDirectory)/artifacts/tests/coreclr'
 
@@ -68,7 +79,7 @@ jobs:
       value: '$(binTestsPath)/$(osGroup).$(archType).$(buildConfigUpper)'
 
     - name: managedGenericTestArtifactName
-      value: 'CoreCLRManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
+      value: 'MonoManagedTestArtifacts_AnyOS_AnyCPU_$(buildConfig)'
 
     - name: microsoftNetSdkIlFolderPath
       value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
@@ -85,6 +96,12 @@ jobs:
     - name: nativeTestArtifactRootFolderPath
       value: '$(binTestsPath)/obj/$(osGroup).$(archType).$(buildConfigUpper)'
 
+    - name: workloadPackagesPath
+      value: $(Build.SourcesDirectory)/artifacts/workloadPackages
+
+    - name: workloadArtifactsPath
+      value: $(Build.SourcesDirectory)/artifacts/workloads
+
     - name: liveRuntimeBuildConfigUpper
       ${{ if eq(parameters.liveRuntimeBuildConfig, 'release') }}:
         value: 'Release'
@@ -92,6 +109,9 @@ jobs:
         value: 'Checked'
       ${{ if eq(parameters.liveRuntimeBuildConfig, 'debug') }}:
         value: 'Debug'
+
+    - name: priorityArg
+      value: ''
 
     - librariesBuildArtifactName: ''
     - librariesOverrideArg: ''

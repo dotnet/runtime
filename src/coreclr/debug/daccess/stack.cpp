@@ -104,8 +104,9 @@ ClrDataStackWalk::GetContext(
         }
         else
         {
-            *(PT_CONTEXT)contextBuf = m_context;
-            UpdateContextFromRegDisp(&m_regDisp, (PT_CONTEXT)contextBuf);
+            T_CONTEXT tmpContext = m_context;
+            UpdateContextFromRegDisp(&m_regDisp, &tmpContext);
+            CopyMemory(contextBuf, &tmpContext, contextBufSize);
             status = S_OK;
         }
     }
@@ -154,7 +155,7 @@ ClrDataStackWalk::SetContext2(
     {
         // Copy the context to local state so
         // that its lifetime extends beyond this call.
-        m_context = *(PT_CONTEXT)context;
+        CopyMemory(&m_context, context, contextSize);
         m_thread->FillRegDisplay(&m_regDisp, &m_context);
         m_frameIter.ResetRegDisp(&m_regDisp, (flags & CLRDATA_STACK_SET_CURRENT_CONTEXT) != 0);
         m_stackPrev = (TADDR)GetRegdisplaySP(&m_regDisp);
@@ -201,7 +202,7 @@ ClrDataStackWalk::Next(void)
             switch(action)
             {
             case SWA_CONTINUE:
-                // We sucessfully unwound a frame so update
+                // We successfully unwound a frame so update
                 // the previous stack pointer before going into
                 // filtering to get the amount of stack skipped
                 // by the filtering.
@@ -660,7 +661,7 @@ ClrDataFrame::GetContext(
 
     EX_TRY
     {
-        *(PT_CONTEXT)contextBuf = m_context;
+        CopyMemory(contextBuf, &m_context, contextBufSize);
         status = S_OK;
     }
     EX_CATCH
@@ -787,7 +788,7 @@ ClrDataFrame::GetArgumentByIndex(
     /* [out] */ IXCLRDataValue **arg,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -942,7 +943,7 @@ ClrDataFrame::GetLocalVariableByIndex(
     /* [out] */ IXCLRDataValue **localVariable,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *nameLen,
-    /* [size_is][out] */ __out_ecount_part(bufLen, *nameLen) WCHAR name[  ])
+    /* [size_is][out] */ _Out_writes_to_opt_(bufLen, *nameLen) WCHAR name[  ])
 {
     HRESULT status;
 
@@ -1111,7 +1112,7 @@ ClrDataFrame::GetCodeName(
     /* [in] */ ULONG32 flags,
     /* [in] */ ULONG32 bufLen,
     /* [out] */ ULONG32 *symbolLen,
-    /* [size_is][out] */ __out_ecount_opt(bufLen) WCHAR symbolBuf[  ])
+    /* [size_is][out] */ _Out_writes_bytes_opt_(bufLen) WCHAR symbolBuf[  ])
 {
     HRESULT status = E_FAIL;
 
@@ -1346,7 +1347,7 @@ ClrDataFrame::ValueFromDebugInfo(MetaSig* sig,
     else
     {
         numLocs = NativeVarLocations(varInfo[i].loc, &m_context,
-                                     NumItems(locs), locs);
+                                     ARRAY_SIZE(locs), locs);
     }
 
     if (numLocs == 1 && !locs[0].contextReg)

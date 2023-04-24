@@ -76,21 +76,25 @@ There is a relatively small number of entry-points to the loader. Although the s
 
 There are usually many calls to the type loader during JITting. Consider:
 
-	object CreateClass()
-	{
-	    return new MyClass();
-	}
+```csharp
+object CreateClass()
+{
+    return new MyClass();
+}
+```
 
 In the IL, MyClass is referred to using a metadata token. In order to generate a call to the `JIT_New` helper which takes care of the actual instantiation, the JIT will ask the type loader to load the type and return a handle to it. This handle will be then directly embedded in the JITted code as an immediate value. The fact that types and members are usually resolved and loaded at JIT time and not at run-time also explains the sometimes confusing behavior easily hit with code like this:
 
-	object CreateClass()
-	{
-	    try {
-	        return new MyClass();
-	    } catch (TypeLoadException) {
-	        return null;
-	    }
-	}
+```csharp
+object CreateClass()
+{
+    try {
+        return new MyClass();
+    } catch (TypeLoadException) {
+        return null;
+    }
+}
+```
 
 If `MyClass` fails to load, for example because it's supposed to be defined in another assembly and it was accidentally removed in the newest build, then this code will still throw `TypeLoadException`. The reason that the catch block did not catch it is that it never ran! The exception occurred during JITting and would only be catchable in the method that called `CreateClass` and caused it to be JITted. In addition, it may not be always obvious at which point the JITting is triggered due to inlining, so users should not expect and rely on deterministic behavior.
 
@@ -112,7 +116,7 @@ Represents a type variable, i.e. the `T` in `List<T>` or in `Array.Sort<T>` (see
 
 **`FnPtrTypeDesc`**
 
-Represents a function pointer, essentially a variable-length list of type handles referring to the return type and parameters. It's not that common to see this descriptor because function pointers are not supported by C#. However, managed C++ uses them.
+Represents a function pointer, essentially a variable-length list of type handles referring to the return type and parameters. It was originally only used by managed C++. C# supported it since C# 9.
 
 **`ParamTypeDesc`**
 
@@ -153,24 +157,49 @@ both the same type.
 
 When the type loader is asked to load a specified type, identified for example by a typedef/typeref/typespec **token** and a **Module** , it does not do all the work atomically at once. The loading is done in phases instead. The reason for this is that the type usually depends on other types and requiring it to be fully loaded before it can be referred to by other types would result in infinite recursion and deadlocks. Consider:
 
-	class A<T> : C<B<T>>
-	{ }
+```csharp
+class A<T> : C<B<T>>
+{ }
 
-	class B<T> : C<A<T>>
-	{ }
+class B<T> : C<A<T>>
+{ }
 
-	class C<T>
-	{ }
+class C<T>
+{ }
+```
 
 These are valid types and apparently `A` depends on `B` and `B` depends on `A`.
 
 The loader initially creates the structure(s) representing the type and initializes them with data that can be obtained without loading other types. When this "no-dependencies" work is done, the structure(s) can be referred from other places, usually by sticking pointers to them into another structures. After that the loader progresses in incremental steps and fills the structure(s) with more and more information until it finally arrives at a fully loaded type. In the above example, the base types of `A` and `B` will be approximated by something that does not include the other type, and substituted by the real thing later.
 
-The exact half-loaded state is described by the so-called load level, starting with CLASS\_LOAD\_BEGIN, ending with CLASS\_LOADED, and having a couple of intermediate levels in between. There are rich and useful comments about individual load levels in the [classloadlevel.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/classloadlevel.h) source file. Notice that although types can be saved in NGEN images, the representing structures cannot be simply mapped or blitted into memory and used without additional work called "restoring". The fact that a type came from an NGEN image and needs to be restored is also captured by its load level.
+The exact half-loaded state is described by the so-called load level, starting with CLASS\_LOAD\_BEGIN, ending with CLASS\_LOADED, and having a couple of intermediate levels in between. There are rich and useful comments about individual load levels in the [classloadlevel.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/classloadlevel.h) source file.
 
-See [Design and Implementation of Generics
-for the .NET Common Language
-Runtime][generics-design] for more detailed explanation of load levels.
+See [Design and Implementation of Generics for the .NET Common Language Runtime][generics-design] for more detailed explanation of load levels.
+
+### 2.1.1 Use of load levels within the type loader.
+Within the type loader, while operating in various portions of the type loader, various different rules apply to what type load level can be used.
+
+#### 2.1.1.1 Code within `ClassLoader::CreateTypeHandleForTypeDefThrowing` and `MethodTableBuilder::BuildMethodTableThrowing`
+While executing the code in `ClassLoader::CreateTypeHandleForTypeDefThrowing` before the call to `MethodTableBuilder::BuildMethodTableThrowing` no logic can rely on the `MethodTable` of the type that is being loaded. This is due to the detail that these are the routines which construct the `MethodTable`.
+
+This has various implications, but the most obvious is that the base type of the type being loaded and any associated interfaces or field types cannot be loaded past `CLASS_LOAD_APPROXPARENTS` without creating a risk of triggering a `TypeLoadException`. For instance, if we load the Base type to `CLASS_LOAD_EXACTPARENTS` then we could not load a type `A` which was derived from type `B<A>`. Exceptions to this rule exist, and are necessary to actually implement the type loading process, but generally should be avoided, as they cause behavior which does not match the ECMA specification.
+
+#### 2.1.1.2 Code within `ClassLoader::DoIncrementalLoad`
+Code that runs during `DoIncrementalLoad` is generally allowed to require a type load to either the level that is being incrementally loaded to, OR the level at which the type being loaded is already at. The distinction here is that if the relationship between the types is circular, or non-circular. Circular relationships such as the relationship of a type to its type parameters can only be loaded to a level below the desired load level. Non-circular relationships can be required to be loaded to the load level that the incremental operation will eventually reach.
+
+For instance, the relationship of a type to its base type is non-circular, as a type cannot transitively be its own exact base type.
+However, the relationship of a type to the instantiation arguments of its base type can be circular.
+
+As an example for the rules above consider the type `class A : B<A> {}`.
+When loading class `A` to `CLASS_LOAD_EXACTPARENTS` we can require the base type `B<A>` to be loaded to `CLASS_LOAD_EXACTPARENTS` as that is a non-circular relationship, but when we load `B<A>` to `CLASS_LOAD_EXACTPARENTS` we cannot require type `A` to be loaded to `CLASS_LOAD_EXACTPARENTS` as that would cause a circularity issue, and thus loading `B<A>` to `CLASS_LOAD_EXACTPARENTS` can only force `A` to be loaded to `CLASS_LOAD_APPROXPARENTS`.
+
+Code that runs in `ClassLoader::DoIncrementalLoad` follows a fairly straightforward pattern where code can depend on types being loaded to a specific load level, and when the incremental load process completes at a given level, the type being loaded is incremented in load level.
+
+#### 2.1.1.3 Code within `PushFinalLevels`
+The final two levels of type loading are handled via `PushFinalLevels` which follows a different set of rules. `PushFinalLevels` runs code which in order to raise the level can only depend on other types being loaded to a level below the level that is desired. However, before marking the type as reaching a higher level, `PushFinalLevels` can require other types to also complete the `PushFinalLevels` algorithm to the new level. Only once all of the types are confirmed to have reached the new level can the entire set of types be marked as reaching the new level.
+
+### 2.1.2 Usage of load levels outside of the type loader.
+In the general case, its preferable to simply ignore load levels when not operating code that is part of the type loader, and to simply ask for fully loaded types. This should be the default, and always functionally correct choice. However, for performance reasons, it is possible to only require partially loaded types, which then requires the user of the type to ensure that their code does not have any dependencies on a fully loaded state.
 
 ## 2.2 Generics
 
@@ -195,10 +224,12 @@ A placeholder to be substituted by another type; the `T` in the declaration of `
 
 A type being substituted for a generic parameter; the `int` in `List<int>`. Note that a generic parameter can also be used as an argument. Consider:
 
-	List<T> GetList<T>()
-	{
-	    return new List<T>();
-	}
+```csharp
+List<T> GetList<T>()
+{
+    return new List<T>();
+}
+```
 
 The method has one generic parameter `T` which is used as a generic argument for the generic list class.
 
@@ -209,28 +240,38 @@ An optional requirement placed by generic parameters on its potential generic ar
 1. Special constraints
   - Reference type constraint - the generic argument must be a reference type (as opposed to a value type). The `class` keyword is used in C# to express this constraint.
 
-			public class A<T> where T : class
+    ```csharp
+    public class A<T> where T : class
+    ```
 
   - Value type constraint - the generic argument must be a value type different from `System.Nullable<T>`. C# uses the `struct` keyword.
 
-			public class A<T> where T : struct
+    ```csharp
+    public class A<T> where T : struct
+    ```
 
   - Default constructor constraint - the generic argument must have a public parameterless constructor. This is expressed by `new()` in C#.
 
-			public class A<T> where T : new()
+    ```csharp
+    public class A<T> where T : new()
+    ```
 
 2. Base type constraints - the generic argument must be derived from
 (or directly be of) the given non-interface type. It obviously makes
 sense to use only zero or one reference type as a base types
 constraint.
 
-		public class A<T> where T : EventArgs
+    ```csharp
+    public class A<T> where T : EventArgs
+    ```
 
 3. Implemented interface constraints - the generic argument must
 implement (or directly be of) the given interface type.  Zero or more
 interfaces can be given.
 
-		public class A<T> where T : ICloneable, IComparable<T>
+    ```csharp
+    public class A<T> where T : ICloneable, IComparable<T>
+    ```
 
 The above constraints are combined with an implicit AND, i.e. a
 generic parameter can be constrained to be derived from a given type,
@@ -239,11 +280,13 @@ generic parameters of the declaring type can be used to express the
 constraints, introducing interdependencies among the parameters. For
 example:
 
-	public class A<S, T, U>
-		where S : T
-		where T : IList<U> {
-	    void f<V>(V v) where V : S {}
-	}
+```csharp
+public class A<S, T, U>
+	where S : T
+	where T : IList<U> {
+    void f<V>(V v) where V : S {}
+}
+```
 
 **Instantiation**
 
@@ -259,7 +302,9 @@ declared. There exists exactly one typical instantiation for each
 generic type and method. Usually when one talks about an open generic
 type, they have the typical instantiation in mind. Example:
 
-	public class A<S, T, U> {}
+```csharp
+public class A<S, T, U> {}
+```
 
 The C# `typeof(A<,,>)` compiles to ldtoken A\'3 which makes the
 runtime load ``A`3`` instantiated at `S` , `T` , `U`.

@@ -25,17 +25,17 @@ namespace BasicEventSourceTests
     public partial class TestsManifestGeneration
     {
         // Specifies whether the process is elevated or not.
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(AdminHelpers.IsProcessElevated);
-        private static bool IsProcessElevated => s_isElevated.Value;
         private static bool IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported =>
-            IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+            PlatformDetection.IsPrivilegedProcess && PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
 
         /// ETW only works with elevated process
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
         public void Test_EventSource_EtwManifestGeneration()
         {
+            RemoteInvokeOptions options = new RemoteInvokeOptions { TimeOut = 300_000 /* ms */ };
             RemoteExecutor.Invoke(() =>
             {
+                RemoteInvokeOptions localOptions = new RemoteInvokeOptions { TimeOut = 300_000 /* ms */ };
                 using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() =>
                 {
                     var es = new SimpleEventSource();
@@ -44,7 +44,7 @@ namespace BasicEventSourceTests
                         es.WriteSimpleInt(i);
                         Thread.Sleep(100);
                     }
-                }))
+                }, localOptions))
                 {
                     var etlFileName = @"file.etl";
                     var tracesession = new TraceEventSession("testname", etlFileName);
@@ -72,7 +72,7 @@ namespace BasicEventSourceTests
                     }
                     Assert.True(manifestExists);
                 }
-            }).Dispose();
+            }, options).Dispose();
         }
 
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]

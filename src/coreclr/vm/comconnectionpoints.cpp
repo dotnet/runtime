@@ -822,7 +822,7 @@ ULONG __stdcall ConnectionPointEnum::AddRef()
 
     SetupForComCallHR();
 
-    LONG i = FastInterlockIncrement((LONG*)&m_cbRefCount );
+    LONG i = InterlockedIncrement((LONG*)&m_cbRefCount );
     return i;
 }
 
@@ -843,7 +843,7 @@ ULONG __stdcall ConnectionPointEnum::Release()
 
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
     {
-        cbRef = FastInterlockDecrement((LONG*)&m_cbRefCount );
+        cbRef = InterlockedDecrement((LONG*)&m_cbRefCount );
         _ASSERTE(cbRef >=0);
         if (cbRef == 0)
             delete this;
@@ -1063,7 +1063,7 @@ ULONG __stdcall ConnectionEnum::AddRef()
 
     SetupForComCallHR();
 
-    LONG i = FastInterlockIncrement((LONG*)&m_cbRefCount);
+    LONG i = InterlockedIncrement((LONG*)&m_cbRefCount);
     return i;
 }
 
@@ -1079,7 +1079,7 @@ ULONG __stdcall ConnectionEnum::Release()
 
     SetupForComCallHR();
 
-    LONG i = FastInterlockDecrement((LONG*)&m_cbRefCount);
+    LONG i = InterlockedDecrement((LONG*)&m_cbRefCount);
     _ASSERTE(i >=0);
     if (i == 0)
         delete this;

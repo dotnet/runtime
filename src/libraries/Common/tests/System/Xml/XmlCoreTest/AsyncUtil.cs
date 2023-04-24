@@ -2,21 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Xml;
-using System.Text;
-using System.IO;
-using System.Globalization;
-using OLEDB.Test.ModuleCore;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using OLEDB.Test.ModuleCore;
 
 /// <summary>
 /// Summary description for Class1
 /// </summary>
 namespace XmlCoreTest.Common
 {
-    public class aaaa { };
-
     public class AsyncUtil
     {
         public static bool IsAsyncEnabled

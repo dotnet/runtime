@@ -36,7 +36,7 @@ public class DelegateDefinitions
     #region Public Constaints
     public const int c_DELEGATE_TEST_DEFAULT_VALUE_PARAMETER = 1;
     public const int c_DELEGATE_TEST_ADDITIONAL_VALUE_PARAMETER = 2;
-    public const string c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER = "abcdefg";
+    public const string c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER = "abcdefg";
     #endregion
 
     #region Public Properties
@@ -246,11 +246,11 @@ public class DelegateDefinitions
 
     public static void TestReferenceParameterVoidStaticCallback(object val)
     {
-        if (!val.Equals(c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER))
+        if (!val.Equals(c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER))
             VerificationAgent.ThrowVerificationException(
                 "Input reference parameter is not expected",
                 val,
-                c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER);
+                c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER);
     }
 
     public static void TestVoidParameterVoidStaticCallback()
@@ -277,11 +277,11 @@ public class DelegateDefinitions
 
     public static object TestReferenceValueParameterReferenceStaticCallback(object val1, int val2)
     {
-        if (!val1.Equals(c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER))
+        if (!val1.Equals(c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER))
             VerificationAgent.ThrowVerificationException(
                 "First input reference parameter is not expected",
                 val1,
-                c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER);
+                c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER);
 
         if (c_DELEGATE_TEST_DEFAULT_VALUE_PARAMETER != val2)
             VerificationAgent.ThrowVerificationException(
@@ -289,7 +289,7 @@ public class DelegateDefinitions
                 val2,
                 c_DELEGATE_TEST_DEFAULT_VALUE_PARAMETER);
 
-        return c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER;
+        return c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER;
     }
     #endregion
 
@@ -306,11 +306,11 @@ public class DelegateDefinitions
 
     public void TestReferenceParameterVoidCallback(object val)
     {
-        if (!val.Equals(c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER))
+        if (!val.Equals(c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER))
             VerificationAgent.ThrowVerificationException(
                 "Input reference parameter is not expected",
                 val,
-                c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER);
+                c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER);
     }
 
     public void TestVoidParameterVoidCallback()
@@ -332,13 +332,13 @@ public class DelegateDefinitions
 
     public object TestReferenceParameterReferenceCallback(object val)
     {
-        if (!val.Equals(c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER))
+        if (!val.Equals(c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER))
             VerificationAgent.ThrowVerificationException(
                 "Input reference parameter is not expected",
                 val,
-                c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER);
+                c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER);
 
-        return c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER;
+        return c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER;
     }
 
     public object TestValueParameterReferenceCallback(int val)
@@ -349,16 +349,16 @@ public class DelegateDefinitions
                 val,
                 c_DELEGATE_TEST_DEFAULT_VALUE_PARAMETER);
 
-        return c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER;
+        return c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER;
     }
 
     public int TestReferenceParameterValueCallback(object val)
     {
-        if (!val.Equals(c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER))
+        if (!val.Equals(c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER))
             VerificationAgent.ThrowVerificationException(
                 "Input reference parameter is not expected",
                 val,
-                c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER);
+                c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER);
 
         return c_DELEGATE_TEST_DEFAULT_VALUE_PARAMETER;
     }
@@ -370,7 +370,7 @@ public class DelegateDefinitions
 
     public object TestVoidParameterReferenceCallback()
     {
-        return c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER;
+        return c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER;
     }
 
     public void TestTwoValueParameterVoidCallback(int val1, int val2)
@@ -396,20 +396,20 @@ public class DelegateDefinitions
                 val1,
                 c_DELEGATE_TEST_DEFAULT_VALUE_PARAMETER);
 
-        if (!val2.Equals(c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER))
+        if (!val2.Equals(c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER))
             VerificationAgent.ThrowVerificationException(
                 "Second input reference parameter is not expected",
                 val2,
-                c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER);
+                c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER);
     }
 
     public void TestReferenceValueParameterVoidCallback(object val1, int val2)
     {
-        if (!val1.Equals(c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER))
+        if (!val1.Equals(c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER))
             VerificationAgent.ThrowVerificationException(
                 "First input reference parameter is not expected",
                 val1,
-                c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER);
+                c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER);
 
         if (c_DELEGATE_TEST_DEFAULT_VALUE_PARAMETER != val2)
             VerificationAgent.ThrowVerificationException(
@@ -420,11 +420,11 @@ public class DelegateDefinitions
 
     public object TestReferenceValueParameterReferenceCallback(object val1, int val2)
     {
-        if (!val1.Equals(c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER))
+        if (!val1.Equals(c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER))
             VerificationAgent.ThrowVerificationException(
                 "First input reference parameter is not expected",
                 val1,
-                c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER);
+                c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER);
 
         if (c_DELEGATE_TEST_DEFAULT_VALUE_PARAMETER != val2)
             VerificationAgent.ThrowVerificationException(
@@ -432,7 +432,7 @@ public class DelegateDefinitions
                 val2,
                 c_DELEGATE_TEST_DEFAULT_VALUE_PARAMETER);
 
-        return c_DELEGATE_TEST_DEFAUTL_REFERENCE_PARAMETER;
+        return c_DELEGATE_TEST_DEFAULT_REFERENCE_PARAMETER;
     }
     #endregion
 

@@ -3,13 +3,13 @@
 
 namespace System.Security.Permissions
 {
-#if NET50_OBSOLETIONS
+#if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     [AttributeUsage((AttributeTargets)(68), AllowMultiple = true, Inherited = false)]
     public sealed partial class PrincipalPermissionAttribute : CodeAccessSecurityAttribute
     {
-#if NET50_OBSOLETIONS
+#if NETCOREAPP
         [Obsolete(Obsoletions.PrincipalPermissionAttributeMessage, error: true, DiagnosticId = Obsoletions.PrincipalPermissionAttributeDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public PrincipalPermissionAttribute(SecurityAction action) : base(default(SecurityAction)) { }

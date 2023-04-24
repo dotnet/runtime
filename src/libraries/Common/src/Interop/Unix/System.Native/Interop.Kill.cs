@@ -15,7 +15,7 @@ internal static partial class Interop
             SIGSTOP = 19
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Kill", SetLastError = true)]
-        internal static extern int Kill(int pid, Signals signal);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Kill", SetLastError = true)]
+        internal static partial int Kill(int pid, Signals signal);
     }
 }

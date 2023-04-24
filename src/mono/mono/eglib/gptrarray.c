@@ -37,7 +37,7 @@ typedef struct _GPtrArrayPriv {
 	guint size;
 } GPtrArrayPriv;
 
-static void 
+static void
 g_ptr_array_grow(GPtrArrayPriv *array, guint length)
 {
 	g_assert (array);
@@ -93,7 +93,7 @@ g_ptr_array_free(GPtrArray *array, gboolean free_seg)
 	}
 
 	g_free(array);
-	
+
 	return data;
 }
 
@@ -104,7 +104,7 @@ g_ptr_array_set_size(GPtrArray *array, gint length)
 
 	if((size_t)length > array->len) {
 		g_ptr_array_grow((GPtrArrayPriv *)array, length);
-		memset(array->pdata + array->len, 0, (length - array->len) 
+		memset(array->pdata + array->len, 0, (length - array->len)
 			* sizeof(gpointer));
 	}
 
@@ -133,7 +133,7 @@ g_ptr_array_remove_index(GPtrArray *array, guint index)
 		g_memmove(array->pdata + index, array->pdata + index + 1,
 			(array->len - index - 1) * sizeof(gpointer));
 	}
-	
+
 	array->len--;
 	array->pdata[array->len] = NULL;
 
@@ -199,7 +199,7 @@ g_ptr_array_remove_fast(GPtrArray *array, gpointer data)
 	return FALSE;
 }
 
-void 
+void
 g_ptr_array_foreach(GPtrArray *array, GFunc func, gpointer user_data)
 {
 	guint i;
@@ -216,14 +216,6 @@ g_ptr_array_sort(GPtrArray *array, GCompareFunc compare)
 	mono_qsort (array->pdata, array->len, sizeof(gpointer), compare);
 }
 
-void
-g_ptr_array_sort_with_data (GPtrArray *array, GCompareDataFunc compare, gpointer user_data)
-{
-	g_assert (array);
-	
-	g_qsort_with_data (array->pdata, array->len, sizeof (gpointer), compare, user_data);
-}
-
 guint
 g_ptr_array_capacity (GPtrArray *array)
 {
@@ -234,7 +226,7 @@ gboolean
 g_ptr_array_find (GPtrArray *array, gconstpointer needle, guint *index)
 {
 	g_assert (array);
-	for (int i = 0; i < array->len; i++) {
+	for (guint i = 0; i < array->len; i++) {
 		if (array->pdata [i] == needle) {
 			if (index)
 				*index = i;

@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Key = cacheKey;
         }
 
-        public ResultCache(ServiceLifetime lifetime, Type type, int slot)
+        public ResultCache(ServiceLifetime lifetime, Type? type, int slot)
         {
             Debug.Assert(lifetime == ServiceLifetime.Transient || type != null);
 

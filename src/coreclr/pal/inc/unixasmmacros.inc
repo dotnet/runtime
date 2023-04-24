@@ -9,7 +9,7 @@
 #define LOCAL_LABEL(name) L##name
 #else
 #define C_FUNC(name) name
-#if defined(HOST_AMD64) || defined(HOST_X86)
+#if defined(HOST_AMD64) || defined(HOST_X86) || defined(HOST_S390X)
 #define EXTERNAL_C_FUNC(name) C_FUNC(name)@plt
 #else
 #define EXTERNAL_C_FUNC(name) C_FUNC(name)
@@ -19,7 +19,7 @@
 
 #if defined(__APPLE__)
 #define C_PLTFUNC(name) _##name
-#elif defined(HOST_ARM64)
+#elif defined(HOST_ARM64) || defined(HOST_POWERPC64)
 #define C_PLTFUNC(name) name
 #else
 #define C_PLTFUNC(name) name@PLT
@@ -39,6 +39,16 @@
 #include "unixasmmacrosamd64.inc"
 #elif defined(HOST_ARM)
 #include "unixasmmacrosarm.inc"
+#elif defined(HOST_ARMV6)
+#include "unixasmmacrosarm.inc"
 #elif defined(HOST_ARM64)
 #include "unixasmmacrosarm64.inc"
+#elif defined(HOST_S390X)
+#include "unixasmmacross390x.inc"
+#elif defined(HOST_LOONGARCH64)
+#include "unixasmmacrosloongarch64.inc"
+#elif defined(HOST_RISCV64)
+#include "unixasmmacrosriscv64.inc"
+#elif defined(HOST_POWERPC64)
+#include "unixasmmacrosppc64le.inc"
 #endif

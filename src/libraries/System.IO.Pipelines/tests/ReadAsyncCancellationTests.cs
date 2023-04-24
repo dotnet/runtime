@@ -32,7 +32,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CancellingBeforeAdvance()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             PipeWriter output = Pipe.Writer;
             output.Write(bytes);
             await output.FlushAsync();
@@ -65,7 +65,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CancellingPendingAfterReadAsync()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             PipeWriter output = Pipe.Writer;
             output.Write(bytes);
 
@@ -116,7 +116,7 @@ namespace System.IO.Pipelines.Tests
             Assert.True(result.IsCanceled);
             Assert.True(buffer.IsEmpty);
 
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             PipeWriter output = Pipe.Writer;
             output.Write(bytes);
             await output.FlushAsync();
@@ -362,12 +362,10 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void ReadAsyncThrowsIfPassedCanceledCancellationToken()
+        public Task ReadAsyncThrowsIfPassedCanceledCancellationToken()
         {
-            var cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.Cancel();
-
-            Assert.Throws<OperationCanceledException>(() => Pipe.Reader.ReadAsync(cancellationTokenSource.Token));
+            ValueTask<ReadResult> task = Pipe.Reader.ReadAsync(new CancellationToken(canceled: true));
+            return Assert.ThrowsAsync<TaskCanceledException>(async () => await task);
         }
 
         [Fact]
@@ -409,7 +407,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task WriteAndCancellingPendingReadBeforeReadAsync()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             PipeWriter output = Pipe.Writer;
             output.Write(bytes);
             await output.FlushAsync();

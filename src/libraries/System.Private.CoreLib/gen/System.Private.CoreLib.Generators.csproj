@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <NoWarn>$(NoWarn);CS3001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="EventSourceGenerator.cs" />
+    <Compile Include="EventSourceGenerator.Emitter.cs" />
+    <Compile Include="EventSourceGenerator.Parser.cs" />
+    <Compile Include="$(CoreLibSharedDir)\System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" Version="$(MicrosoftCodeAnalysisVersion_LatestVS)" />
+  </ItemGroup>
+</Project>

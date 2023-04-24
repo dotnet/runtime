@@ -10,6 +10,45 @@ namespace System.Security.Cryptography.Rsa.Tests
     public sealed class EncryptDecrypt_Span : EncryptDecrypt
     {
         protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
+            WithOutputArray(dest => rsa.Encrypt(data, dest, padding));
+
+        protected override byte[] Decrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
+            WithOutputArray(dest => rsa.Decrypt(data, dest, padding));
+
+        private static byte[] WithOutputArray(Func<byte[], int> func)
+        {
+            for (int length = 1; ; length = checked(length * 2))
+            {
+                byte[] result = new byte[length];
+
+                try
+                {
+                    int written = func(result);
+                    Array.Resize(ref result, written);
+                    return result;
+                }
+                catch (ArgumentException ae) when (ae.ParamName == "destination")
+                {
+                    continue;
+                }
+            }
+        }
+    }
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    public sealed class EncryptDecrypt_AllocatingSpan : EncryptDecrypt
+    {
+        protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
+            rsa.Encrypt(new ReadOnlySpan<byte>(data), padding);
+
+        protected override byte[] Decrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
+            rsa.Decrypt(new ReadOnlySpan<byte>(data), padding);
+    }
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    public sealed class EncryptDecrypt_TrySpan : EncryptDecrypt
+    {
+        protected override byte[] Encrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
             TryWithOutputArray(dest => rsa.TryEncrypt(data, dest, padding, out int bytesWritten) ? (true, bytesWritten) : (false, 0));
 
         protected override byte[] Decrypt(RSA rsa, byte[] data, RSAEncryptionPadding padding) =>
@@ -104,6 +143,25 @@ namespace System.Security.Cryptography.Rsa.Tests
         public void Decrypt_WrongKey_OAEP_SHA256()
         {
             Decrypt_WrongKey(RSAEncryptionPadding.OaepSHA256);
+        }
+
+        [Fact]
+        public static void EncryptDefaultSpan()
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                byte[] dest = new byte[rsa.KeySize / 8];
+
+                Assert.True(
+                    rsa.TryEncrypt(ReadOnlySpan<byte>.Empty, dest, RSAEncryptionPadding.Pkcs1, out int written));
+
+                Assert.Equal(dest.Length, written);
+
+                Assert.True(
+                    rsa.TryEncrypt(ReadOnlySpan<byte>.Empty, dest, RSAEncryptionPadding.OaepSHA1, out written));
+
+                Assert.Equal(dest.Length, written);
+            }
         }
 
         private static void Decrypt_WrongKey(RSAEncryptionPadding padding)

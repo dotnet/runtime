@@ -45,7 +45,6 @@
 #include "eeconfig.h"
 #include "contractimpl.h"
 #include "prettyprintsig.h"
-#include "compile.h"
 
 #include "comcallablewrapper.h"
 #include "clrtocomcall.h"
@@ -939,7 +938,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceMembers(
             }
         }
 
-        if(Classification & mdcMethodImpl)
+        if (Classification & mdcMethodImpl)
         {   // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
         // of them this method participates in as the BODY.
@@ -1241,7 +1240,11 @@ VOID MethodTableBuilder::BuildInteropVTable_ExpandInterface(InterfaceInfo_t *pIn
     if (pNewInterface->GetNumInterfaces() != 0) {
         MethodTable::InterfaceMapIterator it = pNewInterface->IterateInterfaceMap();
         while (it.Next()) {
-            BuildInteropVTable_ExpandInterface(pInterfaceMap, it.GetInterface(),
+            MethodTable *pItf = it.GetInterfaceApprox();
+            if (pItf->HasInstantiation() || pItf->IsSpecialMarkerTypeForGenericCasting())
+                continue;
+
+            BuildInteropVTable_ExpandInterface(pInterfaceMap, pItf,
                                                pwInterfaceListSize, pdwMaxInterfaceMethods, FALSE);
         }
     }
@@ -1412,7 +1415,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceVtableMethods(
 
                     if (i >= NumDeclaredMethods())
                     {
-                        // if this interface has been layed out by our parent then
+                        // if this interface has been laid out by our parent then
                         // we do not need to define a new method desc for it
                         if(fParentInterface)
                         {
@@ -1421,8 +1424,8 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceVtableMethods(
                         }
                         else
                         {
-                            // We will use the interface implemenation if we do not find one in the
-                            // parent. It will have to be overriden by the a method impl unless the
+                            // We will use the interface implementation if we do not find one in the
+                            // parent. It will have to be overridden by the a method impl unless the
                             // class is abstract or it is a special COM type class.
 
                             MethodDesc* pParentMD = NULL;
@@ -1457,7 +1460,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceVtableMethods(
                     }
                     else
                     {
-                        // Found as declared method in class. If the interface was layed out by the parent we
+                        // Found as declared method in class. If the interface was laid out by the parent we
                         // will be overridding their slot so our method counts do not increase. We will fold
                         // our method into our parent's interface if we have not been placed.
                         if(fParentInterface)
@@ -1713,7 +1716,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceInterfaceDeclaration(
 
     BOOL fInterfaceFound = FALSE;
     // Check our vtable for entries that we are suppose to override.
-    // Since this is an external method we must also check the inteface map.
+    // Since this is an external method we must also check the interface map.
     // We want to replace any interface methods even if they have been replaced
     // by a base class.
     for(USHORT i = 0; i < bmtInterface->wInterfaceMapSize; i++)
@@ -1858,7 +1861,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceParentDeclaration(
 
     BOOL fRet = FALSE;
 
-    // Verify that the class of the declaration is in our heirarchy
+    // Verify that the class of the declaration is in our hierarchy
     MethodTable* declType = pDecl->GetMethodTable();
     MethodTable* pParentMT = bmtParent->pParentMethodTable;
     while(pParentMT != NULL)
@@ -2586,14 +2589,9 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
         }
 
         // Some interface checks.
-        // We only need them if default interface method support is disabled or if this is fragile crossgen
-#if !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
-        if (fIsClassInterface
-#if defined(FEATURE_DEFAULT_INTERFACES)
-            // Only fragile crossgen wasn't upgraded to deal with default interface methods.
-            && !IsReadyToRunCompilation() && !IsNgenPDBCompilationProcess()
-#endif
-            )
+        // We only need them if default interface method support is disabled
+#if !defined(FEATURE_DEFAULT_INTERFACES)
+        if (fIsClassInterface)
         {
             if (IsMdVirtual(dwMemberAttrs))
             {
@@ -2611,7 +2609,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
                 }
             }
         }
-#endif // !defined(FEATURE_DEFAULT_INTERFACES) || defined(FEATURE_NATIVE_IMAGE_GENERATION)
+#endif // !defined(FEATURE_DEFAULT_INTERFACES)
 
         // No synchronized methods in ValueTypes
         if(fIsClassValueType && IsMiSynchronized(dwImplFlags))
@@ -2807,7 +2805,7 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
         // on this type so we can just compare the tok with the body token found
         // from the overrides.
         for(DWORD impls = 0; impls < bmtMethodImpl->dwNumberMethodImpls; impls++) {
-            if(bmtMethodImpl->rgMethodImplTokens[impls].methodBody == tok) {
+            if ((bmtMethodImpl->rgMethodImplTokens[impls].methodBody == tok) && !IsMdStatic(dwMemberAttrs)) {
                 Classification |= mdcMethodImpl;
                 break;
             }
@@ -3311,7 +3309,7 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
             IfFailRet(pMDInternalImport->GetNameAndSigOfMemberRef(tkMethod, &pSig, &cSig, &szMember));
 
             if (isCallConv(
-                MetaSig::GetCallingConvention(NULL, Signature(pSig, cSig)),
+                MetaSig::GetCallingConvention(Signature(pSig, cSig)),
                 IMAGE_CEE_CS_CALLCONV_FIELD))
             {
                 return VLDTR_E_MR_BADCALLINGCONV;

@@ -6,15 +6,27 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class Sys
+    internal static unsafe partial class Sys
     {
-        [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_MemAlloc")]
-        internal static extern IntPtr MemAlloc(nuint sizeInBytes);
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_AlignedAlloc")]
+        internal static partial void* AlignedAlloc(nuint alignment, nuint size);
 
-        [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_MemReAlloc")]
-        internal static extern IntPtr MemReAlloc(IntPtr ptr, nuint newSize);
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_AlignedFree")]
+        internal static partial void AlignedFree(void* ptr);
 
-        [DllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_MemFree")]
-        internal static extern void MemFree(IntPtr ptr);
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_AlignedRealloc")]
+        internal static partial void* AlignedRealloc(void* ptr, nuint alignment, nuint new_size);
+
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_Calloc")]
+        internal static partial void* Calloc(nuint num, nuint size);
+
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_Free")]
+        internal static partial void Free(void* ptr);
+
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_Malloc")]
+        internal static partial void* Malloc(nuint size);
+
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_Realloc")]
+        internal static partial void* Realloc(void* ptr, nuint new_size);
     }
 }

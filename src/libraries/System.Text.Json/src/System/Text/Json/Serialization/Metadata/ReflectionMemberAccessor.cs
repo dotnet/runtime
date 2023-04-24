@@ -3,13 +3,27 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
     internal sealed class ReflectionMemberAccessor : MemberAccessor
     {
-        public override JsonTypeInfo.ConstructorDelegate? CreateConstructor(Type type)
+        private sealed class ConstructorContext
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
+            private readonly Type _type;
+
+            public ConstructorContext([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
+                => _type = type;
+
+            public object? CreateInstance()
+                => Activator.CreateInstance(_type, nonPublic: false);
+        }
+
+        public override Func<object>? CreateConstructor(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             Debug.Assert(type != null);
             ConstructorInfo? realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
@@ -24,22 +38,17 @@ namespace System.Text.Json.Serialization.Metadata
                 return null;
             }
 
-            return () => Activator.CreateInstance(type, nonPublic: false);
+            return new ConstructorContext(type).CreateInstance!;
         }
 
-        public override JsonTypeInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)
+        public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor)
         {
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(Array.IndexOf(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance), constructor) >= 0);
+            Debug.Assert(constructor.DeclaringType == type && constructor.IsPublic && !constructor.IsStatic);
 
             int parameterCount = constructor.GetParameters().Length;
-
-            if (parameterCount > JsonConstants.MaxParameterCount)
-            {
-                return null;
-            }
 
             return (arguments) =>
             {
@@ -72,7 +81,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type type = typeof(T);
 
             Debug.Assert(!type.IsAbstract);
-            Debug.Assert(Array.IndexOf(type.GetConstructors(BindingFlags.Public | BindingFlags.Instance), constructor) >= 0);
+            Debug.Assert(constructor.DeclaringType == type && constructor.IsPublic && !constructor.IsStatic);
 
             int parameterCount = constructor.GetParameters().Length;
 
@@ -108,7 +117,7 @@ namespace System.Text.Json.Serialization.Metadata
             };
         }
 
-        public override Action<TCollection, object?> CreateAddMethodDelegate<TCollection>()
+        public override Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>()
         {
             Type collectionType = typeof(TCollection);
             Type elementType = JsonTypeInfo.ObjectType;
@@ -122,6 +131,8 @@ namespace System.Text.Json.Serialization.Metadata
             };
         }
 
+        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
+        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>()
         {
             MethodInfo createRange = typeof(TCollection).GetImmutableEnumerableCreateRangeMethod(typeof(TElement));
@@ -129,6 +140,8 @@ namespace System.Text.Json.Serialization.Metadata
                 typeof(Func<IEnumerable<TElement>, TCollection>));
         }
 
+        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
+        [RequiresDynamicCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>()
         {
             MethodInfo createRange = typeof(TCollection).GetImmutableDictionaryCreateRangeMethod(typeof(TKey), typeof(TValue));

@@ -29,10 +29,12 @@ internal static partial class Interop
         internal const int ERROR_FILE_EXISTS = 0x50;
         internal const int ERROR_INVALID_PARAMETER = 0x57;
         internal const int ERROR_BROKEN_PIPE = 0x6D;
+        internal const int ERROR_DISK_FULL = 0x70;
         internal const int ERROR_SEM_TIMEOUT = 0x79;
         internal const int ERROR_CALL_NOT_IMPLEMENTED = 0x78;
         internal const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
         internal const int ERROR_INVALID_NAME = 0x7B;
+        internal const int ERROR_MOD_NOT_FOUND = 0x7E;
         internal const int ERROR_NEGATIVE_SEEK = 0x83;
         internal const int ERROR_DIR_NOT_EMPTY = 0x91;
         internal const int ERROR_BAD_PATHNAME = 0xA1;
@@ -43,6 +45,7 @@ internal static partial class Interop
         internal const int ERROR_ENVVAR_NOT_FOUND = 0xCB;
         internal const int ERROR_FILENAME_EXCED_RANGE = 0xCE;
         internal const int ERROR_EXE_MACHINE_TYPE_MISMATCH = 0xD8;
+        internal const int ERROR_FILE_TOO_LARGE = 0xDF;
         internal const int ERROR_PIPE_BUSY = 0xE7;
         internal const int ERROR_NO_DATA = 0xE8;
         internal const int ERROR_PIPE_NOT_CONNECTED = 0xE9;
@@ -61,6 +64,8 @@ internal static partial class Interop
         internal const int ERROR_IO_PENDING = 0x3E5;
         internal const int ERROR_NO_TOKEN = 0x3f0;
         internal const int ERROR_SERVICE_DOES_NOT_EXIST = 0x424;
+        internal const int ERROR_EXCEPTION_IN_SERVICE = 0x428;
+        internal const int ERROR_PROCESS_ABORTED = 0x42B;
         internal const int ERROR_NO_UNICODE_TRANSLATION = 0x459;
         internal const int ERROR_DLL_INIT_FAILED = 0x45A;
         internal const int ERROR_COUNTER_TIMEOUT = 0x461;
@@ -68,6 +73,7 @@ internal static partial class Interop
         internal const int ERROR_DDE_FAIL = 0x484;
         internal const int ERROR_DLL_NOT_FOUND = 0x485;
         internal const int ERROR_NOT_FOUND = 0x490;
+        internal const int ERROR_CANCELLED = 0x4C7;
         internal const int ERROR_NETWORK_UNREACHABLE = 0x4CF;
         internal const int ERROR_NON_ACCOUNT_SID = 0x4E9;
         internal const int ERROR_NOT_ALL_ASSIGNED = 0x514;
@@ -88,6 +94,17 @@ internal static partial class Interop
         internal const int ERROR_TIMEOUT = 0x5B4;
         internal const int ERROR_EVENTLOG_FILE_CHANGED = 0x5DF;
         internal const int ERROR_TRUSTED_RELATIONSHIP_FAILURE = 0x6FD;
+        internal const int ERROR_RESOURCE_TYPE_NOT_FOUND = 0x715;
         internal const int ERROR_RESOURCE_LANG_NOT_FOUND = 0x717;
+        internal const int RPC_S_CALL_CANCELED = 0x71A;
+        internal const int ERROR_NOT_A_REPARSE_POINT = 0x1126;
+        internal const int ERROR_EVT_QUERY_RESULT_STALE = 0x3AA3;
+        internal const int ERROR_EVT_QUERY_RESULT_INVALID_POSITION = 0x3AA4;
+        internal const int ERROR_EVT_INVALID_EVENT_DATA = 0x3A9D;
+        internal const int ERROR_EVT_PUBLISHER_METADATA_NOT_FOUND = 0x3A9A;
+        internal const int ERROR_EVT_CHANNEL_NOT_FOUND = 0x3A9F;
+        internal const int ERROR_EVT_MESSAGE_NOT_FOUND = 0x3AB3;
+        internal const int ERROR_EVT_MESSAGE_ID_NOT_FOUND = 0x3AB4;
+        internal const int ERROR_EVT_PUBLISHER_DISABLED = 0x3ABD;
     }
 }

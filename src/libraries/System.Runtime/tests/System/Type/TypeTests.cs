@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -149,6 +150,9 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(FindMembers_TestData))]
+        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
+            Justification = "DAM on FindMembers references compiler-generated members which use reflection. " +
+                            "These members are not accessed by the test.")]
         public void FindMembers_Invoke_ReturnsExpected(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter filter, object filterCriteria, int expectedLength)
         {
             Assert.Equal(expectedLength, typeof(TypeTests).FindMembers(memberType, bindingAttr, filter, filterCriteria).Length);
@@ -248,6 +252,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(MakeArray_UnusualTypes_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void MakeArrayType_UnusualTypes_ReturnsExpected(Type t)
         {
             Type tArray = t.MakeArrayType();
@@ -304,7 +309,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(MakeArrayType_ByRef_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39001", TestRuntimes.Mono)]
         public void MakeArrayType_ByRef_ThrowsTypeLoadException(Type t)
         {
             Assert.Throws<TypeLoadException>(() => t.MakeArrayType());
@@ -503,6 +507,8 @@ namespace System.Tests
         [InlineData("Outside[,,]", typeof(Outside[,,]))]
         [InlineData("Outside[][]", typeof(Outside[][]))]
         [InlineData("Outside`1[System.Nullable`1[System.Boolean]]", typeof(Outside<bool?>))]
+        [InlineData(".Outside`1", typeof(Outside<>))]
+        [InlineData(".Outside`1+.Inside`1", typeof(Outside<>.Inside<>))]
         public void GetTypeByName_ValidType_ReturnsExpected(string typeName, Type expectedType)
         {
             Assert.Equal(expectedType, Type.GetType(typeName, throwOnError: false, ignoreCase: false));
@@ -516,6 +522,8 @@ namespace System.Tests
         [InlineData("System.Int32[,*,]", typeof(ArgumentException), false)]
         [InlineData("Outside`2", typeof(TypeLoadException), false)]
         [InlineData("Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true)]
+        [InlineData(".System.Int32", typeof(TypeLoadException), false)]
+        [InlineData("..Outside`1", typeof(TypeLoadException), false)]
         public void GetTypeByName_Invalid(string typeName, Type expectedException, bool alwaysThrowsException)
         {
             if (!alwaysThrowsException)
@@ -526,7 +534,19 @@ namespace System.Tests
             Assert.Throws(expectedException, () => Type.GetType(typeName, throwOnError: true, ignoreCase: false));
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [InlineData(".GlobalStructStartingWithDot")]
+        [InlineData(" GlobalStructStartingWithSpace")]
+        public void GetTypeByName_NonRoundtrippable(string typeName)
+        {
+            Type type = Assembly.Load("System.TestStructs").GetTypes().Single((t) => t.FullName == typeName);
+            string assemblyQualifiedName = type.AssemblyQualifiedName;
+            Assert.Null(Type.GetType(assemblyQualifiedName));
+        }
+
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52393", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void GetTypeByName_InvokeViaReflection_Success()
         {
             MethodInfo method = typeof(Type).GetMethod("GetType", new[] { typeof(string) });
@@ -570,9 +590,11 @@ namespace System.Tests
         [Fact]
         public void ReflectionOnlyGetType()
         {
+#pragma warning disable SYSLIB0018 // ReflectionOnly loading is not supported and throws PlatformNotSupportedException.
             Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType(null, true, false));
             Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType("", true, true));
             Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType("System.Tests.TypeTests", false, true));
+#pragma warning restore SYSLIB0018
         }
 
         [Fact]
@@ -585,6 +607,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void IsSZArray_TrueForSZArrayTypes()
         {
             foreach (Type type in NonArrayBaseTypes.Select(nonArrayBaseType => nonArrayBaseType.MakeArrayType()))
@@ -636,6 +659,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void IsVariableBoundArray_FalseForSZArrayTypes()
         {
             foreach (Type type in NonArrayBaseTypes.Select(nonArrayBaseType => nonArrayBaseType.MakeArrayType()))
@@ -842,7 +866,7 @@ namespace System.Tests
         static string testtype = "System.Collections.Generic.Dictionary`2[[Program, Foo], [Program, Foo]]";
 
         private static Func<AssemblyName, Assembly> assemblyloader = (aName) => aName.Name == "TestLoadAssembly" ?
-                           Assembly.LoadFrom(@".\TestLoadAssembly.dll") :
+                           Assembly.LoadFrom(Path.Join(".", "TestLoadAssembly.dll")) :
                            null;
         private static Func<Assembly, string, bool, Type> typeloader = (assem, name, ignore) => assem == null ?
                              Type.GetType(name, false, ignore) :
@@ -918,6 +942,23 @@ namespace System.Tests
             Assert.True(!typeof(ContextBoundClass).IsContextful);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public void MakeGenericType_NonRuntimeType()
+        {
+            foreach (Type nonRuntimeType in Helpers.NonRuntimeTypes)
+            {
+                if (PlatformDetection.IsReflectionEmitSupported)
+                {
+                    Type t = typeof(List<>).MakeGenericType(nonRuntimeType);
+                    Assert.NotNull(t);
+                }
+                else
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => typeof(List<>).MakeGenericType(nonRuntimeType));
+                }
+            }
+        }
+
 #region GetInterfaceMap tests
         public static IEnumerable<object[]> GetInterfaceMap_TestData()
         {
@@ -929,6 +970,16 @@ namespace System.Tests
                 {
                     new Tuple<MethodInfo, MethodInfo>(typeof(ISimpleInterface).GetMethod("Method"), typeof(SimpleType).GetMethod("Method")),
                     new Tuple<MethodInfo, MethodInfo>(typeof(ISimpleInterface).GetMethod("GenericMethod"), typeof(SimpleType).GetMethod("GenericMethod"))
+                }
+            };
+            yield return new object[]
+            {
+                typeof(ISimpleInterface),
+                typeof(AbstractSimpleType),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(ISimpleInterface).GetMethod("Method"), typeof(AbstractSimpleType).GetMethod("Method")),
+                    new Tuple<MethodInfo, MethodInfo>(typeof(ISimpleInterface).GetMethod("GenericMethod"), typeof(AbstractSimpleType).GetMethod("GenericMethod"))
                 }
             };
             yield return new object[]
@@ -949,12 +1000,65 @@ namespace System.Tests
                     new Tuple<MethodInfo, MethodInfo>(typeof(IGenericInterface<string>).GetMethod("Method"), typeof(DerivedType).GetMethod("Method", new Type[] { typeof(string) })),
                 }
             };
+            yield return new object[]
+            {
+                typeof(DIMs.I1),
+                typeof(DIMs.C1),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I1).GetMethod("M"), typeof(DIMs.I1).GetMethod("M"))
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I2),
+                typeof(DIMs.C2),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I2).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), null)
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I1),
+                typeof(DIMs.C2),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I1).GetMethod("M"), typeof(DIMs.C2).GetMethod("M"))
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I3),
+                typeof(DIMs.C3),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I3).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), typeof(DIMs.I3).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic))
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I4),
+                typeof(DIMs.C4),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I4).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), null)
+                }
+            };
+            yield return new object[]
+            {
+                typeof(DIMs.I2),
+                typeof(DIMs.C4),
+                new Tuple<MethodInfo, MethodInfo>[]
+                {
+                    new Tuple<MethodInfo, MethodInfo>(typeof(DIMs.I2).GetMethod("System.Tests.TypeTestsExtended.DIMs.I1.M", BindingFlags.Instance | BindingFlags.NonPublic), null)
+                }
+            };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/861", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Theory]
         [MemberData(nameof(GetInterfaceMap_TestData))]
-        // Android-only, change to TestPlatforms.Android once arcade dependency is updated
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36653", TestRuntimes.Mono)]
         public void GetInterfaceMap(Type interfaceType, Type classType, Tuple<MethodInfo, MethodInfo>[] expectedMap)
         {
             InterfaceMapping actualMapping = classType.GetInterfaceMap(interfaceType);
@@ -986,6 +1090,12 @@ namespace System.Tests
             public void GenericMethod<T>() { }
         }
 
+        abstract class AbstractSimpleType : ISimpleInterface
+        {
+            public abstract void Method();
+            public abstract void GenericMethod<T>();
+        }
+
         interface IGenericInterface<T>
         {
             void Method(T arg);
@@ -1000,7 +1110,78 @@ namespace System.Tests
         {
             public void Method(string arg) { }
         }
+
+        static class DIMs
+        {
+            
+            internal interface I1
+            {
+                void M() { throw new Exception("e"); }
+            }
+
+            internal class C1 : I1 { }
+
+            internal interface I2 : I1
+            {
+                abstract void I1.M(); // reabstracted
+            }
+
+            internal abstract class C2 : I2
+            {
+                public abstract void M();
+            }
+
+            internal interface I3 : I2
+            {
+                void I1.M()
+                { // unabstacted
+                    throw new Exception ("e");
+                }
+            }
+
+            internal class C3 : I3 { }
+
+            internal interface I4 : I3
+            {
+                abstract void I1.M(); // reabstracted again
+            }
+
+            internal abstract class C4 : I4
+            {
+                public abstract void M();
+            }
+        }
 #endregion
+
+        [Fact]
+        public void GetEnumTypeCode()
+        {
+            Assert.True(Type.GetTypeCode(typeof(TestEnum)) == TypeCode.Int32);
+        }
+
+        [Fact]
+        public void GetEnumNestedInGenericClassTypeCode()
+        {
+            Assert.True(Type.GetTypeCode(typeof(TestGenericClass<TestClass>.NestedEnum)) == TypeCode.Int32);
+        }
+
+        public enum TestEnum
+        {
+            A,
+            B,
+            C
+        }
+
+        public class TestClass { }
+        public class TestGenericClass<T>
+        {
+            public enum NestedEnum
+            {
+                A,
+                B,
+                C
+            }
+        }
     }
 
     public class NonGenericClass { }

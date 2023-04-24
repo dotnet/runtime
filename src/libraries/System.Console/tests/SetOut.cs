@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using Xunit;
 
+[Collection(nameof(DisableParallelization))] // Console.Out is a static singleton, other tests should not be using it at the same time
 public class SetOut
 {
     [Fact]

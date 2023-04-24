@@ -56,10 +56,8 @@ namespace System.Net.Mime
 
         public ContentDisposition(string disposition)
         {
-            if (disposition == null)
-            {
-                throw new ArgumentNullException(nameof(disposition));
-            }
+            ArgumentNullException.ThrowIfNull(disposition);
+
             _isChanged = true;
             _disposition = disposition;
             ParseValue();
@@ -79,14 +77,7 @@ namespace System.Net.Mime
             get { return _dispositionType; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-                if (value.Length == 0)
-                {
-                    throw new ArgumentException(SR.net_emptystringset, nameof(value));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(value);
 
                 _isChanged = true;
                 _dispositionType = value;
@@ -257,7 +248,7 @@ namespace System.Net.Mime
                 string.Equals(ToString(), rparam.ToString(), StringComparison.OrdinalIgnoreCase);
         }
 
-        public override int GetHashCode() => ToString().ToLowerInvariant().GetHashCode();
+        public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(ToString());
 
         [MemberNotNull(nameof(_dispositionType))]
         private void ParseValue()
@@ -266,7 +257,7 @@ namespace System.Net.Mime
             try
             {
                 // the disposition MUST be the first parameter in the string
-                _dispositionType = MailBnfHelper.ReadToken(_disposition, ref offset, null);
+                _dispositionType = MailBnfHelper.ReadToken(_disposition, ref offset);
 
                 // disposition MUST not be empty
                 if (string.IsNullOrEmpty(_dispositionType))
@@ -299,7 +290,7 @@ namespace System.Net.Mime
                         break;
                     }
 
-                    string? paramAttribute = MailBnfHelper.ReadParameterAttribute(_disposition, ref offset, null);
+                    string? paramAttribute = MailBnfHelper.ReadParameterAttribute(_disposition, ref offset);
                     string? paramValue;
 
                     // verify the next character after the parameter is correct
@@ -317,7 +308,7 @@ namespace System.Net.Mime
 
                     paramValue = _disposition[offset] == '"' ?
                         MailBnfHelper.ReadQuotedString(_disposition, ref offset, null) :
-                        MailBnfHelper.ReadToken(_disposition, ref offset, null);
+                        MailBnfHelper.ReadToken(_disposition, ref offset);
 
                     // paramValue could potentially still be empty if it was a valid quoted string that
                     // contained no inner value.  this is invalid

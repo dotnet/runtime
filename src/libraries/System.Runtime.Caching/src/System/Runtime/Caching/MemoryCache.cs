@@ -13,6 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Security;
 using System.Threading;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
@@ -33,11 +34,18 @@ namespace System.Runtime.Caching
         private int _disposed;
         private MemoryCacheStatistics _stats;
         private readonly string _name;
-        private PerfCounters _perfCounters;
+        private Counters _perfCounters;
         private readonly bool _configLess;
         private bool _useMemoryCacheManager = true;
+        private bool _throwOnDisposed;
         private EventHandler _onAppDomainUnload;
         private UnhandledExceptionEventHandler _onUnhandledException;
+#if NETCOREAPP
+        [UnsupportedOSPlatformGuard("browser")]
+        private static bool _countersSupported => !OperatingSystem.IsBrowser();
+#else
+        private static bool _countersSupported => true;
+#endif
 
         private bool IsDisposed { get { return (_disposed == 1); } }
         internal bool ConfigLess { get { return _configLess; } }
@@ -101,10 +109,7 @@ namespace System.Runtime.Caching
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {
-                        if (monitor != null)
-                        {
-                            monitor.Dispose();
-                        }
+                        monitor?.Dispose();
                     }
                 }
                 return false;
@@ -141,7 +146,7 @@ namespace System.Runtime.Caching
                 {
                     CacheEntryUpdateArguments args = new CacheEntryUpdateArguments(cache, reason, entry.Key, null);
                     entry.CacheEntryUpdateCallback(args);
-                    object expensiveObject = (args.UpdatedCacheItem != null) ? args.UpdatedCacheItem.Value : null;
+                    object expensiveObject = args.UpdatedCacheItem?.Value;
                     CacheItemPolicy policy = args.UpdatedCacheItemPolicy;
                     // Only update the "expensive" object if the user returns a new object,
                     // a policy with update callback, and the change monitors haven't changed.  (Inserting
@@ -196,7 +201,10 @@ namespace System.Runtime.Caching
             {
                 try
                 {
-                    _perfCounters = new PerfCounters(_name);
+                    if (_countersSupported)
+                    {
+                        _perfCounters = new Counters(_name);
+                    }
                 }
                 catch
                 {
@@ -240,7 +248,7 @@ namespace System.Runtime.Caching
             }
         }
 
-        private void ValidatePolicy(CacheItemPolicy policy)
+        private static void ValidatePolicy(CacheItemPolicy policy)
         {
             if (policy.AbsoluteExpiration != ObjectCache.InfiniteAbsoluteExpiration
                 && policy.SlidingExpiration != ObjectCache.NoSlidingExpiration)
@@ -282,10 +290,7 @@ namespace System.Runtime.Caching
                 {
                     lock (s_initLock)
                     {
-                        if (s_defaultCache == null)
-                        {
-                            s_defaultCache = new MemoryCache();
-                        }
+                        s_defaultCache ??= new MemoryCache();
                     }
                 }
                 return s_defaultCache;
@@ -339,10 +344,11 @@ namespace System.Runtime.Caching
 
         public MemoryCache(string name, NameValueCollection config = null)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
@@ -359,10 +365,11 @@ namespace System.Runtime.Caching
         // due to the fact that the (ASP.NET) config system uses the cache, and the cache uses the config system.
         public MemoryCache(string name, NameValueCollection config, bool ignoreConfigSection)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
@@ -383,16 +390,18 @@ namespace System.Runtime.Caching
             if (config != null)
             {
                 _useMemoryCacheManager = ConfigUtil.GetBooleanValue(config, ConfigUtil.UseMemoryCacheManager, true);
+                _throwOnDisposed = ConfigUtil.GetBooleanValue(config, ConfigUtil.ThrowOnDisposed, false);
             }
             InitDisposableMembers(config);
         }
 
         private object AddOrGetExistingInternal(string key, object value, CacheItemPolicy policy)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
+
             DateTimeOffset absExp = ObjectCache.InfiniteAbsoluteExpiration;
             TimeSpan slidingExp = ObjectCache.NoSlidingExpiration;
             CacheItemPriority priority = CacheItemPriority.Default;
@@ -417,18 +426,18 @@ namespace System.Runtime.Caching
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {
-                        if (monitor != null)
-                        {
-                            monitor.Dispose();
-                        }
+                        monitor?.Dispose();
                     }
                 }
+
+                IsDisposedOrThrow();
+
                 return null;
             }
             MemoryCacheKey cacheKey = new MemoryCacheKey(key);
             MemoryCacheStore store = GetStore(cacheKey);
             MemoryCacheEntry entry = store.AddOrGetExisting(cacheKey, new MemoryCacheEntry(key, value, absExp, slidingExp, priority, changeMonitors, removedCallback, this));
-            return (entry != null) ? entry.Value : null;
+            return entry?.Value;
         }
 
         public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string regionName = null)
@@ -465,23 +474,20 @@ namespace System.Runtime.Caching
                 // unhook domain events
                 DisposeSafeCritical();
                 // stats must be disposed prior to disposing the stores.
-                if (_stats != null)
-                {
-                    _stats.Dispose();
-                }
+                _stats?.Dispose();
                 if (_storeRefs != null)
                 {
                     foreach (var storeRef in _storeRefs)
                     {
-                        if (storeRef != null)
-                        {
-                            storeRef.Dispose();
-                        }
+                        storeRef?.Dispose();
                     }
                 }
                 if (_perfCounters != null)
                 {
-                    _perfCounters.Dispose();
+                    if (_countersSupported)
+                    {
+                        _perfCounters.Dispose();
+                    }
                 }
                 GC.SuppressFinalize(this);
             }
@@ -511,12 +517,12 @@ namespace System.Runtime.Caching
                 throw new ArgumentNullException(nameof(key));
             }
             MemoryCacheEntry entry = GetEntry(key);
-            return (entry != null) ? entry.Value : null;
+            return entry?.Value;
         }
 
         internal MemoryCacheEntry GetEntry(string key)
         {
-            if (IsDisposed)
+            if (IsDisposedOrThrow())
             {
                 return null;
             }
@@ -528,7 +534,8 @@ namespace System.Runtime.Caching
         IEnumerator IEnumerable.GetEnumerator()
         {
             Hashtable h = new Hashtable();
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -541,7 +548,8 @@ namespace System.Runtime.Caching
         protected override IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {
             Dictionary<string, object> h = new Dictionary<string, object>();
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -560,12 +568,13 @@ namespace System.Runtime.Caching
 
         public long Trim(int percent)
         {
+            long trimmed = 0;
             if (percent > 100)
             {
                 percent = 100;
             }
-            long trimmed = 0;
-            if (_disposed == 0)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -613,10 +622,11 @@ namespace System.Runtime.Caching
 
         public override CacheItem AddOrGetExisting(CacheItem item, CacheItemPolicy policy)
         {
-            if (item == null)
+            if (item is null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
+
             return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value, policy));
         }
 
@@ -653,10 +663,11 @@ namespace System.Runtime.Caching
 
         public override void Set(CacheItem item, CacheItemPolicy policy)
         {
-            if (item == null)
+            if (item is null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
+
             Set(item.Key, item.Value, policy);
         }
 
@@ -695,12 +706,12 @@ namespace System.Runtime.Caching
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {
-                        if (monitor != null)
-                        {
-                            monitor.Dispose();
-                        }
+                        monitor?.Dispose();
                     }
                 }
+
+                IsDisposedOrThrow();
+
                 return;
             }
             MemoryCacheKey cacheKey = new MemoryCacheKey(key);
@@ -715,10 +726,11 @@ namespace System.Runtime.Caching
                           TimeSpan slidingExpiration,
                           CacheEntryUpdateCallback onUpdateCallback)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
+
             if (changeMonitors == null
                 && absoluteExpiration == ObjectCache.InfiniteAbsoluteExpiration
                 && slidingExpiration == ObjectCache.NoSlidingExpiration)
@@ -735,12 +747,12 @@ namespace System.Runtime.Caching
                 {
                     foreach (ChangeMonitor monitor in changeMonitors)
                     {
-                        if (monitor != null)
-                        {
-                            monitor.Dispose();
-                        }
+                        monitor?.Dispose();
                     }
                 }
+
+                IsDisposedOrThrow();
+
                 return;
             }
             // Insert updatable cache entry
@@ -759,10 +771,7 @@ namespace System.Runtime.Caching
             // Ensure the sentinel depends on its updatable entry
             string[] cacheKeys = { key };
             ChangeMonitor expensiveObjectDep = CreateCacheEntryChangeMonitor(cacheKeys);
-            if (changeMonitors == null)
-            {
-                changeMonitors = new Collection<ChangeMonitor>();
-            }
+            changeMonitors ??= new Collection<ChangeMonitor>();
             changeMonitors.Add(expensiveObjectDep);
 
             // Insert sentinel entry for the updatable cache entry
@@ -795,12 +804,12 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            if (IsDisposed)
+            if (IsDisposedOrThrow())
             {
                 return null;
             }
             MemoryCacheEntry entry = RemoveEntry(key, null, reason);
-            return (entry != null) ? entry.Value : null;
+            return entry?.Value;
         }
 
         public override long GetCount(string regionName = null)
@@ -809,8 +818,10 @@ namespace System.Runtime.Caching
             {
                 throw new NotSupportedException(SR.RegionName_not_supported);
             }
+
             long count = 0;
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -840,8 +851,10 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(keys));
             }
+
             Dictionary<string, object> values = null;
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (string key in keys)
                 {
@@ -852,10 +865,7 @@ namespace System.Runtime.Caching
                     object value = GetInternal(key, null);
                     if (value != null)
                     {
-                        if (values == null)
-                        {
-                            values = new Dictionary<string, object>();
-                        }
+                        values ??= new Dictionary<string, object>();
                         values[key] = value;
                     }
                 }
@@ -868,14 +878,29 @@ namespace System.Runtime.Caching
         // config system.
         internal void UpdateConfig(NameValueCollection config)
         {
-            if (config == null)
+            if (config is null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
+
             if (!IsDisposed)
             {
                 _stats.UpdateConfig(config);
             }
+        }
+
+        private bool IsDisposedOrThrow()
+        {
+            if (!IsDisposed)
+                return false;
+
+            if (_throwOnDisposed)
+            {
+                string cacheName = $"{this.GetType().FullName}({_name})";
+                throw new ObjectDisposedException(cacheName);
+            }
+
+            return true;
         }
     }
 }

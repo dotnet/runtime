@@ -32,11 +32,11 @@ namespace System.ComponentModel.DataAnnotations
                 return false;
             }
 
-            valueAsString = valueAsString.Replace("+", string.Empty).TrimEnd();
-            valueAsString = RemoveExtension(valueAsString);
+            ReadOnlySpan<char> valueSpan = valueAsString.Replace("+", string.Empty).AsSpan().TrimEnd();
+            valueSpan = RemoveExtension(valueSpan);
 
             bool digitFound = false;
-            foreach (char c in valueAsString)
+            foreach (char c in valueSpan)
             {
                 if (char.IsDigit(c))
                 {
@@ -50,7 +50,7 @@ namespace System.ComponentModel.DataAnnotations
                 return false;
             }
 
-            foreach (char c in valueAsString)
+            foreach (char c in valueSpan)
             {
                 if (!(char.IsDigit(c)
                     || char.IsWhiteSpace(c)
@@ -63,17 +63,17 @@ namespace System.ComponentModel.DataAnnotations
             return true;
         }
 
-        private static string RemoveExtension(string potentialPhoneNumber)
+        private static ReadOnlySpan<char> RemoveExtension(ReadOnlySpan<char> potentialPhoneNumber)
         {
-            var lastIndexOfExtension = potentialPhoneNumber
+            int lastIndexOfExtension = potentialPhoneNumber
                 .LastIndexOf(ExtensionAbbreviationExtDot, StringComparison.OrdinalIgnoreCase);
             if (lastIndexOfExtension >= 0)
             {
-                var extension = potentialPhoneNumber.Substring(
+                ReadOnlySpan<char> extension = potentialPhoneNumber.Slice(
                     lastIndexOfExtension + ExtensionAbbreviationExtDot.Length);
                 if (MatchesExtension(extension))
                 {
-                    return potentialPhoneNumber.Substring(0, lastIndexOfExtension);
+                    return potentialPhoneNumber.Slice(0, lastIndexOfExtension);
                 }
             }
 
@@ -81,11 +81,11 @@ namespace System.ComponentModel.DataAnnotations
                 .LastIndexOf(ExtensionAbbreviationExt, StringComparison.OrdinalIgnoreCase);
             if (lastIndexOfExtension >= 0)
             {
-                var extension = potentialPhoneNumber.Substring(
+                ReadOnlySpan<char> extension = potentialPhoneNumber.Slice(
                     lastIndexOfExtension + ExtensionAbbreviationExt.Length);
                 if (MatchesExtension(extension))
                 {
-                    return potentialPhoneNumber.Substring(0, lastIndexOfExtension);
+                    return potentialPhoneNumber.Slice(0, lastIndexOfExtension);
                 }
             }
 
@@ -93,18 +93,18 @@ namespace System.ComponentModel.DataAnnotations
                 .LastIndexOf(ExtensionAbbreviationX, StringComparison.OrdinalIgnoreCase);
             if (lastIndexOfExtension >= 0)
             {
-                var extension = potentialPhoneNumber.Substring(
+                ReadOnlySpan<char> extension = potentialPhoneNumber.Slice(
                     lastIndexOfExtension + ExtensionAbbreviationX.Length);
                 if (MatchesExtension(extension))
                 {
-                    return potentialPhoneNumber.Substring(0, lastIndexOfExtension);
+                    return potentialPhoneNumber.Slice(0, lastIndexOfExtension);
                 }
             }
 
             return potentialPhoneNumber;
         }
 
-        private static bool MatchesExtension(string potentialExtension)
+        private static bool MatchesExtension(ReadOnlySpan<char> potentialExtension)
         {
             potentialExtension = potentialExtension.TrimStart();
             if (potentialExtension.Length == 0)

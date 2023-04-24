@@ -11,7 +11,7 @@ namespace NativeCallingManaged
 {
     class NativeCallingManaged
     {
-        static int Main(string[] args)
+        static int Main()
         {
             // Disable running on Windows 7 until IJW activation work is complete.
             if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7)
@@ -20,7 +20,7 @@ namespace NativeCallingManaged
             }
 
             bool success = true;
-            Assembly ijwNativeDll = IjwHelper.LoadIjwAssembly("IjwNativeCallingManagedDll");
+            Assembly ijwNativeDll = Assembly.Load("IjwNativeCallingManagedDll");
 
             TestFramework.BeginTestCase("Call native method returning int");
             Type testType = ijwNativeDll.GetType("TestClass");
@@ -34,19 +34,7 @@ namespace NativeCallingManaged
             }
             TestFramework.EndTestCase();
 
-            TestFramework.BeginTestCase("Ensure .NET Framework was not loaded");
-            IntPtr clrHandle = GetModuleHandle("mscoreei.dll");
-            if (clrHandle != IntPtr.Zero)
-            {
-                TestFramework.LogError("IJW", ".NET Framework loaded by IJw module load");
-                success = false;
-            }
-            TestFramework.EndTestCase();
-
             return success ? 100 : 99;
         }
-
-        [DllImport("kernel32.dll")]
-        static extern IntPtr GetModuleHandle(string lpModuleName);
     }
 }

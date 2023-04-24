@@ -27,7 +27,7 @@ namespace System.ComponentModel.Composition.Primitives
 
         public ICompositionElement? Origin => _origin;
 
-        [return: NotNullIfNotNull("element")]
+        [return: NotNullIfNotNull(nameof(element))]
         public static ICompositionElement? FromICompositionElement(ICompositionElement? element)
         {
             if (element == null)

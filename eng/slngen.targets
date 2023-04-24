@@ -1,16 +1,8 @@
 <Project>
   <PropertyGroup>
-    <SlnGenSolutionFolder Condition="'$(IsReferenceAssembly)' == 'true'">ref</SlnGenSolutionFolder>
-    <SlnGenSolutionFolder Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">tests</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(IsGeneratorProject)' == 'true'">gen</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(IsReferenceAssemblyProject)' == 'true'">ref</SlnGenSolutionFolder>
+    <SlnGenSolutionFolder Condition="'$(IsTestProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true'">tests</SlnGenSolutionFolder>
     <SlnGenSolutionFolder Condition="'$(SlnGenSolutionFolder)' == ''">src</SlnGenSolutionFolder>
-
-    <!-- Don't include shared framework projects referenced via a named reference except the leaf's project. -->
-    <IncludeInSolutionFile Condition="'$(IsNETCoreAppRef)' == 'true' and '$(MSBuildProjectName)' != '$(SlnGenMainProject)'">false</IncludeInSolutionFile>
-
-    <!-- Include CompilerServices.Unsafe as it's a transitive test dependency. -->
-    <IncludeInSolutionFile Condition="'$(IsNETCoreAppRef)' == 'true' and '$(MSBuildProjectName)' == 'System.Runtime.CompilerServices.Unsafe'">true</IncludeInSolutionFile>
   </PropertyGroup>
-  <ItemGroup>
-    <SlnGenCustomProjectTypeGuid Include=".ilproj" ProjectTypeGuid="{9A19103F-16F7-4668-BE54-9A1E7A4F7556}" />
-  </ItemGroup>
 </Project>

@@ -9,10 +9,15 @@
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/metadata/components.h>
 
-//XXX This is dirty, extend ee.h to support extracting info from MonoInterpFrameHandle
-#include <mono/mini/interp/interp-internals.h>
+#ifdef HOST_BROWSER
+#ifndef DISABLE_THREADS
+#include <mono/utils/mono-threads-wasm.h>
+#endif
+#endif
 
+static int mono_wasm_debug_level = 0;
 #ifndef DISABLE_JIT
 
 #include "ir-emit.h"
@@ -24,11 +29,13 @@ typedef enum {
 	ArgValuetypeAddrOnStack,
 	ArgGsharedVTOnStack,
 	ArgValuetypeAddrInIReg,
+	ArgVtypeAsScalar,
 	ArgInvalid,
 } ArgStorage;
 
 typedef struct {
 	ArgStorage storage : 8;
+	MonoType *type;
 } ArgInfo;
 
 struct CallInfo {
@@ -38,6 +45,8 @@ struct CallInfo {
 	ArgInfo ret;
 	ArgInfo args [1];
 };
+
+// WASM ABI: https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md
 
 static ArgStorage
 get_storage (MonoType *type, gboolean is_return)
@@ -70,20 +79,19 @@ get_storage (MonoType *type, gboolean is_return)
 		if (!mono_type_generic_inst_is_valuetype (type))
 			return ArgOnStack;
 
-		if (mini_is_gsharedvt_type (type)) {
+		if (mini_is_gsharedvt_variable_type (type))
 			return ArgGsharedVTOnStack;
-		}
 		/* fall through */
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF: {
+		if (mini_wasm_is_scalar_vtype (type))
+			return ArgVtypeAsScalar;
 		return is_return ? ArgValuetypeAddrInIReg : ArgValuetypeAddrOnStack;
-		break;
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
 		g_assert (mini_is_gsharedvt_type (type));
 		return ArgGsharedVTOnStack;
-		break;
 	case MONO_TYPE_VOID:
 		g_assert (is_return);
 		break;
@@ -108,7 +116,8 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	cinfo->gsharedvt = mini_is_gsharedvt_variable_signature (sig);
 
 	/* return value */
-	cinfo->ret.storage = get_storage (mini_get_underlying_type (sig->ret), TRUE);
+	cinfo->ret.type = mini_get_underlying_type (sig->ret);
+	cinfo->ret.storage = get_storage (cinfo->ret.type, TRUE);
 
 	if (sig->hasthis)
 		cinfo->args [0].storage = ArgOnStack;
@@ -117,8 +126,10 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	g_assert (sig->call_convention != MONO_CALL_VARARG);
 
 	int i;
-	for (i = 0; i < sig->param_count; ++i)
-		cinfo->args [i + sig->hasthis].storage = get_storage (mini_get_underlying_type (sig->params [i]), FALSE);
+	for (i = 0; i < sig->param_count; ++i) {
+		cinfo->args [i + sig->hasthis].type = mini_get_underlying_type (sig->params [i]);
+		cinfo->args [i + sig->hasthis].storage = get_storage (cinfo->args [i + sig->hasthis].type, FALSE);
+	}
 
 	return cinfo;
 }
@@ -155,6 +166,37 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 gboolean
 mono_arch_opcode_supported (int opcode)
 {
+	switch (opcode) {
+	case OP_ATOMIC_ADD_I4:
+	case OP_ATOMIC_ADD_I8:
+	case OP_ATOMIC_EXCHANGE_I4:
+	case OP_ATOMIC_EXCHANGE_I8:
+	case OP_ATOMIC_CAS_I4:
+	case OP_ATOMIC_CAS_I8:
+	case OP_ATOMIC_LOAD_I1:
+	case OP_ATOMIC_LOAD_I2:
+	case OP_ATOMIC_LOAD_I4:
+	case OP_ATOMIC_LOAD_I8:
+	case OP_ATOMIC_LOAD_U1:
+	case OP_ATOMIC_LOAD_U2:
+	case OP_ATOMIC_LOAD_U4:
+	case OP_ATOMIC_LOAD_U8:
+	case OP_ATOMIC_LOAD_R4:
+	case OP_ATOMIC_LOAD_R8:
+	case OP_ATOMIC_STORE_I1:
+	case OP_ATOMIC_STORE_I2:
+	case OP_ATOMIC_STORE_I4:
+	case OP_ATOMIC_STORE_I8:
+	case OP_ATOMIC_STORE_U1:
+	case OP_ATOMIC_STORE_U2:
+	case OP_ATOMIC_STORE_U4:
+	case OP_ATOMIC_STORE_U8:
+	case OP_ATOMIC_STORE_R4:
+	case OP_ATOMIC_STORE_R8:
+		return TRUE;
+	default:
+		return FALSE;
+	}
 	return FALSE;
 }
 
@@ -203,7 +245,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
-	MonoType *sig_ret;
 
 	sig = mono_method_signature_internal (cfg->method);
 
@@ -214,7 +255,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	// if (cinfo->ret.storage == ArgValuetypeInReg)
 	// 	cfg->ret_var_is_local = TRUE;
 
-	sig_ret = mini_get_underlying_type (sig->ret);
+	mini_get_underlying_type (sig->ret);
 	if (cinfo->ret.storage == ArgValuetypeAddrInIReg || cinfo->ret.storage == ArgGsharedVTOnStack) {
 		cfg->vret_addr = mono_compile_create_var (cfg, mono_get_int_type (), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
@@ -273,9 +314,9 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
 
-	if (!ret->byref) {
+	if (!m_type_is_byref (ret)) {
 		if (ret->type == MONO_TYPE_R4) {
-			MONO_EMIT_NEW_UNALU (cfg, cfg->r4fp ? OP_RMOVE : OP_FMOVE, cfg->ret->dreg, val->dreg);
+			MONO_EMIT_NEW_UNALU (cfg, OP_RMOVE, cfg->ret->dreg, val->dreg);
 			return;
 		} else if (ret->type == MONO_TYPE_R8) {
 			MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, cfg->ret->dreg, val->dreg);
@@ -305,7 +346,10 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 
 	linfo = mono_mempool_alloc0 (cfg->mempool, sizeof (LLVMCallInfo) + (sizeof (LLVMArgInfo) * n));
 
-	if (mini_type_is_vtype (sig->ret)) {
+	if (cinfo->ret.storage == ArgVtypeAsScalar) {
+		linfo->ret.storage = LLVMArgWasmVtypeAsScalar;
+		linfo->ret.esize = mono_class_value_size (mono_class_from_mono_type_internal (cinfo->ret.type), NULL);
+	} else if (mini_type_is_vtype (sig->ret)) {
 		/* Vtype returned using a hidden argument */
 		linfo->ret.storage = LLVMArgVtypeRetAddr;
 		// linfo->vret_arg_index = cinfo->vret_arg_index;
@@ -326,6 +370,11 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			break;
 		case ArgGsharedVTOnStack:
 			linfo->args [i].storage = LLVMArgGsharedvtVariable;
+			break;
+		case ArgVtypeAsScalar:
+			linfo->args [i].storage = LLVMArgWasmVtypeAsScalar;
+			linfo->args [i].type = ainfo->type;
+			linfo->args [i].esize = mono_class_value_size (mono_class_from_mono_type_internal (ainfo->type), NULL);
 			break;
 		case ArgValuetypeAddrInIReg:
 			g_error ("this is only valid for sig->ret");
@@ -381,22 +430,22 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 	g_error ("mono_arch_get_delegate_invoke_impl");
 }
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 
 #include <emscripten.h>
 
 //functions exported to be used by JS
 G_BEGIN_DECLS
-EMSCRIPTEN_KEEPALIVE void mono_set_timeout_exec (int id);
+EMSCRIPTEN_KEEPALIVE void mono_set_timeout_exec (void);
 
 //JS functions imported that we use
-extern void mono_set_timeout (int t, int d);
+extern void mono_set_timeout (int t);
 extern void mono_wasm_queue_tp_cb (void);
 G_END_DECLS
 
 void mono_background_exec (void);
 
-#endif // HOST_WASM
+#endif // HOST_BROWSER
 
 gpointer
 mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
@@ -494,21 +543,7 @@ mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
 	return 0;
 }
 
-#ifdef HOST_WASM
-
-void
-mono_runtime_setup_stat_profiler (void)
-{
-	g_error ("mono_runtime_setup_stat_profiler");
-}
-
-gboolean
-MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
-{
-	g_error ("mono_chain_signal");
-	
-	return FALSE;
-}
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
 
 void
 mono_runtime_install_handlers (void)
@@ -521,6 +556,24 @@ mono_init_native_crash_info (void)
 	return;
 }
 
+#endif
+
+#ifdef HOST_BROWSER
+
+void
+mono_runtime_setup_stat_profiler (void)
+{
+	g_error ("mono_runtime_setup_stat_profiler");
+}
+
+gboolean
+MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
+{
+	g_error ("mono_chain_signal");
+
+	return FALSE;
+}
+
 gboolean
 mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo *info, void *sigctx)
 {
@@ -529,21 +582,24 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 }
 
 EMSCRIPTEN_KEEPALIVE void
-mono_set_timeout_exec (int id)
+mono_set_timeout_exec (void)
 {
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
 
-	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "TimerQueue");
-	g_assert (klass);
+	static MonoMethod *method = NULL;
+	if (method == NULL) {
+		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "TimerQueue");
+		g_assert (klass);
 
-	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
-	mono_error_assert_ok (error);
-	g_assert (method);
+		method = mono_class_get_method_from_name_checked (klass, "TimeoutCallback", -1, 0, error);
+		mono_error_assert_ok (error);
+		g_assert (method);
+	}
 
-	gpointer params[1] = { &id };
 	MonoObject *exc = NULL;
 
-	mono_runtime_try_invoke (method, NULL, params, &exc, error);
+	mono_runtime_try_invoke (method, NULL, NULL, &exc, error);
 
 	//YES we swallow exceptions cuz there's nothing much we can do from here.
 	//FIXME Maybe call the unhandled exception function?
@@ -557,15 +613,22 @@ mono_set_timeout_exec (int id)
 		g_printerr ("timeout callback threw a %s\n", type_name);
 		g_free (type_name);
 	}
+	MONO_EXIT_GC_UNSAFE;
 }
 
 #endif
 
 void
-mono_wasm_set_timeout (int timeout, int id)
+mono_wasm_set_timeout (int timeout)
 {
-#ifdef HOST_WASM
-	mono_set_timeout (timeout, id);
+#ifdef HOST_BROWSER
+#ifndef DISABLE_THREADS
+    if (!mono_threads_wasm_is_browser_thread ()) {
+        mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_wasm_set_timeout, GINT_TO_POINTER(timeout));
+        return;
+    }
+#endif
+    mono_set_timeout (timeout);
 #endif
 }
 
@@ -574,12 +637,15 @@ tp_cb (void)
 {
 	ERROR_DECL (error);
 
-	MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
-	g_assert (klass);
+	static MonoMethod *method = NULL;
+	if (method == NULL) {
+		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System.Threading", "ThreadPool");
+		g_assert (klass);
 
-	MonoMethod *method = mono_class_get_method_from_name_checked (klass, "Callback", -1, 0, error);
-	mono_error_assert_ok (error);
-	g_assert (method);
+		method = mono_class_get_method_from_name_checked (klass, "Callback", -1, 0, error);
+		mono_error_assert_ok (error);
+		g_assert (method);
+	}
 
 	MonoObject *exc = NULL;
 
@@ -597,7 +663,7 @@ tp_cb (void)
 	}
 }
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 void
 mono_wasm_queue_tp_cb (void)
 {
@@ -608,7 +674,7 @@ mono_wasm_queue_tp_cb (void)
 void
 mono_arch_register_icall (void)
 {
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::SetTimeout", mono_wasm_set_timeout);
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::QueueCallback", mono_wasm_queue_tp_cb);
 #endif
@@ -620,12 +686,10 @@ mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpoi
 	g_error ("mono_arch_patch_code_new");
 }
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 
 G_BEGIN_DECLS
 
-void * getgrnam (const char *name);
-void * getgrgid (gid_t gid);
 int inotify_init (void);
 int inotify_rm_watch (int fd, int wd);
 int inotify_add_watch (int fd, const char *pathname, uint32_t mask);
@@ -656,13 +720,6 @@ pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *pa
 }
 
 int
-pthread_sigmask (int how, const sigset_t *set, sigset_t *oset)
-{
-	return 0;
-}
-
-
-int
 sigsuspend(const sigset_t *sigmask)
 {
 	g_error ("sigsuspend");
@@ -673,18 +730,6 @@ int
 getdtablesize (void)
 {
 	return 256; //random constant that is the fd limit
-}
-
-void *
-getgrnam (const char *name)
-{
-	return NULL;
-}
-
-void *
-getgrgid (gid_t gid)
-{
-	return NULL;
 }
 
 int
@@ -724,22 +769,6 @@ ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count)
 	return -1;
 }
 
-int
-getpwnam_r (const char *name, struct passwd *pwd, char *buffer, size_t bufsize,
-			struct passwd **result)
-{
-	*result = NULL;
-	return ENOTSUP;
-}
-
-int
-getpwuid_r (uid_t uid, struct passwd *pwd, char *buffer, size_t bufsize,
-			struct passwd **result)
-{
-	*result = NULL;
-	return ENOTSUP;
-}
-
 G_END_DECLS
 
 /* Helper for runtime debugging */
@@ -753,10 +782,60 @@ mono_wasm_print_stack_trace (void)
 		   );
 }
 
-#endif // HOST_WASM
+#endif // HOST_BROWSER
 
 gpointer
 mono_arch_load_function (MonoJitICallId jit_icall_id)
 {
 	return NULL;
+}
+
+MONO_API void
+mono_wasm_enable_debugging (int log_level)
+{
+	mono_wasm_debug_level = log_level;
+}
+
+int
+mono_wasm_get_debug_level (void)
+{
+	return mono_wasm_debug_level;
+}
+
+/* Return whenever TYPE represents a vtype with only one scalar member */
+gboolean
+mini_wasm_is_scalar_vtype (MonoType *type)
+{
+	MonoClass *klass;
+	MonoClassField *field;
+	gpointer iter;
+
+	if (!MONO_TYPE_ISSTRUCT (type))
+		return FALSE;
+	klass = mono_class_from_mono_type_internal (type);
+	mono_class_init_internal (klass);
+
+	int size = mono_class_value_size (klass, NULL);
+	if (size == 0 || size >= 8)
+		return FALSE;
+
+	iter = NULL;
+	int nfields = 0;
+	field = NULL;
+	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		nfields ++;
+		if (nfields > 1)
+			return FALSE;
+		MonoType *t = mini_get_underlying_type (field->type);
+		if (MONO_TYPE_ISSTRUCT (t)) {
+			if (!mini_wasm_is_scalar_vtype (t))
+				return FALSE;
+		} else if (!((MONO_TYPE_IS_PRIMITIVE (t) || MONO_TYPE_IS_REFERENCE (t) || MONO_TYPE_IS_POINTER (t)))) {
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }

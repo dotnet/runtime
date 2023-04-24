@@ -18,7 +18,7 @@ bool Compiler::fgBlockContainsStatementBounded(BasicBlock* block,
                                                Statement*  stmt,
                                                bool        answerOnBoundExceeded /*= true*/)
 {
-    const __int64 maxLinks = 1000000000;
+    const __int64 maxLinks = 100000000;
 
     __int64* numTraversed = &JitTls::GetCompiler()->compNumStatementLinksTraversed;
 
@@ -101,13 +101,14 @@ void Compiler::fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt)
 // Arguments:
 //   block - the block into which 'tree' will be inserted;
 //   tree  - the tree to be inserted.
+//   di    - the debug info to use for the new statement.
 //
 // Return Value:
 //    The new created statement with `tree` inserted into `block`.
 //
-Statement* Compiler::fgNewStmtAtBeg(BasicBlock* block, GenTree* tree)
+Statement* Compiler::fgNewStmtAtBeg(BasicBlock* block, GenTree* tree, const DebugInfo& di)
 {
-    Statement* stmt = gtNewStmt(tree);
+    Statement* stmt = gtNewStmt(tree, di);
     fgInsertStmtAtBeg(block, stmt);
     return stmt;
 }
@@ -153,6 +154,7 @@ void Compiler::fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt)
 // Arguments:
 //   block - the block into which 'stmt' will be inserted;
 //   tree  - the tree to be inserted.
+//   di    - the debug info to use for the new statement.
 //
 // Return Value:
 //    The new created statement with `tree` inserted into `block`.
@@ -160,9 +162,9 @@ void Compiler::fgInsertStmtAtEnd(BasicBlock* block, Statement* stmt)
 // Note:
 //   If the block can be a conditional block, use fgNewStmtNearEnd.
 //
-Statement* Compiler::fgNewStmtAtEnd(BasicBlock* block, GenTree* tree)
+Statement* Compiler::fgNewStmtAtEnd(BasicBlock* block, GenTree* tree, const DebugInfo& di)
 {
-    Statement* stmt = gtNewStmt(tree);
+    Statement* stmt = gtNewStmt(tree, di);
     fgInsertStmtAtEnd(block, stmt);
     return stmt;
 }
@@ -180,7 +182,7 @@ void Compiler::fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt)
     // This routine can only be used when in tree order.
     assert(fgOrder == FGOrderTree);
 
-    if ((block->bbJumpKind == BBJ_COND) || (block->bbJumpKind == BBJ_SWITCH) || (block->bbJumpKind == BBJ_RETURN))
+    if (block->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_RETURN))
     {
         Statement* firstStmt = block->firstStmt();
         noway_assert(firstStmt != nullptr);
@@ -241,13 +243,14 @@ void Compiler::fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt)
 // Arguments:
 //   block - the block into which 'stmt' will be inserted;
 //   tree  - the tree to be inserted.
+//   di    - the debug info to use for the new statement.
 //
 // Return Value:
 //    The new created statement with `tree` inserted into `block`.
 //
-Statement* Compiler::fgNewStmtNearEnd(BasicBlock* block, GenTree* tree)
+Statement* Compiler::fgNewStmtNearEnd(BasicBlock* block, GenTree* tree, const DebugInfo& di)
 {
-    Statement* stmt = gtNewStmt(tree);
+    Statement* stmt = gtNewStmt(tree, di);
     fgInsertStmtNearEnd(block, stmt);
     return stmt;
 }
@@ -379,14 +382,18 @@ Statement* Compiler::fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAft
  *
  *  Create a new statement from tree and wire the links up.
  */
-Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, IL_OFFSETX offs)
+Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const DebugInfo& di)
 {
-    Statement* stmt = gtNewStmt(tree, offs);
+    Statement* stmt = gtNewStmt(tree, di);
 
-    if (fgStmtListThreaded)
+    if (fgNodeThreading == NodeThreading::AllTrees)
     {
         gtSetStmtInfo(stmt);
         fgSetStmtSeq(stmt);
+    }
+    else if (fgNodeThreading == NodeThreading::AllLocals)
+    {
+        fgSequenceLocals(stmt);
     }
 
 #if DEBUG
@@ -401,40 +408,61 @@ Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, IL_OFFS
 
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree)
 {
-    return fgNewStmtFromTree(tree, nullptr, BAD_IL_OFFSET);
+    return fgNewStmtFromTree(tree, nullptr, DebugInfo());
 }
 
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block)
 {
-    return fgNewStmtFromTree(tree, block, BAD_IL_OFFSET);
+    return fgNewStmtFromTree(tree, block, DebugInfo());
 }
 
-Statement* Compiler::fgNewStmtFromTree(GenTree* tree, IL_OFFSETX offs)
+Statement* Compiler::fgNewStmtFromTree(GenTree* tree, const DebugInfo& di)
 {
-    return fgNewStmtFromTree(tree, nullptr, offs);
+    return fgNewStmtFromTree(tree, nullptr, di);
 }
 
-/*****************************************************************************
- *
- * Remove a useless statement from a basic block.
- *
- */
+//------------------------------------------------------------------------
+// fgUnlinkStmt: unlink a statement from a block's statement list
+//
+// Arguments:
+//   block - the block from which 'stmt' will be unlinked
+//   stmt  - the statement to be unlinked
+//
+// Notes:
+//   next and previous links are nulled out, in anticipation
+//   of this statement being re-inserted somewhere else.
+//
+void Compiler::fgUnlinkStmt(BasicBlock* block, Statement* stmt)
+{
+    constexpr bool isUnlink = true;
+    fgRemoveStmt(block, stmt DEBUGARG(isUnlink));
+    stmt->SetNextStmt(nullptr);
+    stmt->SetPrevStmt(nullptr);
+}
 
-void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt)
+//------------------------------------------------------------------------
+// fgRemoveStmt: remove a statement from a block's statement list
+//
+// Arguments:
+//   block - the block from which 'stmt' will be removed
+//   stmt  - the statement to be removed
+//   isUnlink - ultimate plan is to move the statement, not delete it
+//
+void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isUnlink))
 {
     assert(fgOrder == FGOrderTree);
 
 #ifdef DEBUG
-    if (verbose &&
-        stmt->GetRootNode()->gtOper != GT_NOP) // Don't print if it is a GT_NOP. Too much noise from the inliner.
+    // Don't print if it is a GT_NOP. Too much noise from the inliner.
+    if (verbose && (stmt->GetRootNode()->gtOper != GT_NOP))
     {
-        printf("\nRemoving statement ");
+        printf("\n%s ", isUnlink ? "unlinking" : "removing useless");
         gtDispStmt(stmt);
-        printf(" in " FMT_BB " as useless:\n", block->bbNum);
+        printf(" from " FMT_BB "\n", block->bbNum);
     }
 #endif // DEBUG
 
-    if (opts.compDbgCode && stmt->GetPrevStmt() != stmt && stmt->GetILOffsetX() != BAD_IL_OFFSET)
+    if (opts.compDbgCode && stmt->GetPrevStmt() != stmt && stmt->GetDebugInfo().IsValid())
     {
         /* TODO: For debuggable code, should we remove significant
            statement boundaries. Or should we leave a GT_NO_OP in its place? */
@@ -480,17 +508,16 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt)
     {
         if (block->bbStmtList == nullptr)
         {
-            printf("\n" FMT_BB " becomes empty", block->bbNum);
+            printf("\n" FMT_BB " becomes empty\n", block->bbNum);
         }
-        printf("\n");
     }
 #endif // DEBUG
 }
 
 /******************************************************************************/
-// Returns true if the operator is involved in control-flow
-// TODO-Cleanup: Move this into genTreeKinds in genTree.h
-
+// Returns true if the operator is involved in control-flow.
+// TODO-Cleanup: Make this a GenTreeOperKind.
+//
 inline bool OperIsControlFlow(genTreeOps oper)
 {
     switch (oper)
@@ -531,13 +558,13 @@ bool Compiler::fgCheckRemoveStmt(BasicBlock* block, Statement* stmt)
     GenTree*   tree = stmt->GetRootNode();
     genTreeOps oper = tree->OperGet();
 
-    if (OperIsControlFlow(oper) || GenTree::OperIsHWIntrinsic(oper) || oper == GT_NO_OP)
+    if (OperIsControlFlow(oper) || oper == GT_NO_OP)
     {
         return false;
     }
 
     // TODO: Use a recursive version of gtNodeHasSideEffects()
-    if (tree->gtFlags & GTF_SIDE_EFFECT)
+    if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
         return false;
     }

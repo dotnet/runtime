@@ -1,16 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <NoWarn>$(NoWarn);0436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <DefineConstants>UNITTEST</DefineConstants>
-    <Nullable>annotations</Nullable>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
              Link="CommonTest\System\Net\SslProtocolSupport.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
@@ -29,6 +29,8 @@
              Link="Common\System\CharArrayHelpers.cs" />
     <Compile Include="$(CommonPath)System\StringExtensions.cs"
              Link="Common\System\StringExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" 
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs"
              Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.cs"
@@ -57,14 +59,14 @@
              Link="Common\System\Text\SimpleRegex.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\RendezvousAwaitable.cs"
              Link="Common\System\Threading\Tasks\RendezvousAwaitable.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="..\..\src\System\Net\Http\NoWriteNoSeekStreamContent.cs"
              Link="ProductionCode\NoWriteNoSeekStreamContent.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs"
              Link="ProductionCode\WinHttpAuthHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpChannelBinding.cs"
              Link="ProductionCode\WinHttpChannelBinding.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpChunkMode.cs"
+             Link="ProductionCode\WinHttpChunkMode.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpCookieContainerAdapter.cs"
              Link="ProductionCode\WinHttpCookieContainerAdapter.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpException.cs"
@@ -114,6 +116,6 @@
     <Compile Include="WinHttpRequestStreamTest.cs" />
     <Compile Include="WinHttpResponseHeaderReaderTest.cs" />
     <Compile Include="WinHttpResponseStreamTest.cs" />
-    <Compile Include="XunitTestAssemblyAtrributes.cs" />
+    <Compile Include="XunitTestAssemblyAttributes.cs" />
   </ItemGroup>
 </Project>

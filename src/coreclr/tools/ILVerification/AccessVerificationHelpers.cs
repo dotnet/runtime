@@ -22,19 +22,8 @@ namespace ILVerify
             if (targetClass.IsParameterizedType)
                 return currentClass.CanAccess(((ParameterizedType)targetClass).ParameterType);
 
-#if false
-            // perform transparency check on the type, if the caller is transparent
-            if ((NULL != pCurrentMD) && Security::IsTransparentMethod(pCurrentMD))
-            {
-                // check if type is visible outside the assembly
-                if (!IsTypeVisibleOutsideAssembly(pTargetClass))
-                {
-                    // check transparent/critical on type
-                    if (!Security::CheckNonPublicCriticalAccess(pCurrentMD, NULL, NULL, pTargetClass)) 
-                        return FALSE;
-                }
-            }
-#endif
+            if (targetClass.IsFunctionPointer)
+                return currentClass.CanAccessSignature(((FunctionPointerType)targetClass).Signature);
 
             // Check access to class instantiations if generic class
             if (targetClass.HasInstantiation && !currentClass.CanAccessInstantiation(targetClass.Instantiation))
@@ -80,7 +69,7 @@ namespace ILVerify
                     return false;
             }
 
-            return currentTypeDef.CanAccessMethodSignature(targetMethod);
+            return currentTypeDef.CanAccessSignature(targetMethod.Signature);
         }
 
         /// <summary>
@@ -180,33 +169,14 @@ namespace ILVerify
             return true;
         }
 
-        private static bool CanAccessMethodSignature(this TypeDesc currentType, MethodDesc targetMethod)
+        private static bool CanAccessSignature(this TypeDesc currentType, MethodSignature signature)
         {
-            var methodSig = targetMethod.Signature;
+            if (!currentType.CanAccess(signature.ReturnType))
+                return false;
 
-            // Check return type
-            var returnType = methodSig.ReturnType;
-            if (returnType.IsParameterizedType)
-                returnType = ((ParameterizedType)returnType).ParameterType;
-
-            if (!returnType.IsGenericParameter && !returnType.IsSignatureVariable // Generic parameters are always accessible
-                && !returnType.IsVoid)
+            for (int i = 0; i < signature.Length; ++i)
             {
-                if (!currentType.CanAccess(returnType))
-                    return false;
-            }
-
-            // Check arguments
-            for (int i = 0; i < methodSig.Length; ++i)
-            {
-                var param = methodSig[i];
-                if (param.IsByRef)
-                    param = ((ByRefType)param).ParameterType;
-
-                if (param.IsGenericParameter || param.IsSignatureVariable)
-                    continue; // Generic parameters are always accessible
-
-                if (!currentType.CanAccess(param))
+                if (!currentType.CanAccess(signature[i]))
                     return false;
             }
 
@@ -258,7 +228,7 @@ namespace ILVerify
         private static EcmaAssembly ToEcmaAssembly(this ModuleDesc module)
         {
             return module.Assembly as EcmaAssembly;
-        }   
+        }
 
         private static bool GrantsFriendAccessTo(this ModuleDesc module, ModuleDesc friendModule)
         {

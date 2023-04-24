@@ -5,14 +5,11 @@
 #define _PAL_SHARED_MEMORY_H_
 
 #include "corunix.hpp"
+#include <minipal/utils.h>
 
 #ifndef static_assert_no_msg
 #define static_assert_no_msg( cond ) static_assert( cond, #cond )
 #endif // !static_assert_no_msg
-
-#ifndef _countof
-#define _countof(a) (sizeof(a) / sizeof(a[0]))
-#endif // !_countof
 
 // The folder used for storing shared memory files and their lock files is defined in
 // the gSharedFilesPath global variable. The value of the variable depends on which
@@ -28,16 +25,16 @@
 //     {gSharedFilesPath}/.dotnet/lockfiles/session<sessionId>/<fileName>
 
 #define SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT (_MAX_FNAME - 1)
-#define SHARED_MEMORY_MAX_NAME_CHAR_COUNT (string_countof("Global\\") + SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT)
+#define SHARED_MEMORY_MAX_NAME_CHAR_COUNT (STRING_LENGTH("Global\\") + SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT)
 
 #define SHARED_MEMORY_RUNTIME_TEMP_DIRECTORY_NAME ".dotnet"
 #define SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_NAME ".dotnet/shm"
 #define SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME ".dotnet/lockfiles"
-static_assert_no_msg(_countof(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) >= _countof(SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_NAME));
+static_assert_no_msg(ARRAY_SIZE(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) >= ARRAY_SIZE(SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_NAME));
 
 #define SHARED_MEMORY_GLOBAL_DIRECTORY_NAME "global"
 #define SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX "session"
-static_assert_no_msg(_countof(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) >= _countof(SHARED_MEMORY_GLOBAL_DIRECTORY_NAME));
+static_assert_no_msg(ARRAY_SIZE(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) >= ARRAY_SIZE(SHARED_MEMORY_GLOBAL_DIRECTORY_NAME));
 
 #define SHARED_MEMORY_UNIQUE_TEMP_NAME_TEMPLATE ".coreclr.XXXXXX"
 
@@ -46,9 +43,9 @@ static_assert_no_msg(_countof(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) >= _c
 // Note that this Max size does not include the prefix folder path size which is unknown (in the case of sandbox) until runtime
 #define SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT \
     ( \
-        string_countof(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) + \
+        STRING_LENGTH(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) + \
         1 /* path separator */ + \
-        string_countof(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) + \
+        STRING_LENGTH(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) + \
         SHARED_MEMORY_MAX_SESSION_ID_CHAR_COUNT + \
         1 /* path separator */ + \
         SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT \
@@ -91,9 +88,11 @@ public:
 class SharedMemoryHelpers
 {
 private:
+    static const mode_t PermissionsMask_CurrentUser_ReadWrite;
     static const mode_t PermissionsMask_CurrentUser_ReadWriteExecute;
     static const mode_t PermissionsMask_AllUsers_ReadWrite;
     static const mode_t PermissionsMask_AllUsers_ReadWriteExecute;
+
 public:
     static const UINT32 InvalidProcessId;
     static const SIZE_T InvalidThreadId;
@@ -109,12 +108,12 @@ public:
     static void BuildSharedFilesPath(PathCharString& destination, const char *suffix, int suffixByteCount);
     static bool AppendUInt32String(PathCharString& destination, UINT32 value);
 
-    static bool EnsureDirectoryExists(const char *path, bool isGlobalLockAcquired, bool createIfNotExist = true, bool isSystemDirectory = false);
+    static bool EnsureDirectoryExists(const char *path, bool isGlobalLockAcquired, bool hasCurrentUserAccessOnly, bool setStickyFlag, bool createIfNotExist = true, bool isSystemDirectory = false);
 private:
     static int Open(LPCSTR path, int flags, mode_t mode = static_cast<mode_t>(0));
 public:
     static int OpenDirectory(LPCSTR path);
-    static int CreateOrOpenFile(LPCSTR path, bool createIfNotExist = true, bool *createdRef = nullptr);
+    static int CreateOrOpenFile(LPCSTR path, bool createIfNotExist = true, bool isSessionScope = true, bool *createdRef = nullptr);
     static void CloseFile(int fileDescriptor);
 
     static SIZE_T GetFileSize(int fileDescriptor);
@@ -173,7 +172,8 @@ private:
     };
 
 public:
-    static SIZE_T DetermineTotalByteCount(SIZE_T dataByteCount);
+    static SIZE_T GetUsedByteCount(SIZE_T dataByteCount);
+    static SIZE_T GetTotalByteCount(SIZE_T dataByteCount);
 
 public:
     SharedMemorySharedDataHeader(SharedMemoryType type, UINT8 version);

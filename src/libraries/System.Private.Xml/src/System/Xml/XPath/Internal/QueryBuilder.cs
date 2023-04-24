@@ -55,7 +55,7 @@ namespace MS.Internal.Xml.XPath
 
         private Query ProcessAxis(Axis root, Flags flags, out Props props)
         {
-            Query? result = null;
+            Query? result;
             if (root.Prefix.Length > 0)
             {
                 _needContext = true;
@@ -269,10 +269,7 @@ namespace MS.Internal.Xml.XPath
             {
                 qyInput = ((DocumentOrderQuery)qyInput).input;
             }
-            if (_firstInput == null)
-            {
-                _firstInput = qyInput as BaseAxisQuery;
-            }
+            _firstInput ??= qyInput as BaseAxisQuery;
 
             bool merge = (qyInput.Properties & QueryProps.Merge) != 0;
             bool reverse = (qyInput.Properties & QueryProps.Reverse) != 0;
@@ -339,7 +336,7 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
-        private Query ProcessVariable(Variable root)
+        private VariableQuery ProcessVariable(Variable root)
         {
             _needContext = true;
             if (!_allowVar)
@@ -352,7 +349,7 @@ namespace MS.Internal.Xml.XPath
         private Query ProcessFunction(Function root, out Props props)
         {
             props = Props.None;
-            Query? qy = null;
+            Query? qy;
             switch (root.TypeOfFunction)
             {
                 case FT.FuncLast:
@@ -504,9 +501,8 @@ namespace MS.Internal.Xml.XPath
         private Query Build(AstNode root, string query)
         {
             Reset();
-            Props props;
             _query = query;
-            Query result = ProcessNode(root, Flags.None, out props);
+            Query result = ProcessNode(root, Flags.None, out _);
             return result;
         }
 

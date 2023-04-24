@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public abstract class FileConfigurationProvider : ConfigurationProvider, IDisposable
     {
-        private readonly IDisposable _changeTokenRegistration;
+        private readonly IDisposable? _changeTokenRegistration;
 
         /// <summary>
         /// Initializes a new instance with the specified source.
@@ -25,16 +25,14 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="source">The source settings.</param>
         public FileConfigurationProvider(FileConfigurationSource source)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ThrowHelper.ThrowIfNull(source);
+
             Source = source;
 
             if (Source.ReloadOnChange && Source.FileProvider != null)
             {
                 _changeTokenRegistration = ChangeToken.OnChange(
-                    () => Source.FileProvider.Watch(Source.Path),
+                    () => Source.FileProvider.Watch(Source.Path!),
                     () =>
                     {
                         Thread.Sleep(Source.ReloadDelay);
@@ -57,19 +55,19 @@ namespace Microsoft.Extensions.Configuration
 
         private void Load(bool reload)
         {
-            IFileInfo file = Source.FileProvider?.GetFileInfo(Source.Path);
+            IFileInfo? file = Source.FileProvider?.GetFileInfo(Source.Path ?? string.Empty);
             if (file == null || !file.Exists)
             {
                 if (Source.Optional || reload) // Always optional on reload
                 {
-                    Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
                 }
                 else
                 {
-                    var error = new StringBuilder($"The configuration file '{Source.Path}' was not found and is not optional.");
+                    var error = new StringBuilder(SR.Format(SR.Error_FileNotFound, Source.Path));
                     if (!string.IsNullOrEmpty(file?.PhysicalPath))
                     {
-                        error.Append($" The physical path is '{file.PhysicalPath}'.");
+                        error.Append(SR.Format(SR.Error_ExpectedPhysicalPath, file.PhysicalPath));
                     }
                     HandleException(ExceptionDispatchInfo.Capture(new FileNotFoundException(error.ToString())));
                 }
@@ -100,13 +98,14 @@ namespace Microsoft.Extensions.Configuration
                 {
                     Load(stream);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
                     if (reload)
                     {
-                        Data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        Data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
                     }
-                    HandleException(ExceptionDispatchInfo.Capture(e));
+                    var exception = new InvalidDataException(SR.Format(SR.Error_FailedToLoad, file.PhysicalPath), ex);
+                    HandleException(ExceptionDispatchInfo.Capture(exception));
                 }
             }
             // REVIEW: Should we raise this in the base as well / instead?
@@ -116,8 +115,13 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Loads the contents of the file at <see cref="Path"/>.
         /// </summary>
-        /// <exception cref="FileNotFoundException">If Optional is <c>false</c> on the source and a
+        /// <exception cref="DirectoryNotFoundException">Optional is <c>false</c> on the source and a
+        /// directory cannot be found at the specified Path.</exception>
+        /// <exception cref="FileNotFoundException">Optional is <c>false</c> on the source and a
         /// file does not exist at specified Path.</exception>
+        /// <exception cref="InvalidDataException">An exception was thrown by the concrete implementation of the
+        /// <see cref="Load()"/> method. Use the source <see cref="FileConfigurationSource.OnLoadException"/> callback
+        /// if you need more control over the exception.</exception>
         public override void Load()
         {
             Load(reload: false);

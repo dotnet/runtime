@@ -80,5 +80,10 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 	return res != 0 ? -1 : 0;
 #endif /* !HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP */
 }
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_os_mutex);
 
 #endif /* HOST_WIN32 */

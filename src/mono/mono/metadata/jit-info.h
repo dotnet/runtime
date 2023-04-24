@@ -20,7 +20,7 @@
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/handle-decl.h>
-#include <mono/mini/mono-private-unstable.h>
+#include <mono/jit/mono-private-unstable.h>
 
 G_BEGIN_DECLS
 
@@ -222,7 +222,7 @@ struct _MonoJitInfo {
 	gpointer    gc_info; /* Currently only used by SGen */
 
 	gpointer    seq_points;
-	
+
 	MonoJitExceptionInfo clauses [MONO_ZERO_LEN_ARRAY];
 	/* There is an optional MonoGenericJitInfo after the clauses */
 	/* There is an optional MonoTryBlockHoleTableJitInfo after MonoGenericJitInfo clauses*/
@@ -260,7 +260,7 @@ mono_jit_info_add_aot_module (MonoImage *image, gpointer start, gpointer end);
 MonoGenericJitInfo*
 mono_jit_info_get_generic_jit_info (MonoJitInfo *ji);
 
-MonoGenericSharingContext*
+MONO_COMPONENT_API MonoGenericSharingContext*
 mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji);
 
 void
@@ -278,18 +278,18 @@ mono_jit_info_get_thunk_info (MonoJitInfo *ji);
 MonoUnwindJitInfo*
 mono_jit_info_get_unwind_info (MonoJitInfo *ji);
 
-/* 
+/*
  * Installs a new function which is used to return a MonoJitInfo for a method inside
  * an AOT module.
  */
 typedef MonoJitInfo *(*MonoJitInfoFindInAot)         (MonoImage *image, gpointer addr);
 void          mono_install_jit_info_find_in_aot (MonoJitInfoFindInAot func);
 
-MonoJitInfo* mono_jit_info_table_find_internal (gpointer addr, gboolean try_aot, gboolean allow_trampolines);
+MONO_PROFILER_API MonoJitInfo* mono_jit_info_table_find_internal (gpointer addr, gboolean try_aot, gboolean allow_trampolines);
 
 typedef void (*MonoJitInfoFunc) (MonoJitInfo *ji, gpointer user_data);
 
-void
+MONO_COMPONENT_API void
 mono_jit_info_table_foreach_internal (MonoJitInfoFunc func, gpointer user_data);
 
 void

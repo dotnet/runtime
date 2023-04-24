@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Explicit)]
 internal struct AA
@@ -77,4 +78,13 @@ internal struct AA
 internal struct BB
 {
     public static AA f_init, f_zero;
+}
+
+public static class Test_expl_long_1
+{
+    [Fact]
+    public static int TestEntrypoint()
+    {
+        return TestApp.RunAllTests();
+    }
 }

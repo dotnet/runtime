@@ -18,7 +18,10 @@ namespace System.Reflection.Tests
             int[] blength = new int[] { -100, -9, -1 };
             for (int j = 0; j < blength.Length; j++)
             {
-                Assert.Throws<OverflowException>(() => constructor.Invoke(new object[] { blength[j] }));
+                Exception ex = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(
+                    new object[] { blength[j] }));
+
+                Assert.IsType<OverflowException>(ex.InnerException);
             }
 
             int[] glength = new int[] { 0, 1, 2, 3, 5, 10, 99, 65535 };
@@ -52,7 +55,10 @@ namespace System.Reflection.Tests
                             int[] invalidLengths = new int[] { -100, -9, -1 };
                             for (int j = 0; j < invalidLengths.Length; j++)
                             {
-                                Assert.Throws<OverflowException>(() => constructors[i].Invoke(new object[] { invalidLengths[j] }));
+                                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[i].Invoke(
+                                    new object[] { invalidLengths[j] }));
+
+                                Assert.IsType<OverflowException>(ex.InnerException);
                             }
 
                             int[] validLengths = new int[] { 0, 1, 2, 3, 5, 10, 99 };
@@ -70,18 +76,21 @@ namespace System.Reflection.Tests
                             int[] invalidLowerBounds = new int[] { -20, 0, 20 };
                             if (!PlatformDetection.IsNonZeroLowerBoundArraySupported)
                             {
-                                Array.Clear(invalidLowerBounds, 0, invalidLowerBounds.Length);
+                                Array.Clear(invalidLowerBounds);
                             }
                             int[] invalidLengths = new int[] { -100, -9, -1 };
                             for (int j = 0; j < invalidLengths.Length; j++)
                             {
-                                Assert.Throws<OverflowException>(() => constructors[i].Invoke(new object[] { invalidLowerBounds[j], invalidLengths[j] }));
+                                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[i].Invoke(
+                                    new object[] { invalidLowerBounds[j], invalidLengths[j] }));
+
+                                Assert.IsType<OverflowException>(ex.InnerException);
                             }
 
                             int[] validLowerBounds = new int[] { 0, 1, -1, 2, -3, 5, -10, 99, 100 };
                             if (!PlatformDetection.IsNonZeroLowerBoundArraySupported)
                             {
-                                Array.Clear(validLowerBounds, 0, validLowerBounds.Length);
+                                Array.Clear(validLowerBounds);
                             }
                             int[] validLengths = new int[] { 0, 1, 3, 2, 3, 5, 10, 99, 0 };
                             for (int j = 0; j < validLengths.Length; j++)
@@ -117,7 +126,10 @@ namespace System.Reflection.Tests
 
                             for (int j = 0; j < invalidLengths1.Length; j++)
                             {
-                                Assert.Throws<OverflowException>(() => constructors[i].Invoke(new object[] { invalidLengths1[j], invalidLengths2[j] }));
+                                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[i].Invoke(
+                                    new object[] { invalidLengths1[j], invalidLengths2[j] }));
+
+                                Assert.IsType<OverflowException>(ex.InnerException);
                             }
 
                             int[] validLengths1 = new int[] { 0, 0, 1, 1, 2, 1, 2, 10, 17, 99 };
@@ -144,13 +156,16 @@ namespace System.Reflection.Tests
 
                             if (!PlatformDetection.IsNonZeroLowerBoundArraySupported)
                             {
-                                Array.Clear(invalidLowerBounds1, 0, invalidLowerBounds1.Length);
-                                Array.Clear(invalidLowerBounds2, 0, invalidLowerBounds2.Length);
+                                Array.Clear(invalidLowerBounds1);
+                                Array.Clear(invalidLowerBounds2);
                             }
 
                             for (int j = 0; j < invalidLengths3.Length; j++)
                             {
-                                Assert.Throws<OverflowException>(() => constructors[i].Invoke(new object[] { invalidLowerBounds1[j], invalidLengths3[j], invalidLowerBounds2[j], invalidLengths4[j] }));
+                                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[i].Invoke(
+                                    new object[] { invalidLowerBounds1[j], invalidLengths3[j], invalidLowerBounds2[j], invalidLengths4[j] }));
+
+                                Assert.IsType<OverflowException>(ex.InnerException);
                             }
 
                             int baseNum = 3;
@@ -179,8 +194,8 @@ namespace System.Reflection.Tests
 
                             if (!PlatformDetection.IsNonZeroLowerBoundArraySupported)
                             {
-                                Array.Clear(validLowerBounds1, 0, validLowerBounds1.Length);
-                                Array.Clear(validLowerBounds2, 0, validLowerBounds2.Length);
+                                Array.Clear(validLowerBounds1);
+                                Array.Clear(validLowerBounds2);
                             }
 
                             for (int j = 0; j < validLengths1.Length; j++)
@@ -201,8 +216,8 @@ namespace System.Reflection.Tests
 
                             if (!PlatformDetection.IsNonZeroLowerBoundArraySupported)
                             {
-                                Array.Clear(validLowerBounds1, 0, validLowerBounds1.Length);
-                                Array.Clear(validLowerBounds2, 0, validLowerBounds2.Length);
+                                Array.Clear(validLowerBounds1);
+                                Array.Clear(validLowerBounds2);
                             }
 
                             for (int j = 0; j < validLengths1.Length; j++)
@@ -223,10 +238,10 @@ namespace System.Reflection.Tests
         [ActiveIssue("https://github.com/mono/mono/issues/15318", TestRuntimes.Mono)]
         public void Invoke_LargeDimensionalArrayConstructor()
         {
-            Type type = Type.GetType("System.Type[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]");
+            Type type = Type.GetType($"System.Type[{new string(',', 31)}]");
             ConstructorInfo[] cia = TypeExtensions.GetConstructors(type);
             Assert.Equal(2, cia.Length);
-            Assert.Throws<TypeLoadException>(() => Type.GetType("System.Type[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]"));
+            Assert.Throws<TypeLoadException>(() => Type.GetType($"System.Type[{new string(',', 42)}]"));
         }
 
         [Fact]
@@ -245,7 +260,10 @@ namespace System.Reflection.Tests
                             int[] invalidLengths = new int[] { -11, -10, -99 };
                             for (int j = 0; j < invalidLengths.Length; j++)
                             {
-                                Assert.Throws<OverflowException>(() => constructors[i].Invoke(new object[] { invalidLengths[j] }));
+                                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[i].Invoke(
+                                    new object[] { invalidLengths[j] }));
+
+                                Assert.IsType<OverflowException>(ex.InnerException);
                             }
 
                             int[] validLengths = new int[] { 0, 1, 2, 10, 17, 99 };
@@ -264,7 +282,10 @@ namespace System.Reflection.Tests
                             int[] invalidLengths2 = new int[] { -33, 0, -33, -1 };
                             for (int j = 0; j < invalidLengths1.Length; j++)
                             {
-                                Assert.Throws<OverflowException>(() => constructors[i].Invoke(new object[] { invalidLengths1[j], invalidLengths2[j] }));
+                                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[i].Invoke(
+                                     new object[] { invalidLengths1[j], invalidLengths2[j] }));
+
+                                Assert.IsType<OverflowException>(ex.InnerException);
                             }
 
                             int[] validLengths1 = new int[] { 0, 0, 0, 1, 1, 2, 1, 2, 10, 17, 500 };

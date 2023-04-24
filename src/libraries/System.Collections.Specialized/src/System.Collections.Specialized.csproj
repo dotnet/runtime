@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Collections\Specialized\BitVector32.cs" />
@@ -15,12 +14,11 @@
     <Compile Include="System\Collections\Specialized\StringDictionary.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\CompatibleComparer.cs"
              Link="Common\System\Collections\CompatibleComparer.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

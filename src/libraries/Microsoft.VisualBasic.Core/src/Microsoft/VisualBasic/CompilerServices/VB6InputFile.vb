@@ -7,11 +7,12 @@ Imports System.IO
 
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Utils
+Imports System.Diagnostics.CodeAnalysis
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
     <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)>
-    Friend Class VB6InputFile
+    Friend NotInheritable Class VB6InputFile
 
         '============================================================================
         ' Declarations
@@ -123,6 +124,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         '======================================
         ' Input
         '======================================
+        <RequiresUnreferencedCode("Calls Conversion.ParseInputField")>
         Friend Overloads Overrides Sub Input(ByRef obj As Object)
             Dim lChar As Integer
             Dim sField As String

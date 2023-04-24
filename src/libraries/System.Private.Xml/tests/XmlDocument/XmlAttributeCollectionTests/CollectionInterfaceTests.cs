@@ -4,7 +4,7 @@
 using System.Collections;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlDocumentTests
 {
     public class CollectionInterfaceTests
     {
@@ -56,7 +56,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        public void IsSyncronizedGetsFalse()
+        public void IsSynchronizedGetsFalse()
         {
             XmlDocument doc = CreateDocumentWithElement();
             XmlElement element = doc.DocumentElement;

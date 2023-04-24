@@ -90,7 +90,14 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
         hasRetBuff = false;
     }
 #endif
-#if defined(HOST_ARM) || defined(HOST_AMD64)|| defined(HOST_ARM64)
+
+#if defined(UNIX_AMD64_ABI) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
+    // ...or it fits into two registers.
+    if (hasRetBuff && getClassSize(methInfo->args.retTypeClass) <= 2 * sizeof(void*))
+    {
+        hasRetBuff = false;
+    }
+#elif defined(HOST_ARM) || defined(HOST_AMD64)|| defined(HOST_ARM64)
     // ...or it fits into one register.
     if (hasRetBuff && getClassSize(methInfo->args.retTypeClass) <= sizeof(void*))
     {
@@ -105,7 +112,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
     SetFlag<Flag_typeHasGenericArgs>(methInfo->args.sigInst.classInstCount > 0);
     SetFlag<Flag_methHasGenericArgs>(methInfo->args.sigInst.methInstCount > 0);
     _ASSERTE_MSG(!GetFlag<Flag_hasGenericsContextArg>()
-                 || ((GetFlag<Flag_typeHasGenericArgs>() & !(GetFlag<Flag_hasThisArg>() && GetFlag<Flag_thisArgIsObjPtr>())) || GetFlag<Flag_methHasGenericArgs>()),
+                 || ((GetFlag<Flag_typeHasGenericArgs>() && !(GetFlag<Flag_hasThisArg>() && GetFlag<Flag_thisArgIsObjPtr>())) || GetFlag<Flag_methHasGenericArgs>()),
                  "If the method takes a generic parameter, is a static method of generic class (or meth of a value class), and/or itself takes generic parameters");
 
     if (GetFlag<Flag_hasThisArg>())
@@ -278,7 +285,7 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                 }
                 m_argDescs[k].m_typeStackNormal = m_argDescs[k].m_type;
                 m_argDescs[k].m_nativeOffset = argOffsets_[k];
-                m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 directOffset++;
                 k++;
             }
@@ -301,18 +308,18 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
 #endif // defined(HOST_ARM)
                 )
             {
-                directRetBuffOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                directRetBuffOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
 #if defined(HOST_AMD64)
             if (GetFlag<Flag_isVarArg>())
             {
-                directVarArgOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                directVarArgOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
             if (GetFlag<Flag_hasGenericsContextArg>())
             {
-                directTypeParamOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                directTypeParamOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
 #endif
@@ -342,11 +349,11 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                 // When invoking the interpreter directly, large value types are always passed by reference.
                 if (it.IsLargeStruct(comp))
                 {
-                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 }
                 else
                 {
-                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, it.Size(comp))));
+                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, it.Size(comp))));
                 }
                 argPtr = comp->getArgNext(argPtr);
                 directOffset++;
@@ -421,7 +428,7 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
         break;
 
     default:
-        _ASSERTE_ALL_BUILDS(__FILE__, false); // shouldn't get here
+        _ASSERTE_ALL_BUILDS(false); // shouldn't get here
     }
 }
 
@@ -474,6 +481,7 @@ void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noR
     _ASSERTE(!noReg);
     _ASSERTE(!twoSlotAlign);
     AddArgAmd64(canonIndex, numSlots, /*isFloatingType*/false);
+    return;
 #else // !HOST_AMD64
 #if defined(HOST_X86) || defined(HOST_ARM64)
     _ASSERTE(!twoSlotAlign); // Shouldn't use this flag on x86 (it wouldn't work right in the stack, at least).
@@ -526,6 +534,12 @@ void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noR
         // On ARM, args are pushed in *reverse* order.  So we will create an offset relative to the address
         // of the first stack arg; later, we will add the size of the non-stack arguments.
         ClrSafeInt<short> offset(callerArgStackSlots);
+#elif defined(HOST_LOONGARCH64)
+        callerArgStackSlots += numSlots;
+        ClrSafeInt<short> offset(-callerArgStackSlots);
+#elif defined(HOST_RISCV64)
+        callerArgStackSlots += numSlots;
+        ClrSafeInt<short> offset(-callerArgStackSlots);
 #endif
         offset *= static_cast<short>(sizeof(void*));
         _ASSERTE(!offset.IsOverflow());
@@ -538,7 +552,37 @@ void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noR
 }
 
 #if defined(HOST_AMD64)
-// AMD64 calling convention allows any type that can be contained in 64 bits to be passed in registers,
+
+#if defined(UNIX_AMD64_ABI)
+void Interpreter::ArgState::AddArgAmd64(unsigned canonIndex, unsigned short numSlots, bool isFloatingType)
+{
+    int regSlots = numFPRegArgSlots + numRegArgs;
+    if (isFloatingType && numFPRegArgSlots + 1 < MaxNumFPRegArgSlots)
+    {
+        _ASSERTE(numSlots == 1);
+        argIsReg[canonIndex]   = ARS_FloatReg;
+        argOffsets[canonIndex] = regSlots * sizeof(void*);
+        fpArgsUsed |= (0x1 << regSlots);
+        numFPRegArgSlots += 1;
+        return;
+    }
+    else if (numSlots < 3 && (numRegArgs + numSlots <= NumberOfIntegerRegArgs()))
+    {
+        argIsReg[canonIndex]   = ARS_IntReg;
+        argOffsets[canonIndex] = regSlots * sizeof(void*);
+        numRegArgs += numSlots;
+    }
+    else
+    {
+        argIsReg[canonIndex] = ARS_NotReg;
+        ClrSafeInt<short> offset(callerArgStackSlots * sizeof(void*));
+        _ASSERTE(!offset.IsOverflow());
+        argOffsets[canonIndex] = offset.Value();
+        callerArgStackSlots += numSlots;
+    }
+}
+#else
+// Windows AMD64 calling convention allows any type that can be contained in 64 bits to be passed in registers,
 // if not contained or they are of a size not a power of 2, then they are passed by reference on the stack.
 // RCX, RDX, R8, R9 are the int arg registers. XMM0-3 overlap with the integer registers and are used
 // for floating point arguments.
@@ -574,6 +618,7 @@ void Interpreter::ArgState::AddArgAmd64(unsigned canonIndex, unsigned short numS
         callerArgStackSlots += 1;
     }
 }
+#endif //UNIX_AMD64_ABI
 #endif
 
 void Interpreter::ArgState::AddFPArg(unsigned canonIndex, unsigned short numSlots, bool twoSlotAlign)
@@ -646,6 +691,29 @@ void Interpreter::ArgState::AddFPArg(unsigned canonIndex, unsigned short numSlot
     }
     numFPRegArgSlots += numSlots;
 
+#elif defined(HOST_LOONGARCH64)
+
+    assert(numFPRegArgSlots + numSlots <= MaxNumFPRegArgSlots);
+    assert(!twoSlotAlign);
+    argIsReg[canonIndex] = ARS_FloatReg;
+
+    argOffsets[canonIndex] = numFPRegArgSlots * sizeof(void*);
+    for (unsigned i = 0; i < numSlots; i++)
+    {
+        fpArgsUsed |= (0x1 << (numFPRegArgSlots + i));
+    }
+    numFPRegArgSlots += numSlots;
+#elif defined(HOST_RISCV64)
+    assert(numFPRegArgSlots + numSlots <= MaxNumFPRegArgSlots);
+    assert(!twoSlotAlign);
+    argIsReg[canonIndex] = ARS_FloatReg;
+
+    argOffsets[canonIndex] = numFPRegArgSlots * sizeof(void*);
+    for (unsigned i = 0; i < numSlots; i++)
+    {
+        fpArgsUsed |= (0x1 << (numFPRegArgSlots + i));
+    }
+    numFPRegArgSlots += numSlots;
 #else
 #error "Unsupported architecture"
 #endif
@@ -803,7 +871,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     // push ebp
     // mov ebp, esp
     // [if there are register arguments in ecx or edx, push them]
-    // ecx := addr of InterpretMethodInfo for the method to be intepreted.
+    // ecx := addr of InterpretMethodInfo for the method to be interpreted.
     // edx = esp  /*pointer to argument structure*/
     // call to Interpreter::InterpretMethod
     // [if we pushed register arguments, increment esp by the right amount.]
@@ -843,7 +911,6 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         // x8 through x15 are scratch registers on ARM64.
         IntReg x8 = IntReg(8);
         IntReg x9 = IntReg(9);
-#else
 #error unsupported platform
 #endif
     }
@@ -1041,7 +1108,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                 case CORINFO_TYPE_UNDEF:
                 case CORINFO_TYPE_VOID:
                 case CORINFO_TYPE_VAR:
-                    _ASSERTE_ALL_BUILDS(__FILE__, false);  // Should not happen;
+                    _ASSERTE_ALL_BUILDS(false);  // Should not happen;
                     break;
 
                     // One integer slot arguments:
@@ -1071,7 +1138,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #elif defined(HOST_ARM)
                     // LONGS have 2-reg alignment; inc reg if necessary.
                     argState.AddArg(k, 2, /*noReg*/false, /*twoSlotAlign*/true);
-#elif defined(HOST_AMD64) || defined(HOST_ARM64)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
                     argState.AddArg(k);
 #else
 #error unknown platform
@@ -1084,7 +1151,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     argState.AddArg(k, 1, /*noReg*/true);
 #elif defined(HOST_ARM)
                     argState.AddFPArg(k, 1, /*twoSlotAlign*/false);
-#elif defined(HOST_AMD64) || defined(HOST_ARM64)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
                     argState.AddFPArg(k, 1, false);
 #else
 #error unknown platform
@@ -1097,7 +1164,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     argState.AddArg(k, 2, /*noReg*/true);
 #elif defined(HOST_ARM)
                     argState.AddFPArg(k, 2, /*twoSlotAlign*/true);
-#elif defined(HOST_AMD64) || defined(HOST_ARM64)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64) || defined(HOST_LOONGARCH64) || defined(HOST_RISCV64)
                     argState.AddFPArg(k, 1, false);
 #else
 #error unknown platform
@@ -1138,6 +1205,10 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #endif
                                     );
                         }
+#elif defined(HOST_LOONGARCH64)
+                        argState.AddArg(k, static_cast<short>(szSlots));
+#elif defined(HOST_RISCV64)
+                        argState.AddArg(k, static_cast<short>(szSlots));
 #else
 #error unknown platform
 #endif
@@ -1185,8 +1256,18 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
             // See StubLinkerCPU::EmitProlog for the layout of the stack
             unsigned       intRegArgBaseOffset = (argState.numFPRegArgSlots) * sizeof(void*);
             unsigned short stackArgBaseOffset = (unsigned short) ((argState.numRegArgs + argState.numFPRegArgSlots) * sizeof(void*));
+#elif defined(UNIX_AMD64_ABI)
+            unsigned       intRegArgBaseOffset = 0;
+            unsigned short stackArgBaseOffset = (2 + argState.numRegArgs + argState.numFPRegArgSlots) * sizeof(void*);
 #elif defined(HOST_AMD64)
             unsigned short stackArgBaseOffset = (argState.numRegArgs) * sizeof(void*);
+#elif defined(HOST_LOONGARCH64)
+            // See StubLinkerCPU::EmitProlog for the layout of the stack
+            unsigned       intRegArgBaseOffset = (argState.numFPRegArgSlots) * sizeof(void*);
+            unsigned short stackArgBaseOffset = (unsigned short) ((argState.numRegArgs + argState.numFPRegArgSlots) * sizeof(void*));
+#elif defined(HOST_RISCV64)
+            unsigned       intRegArgBaseOffset = (argState.numFPRegArgSlots) * sizeof(void*);
+            unsigned short stackArgBaseOffset = (unsigned short) ((argState.numRegArgs + argState.numFPRegArgSlots) * sizeof(void*));
 #else
 #error unsupported platform
 #endif
@@ -1227,7 +1308,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                         if (!jmpCall) { sl.X86EmitPushReg(kEDX); }
                         argState.argOffsets[k] = (argState.numRegArgs - regArgsFound)*sizeof(void*);
                     }
-#elif defined(HOST_ARM) || defined(HOST_ARM64)
+#elif defined(HOST_ARM) || defined(HOST_ARM64) || defined(UNIX_AMD64_ABI)
                     argState.argOffsets[k] += intRegArgBaseOffset;
 #elif defined(HOST_AMD64)
                     // First home the register arguments in the stack space allocated by the caller.
@@ -1235,11 +1316,15 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     X86Reg argRegs[] = { kECX, kEDX, kR8, kR9 };
                     if (!jmpCall) { sl.X86EmitIndexRegStoreRSP(regArgsFound * sizeof(void*), argRegs[regArgsFound - 1]); }
                     argState.argOffsets[k] = (regArgsFound - 1) * sizeof(void*);
+#elif defined(HOST_LOONGARCH64)
+                    argState.argOffsets[k] += intRegArgBaseOffset;
+#elif defined(HOST_RISCV64)
+                    argState.argOffsets[k] += intRegArgBaseOffset;
 #else
 #error unsupported platform
 #endif
                 }
-#if defined(HOST_AMD64)
+#if defined(HOST_AMD64) && !defined(UNIX_AMD64_ABI)
                 else if (argState.argIsReg[k] == ArgState::ARS_FloatReg)
                 {
                     // Increment regArgsFound since float/int arguments have overlapping registers.
@@ -1298,7 +1383,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         break;
 
     default:
-        _ASSERTE_ALL_BUILDS(__FILE__, false); // shouldn't get here
+        _ASSERTE_ALL_BUILDS(false); // shouldn't get here
     }
 
     delete[] argPerm;
@@ -1346,6 +1431,65 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         }
         sl.X86EmitPopReg(kEBP);
         sl.X86EmitReturn(static_cast<WORD>(argState.callerArgStackSlots * sizeof(void*)));
+#elif defined(UNIX_AMD64_ABI)
+        bool hasTowRetSlots = info->args.retType == CORINFO_TYPE_VALUECLASS &&
+            getClassSize(info->args.retTypeClass) == 16;
+
+        int fixedTwoSlotSize = 16;
+
+        int argSize = (argState.numFPRegArgSlots +  argState.numRegArgs) * sizeof(void*);
+
+        int stackSize = argSize + fixedTwoSlotSize; // Fixed two slot for possible "retbuf", access address by "m_ilArgs-16"
+
+        if (stackSize % 16 == 0) { // for $rsp align requirement
+            stackSize += 8;
+        }
+
+        sl.X86EmitSubEsp(stackSize);
+
+        X86Reg intArgsRegs[] = {ARGUMENT_kREG1, ARGUMENT_kREG2, kRDX, kRCX, kR8, kR9};
+        int    indexGP       = 0;
+        int    indexFP       = 0;
+        for (int i = 0; i < argState.numRegArgs + argState.numFPRegArgSlots; i++)
+        {
+            int offs = i * sizeof(void*) + 16;
+            if (argState.fpArgsUsed & (1 << i))
+            {
+                sl.X64EmitMovSDToMem(static_cast<X86Reg>(indexFP), static_cast<X86Reg>(kESP_Unsafe), offs);
+                indexFP++;
+            }
+            else
+            {
+                sl.X86EmitIndexRegStoreRSP(offs, intArgsRegs[indexGP]);
+                indexGP++;
+            }
+        }
+
+        // Pass "ilArgs", i.e. just the point where registers have been homed, as 2nd arg.
+        sl.X86EmitIndexLeaRSP(ARGUMENT_kREG2, static_cast<X86Reg>(kESP_Unsafe), fixedTwoSlotSize);
+
+        // If we have IL stubs pass the stub context in R10 or else pass NULL.
+#if INTERP_ILSTUBS
+        if (pMD->IsILStub())
+        {
+            sl.X86EmitMovRegReg(kRDX, kR10);
+        }
+        else
+#endif
+        {
+            // For a non-ILStub method, push NULL as the StubContext argument.
+            sl.X86EmitZeroOutReg(ARGUMENT_kREG1);
+            sl.X86EmitMovRegReg(kRDX, ARGUMENT_kREG1);
+        }
+        sl.X86EmitRegLoad(ARGUMENT_kREG1, reinterpret_cast<UINT_PTR>(interpMethInfo));
+
+        sl.X86EmitCall(sl.NewExternalCodeLabel(interpretMethodFunc), 0);
+        if (hasTowRetSlots) {
+            sl.X86EmitEspOffset(0x8b, kRAX, 0);
+            sl.X86EmitEspOffset(0x8b, kRDX, 8);
+        }
+        sl.X86EmitAddEsp(stackSize);
+        sl.X86EmitReturn(0);
 #elif defined(HOST_AMD64)
         // Pass "ilArgs", i.e. just the point where registers have been homed, as 2nd arg
         sl.X86EmitIndexLeaRSP(ARGUMENT_kREG2, static_cast<X86Reg>(kESP_Unsafe), 8);
@@ -1488,7 +1632,10 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
         sl.EmitEpilog();
 
-
+#elif defined(HOST_LOONGARCH64)
+        assert(!"unimplemented on LOONGARCH yet");
+#elif defined(HOST_RISCV64)
+        assert(!"unimplemented on RISCV64 yet");
 #else
 #error unsupported platform
 #endif
@@ -1527,7 +1674,7 @@ size_t Interpreter::GetFrameSize(InterpreterMethodInfo* interpMethInfo)
 }
 
 // static
-ARG_SLOT Interpreter::ExecuteMethodWrapper(struct InterpreterMethodInfo* interpMethInfo, bool directCall, BYTE* ilArgs, void* stubContext, __out bool* pDoJmpCall, CORINFO_RESOLVED_TOKEN* pResolvedToken)
+ARG_SLOT Interpreter::ExecuteMethodWrapper(struct InterpreterMethodInfo* interpMethInfo, bool directCall, BYTE* ilArgs, void* stubContext, _Out_ bool* pDoJmpCall, CORINFO_RESOLVED_TOKEN* pResolvedToken)
 {
 #define INTERP_DYNAMIC_CONTRACTS 1
 #if INTERP_DYNAMIC_CONTRACTS
@@ -1676,7 +1823,7 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
             CodeVersionManager::LockHolder _lockHolder;
             NativeCodeVersion activeCodeVersion = md->GetCodeVersionManager()->GetActiveILCodeVersion(md).GetActiveNativeCodeVersion(md);
             ILCodeVersion ilCodeVersion = activeCodeVersion.GetILCodeVersion();
-            if (activeCodeVersion.GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
+            if (!activeCodeVersion.IsFinalTier() &&
                 !ilCodeVersion.HasAnyOptimizedNativeCodeVersion(activeCodeVersion))
             {
                 tieredCompilationManager->AsyncPromoteToTier1(activeCodeVersion, &scheduleTieringBackgroundWork);
@@ -1689,7 +1836,7 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
 
     if (scheduleTieringBackgroundWork)
     {
-        tieredCompilationManager->ScheduleBackgroundWork(); // requires GC_TRIGGERS
+        tieredCompilationManager->TryScheduleBackgroundWorkerWithoutGCTrigger_Locked();
     }
 }
 
@@ -1704,7 +1851,7 @@ HCIMPL3(float, InterpretMethodFloat, struct InterpreterMethodInfo* interpMethInf
     retVal = (ARG_SLOT)Interpreter::InterpretMethodBody(interpMethInfo, false, ilArgs, stubContext);
     HELPER_METHOD_FRAME_END();
 
-    return *reinterpret_cast<float*>(ArgSlotEndianessFixup(&retVal, sizeof(float)));
+    return *reinterpret_cast<float*>(ArgSlotEndiannessFixup(&retVal, sizeof(float)));
 }
 HCIMPLEND
 
@@ -1719,7 +1866,7 @@ HCIMPL3(double, InterpretMethodDouble, struct InterpreterMethodInfo* interpMethI
     retVal = Interpreter::InterpretMethodBody(interpMethInfo, false, ilArgs, stubContext);
     HELPER_METHOD_FRAME_END();
 
-    return *reinterpret_cast<double*>(ArgSlotEndianessFixup(&retVal, sizeof(double)));
+    return *reinterpret_cast<double*>(ArgSlotEndiannessFixup(&retVal, sizeof(double)));
 }
 HCIMPLEND
 
@@ -1894,7 +2041,7 @@ void Interpreter::DoMonitorExitWork()
 }
 
 
-void Interpreter::ExecuteMethod(ARG_SLOT* retVal, __out bool* pDoJmpCall, __out unsigned* pJmpCallToken)
+void Interpreter::ExecuteMethod(ARG_SLOT* retVal, _Out_ bool* pDoJmpCall, _Out_ unsigned* pJmpCallToken)
 {
 #if INTERP_DYNAMIC_CONTRACTS
     CONTRACTL {
@@ -2274,6 +2421,14 @@ EvalLoop:
                         // The ostack value *is* the struct value.
                         memcpy(GetHFARetBuffAddr(static_cast<unsigned>(sz)), OpStackGetAddr(0, sz), sz);
                     }
+                }
+#elif defined(UNIX_AMD64_ABI)
+                // Is it an struct contained in $rax and $rdx
+                else if (m_methInfo->m_returnType == CORINFO_TYPE_VALUECLASS
+                         && sz == 16)
+                {
+                    //The Fixed Two slot return buffer address
+                    memcpy(m_ilArgs-16, OpStackGet<void*>(0), sz);
                 }
 #endif
                 else if (CorInfoTypeIsFloatingPoint(m_methInfo->m_returnType) &&
@@ -3650,12 +3805,12 @@ void Interpreter::GCScanRoots(promote_func* pf, ScanContext* sc)
         void* localPtr = NULL;
         if (it.IsLargeStruct(&m_interpCeeInfo))
         {
-            void* structPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
+            void* structPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
             localPtr = *reinterpret_cast<void**>(structPtr);
         }
         else
         {
-            localPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), it.Size(&m_interpCeeInfo));
+            localPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), it.Size(&m_interpCeeInfo));
         }
         GCScanRootAtLoc(reinterpret_cast<Object**>(localPtr), it, pf, sc, m_methInfo->GetPinningBit(i));
     }
@@ -3690,7 +3845,7 @@ void Interpreter::GCScanRoots(promote_func* pf, ScanContext* sc)
         InterpreterType it = m_argTypes[i];
         if (it != undef && !it.IsLargeStruct(&m_interpCeeInfo))
         {
-            BYTE* argPtr = ArgSlotEndianessFixup(&m_args[i], it.Size(&m_interpCeeInfo));
+            BYTE* argPtr = ArgSlotEndiannessFixup(&m_args[i], it.Size(&m_interpCeeInfo));
             GCScanRootAtLoc(reinterpret_cast<Object**>(argPtr), it, pf, sc);
         }
     }
@@ -4119,12 +4274,12 @@ void Interpreter::LdLocA(int locNum)
     void* addr;
     if (tp.IsLargeStruct(&m_interpCeeInfo))
     {
-        void* structPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(locNum)), sizeof(void**));
+        void* structPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(locNum)), sizeof(void**));
         addr = *reinterpret_cast<void**>(structPtr);
     }
     else
     {
-        addr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(locNum)), tp.Size(&m_interpCeeInfo));
+        addr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(locNum)), tp.Size(&m_interpCeeInfo));
     }
     // The "addr" above, while a byref, is never a heap pointer, so we're robust if
     // any of these were to cause a GC.
@@ -5928,7 +6083,8 @@ void Interpreter::NewObj()
             CorInfoHelpFunc newHelper;
             {
                 GCX_PREEMP();
-                newHelper = m_interpCeeInfo.getNewHelper(&methTok, m_methInfo->m_method);
+                bool sideEffect;
+                newHelper = m_interpCeeInfo.getNewHelper(&methTok, m_methInfo->m_method, &sideEffect);
             }
 
             MethodTable * pNewObjMT = GetMethodTableFromClsHnd(methTok.hClass);
@@ -6170,6 +6326,12 @@ void Interpreter::MkRefany()
 #elif defined(HOST_ARM64)
     tbr = NULL;
     NYI_INTERP("Unimplemented code: MkRefAny");
+#elif defined(HOST_LOONGARCH64)
+    tbr = NULL;
+    NYI_INTERP("Unimplemented code: MkRefAny on LOONGARCH");
+#elif defined(HOST_RISCV64)
+    tbr = NULL;
+    NYI_INTERP("Unimplemented code: MkRefAny on RISCV64");
 #else
 #error "unsupported platform"
 #endif
@@ -6783,7 +6945,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
     case CORINFO_TYPE_NATIVEINT:
@@ -6840,7 +7002,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
     case CORINFO_TYPE_LONG:
@@ -6877,7 +7039,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         break;
@@ -6899,12 +7061,12 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
 
@@ -6946,7 +7108,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         break;
@@ -6988,7 +7150,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         break;
@@ -7031,7 +7193,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
 
@@ -7224,7 +7386,7 @@ void Interpreter::LdFld(FieldDesc* fldIn)
     if (valCit == CORINFO_TYPE_VALUECLASS)
     {
         GCX_PREEMP();
-        valCit = m_interpCeeInfo.getFieldType(CORINFO_FIELD_HANDLE(fld), &valClsHnd);
+        valCit = m_interpCeeInfo.getFieldType(CORINFO_FIELD_HANDLE(fld), &valClsHnd, nullptr);
         structValIT = InterpreterType(&m_interpCeeInfo, valClsHnd);
     }
 
@@ -7643,7 +7805,7 @@ bool Interpreter::StaticFldAddrWork(CORINFO_ACCESS_FLAGS accessFlgs, /*out (byre
 
         EnsureClassInit(GetMethodTableFromClsHnd(fldTok.hClass));
 
-        if (fldInfo.fieldAccessor == CORINFO_FIELD_STATIC_TLS)
+        if ((fldInfo.fieldAccessor == CORINFO_FIELD_STATIC_TLS) || (fldInfo.fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED))
         {
             NYI_INTERP("Thread-local static.");
         }
@@ -8584,7 +8746,7 @@ void Interpreter::Unbox()
                 CorElementType type1 = pMT1->GetInternalCorElementType();
                 CorElementType type2 = pMT2->GetInternalCorElementType();
 
-                // we allow enums and their primitive type to be interchangable
+                // we allow enums and their primitive type to be interchangeable
                 if (type1 == type2)
                 {
                     if ((pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
@@ -9009,7 +9171,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         GCX_PREEMP();
 
         CORINFO_SIG_INFO sigInfoFull;
-        m_interpCeeInfo.getMethodSig(CORINFO_METHOD_HANDLE(methToCall), &sigInfoFull);
+        m_interpCeeInfo.getMethodSig(CORINFO_METHOD_HANDLE(methToCall), &sigInfoFull, nullptr);
         sigInfo.retTypeClass = sigInfoFull.retTypeClass;
         sigInfo.numArgs = sigInfoFull.numArgs;
         sigInfo.callConv = sigInfoFull.callConv;
@@ -9019,16 +9181,19 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     // Point A in our cycle count.
 
 
+    // TODO: enable when NamedIntrinsic is available to interpreter
+
+    /*
     // Is the method an intrinsic?  If so, and if it's one we've written special-case code for
     // handle intrinsically.
-    CorInfoIntrinsics intrinsicId;
+    NamedIntrinsic intrinsicName;
     {
         GCX_PREEMP();
-        intrinsicId = m_interpCeeInfo.getIntrinsicID(CORINFO_METHOD_HANDLE(methToCall));
+        intrinsicName = getIntrinsicName(CORINFO_METHOD_HANDLE(methToCall), nullptr);
     }
 
 #if INTERP_TRACING
-    if (intrinsicId != CORINFO_INTRINSIC_Illegal)
+    if (intrinsicName == NI_Illegal)
         InterlockedIncrement(&s_totalInterpCallsToIntrinsics);
 #endif // INTERP_TRACING
     bool didIntrinsic = false;
@@ -9036,34 +9201,9 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     {
         switch (intrinsicId)
         {
-        case CORINFO_INTRINSIC_StringLength:
-            DoStringLength(); didIntrinsic = true;
-            break;
-        case CORINFO_INTRINSIC_StringGetChar:
-            DoStringGetChar(); didIntrinsic = true;
-            break;
-        case CORINFO_INTRINSIC_GetTypeFromHandle:
-            // This is an identity transformation.  (At least until I change LdToken to
-            // return a RuntimeTypeHandle struct...which is a TODO.)
-            DoGetTypeFromHandle();
-            didIntrinsic = true;
-            break;
-        case CORINFO_INTRINSIC_ByReference_Ctor:
-            DoByReferenceCtor();
-            didIntrinsic = true;
-            break;
-        case CORINFO_INTRINSIC_ByReference_Value:
-            DoByReferenceValue();
-            didIntrinsic = true;
-            break;
 #if INTERP_ILSTUBS
-        case CORINFO_INTRINSIC_StubHelpers_GetStubContext:
+        case NI_System_StubHelpers_GetStubContext:
             OpStackSet<void*>(m_curStackHt, GetStubContext());
-            OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_NATIVEINT));
-            m_curStackHt++; didIntrinsic = true;
-            break;
-        case CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr:
-            OpStackSet<void*>(m_curStackHt, GetStubContextAddr());
             OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_NATIVEINT));
             m_curStackHt++; didIntrinsic = true;
             break;
@@ -9115,32 +9255,29 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         }
 
 #if FEATURE_SIMD
-        if (fFeatureSIMD.val(CLRConfig::EXTERNAL_FeatureSIMD) != 0)
+        // Check for the simd class...
+        _ASSERTE(exactClass != NULL);
+        GCX_PREEMP();
+        bool isIntrinsicType = m_interpCeeInfo.isIntrinsicType(exactClass);
+
+        if (isIntrinsicType)
         {
-            // Check for the simd class...
-            _ASSERTE(exactClass != NULL);
-            GCX_PREEMP();
-            bool isIntrinsicType = m_interpCeeInfo.isIntrinsicType(exactClass);
-
-            if (isIntrinsicType)
+            // SIMD intrinsics are recognized by name.
+            const char* namespaceName = NULL;
+            const char* className = NULL;
+            const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
+            if ((strcmp(methodName, "get_IsHardwareAccelerated") == 0) && (strcmp(className, "Vector") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
             {
-                // SIMD intrinsics are recognized by name.
-                const char* namespaceName = NULL;
-                const char* className = NULL;
-                const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
-                if ((strcmp(methodName, "get_IsHardwareAccelerated") == 0) && (strcmp(className, "Vector") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
-                {
-                    GCX_COOP();
-                    DoSIMDHwAccelerated();
-                    didIntrinsic = true;
-                }
+                GCX_COOP();
+                DoSIMDHwAccelerated();
+                didIntrinsic = true;
             }
+        }
 
-            if (didIntrinsic)
-            {
-                // Must block caching or we lose easy access to the class
-                doNotCache = true;
-            }
+        if (didIntrinsic)
+        {
+            // Must block caching or we lose easy access to the class
+            doNotCache = true;
         }
 #endif // FEATURE_SIMD
 
@@ -9157,6 +9294,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         // Now we can return.
         return;
     }
+    */
 
     // Handle other simple special cases:
 
@@ -9310,6 +9448,9 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             HFAReturnArgSlots = (HFAReturnArgSlots + sizeof(ARG_SLOT) - 1) / sizeof(ARG_SLOT);
         }
     }
+#elif defined(UNIX_AMD64_ABI)
+    unsigned HasTwoSlotBuf = sigInfo.retType == CORINFO_TYPE_VALUECLASS &&
+        getClassSize(sigInfo.retTypeClass) == 16;
 #endif
 
     // Point B
@@ -9326,6 +9467,10 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     // ARM64TODO: Verify that the following statement is correct for ARM64.
     unsigned totalArgSlots = nSlots + HFAReturnArgSlots;
 #elif defined(HOST_AMD64)
+    unsigned totalArgSlots = nSlots;
+#elif defined(HOST_LOONGARCH64)
+    unsigned totalArgSlots = nSlots;
+#elif defined(HOST_RISCV64)
     unsigned totalArgSlots = nSlots;
 #else
 #error "unsupported platform"
@@ -9542,7 +9687,8 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     }
 
     // This is the argument slot that will be used to hold the return value.
-    ARG_SLOT retVal = 0;
+    // In UNIX_AMD64_ABI, return type may have need tow ARG_SLOTs.
+    ARG_SLOT retVals[2] = {0, 0};
 #if !defined(HOST_ARM) && !defined(UNIX_AMD64_ABI)
     _ASSERTE (NUMBER_RETURNVALUE_SLOTS == 1);
 #endif
@@ -9661,7 +9807,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             BOOL fNeedUnboxingStub = virtualCall && TypeHandle(exactClass).IsValueType() && methToCall->IsVirtual();
             methToCall = MethodDesc::FindOrCreateAssociatedMethodDesc(methToCall,
                 TypeHandle(exactClass).GetMethodTable(), fNeedUnboxingStub, methodInst, FALSE, TRUE);
-            m_interpCeeInfo.getMethodSig(CORINFO_METHOD_HANDLE(methToCall), &sigInfoFull);
+            m_interpCeeInfo.getMethodSig(CORINFO_METHOD_HANDLE(methToCall), &sigInfoFull, nullptr);
             sigInfo.retTypeClass = sigInfoFull.retTypeClass;
             sigInfo.numArgs = sigInfoFull.numArgs;
             sigInfo.callConv = sigInfoFull.callConv;
@@ -9810,7 +9956,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 #if INTERP_ILCYCLE_PROFILE
             bool b = CycleTimer::GetThreadCyclesS(&startCycles); _ASSERTE(b);
 #endif // INTERP_ILCYCLE_PROFILE
-            retVal = InterpretMethodBody(methInfo, true, reinterpret_cast<BYTE*>(args), NULL);
+            retVals[0] = InterpretMethodBody(methInfo, true, reinterpret_cast<BYTE*>(args), NULL);
             pCscd = NULL;  // Nothing to cache.
         }
         else
@@ -9821,7 +9967,12 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 #if INTERP_ILCYCLE_PROFILE
             bool b = CycleTimer::GetThreadCyclesS(&startCycles); _ASSERTE(b);
 #endif // INTERP_ILCYCLE_PROFILE
-            mdcs.CallTargetWorker(args, &retVal, sizeof(retVal));
+
+#if defined(UNIX_AMD64_ABI)
+            mdcs.CallTargetWorker(args, retVals, HasTwoSlotBuf ? 16: 8);
+#else
+            mdcs.CallTargetWorker(args, retVals, 8);
+#endif
 
             if (pCscd != NULL)
             {
@@ -9885,7 +10036,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         if (size_t(m_callThisArg) == 0x1)
         {
             _ASSERTE_MSG(sigInfo.retType == CORINFO_TYPE_VOID, "Constructor for var-sized object becomes factory method that returns result.");
-            OpStackSet<Object*>(m_curStackHt, reinterpret_cast<Object*>(retVal));
+            OpStackSet<Object*>(m_curStackHt, reinterpret_cast<Object*>(retVals[0]));
             OpStackTypeSet(m_curStackHt, InterpreterType(CORINFO_TYPE_CLASS));
             m_curStackHt++;
         }
@@ -9895,38 +10046,38 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             {
             case CORINFO_TYPE_BOOL:
             case CORINFO_TYPE_BYTE:
-                OpStackSet<INT32>(m_curStackHt, static_cast<INT8>(retVal));
+                OpStackSet<INT32>(m_curStackHt, static_cast<INT8>(retVals[0]));
                 break;
             case CORINFO_TYPE_UBYTE:
-                OpStackSet<UINT32>(m_curStackHt, static_cast<UINT8>(retVal));
+                OpStackSet<UINT32>(m_curStackHt, static_cast<UINT8>(retVals[0]));
                 break;
             case CORINFO_TYPE_SHORT:
-                OpStackSet<INT32>(m_curStackHt, static_cast<INT16>(retVal));
+                OpStackSet<INT32>(m_curStackHt, static_cast<INT16>(retVals[0]));
                 break;
             case CORINFO_TYPE_USHORT:
             case CORINFO_TYPE_CHAR:
-                OpStackSet<UINT32>(m_curStackHt, static_cast<UINT16>(retVal));
+                OpStackSet<UINT32>(m_curStackHt, static_cast<UINT16>(retVals[0]));
                 break;
             case CORINFO_TYPE_INT:
             case CORINFO_TYPE_UINT:
             case CORINFO_TYPE_FLOAT:
-                OpStackSet<INT32>(m_curStackHt, static_cast<INT32>(retVal));
+                OpStackSet<INT32>(m_curStackHt, static_cast<INT32>(retVals[0]));
                 break;
             case CORINFO_TYPE_LONG:
             case CORINFO_TYPE_ULONG:
             case CORINFO_TYPE_DOUBLE:
-                OpStackSet<INT64>(m_curStackHt, static_cast<INT64>(retVal));
+                OpStackSet<INT64>(m_curStackHt, static_cast<INT64>(retVals[0]));
                 break;
             case CORINFO_TYPE_NATIVEINT:
             case CORINFO_TYPE_NATIVEUINT:
             case CORINFO_TYPE_PTR:
-                OpStackSet<NativeInt>(m_curStackHt, static_cast<NativeInt>(retVal));
+                OpStackSet<NativeInt>(m_curStackHt, static_cast<NativeInt>(retVals[0]));
                 break;
             case CORINFO_TYPE_CLASS:
-                OpStackSet<Object*>(m_curStackHt, reinterpret_cast<Object*>(retVal));
+                OpStackSet<Object*>(m_curStackHt, reinterpret_cast<Object*>(retVals[0]));
                 break;
             case CORINFO_TYPE_BYREF:
-                OpStackSet<void*>(m_curStackHt, reinterpret_cast<void*>(retVal));
+                OpStackSet<void*>(m_curStackHt, reinterpret_cast<void*>(retVals[0]));
                 break;
             case CORINFO_TYPE_VALUECLASS:
             case CORINFO_TYPE_REFANY:
@@ -9963,9 +10114,17 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
                     {
                         OpStackSet<INT64>(m_curStackHt, GetSmallStructValue(&smallStructRetVal, retTypeSz));
                     }
+#if defined(UNIX_AMD64_ABI)
+                    else if (HasTwoSlotBuf)
+                    {
+                        void* dst = LargeStructOperandStackPush(16);
+                        CopyValueClassUnchecked(dst, retVals, GetMethodTableFromClsHnd(retTypeClsHnd));
+                        OpStackSet<void*>(m_curStackHt, dst);
+                    }
+#endif
                     else
                     {
-                        OpStackSet<UINT64>(m_curStackHt, retVal);
+                        OpStackSet<UINT64>(m_curStackHt, retVals[0]);
                     }
                     // We already created this interpreter type, so use it.
                     OpStackTypeSet(m_curStackHt, retTypeIt.StackNormalize());
@@ -10144,7 +10303,10 @@ void Interpreter::CallI()
         retTypeClsHnd = sigInfo.retTypeClass;
         retTypeIt = InterpreterType(&m_interpCeeInfo, retTypeClsHnd);
         retTypeSz = retTypeIt.Size(&m_interpCeeInfo);
-#if defined(HOST_AMD64)
+
+#if defined(UNIX_AMD64_ABI)
+        //
+#elif defined(HOST_AMD64)
         // TODO: Investigate why HasRetBuffArg can't be used. pMD is a hacked up MD for the
         // calli because it belongs to the current method. Doing what the JIT does.
         hasRetBuffArg = (retTypeSz > sizeof(void*)) || ((retTypeSz & (retTypeSz - 1)) != 0);
@@ -10606,74 +10768,6 @@ void Interpreter::DoGetTypeFromHandle()
 #endif // _DEBUG
 
     OpStackTypeSet(ind, InterpreterType(CORINFO_TYPE_CLASS));
-}
-
-void Interpreter::DoByReferenceCtor()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    // Note 'this' is not passed on the operand stack...
-    _ASSERTE(m_curStackHt > 0);
-    _ASSERTE(m_callThisArg != NULL);
-    unsigned valInd = m_curStackHt - 1;
-    CorInfoType valCit = OpStackTypeGet(valInd).ToCorInfoType();
-
-#ifdef _DEBUG
-    if (valCit != CORINFO_TYPE_BYREF)
-    {
-        VerificationError("ByReference<T>.ctor called with non-byref value.");
-    }
-#endif // _DEBUG
-
-#if INTERP_TRACING
-    if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
-    {
-        fprintf(GetLogFile(), "    ByReference<T>.ctor -- intrinsic\n");
-    }
-#endif // INTERP_TRACING
-
-    GCX_FORBID();
-    void** thisPtr = reinterpret_cast<void**>(m_callThisArg);
-    void* val = OpStackGet<void*>(valInd);
-    *thisPtr = val;
-    m_curStackHt--;
-}
-
-void Interpreter::DoByReferenceValue()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    _ASSERTE(m_curStackHt > 0);
-    unsigned slot = m_curStackHt - 1;
-    CorInfoType thisCit = OpStackTypeGet(slot).ToCorInfoType();
-
-#ifdef _DEBUG
-    if (thisCit != CORINFO_TYPE_BYREF)
-    {
-        VerificationError("ByReference<T>.get_Value called with non-byref this");
-    }
-#endif // _DEBUG
-
-#if INTERP_TRACING
-    if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
-    {
-        fprintf(GetLogFile(), "    ByReference<T>.getValue -- intrinsic\n");
-    }
-#endif // INTERP_TRACING
-
-    GCX_FORBID();
-    void** thisPtr = OpStackGet<void**>(slot);
-    void* value = *thisPtr;
-    OpStackSet<void*>(slot, value);
-    OpStackTypeSet(slot, InterpreterType(CORINFO_TYPE_BYREF));
 }
 
 void Interpreter::DoSIMDHwAccelerated()
@@ -11574,7 +11668,7 @@ const char* eeGetMethodFullName(CEEInfo* info, CORINFO_METHOD_HANDLE hnd, const 
     length += strlen(methodName) + 1;
 
     CORINFO_SIG_INFO sig;
-    info->getMethodSig(hnd, &sig);
+    info->getMethodSig(hnd, &sig, nullptr);
     CORINFO_ARG_LIST_HANDLE argLst = sig.args;
 
     CORINFO_CLASS_HANDLE dummyCls;
@@ -11741,12 +11835,12 @@ void Interpreter::PrintLocals()
             void* localPtr = NULL;
             if (it.IsLargeStruct(&m_interpCeeInfo))
             {
-                void* structPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
+                void* structPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
                 localPtr = *reinterpret_cast<void**>(structPtr);
             }
             else
             {
-                localPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), it.Size(&m_interpCeeInfo));
+                localPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), it.Size(&m_interpCeeInfo));
             }
             fprintf(GetLogFile(), "      loc%-4d: %10s: ", i, CorInfoTypeNames[cit]);
             PrintValue(it, reinterpret_cast<BYTE*>(localPtr));

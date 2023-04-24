@@ -34,8 +34,8 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-mmap.h>
-#include <mono/utils/mono-state.h>
 #include <mono/utils/w32subset.h>
 
 #include "mini.h"
@@ -64,11 +64,12 @@ static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 	}
 #endif
 
-	if (mono_dump_start ())
-		mono_handle_native_crash (mono_get_signame (SIGSEGV), NULL, NULL);
+	mono_handle_native_crash (mono_get_signame (SIGSEGV), NULL, NULL);
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
+
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 
 #if HAVE_API_SUPPORT_WIN32_RESET_STKOFLW
 static gpointer
@@ -111,7 +112,7 @@ get_win32_restore_stack (void)
 
 	g_assertf ((code - start) <= size, "%d %d", (int)(code - start), size);
 
-	mono_arch_flush_icache (start, code - start);
+	mono_arch_flush_icache (start, GPTRDIFF_TO_INT (code - start));
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	return start;
@@ -124,6 +125,8 @@ get_win32_restore_stack (void)
 	return NULL;
 }
 #endif /* HAVE_API_SUPPORT_WIN32_RESET_STKOFLW */
+
+MONO_RESTORE_WARNING
 
 /*
  * Unhandled Exception Filter
@@ -192,7 +195,7 @@ static LONG CALLBACK seh_vectored_exception_handler(EXCEPTION_POINTERS* ep)
 	return res;
 }
 
-void win32_seh_init()
+void win32_seh_init(void)
 {
 	if (!mono_aot_only)
 		restore_stack = (void (*) (void))get_win32_restore_stack ();
@@ -201,7 +204,7 @@ void win32_seh_init()
 	mono_win_vectored_exception_handle = AddVectoredExceptionHandler (1, seh_vectored_exception_handler);
 }
 
-void win32_seh_cleanup()
+void win32_seh_cleanup(void)
 {
 	guint32 ret = 0;
 
@@ -231,6 +234,8 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 #endif /* TARGET_WIN32 */
 
 #ifndef DISABLE_JIT
+
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 /*
  * mono_arch_get_restore_context:
  *
@@ -275,13 +280,13 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	/* jump to the saved IP */
 	amd64_jump_reg (code, AMD64_R11);
 
-	g_assertf ((code - start) <= size, "%d %d", (int)(code - start), size);
+	g_assertf ((code - start) <= size, "%d %d", GPTRDIFF_TO_INT(code - start), size);
 
-	mono_arch_flush_icache (start, code - start);
+	mono_arch_flush_icache (start, GPTRDIFF_TO_INT (code - start));
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	if (info)
-		*info = mono_tramp_info_create ("restore_context", start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("restore_context", start, GPTRDIFF_TO_UINT32 (code - start), ji, unwind_ops);
 
 	return start;
 }
@@ -290,7 +295,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
  * mono_arch_get_call_filter:
  *
  * Returns a pointer to a method which calls an exception filter. We
- * also use this function to call finally handlers (we pass NULL as 
+ * also use this function to call finally handlers (we pass NULL as
  * @exc object in this case).
  */
 gpointer
@@ -365,17 +370,20 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	g_assertf ((code - start) <= kMaxCodeSize, "%d %d", (int)(code - start), kMaxCodeSize);
 
-	mono_arch_flush_icache (start, code - start);
+	mono_arch_flush_icache (start, GPTRDIFF_TO_INT (code - start));
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	if (info)
-		*info = mono_tramp_info_create ("call_filter", start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create ("call_filter", start, GPTRDIFF_TO_UINT32 (code - start), ji, unwind_ops);
 
 	return start;
 }
+
+MONO_RESTORE_WARNING
+
 #endif /* !DISABLE_JIT */
 
-/* 
+/*
  * The first few arguments are dummy, to force the other arguments to be passed on
  * the stack, this avoids overwriting the argument registers in the throw trampoline.
  */
@@ -442,6 +450,9 @@ mono_amd64_resume_unwind (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint6
 }
 
 #ifndef DISABLE_JIT
+
+MONO_DISABLE_WARNING(4127)
+
 /*
  * get_throw_trampoline:
  *
@@ -542,7 +553,7 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 			icall_id = MONO_JIT_ICALL_mono_amd64_throw_corlib_exception;
 		else
 			icall_id = MONO_JIT_ICALL_mono_amd64_throw_exception;
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (icall_id));
+		ji = mono_patch_info_list_prepend (ji, GPTRDIFF_TO_INT (code - start), MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (icall_id));
 		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 	} else {
 		amd64_mov_reg_imm (code, AMD64_R11, resume_unwind ? ((gpointer)mono_amd64_resume_unwind) : (corlib ? (gpointer)mono_amd64_throw_corlib_exception : (gpointer)mono_amd64_throw_exception));
@@ -550,7 +561,7 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	amd64_call_reg (code, AMD64_R11);
 	amd64_breakpoint (code);
 
-	mono_arch_flush_icache (start, code - start);
+	mono_arch_flush_icache (start, GPTRDIFF_TO_INT (code - start));
 
 	g_assertf ((code - start) <= kMaxCodeSize, "%d %d", (int)(code - start), kMaxCodeSize);
 	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE));
@@ -558,16 +569,18 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	if (info)
-		*info = mono_tramp_info_create (tramp_name, start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create (tramp_name, start, GPTRDIFF_TO_UINT32 (code - start), ji, unwind_ops);
 
 	return start;
 }
 
+MONO_RESTORE_WARNING
+
 /**
  * mono_arch_get_throw_exception:
- * \returns a function pointer which can be used to raise 
- * exceptions. The returned function has the following 
- * signature: void (*func) (MonoException *exc); 
+ * \returns a function pointer which can be used to raise
+ * exceptions. The returned function has the following
+ * signature: void (*func) (MonoException *exc);
  */
 gpointer
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
@@ -575,13 +588,13 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 	return get_throw_trampoline (info, FALSE, FALSE, FALSE, FALSE, "throw_exception", aot, FALSE);
 }
 
-gpointer 
+gpointer
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (info, TRUE, FALSE, FALSE, FALSE, "rethrow_exception", aot, FALSE);
 }
 
-gpointer 
+gpointer
 mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (info, TRUE, FALSE, FALSE, FALSE, "rethrow_preserve_exception", aot, TRUE);
@@ -590,14 +603,14 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 /**
  * mono_arch_get_throw_corlib_exception:
  *
- * Returns a function pointer which can be used to raise 
- * corlib exceptions. The returned function has the following 
- * signature: void (*func) (guint32 ex_token, guint32 offset); 
- * Here, offset is the offset which needs to be substracted from the caller IP 
- * to get the IP of the throw. Passing the offset has the advantage that it 
+ * Returns a function pointer which can be used to raise
+ * corlib exceptions. The returned function has the following
+ * signature: void (*func) (guint32 ex_token, guint32 offset);
+ * Here, offset is the offset which needs to be subtracted from the caller IP
+ * to get the IP of the throw. Passing the offset has the advantage that it
  * needs no relocations in the caller.
  */
-gpointer 
+gpointer
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
 	return get_throw_trampoline (info, FALSE, TRUE, FALSE, FALSE, "throw_corlib_exception", aot, FALSE);
@@ -651,7 +664,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 		/* LLVM compiled code doesn't have this info */
 		if (ji->has_arch_eh_info)
 			epilog = (guint8*)ji->code_start + ji->code_size - mono_jinfo_get_epilog_size (ji);
- 
+
 		for (i = 0; i < AMD64_NREG; ++i)
 			regs [i] = new_ctx->gregs [i];
 
@@ -665,7 +678,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 
 		for (i = 0; i < AMD64_NREG; ++i)
 			new_ctx->gregs [i] = regs [i];
- 
+
 		/* The CFA becomes the new SP value */
 		new_ctx->gregs [AMD64_RSP] = (host_mgreg_t)(gsize)cfa;
 
@@ -686,8 +699,8 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 			/* Top LMF entry */
 			return FALSE;
 		} else {
-			/* 
-			 * The rsp field is set just before the call which transitioned to native 
+			/*
+			 * The rsp field is set just before the call which transitioned to native
 			 * code. Obtain the rip from the stack.
 			 */
 			rip = *(guint64*)((*lmf)->rsp - sizeof(host_mgreg_t));
@@ -827,7 +840,7 @@ mono_arch_ip_from_context (void *sigctx)
 #else
 	MonoContext *ctx = (MonoContext*)sigctx;
 	return (gpointer)ctx->gregs [AMD64_RIP];
-#endif	
+#endif
 }
 
 static MonoObject*
@@ -845,7 +858,7 @@ restore_soft_guard_pages (void)
 	return NULL;
 }
 
-/* 
+/*
  * this function modifies mctx so that when it is restored, it
  * won't execcute starting at mctx.eip, but in a function that
  * will restore the protection on the soft-guard pages and return back to
@@ -872,8 +885,7 @@ altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, guint32 flags)
 	gboolean nullref = (flags & 2) != 0;
 
 	if (!ji || (!stack_ovf && !nullref)) {
-		if (mono_dump_start ())
-			mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, NULL);
+		mono_handle_native_crash (mono_get_signame (SIGSEGV), ctx, NULL);
 		// if couldn't dump or if mono_handle_native_crash returns, abort
 		abort ();
 	}
@@ -1027,8 +1039,8 @@ mono_arch_unwindinfo_add_push_nonvol (PUNWIND_INFO unwindinfo, MonoUnwindOp *unw
 	codeindex = MONO_MAX_UNWIND_CODES - (++unwindinfo->CountOfCodes);
 	unwindcode = &unwindinfo->UnwindCode [codeindex];
 	unwindcode->UnwindOp = UWOP_PUSH_NONVOL;
-	unwindcode->CodeOffset = (guchar)unwind_op->when;
-	unwindcode->OpInfo = unwind_op->reg;
+	unwindcode->CodeOffset = GUINT32_TO_UINT8 (unwind_op->when);
+	unwindcode->OpInfo = GUINT32_TO_UINT8 (unwind_op->reg);
 
 	if (unwindinfo->SizeOfProlog >= unwindcode->CodeOffset)
 		g_error ("Adding unwind info in wrong order.");
@@ -1053,8 +1065,8 @@ mono_arch_unwindinfo_add_set_fpreg (PUNWIND_INFO unwindinfo, MonoUnwindOp *unwin
 	unwindcode->CodeOffset = (guchar)unwind_op->when;
 
 	g_assert (unwind_op->val % 16 == 0);
-	unwindinfo->FrameRegister = unwind_op->reg;
-	unwindinfo->FrameOffset = unwind_op->val / 16;
+	unwindinfo->FrameRegister = GUINT16_TO_UINT8 (unwind_op->reg);
+	unwindinfo->FrameOffset = GINT32_TO_UINT8 (unwind_op->val / 16);
 
 	if (unwindinfo->SizeOfProlog >= unwindcode->CodeOffset)
 		g_error ("Adding unwind info in wrong order.");
@@ -1096,7 +1108,7 @@ mono_arch_unwindinfo_add_alloc_stack (PUNWIND_INFO unwindinfo, MonoUnwindOp *unw
 		/*The size of the allocation is
 		  (the number in the OpInfo member) times 8 plus 8*/
 		unwindcode->UnwindOp = UWOP_ALLOC_SMALL;
-		unwindcode->OpInfo = (size - 8)/8;
+		unwindcode->OpInfo = GUINT_TO_UINT8 ((size - 8)/8);
 	}
 	else {
 		if (codesneeded == 3) {
@@ -1415,7 +1427,7 @@ mono_arch_unwindinfo_insert_range_in_table (const gpointer code_block, gsize blo
 			new_entry->handle = NULL;
 			new_entry->begin_range = begin_range;
 			new_entry->end_range = end_range;
-			new_entry->rt_funcs_max_count = (block_size / MONO_UNWIND_INFO_RT_FUNC_SIZE) + 1;
+			new_entry->rt_funcs_max_count = (DWORD)((block_size / MONO_UNWIND_INFO_RT_FUNC_SIZE) + 1);
 			new_entry->rt_funcs_current_count = 0;
 			new_entry->rt_funcs = g_new0 (RUNTIME_FUNCTION, new_entry->rt_funcs_max_count);
 
@@ -1572,7 +1584,7 @@ mono_arch_unwindinfo_find_rt_func_in_table (const gpointer code, gsize code_size
 		g_assert_checked (found_entry->end_range >= begin_range && found_entry->end_range >= end_range);
 		g_assert_checked (found_entry->rt_funcs != NULL);
 
-		for (int i = 0; i < found_entry->rt_funcs_current_count; ++i) {
+		for (DWORD i = 0; i < found_entry->rt_funcs_current_count; ++i) {
 			PRUNTIME_FUNCTION current_rt_func = (PRUNTIME_FUNCTION)(&found_entry->rt_funcs [i]);
 
 			// Is this our RT function entry?
@@ -1609,7 +1621,7 @@ validate_rt_funcs_in_table_no_lock (DynamicFunctionTableEntry *entry)
 
 	PRUNTIME_FUNCTION current_rt_func = NULL;
 	PRUNTIME_FUNCTION previous_rt_func = NULL;
-	for (int i = 0; i < entry->rt_funcs_current_count; ++i) {
+	for (DWORD i = 0; i < entry->rt_funcs_current_count; ++i) {
 		current_rt_func = &(entry->rt_funcs [i]);
 
 		g_assert_checked (current_rt_func->BeginAddress < current_rt_func->EndAddress);
@@ -1662,11 +1674,11 @@ mono_arch_unwindinfo_insert_rt_func_in_table (const gpointer code, gsize code_si
 		PRUNTIME_FUNCTION current_rt_funcs = found_entry->rt_funcs;
 
 		RUNTIME_FUNCTION new_rt_func_data;
-		new_rt_func_data.BeginAddress = code_offset;
-		new_rt_func_data.EndAddress = code_offset + code_size;
+		new_rt_func_data.BeginAddress = (DWORD)code_offset;
+		new_rt_func_data.EndAddress = (DWORD)(code_offset + code_size);
 
 		gsize aligned_unwind_data = ALIGN_TO(end_range, sizeof(host_mgreg_t));
-		new_rt_func_data.UnwindData = aligned_unwind_data - found_entry->begin_range;
+		new_rt_func_data.UnwindData = (DWORD)(aligned_unwind_data - found_entry->begin_range);
 
 		g_assert_checked (new_rt_func_data.UnwindData == ALIGN_TO(new_rt_func_data.EndAddress, sizeof (host_mgreg_t)));
 
@@ -1710,8 +1722,8 @@ mono_arch_unwindinfo_insert_rt_func_in_table (const gpointer code, gsize code_si
 		}
 
 		// Update the stats for current entry.
-		found_entry->rt_funcs_current_count = entry_count;
-		found_entry->rt_funcs_max_count = max_entry_count;
+		found_entry->rt_funcs_current_count = (DWORD)entry_count;
+		found_entry->rt_funcs_max_count = (DWORD)max_entry_count;
 
 		if (new_rt_funcs == NULL && g_rtl_grow_function_table != NULL) {
 			// No new table just report increase in use.
@@ -1910,7 +1922,7 @@ void mono_arch_code_chunk_destroy (void *chunk)
 void
 mono_arch_setup_resume_sighandler_ctx (MonoContext *ctx, gpointer func)
 {
-	/* 
+	/*
 	 * When resuming from a signal handler, the stack should be misaligned, just like right after
 	 * a call.
 	 */

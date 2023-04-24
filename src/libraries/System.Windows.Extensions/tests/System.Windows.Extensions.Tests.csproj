@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup>
     <Compile Include="X509Certificate2UITests.cs" />
     <Compile Include="X509Certificate2UIManualTests.cs" />
     <Compile Include="XamlAccessLevelTests.cs" />
@@ -20,7 +20,6 @@
     <PackageReference Include="System.ComponentModel.TypeConverter.TestData" Version="$(SystemComponentModelTypeConverterTestDataVersion)" />
     <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />
     <PackageReference Include="System.Windows.Extensions.TestData" Version="$(SystemWindowsExtensionsTestDataVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\src\System.Drawing.Common.csproj" />
     <ProjectReference Include="..\src\System.Windows.Extensions.csproj" />
   </ItemGroup>
 </Project>

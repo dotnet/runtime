@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.Data.Common;
@@ -20,10 +21,12 @@ namespace System.Data
         private readonly Type? _dataType;  // This set if the expression is part of ExpressionCoulmn
         private DataColumn[] _dependency = Array.Empty<DataColumn>();
 
+        [RequiresUnreferencedCode("Members of types used in the expression might be trimmed")]
         internal DataExpression(DataTable? table, string? expression) : this(table, expression, null)
         {
         }
 
+        [RequiresUnreferencedCode("Members of types used in the expression might be trimmed")]
         internal DataExpression(DataTable? table, string? expression, Type? type)
         {
             ExpressionParser parser = new ExpressionParser(table);
@@ -59,7 +62,7 @@ namespace System.Data
         {
             get
             {
-                return (_originalExpression != null ? _originalExpression : ""); // CONSIDER: return optimized expression here (if bound)
+                return _originalExpression ?? ""; // CONSIDER: return optimized expression here (if bound)
             }
         }
 
@@ -115,6 +118,8 @@ namespace System.Data
             return Evaluate((DataRow?)null, DataRowVersion.Default);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Constructors taking expression are marked as unsafe")]
         internal object Evaluate(DataRow? row, DataRowVersion version)
         {
             object? result;
@@ -142,7 +147,7 @@ namespace System.Data
                     catch (Exception e) when (ADP.IsCatchableExceptionType(e))
                     {
                         ExceptionBuilder.TraceExceptionForCapture(e);
-                        throw ExprException.DatavalueConvertion(result, _dataType!, e);
+                        throw ExprException.DatavalueConversion(result, _dataType!);
                     }
                 }
             }
@@ -158,7 +163,8 @@ namespace System.Data
             return Evaluate(rows, DataRowVersion.Default);
         }
 
-
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Constructors taking expression are marked as unsafe")]
         internal object Evaluate(DataRow[] rows, DataRowVersion version)
         {
             if (!_bound)
@@ -185,6 +191,8 @@ namespace System.Data
             }
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Constructors taking expression are marked as unsafe")]
         public bool Invoke(DataRow row, DataRowVersion version)
         {
             if (_expr == null)
@@ -202,7 +210,7 @@ namespace System.Data
             }
             catch (EvaluateException)
             {
-                throw ExprException.FilterConvertion(Expression);
+                throw ExprException.FilterConversion(Expression);
             }
             return result;
         }
@@ -262,11 +270,11 @@ namespace System.Data
                 catch (Exception e) when (ADP.IsCatchableExceptionType(e))
                 {
                     ExceptionBuilder.TraceExceptionForCapture(e);
-                    throw ExprException.DatavalueConvertion(value, typeof(bool), e);
+                    throw ExprException.DatavalueConversion(value, typeof(bool));
                 }
             }
 
-            throw ExprException.DatavalueConvertion(value, typeof(bool), null);
+            throw ExprException.DatavalueConversion(value, typeof(bool));
         }
     }
 }

@@ -2,17 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Context.Virtual
 {
     internal class VirtualParameter : ParameterInfo
     {
-        public VirtualParameter(MemberInfo member, Type parameterType, string name, int position)
+        public VirtualParameter(MemberInfo member, Type parameterType, string? name, int position)
         {
+            if (member is null)
+            {
+                throw new ArgumentNullException(nameof(member));
+            }
+            if (parameterType is null)
+            {
+                throw new ArgumentNullException(nameof(parameterType));
+            }
+
             Debug.Assert(position >= -1);
 
-            ClassImpl = parameterType ?? throw new ArgumentNullException(nameof(parameterType));
-            MemberImpl = member ?? throw new ArgumentNullException(nameof(member));
+            ClassImpl = parameterType;
+            MemberImpl = member;
             NameImpl = name;
             PositionImpl = position;
         }
@@ -36,7 +46,7 @@ namespace System.Reflection.Context.Virtual
             return clonedParameters;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             // Do we need to compare Name and ParameterType?
             return obj is VirtualParameter other &&

@@ -25,10 +25,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static Type GetDefaultTypeFromMember(this MemberInfo member)
         {
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
+            ArgumentNullException.ThrowIfNull(member);
 
             switch (member.MemberType)
             {
@@ -63,15 +60,12 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static Type AdjustSpecifiedTypeIdentityType(this Type specifiedContractType, Type? memberType)
         {
-            if (specifiedContractType == null)
-            {
-                throw new ArgumentNullException(nameof(specifiedContractType));
-            }
+            ArgumentNullException.ThrowIfNull(specifiedContractType);
 
             if ((memberType != null) && memberType.IsGenericType && specifiedContractType.IsGenericType)
             {
-                // if the memeber type is closed and the specified contract type is open and they have exatly the same number of parameters
-                // we will close the specfied contract type
+                // if the member type is closed and the specified contract type is open and they have exatly the same number of parameters
+                // we will close the specified contract type
                 if (specifiedContractType.ContainsGenericParameters && !memberType.ContainsGenericParameters)
                 {
                     var typeGenericArguments = memberType.GetGenericArguments();
@@ -190,7 +184,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static IDictionary<string, object?> GetPartMetadataForType(this Type type, CreationPolicy creationPolicy)
         {
-            IDictionary<string, object?> dictionary = new Dictionary<string, object?>(StringComparers.MetadataKeyNames);
+            var dictionary = new Dictionary<string, object?>(StringComparers.MetadataKeyNames);
 
             if (creationPolicy != CreationPolicy.Any)
             {
@@ -408,10 +402,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             private void InferArrayType(Type itemType)
             {
-                if (itemType == null)
-                {
-                    throw new ArgumentNullException(nameof(itemType));
-                }
+                ArgumentNullException.ThrowIfNull(itemType);
 
                 if (_arrayType == null)
                 {
@@ -485,7 +476,7 @@ namespace System.ComponentModel.Composition.Hosting
                 return Enumerable.Empty<KeyValuePair<string, Type>>();
             }
 
-            // A metadata view is required to be an Intrerface, and therefore only properties are allowed
+            // A metadata view is required to be an Interface, and therefore only properties are allowed
             List<PropertyInfo> properties = metadataViewType.GetAllProperties().
                 Where(property => property.GetFirstAttribute<DefaultValueAttribute>() == null).
                 ToList();
@@ -524,10 +515,7 @@ namespace System.ComponentModel.Composition.Hosting
             // Default value is ImportSource.Any
             if (attributedImport != null && attributedImport.Source != ImportSource.Any)
             {
-                if (metadata == null)
-                {
-                    metadata = new Dictionary<string, object?>();
-                }
+                metadata ??= new Dictionary<string, object?>();
                 metadata[CompositionConstants.ImportSourceMetadataName] = attributedImport.Source;
             }
 
@@ -629,10 +617,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private static bool IsValidAttributeType(Type type, bool arrayAllowed)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             // Definitions of valid attribute type taken from C# 3.0 Specification section 17.1.3.
 

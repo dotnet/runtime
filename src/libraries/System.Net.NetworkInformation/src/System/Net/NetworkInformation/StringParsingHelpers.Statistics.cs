@@ -175,7 +175,7 @@ namespace System.Net.NetworkInformation
         // Parses ICMP v4 statistics from /proc/net/snmp
         public static Icmpv4StatisticsTable ParseIcmpv4FromSnmpFile(string filePath)
         {
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
             int firstIpHeader = fileContents.IndexOf("Icmp:", StringComparison.Ordinal);
             int secondIpHeader = fileContents.IndexOf("Icmp:", firstIpHeader + 1, StringComparison.Ordinal);
             int inCsumErrorsIdx = fileContents.IndexOf("InCsumErrors", firstIpHeader + 1, StringComparison.Ordinal);
@@ -219,7 +219,7 @@ namespace System.Net.NetworkInformation
 
         public static Icmpv6StatisticsTable ParseIcmpv6FromSnmp6File(string filePath)
         {
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
             RowConfigReader reader = new RowConfigReader(fileContents);
             bool hasIcmp6OutErrors = fileContents.Contains("Icmp6OutErrors");
 
@@ -262,7 +262,7 @@ namespace System.Net.NetworkInformation
 
         public static IPGlobalStatisticsTable ParseIPv4GlobalStatisticsFromSnmpFile(string filePath)
         {
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
 
             int firstIpHeader = fileContents.IndexOf("Ip:", StringComparison.Ordinal);
             int secondIpHeader = fileContents.IndexOf("Ip:", firstIpHeader + 1, StringComparison.Ordinal);
@@ -300,7 +300,7 @@ namespace System.Net.NetworkInformation
         internal static IPGlobalStatisticsTable ParseIPv6GlobalStatisticsFromSnmp6File(string filePath)
         {
             // Read the remainder of statistics from snmp6.
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
             RowConfigReader reader = new RowConfigReader(fileContents);
 
             return new IPGlobalStatisticsTable()
@@ -329,7 +329,7 @@ namespace System.Net.NetworkInformation
         {
             // NOTE: There is no information in the snmp6 file regarding TCP statistics,
             // so the statistics are always pulled from /proc/net/snmp.
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
             int firstTcpHeader = fileContents.IndexOf("Tcp:", StringComparison.Ordinal);
             int secondTcpHeader = fileContents.IndexOf("Tcp:", firstTcpHeader + 1, StringComparison.Ordinal);
             int inCsumErrorsIdx = fileContents.IndexOf("InCsumErrors", firstTcpHeader + 1, StringComparison.Ordinal);
@@ -361,7 +361,7 @@ namespace System.Net.NetworkInformation
 
         internal static UdpGlobalStatisticsTable ParseUdpv4GlobalStatisticsFromSnmpFile(string filePath)
         {
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
             int firstUdpHeader = fileContents.IndexOf("Udp:", StringComparison.Ordinal);
             int secondUdpHeader = fileContents.IndexOf("Udp:", firstUdpHeader + 1, StringComparison.Ordinal);
             int inCsumErrorsIdx = fileContents.IndexOf("InCsumErrors", firstUdpHeader + 1, StringComparison.Ordinal);
@@ -385,7 +385,7 @@ namespace System.Net.NetworkInformation
 
         internal static UdpGlobalStatisticsTable ParseUdpv6GlobalStatisticsFromSnmp6File(string filePath)
         {
-            string fileContents = File.ReadAllText(filePath);
+            string fileContents = ReadAllText(filePath);
             RowConfigReader reader = new RowConfigReader(fileContents);
             bool hasUdp6Errors = fileContents.Contains("Udp6SndbufErrors");
 
@@ -403,7 +403,7 @@ namespace System.Net.NetworkInformation
 
         internal static IPInterfaceStatisticsTable ParseInterfaceStatisticsTableFromFile(string filePath, string name)
         {
-            using (StreamReader sr = new StreamReader(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x1000, useAsync: false)))
+            using (StreamReader sr = OpenStreamReader(filePath))
             {
                 sr.ReadLine();
                 sr.ReadLine();
@@ -413,27 +413,29 @@ namespace System.Net.NetworkInformation
                     string line = sr.ReadLine()!;
                     if (line.Contains(name))
                     {
-                        string[] pieces = line.Split(new char[] { ' ', ':' }, StringSplitOptions.RemoveEmptyEntries);
+                        Span<Range> pieces = stackalloc Range[18]; // [0] skipped, [1]-[16] used, +1 to ensure any additional segment goes into [17]
+                        ReadOnlySpan<char> lineSpan = line;
+                        pieces = pieces.Slice(0, lineSpan.SplitAny(pieces, " :", StringSplitOptions.RemoveEmptyEntries));
 
                         return new IPInterfaceStatisticsTable()
                         {
-                            BytesReceived = ParseUInt64AndClampToInt64(pieces[1]),
-                            PacketsReceived = ParseUInt64AndClampToInt64(pieces[2]),
-                            ErrorsReceived = ParseUInt64AndClampToInt64(pieces[3]),
-                            IncomingPacketsDropped = ParseUInt64AndClampToInt64(pieces[4]),
-                            FifoBufferErrorsReceived = ParseUInt64AndClampToInt64(pieces[5]),
-                            PacketFramingErrorsReceived = ParseUInt64AndClampToInt64(pieces[6]),
-                            CompressedPacketsReceived = ParseUInt64AndClampToInt64(pieces[7]),
-                            MulticastFramesReceived = ParseUInt64AndClampToInt64(pieces[8]),
+                            BytesReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[1]]),
+                            PacketsReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[2]]),
+                            ErrorsReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[3]]),
+                            IncomingPacketsDropped = ParseUInt64AndClampToInt64(lineSpan[pieces[4]]),
+                            FifoBufferErrorsReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[5]]),
+                            PacketFramingErrorsReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[6]]),
+                            CompressedPacketsReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[7]]),
+                            MulticastFramesReceived = ParseUInt64AndClampToInt64(lineSpan[pieces[8]]),
 
-                            BytesTransmitted = ParseUInt64AndClampToInt64(pieces[9]),
-                            PacketsTransmitted = ParseUInt64AndClampToInt64(pieces[10]),
-                            ErrorsTransmitted = ParseUInt64AndClampToInt64(pieces[11]),
-                            OutgoingPacketsDropped = ParseUInt64AndClampToInt64(pieces[12]),
-                            FifoBufferErrorsTransmitted = ParseUInt64AndClampToInt64(pieces[13]),
-                            CollisionsDetected = ParseUInt64AndClampToInt64(pieces[14]),
-                            CarrierLosses = ParseUInt64AndClampToInt64(pieces[15]),
-                            CompressedPacketsTransmitted = ParseUInt64AndClampToInt64(pieces[16]),
+                            BytesTransmitted = ParseUInt64AndClampToInt64(lineSpan[pieces[9]]),
+                            PacketsTransmitted = ParseUInt64AndClampToInt64(lineSpan[pieces[10]]),
+                            ErrorsTransmitted = ParseUInt64AndClampToInt64(lineSpan[pieces[11]]),
+                            OutgoingPacketsDropped = ParseUInt64AndClampToInt64(lineSpan[pieces[12]]),
+                            FifoBufferErrorsTransmitted = ParseUInt64AndClampToInt64(lineSpan[pieces[13]]),
+                            CollisionsDetected = ParseUInt64AndClampToInt64(lineSpan[pieces[14]]),
+                            CarrierLosses = ParseUInt64AndClampToInt64(lineSpan[pieces[15]]),
+                            CompressedPacketsTransmitted = ParseUInt64AndClampToInt64(lineSpan[pieces[16]]),
                         };
                     }
                     index += 1;
@@ -443,9 +445,9 @@ namespace System.Net.NetworkInformation
             }
         }
 
-        private static long ParseUInt64AndClampToInt64(string value)
+        private static long ParseUInt64AndClampToInt64(ReadOnlySpan<char> value)
         {
-            return (long)Math.Min((ulong)long.MaxValue, ulong.Parse(value, CultureInfo.InvariantCulture));
+            return (long)Math.Min(long.MaxValue, ulong.Parse(value, CultureInfo.InvariantCulture));
         }
     }
 }

@@ -3,20 +3,22 @@
 //
 
 using System;
+using Xunit;
 
-public class Test
+public class Test_devdiv_174983
 {
     public int i;
     public int j;
 
     public static int l;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
-        Test test = new Test();
+        Test_devdiv_174983 test = new Test_devdiv_174983();
         test.i = 3;
         test.j = 5;
-        Test.l = 1;
+        Test_devdiv_174983.l = 1;
         if (test.Foo() == 8)
         {
             Console.WriteLine("PASS!");

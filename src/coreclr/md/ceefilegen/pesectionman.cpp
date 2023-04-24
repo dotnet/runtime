@@ -257,7 +257,7 @@ HRESULT PESection::addSectReloc(unsigned offset, PESection *relativeTo,
         }
 
         memcpy(relocNew, m_relocStart, sizeof(PESectionReloc)*curLen);
-        delete m_relocStart;
+        delete[] m_relocStart;
         m_relocStart = relocNew;
         m_relocCur = &m_relocStart[curLen];
         m_relocEnd = &m_relocStart[newLen];
@@ -281,14 +281,14 @@ char * PESection::computePointer(unsigned offset) const // virtual
 }
 
 /******************************************************************/
-BOOL PESection::containsPointer(__in char *ptr) const // virtual
+BOOL PESection::containsPointer(_In_ char *ptr) const // virtual
 {
     return m_blobFetcher.ContainsPointer(ptr);
 }
 
 /******************************************************************/
 // Compute an offset (wrap blobfetcher)
-unsigned PESection::computeOffset(__in char *ptr) const // virtual
+unsigned PESection::computeOffset(_In_ char *ptr) const // virtual
 {
     return m_blobFetcher.ComputeOffset(ptr);
 }
@@ -403,7 +403,7 @@ HRESULT PESection::cloneInstance(PESection *destination) {
     newSize = (INT32)(m_relocCur-m_relocStart);
 
     if (newSize>(destination->m_relocEnd - destination->m_relocStart)) {
-        delete destination->m_relocStart;
+        delete[] destination->m_relocStart;
 
         destination->m_relocStart = new (nothrow) PESectionReloc[newSize];
         if (destination->m_relocStart == NULL)

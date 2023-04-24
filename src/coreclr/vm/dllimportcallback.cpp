@@ -14,17 +14,12 @@
 #include "object.h"
 #include "dllimportcallback.h"
 #include "mlinfo.h"
-#include "comdelegate.h"
 #include "ceeload.h"
 #include "eeconfig.h"
 #include "dbginterface.h"
 #include "stubgen.h"
 #include "appdomain.inl"
-#include "callingconvention.h"
-#include "customattribute.h"
-#include "typeparse.h"
 
-#ifndef CROSSGEN_COMPILE
 
 struct UM2MThunk_Args
 {
@@ -45,7 +40,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        m_crst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
+        m_crst.Init(CrstUMEntryThunkFreeListLock, CRST_UNSAFE_ANYMODE);
     }
 
     UMEntryThunk *GetUMEntryThunk()
@@ -68,7 +63,7 @@ public:
         return pThunk;
     }
 
-    void AddToList(UMEntryThunk *pThunk)
+    void AddToList(UMEntryThunk *pThunkRX, UMEntryThunk *pThunkRW)
     {
         CONTRACTL
         {
@@ -78,22 +73,19 @@ public:
 
         CrstHolder ch(&m_crst);
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         if (m_pHead == NULL)
         {
-            m_pHead = pThunk;
-            m_pTail = pThunk;
+            m_pHead = pThunkRX;
+            m_pTail = pThunkRX;
         }
         else
         {
-            m_pTail->m_pNextFreeThunk = pThunk;
-            m_pTail = pThunk;
+            ExecutableWriterHolder<UMEntryThunk> tailThunkWriterHolder(m_pTail, sizeof(UMEntryThunk));
+            tailThunkWriterHolder.GetRW()->m_pNextFreeThunk = pThunkRX;
+            m_pTail = pThunkRX;
         }
 
-        pThunk->m_pNextFreeThunk = NULL;
+        pThunkRW->m_pNextFreeThunk = NULL;
 
         ++m_count;
     }
@@ -162,9 +154,6 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
     else
     {
         // cache miss -> create a new thunk
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
         pThunk = UMEntryThunk::CreateUMEntryThunk();
         Holder<UMEntryThunk *, DoNothing, UMEntryThunk::FreeUMEntryThunk> umHolder;
         umHolder.Assign(pThunk);
@@ -173,8 +162,11 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
         Holder<UMThunkMarshInfo *, DoNothing, UMEntryThunkCache::DestroyMarshInfo> miHolder;
         miHolder.Assign(pMarshInfo);
 
-        pMarshInfo->LoadTimeInit(pMD);
-        pThunk->LoadTimeInit(NULL, NULL, pMarshInfo, pMD);
+        ExecutableWriterHolder<UMThunkMarshInfo> marshInfoWriterHolder(pMarshInfo, sizeof(UMThunkMarshInfo));
+        marshInfoWriterHolder.GetRW()->LoadTimeInit(pMD);
+
+        ExecutableWriterHolder<UMEntryThunk> thunkWriterHolder(pThunk, sizeof(UMEntryThunk));
+        thunkWriterHolder.GetRW()->LoadTimeInit(pThunk, NULL, NULL, pMarshInfo, pMD);
 
         // add it to the cache
         CacheElement element;
@@ -203,37 +195,6 @@ extern "C" VOID STDCALL ReversePInvokeBadTransition()
                                             );
 }
 
-// Disable from a place that is calling into managed code via a UMEntryThunk.
-extern "C" VOID STDCALL UMThunkStubRareDisableWorker(Thread *pThread, UMEntryThunk *pUMEntryThunk)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    // Do not add a CONTRACT here.  We haven't set up SEH.
-
-    // WARNING!!!!
-    // when we start executing here, we are actually in cooperative mode.  But we
-    // haven't synchronized with the barrier to reentry yet.  So we are in a highly
-    // dangerous mode.  If we call managed code, we will potentially be active in
-    // the GC heap, even as GC's are occuring!
-
-    // We must do the following in this order, because otherwise we would be constructing
-    // the exception for the abort without synchronizing with the GC.  Also, we have no
-    // CLR SEH set up, despite the fact that we may throw a ThreadAbortException.
-    pThread->RareDisablePreemptiveGC();
-    pThread->HandleThreadAbort();
-
-#ifdef DEBUGGING_SUPPORTED
-    // If the debugger is attached, we use this opportunity to see if
-    // we're disabling preemptive GC on the way into the runtime from
-    // unmanaged code. We end up here because
-    // Increment/DecrementTraceCallCount() will bump
-    // g_TrapReturningThreads for us.
-    if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall((const BYTE *)pUMEntryThunk->GetManagedTarget());
-#endif // DEBUGGING_SUPPORTED
-}
-
 PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk)
 {
     STATIC_CONTRACT_THROWS;
@@ -242,39 +203,13 @@ PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk)
 
     Thread * pThread = GetThreadNULLOk();
     if (pThread == NULL)
-        pThread = CreateThreadBlockThrow();
-
-    GCX_COOP_THREAD_EXISTS(pThread);
-
-    if (pThread->IsAbortRequested())
-        pThread->HandleThreadAbort();
-
-    UMEntryThunk::DoRunTimeInit(pUMEntryThunk);
-
-    return (PCODE)pUMEntryThunk->GetCode();
-}
-
-void RunTimeInit_Wrapper(LPVOID /* UMThunkMarshInfo * */ ptr)
-{
-    WRAPPER_NO_CONTRACT;
-
-    UMEntryThunk::DoRunTimeInit((UMEntryThunk*)ptr);
-}
-
-
-// asm entrypoint
-void STDCALL UMEntryThunk::DoRunTimeInit(UMEntryThunk* pUMEntryThunk)
-{
-
-    CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        ENTRY_POINT;
-        PRECONDITION(CheckPointer(pUMEntryThunk));
+        CREATETHREAD_IF_NULL_FAILFAST(pThread, W("Failed to setup new thread during reverse P/Invoke"));
     }
-    CONTRACTL_END;
+
+    // Verify the current thread isn't in COOP mode.
+    if (pThread->PreemptiveGCDisabled())
+        ReversePInvokeBadTransition();
 
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     // this method is called by stubs which are called by managed code,
@@ -282,18 +217,13 @@ void STDCALL UMEntryThunk::DoRunTimeInit(UMEntryThunk* pUMEntryThunk)
     // exceptions don't leak out into managed code.
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-    {
-        GCX_PREEMP();
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
-        pUMEntryThunk->RunTimeInit();
-    }
+    ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
+    uMEntryThunkWriterHolder.GetRW()->RunTimeInit(pUMEntryThunk);
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+
+    return (PCODE)pUMEntryThunk->GetCode();
 }
 
 UMEntryThunk* UMEntryThunk::CreateUMEntryThunk()
@@ -327,19 +257,16 @@ void UMEntryThunk::Terminate()
     }
     CONTRACTL_END;
 
+    ExecutableWriterHolder<UMEntryThunk> thunkWriterHolder(this, sizeof(UMEntryThunk));
     m_code.Poison();
 
     if (GetObjectHandle())
     {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         DestroyLongWeakHandle(GetObjectHandle());
-        m_pObjectHandle = 0;
+        thunkWriterHolder.GetRW()->m_pObjectHandle = 0;
     }
 
-    s_thunkFreeList.AddToList(this);
+    s_thunkFreeList.AddToList(this, thunkWriterHolder.GetRW());
 }
 
 VOID UMEntryThunk::FreeUMEntryThunk(UMEntryThunk* p)
@@ -356,7 +283,6 @@ VOID UMEntryThunk::FreeUMEntryThunk(UMEntryThunk* p)
     p->Terminate();
 }
 
-#endif // CROSSGEN_COMPILE
 
 //-------------------------------------------------------------------------
 // This function is used to report error when we call collected delegate.
@@ -379,17 +305,13 @@ VOID __fastcall UMEntryThunk::ReportViolation(UMEntryThunk* pEntryThunk)
 
     SString namespaceOrClassName;
     SString methodName;
-    SString moduleName;
-
     pMethodDesc->GetMethodInfoNoSig(namespaceOrClassName, methodName);
-    moduleName.SetUTF8(pMethodDesc->GetModule()->GetSimpleName());
 
     SString message;
-
-    message.Printf(W("A callback was made on a garbage collected delegate of type '%s!%s::%s'."),
-        moduleName.GetUnicode(),
-        namespaceOrClassName.GetUnicode(),
-        methodName.GetUnicode());
+    message.Printf("A callback was made on a garbage collected delegate of type '%s!%s::%s'.",
+        pMethodDesc->GetModule()->GetSimpleName(),
+        namespaceOrClassName.GetUTF8(),
+        methodName.GetUTF8());
 
     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
 }
@@ -462,7 +384,6 @@ VOID UMThunkMarshInfo::LoadTimeInit(Signature sig, Module * pModule, MethodDesc 
     m_sig = sig;
 }
 
-#ifndef CROSSGEN_COMPILE
 //----------------------------------------------------------
 // This initializer finishes the init started by LoadTimeInit.
 // It does stub creation and can throw an exception.
@@ -478,45 +399,22 @@ VOID UMThunkMarshInfo::RunTimeInit()
     if (IsCompletelyInited())
         return;
 
-    PCODE pFinalILStub = NULL;
-    MethodDesc* pStubMD = NULL;
-
     MethodDesc * pMD = GetMethod();
 
-    // Lookup NGened stub - currently we only support ngening of reverse delegate invoke interop stubs
-    if (pMD != NULL && pMD->IsEEImpl())
-    {
-        DWORD dwStubFlags = NDIRECTSTUB_FL_NGENEDSTUB | NDIRECTSTUB_FL_REVERSE_INTEROP | NDIRECTSTUB_FL_DELEGATE;
+    PInvokeStaticSigInfo sigInfo;
 
-#if defined(DEBUGGING_SUPPORTED)
-        // Combining the next two lines, and eliminating jitDebuggerFlags, leads to bad codegen in x86 Release builds using Visual C++ 19.00.24215.1.
-        CORJIT_FLAGS jitDebuggerFlags = GetDebuggerCompileFlags(GetModule(), CORJIT_FLAGS());
-        if (jitDebuggerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE))
-        {
-            dwStubFlags |= NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL;
-        }
-#endif // DEBUGGING_SUPPORTED
+    if (pMD != NULL)
+        new (&sigInfo) PInvokeStaticSigInfo(pMD);
+    else
+        new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
 
-        pFinalILStub = GetStubForInteropMethod(pMD, dwStubFlags, &pStubMD);
-    }
+    DWORD dwStubFlags = 0;
 
-    if (pFinalILStub == NULL)
-    {
-        PInvokeStaticSigInfo sigInfo;
+    if (sigInfo.IsDelegateInterop())
+        dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
 
-        if (pMD != NULL)
-            new (&sigInfo) PInvokeStaticSigInfo(pMD);
-        else
-            new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
-
-        DWORD dwStubFlags = 0;
-
-        if (sigInfo.IsDelegateInterop())
-            dwStubFlags |= NDIRECTSTUB_FL_DELEGATE;
-
-        pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
-        pFinalILStub = JitILStub(pStubMD);
-    }
+    MethodDesc* pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
+    PCODE pFinalILStub = JitILStub(pStubMD);
 
     // Must be the last thing we set!
     InterlockedCompareExchangeT<PCODE>(&m_pILStub, pFinalILStub, (PCODE)1);
@@ -538,8 +436,6 @@ void STDCALL LogUMTransition(UMEntryThunk* thunk)
     }
     CONTRACTL_END;
 
-    BEGIN_ENTRYPOINT_VOIDRET;
-
     void** retESP = ((void**) &thunk) + 4;
 
     MethodDesc* method = thunk->GetMethod();
@@ -550,118 +446,6 @@ void STDCALL LogUMTransition(UMEntryThunk* thunk)
             method->m_pszDebugMethodName,
             method->m_pszDebugMethodSignature, retESP, *retESP));
     }
-
-    END_ENTRYPOINT_VOIDRET;
-
-    }
-#endif
-
-bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCallConvExtension* pCallConv)
-{
-    STANDARD_VM_CONTRACT;
-    _ASSERTE(pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute());
-
-    // Validate usage
-    COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(pMD);
-
-    BYTE* pData = NULL;
-    LONG cData = 0;
-
-    bool nativeCallableInternalData = false;
-    HRESULT hr = pMD->GetCustomAttribute(WellKnownAttribute::UnmanagedCallersOnly, (const VOID **)(&pData), (ULONG *)&cData);
-    if (hr == S_FALSE)
-    {
-        hr = pMD->GetCustomAttribute(WellKnownAttribute::NativeCallableInternal, (const VOID **)(&pData), (ULONG *)&cData);
-        nativeCallableInternalData = SUCCEEDED(hr);
-    }
-
-    IfFailThrow(hr);
-
-    _ASSERTE(cData > 0);
-
-    CustomAttributeParser ca(pData, cData);
-
-    // UnmanagedCallersOnly and NativeCallableInternal each
-    // have optional named arguments.
-    CaNamedArg namedArgs[2];
-
-    // For the UnmanagedCallersOnly scenario.
-    CaType caCallConvs;
-
-    // Define attribute specific optional named properties
-    if (nativeCallableInternalData)
-    {
-        namedArgs[0].InitI4FieldEnum("CallingConvention", "System.Runtime.InteropServices.CallingConvention", (ULONG)(CorPinvokeMap)0);
-    }
-    else
-    {
-        caCallConvs.Init(SERIALIZATION_TYPE_SZARRAY, SERIALIZATION_TYPE_TYPE, SERIALIZATION_TYPE_UNDEFINED, NULL, 0);
-        namedArgs[0].Init("CallConvs", SERIALIZATION_TYPE_SZARRAY, caCallConvs);
-    }
-
-    // Define common optional named properties
-    CaTypeCtor caEntryPoint(SERIALIZATION_TYPE_STRING);
-    namedArgs[1].Init("EntryPoint", SERIALIZATION_TYPE_STRING, caEntryPoint);
-
-    InlineFactory<SArray<CaValue>, 4> caValueArrayFactory;
-    DomainAssembly* domainAssembly = pMD->GetLoaderModule()->GetDomainAssembly();
-    IfFailThrow(Attribute::ParseAttributeArgumentValues(
-        pData,
-        cData,
-        &caValueArrayFactory,
-        NULL,
-        0,
-        namedArgs,
-        lengthof(namedArgs),
-        domainAssembly));
-
-    // If the value isn't defined, then return without setting anything.
-    if (namedArgs[0].val.type.tag == SERIALIZATION_TYPE_UNDEFINED)
-        return false;
-
-    CorInfoCallConvExtension callConvLocal;
-    if (nativeCallableInternalData)
-    {
-        callConvLocal = (CorInfoCallConvExtension)(namedArgs[0].val.u4 << 8);
-    }
-    else
-    {
-        // Set WinAPI as the default
-        callConvLocal = CorInfoCallConvExtension::Managed;
-
-        MetaSig::CallingConventionModifiers modifiers = MetaSig::CALL_CONV_MOD_NONE;
-
-        bool foundBaseCallConv = false;
-        bool useMemberFunctionVariant = false;
-
-        CaValue* arrayOfTypes = &namedArgs[0].val;
-        for (ULONG i = 0; i < arrayOfTypes->arr.length; i++)
-        {
-            CaValue& typeNameValue = arrayOfTypes->arr[i];
-
-            if (!MetaSig::TryApplyModOptToCallingConvention(
-                typeNameValue.str.pStr,
-                typeNameValue.str.cbStr,
-                MetaSig::CallConvModOptNameType::FullyQualifiedName,
-                &callConvLocal,
-                &modifiers))
-            {
-                // We found a second base calling convention.
-                return false;
-            }
-        }
-
-        if (callConvLocal == CorInfoCallConvExtension::Managed)
-        {
-            callConvLocal = MetaSig::GetDefaultUnmanagedCallingConvention();
-        }
-
-        if (modifiers & MetaSig::CALL_CONV_MOD_MEMBERFUNCTION)
-        {
-            callConvLocal = MetaSig::GetMemberFunctionUnmanagedCallingConventionVariant(callConvLocal);
-        }
-    }
-    *pCallConv = callConvLocal;
-    return true;
 }
-#endif // CROSSGEN_COMPILE
+#endif // _DEBUG
+

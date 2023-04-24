@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Text;
-using System.Runtime.InteropServices;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System
 {
@@ -62,8 +64,8 @@ namespace System
         "M"     "0"         month w/o leading zero                2
         "MM"    "00"        month with leading zero               02
         "MMM"               short month name (abbreviation)       Feb
-        "MMMM"              full month name                       Febuary
-        "MMMM*"             full month name                       Febuary
+        "MMMM"              full month name                       February
+        "MMMM*"             full month name                       February
 
         "y"     "0"         two digit year (year % 100) w/o leading zero           0
         "yy"    "00"        two digit year (year % 100) with leading zero          00
@@ -120,18 +122,12 @@ namespace System
     */
 
     // This class contains only static members and does not require the serializable attribute.
-    internal static
-    class DateTimeFormat
+    internal static class DateTimeFormat
     {
         internal const int MaxSecondsFractionDigits = 7;
         internal const long NullOffset = long.MinValue;
 
-        internal static char[] allStandardFormats =
-        {
-            'd', 'D', 'f', 'F', 'g', 'G',
-            'm', 'M', 'o', 'O', 'r', 'R',
-            's', 't', 'T', 'u', 'U', 'y', 'Y',
-        };
+        internal const string AllStandardFormats = "dDfFgGmMoOrRstTuUyY";
 
         internal const string RoundtripFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.fffffffK";
         internal const string RoundtripDateTimeUnfixed = "yyyy'-'MM'-'ddTHH':'mm':'ss zzz";
@@ -139,9 +135,8 @@ namespace System
         private const int DEFAULT_ALL_DATETIMES_SIZE = 132;
 
         internal static readonly DateTimeFormatInfo InvariantFormatInfo = CultureInfo.InvariantCulture.DateTimeFormat;
-        internal static readonly string[] InvariantAbbreviatedMonthNames = InvariantFormatInfo.AbbreviatedMonthNames;
-        internal static readonly string[] InvariantAbbreviatedDayNames = InvariantFormatInfo.AbbreviatedDayNames;
-        internal const string Gmt = "GMT";
+        private static readonly string[] s_invariantAbbreviatedMonthNames = InvariantFormatInfo.AbbreviatedMonthNames;
+        private static readonly string[] s_invariantAbbreviatedDayNames = InvariantFormatInfo.AbbreviatedDayNames;
 
         internal static string[] fixedNumberFormats = new string[] {
             "0",
@@ -153,62 +148,44 @@ namespace System
             "0000000",
         };
 
-        ////////////////////////////////////////////////////////////////////////////
-        //
-        // Format the positive integer value to a string and prefix with assigned
-        // length of leading zero.
-        //
-        // Parameters:
-        //  value: The value to format
-        //  len: The maximum length for leading zero.
-        //  If the digits of the value is greater than len, no leading zero is added.
-        //
-        // Notes:
-        //  The function can format to int.MaxValue.
-        //
-        ////////////////////////////////////////////////////////////////////////////
-        internal static void FormatDigits(StringBuilder outputBuffer, int value, int len)
+        /// <summary>Format the positive integer value to a string and prefix with assigned length of leading zero.</summary>
+        /// <typeparam name="TChar">The type of the character.</typeparam>
+        /// <param name="outputBuffer">The buffer into which to write the digits.</param>
+        /// <param name="value">The value to format</param>
+        /// <param name="minimumLength">
+        /// The minimum length for formatted number. If the number of digits in the value is less than this length, it will be padded with leading zeros.
+        /// </param>
+        internal static unsafe void FormatDigits<TChar>(ref ValueListBuilder<TChar> outputBuffer, int value, int minimumLength) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(value >= 0, "DateTimeFormat.FormatDigits(): value >= 0");
-            FormatDigits(outputBuffer, value, len, false);
-        }
+            Debug.Assert(minimumLength <= 16);
 
-        internal static unsafe void FormatDigits(StringBuilder outputBuffer, int value, int len, bool overrideLengthLimit)
-        {
-            Debug.Assert(value >= 0, "DateTimeFormat.FormatDigits(): value >= 0");
-
-            // Limit the use of this function to be two-digits, so that we have the same behavior
-            // as RTM bits.
-            if (!overrideLengthLimit && len > 2)
+            switch (minimumLength)
             {
-                len = 2;
+                case 1 when value < 10:
+                    outputBuffer.Append(TChar.CreateTruncating(value + '0'));
+                    break;
+
+                case 2 when value < 100:
+                    fixed (TChar* ptr = &MemoryMarshal.GetReference(outputBuffer.AppendSpan(2)))
+                    {
+                        Number.WriteTwoDigits((uint)value, ptr);
+                    }
+                    break;
+
+                case 4 when value < 10000:
+                    fixed (TChar* ptr = &MemoryMarshal.GetReference(outputBuffer.AppendSpan(4)))
+                    {
+                        Number.WriteFourDigits((uint)value, ptr);
+                    }
+                    break;
+
+                default:
+                    TChar* buffer = stackalloc TChar[16];
+                    TChar* p = Number.UInt32ToDecChars(buffer + 16, (uint)value, minimumLength);
+                    outputBuffer.Append(new ReadOnlySpan<TChar>(p, (int)(buffer + 16 - p)));
+                    break;
             }
-
-            char* buffer = stackalloc char[16];
-            char* p = buffer + 16;
-            int n = value;
-            do
-            {
-                *--p = (char)(n % 10 + '0');
-                n /= 10;
-            } while ((n != 0) && (p > buffer));
-
-            int digits = (int)(buffer + 16 - p);
-
-            // If the repeat count is greater than 0, we're trying
-            // to emulate the "00" format, so we have to prepend
-            // a zero if the string only has one character.
-            while ((digits < len) && (p > buffer))
-            {
-                *--p = '0';
-                digits++;
-            }
-            outputBuffer.Append(p, digits);
-        }
-
-        private static void HebrewFormatDigits(StringBuilder outputBuffer, int digits)
-        {
-            HebrewNumber.Append(outputBuffer, digits);
         }
 
         internal static int ParseRepeatPattern(ReadOnlySpan<char> format, int pos, char patternChar)
@@ -299,7 +276,7 @@ namespace System
         // The pos should point to a quote character. This method will
         // append to the result StringBuilder the string enclosed by the quote character.
         //
-        internal static int ParseQuoteString(ReadOnlySpan<char> format, int pos, StringBuilder result)
+        internal static int ParseQuoteString<TChar>(scoped ReadOnlySpan<char> format, int pos, ref ValueListBuilder<TChar> result) where TChar : unmanaged, IUtfChar<TChar>
         {
             //
             // NOTE : pos will be the index of the quote character in the 'format' string.
@@ -326,7 +303,7 @@ namespace System
                     // because the second double quote is escaped.
                     if (pos < formatLen)
                     {
-                        result.Append(format[pos++]);
+                        result.Append(TChar.CastFrom(format[pos++]));
                     }
                     else
                     {
@@ -338,7 +315,7 @@ namespace System
                 }
                 else
                 {
-                    result.Append(ch);
+                    result.Append(TChar.CastFrom(ch));
                 }
             }
 
@@ -361,11 +338,11 @@ namespace System
         //
         internal static int ParseNextChar(ReadOnlySpan<char> format, int pos)
         {
-            if (pos >= format.Length - 1)
+            if ((uint)(pos + 1) >= (uint)format.Length)
             {
                 return -1;
             }
-            return (int)format[pos + 1];
+            return format[pos + 1];
         }
 
         //
@@ -421,7 +398,7 @@ namespace System
             if (i < format.Length)
             {
                 repeat = 0;
-                // Find a "d", so contine the walk to see how may "d" that we can find.
+                // Find a "d", so continue the walk to see how may "d" that we can find.
                 while (++i < format.Length && format[i] == patternToMatch)
                 {
                     repeat++;
@@ -443,17 +420,10 @@ namespace System
         //
         //  Actions: Format the DateTime instance using the specified format.
         //
-        private static StringBuilder FormatCustomized(
-            DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset, StringBuilder? result)
+        private static void FormatCustomized<TChar>(
+            DateTime dateTime, scoped ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset, ref ValueListBuilder<TChar> result) where TChar : unmanaged, IUtfChar<TChar>
         {
             Calendar cal = dtfi.Calendar;
-
-            bool resultBuilderIsPooled = false;
-            if (result == null)
-            {
-                resultBuilderIsPooled = true;
-                result = StringBuilderCache.Acquire();
-            }
 
             // This is a flag to indicate if we are formatting the dates using Hebrew calendar.
             bool isHebrewCalendar = (cal.ID == CalendarId.HEBREW);
@@ -472,8 +442,9 @@ namespace System
                 {
                     case 'g':
                         tokenLen = ParseRepeatPattern(format, i, ch);
-                        result.Append(dtfi.GetEraName(cal.GetEra(dateTime)));
+                        AppendString(ref result, dtfi.GetEraName(cal.GetEra(dateTime)));
                         break;
+
                     case 'h':
                         tokenLen = ParseRepeatPattern(format, i, ch);
                         hour12 = dateTime.Hour % 12;
@@ -481,20 +452,24 @@ namespace System
                         {
                             hour12 = 12;
                         }
-                        FormatDigits(result, hour12, tokenLen);
+                        FormatDigits(ref result, hour12, Math.Min(tokenLen, 2));
                         break;
+
                     case 'H':
                         tokenLen = ParseRepeatPattern(format, i, ch);
-                        FormatDigits(result, dateTime.Hour, tokenLen);
+                        FormatDigits(ref result, dateTime.Hour, Math.Min(tokenLen, 2));
                         break;
+
                     case 'm':
                         tokenLen = ParseRepeatPattern(format, i, ch);
-                        FormatDigits(result, dateTime.Minute, tokenLen);
+                        FormatDigits(ref result, dateTime.Minute, Math.Min(tokenLen, 2));
                         break;
+
                     case 's':
                         tokenLen = ParseRepeatPattern(format, i, ch);
-                        FormatDigits(result, dateTime.Second, tokenLen);
+                        FormatDigits(ref result, dateTime.Second, Math.Min(tokenLen, 2));
                         break;
+
                     case 'f':
                     case 'F':
                         tokenLen = ParseRepeatPattern(format, i, ch);
@@ -504,7 +479,7 @@ namespace System
                             fraction /= (long)Math.Pow(10, 7 - tokenLen);
                             if (ch == 'f')
                             {
-                                result.AppendSpanFormattable((int)fraction, fixedNumberFormats[tokenLen - 1], CultureInfo.InvariantCulture);
+                                FormatFraction(ref result, (int)fraction, fixedNumberFormats[tokenLen - 1]);
                             }
                             else
                             {
@@ -523,51 +498,40 @@ namespace System
                                 }
                                 if (effectiveDigits > 0)
                                 {
-                                    result.AppendSpanFormattable((int)fraction, fixedNumberFormats[effectiveDigits - 1], CultureInfo.InvariantCulture);
+                                    FormatFraction(ref result, (int)fraction, fixedNumberFormats[effectiveDigits - 1]);
                                 }
                                 else
                                 {
                                     // No fraction to emit, so see if we should remove decimal also.
-                                    if (result.Length > 0 && result[result.Length - 1] == '.')
+                                    if (result.Length > 0 && result[result.Length - 1] == TChar.CastFrom('.'))
                                     {
-                                        result.Remove(result.Length - 1, 1);
+                                        result.Length--;
                                     }
                                 }
                             }
                         }
                         else
                         {
-                            if (resultBuilderIsPooled)
-                            {
-                                StringBuilderCache.Release(result);
-                            }
                             throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
+
                     case 't':
                         tokenLen = ParseRepeatPattern(format, i, ch);
                         if (tokenLen == 1)
                         {
-                            if (dateTime.Hour < 12)
+                            string designator = dateTime.Hour < 12 ? dtfi.AMDesignator : dtfi.PMDesignator;
+                            if (designator.Length >= 1)
                             {
-                                if (dtfi.AMDesignator.Length >= 1)
-                                {
-                                    result.Append(dtfi.AMDesignator[0]);
-                                }
-                            }
-                            else
-                            {
-                                if (dtfi.PMDesignator.Length >= 1)
-                                {
-                                    result.Append(dtfi.PMDesignator[0]);
-                                }
+                                AppendChar(ref result, designator[0]);
                             }
                         }
                         else
                         {
-                            result.Append(dateTime.Hour < 12 ? dtfi.AMDesignator : dtfi.PMDesignator);
+                            result.Append(dateTime.Hour < 12 ? dtfi.AMDesignatorTChar<TChar>() : dtfi.PMDesignatorTChar<TChar>());
                         }
                         break;
+
                     case 'd':
                         //
                         // tokenLen == 1 : Day of month as digits with no leading zero.
@@ -582,27 +546,26 @@ namespace System
                             if (isHebrewCalendar)
                             {
                                 // For Hebrew calendar, we need to convert numbers to Hebrew text for yyyy, MM, and dd values.
-                                HebrewFormatDigits(result, day);
+                                HebrewNumber.Append(ref result, day);
                             }
                             else
                             {
-                                FormatDigits(result, day, tokenLen);
+                                FormatDigits(ref result, day, tokenLen);
                             }
                         }
                         else
                         {
                             int dayOfWeek = (int)cal.GetDayOfWeek(dateTime);
-                            result.Append(FormatDayOfWeek(dayOfWeek, tokenLen, dtfi));
+                            AppendString(ref result, FormatDayOfWeek(dayOfWeek, tokenLen, dtfi));
                         }
                         bTimeOnly = false;
                         break;
+
                     case 'M':
-                        //
                         // tokenLen == 1 : Month as digits with no leading zero.
                         // tokenLen == 2 : Month as digits with leading zero for single-digit months.
                         // tokenLen == 3 : Month as a three-letter abbreviation.
                         // tokenLen >= 4 : Month as its full name.
-                        //
                         tokenLen = ParseRepeatPattern(format, i, ch);
                         int month = cal.GetMonth(dateTime);
                         if (tokenLen <= 2)
@@ -610,24 +573,24 @@ namespace System
                             if (isHebrewCalendar)
                             {
                                 // For Hebrew calendar, we need to convert numbers to Hebrew text for yyyy, MM, and dd values.
-                                HebrewFormatDigits(result, month);
+                                HebrewNumber.Append(ref result, month);
                             }
                             else
                             {
-                                FormatDigits(result, month, tokenLen);
+                                FormatDigits(ref result, month, tokenLen);
                             }
                         }
                         else
                         {
                             if (isHebrewCalendar)
                             {
-                                result.Append(FormatHebrewMonthName(dateTime, month, tokenLen, dtfi));
+                                AppendString(ref result, FormatHebrewMonthName(dateTime, month, tokenLen, dtfi));
                             }
                             else
                             {
                                 if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0)
                                 {
-                                    result.Append(
+                                    AppendString(ref result,
                                         dtfi.InternalGetMonthName(
                                             month,
                                             IsUseGenitiveForm(format, i, tokenLen, 'd') ? MonthNameStyles.Genitive : MonthNameStyles.Regular,
@@ -635,12 +598,13 @@ namespace System
                                 }
                                 else
                                 {
-                                    result.Append(FormatMonth(month, tokenLen, dtfi));
+                                    AppendString(ref result, FormatMonth(month, tokenLen, dtfi));
                                 }
                             }
                         }
                         bTimeOnly = false;
                         break;
+
                     case 'y':
                         // Notes about OS behavior:
                         // y: Always print (year % 100). No leading zero.
@@ -658,53 +622,59 @@ namespace System
                             // We are formatting a Japanese date with year equals 1 and the year number is followed by the year sign \u5e74
                             // In Japanese dates, the first year in the era is not formatted as a number 1 instead it is formatted as \u5143 which means
                             // first or beginning of the era.
-                            result.Append(DateTimeFormatInfo.JapaneseEraStart[0]);
+                            AppendChar(ref result, DateTimeFormatInfo.JapaneseEraStart[0]);
                         }
                         else if (dtfi.HasForceTwoDigitYears)
                         {
-                            FormatDigits(result, year, tokenLen <= 2 ? tokenLen : 2);
+                            FormatDigits(ref result, year, Math.Min(tokenLen, 2));
                         }
                         else if (cal.ID == CalendarId.HEBREW)
                         {
-                            HebrewFormatDigits(result, year);
+                            HebrewNumber.Append(ref result, year);
                         }
                         else
                         {
                             if (tokenLen <= 2)
                             {
-                                FormatDigits(result, year % 100, tokenLen);
+                                FormatDigits(ref result, year % 100, tokenLen);
                             }
                             else if (tokenLen <= 16) // FormatDigits has an implicit 16-digit limit
                             {
-                                FormatDigits(result, year, tokenLen, overrideLengthLimit: true);
+                                FormatDigits(ref result, year, tokenLen);
                             }
                             else
                             {
-                                result.Append(year.ToString("D" + tokenLen.ToString(), CultureInfo.InvariantCulture));
+                                AppendString(ref result, year.ToString("D" + tokenLen.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture));
                             }
                         }
                         bTimeOnly = false;
                         break;
+
                     case 'z':
                         tokenLen = ParseRepeatPattern(format, i, ch);
-                        FormatCustomizedTimeZone(dateTime, offset, tokenLen, bTimeOnly, result);
+                        FormatCustomizedTimeZone(dateTime, offset, tokenLen, bTimeOnly, ref result);
                         break;
+
                     case 'K':
                         tokenLen = 1;
-                        FormatCustomizedRoundripTimeZone(dateTime, offset, result);
+                        FormatCustomizedRoundripTimeZone(dateTime, offset, ref result);
                         break;
+
                     case ':':
-                        result.Append(dtfi.TimeSeparator);
+                        result.Append(dtfi.TimeSeparatorTChar<TChar>());
                         tokenLen = 1;
                         break;
+
                     case '/':
-                        result.Append(dtfi.DateSeparator);
+                        result.Append(dtfi.DateSeparatorTChar<TChar>());
                         tokenLen = 1;
                         break;
+
                     case '\'':
                     case '\"':
-                        tokenLen = ParseQuoteString(format, i, result);
+                        tokenLen = ParseQuoteString(format, i, ref result);
                         break;
+
                     case '%':
                         // Optional format character.
                         // For example, format string "%d" will print day of month
@@ -715,8 +685,7 @@ namespace System
                         if (nextChar >= 0 && nextChar != '%')
                         {
                             char nextCharChar = (char)nextChar;
-                            StringBuilder origStringBuilder = FormatCustomized(dateTime, MemoryMarshal.CreateReadOnlySpan<char>(ref nextCharChar, 1), dtfi, offset, result);
-                            Debug.Assert(ReferenceEquals(origStringBuilder, result));
+                            FormatCustomized(dateTime, new ReadOnlySpan<char>(in nextCharChar), dtfi, offset, ref result);
                             tokenLen = 2;
                         }
                         else
@@ -725,16 +694,13 @@ namespace System
                             // This means that '%' is at the end of the format string or
                             // "%%" appears in the format string.
                             //
-                            if (resultBuilderIsPooled)
-                            {
-                                StringBuilderCache.Release(result);
-                            }
                             throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
+
                     case '\\':
                         // Escaped character.  Can be used to insert a character into the format string.
-                        // For exmple, "\d" will insert the character 'd' into the string.
+                        // For example, "\d" will insert the character 'd' into the string.
                         //
                         // NOTENOTE : we can remove this format character if we enforce the enforced quote
                         // character rule.
@@ -744,7 +710,7 @@ namespace System
                         nextChar = ParseNextChar(format, i);
                         if (nextChar >= 0)
                         {
-                            result.Append((char)nextChar);
+                            result.Append(TChar.CastFrom(nextChar));
                             tokenLen = 2;
                         }
                         else
@@ -752,32 +718,68 @@ namespace System
                             //
                             // This means that '\' is at the end of the formatting string.
                             //
-                            if (resultBuilderIsPooled)
-                            {
-                                StringBuilderCache.Release(result);
-                            }
                             throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
+
                     default:
                         // NOTENOTE : we can remove this rule if we enforce the enforced quote
                         // character rule.
                         // That is, if we ask everyone to use single quote or double quote to insert characters,
                         // then we can remove this default block.
-                        result.Append(ch);
+                        result.Append(TChar.CastFrom(ch));
                         tokenLen = 1;
                         break;
                 }
                 i += tokenLen;
             }
-            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void AppendChar<TChar>(ref ValueListBuilder<TChar> result, char ch) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (typeof(TChar) == typeof(char) || char.IsAscii(ch))
+            {
+                result.Append(TChar.CastFrom(ch));
+            }
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(byte));
+                var r = new Rune(ch);
+                r.EncodeToUtf8(MemoryMarshal.AsBytes(result.AppendSpan(r.Utf8SequenceLength)));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void AppendString<TChar>(ref ValueListBuilder<TChar> result, scoped ReadOnlySpan<char> s) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (typeof(TChar) == typeof(char))
+            {
+                result.Append(MemoryMarshal.Cast<char, TChar>(s));
+            }
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(byte));
+                Encoding.UTF8.GetBytes(s, MemoryMarshal.Cast<TChar, byte>(result.AppendSpan(Encoding.UTF8.GetByteCount(s))));
+            }
+        }
+
+        internal static void FormatFraction<TChar>(ref ValueListBuilder<TChar> result, int fraction, ReadOnlySpan<char> fractionFormat) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Span<TChar> chars = stackalloc TChar[11];
+            int charCount;
+            bool formatted = typeof(TChar) == typeof(char) ?
+                fraction.TryFormat(MemoryMarshal.Cast<TChar, char>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture) :
+                fraction.TryFormat(MemoryMarshal.Cast<TChar, byte>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture);
+            Debug.Assert(charCount != 0);
+            result.Append(chars.Slice(0, charCount));
         }
 
         // output the 'z' family of formats, which output a the offset from UTC, e.g. "-07:30"
-        private static void FormatCustomizedTimeZone(DateTime dateTime, TimeSpan offset, int tokenLen, bool timeOnly, StringBuilder result)
+        private static unsafe void FormatCustomizedTimeZone<TChar>(DateTime dateTime, TimeSpan offset, int tokenLen, bool timeOnly, ref ValueListBuilder<TChar> result) where TChar : unmanaged, IUtfChar<TChar>
         {
             // See if the instance already has an offset
-            bool dateTimeFormat = (offset.Ticks == NullOffset);
+            bool dateTimeFormat = offset.Ticks == NullOffset;
             if (dateTimeFormat)
             {
                 // No offset. The instance is a DateTime and the output should be the local time zone
@@ -797,36 +799,49 @@ namespace System
                     offset = TimeZoneInfo.GetLocalUtcOffset(dateTime, TimeZoneInfoOptions.NoThrowOnInvalidTime);
                 }
             }
+
             if (offset.Ticks >= 0)
             {
-                result.Append('+');
+                result.Append(TChar.CastFrom('+'));
             }
             else
             {
-                result.Append('-');
-                // get a positive offset, so that you don't need a separate code path for the negative numbers.
-                offset = offset.Negate();
+                result.Append(TChar.CastFrom('-'));
+                offset = offset.Negate(); // get a positive offset, so that you don't need a separate code path for the negative numbers.
             }
 
             if (tokenLen <= 1)
             {
                 // 'z' format e.g "-7"
-                result.AppendFormat(CultureInfo.InvariantCulture, "{0:0}", offset.Hours);
+                (int tens, int ones) = Math.DivRem(offset.Hours, 10);
+                if (tens != 0)
+                {
+                    result.Append(TChar.CastFrom('0' + tens));
+                }
+                result.Append(TChar.CastFrom('0' + ones));
+            }
+            else if (tokenLen == 2)
+            {
+                // 'zz' format e.g "-07"
+                fixed (TChar* p = &MemoryMarshal.GetReference(result.AppendSpan(2)))
+                {
+                    Number.WriteTwoDigits((uint)offset.Hours, p);
+                }
             }
             else
             {
-                // 'zz' or longer format e.g "-07"
-                result.AppendFormat(CultureInfo.InvariantCulture, "{0:00}", offset.Hours);
-                if (tokenLen >= 3)
+                Debug.Assert(tokenLen >= 3);
+                fixed (TChar* p = &MemoryMarshal.GetReference(result.AppendSpan(5)))
                 {
-                    // 'zzz*' or longer format e.g "-07:30"
-                    result.AppendFormat(CultureInfo.InvariantCulture, ":{0:00}", offset.Minutes);
+                    Number.WriteTwoDigits((uint)offset.Hours, p);
+                    p[2] = TChar.CastFrom(':');
+                    Number.WriteTwoDigits((uint)offset.Minutes, p + 3);
                 }
             }
         }
 
         // output the 'K' format, which is for round-tripping the data
-        private static void FormatCustomizedRoundripTimeZone(DateTime dateTime, TimeSpan offset, StringBuilder result)
+        private static unsafe void FormatCustomizedRoundripTimeZone<TChar>(DateTime dateTime, TimeSpan offset, ref ValueListBuilder<TChar> result) where TChar : unmanaged, IUtfChar<TChar>
         {
             // The objective of this format is to round trip the data in the type
             // For DateTime it should round-trip the Kind value and preserve the time zone.
@@ -844,7 +859,7 @@ namespace System
                         break;
                     case DateTimeKind.Utc:
                         // The 'Z' constant is a marker for a UTC date
-                        result.Append('Z');
+                        result.Append(TChar.CastFrom('Z'));
                         return;
                     default:
                         // If the kind is unspecified, we output nothing here
@@ -853,24 +868,21 @@ namespace System
             }
             if (offset.Ticks >= 0)
             {
-                result.Append('+');
+                result.Append(TChar.CastFrom('+'));
             }
             else
             {
-                result.Append('-');
+                result.Append(TChar.CastFrom('-'));
                 // get a positive offset, so that you don't need a separate code path for the negative numbers.
                 offset = offset.Negate();
             }
 
-            Append2DigitNumber(result, offset.Hours);
-            result.Append(':');
-            Append2DigitNumber(result, offset.Minutes);
-        }
-
-        private static void Append2DigitNumber(StringBuilder result, int val)
-        {
-            result.Append((char)('0' + (val / 10)));
-            result.Append((char)('0' + (val % 10)));
+            fixed (TChar* hoursMinutes = &MemoryMarshal.GetReference(result.AppendSpan(5)))
+            {
+                Number.WriteTwoDigits((uint)offset.Hours, hoursMinutes);
+                hoursMinutes[2] = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)offset.Minutes, hoursMinutes + 3);
+            }
         }
 
         internal static string GetRealFormat(ReadOnlySpan<char> format, DateTimeFormatInfo dtfi)
@@ -966,7 +978,7 @@ namespace System
                         // This format is not supported by DateTimeOffset
                         throw new FormatException(SR.Format_InvalidString);
                     }
-                    // Universal time is always in Greogrian calendar.
+                    // Universal time is always in Gregorian calendar.
                     //
                     // Change the Calendar to be Gregorian Calendar.
                     //
@@ -991,11 +1003,10 @@ namespace System
             if (format != null && format.Length == 1)
             {
                 // Optimize for these standard formats that are not affected by culture.
-                switch (format[0])
+                switch ((char)(format[0] | 0x20))
                 {
                     // Round trip format
                     case 'o':
-                    case 'O':
                         const int MinFormatOLength = 27, MaxFormatOLength = 33;
                         Span<char> span = stackalloc char[MaxFormatOLength];
                         TryFormatO(dateTime, offset, span, out int ochars);
@@ -1004,7 +1015,6 @@ namespace System
 
                     // RFC1123
                     case 'r':
-                    case 'R':
                         const int FormatRLength = 29;
                         string str = string.FastAllocateString(FormatRLength);
                         TryFormatR(dateTime, offset, new Span<char>(ref str.GetRawStringData(), str.Length), out int rchars);
@@ -1013,51 +1023,43 @@ namespace System
                 }
             }
 
-            DateTimeFormatInfo dtfi = DateTimeFormatInfo.GetInstance(provider);
-            return StringBuilderCache.GetStringAndRelease(FormatStringBuilder(dateTime, format, dtfi, offset));
+            var vlb = new ValueListBuilder<char>(stackalloc char[256]);
+            FormatIntoBuilder(dateTime, format, DateTimeFormatInfo.GetInstance(provider), offset, ref vlb);
+            string resultString = vlb.AsSpan().ToString();
+            vlb.Dispose();
+            return resultString;
         }
 
-        internal static bool TryFormat(DateTime dateTime, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
-            TryFormat(dateTime, destination, out charsWritten, format, provider, new TimeSpan(NullOffset));
+        internal static bool TryFormat<TChar>(DateTime dateTime, Span<TChar> destination, out int written, ReadOnlySpan<char> format, IFormatProvider? provider) where TChar : unmanaged, IUtfChar<TChar> =>
+            TryFormat(dateTime, destination, out written, format, provider, new TimeSpan(NullOffset));
 
-        internal static bool TryFormat(DateTime dateTime, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider, TimeSpan offset)
+        internal static bool TryFormat<TChar>(DateTime dateTime, Span<TChar> destination, out int written, ReadOnlySpan<char> format, IFormatProvider? provider, TimeSpan offset) where TChar : unmanaged, IUtfChar<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             if (format.Length == 1)
             {
                 // Optimize for these standard formats that are not affected by culture.
-                switch (format[0])
+                switch ((char)(format[0] | 0x20))
                 {
                     // Round trip format
                     case 'o':
-                    case 'O':
-                        return TryFormatO(dateTime, offset, destination, out charsWritten);
+                        return TryFormatO(dateTime, offset, destination, out written);
 
                     // RFC1123
                     case 'r':
-                    case 'R':
-                        return TryFormatR(dateTime, offset, destination, out charsWritten);
+                        return TryFormatR(dateTime, offset, destination, out written);
                 }
             }
 
-            DateTimeFormatInfo dtfi = DateTimeFormatInfo.GetInstance(provider);
-            StringBuilder sb = FormatStringBuilder(dateTime, format, dtfi, offset);
-
-            bool success = sb.Length <= destination.Length;
-            if (success)
-            {
-                sb.CopyTo(0, destination, sb.Length);
-                charsWritten = sb.Length;
-            }
-            else
-            {
-                charsWritten = 0;
-            }
-
-            StringBuilderCache.Release(sb);
-            return success;
+            var vlb = new ValueListBuilder<TChar>(stackalloc TChar[256]);
+            FormatIntoBuilder(dateTime, format, DateTimeFormatInfo.GetInstance(provider), offset, ref vlb);
+            bool copied = vlb.TryCopyTo(destination, out written);
+            vlb.Dispose();
+            return copied;
         }
 
-        private static StringBuilder FormatStringBuilder(DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset)
+        private static void FormatIntoBuilder<TChar>(DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset, ref ValueListBuilder<TChar> result) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(dtfi != null);
             if (format.Length == 0)
@@ -1109,7 +1111,7 @@ namespace System
                 format = ExpandPredefinedFormat(format, ref dateTime, ref dtfi, offset);
             }
 
-            return FormatCustomized(dateTime, format, dtfi, offset, result: null);
+            FormatCustomized(dateTime, format, dtfi, offset, ref result);
         }
 
         internal static bool IsValidCustomDateFormat(ReadOnlySpan<char> format, bool throwOnError)
@@ -1252,20 +1254,26 @@ namespace System
         //   012345678901234567890123456789012
         //   ---------------------------------
         //   05:30:45.7680000
-        internal static bool TryFormatTimeOnlyO(int hour, int minute, int second, long fraction, Span<char> destination)
+        internal static unsafe bool TryFormatTimeOnlyO<TChar>(int hour, int minute, int second, long fraction, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             if (destination.Length < 16)
             {
+                charsWritten = 0;
                 return false;
             }
 
-            WriteTwoDecimalDigits((uint)hour, destination, 0);
-            destination[2] = ':';
-            WriteTwoDecimalDigits((uint)minute, destination, 3);
-            destination[5] = ':';
-            WriteTwoDecimalDigits((uint)second, destination, 6);
-            destination[8] = '.';
-            WriteDigits((uint)fraction, destination.Slice(9));
+            charsWritten = 16;
+
+            fixed (TChar* dest = &MemoryMarshal.GetReference(destination))
+            {
+                Number.WriteTwoDigits((uint)hour, dest);
+                dest[2] = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)minute, dest + 3);
+                dest[5] = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)second, dest + 6);
+                dest[8] = TChar.CastFrom('.');
+                Number.WriteDigits((uint)fraction, dest + 9, 7);
+            }
 
             return true;
         }
@@ -1273,18 +1281,24 @@ namespace System
         //   012345678901234567890123456789012
         //   ---------------------------------
         //   05:30:45
-        internal static bool TryFormatTimeOnlyR(int hour, int minute, int second, Span<char> destination)
+        internal static unsafe bool TryFormatTimeOnlyR<TChar>(int hour, int minute, int second, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             if (destination.Length < 8)
             {
+                charsWritten = 0;
                 return false;
             }
 
-            WriteTwoDecimalDigits((uint)hour, destination, 0);
-            destination[2] = ':';
-            WriteTwoDecimalDigits((uint)minute, destination, 3);
-            destination[5] = ':';
-            WriteTwoDecimalDigits((uint)second, destination, 6);
+            charsWritten = 8;
+
+            fixed (TChar* dest = &MemoryMarshal.GetReference(destination))
+            {
+                Number.WriteTwoDigits((uint)hour, dest);
+                dest[2] = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)minute, dest + 3);
+                dest[5] = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)second, dest +6);
+            }
 
             return true;
         }
@@ -1293,18 +1307,25 @@ namespace System
         //   012345678901234567890123456789012
         //   ---------------------------------
         //   2017-06-12
-        internal static bool TryFormatDateOnlyO(int year, int month, int day, Span<char> destination)
+        internal static unsafe bool TryFormatDateOnlyO<TChar>(int year, int month, int day, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             if (destination.Length < 10)
             {
+                charsWritten = 0;
                 return false;
             }
 
-            WriteFourDecimalDigits((uint)year, destination, 0);
-            destination[4] = '-';
-            WriteTwoDecimalDigits((uint)month, destination, 5);
-            destination[7] = '-';
-            WriteTwoDecimalDigits((uint)day, destination, 8);
+            charsWritten = 10;
+
+            fixed (TChar* dest = &MemoryMarshal.GetReference(destination))
+            {
+                Number.WriteFourDigits((uint)year, dest);
+                dest[4] = TChar.CastFrom('-');
+                Number.WriteTwoDigits((uint)month, dest + 5);
+                dest[7] = TChar.CastFrom('-');
+                Number.WriteTwoDigits((uint)day, dest + 8);
+            }
+
             return true;
         }
 
@@ -1312,31 +1333,41 @@ namespace System
         //   01234567890123456789012345678
         //   -----------------------------
         //   Tue, 03 Jan 2017
-        internal static bool TryFormatDateOnlyR(DayOfWeek dayOfWeek, int year, int month, int day, Span<char> destination)
+        internal static unsafe bool TryFormatDateOnlyR<TChar>(DayOfWeek dayOfWeek, int year, int month, int day, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             if (destination.Length < 16)
             {
+                charsWritten = 0;
                 return false;
             }
 
-            string dayAbbrev = InvariantAbbreviatedDayNames[(int)dayOfWeek];
+            charsWritten = 16;
+
+            Debug.Assert((uint)dayOfWeek < 7);
+            string dayAbbrev = s_invariantAbbreviatedDayNames[(int)dayOfWeek];
             Debug.Assert(dayAbbrev.Length == 3);
 
-            string monthAbbrev = InvariantAbbreviatedMonthNames[month - 1];
+            string monthAbbrev = s_invariantAbbreviatedMonthNames[month - 1];
             Debug.Assert(monthAbbrev.Length == 3);
 
-            destination[0] = dayAbbrev[0];
-            destination[1] = dayAbbrev[1];
-            destination[2] = dayAbbrev[2];
-            destination[3] = ',';
-            destination[4] = ' ';
-            WriteTwoDecimalDigits((uint)day, destination, 5);
-            destination[7] = ' ';
-            destination[8] = monthAbbrev[0];
-            destination[9] = monthAbbrev[1];
-            destination[10] = monthAbbrev[2];
-            destination[11] = ' ';
-            WriteFourDecimalDigits((uint)year, destination, 12);
+            fixed (TChar* dest = &MemoryMarshal.GetReference(destination))
+            {
+                char c = dayAbbrev[2]; // remove bounds checks on remaining dayAbbrev accesses
+                dest[0] = TChar.CastFrom(dayAbbrev[0]);
+                dest[1] = TChar.CastFrom(dayAbbrev[1]);
+                dest[2] = TChar.CastFrom(c);
+                dest[3] = TChar.CastFrom(',');
+                dest[4] = TChar.CastFrom(' ');
+                Number.WriteTwoDigits((uint)day, dest + 5);
+                dest[7] = TChar.CastFrom(' ');
+                c = monthAbbrev[2]; // remove bounds checks on remaining monthAbbrev accesses
+                dest[8] = TChar.CastFrom(monthAbbrev[0]);
+                dest[9] = TChar.CastFrom(monthAbbrev[1]);
+                dest[10] = TChar.CastFrom(c);
+                dest[11] = TChar.CastFrom(' ');
+                Number.WriteFourDigits((uint)year, dest + 12);
+            }
+
             return true;
         }
 
@@ -1346,7 +1377,7 @@ namespace System
         //   2017-06-12T05:30:45.7680000-07:00
         //   2017-06-12T05:30:45.7680000Z           (Z is short for "+00:00" but also distinguishes DateTimeKind.Utc from DateTimeKind.Local)
         //   2017-06-12T05:30:45.7680000            (interpreted as local time wrt to current time zone)
-        private static bool TryFormatO(DateTime dateTime, TimeSpan offset, Span<char> destination, out int charsWritten)
+        internal static unsafe bool TryFormatO<TChar>(DateTime dateTime, TimeSpan offset, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             const int MinimumBytesNeeded = 27;
 
@@ -1378,53 +1409,47 @@ namespace System
             }
             charsWritten = charsRequired;
 
-            // Hoist most of the bounds checks on destination.
-            { _ = destination[MinimumBytesNeeded - 1]; }
-
             dateTime.GetDate(out int year, out int month, out int day);
             dateTime.GetTimePrecise(out int hour, out int minute, out int second, out int tick);
 
-            WriteFourDecimalDigits((uint)year, destination, 0);
-            destination[4] = '-';
-            WriteTwoDecimalDigits((uint)month, destination, 5);
-            destination[7] = '-';
-            WriteTwoDecimalDigits((uint)day, destination, 8);
-            destination[10] = 'T';
-            WriteTwoDecimalDigits((uint)hour, destination, 11);
-            destination[13] = ':';
-            WriteTwoDecimalDigits((uint)minute, destination, 14);
-            destination[16] = ':';
-            WriteTwoDecimalDigits((uint)second, destination, 17);
-            destination[19] = '.';
-            WriteDigits((uint)tick, destination.Slice(20, 7));
-
-            if (kind == DateTimeKind.Local)
+            fixed (TChar* dest = &MemoryMarshal.GetReference(destination))
             {
-                int offsetTotalMinutes = (int)(offset.Ticks / TimeSpan.TicksPerMinute);
+                Number.WriteFourDigits((uint)year, dest);
+                dest[4] = TChar.CastFrom('-');
+                Number.WriteTwoDigits((uint)month, dest + 5);
+                dest[7] = TChar.CastFrom('-');
+                Number.WriteTwoDigits((uint)day, dest + 8);
+                dest[10] = TChar.CastFrom('T');
+                Number.WriteTwoDigits((uint)hour, dest + 11);
+                dest[13] = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)minute, dest + 14);
+                dest[16] = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)second, dest + 17);
+                dest[19] = TChar.CastFrom('.');
+                Number.WriteDigits((uint)tick, dest + 20, 7);
 
-                char sign;
-                if (offsetTotalMinutes < 0)
+                if (kind == DateTimeKind.Local)
                 {
-                    sign = '-';
-                    offsetTotalMinutes = -offsetTotalMinutes;
+                    int offsetTotalMinutes = (int)(offset.Ticks / TimeSpan.TicksPerMinute);
+
+                    char sign = '+';
+                    if (offsetTotalMinutes < 0)
+                    {
+                        sign = '-';
+                        offsetTotalMinutes = -offsetTotalMinutes;
+                    }
+
+                    (int offsetHours, int offsetMinutes) = Math.DivRem(offsetTotalMinutes, 60);
+
+                    dest[27] = TChar.CastFrom(sign);
+                    Number.WriteTwoDigits((uint)offsetHours, dest + 28);
+                    dest[30] = TChar.CastFrom(':');
+                    Number.WriteTwoDigits((uint)offsetMinutes, dest + 31);
                 }
-                else
+                else if (kind == DateTimeKind.Utc)
                 {
-                    sign = '+';
+                    dest[27] = TChar.CastFrom('Z');
                 }
-
-                int offsetHours = Math.DivRem(offsetTotalMinutes, 60, out int offsetMinutes);
-
-                // Writing the value backward allows the JIT to optimize by
-                // performing a single bounds check against buffer.
-                WriteTwoDecimalDigits((uint)offsetMinutes, destination, 31);
-                destination[30] = ':';
-                WriteTwoDecimalDigits((uint)offsetHours, destination, 28);
-                destination[27] = sign;
-            }
-            else if (kind == DateTimeKind.Utc)
-            {
-                destination[27] = 'Z';
             }
 
             return true;
@@ -1434,13 +1459,15 @@ namespace System
         //   01234567890123456789012345678
         //   -----------------------------
         //   Tue, 03 Jan 2017 08:08:05 GMT
-        private static bool TryFormatR(DateTime dateTime, TimeSpan offset, Span<char> destination, out int charsWritten)
+        internal static unsafe bool TryFormatR<TChar>(DateTime dateTime, TimeSpan offset, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             if (destination.Length <= 28)
             {
                 charsWritten = 0;
                 return false;
             }
+
+            charsWritten = 29;
 
             if (offset.Ticks != NullOffset)
             {
@@ -1451,93 +1478,41 @@ namespace System
             dateTime.GetDate(out int year, out int month, out int day);
             dateTime.GetTime(out int hour, out int minute, out int second);
 
-            string dayAbbrev = InvariantAbbreviatedDayNames[(int)dateTime.DayOfWeek];
+            string dayAbbrev = s_invariantAbbreviatedDayNames[(int)dateTime.DayOfWeek];
             Debug.Assert(dayAbbrev.Length == 3);
 
-            string monthAbbrev = InvariantAbbreviatedMonthNames[month - 1];
+            string monthAbbrev = s_invariantAbbreviatedMonthNames[month - 1];
             Debug.Assert(monthAbbrev.Length == 3);
 
-            destination[0] = dayAbbrev[0];
-            destination[1] = dayAbbrev[1];
-            destination[2] = dayAbbrev[2];
-            destination[3] = ',';
-            destination[4] = ' ';
-            WriteTwoDecimalDigits((uint)day, destination, 5);
-            destination[7] = ' ';
-            destination[8] = monthAbbrev[0];
-            destination[9] = monthAbbrev[1];
-            destination[10] = monthAbbrev[2];
-            destination[11] = ' ';
-            WriteFourDecimalDigits((uint)year, destination, 12);
-            destination[16] = ' ';
-            WriteTwoDecimalDigits((uint)hour, destination, 17);
-            destination[19] = ':';
-            WriteTwoDecimalDigits((uint)minute, destination, 20);
-            destination[22] = ':';
-            WriteTwoDecimalDigits((uint)second, destination, 23);
-            destination[25] = ' ';
-            destination[26] = 'G';
-            destination[27] = 'M';
-            destination[28] = 'T';
-
-            charsWritten = 29;
-            return true;
-        }
-
-        /// <summary>
-        /// Writes a value [ 00 .. 99 ] to the buffer starting at the specified offset.
-        /// This method performs best when the starting index is a constant literal.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void WriteTwoDecimalDigits(uint value, Span<char> destination, int offset)
-        {
-            Debug.Assert(value <= 99);
-
-            uint temp = '0' + value;
-            value /= 10;
-            destination[offset + 1] = (char)(temp - (value * 10));
-            destination[offset] = (char)('0' + value);
-        }
-
-        /// <summary>
-        /// Writes a value [ 0000 .. 9999 ] to the buffer starting at the specified offset.
-        /// This method performs best when the starting index is a constant literal.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void WriteFourDecimalDigits(uint value, Span<char> buffer, int startingIndex = 0)
-        {
-            Debug.Assert(value <= 9999);
-
-            uint temp = '0' + value;
-            value /= 10;
-            buffer[startingIndex + 3] = (char)(temp - (value * 10));
-
-            temp = '0' + value;
-            value /= 10;
-            buffer[startingIndex + 2] = (char)(temp - (value * 10));
-
-            temp = '0' + value;
-            value /= 10;
-            buffer[startingIndex + 1] = (char)(temp - (value * 10));
-
-            buffer[startingIndex] = (char)('0' + value);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void WriteDigits(ulong value, Span<char> buffer)
-        {
-            // We can mutate the 'value' parameter since it's a copy-by-value local.
-            // It'll be used to represent the value left over after each division by 10.
-
-            for (int i = buffer.Length - 1; i >= 1; i--)
+            fixed (TChar* dest = &MemoryMarshal.GetReference(destination))
             {
-                ulong temp = '0' + value;
-                value /= 10;
-                buffer[i] = (char)(temp - (value * 10));
+                char c = dayAbbrev[2]; // remove bounds checks on remaining dayAbbrev accesses
+                dest[0] = TChar.CastFrom(dayAbbrev[0]);
+                dest[1] = TChar.CastFrom(dayAbbrev[1]);
+                dest[2] = TChar.CastFrom(c);
+                dest[3] = TChar.CastFrom(',');
+                dest[4] = TChar.CastFrom(' ');
+                Number.WriteTwoDigits((uint)day, dest + 5);
+                dest[7] = TChar.CastFrom(' ');
+                c = monthAbbrev[2]; // remove bounds checks on remaining monthAbbrev accesses
+                dest[8] = TChar.CastFrom(monthAbbrev[0]);
+                dest[9] = TChar.CastFrom(monthAbbrev[1]);
+                dest[10] = TChar.CastFrom(c);
+                dest[11] = TChar.CastFrom(' ');
+                Number.WriteFourDigits((uint)year, dest + 12);
+                dest[16] = TChar.CastFrom(' ');
+                Number.WriteTwoDigits((uint)hour, dest + 17);
+                dest[19] = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)minute, dest + 20);
+                dest[22] = TChar.CastFrom(':');
+                Number.WriteTwoDigits((uint)second, dest + 23);
+                dest[25] = TChar.CastFrom(' ');
+                dest[26] = TChar.CastFrom('G');
+                dest[27] = TChar.CastFrom('M');
+                dest[28] = TChar.CastFrom('T');
             }
 
-            Debug.Assert(value < 10);
-            buffer[0] = (char)('0' + value);
+            return true;
         }
 
         internal static string[] GetAllDateTimes(DateTime dateTime, char format, DateTimeFormatInfo dtfi)
@@ -1598,12 +1573,11 @@ namespace System
         {
             List<string> results = new List<string>(DEFAULT_ALL_DATETIMES_SIZE);
 
-            for (int i = 0; i < allStandardFormats.Length; i++)
+            foreach (char standardFormat in AllStandardFormats)
             {
-                string[] strings = GetAllDateTimes(dateTime, allStandardFormats[i], dtfi);
-                for (int j = 0; j < strings.Length; j++)
+                foreach (string dateTimes in GetAllDateTimes(dateTime, standardFormat, dtfi))
                 {
-                    results.Add(strings[j]);
+                    results.Add(dateTimes);
                 }
             }
 

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(InteropCommonDir)CheckGCMode.cs" />
+    <Compile Include="SuppressGCTransitionTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
+    <ProjectReference Include="SuppressGCTransitionUtil.ilproj" />
+  </ItemGroup>
+</Project>

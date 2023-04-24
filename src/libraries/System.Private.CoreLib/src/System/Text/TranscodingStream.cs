@@ -83,10 +83,10 @@ namespace System.Text
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            => TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            => TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         protected override void Dispose(bool disposing)
         {
@@ -162,10 +162,10 @@ namespace System.Text
         }
 
         public override int EndRead(IAsyncResult asyncResult)
-            => TaskToApm.End<int>(asyncResult);
+            => TaskToAsyncResult.End<int>(asyncResult);
 
         public override void EndWrite(IAsyncResult asyncResult)
-            => TaskToApm.End(asyncResult);
+            => TaskToAsyncResult.End(asyncResult);
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
 #pragma warning disable CS8774 // Member must have a non-null value when exiting.
@@ -437,11 +437,10 @@ namespace System.Text
             }
         }
 
-        public override int ReadByte()
+        public override unsafe int ReadByte()
         {
-            Span<byte> buffer = stackalloc byte[1];
-            int bytesRead = Read(buffer);
-            return (bytesRead == 0) ? -1 /* EOF */ : buffer[0];
+            byte b = 0;
+            return Read(new Span<byte>(ref b)) != 0 ? b : -1;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -608,6 +607,6 @@ namespace System.Text
         }
 
         public override void WriteByte(byte value)
-            => Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+            => Write(new ReadOnlySpan<byte>(in value));
     }
 }

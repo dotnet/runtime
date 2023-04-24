@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
 
 namespace System.Reflection.TypeLoading
@@ -24,6 +25,8 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsVariableBoundArray => false;
         protected sealed override bool IsByRefImpl() => false;
         protected sealed override bool IsPointerImpl() => false;
+        public sealed override bool IsFunctionPointer => false;
+        public sealed override bool IsUnmanagedFunctionPointer => false;
         public sealed override bool IsConstructedGenericType => false;
         public sealed override bool IsGenericParameter => true;
         public sealed override bool ContainsGenericParameters => true;
@@ -42,6 +45,7 @@ namespace System.Reflection.TypeLoading
         internal sealed override RoType[] GetGenericTypeParametersNoCopy() => Array.Empty<RoType>();
         internal sealed override RoType[] GetGenericTypeArgumentsNoCopy() => Array.Empty<RoType>();
         protected internal sealed override RoType[] GetGenericArgumentsNoCopy() => Array.Empty<RoType>();
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override Type MakeGenericType(params Type[] typeArguments) => throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 
         public sealed override int GenericParameterPosition => (_lazyPosition == -1) ? (_lazyPosition = ComputePosition()) : _lazyPosition;
@@ -49,15 +53,17 @@ namespace System.Reflection.TypeLoading
         private volatile int _lazyPosition = -1;
 
         public sealed override Type[] GetGenericParameterConstraints() => GetGenericParameterConstraintsNoCopy().CloneArray<Type>();
-        private RoType[] GetGenericParameterConstraintsNoCopy() => _lazyConstraints ?? (_lazyConstraints = ComputeGenericParameterConstraints());
+        private RoType[] GetGenericParameterConstraintsNoCopy() => _lazyConstraints ??= ComputeGenericParameterConstraints();
         protected abstract RoType[] ComputeGenericParameterConstraints();
         private volatile RoType[]? _lazyConstraints;
 
+        public sealed override Type GetFunctionPointerReturnType() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        public sealed override Type[] GetFunctionPointerParameterTypes() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
         public sealed override Guid GUID => Guid.Empty;
         public sealed override StructLayoutAttribute? StructLayoutAttribute => null;
         protected internal sealed override RoType ComputeEnumUnderlyingType() => throw new ArgumentException(SR.Arg_MustBeEnum);
 
-        protected sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk()
+        internal sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk()
         {
             RoType[] constraints = GetGenericParameterConstraintsNoCopy();
             foreach (RoType constraint in constraints)
@@ -68,7 +74,7 @@ namespace System.Reflection.TypeLoading
             return Loader.GetCoreType(CoreType.Object);
         }
 
-        protected sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces()
+        internal sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces()
         {
             RoType[] constraints = GetGenericParameterConstraintsNoCopy();
             foreach (RoType constraint in constraints)

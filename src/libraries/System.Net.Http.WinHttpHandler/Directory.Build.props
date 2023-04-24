@@ -2,10 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
-    <PackageDescription>Provides a message handler for HttpClient based on the WinHTTP interface of Windows. While similar to HttpClientHandler, it provides developers more granular control over the application's HTTP communication than the HttpClientHandler.
-
-Commonly Used Types:
-System.Net.Http.WinHttpHandler</PackageDescription>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
   </PropertyGroup>
 </Project>

@@ -15,7 +15,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         void ICollection.CopyTo(Array array, int index)
         {
-            // Parameter validation
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 

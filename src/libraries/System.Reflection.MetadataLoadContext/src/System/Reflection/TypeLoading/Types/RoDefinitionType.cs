@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Reflection.TypeLoading
@@ -24,13 +25,15 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsVariableBoundArray => false;
         protected sealed override bool IsByRefImpl() => false;
         protected sealed override bool IsPointerImpl() => false;
+        public sealed override bool IsFunctionPointer => false;
+        public sealed override bool IsUnmanagedFunctionPointer => false;
         public sealed override bool IsConstructedGenericType => false;
         public sealed override bool IsGenericParameter => false;
         public sealed override bool IsGenericTypeParameter => false;
         public sealed override bool IsGenericMethodParameter => false;
         public sealed override bool ContainsGenericParameters => IsGenericTypeDefinition;
 
-        protected sealed override string ComputeFullName()
+        protected sealed override string? ComputeFullName()
         {
             Debug.Assert(!IsConstructedGenericType);
             Debug.Assert(!IsGenericParameter);
@@ -77,15 +80,16 @@ namespace System.Reflection.TypeLoading
 
         public sealed override Type GetGenericTypeDefinition() => IsGenericTypeDefinition ? this : throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
 
-        protected sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk() => SpecializeBaseType(Instantiation);
+        internal sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk() => SpecializeBaseType(Instantiation);
         internal abstract RoType? SpecializeBaseType(RoType[] instantiation);
 
-        protected sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces() => SpecializeInterfaces(Instantiation);
+        internal sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces() => SpecializeInterfaces(Instantiation);
         internal abstract IEnumerable<RoType> SpecializeInterfaces(RoType[] instantiation);
 
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override Type MakeGenericType(params Type[] typeArguments)
         {
-            if (typeArguments == null)
+            if (typeArguments is null)
                 throw new ArgumentNullException(nameof(typeArguments));
 
             if (!IsGenericTypeDefinition)
@@ -144,8 +148,6 @@ namespace System.Reflection.TypeLoading
         {
             get
             {
-                const int DefaultPackingSize = 8;
-
                 // Note: CoreClr checks HasElementType and IsGenericParameter in addition to IsInterface but those properties cannot be true here as this
                 // RoType subclass is solely for TypeDef types.)
                 if (IsInterface)
@@ -167,12 +169,6 @@ namespace System.Reflection.TypeLoading
                     _ => CharSet.None,
                 };
                 GetPackSizeAndSize(out int pack, out int size);
-
-                // Metadata parameter checking should not have allowed 0 for packing size.
-                // The runtime later converts a packing size of 0 to 8 so do the same here
-                // because it's more useful from a user perspective.
-                if (pack == 0)
-                    pack = DefaultPackingSize;
 
                 return new StructLayoutAttribute(layoutKind)
                 {
@@ -232,7 +228,8 @@ namespace System.Reflection.TypeLoading
         public sealed override int GenericParameterPosition => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
         public sealed override Type[] GetGenericParameterConstraints() => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
         public sealed override MethodBase DeclaringMethod => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
-
+        public sealed override Type GetFunctionPointerReturnType() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        public sealed override Type[] GetFunctionPointerParameterTypes() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
         internal sealed override IEnumerable<ConstructorInfo> GetConstructorsCore(NameFilter? filter) => SpecializeConstructors(filter, this);
         internal sealed override IEnumerable<MethodInfo> GetMethodsCore(NameFilter? filter, Type reflectedType) => SpecializeMethods(filter, reflectedType, this);
         internal sealed override IEnumerable<EventInfo> GetEventsCore(NameFilter? filter, Type reflectedType) => SpecializeEvents(filter, reflectedType, this);

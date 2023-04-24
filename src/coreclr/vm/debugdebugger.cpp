@@ -27,8 +27,10 @@
 #include "cordebug.h"
 #include "corsym.h"
 #include "generics.h"
-#include "eemessagebox.h"
 #include "stackwalk.h"
+
+#define PORTABLE_PDB_MINOR_VERSION              20557
+#define IMAGE_DEBUG_TYPE_EMBEDDED_PORTABLE_PDB  17
 
 #ifndef DACCESS_COMPILE
 //----------------------------------------------------------------------------
@@ -156,7 +158,7 @@ FCIMPL0(void, DebugDebugger::Break)
 }
 FCIMPLEND
 
-BOOL QCALLTYPE DebugDebugger::Launch()
+extern "C" BOOL QCALLTYPE DebugDebugger_Launch()
 {
     QCALL_CONTRACT;
 
@@ -190,24 +192,26 @@ FCIMPL0(FC_BOOL_RET, DebugDebugger::IsDebuggerAttached)
 }
 FCIMPLEND
 
-
-/*static*/ BOOL DebugDebugger::IsLoggingHelper()
+namespace
 {
-    CONTRACTL
+    BOOL IsLoggingHelper()
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
 
-#ifdef DEBUGGING_SUPPORTED
-    if (CORDebuggerAttached())
-    {
-        return (g_pDebugInterface->IsLoggingEnabled());
+    #ifdef DEBUGGING_SUPPORTED
+        if (CORDebuggerAttached())
+        {
+            return (g_pDebugInterface->IsLoggingEnabled());
+        }
+    #endif // DEBUGGING_SUPPORTED
+        return FALSE;
     }
-#endif // DEBUGGING_SUPPORTED
-    return FALSE;
 }
 
 
@@ -216,7 +220,7 @@ FCIMPLEND
 // appending a newline to anything.
 // It will also call OutputDebugString() which will send a native debug event. The message
 // string there will be a composite of the two managed string parameters and may include a newline.
-void QCALLTYPE DebugDebugger::Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage)
+extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage)
 {
     CONTRACTL
     {
@@ -294,7 +298,6 @@ FCIMPL0(FC_BOOL_RET, DebugDebugger::IsLogging)
     FC_RETURN_BOOL(IsLoggingHelper());
 }
 FCIMPLEND
-
 
 FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         StackFrameHelper* pStackFrameHelperUNSAFE,
@@ -383,6 +386,10 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         OBJECTREF loadedPeSizeArray = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLoadedPeSize), (OBJECTREF)loadedPeSizeArray);
 
+        // Allocate memory for the IsFileLayout flags
+        OBJECTREF isFileLayouts = AllocatePrimitiveArray(ELEMENT_TYPE_BOOLEAN, data.cElements);
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiIsFileLayout), (OBJECTREF)isFileLayouts);
+
         // Allocate memory for the InMemoryPdbAddress
         BASEARRAYREF inMemoryPdbAddressArray = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, data.cElements);
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgInMemoryPdbAddress), (OBJECTREF)inMemoryPdbAddressArray);
@@ -467,11 +474,11 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             pElem[iNumValidFrames] = (size_t)pFunc;
 
             // Native offset
-            I4 *pI4 = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiOffset)->GetDirectPointerToNonObjectElements();
+            CLR_I4 *pI4 = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiOffset)->GetDirectPointerToNonObjectElements();
             pI4[iNumValidFrames] = data.pElements[i].dwOffset;
 
             // IL offset
-            I4 *pILI4 = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiILOffset)->GetDirectPointerToNonObjectElements();
+            CLR_I4 *pILI4 = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiILOffset)->GetDirectPointerToNonObjectElements();
             pILI4[iNumValidFrames] = data.pElements[i].dwILOffset;
 
             // Assembly
@@ -481,9 +488,9 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             if (data.fDoWeHaveAnyFramesFromForeignStackTrace)
             {
                 // Set the BOOL indicating if the frame represents the last frame from a foreign exception stack trace.
-                U1 *pIsLastFrameFromForeignExceptionStackTraceU1 = (U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace)
+                CLR_U1 *pIsLastFrameFromForeignExceptionStackTraceU1 = (CLR_U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace)
                                             ->GetDirectPointerToNonObjectElements();
-                pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (U1)(data.pElements[i].flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE);
+                pIsLastFrameFromForeignExceptionStackTraceU1 [iNumValidFrames] = (CLR_U1)(data.pElements[i].flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE);
             }
 
             MethodDesc *pMethod = data.pElements[i].pFunc;
@@ -515,7 +522,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             // Since the MethodDesc is always the most recent, v1 instances of EnC methods on the stack
             // will appeared to be Enc. This means we err on the side of not showing line numbers for EnC methods.
             // If any method in the file was changed, then our line numbers could be wrong. Since we don't
-            // have udpated PDBs from EnC, we can at best look at the module's version number as a rough guess
+            // have updated PDBs from EnC, we can at best look at the module's version number as a rough guess
             // to if this file has been updated.
             bool fIsEnc = false;
 #ifdef EnC_SUPPORTED
@@ -528,199 +535,239 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                 }
             }
 #endif
-            BOOL fPortablePDB = TRUE;
-
             // Check if the user wants the filenumber, linenumber info and that it is possible.
             if (!fIsEnc && fNeedFileInfo)
             {
 #ifdef FEATURE_ISYM_READER
-                BOOL fFileInfoSet = FALSE;
-                ULONG32 sourceLine = 0;
-                ULONG32 sourceColumn = 0;
-                WCHAR wszFileName[MAX_LONGPATH];
-                ULONG32 fileNameLength = 0;
+                BOOL fPortablePDB = FALSE;
+                // We are checking if the PE image's debug directory contains a portable or embedded PDB because
+                // the native diasymreader's portable PDB support has various bugs (crashes on certain PDBs) and
+                // limitations (doesn't support in-memory or embedded PDBs).
+                if (pModule->GetPEAssembly()->HasLoadedPEImage())
                 {
-                    // Note: we need to enable preemptive GC when accessing the unmanages symbol store.
-                    GCX_PREEMP();
-
-                    // Note: we use the NoThrow version of GetISymUnmanagedReader. If getting the unmanaged
-                    // reader fails, then just leave the pointer NULL and leave any symbol info off of the
-                    // stack trace.
-                    ReleaseHolder<ISymUnmanagedReader> pISymUnmanagedReader(
-                        pModule->GetISymUnmanagedReaderNoThrow());
-
-                    if (pISymUnmanagedReader != NULL)
+                    PEDecoder* pe = pModule->GetPEAssembly()->GetLoadedLayout();
+                    IMAGE_DATA_DIRECTORY* debugDirectoryEntry = pe->GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_DEBUG);
+                    if (debugDirectoryEntry != nullptr)
                     {
-                        // Found a ISymUnmanagedReader for the regular PDB so don't attempt to
-                        // read it as a portable PDB in CoreLib's StackFrameHelper.
-                        fPortablePDB = FALSE;
-
-                        ReleaseHolder<ISymUnmanagedMethod> pISymUnmanagedMethod;
-                        HRESULT hr = pISymUnmanagedReader->GetMethod(pMethod->GetMemberDef(),
-                                                                     &pISymUnmanagedMethod);
-
-                        if (SUCCEEDED(hr))
+                        IMAGE_DEBUG_DIRECTORY* debugDirectory = (IMAGE_DEBUG_DIRECTORY*)pe->GetDirectoryData(debugDirectoryEntry);
+                        if (debugDirectory != nullptr)
                         {
-                            // get all the sequence points and the documents
-                            // associated with those sequence points.
-                            // from the doument get the filename using GetURL()
-                            ULONG32 SeqPointCount = 0;
-                            ULONG32 RealSeqPointCount = 0;
-
-                            hr = pISymUnmanagedMethod->GetSequencePointCount(&SeqPointCount);
-                            _ASSERTE (SUCCEEDED(hr) || (hr == E_OUTOFMEMORY) );
-
-                            if (SUCCEEDED(hr) && SeqPointCount > 0)
+                            size_t nbytes = 0;
+                            while (nbytes < debugDirectoryEntry->Size)
                             {
-                                // allocate memory for the objects to be fetched
-                                NewArrayHolder<ULONG32> offsets    (new (nothrow) ULONG32 [SeqPointCount]);
-                                NewArrayHolder<ULONG32> lines      (new (nothrow) ULONG32 [SeqPointCount]);
-                                NewArrayHolder<ULONG32> columns    (new (nothrow) ULONG32 [SeqPointCount]);
-                                NewArrayHolder<ULONG32> endlines   (new (nothrow) ULONG32 [SeqPointCount]);
-                                NewArrayHolder<ULONG32> endcolumns (new (nothrow) ULONG32 [SeqPointCount]);
-
-                                // we free the array automatically, but we have to manually call release
-                                // on each element in the array when we're done with it.
-                                NewArrayHolder<ISymUnmanagedDocument*> documents (
-                                    (ISymUnmanagedDocument **)new PVOID [SeqPointCount]);
-
-                                if ((offsets && lines && columns && documents && endlines && endcolumns))
+                                if ((debugDirectory->Type == IMAGE_DEBUG_TYPE_CODEVIEW && debugDirectory->MinorVersion == PORTABLE_PDB_MINOR_VERSION) ||
+                                    (debugDirectory->Type == IMAGE_DEBUG_TYPE_EMBEDDED_PORTABLE_PDB))
                                 {
-                                    hr = pISymUnmanagedMethod->GetSequencePoints (
-                                                        SeqPointCount,
-                                                        &RealSeqPointCount,
-                                                        offsets,
-                                                        (ISymUnmanagedDocument **)documents,
-                                                        lines,
-                                                        columns,
-                                                        endlines,
-                                                        endcolumns);
-
-                                    _ASSERTE(SUCCEEDED(hr) || (hr == E_OUTOFMEMORY) );
-
-                                    if (SUCCEEDED(hr))
-                                    {
-                                        _ASSERTE(RealSeqPointCount == SeqPointCount);
-
-#ifdef _DEBUG
-                                        {
-                                            // This is just some debugging code to help ensure that the array
-                                            // returned contains valid interface pointers.
-                                            for (ULONG32 i = 0; i < RealSeqPointCount; i++)
-                                            {
-                                                _ASSERTE(documents[i] != NULL);
-                                                documents[i]->AddRef();
-                                                documents[i]->Release();
-                                            }
-                                        }
-#endif
-
-                                        // This is the IL offset of the current frame
-                                        DWORD dwCurILOffset = data.pElements[i].dwILOffset;
-
-                                        // search for the correct IL offset
-                                        DWORD j;
-                                        for (j=0; j<RealSeqPointCount; j++)
-                                        {
-                                            // look for the entry matching the one we're looking for
-                                            if (offsets[j] >= dwCurILOffset)
-                                            {
-                                                // if this offset is > what we're looking for, adjust the index
-                                                if (offsets[j] > dwCurILOffset && j > 0)
-                                                {
-                                                    j--;
-                                                }
-
-                                                break;
-                                            }
-                                        }
-
-                                        // If we didn't find a match, default to the last sequence point
-                                        if  (j == RealSeqPointCount)
-                                        {
-                                            j--;
-                                        }
-
-                                        while (lines[j] == 0x00feefee && j > 0)
-                                        {
-                                            j--;
-                                        }
-
-#ifdef DEBUGGING_SUPPORTED
-                                        if (lines[j] != 0x00feefee)
-                                        {
-                                            sourceLine = lines [j];
-                                            sourceColumn = columns [j];
-                                        }
-                                        else
-#endif // DEBUGGING_SUPPORTED
-                                        {
-                                            sourceLine = 0;
-                                            sourceColumn = 0;
-                                        }
-
-                                        // Also get the filename from the document...
-                                        _ASSERTE (documents [j] != NULL);
-
-                                        hr = documents [j]->GetURL (MAX_LONGPATH, &fileNameLength, wszFileName);
-                                        _ASSERTE ( SUCCEEDED(hr) || (hr == E_OUTOFMEMORY) || (hr == HRESULT_FROM_WIN32(ERROR_NOT_ENOUGH_MEMORY)) );
-
-                                        // indicate that the requisite information has been set!
-                                        fFileInfoSet = TRUE;
-
-                                        // release the documents set by GetSequencePoints
-                                        for (DWORD x=0; x<RealSeqPointCount; x++)
-                                        {
-                                            documents [x]->Release();
-                                        }
-                                    } // if got sequence points
-
-                                }  // if all memory allocations succeeded
-
-                                // holders will now delete the arrays.
+                                    fPortablePDB = TRUE;
+                                    break;
+                                }
+                                debugDirectory++;
+                                nbytes += sizeof(*debugDirectory);
                             }
                         }
-                        // Holder will release pISymUnmanagedMethod
                     }
-
-                } // GCX_PREEMP()
-
-                if (fFileInfoSet)
-                {
-                    // Set the line and column numbers
-                    I4 *pI4Line = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLineNumber)->GetDirectPointerToNonObjectElements();
-                    pI4Line[iNumValidFrames] = sourceLine;
-
-                    I4 *pI4Column = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiColumnNumber)->GetDirectPointerToNonObjectElements();
-                    pI4Column[iNumValidFrames] = sourceColumn;
-
-                    // Set the file name
-                    OBJECTREF obj = (OBJECTREF) StringObject::NewString(wszFileName);
-                    pStackFrameHelper->rgFilename->SetAt(iNumValidFrames, obj);
                 }
-#endif // FEATURE_ISYM_READER
+                if (!fPortablePDB)
+                {
+                    // We didn't see a portable PDB in the debug directory but to just make sure we defensively assume that is
+                    // portable and if the diasymreader doesn't exist or fails, we go down the portable PDB path.
+                    fPortablePDB = TRUE;
 
-                // If the above isym reader code did NOT set the source info either because it is ifdef'ed out (on xplat)
-                // or because the pdb is the new portable format on Windows then set the information needed to call the
-                // portable pdb reader in the StackTraceHelper.
+                    BOOL fFileInfoSet = FALSE;
+                    ULONG32 sourceLine = 0;
+                    ULONG32 sourceColumn = 0;
+                    WCHAR wszFileName[MAX_LONGPATH];
+                    ULONG32 fileNameLength = 0;
+                    {
+                        // Note: we need to enable preemptive GC when accessing the unmanages symbol store.
+                        GCX_PREEMP();
+
+                        // Note: we use the NoThrow version of GetISymUnmanagedReader. If getting the unmanaged
+                        // reader fails, then just leave the pointer NULL and leave any symbol info off of the
+                        // stack trace.
+                        ReleaseHolder<ISymUnmanagedReader> pISymUnmanagedReader(
+                            pModule->GetISymUnmanagedReaderNoThrow());
+
+                        if (pISymUnmanagedReader != NULL)
+                        {
+                            // Found a ISymUnmanagedReader for the regular PDB so don't attempt to
+                            // read it as a portable PDB in CoreLib's StackFrameHelper.
+                            fPortablePDB = FALSE;
+
+                            ReleaseHolder<ISymUnmanagedMethod> pISymUnmanagedMethod;
+                            HRESULT hr = pISymUnmanagedReader->GetMethod(pMethod->GetMemberDef(),
+                                                                         &pISymUnmanagedMethod);
+
+                            if (SUCCEEDED(hr))
+                            {
+                                // get all the sequence points and the documents
+                                // associated with those sequence points.
+                                // from the doument get the filename using GetURL()
+                                ULONG32 SeqPointCount = 0;
+                                ULONG32 RealSeqPointCount = 0;
+
+                                hr = pISymUnmanagedMethod->GetSequencePointCount(&SeqPointCount);
+                                _ASSERTE (SUCCEEDED(hr) || (hr == E_OUTOFMEMORY) );
+
+                                if (SUCCEEDED(hr) && SeqPointCount > 0)
+                                {
+                                    // allocate memory for the objects to be fetched
+                                    NewArrayHolder<ULONG32> offsets    (new (nothrow) ULONG32 [SeqPointCount]);
+                                    NewArrayHolder<ULONG32> lines      (new (nothrow) ULONG32 [SeqPointCount]);
+                                    NewArrayHolder<ULONG32> columns    (new (nothrow) ULONG32 [SeqPointCount]);
+                                    NewArrayHolder<ULONG32> endlines   (new (nothrow) ULONG32 [SeqPointCount]);
+                                    NewArrayHolder<ULONG32> endcolumns (new (nothrow) ULONG32 [SeqPointCount]);
+
+                                    // we free the array automatically, but we have to manually call release
+                                    // on each element in the array when we're done with it.
+                                    NewArrayHolder<ISymUnmanagedDocument*> documents (
+                                        (ISymUnmanagedDocument **)new PVOID [SeqPointCount]);
+
+                                    if ((offsets && lines && columns && documents && endlines && endcolumns))
+                                    {
+                                        hr = pISymUnmanagedMethod->GetSequencePoints (
+                                                            SeqPointCount,
+                                                            &RealSeqPointCount,
+                                                            offsets,
+                                                            (ISymUnmanagedDocument **)documents,
+                                                            lines,
+                                                            columns,
+                                                            endlines,
+                                                            endcolumns);
+
+                                        _ASSERTE(SUCCEEDED(hr) || (hr == E_OUTOFMEMORY) );
+
+                                        if (SUCCEEDED(hr))
+                                        {
+                                            _ASSERTE(RealSeqPointCount == SeqPointCount);
+
+    #ifdef _DEBUG
+                                            {
+                                                // This is just some debugging code to help ensure that the array
+                                                // returned contains valid interface pointers.
+                                                for (ULONG32 i = 0; i < RealSeqPointCount; i++)
+                                                {
+                                                    _ASSERTE(documents[i] != NULL);
+                                                    documents[i]->AddRef();
+                                                    documents[i]->Release();
+                                                }
+                                            }
+    #endif
+
+                                            // This is the IL offset of the current frame
+                                            DWORD dwCurILOffset = data.pElements[i].dwILOffset;
+
+                                            // search for the correct IL offset
+                                            DWORD j;
+                                            for (j=0; j<RealSeqPointCount; j++)
+                                            {
+                                                // look for the entry matching the one we're looking for
+                                                if (offsets[j] >= dwCurILOffset)
+                                                {
+                                                    // if this offset is > what we're looking for, adjust the index
+                                                    if (offsets[j] > dwCurILOffset && j > 0)
+                                                    {
+                                                        j--;
+                                                    }
+
+                                                    break;
+                                                }
+                                            }
+
+                                            // If we didn't find a match, default to the last sequence point
+                                            if  (j == RealSeqPointCount)
+                                            {
+                                                j--;
+                                            }
+
+                                            while (lines[j] == 0x00feefee && j > 0)
+                                            {
+                                                j--;
+                                            }
+
+    #ifdef DEBUGGING_SUPPORTED
+                                            if (lines[j] != 0x00feefee)
+                                            {
+                                                sourceLine = lines [j];
+                                                sourceColumn = columns [j];
+                                            }
+                                            else
+    #endif // DEBUGGING_SUPPORTED
+                                            {
+                                                sourceLine = 0;
+                                                sourceColumn = 0;
+                                            }
+
+                                            // Also get the filename from the document...
+                                            _ASSERTE (documents [j] != NULL);
+
+                                            hr = documents [j]->GetURL (MAX_LONGPATH, &fileNameLength, wszFileName);
+                                            _ASSERTE ( SUCCEEDED(hr) || (hr == E_OUTOFMEMORY) || (hr == HRESULT_FROM_WIN32(ERROR_NOT_ENOUGH_MEMORY)) );
+
+                                            // indicate that the requisite information has been set!
+                                            fFileInfoSet = TRUE;
+
+                                            // release the documents set by GetSequencePoints
+                                            for (DWORD x=0; x<RealSeqPointCount; x++)
+                                            {
+                                                documents [x]->Release();
+                                            }
+                                        } // if got sequence points
+
+                                    }  // if all memory allocations succeeded
+
+                                    // holders will now delete the arrays.
+                                }
+                            }
+                            // Holder will release pISymUnmanagedMethod
+                        }
+
+                    } // GCX_PREEMP()
+
+                    if (fFileInfoSet)
+                    {
+                        // Set the line and column numbers
+                        CLR_I4 *pI4Line = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLineNumber)->GetDirectPointerToNonObjectElements();
+                        pI4Line[iNumValidFrames] = sourceLine;
+
+                        CLR_I4 *pI4Column = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiColumnNumber)->GetDirectPointerToNonObjectElements();
+                        pI4Column[iNumValidFrames] = sourceColumn;
+
+                        // Set the file name
+                        OBJECTREF obj = (OBJECTREF) StringObject::NewString(wszFileName);
+                        pStackFrameHelper->rgFilename->SetAt(iNumValidFrames, obj);
+                    }
+                }
+
+                // If the above isym reader code did NOT set the source info either because the pdb is the new portable format on
+                // Windows then set the information needed to call the portable pdb reader in the StackTraceHelper.
                 if (fPortablePDB)
+#endif // FEATURE_ISYM_READER
                 {
                     // Save MethodToken for the function
-                    I4 *pMethodToken = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
+                    CLR_I4 *pMethodToken = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
                     pMethodToken[iNumValidFrames] = pMethod->GetMemberDef();
 
-                    PEFile *pPEFile = pModule->GetFile();
+                    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
                     // Get the address and size of the loaded PE image
                     COUNT_T peSize;
-                    PTR_CVOID peAddress = pPEFile->GetLoadedImageContents(&peSize);
+                    PTR_CVOID peAddress = pPEAssembly->GetLoadedImageContents(&peSize);
 
                     // Save the PE address and size
                     PTR_CVOID *pLoadedPeAddress = (PTR_CVOID *)pStackFrameHelper->rgLoadedPeAddress->GetDataPtr();
                     pLoadedPeAddress[iNumValidFrames] = peAddress;
 
-                    I4 *pLoadedPeSize = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLoadedPeSize)->GetDirectPointerToNonObjectElements();
-                    pLoadedPeSize[iNumValidFrames] = (I4)peSize;
+                    CLR_I4 *pLoadedPeSize = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLoadedPeSize)->GetDirectPointerToNonObjectElements();
+                    pLoadedPeSize[iNumValidFrames] = (CLR_I4)peSize;
+
+                    // Set flag indicating PE file in memory has the on disk layout
+                    if (!pPEAssembly->IsDynamic())
+                    {
+                        // This flag is only available for non-dynamic assemblies.
+                        CLR_U1 *pIsFileLayout = (CLR_U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
+                        pIsFileLayout[iNumValidFrames] = (CLR_U1) pPEAssembly->GetLoadedLayout()->IsFlat();
+                    }
 
                     // If there is a in memory symbol stream
                     CGrowableStream* stream = pModule->GetInMemorySymbolStream();
@@ -732,13 +779,13 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                         PTR_VOID *pInMemoryPdbAddress = (PTR_VOID *)pStackFrameHelper->rgInMemoryPdbAddress->GetDataPtr();
                         pInMemoryPdbAddress[iNumValidFrames] = range.StartAddress();
 
-                        I4 *pInMemoryPdbSize = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiInMemoryPdbSize)->GetDirectPointerToNonObjectElements();
-                        pInMemoryPdbSize[iNumValidFrames] = (I4)range.Size();
+                        CLR_I4 *pInMemoryPdbSize = (CLR_I4 *)((I4ARRAYREF)pStackFrameHelper->rgiInMemoryPdbSize)->GetDirectPointerToNonObjectElements();
+                        pInMemoryPdbSize[iNumValidFrames] = (CLR_I4)range.Size();
                     }
                     else
                     {
                         // Set the pdb path (assembly file name)
-                        const SString& assemblyPath = pPEFile->GetPath();
+                        SString assemblyPath = pPEAssembly->GetIdentityPath();
                         if (!assemblyPath.IsEmpty())
                         {
                             OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath);
@@ -764,12 +811,34 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
 }
 FCIMPLEND
 
+extern MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
+{
+    QCALL_CONTRACT;
+
+    MethodDesc* pResult = nullptr;
+
+    BEGIN_QCALL;
+
+    // TODO: There is a race for dynamic and collectible methods here between getting
+    // the MethodDesc here and when the managed wrapper converts it into a MethodBase
+    // where the method could be collected.
+    EECodeInfo codeInfo((PCODE)ip);
+    if (codeInfo.IsValid())
+    {
+        pResult = codeInfo.GetMethodDesc();
+    }
+
+    END_QCALL;
+
+    return pResult;
+}
+
 FORCEINLINE void HolderDestroyStrongHandle(OBJECTHANDLE h) { if (h != NULL) DestroyStrongHandle(h); }
 typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle, NULL> StrongHandleHolder;
 
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
-// Argument: dataUNSAFE - a pointer the the custom notification object being sent
+// Argument: dataUNSAFE - a pointer the custom notification object being sent
 FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
 {
     CONTRACTL
@@ -792,11 +861,11 @@ FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
         StrongHandleHolder objHandle = pAppDomain->CreateStrongHandle(pData);
         MethodTable * pMT = pData->GetGCSafeMethodTable();
         Module * pModule = pMT->GetModule();
-        DomainFile * pDomainFile = pModule->GetDomainFile();
+        DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
         mdTypeDef classToken = pMT->GetCl();
 
         pThread->SetThreadCurrNotification(objHandle);
-        g_pDebugInterface->SendCustomDebuggerNotification(pThread, pDomainFile, classToken);
+        g_pDebugInterface->SendCustomDebuggerNotification(pThread, pDomainAssembly, classToken);
         pThread->ClearThreadCurrNotification();
 
         if (pThread->IsAbortRequested())
@@ -1085,7 +1154,8 @@ void DebugStackTrace::GetStackFramesFromException(OBJECTREF * e,
 
                 if (cur.ip)
                 {
-                    dwNativeOffset = (DWORD)(cur.ip - (UINT_PTR)pMD->GetNativeCode());
+                    EECodeInfo codeInfo(cur.ip);
+                    dwNativeOffset = codeInfo.GetRelOffset();
                 }
                 else
                 {
@@ -1148,14 +1218,14 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
 
     _ASSERTE(!ThreadStore::HoldingThreadStore());
 
-    bool bRes = false; 
+    bool bRes = false;
 
 #ifdef DEBUGGING_SUPPORTED
     // Calculate the IL offset using the debugging services
     if ((this->ip != NULL) && g_pDebugInterface)
     {
         // To get the source line number of the actual code that threw an exception, the dwOffset needs to be
-        // adjusted in certain cases when calculating the IL offset. 
+        // adjusted in certain cases when calculating the IL offset.
         //
         // The dwOffset of the stack frame points to either:
         //

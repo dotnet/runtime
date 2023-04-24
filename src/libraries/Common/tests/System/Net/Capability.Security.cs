@@ -10,7 +10,7 @@ namespace System.Net.Test.Common
     {
         // Thumbprint for CN = NDX Test Root CA.
         // The certificate is part of the chain at
-        // https://github.com/dotnet/runtime-assets/blob/master/System.Net.TestData/contoso.com.p7b
+        // https://github.com/dotnet/runtime-assets/blob/main/src/System.Net.TestData/TestData/contoso.com.p7b
         private const string CARootThumbprint = "3B279AD43D6DD459268D3F3A3D72DAAD4BF4D9C6";
 
         private static Lazy<bool> s_trustedCertificateSupport =
@@ -70,12 +70,29 @@ namespace System.Net.Test.Common
             {
                 store.Open(OpenFlags.ReadOnly);
 
-                X509Certificate2Collection certs =
-                    store.Certificates.Find(X509FindType.FindByThumbprint, CARootThumbprint, false);
-
-                if (certs.Count == 1)
+                X509Certificate2Collection? certs = null;
+                X509Certificate2Collection? found = null;
+                try
                 {
-                    return true;
+                    certs = store.Certificates;
+                    found = certs.Find(X509FindType.FindByThumbprint, CARootThumbprint, false);
+
+                    if (found.Count == 1)
+                    {
+                        return true;
+                    }
+                }
+                finally
+                {
+                    if (found != null)
+                    {
+                        foreach (X509Certificate2 c in found) c.Dispose();
+                    }
+
+                    if (certs != null)
+                    {
+                        foreach (X509Certificate2 c in certs) c.Dispose();
+                    }
                 }
             }
 

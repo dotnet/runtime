@@ -11,15 +11,15 @@ namespace System.IO.MemoryMappedFiles
     public partial class MemoryMappedFile
     {
         // This will verify file access.
-        private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, FileStream fileStream)
+        private static void VerifyMemoryMappedFileAccess(MemoryMappedFileAccess access, long capacity, long fileSize)
         {
-            if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
+            if (access == MemoryMappedFileAccess.Read && capacity > fileSize)
             {
                 throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
             }
 
             // one can always create a small view if they do not want to map an entire file
-            if (fileStream.Length > capacity)
+            if (fileSize > capacity)
             {
                 throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_CapacityGEFileSizeRequired);
             }
@@ -31,23 +31,23 @@ namespace System.IO.MemoryMappedFiles
         /// out empty).
         /// </summary>
         private static SafeMemoryMappedFileHandle CreateCore(
-            FileStream? fileStream, string? mapName, HandleInheritability inheritability,
-            MemoryMappedFileAccess access, MemoryMappedFileOptions options, long capacity)
+            SafeFileHandle? fileHandle, string? mapName, HandleInheritability inheritability,
+            MemoryMappedFileAccess access, MemoryMappedFileOptions options, long capacity, long fileSize)
         {
-            SafeFileHandle? fileHandle = fileStream != null ? fileStream.SafeFileHandle : null;
+            Debug.Assert(fileHandle is null || fileSize >= 0);
+
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
-
-            if (fileStream != null)
+            if (fileHandle != null)
             {
-                VerifyMemoryMappedFileAccess(access, capacity, fileStream);
+                VerifyMemoryMappedFileAccess(access, capacity, fileSize);
             }
 
             SafeMemoryMappedFileHandle handle = fileHandle != null ?
                 Interop.CreateFileMapping(fileHandle, ref secAttrs, GetPageAccess(access) | (int)options, capacity, mapName) :
                 Interop.CreateFileMapping(new IntPtr(-1), ref secAttrs, GetPageAccess(access) | (int)options, capacity, mapName);
 
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
             if (!handle.IsInvalid)
             {
                 if (errorCode == Interop.Errors.ERROR_ALREADY_EXISTS)
@@ -126,7 +126,7 @@ namespace System.IO.MemoryMappedFiles
                 else
                 {
                     handle.Dispose();
-                    int createErrorCode = Marshal.GetLastWin32Error();
+                    int createErrorCode = Marshal.GetLastPInvokeError();
                     if (createErrorCode != Interop.Errors.ERROR_ACCESS_DENIED)
                     {
                         throw Win32Marshal.GetExceptionForWin32Error(createErrorCode);
@@ -146,7 +146,7 @@ namespace System.IO.MemoryMappedFiles
                 else
                 {
                     handle.Dispose();
-                    int openErrorCode = Marshal.GetLastWin32Error();
+                    int openErrorCode = Marshal.GetLastPInvokeError();
                     if (openErrorCode != Interop.Errors.ERROR_FILE_NOT_FOUND)
                     {
                         throw Win32Marshal.GetExceptionForWin32Error(openErrorCode);
@@ -169,6 +169,7 @@ namespace System.IO.MemoryMappedFiles
             // finished retrying but couldn't create or open
             if (handle == null || handle.IsInvalid)
             {
+                handle?.Dispose();
                 throw new InvalidOperationException(SR.InvalidOperation_CantCreateFileMapping);
             }
 
@@ -232,7 +233,7 @@ namespace System.IO.MemoryMappedFiles
         {
             SafeMemoryMappedFileHandle handle = Interop.OpenFileMapping(
                 desiredAccessRights, (inheritability & HandleInheritability.Inheritable) != 0, mapName);
-            int lastError = Marshal.GetLastWin32Error();
+            int lastError = Marshal.GetLastPInvokeError();
 
             if (handle.IsInvalid)
             {

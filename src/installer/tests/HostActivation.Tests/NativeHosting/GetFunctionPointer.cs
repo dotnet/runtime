@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.Cli.Build.Framework;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -46,7 +47,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             if (validType && validMethod)
             {
                 result.Should().Pass()
-                    .And.ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint1, 1, 1);
+                    .And.ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint1, 1, 1)
+                    .And.ExecuteInDefaultContext(appProject.AssemblyName);
             }
             else
             {
@@ -95,10 +97,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             CommandResult result = sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
                 .Execute();
 
-            result.Should()
-                .InitializeContextForApp(appProject.AppDll)
-                .And.Pass()
-                .And.ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint1, 1, 1);
+            result.Should().Pass()
+                .And.InitializeContextForApp(appProject.AppDll)
+                .And.ExecuteFunctionPointer(sharedState.FunctionPointerEntryPoint1, 1, 1)
+                .And.ExecuteInDefaultContext(appProject.AssemblyName);
         }
 
         [Theory]
@@ -137,7 +139,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForApp(appProject.AppDll);
+                .And.InitializeContextForApp(appProject.AppDll)
+                .And.ExecuteInDefaultContext(appProject.AssemblyName);
 
             for (int i = 1; i <= callCount; ++i)
             {
@@ -178,7 +181,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForApp(appProject.AppDll);
+                .And.InitializeContextForApp(appProject.AppDll)
+                .And.ExecuteInDefaultContext(appProject.AssemblyName);
 
             for (int i = 1; i <= callCount; ++i)
             {
@@ -203,7 +207,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             };
 
             sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
-                .Execute()
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.InitializeContextForApp(appProject.AppDll)
                 .And.ExecuteFunctionPointerWithException(entryPoint, 1);
@@ -254,35 +258,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 base.Dispose(disposing);
             }
-        }
-    }
-
-    internal static class FunctionPointerLoadingResultExtensions
-    {
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteFunctionPointer(this CommandResultAssertions assertion, string methodName, int functionPointerCallCount, int returnValue)
-        {
-            return assertion.ExecuteFunctionPointer(methodName, functionPointerCallCount)
-                .And.HaveStdOutContaining($"{methodName} delegate result: 0x{returnValue.ToString("x")}");
-        }
-
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteFunctionPointerWithException(this CommandResultAssertions assertion, string methodName, int functionPointerCallCount)
-        {
-            var constraint = assertion.ExecuteFunctionPointer(methodName, functionPointerCallCount);
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return constraint.And.HaveStdOutContaining($"{methodName} delegate threw exception: 0x{Constants.ErrorCode.COMPlusException.ToString("x")}");
-            }
-            else
-            {
-                // Exception is unhandled by native host on non-Windows systems
-                return constraint.And.ExitWith(Constants.ErrorCode.SIGABRT)
-                    .And.HaveStdErrContaining($"Unhandled exception. System.InvalidOperationException: {methodName}");
-            }
-        }
-
-        public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteFunctionPointer(this CommandResultAssertions assertion, string methodName, int functionPointerCallCount)
-        {
-            return assertion.HaveStdOutContaining($"Called {methodName}(0xdeadbeef, 42) - function pointer call count: {functionPointerCallCount}");
         }
     }
 }

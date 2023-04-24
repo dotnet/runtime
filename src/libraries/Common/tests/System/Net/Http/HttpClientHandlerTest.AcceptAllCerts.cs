@@ -36,25 +36,27 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(SslProtocols.Tls12, false)] // try various protocols to ensure we correctly set versions even when accepting all certs
         [InlineData(SslProtocols.Tls12, true)]
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
         [InlineData(SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false)]
         [InlineData(SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, true)]
 #if !NETFRAMEWORK
         [InlineData(SslProtocols.Tls13 | SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false)]
         [InlineData(SslProtocols.Tls13 | SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, true)]
 #endif
+#pragma warning restore SYSLIB0039
         [InlineData(SslProtocols.None, false)]
         [InlineData(SslProtocols.None, true)]
         public async Task SetDelegate_ConnectionSucceeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)
         {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             // Overriding flag for the same reason we skip tests on Catalina
             // On OSX 10.13-10.14 we can override this flag to enable the scenario
             requestOnlyThisProtocol |= PlatformDetection.IsOSX && acceptedProtocol == SslProtocols.Tls;
+#pragma warning restore SYSLIB0039
 
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-
                 if (requestOnlyThisProtocol)
                 {
                     handler.SslProtocols = acceptedProtocol;
@@ -65,11 +67,13 @@ namespace System.Net.Http.Functional.Tests
                     // restrictions on minimum TLS/SSL version
                     // We currently know that some platforms like Debian 10 OpenSSL
                     // will by default block < TLS 1.2
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
 #if !NETFRAMEWORK
                     handler.SslProtocols = SslProtocols.Tls13 | SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
 #else
                     handler.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls;
 #endif
+#pragma warning restore SYSLIB0039
                 }
 
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };
@@ -94,10 +98,9 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(InvalidCertificateServers))]
         public async Task InvalidCertificateServers_CertificateValidationDisabled_Succeeds(string url)
         {
-            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true))
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
                 (await client.GetAsync(url)).Dispose();
             }
         }

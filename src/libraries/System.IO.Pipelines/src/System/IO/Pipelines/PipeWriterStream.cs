@@ -24,8 +24,18 @@ namespace System.IO.Pipelines
             {
                 _pipeWriter.Complete();
             }
-            base.Dispose(disposing);
         }
+
+#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
+        public override ValueTask DisposeAsync()
+        {
+            if (!LeaveOpen)
+            {
+                return _pipeWriter.CompleteAsync();
+            }
+            return default;
+        }
+#endif
 
         internal bool LeaveOpen { get; set; }
 
@@ -51,10 +61,10 @@ namespace System.IO.Pipelines
         public override void SetLength(long value) => throw new NotSupportedException();
 
         public sealed override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, default), callback, state);
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, default), callback, state);
 
         public sealed override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
 
         public override void Write(byte[] buffer, int offset, int count) =>
             WriteAsync(buffer, offset, count).GetAwaiter().GetResult();
@@ -63,7 +73,7 @@ namespace System.IO.Pipelines
         {
             if (buffer is null)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffer);
             }
 
             ValueTask<FlushResult> valueTask = _pipeWriter.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken);

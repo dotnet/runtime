@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -36,35 +36,35 @@ $SED -e "s/CODE/${TEST_CODE}/g" -e "s/OTHER/${TEST_OTHER_CODE}/g" -e "s/VALIDITY
 .module delegate_test.exe
 .class ansi beforefieldinit TestClass extends [mscorlib]System.Object
 {
-	.method public hidebysig specialname  rtspecialname instance default void .ctor ()  cil managed 
+	.method public hidebysig specialname  rtspecialname instance default void .ctor ()  cil managed
 	{
 		.maxstack 8
 		ldarg.0
 		call instance void object::'.ctor'()
-		ret 
+		ret
 	}
 
-	.method public hidebysig specialname  rtspecialname instance default void .ctor (object V_1)  cil managed 
+	.method public hidebysig specialname  rtspecialname instance default void .ctor (object V_1)  cil managed
 	{
 		.maxstack 8
 		ldarg.0
 		call instance void object::'.ctor'()
-		ret 
+		ret
 	}
 }
 
 .module delegate_test.exe
 .class ansi beforefieldinit TestSubClass extends TestClass
 {
-	.method public hidebysig specialname  rtspecialname instance default void .ctor ()  cil managed 
+	.method public hidebysig specialname  rtspecialname instance default void .ctor ()  cil managed
 	{
 		.maxstack 8
 		ldarg.0
 		OTHER
-		
+
 		leave END
 END:
-		ret 
+		ret
 	}
 }
 
@@ -76,29 +76,29 @@ END:
 	.field int32 val
 	.field object obj
 
-	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed
 	{
 		.maxstack 8
 		.locals init (Test V_0)
 		ldarg.0
 		CODE
-		
+
 		leave END
 END:
-		ret 
+		ret
 	}
 
-	.method public hidebysig static default void StaticMethod (object A_0)  cil managed 
+	.method public hidebysig static default void StaticMethod (object A_0)  cil managed
 	{
 		.maxstack 8
-		ret 
+		ret
 	}
 
 
-	.method public hidebysig instance default void InstanceMethod ()  cil managed 
+	.method public hidebysig instance default void InstanceMethod ()  cil managed
 	{
 		.maxstack 8
-		ret 
+		ret
 	}
 
 }
@@ -107,13 +107,13 @@ END:
 .class public auto ansi beforefieldinit Driver
         extends [mscorlib]System.Object
 {
-	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed
 	{
 		.maxstack 8
 		ldarg.0
 		call instance void object::'.ctor'()
 
-		ret 
+		ret
 	}
 
 	.method public static int32 Main ()
@@ -124,7 +124,7 @@ END:
 		newobj instance void ${TARGET_TYPE}::.ctor()
 		pop
 		ldc.i4.0
-		ret 
+		ret
 
 	}
 }

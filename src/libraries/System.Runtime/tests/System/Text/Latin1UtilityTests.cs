@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -82,7 +83,7 @@ namespace System.Text.Tests
             //
             // The 5 * Vector test should make sure that we're exercising all possible
             // code paths across both implementations. The sizeof(char) is because we're
-            // specifying element count, but underlying implementation reintepret casts to bytes.
+            // specifying element count, but underlying implementation reinterpret casts to bytes.
             //
             // Use U+FF80 for this test because if our implementation incorrectly uses paddw or
             // paddsw instead of paddusw, U+FF80 will incorrectly show up as Latin-1,
@@ -325,9 +326,10 @@ namespace System.Text.Tests
             }
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
         private static Type GetLatin1UtilityType()
         {
-            return typeof(object).Assembly.GetType("System.Text.Latin1Utility");
+            return Type.GetType("System.Text.Latin1Utility, System.Private.CoreLib");
         }
 
         private sealed class UnsafeLazyDelegate<TDelegate> where TDelegate : class

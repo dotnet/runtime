@@ -13,6 +13,7 @@ add_library_clr(CoreShim
 )
 
 target_link_libraries(CoreShim
+    PRIVATE
     utilcodestaticnohost
     advapi32.lib
     oleaut32.lib
@@ -22,4 +23,4 @@ target_link_libraries(CoreShim
     ${STATIC_MT_VCRT_LIB}
 )
 
-install_clr(TARGETS CoreShim DESTINATIONS . COMPONENT runtime)
+install_clr(TARGETS CoreShim DESTINATIONS . COMPONENT hosts)

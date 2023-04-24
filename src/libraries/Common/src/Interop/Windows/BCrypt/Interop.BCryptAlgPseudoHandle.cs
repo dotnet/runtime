@@ -17,9 +17,23 @@ internal static partial class Interop
             BCRYPT_SHA256_ALG_HANDLE = 0x00000041,
             BCRYPT_SHA384_ALG_HANDLE = 0x00000051,
             BCRYPT_SHA512_ALG_HANDLE = 0x00000061,
+            BCRYPT_HMAC_MD5_ALG_HANDLE = 0x00000091,
+            BCRYPT_HMAC_SHA1_ALG_HANDLE = 0x000000a1,
+            BCRYPT_HMAC_SHA256_ALG_HANDLE = 0x000000b1,
+            BCRYPT_HMAC_SHA384_ALG_HANDLE = 0x000000c1,
+            BCRYPT_HMAC_SHA512_ALG_HANDLE = 0x000000d1,
             BCRYPT_PBKDF2_ALG_HANDLE = 0x00000331,
         }
 
-        internal static bool PseudoHandlesSupported { get; } = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 0);
+        internal static bool PseudoHandlesSupported { get; } =
+#if NET
+            OperatingSystem.IsWindowsVersionAtLeast(10, 0, 0);
+#elif NETSTANDARD2_0_OR_GREATER
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major >= 10;
+#elif NETFRAMEWORK
+            Environment.OSVersion.Version.Major >= 10;
+#else
+#error Unhandled platform targets
+#endif
     }
 }

@@ -36,10 +36,9 @@ namespace System.Net
         {
             get
             {
-                if (index < 0 || index >= m_list.Count)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, m_list.Count);
+
                 return (m_list[index] as Cookie)!;
             }
         }
@@ -67,10 +66,8 @@ namespace System.Net
 
         public void Add(Cookie cookie)
         {
-            if (cookie == null)
-            {
-                throw new ArgumentNullException(nameof(cookie));
-            }
+            ArgumentNullException.ThrowIfNull(cookie);
+
             int idx = IndexOf(cookie);
             if (idx == -1)
             {
@@ -84,10 +81,8 @@ namespace System.Net
 
         public void Add(CookieCollection cookies)
         {
-            if (cookies == null)
-            {
-                throw new ArgumentNullException(nameof(cookies));
-            }
+            ArgumentNullException.ThrowIfNull(cookies);
+
             foreach (Cookie? cookie in cookies.m_list)
             {
                 Add(cookie!);
@@ -203,7 +198,7 @@ namespace System.Net
                 for (int i = 0; i < listCount; i++)
                 {
                     Cookie c = (Cookie)m_list[i]!;
-                    if (CookieComparer.Compare(cookie, c) == 0)
+                    if (CookieComparer.Equals(cookie, c))
                     {
                         ret = 0; // Will replace or reject
 
@@ -237,7 +232,7 @@ namespace System.Net
             int idx = 0;
             foreach (Cookie? c in m_list)
             {
-                if (CookieComparer.Compare(cookie, c!) == 0)
+                if (CookieComparer.Equals(cookie, c!))
                 {
                     return idx;
                 }

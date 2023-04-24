@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 
 interface IGen<T>
@@ -16,14 +17,14 @@ struct Gen<T> : IGen<T>
 
 	public void Target(object p)
 	{			
-		if (Test.Xcounter>=Test.nThreads)
+		if (Test_thread11.Xcounter>=Test_thread11.nThreads)
 		{
 			ManualResetEvent evt = (ManualResetEvent) p;	
 			evt.Set();
 		}
 		else
 		{
-			Interlocked.Increment(ref Test.Xcounter);	
+			Interlocked.Increment(ref Test_thread11.Xcounter);	
 		}
 	}
 	
@@ -34,16 +35,16 @@ struct Gen<T> : IGen<T>
 		IGen<T> obj = new Gen<T>();
 
 		TimerCallback tcb = new TimerCallback(obj.Target);
-		Timer timer = new Timer(tcb,evt,Test.delay,Test.period);
+		Timer timer = new Timer(tcb,evt,Test_thread11.delay,Test_thread11.period);
 	
 		evt.WaitOne();
 		timer.Dispose();
-		Test.Eval(Test.Xcounter>=Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread11.Eval(Test_thread11.Xcounter>=Test_thread11.nThreads);
+		Test_thread11.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread11
 {
 	public static int delay = 0;
 	public static int period = 2;
@@ -62,7 +63,8 @@ public class Test
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Gen<int>.ThreadPoolTest();
 		Gen<double>.ThreadPoolTest();

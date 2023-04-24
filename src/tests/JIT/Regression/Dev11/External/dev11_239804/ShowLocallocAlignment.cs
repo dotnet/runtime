@@ -12,13 +12,14 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace ShowLocallocAlignment
 {
     public struct Struct1 { public int F1; }
     public struct Struct2 { public int F1; public int F2; }
 
-    internal static class App
+    public static class App
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void CallTarget1(int arg1, int arg2, int arg3, int arg4, int arg5) { return; }
@@ -52,7 +53,7 @@ namespace ShowLocallocAlignment
             void* ptr2;
 
             required_alignment = 16; // Default to the biggest alignment required
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && (RuntimeInformation.ProcessArchitecture == Architecture.X86))
+            if (OperatingSystem.IsWindows() && (RuntimeInformation.ProcessArchitecture == Architecture.X86))
             {
                 required_alignment = 4;
             }
@@ -94,7 +95,8 @@ namespace ShowLocallocAlignment
             return 101;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return App.RunAlignmentCheckScenario();
         }

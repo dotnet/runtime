@@ -9,6 +9,19 @@
 #include <interoplibabi.h>
 #include "referencetrackertypes.hpp"
 
+#ifndef DEFINE_ENUM_FLAG_OPERATORS
+#define DEFINE_ENUM_FLAG_OPERATORS(ENUMTYPE) \
+extern "C++" { \
+    inline ENUMTYPE operator | (ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a)|((int)b)); } \
+    inline ENUMTYPE operator |= (ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) |= ((int)b)); } \
+    inline ENUMTYPE operator & (ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a)&((int)b)); } \
+    inline ENUMTYPE operator &= (ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) &= ((int)b)); } \
+    inline ENUMTYPE operator ~ (ENUMTYPE a) { return (ENUMTYPE)(~((int)a)); } \
+    inline ENUMTYPE operator ^ (ENUMTYPE a, ENUMTYPE b) { return ENUMTYPE(((int)a)^((int)b)); } \
+    inline ENUMTYPE operator ^= (ENUMTYPE &a, ENUMTYPE b) { return (ENUMTYPE &)(((int &)a) ^= ((int)b)); } \
+}
+#endif
+
 enum class CreateComInterfaceFlagsEx : int32_t
 {
     None = InteropLib::Com::CreateComInterfaceFlags_None,
@@ -31,6 +44,8 @@ namespace ABI
     struct ComInterfaceDispatch;
     struct ComInterfaceEntry;
 }
+
+static constexpr size_t ManagedObjectWrapperRefCountOffset();
 
 // Class for wrapping a managed object and projecting it in a non-managed environment
 class ManagedObjectWrapper
@@ -60,6 +75,13 @@ public: // static
     // Convert the IUnknown if the instance is a ManagedObjectWrapper
     // into a ManagedObjectWrapper, otherwise null.
     static ManagedObjectWrapper* MapFromIUnknown(_In_ IUnknown* pUnk);
+
+    // Convert the IUnknown if the instance is a ManagedObjectWrapper
+    // into a ManagedObjectWrapper, otherwise null. This API provides
+    // a stronger guarantee than MapFromIUnknown(), but does so by
+    // performing a QueryInterface() which may not always be possible.
+    // See implementation for more details.
+    static ManagedObjectWrapper* MapFromIUnknownWithQueryInterface(_In_ IUnknown* pUnk);
 
     // Create a ManagedObjectWrapper instance
     static HRESULT Create(
@@ -102,6 +124,9 @@ public:
 
     // Indicate if the wrapper should be considered a GC root.
     bool IsRooted() const;
+
+    // Check if the wrapper has been marked to be destroyed.
+    bool IsMarkedToDestroy() const;
 
 public: // IReferenceTrackerTarget
     ULONG AddRefFromReferenceTracker();
@@ -156,7 +181,7 @@ public: // static
     static NativeObjectWrapperContext* MapFromRuntimeContext(_In_ void* cxt);
 
     // Create a NativeObjectWrapperContext instance
-    static HRESULT NativeObjectWrapperContext::Create(
+    static HRESULT Create(
         _In_ IUnknown* external,
         _In_opt_ IUnknown* nativeObjectAsInner,
         _In_ InteropLib::Com::CreateObjectFlags flags,
@@ -194,8 +219,8 @@ public:
     // Called after wrapper has been created.
     static HRESULT AfterWrapperCreated(_In_ IReferenceTracker* obj);
 
-    // Called before wrapper is about to be destroyed (the same lifetime as short weak handle).
-    static HRESULT BeforeWrapperDestroyed(_In_ IReferenceTracker* obj);
+    // Called before wrapper is about to be finalized (the same lifetime as short weak handle).
+    static HRESULT BeforeWrapperFinalized(_In_ IReferenceTracker* obj);
 
 public:
     // Begin the reference tracking process for external objects.

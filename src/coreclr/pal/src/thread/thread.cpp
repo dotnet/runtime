@@ -93,6 +93,8 @@ using namespace CorUnix;
 
 #ifdef __APPLE__
 #define MAX_THREAD_NAME_SIZE 63
+#elif defined(__FreeBSD__)
+#define MAX_THREAD_NAME_SIZE MAXCOMLEN
 #else
 #define MAX_THREAD_NAME_SIZE 15
 #endif
@@ -551,41 +553,6 @@ CorUnix::InternalCreateThread(
     int iError = 0;
     size_t alignedStackSize;
 
-    if (0 != terminator)
-    {
-        //
-        // Since the PAL is in the middle of shutting down we don't want to
-        // create any new threads (since it's possible for that new thread
-        // to create another thread before the shutdown thread gets around
-        // to suspending it, and so on). We don't want to return an error
-        // here, though, as some programs (in particular, build) do not
-        // handle CreateThread errors properly -- instead, we just put
-        // the calling thread to sleep (unless it is the shutdown thread,
-        // which could occur if a DllMain PROCESS_DETACH handler tried to
-        // create a new thread for some odd reason).
-        //
-
-        ERROR("process is terminating, can't create new thread.\n");
-
-        if (pThread->GetThreadId() != static_cast<DWORD>(terminator))
-        {
-            while (true)
-            {
-                poll(NULL, 0, INFTIM);
-                sched_yield();
-            }
-        }
-        else
-        {
-            //
-            // This is the shutdown thread, so just return an error
-            //
-
-            palError = ERROR_PROCESS_ABORTED;
-            goto EXIT;
-        }
-    }
-
     /* Validate parameters */
 
     if (lpThreadAttributes != NULL)
@@ -605,7 +572,7 @@ CorUnix::InternalCreateThread(
             // When coming here from the public API surface, the incoming value is originally a nonnegative signed int32, so
             // this shouldn't happen
             ASSERT(
-                "Couldn't align the requested stack size (%Iu) to the page size because the stack size was too large\n",
+                "Couldn't align the requested stack size (%zu) to the page size because the stack size was too large\n",
                 alignedStackSize);
             palError = ERROR_INVALID_PARAMETER;
             goto EXIT;
@@ -678,10 +645,10 @@ CorUnix::InternalCreateThread(
             alignedStackSize = MinStackSize;
         }
 
-        TRACE("setting thread stack size to %Iu\n", alignedStackSize);
+        TRACE("setting thread stack size to %zu\n", alignedStackSize);
         if (0 != pthread_attr_setstacksize(&pthreadAttr, alignedStackSize))
         {
-            ERROR("couldn't set pthread stack size to %Iu\n", alignedStackSize);
+            ERROR("couldn't set pthread stack size to %zu\n", alignedStackSize);
             palError = ERROR_INTERNAL_ERROR;
             goto EXIT;
         }
@@ -1192,7 +1159,7 @@ CorUnix::InternalSetThreadPriority(
        Time Critical [+15]), we have to do a mapping from a known range to an
        unknown (at compilation) range.
        We do this by :
-       -substracting the minimal PAL priority from the desired priority. this
+       -subtracting the minimal PAL priority from the desired priority. this
         gives a value between 0 and the PAL priority range
        -dividing this value by the PAL priority range. this allows us to
         express the desired priority as a floating-point value between 0 and 1
@@ -1517,75 +1484,6 @@ GetThreadTimesInternalExit:
     return retval;
 }
 
-/*++
-Function:
-  GetThreadTimes
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-GetThreadTimes(
-        IN HANDLE hThread,
-        OUT LPFILETIME lpCreationTime,
-        OUT LPFILETIME lpExitTime,
-        OUT LPFILETIME lpKernelTime,
-        OUT LPFILETIME lpUserTime)
-{
-    PERF_ENTRY(GetThreadTimes);
-    ENTRY("GetThreadTimes(hThread=%p, lpExitTime=%p, lpKernelTime=%p,"
-          "lpUserTime=%p)\n",
-          hThread, lpCreationTime, lpExitTime, lpKernelTime, lpUserTime );
-
-    FILETIME KernelTime, UserTime;
-
-    BOOL retval = GetThreadTimesInternal(hThread, &KernelTime, &UserTime);
-
-    /* Not sure if this still needs to be here */
-    /*
-    TRACE ("thread_info User: %ld sec,%ld microsec. Kernel: %ld sec,%ld"
-           " microsec\n",
-           resUsage.user_time.seconds, resUsage.user_time.microseconds,
-           resUsage.system_time.seconds, resUsage.system_time.microseconds);
-    */
-
-    __int64 calcTime;
-    if (lpUserTime)
-    {
-        /* Produce the time in 100s of ns */
-        calcTime = ((ULONG64)UserTime.dwHighDateTime << 32);
-        calcTime += (ULONG64)UserTime.dwLowDateTime;
-        calcTime /= 100;
-        lpUserTime->dwLowDateTime = (DWORD)calcTime;
-        lpUserTime->dwHighDateTime = (DWORD)(calcTime >> 32);
-    }
-    if (lpKernelTime)
-    {
-        /* Produce the time in 100s of ns */
-        calcTime = ((ULONG64)KernelTime.dwHighDateTime << 32);
-        calcTime += (ULONG64)KernelTime.dwLowDateTime;
-        calcTime /= 100;
-        lpKernelTime->dwLowDateTime = (DWORD)calcTime;
-        lpKernelTime->dwHighDateTime = (DWORD)(calcTime >> 32);
-    }
-    //Set CreationTime and Exit time to zero for now - maybe change this later?
-    if (lpCreationTime)
-    {
-        lpCreationTime->dwLowDateTime = 0;
-        lpCreationTime->dwHighDateTime = 0;
-    }
-
-    if (lpExitTime)
-    {
-        lpExitTime->dwLowDateTime = 0;
-        lpExitTime->dwHighDateTime = 0;
-    }
-
-    LOGEXIT("GetThreadTimes returns BOOL %d\n", retval);
-    PERF_EXIT(GetThreadTimes);
-    return (retval);
-}
-
 HRESULT
 PALAPI
 SetThreadDescription(
@@ -1633,8 +1531,8 @@ CorUnix::InternalSetThreadDescription(
     char *nameBuf = NULL;
 
 // The exact API of pthread_setname_np varies very wildly depending on OS.
-// For now, only Linux and macOS are implemented.
-#if defined(__linux__) || defined(__APPLE__)
+// For now, only Linux, macOS and FreeBSD are implemented.
+#if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
 
     palError = InternalGetThreadDataFromHandle(
         pThread,
@@ -1681,20 +1579,20 @@ CorUnix::InternalSetThreadDescription(
     }
 
     // Null terminate early.
-    // pthread_setname_np only accepts up to 16 chars on Linux and
-    // 64 chars on macOS.
+    // pthread_setname_np only accepts up to 16 chars on Linux,
+    // 64 chars on macOS and 20 chars on FreeBSD.
     if (nameSize > MAX_THREAD_NAME_SIZE)
     {
         nameBuf[MAX_THREAD_NAME_SIZE] = '\0';
     }
-    
-    #if defined(__linux__)
+
+    #if defined(__linux__) || defined(__FreeBSD__)
     error = pthread_setname_np(pTargetThread->GetPThreadSelf(), nameBuf);
     #endif
 
     #if defined(__APPLE__)
     // on macOS, pthread_setname_np only works for the calling thread.
-    if (PlatformGetCurrentThreadId() == pTargetThread->GetThreadId()) 
+    if (PlatformGetCurrentThreadId() == pTargetThread->GetThreadId())
     {
         error = pthread_setname_np(nameBuf);
     }
@@ -1721,7 +1619,7 @@ InternalSetThreadDescriptionExit:
         PAL_free(nameBuf);
     }
 
-#endif //defined(__linux__) || defined(__APPLE__)
+#endif //defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__)
 
     return palError;
 }

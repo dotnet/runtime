@@ -293,6 +293,22 @@ namespace System.Media.Test
             player.PlayLooping();
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
+        [MemberData(nameof(Play_String_TestData))]
+        [OuterLoop]
+        public void PlaySync_TrickledData_Success(string sourceLocation)
+        {
+            using var player = new SoundPlayer();
+            player.Stream = new TrickleStream(File.ReadAllBytes(sourceLocation.Replace("file://", "")));
+            player.PlaySync();
+        }
+
+        private sealed class TrickleStream : MemoryStream
+        {
+            public TrickleStream(byte[] bytes) : base(bytes) { }
+            public override int Read(byte[] buffer, int offset, int count) => base.Read(buffer, offset, Math.Min(count, 1));
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))]
         [OuterLoop]
         public void PlaySync_NullStream_Success()
@@ -462,7 +478,6 @@ namespace System.Media.Test
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/41676", TestRuntimes.Mono)]
         public async Task LoadAsync_CancelDuringLoad_CompletesAsCanceled(int cancellationCause)
         {
             var tcs = new TaskCompletionSource<AsyncCompletedEventArgs>();

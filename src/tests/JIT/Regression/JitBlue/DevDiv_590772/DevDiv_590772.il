@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { auto }
-.assembly extern System.Runtime { auto }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Console { auto }
 
 .assembly DevDiv_590772 { }
+.assembly extern xunit.core {}
 
 .class public auto ansi beforefieldinit DevDiv_590772
        extends [System.Runtime]System.Object
@@ -117,9 +118,12 @@
     IL_00b6: ret   
   }
 
-  .method private hidebysig static int32 
-          Main(string[] args) cil managed
+  .method public hidebysig static int32 
+          Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       34 (0x22)
     .maxstack  7

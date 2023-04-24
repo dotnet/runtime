@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -20,7 +20,7 @@ TEST_PARAMS=`echo $TEST_PARAMS | $SED -s 's/&/\\\&/'`
 TEST_LOCALS=`echo $TEST_LOCALS | $SED -s 's/&/\\\&/'`
 $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/PARAMS/${TEST_PARAMS}/g" -e "s/LOCALS/${TEST_LOCALS}/g" -e "s/OPCODE/${TEST_OP}/g" -e "s/ARGS/${TEST_ARGS}/g" -e "s/SIG/${TEST_SIG}/g" > $TEST_FILE <<//EOF
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly '${TEST_NAME}_generated'

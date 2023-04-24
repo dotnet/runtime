@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
-using ILCompiler;
 using Internal.TypeSystem;
 using NumberStyles = System.Globalization.NumberStyles;
 
@@ -62,7 +61,7 @@ namespace Internal.JitInterface
                 return libHandle;
             });
 
-            CorInfoImpl.Startup();
+            CorInfoImpl.Startup(CorInfoImpl.TargetToOs(target));
         }
 
         public IntPtr UnmanagedInstance
@@ -79,7 +78,7 @@ namespace Internal.JitInterface
         /// <param name="parameters">A collection of parameter name/value pairs.</param>
         public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters)
         {
-            ArrayBuilder<CorJitFlag> jitFlagBuilder = new ArrayBuilder<CorJitFlag>();
+            ArrayBuilder<CorJitFlag> jitFlagBuilder = default(ArrayBuilder<CorJitFlag>);
             foreach (CorJitFlag jitFlag in jitFlags)
             {
                 jitFlagBuilder.Add(jitFlag);
@@ -110,7 +109,7 @@ namespace Internal.JitInterface
             string stringValue;
             int intValue;
             if (_config.TryGetValue(name, out stringValue) &&
-                Int32.TryParse(stringValue, NumberStyles.AllowHexSpecifier, null, out intValue))
+                int.TryParse(stringValue, NumberStyles.AllowHexSpecifier, null, out intValue))
             {
                 return intValue;
             }
@@ -126,7 +125,7 @@ namespace Internal.JitInterface
                 return stringValue;
             }
 
-            return String.Empty;
+            return string.Empty;
         }
 
         private static string GetTargetSpec(TargetDetails target)
@@ -138,12 +137,13 @@ namespace Internal.JitInterface
                 TargetArchitecture.X64 => "x64",
                 TargetArchitecture.ARM => "arm",
                 TargetArchitecture.ARM64 => "arm64",
+                TargetArchitecture.LoongArch64 => "loongarch64",
                 _ => throw new NotImplementedException(target.Architecture.ToString())
             };
 
-            if ((target.Architecture == TargetArchitecture.ARM64) && (target.OperatingSystem == TargetOS.OSX))
+            if ((target.Architecture == TargetArchitecture.ARM64) || (target.Architecture == TargetArchitecture.ARM))
             {
-                targetOSComponent = "unix_osx";
+                targetOSComponent = "universal";
             }
 
             return targetOSComponent + '_' + targetArchComponent + "_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();

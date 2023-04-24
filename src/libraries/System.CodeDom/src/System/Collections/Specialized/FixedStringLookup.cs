@@ -75,7 +75,7 @@ namespace System.Collections.Specialized
         // Do a binary search on the character array at the specific position and constrict the ranges appropriately.
         private static bool FindCharacter(string[] array, char value, int pos, ref int min, ref int max)
         {
-            int index = min;
+            int index;
             while (min < max)
             {
                 index = (min + max) / 2;

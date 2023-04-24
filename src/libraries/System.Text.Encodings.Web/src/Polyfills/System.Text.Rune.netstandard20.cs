@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Encodings.Web;
+using System.Diagnostics.CodeAnalysis;
 
 // Contains a polyfill implementation of System.Text.Rune that works on netstandard2.0.
 // Implementation copied from:
@@ -13,7 +14,7 @@ using System.Text.Encodings.Web;
 
 namespace System.Text
 {
-    internal readonly struct Rune
+    internal readonly struct Rune : IEquatable<Rune>
     {
         private const int MaxUtf16CharsPerRune = 2; // supplementary plane code points are encoded as 2 UTF-16 code units
 
@@ -50,7 +51,7 @@ namespace System.Text
         }
 
         // non-validating ctor
-        private Rune(uint scalarValue, bool unused)
+        private Rune(uint scalarValue, bool _)
         {
             UnicodeDebug.AssertIsValidScalar(scalarValue);
             _value = scalarValue;
@@ -387,7 +388,7 @@ namespace System.Text
             return OperationStatus.NeedMoreData;
         }
 
-        public override bool Equals(object? obj) => (obj is Rune other) && Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Rune other) && Equals(other);
 
         public bool Equals(Rune other) => this == other;
 

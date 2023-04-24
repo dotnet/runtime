@@ -88,18 +88,9 @@ class Crst;
 #ifdef FEATURE_COMINTEROP
 class RCWCleanupList;
 #endif // FEATURE_COMINTEROP
-class BBSweep;
 
-//
-// loader handles are opaque types that track object pointers that have a lifetime
-// that matches that of a loader allocator
-//
-struct LOADERHANDLE__
-{
-    void* unused;
-};
 typedef TADDR LOADERHANDLE;
-
+typedef TADDR RUNTIMETYPEHANDLE;
 
 #ifdef DACCESS_COMPILE
 void OBJECTHANDLE_EnumMemoryRegions(OBJECTHANDLE handle);
@@ -157,6 +148,8 @@ class OBJECTREF {
     };
 
     public:
+        enum class tagVolatileLoadWithoutBarrier { tag };
+
         //-------------------------------------------------------------
         // Default constructor, for non-initializing declarations:
         //
@@ -168,6 +161,12 @@ class OBJECTREF {
         // Copy constructor, for passing OBJECTREF's as function arguments.
         //-------------------------------------------------------------
         OBJECTREF(const OBJECTREF & objref);
+
+        //-------------------------------------------------------------
+        // Copy constructor, for passing OBJECTREF's as function arguments
+        // using a volatile without barrier load
+        //-------------------------------------------------------------
+        OBJECTREF(const OBJECTREF * pObjref, tagVolatileLoadWithoutBarrier tag);
 
         //-------------------------------------------------------------
         // To allow NULL to be used as an OBJECTREF.
@@ -205,7 +204,7 @@ class OBJECTREF {
         OBJECTREF& operator=(const OBJECTREF &objref);
         OBJECTREF& operator=(TADDR nul);
 
-            // allow explict casts
+            // allow explicit casts
         explicit OBJECTREF(Object *pObject);
 
         void Validate(BOOL bDeep = TRUE, BOOL bVerifyNextHeader = TRUE, BOOL bVerifySyncBlock = TRUE);
@@ -302,6 +301,7 @@ class REF : public OBJECTREF
 #define OBJECTREFToObject(objref)  ((objref).operator-> ())
 #define ObjectToSTRINGREF(obj)     (STRINGREF(obj))
 #define STRINGREFToObject(objref)  (*( (StringObject**) &(objref) ))
+#define VolatileLoadWithoutBarrierOBJECTREF(pObj) (OBJECTREF(pObj, OBJECTREF::tagVolatileLoadWithoutBarrier::tag))
 
 // the while (0) syntax below is to force a trailing semicolon on users of the macro
 #define VALIDATEOBJECT(obj) do {if ((obj) != NULL) (obj)->Validate();} while (0)
@@ -316,6 +316,7 @@ class REF : public OBJECTREF
 #define OBJECTREFToObject(objref) ((PTR_Object) (objref))
 #define ObjectToSTRINGREF(obj)    ((PTR_StringObject) (obj))
 #define STRINGREFToObject(objref) ((PTR_StringObject) (objref))
+#define VolatileLoadWithoutBarrierOBJECTREF(pObj) VolatileLoadWithoutBarrier(pObj)
 
 #endif // _DEBUG_IMPL
 
@@ -334,9 +335,6 @@ class Module;
 GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 extern "C" Volatile<int32_t>   g_TrapReturningThreads;
-
-EXTERN BBSweep              g_BBSweep;
-EXTERN IBCLogger            g_IBCLogger;
 
 #ifdef _DEBUG
 // next two variables are used to enforce an ASSERT in Thread::DbgFindThread
@@ -357,22 +355,22 @@ GPTR_DECL(MethodTable,      g_pStringClass);
 GPTR_DECL(MethodTable,      g_pArrayClass);
 GPTR_DECL(MethodTable,      g_pSZArrayHelperClass);
 GPTR_DECL(MethodTable,      g_pNullableClass);
-GPTR_DECL(MethodTable,      g_pByReferenceClass);
 GPTR_DECL(MethodTable,      g_pExceptionClass);
 GPTR_DECL(MethodTable,      g_pThreadAbortExceptionClass);
 GPTR_DECL(MethodTable,      g_pOutOfMemoryExceptionClass);
 GPTR_DECL(MethodTable,      g_pStackOverflowExceptionClass);
 GPTR_DECL(MethodTable,      g_pExecutionEngineExceptionClass);
-GPTR_DECL(MethodTable,      g_pThreadAbortExceptionClass);
 GPTR_DECL(MethodTable,      g_pDelegateClass);
 GPTR_DECL(MethodTable,      g_pMulticastDelegateClass);
 GPTR_DECL(MethodTable,      g_pFreeObjectMethodTable);
 GPTR_DECL(MethodTable,      g_pValueTypeClass);
 GPTR_DECL(MethodTable,      g_pEnumClass);
 GPTR_DECL(MethodTable,      g_pThreadClass);
-GPTR_DECL(MethodTable,      g_pOverlappedDataClass);
 
 GPTR_DECL(MethodTable,      g_TypedReferenceMT);
+
+GPTR_DECL(MethodTable,      g_pWeakReferenceClass);
+GPTR_DECL(MethodTable,      g_pWeakReferenceOfTClass);
 
 #ifdef FEATURE_COMINTEROP
 GPTR_DECL(MethodTable,      g_pBaseCOMObject);
@@ -616,25 +614,6 @@ GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #define MAXULONGLONG                     UI64(0xffffffffffffffff)
 #endif
 
-struct TPIndex
-{
-    DWORD m_dwIndex;
-    TPIndex ()
-    : m_dwIndex(0)
-    {}
-    explicit TPIndex (DWORD id)
-    : m_dwIndex(id)
-    {}
-    BOOL operator==(const TPIndex& tpindex) const
-    {
-        return m_dwIndex == tpindex.m_dwIndex;
-    }
-    BOOL operator!=(const TPIndex& tpindex) const
-    {
-        return m_dwIndex != tpindex.m_dwIndex;
-    }
-};
-
 // Every Module is assigned a ModuleIndex, regardless of whether the Module is domain
 // neutral or domain specific. When a domain specific Module is unloaded, its ModuleIndex
 // can be reused.
@@ -702,36 +681,6 @@ PTR_GSCookie GetProcessGSCookiePtr() { return  PTR_GSCookie(&s_gsCookie); }
 inline
 GSCookie GetProcessGSCookie() { return *(RAW_KEYWORD(volatile) GSCookie *)(&s_gsCookie); }
 
-class CEECompileInfo;
-extern CEECompileInfo *g_pCEECompileInfo;
-
-#ifdef FEATURE_READYTORUN_COMPILER
-extern bool g_fReadyToRunCompilation;
-extern bool g_fLargeVersionBubble;
-#endif
-
-// Returns true if this is NGen compilation process.
-// This is a superset of CompilationDomain::IsCompilationDomain() as there is more
-// than one AppDomain in ngen (the DefaultDomain)
-inline BOOL IsCompilationProcess()
-{
-#ifdef CROSSGEN_COMPILE
-    return TRUE;
-#else
-    return FALSE;
-#endif
-}
-
-// Flag for cross-platform ngen: Removes all execution of managed or third-party code in the ngen compilation process.
-inline BOOL NingenEnabled()
-{
-#ifdef CROSSGEN_COMPILE
-    return TRUE;
-#else
-    return FALSE;
-#endif
-}
-
 // Passed to JitManager APIs to determine whether to avoid calling into the host.
 // The profiling API stackwalking uses this to ensure to avoid re-entering the host
 // (particularly SQL) from a hijacked thread.
@@ -740,5 +689,16 @@ enum HostCallPreference
     AllowHostCalls,
     NoHostCalls,
 };
+
+#ifdef TARGET_WINDOWS
+typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
+extern PINITIALIZECONTEXT2 g_pfnInitializeContext2;
+
+#ifdef TARGET_X86
+typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
+extern PRTLRESTORECONTEXT g_pfnRtlRestoreContext;
+#endif // TARGET_X86
+
+#endif // TARGET_WINDOWS
 
 #endif /* _VARS_HPP */

@@ -13,7 +13,7 @@
   .ver 4:0:0:0
 }
 
-.assembly Except.exe{}
+.assembly Except{}
 
 .class		Except {
 
@@ -25,7 +25,7 @@
 
 // Execution starts here
 
-.method static	int32 main(class [mscorlib]System.String[]) {
+.method static	int32 main() {
 .locals (string)
 .entrypoint
 .maxstack	2

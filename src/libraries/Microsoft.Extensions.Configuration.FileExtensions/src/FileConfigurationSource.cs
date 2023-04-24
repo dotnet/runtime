@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Microsoft.Extensions.FileProviders;
 
@@ -15,12 +16,13 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Used to access the contents of the file.
         /// </summary>
-        public IFileProvider FileProvider { get; set; }
+        public IFileProvider? FileProvider { get; set; }
 
         /// <summary>
         /// The path to the file.
         /// </summary>
-        public string Path { get; set; }
+        [DisallowNull]
+        public string? Path { get; set; }
 
         /// <summary>
         /// Determines if loading the file is optional.
@@ -41,7 +43,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Will be called if an uncaught exception occurs in FileConfigurationProvider.Load.
         /// </summary>
-        public Action<FileLoadExceptionContext> OnLoadException { get; set; }
+        public Action<FileLoadExceptionContext>? OnLoadException { get; set; }
 
         /// <summary>
         /// Builds the <see cref="IConfigurationProvider"/> for this source.
@@ -56,8 +58,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
         public void EnsureDefaults(IConfigurationBuilder builder)
         {
-            FileProvider = FileProvider ?? builder.GetFileProvider();
-            OnLoadException = OnLoadException ?? builder.GetFileLoadExceptionHandler();
+            FileProvider ??= builder.GetFileProvider();
+            OnLoadException ??= builder.GetFileLoadExceptionHandler();
         }
 
         /// <summary>
@@ -70,8 +72,8 @@ namespace Microsoft.Extensions.Configuration
                 !string.IsNullOrEmpty(Path) &&
                 System.IO.Path.IsPathRooted(Path))
             {
-                string directory = System.IO.Path.GetDirectoryName(Path);
-                string pathToFile = System.IO.Path.GetFileName(Path);
+                string? directory = System.IO.Path.GetDirectoryName(Path);
+                string? pathToFile = System.IO.Path.GetFileName(Path);
                 while (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 {
                     pathToFile = System.IO.Path.Combine(System.IO.Path.GetFileName(directory), pathToFile);
@@ -84,6 +86,5 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
         }
-
     }
 }

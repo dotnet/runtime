@@ -37,7 +37,7 @@ namespace System.Runtime
                 if ((value < GCLatencyMode.Batch) ||
                     (value > GCLatencyMode.SustainedLowLatency))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_Enum);
+                    ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
                 }
 
                 SetLatencyModeStatus status = SetGCLatencyMode(value);
@@ -58,7 +58,7 @@ namespace System.Runtime
                 if ((value < GCLargeObjectHeapCompactionMode.Default) ||
                     (value > GCLargeObjectHeapCompactionMode.CompactOnce))
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_Enum);
+                    ThrowHelper.ArgumentOutOfRangeException_Enum_Value();
                 }
 
                 SetLOHCompactionMode(value);

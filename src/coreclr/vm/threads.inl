@@ -165,13 +165,13 @@ inline bool Thread::IsGCSpecial()
     return m_fGCSpecial;
 }
 
-inline void Thread::SetGCSpecial(bool fGCSpecial)
+inline void Thread::SetGCSpecial()
 {
     LIMITED_METHOD_CONTRACT;
-    m_fGCSpecial = fGCSpecial;
+    m_fGCSpecial = true;
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 inline Thread::CurrentPrepareCodeConfigHolder::CurrentPrepareCodeConfigHolder(Thread *thread, PrepareCodeConfig *config)
     : m_thread(thread)
@@ -232,6 +232,6 @@ inline size_t Thread::GetOffsetOfThreadStatic(void* pThreadStatic)
 }
 #endif
 
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 #endif

@@ -173,7 +173,7 @@ namespace System.Xml
             _write = _write.ParentNode;
         }
 
-        internal override void WriteEndElement(string prefix, string localName, string ns)
+        internal override void WriteEndElement(string? prefix, string localName, string? ns)
         {
             WriteEndElement();
         }
@@ -441,7 +441,7 @@ namespace System.Xml
                 if (offset != -1
                     && ((XmlAttribute)attrs.nodes[offset]).Specified)
                 {
-                    throw new XmlException(SR.Xml_DupAttributeName, attr.Prefix.Length == 0 ? attr.LocalName : string.Concat(attr.Prefix, ":", attr.LocalName));
+                    throw new XmlException(SR.Xml_DupAttributeName, attr.Prefix.Length == 0 ? attr.LocalName : $"{attr.Prefix}:{attr.LocalName}");
                 }
             }
             for (int i = 0; i < _fragment.Count; i++)

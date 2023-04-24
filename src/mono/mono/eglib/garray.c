@@ -46,20 +46,20 @@ static void
 ensure_capacity (GArrayPriv *priv, guint capacity)
 {
 	guint new_capacity;
-	
+
 	if (capacity <= priv->capacity)
 		return;
-	
+
 	new_capacity = (capacity + (capacity >> 1) + 63) & ~63;
-	
+
 	priv->array.data = g_realloc (priv->array.data, element_length (priv, new_capacity));
-	
+
 	if (priv->clear_) {
 		memset (element_offset (priv, priv->capacity),
 			0,
 			element_length (priv, new_capacity - priv->capacity));
 	}
-	
+
 	priv->capacity = new_capacity;
 }
 
@@ -122,7 +122,7 @@ g_array_append_vals (GArray *array,
 	g_return_val_if_fail (array != NULL, NULL);
 
 	ensure_capacity (priv, priv->array.len + len + (priv->zero_terminated ? 1 : 0));
-  
+
 	memmove (element_offset (priv, priv->array.len),
 		 data,
 		 element_length (priv, len));
@@ -150,7 +150,7 @@ g_array_insert_vals (GArray *array,
 	g_return_val_if_fail (array != NULL, NULL);
 
 	ensure_capacity (priv, array->len + len + extra);
-  
+
 	/* first move the existing elements out of the way */
 	memmove (element_offset (priv, index_ + len),
 		 element_offset (priv, index_),
@@ -229,7 +229,7 @@ g_array_set_size (GArray *array, gint length)
 	if (length == priv->capacity)
 		return; // nothing to be done
 
-	if (length > priv->capacity) {
+	if (GINT_TO_UINT(length) > priv->capacity) {
 		// grow the array
 		ensure_capacity (priv, length);
 	}

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization
@@ -11,7 +12,11 @@ namespace System.Text.Json.Serialization
     /// <remarks>
     /// Reading is case insensitive, writing can be customized via a <see cref="JsonNamingPolicy" />.
     /// </remarks>
-    public sealed class JsonStringEnumConverter : JsonConverterFactory
+    [RequiresDynamicCode(
+        "JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. " +
+        "Consider authoring a custom converter that is not a factory to work around the issue. " +
+        "See https://github.com/dotnet/runtime/issues/73124.")]
+    public class JsonStringEnumConverter : JsonConverterFactory
     {
         private readonly JsonNamingPolicy? _namingPolicy;
         private readonly EnumConverterOptions _converterOptions;
@@ -45,13 +50,13 @@ namespace System.Text.Json.Serialization
         }
 
         /// <inheritdoc />
-        public override bool CanConvert(Type typeToConvert)
+        public sealed override bool CanConvert(Type typeToConvert)
         {
             return typeToConvert.IsEnum;
         }
 
         /// <inheritdoc />
-        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
+        public sealed override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
             EnumConverterFactory.Create(typeToConvert, _converterOptions, _namingPolicy, options);
     }
 }

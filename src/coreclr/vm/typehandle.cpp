@@ -15,10 +15,7 @@
 #include "classloadlevel.h"
 #include "array.h"
 #include "castcache.h"
-
-#ifdef FEATURE_PREJIT
-#include "zapsig.h"
-#endif
+#include "frozenobjectheap.h"
 
 #ifdef _DEBUG_IMPL
 
@@ -33,11 +30,6 @@ BOOL TypeHandle::Verify()
 
     if (IsNull())
         return(TRUE);
-
-    // If you try to do IBC logging of a type being created, the type
-    // will look inconsistent. IBC logging knows to filter out such types.
-    if (g_IBCLogger.InstrEnabled())
-        return TRUE;
 
     if (!IsRestored_NoLogging())
         return TRUE;
@@ -301,16 +293,6 @@ PTR_Module TypeHandle::GetLoaderModule() const
         return AsMethodTable()->GetLoaderModule();
 }
 
-PTR_Module TypeHandle::GetZapModule() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (IsTypeDesc())
-        return AsTypeDesc()->GetZapModule();
-    else
-        return AsMethodTable()->GetZapModule();
-}
-
 PTR_BaseDomain TypeHandle::GetDomain() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -361,6 +343,62 @@ BOOL TypeHandle::IsCanonicalSubtype() const
 
     return (*this == TypeHandle(g_pCanonMethodTableClass)) || IsSharedByGenericInstantiations();
 }
+
+#ifndef DACCESS_COMPILE
+bool TypeHandle::IsManagedClassObjectPinned() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return !GetLoaderAllocator()->CanUnload();
+}
+
+void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
+{
+    REFLECTCLASSBASEREF refClass = NULL;
+
+    PTR_LoaderAllocator allocator = GetLoaderAllocator();
+
+    if (!allocator->CanUnload())
+    {
+        // Allocate RuntimeType on a frozen segment
+        // Take a lock here since we don't want to allocate redundant objects which won't be collected
+        CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
+
+        if (VolatileLoad(pDest) == NULL)
+        {
+            FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+            Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, g_pRuntimeTypeClass->GetBaseSize());
+            _ASSERTE(obj != NULL);
+            // Since objects are aligned we can use the lowest bit as a storage for "is pinned object" flag
+            _ASSERTE((((SSIZE_T)obj) & 1) == 0);
+            refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
+            refClass->SetType(*this);
+            RUNTIMETYPEHANDLE handle = (RUNTIMETYPEHANDLE)obj;
+            // Set the bit to 1 (we'll have to reset it before use)
+            handle |= 1;
+            VolatileStore(pDest, handle);
+        }
+    }
+    else
+    {
+        GCPROTECT_BEGIN(refClass);
+        refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
+        refClass->SetKeepAlive(allocator->GetExposedObject());
+        LOADERHANDLE exposedClassObjectHandle = allocator->AllocateHandle(refClass);
+        _ASSERTE((exposedClassObjectHandle & 1) == 0);
+        refClass->SetType(*this);
+
+        // Let all threads fight over who wins using InterlockedCompareExchange.
+        // Only the winner can set m_ExposedClassObject from NULL.
+        if (InterlockedCompareExchangeT(pDest, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
+        {
+            // GC will collect unused instance
+            allocator->FreeHandle(exposedClassObjectHandle);
+        }
+        GCPROTECT_END();
+    }
+}
+#endif
 
 /* static */ BOOL TypeHandle::IsCanonicalSubtypeInstantiation(Instantiation inst)
 {
@@ -640,7 +678,6 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
         if (IsTypeDesc())
             return AsTypeDesc()->CanCastTo(type, pVisited);
 
-#ifndef CROSSGEN_COMPILE
         // we check nullable case first because it is not cacheable.
         // object castability and type castability disagree on T --> Nullable<T>,
         // so we can't put this in the cache
@@ -649,7 +686,6 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
             // do not allow type T to be cast to Nullable<T>
             return FALSE;
         }
-#endif  //!CROSSGEN_COMPILE
 
         return AsMethodTable()->CanCastTo(type.AsMethodTable(), pVisited);
     }
@@ -740,7 +776,7 @@ TypeHandle TypeHandle::MergeClassWithInterface(TypeHandle tClass, TypeHandle tIn
     MethodTable::InterfaceMapIterator intIt = pMTInterface->IterateInterfaceMap();
     while (intIt.Next())
     {
-        MethodTable *pMT = intIt.GetInterface();
+        MethodTable *pMT = intIt.GetInterface(pMTInterface);
         if (pMTClass->ImplementsEquivalentInterface(pMT))
         {
             // Found a common interface.  If there are multiple common interfaces, then
@@ -1019,13 +1055,6 @@ BOOL TypeHandle::IsRestored() const
     }
 }
 
-BOOL TypeHandle::IsEncodedFixup() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return CORCOMPILE_IS_POINTER_TAGGED(m_asTAddr);
-}
-
 BOOL TypeHandle::HasUnrestoredTypeKey()  const
 {
     WRAPPER_NO_CONTRACT;
@@ -1037,53 +1066,12 @@ BOOL TypeHandle::HasUnrestoredTypeKey()  const
         return AsMethodTable()->HasUnrestoredTypeKey();
 }
 
-#ifdef FEATURE_PREJIT
-void TypeHandle::DoRestoreTypeKey()
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(!IsEncodedFixup());
-    }
-    CONTRACT_END
-
-#ifndef DACCESS_COMPILE
-    if (IsTypeDesc())
-    {
-        AsTypeDesc()->DoRestoreTypeKey();
-    }
-    else
-    {
-        MethodTable* pMT = AsMethodTable();
-        PREFIX_ASSUME(pMT != NULL);
-        pMT->DoRestoreTypeKey();
-    }
-#endif
-
-#ifdef _DEBUG
-#ifndef DACCESS_COMPILE
-    if (LoggingOn(LF_CLASSLOADER, LL_INFO10000))
-    {
-        StackSString name;
-        TypeString::AppendTypeDebug(name, *this);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "GENERICS:RestoreTypeKey: type %S at %p\n", name.GetUnicode(), AsPtr()));
-    }
-#endif
-#endif
-
-
-    RETURN;
-}
-#endif
-
 void TypeHandle::CheckRestore() const
 {
     CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        PRECONDITION(!IsEncodedFixup());
     }
     CONTRACTL_END
 
@@ -1092,25 +1080,9 @@ void TypeHandle::CheckRestore() const
         ClassLoader::EnsureLoaded(*this);
         _ASSERTE(IsFullyLoaded());
     }
-
-    g_IBCLogger.LogTypeMethodTableAccess(this);
 }
 
 #ifndef DACCESS_COMPILE
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-BOOL TypeHandle::ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited) const
-{
-    STATIC_STANDARD_VM_CONTRACT;
-
-    _ASSERTE(GetAppDomain()->IsCompilationDomain());
-
-    if (!IsTypeDesc())
-        return AsMethodTable()->ComputeNeedsRestore(image, pVisited);
-    else
-        return AsTypeDesc()->ComputeNeedsRestore(image, pVisited);
-}
-#endif // FEATURE_NATIVE_IMAGE_GENERATION
 
 BOOL
 TypeHandle::IsExternallyVisible() const
@@ -1147,7 +1119,6 @@ TypeHandle::IsExternallyVisible() const
     return paramType.IsExternallyVisible();
 } // TypeHandle::IsExternallyVisible
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF TypeHandle::GetManagedClassObject() const
 {
     CONTRACTL
@@ -1161,7 +1132,7 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
     CONTRACTL_END;
 
 #ifdef _DEBUG
-    // Force a GC here because GetManagedClassObject could trigger GC nondeterminsticaly
+    // Force a GC here because GetManagedClassObject could trigger GC nondeterministicaly
     GCStress<cfg_any, PulseGcTriggerPolicy>::MaybeTrigger();
 #endif // _DEBUG
 
@@ -1184,8 +1155,7 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
                 return ((TypeVarTypeDesc*)AsTypeDesc())->GetManagedClassObject();
 
             case ELEMENT_TYPE_FNPTR:
-                // A function pointer is mapped into typeof(IntPtr). It results in a loss of information.
-                return CoreLibBinder::GetElementType(ELEMENT_TYPE_I)->GetManagedClassObject();
+                return ((FnPtrTypeDesc*)AsTypeDesc())->GetManagedClassObject();
 
             default:
                 _ASSERTE(!"Bad Element Type");
@@ -1193,7 +1163,6 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
         }
     }
 }
-#endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -1426,9 +1395,6 @@ BOOL SatisfiesClassConstraints(TypeHandle instanceTypeHnd, TypeHandle typicalTyp
         SigTypeContext typeContext;
         SigTypeContext::InitTypeContext(instanceTypeHnd, &typeContext);
 
-        // Log the TypeVarTypeDesc access
-        g_IBCLogger.LogTypeMethodTableWriteableAccess(&thActualArg);
-
         BOOL bSatisfiesConstraints =
             formalInst[i].AsGenericVariable()->SatisfiesConstraints(&typeContext, thActualArg, pInstContext);
 
@@ -1593,55 +1559,50 @@ CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
         {
             MethodTable *pMT = AsMethodTable();
             CHECK_MSGF(pMT->GetInternalCorElementType() == pKey->GetKind(),
-                       ("CorElementType %d of Array MethodTable does not match key %S", pMT->GetArrayElementType(), typeKeyString.GetUnicode()));
+                       ("CorElementType %d of Array MethodTable does not match key %s", pMT->GetArrayElementType(), typeKeyString.GetUTF8()));
 
             CHECK_MSGF(pMT->GetArrayElementTypeHandle() == pKey->GetElementType(),
-                       ("Element type of Array MethodTable does not match key %S",typeKeyString.GetUnicode()));
+                       ("Element type of Array MethodTable does not match key %s",typeKeyString.GetUTF8()));
 
             CHECK_MSGF(pMT->GetRank() == pKey->GetRank(),
-                       ("Rank %d of Array MethodTable does not match key %S", pMT->GetRank(), typeKeyString.GetUnicode()));
+                       ("Rank %d of Array MethodTable does not match key %s", pMT->GetRank(), typeKeyString.GetUTF8()));
         }
         else
         if (IsTypeDesc())
         {
             TypeDesc *pTD = AsTypeDesc();
             CHECK_MSGF(pTD->GetInternalCorElementType() == pKey->GetKind(),
-                       ("CorElementType %d of TypeDesc does not match key %S", pTD->GetInternalCorElementType(), typeKeyString.GetUnicode()));
+                       ("CorElementType %d of TypeDesc does not match key %s", pTD->GetInternalCorElementType(), typeKeyString.GetUTF8()));
 
             if (CorTypeInfo::IsModifier(pKey->GetKind()))
             {
                 CHECK_MSGF(pTD->GetTypeParam() == pKey->GetElementType(),
-                           ("Element type of TypeDesc does not match key %S",typeKeyString.GetUnicode()));
+                           ("Element type of TypeDesc does not match key %s",typeKeyString.GetUTF8()));
             }
         }
         else
         {
             MethodTable *pMT = AsMethodTable();
-            CHECK_MSGF(pMT->GetModule() == pKey->GetModule(), ("Module of MethodTable does not match key %S", typeKeyString.GetUnicode()));
+            CHECK_MSGF(pMT->GetModule() == pKey->GetModule(), ("Module of MethodTable does not match key %s", typeKeyString.GetUTF8()));
             CHECK_MSGF(pMT->GetCl() == pKey->GetTypeToken(),
-                       ("TypeDef %x of Methodtable does not match TypeDef %x of key %S", pMT->GetCl(), pKey->GetTypeToken(),
-                        typeKeyString.GetUnicode()));
+                       ("TypeDef %x of Methodtable does not match TypeDef %x of key %s", pMT->GetCl(), pKey->GetTypeToken(),
+                        typeKeyString.GetUTF8()));
 
             if (pMT->IsTypicalTypeDefinition())
             {
                 CHECK_MSGF(pKey->GetNumGenericArgs() == 0 && !pKey->HasInstantiation(),
-                           ("Key %S for Typical MethodTable has non-zero number of generic arguments", typeKeyString.GetUnicode()));
+                           ("Key %s for Typical MethodTable has non-zero number of generic arguments", typeKeyString.GetUTF8()));
             }
             else
             {
                 CHECK_MSGF(pMT->GetNumGenericArgs() == pKey->GetNumGenericArgs(),
-                           ("Number of generic params %d in MethodTable does not match key %S", pMT->GetNumGenericArgs(), typeKeyString.GetUnicode()));
+                           ("Number of generic params %d in MethodTable does not match key %s", pMT->GetNumGenericArgs(), typeKeyString.GetUTF8()));
                 if (pKey->HasInstantiation())
                 {
                     for (DWORD i = 0; i < pMT->GetNumGenericArgs(); i++)
                     {
-#ifdef FEATURE_PREJIT
-                        CHECK_MSGF(ZapSig::CompareTypeHandleFieldToTypeHandle(pMT->GetInstantiation().GetRawArgs()[i].GetValuePtr(), pKey->GetInstantiation()[i]),
-                               ("Generic argument %d in MethodTable does not match key %S", i, typeKeyString.GetUnicode()));
-#else
                         CHECK_MSGF(pMT->GetInstantiation()[i] == pKey->GetInstantiation()[i],
-                               ("Generic argument %d in MethodTable does not match key %S", i, typeKeyString.GetUnicode()));
-#endif
+                               ("Generic argument %d in MethodTable does not match key %s", i, typeKeyString.GetUTF8()));
                     }
                 }
             }
@@ -1667,7 +1628,7 @@ CHECK TypeHandle::CheckLoadLevel(ClassLoadLevel requiredLevel)
 {
     CHECK(!IsNull());
     //    CHECK_MSGF(!IsNull(), ("Type is null, required load level is %s", classLoadLevelName[requiredLevel]));
-    static_assert_no_msg(NumItems(classLoadLevelName) == (1 + CLASS_LOAD_LEVEL_FINAL));
+    static_assert_no_msg(ARRAY_SIZE(classLoadLevelName) == (1 + CLASS_LOAD_LEVEL_FINAL));
 
     // Quick check to avoid creating debug string
     ClassLoadLevel actualLevel = GetLoadLevel();

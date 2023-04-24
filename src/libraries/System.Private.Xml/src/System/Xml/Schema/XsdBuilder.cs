@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml;
 using System.Xml.Serialization;
-using System.Collections.Generic;
 
 namespace System.Xml.Schema
 {
@@ -126,17 +125,8 @@ namespace System.Xml.Schema
                 _reader = reader;
             }
 
-            public override string? LookupNamespace(string prefix)
-            {
-                string? ns = _nsMgr.LookupNamespace(prefix);
-
-                if (ns == null)
-                {
-                    ns = _reader.LookupNamespace(prefix);
-                }
-
-                return ns;
-            }
+            public override string? LookupNamespace(string prefix) =>
+                _nsMgr.LookupNamespace(prefix) ?? _reader.LookupNamespace(prefix);
         }
 
         //////////////////////////////////////////////////////////////////////////////////////////////
@@ -608,7 +598,7 @@ namespace System.Xml.Schema
         //
         // for 'block' and 'final' attribute values
         //
-        private static readonly int[] s_derivationMethodValues = {
+        private static ReadOnlySpan<int> DerivationMethodValues => new int[] {
             (int)XmlSchemaDerivationMethod.Substitution,
             (int)XmlSchemaDerivationMethod.Extension,
             (int)XmlSchemaDerivationMethod.Restriction,
@@ -679,8 +669,8 @@ namespace System.Xml.Schema
         private XmlSchemaRedefine? _redefine;
 
         private readonly ValidationEventHandler? _validationEventHandler;
-        private readonly ArrayList _unhandledAttributes = new ArrayList();
-        private Dictionary<string, string>? _namespaces;
+        private readonly List<XmlAttribute> _unhandledAttributes = new List<XmlAttribute>();
+        private List<XmlQualifiedName>? _namespaces;
 
         internal XsdBuilder(
                            XmlReader reader,
@@ -704,8 +694,10 @@ namespace System.Xml.Schema
 
         internal override bool ProcessElement(string prefix, string name, string ns)
         {
-            XmlQualifiedName qname = new XmlQualifiedName(name, ns);
-            if (GetNextState(qname))
+            name ??= string.Empty;
+            ns ??= string.Empty;
+
+            if (GetNextState(name, ns))
             {
                 Push();
                 Debug.Assert(_currentEntry.InitFunc != null);
@@ -716,9 +708,9 @@ namespace System.Xml.Schema
             }
             else
             {
-                if (!IsSkipableElement(qname))
+                if (!IsSkipableElement())
                 {
-                    SendValidationEvent(SR.Sch_UnsupportedElement, qname.ToString());
+                    SendValidationEvent(SR.Sch_UnsupportedElement, XmlQualifiedName.ToString(name, ns));
                 }
                 return false;
             }
@@ -727,13 +719,15 @@ namespace System.Xml.Schema
 
         internal override void ProcessAttribute(string prefix, string name, string ns, string value)
         {
-            XmlQualifiedName qname = new XmlQualifiedName(name, ns);
+            name ??= string.Empty;
+            ns ??= string.Empty;
+
             if (_currentEntry.Attributes != null)
             {
                 for (int i = 0; i < _currentEntry.Attributes.Length; i++)
                 {
                     XsdAttributeEntry a = _currentEntry.Attributes[i];
-                    if (_schemaNames.TokenToQName[(int)a.Attribute].Equals(qname))
+                    if (_schemaNames.TokenToQName[(int)a.Attribute].Equals(name, ns))
                     {
                         try
                         {
@@ -754,11 +748,8 @@ namespace System.Xml.Schema
             {
                 if (ns == _schemaNames.NsXmlNs)
                 {
-                    if (_namespaces == null)
-                    {
-                        _namespaces = new Dictionary<string, string>();
-                    }
-                    _namespaces.Add((name == _schemaNames.QnXmlNs.Name) ? string.Empty : name, value);
+                    _namespaces ??= new List<XmlQualifiedName>();
+                    _namespaces.Add(new XmlQualifiedName((name == _schemaNames.QnXmlNs.Name) ? string.Empty : name, value));
                 }
                 else
                 {
@@ -769,7 +760,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                SendValidationEvent(SR.Sch_UnsupportedAttribute, qname.ToString());
+                SendValidationEvent(SR.Sch_UnsupportedAttribute, XmlQualifiedName.ToString(name, ns));
             }
         }
 
@@ -794,12 +785,12 @@ namespace System.Xml.Schema
             {
                 if (_namespaces != null && _namespaces.Count > 0)
                 {
-                    _xso.Namespaces.Namespaces = _namespaces!;
+                    _xso.Namespaces = new XmlSerializerNamespaces(_namespaces);
                     _namespaces = null;
                 }
                 if (_unhandledAttributes.Count != 0)
                 {
-                    _xso.SetUnhandledAttributes((XmlAttribute[])_unhandledAttributes.ToArray(typeof(System.Xml.XmlAttribute)));
+                    _xso.SetUnhandledAttributes(_unhandledAttributes.ToArray());
                     _unhandledAttributes.Clear();
                 }
             }
@@ -971,7 +962,7 @@ namespace System.Xml.Schema
                     container = _redefine!;
                     break;
                 default:
-                    Debug.Fail("State is " + state);
+                    Debug.Fail($"State is {state}");
                     break;
             }
             return container;
@@ -1096,7 +1087,7 @@ namespace System.Xml.Schema
                     _redefine = (XmlSchemaRedefine)container;
                     break;
                 default:
-                    Debug.Fail("State is " + state);
+                    Debug.Fail($"State is {state}");
                     break;
             }
         }
@@ -2434,14 +2425,14 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool GetNextState(XmlQualifiedName qname)
+        private bool GetNextState(string name, string ns)
         {
             if (_currentEntry.NextStates != null)
             {
                 for (int i = 0; i < _currentEntry.NextStates.Length; ++i)
                 {
                     int state = (int)_currentEntry.NextStates[i];
-                    if (_schemaNames.TokenToQName[(int)s_schemaEntries[state].Name].Equals(qname))
+                    if (_schemaNames.TokenToQName[(int)s_schemaEntries[state].Name].Equals(name, ns))
                     {
                         _nextEntry = s_schemaEntries[state];
                         return true;
@@ -2452,7 +2443,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        private bool IsSkipableElement(XmlQualifiedName qname)
+        private bool IsSkipableElement()
         {
             return ((CurrentElement == SchemaNames.Token.XsdDocumentation) ||
                     (CurrentElement == SchemaNames.Token.XsdAppInfo));
@@ -2534,12 +2525,12 @@ namespace System.Xml.Schema
                 {
                     if (stringValues[i] == s_derivationMethodStrings[j])
                     {
-                        if ((r & s_derivationMethodValues[j]) != 0 && (r & s_derivationMethodValues[j]) != s_derivationMethodValues[j])
+                        if ((r & DerivationMethodValues[j]) != 0 && (r & DerivationMethodValues[j]) != DerivationMethodValues[j])
                         {
                             SendValidationEvent(SR.Sch_InvalidXsdAttributeValue, attributeName, value, null);
                             return 0;
                         }
-                        r |= s_derivationMethodValues[j];
+                        r |= DerivationMethodValues[j];
                         matched = true;
                         break;
                     }

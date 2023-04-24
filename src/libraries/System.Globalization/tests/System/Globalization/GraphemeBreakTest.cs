@@ -187,10 +187,10 @@ namespace System.Globalization.Tests
                     continue;
                 }
 
-                // Line has format "÷ (XXXX (× YYYY)* ÷)+ # <comment>"
+                // Line has format "\u00F7 (XXXX (\u00D7 YYYY)* \u00F7)+ # <comment>"
                 // We'll yield return a Rune[][], representing a collection of clusters, where each cluster contains a collection of Runes.
                 //
-                // Example: "÷ AAAA ÷ BBBB × CCCC × DDDD ÷ EEEE × FFFF ÷ # <comment>"
+                // Example: "\u00F7 AAAA \u00F7 BBBB \u00D7 CCCC \u00D7 DDDD \u00F7 EEEE \u00D7 FFFF \u00F7 # <comment>"
                 // -> [ [ AAAA ], [ BBBB, CCCC, DDDD ], [ EEEE, FFFF ] ]
                 //
                 // We also return the line for ease of debugging any test failures.
@@ -222,7 +222,7 @@ namespace System.Globalization.Tests
                 if (!char.IsHighSurrogate(thisChar) || !enumerator.MoveNext())
                 {
                     // not a high surrogate, or a high surrogate at the end of the sequence - it goes as-is
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "{0:X4} ", (uint)thisChar);
+                    sb.Append($"{(uint)thisChar:X4} ");
                 }
                 else
                 {
@@ -230,13 +230,13 @@ namespace System.Globalization.Tests
                     if (!char.IsLowSurrogate(secondChar))
                     {
                         // previous char was a standalone high surrogate char - send it as-is
-                        sb.AppendFormat(CultureInfo.InvariantCulture, "{0:X4} ", (uint)thisChar);
+                        sb.Append($"{(uint)thisChar:X4} ");
                         goto SawStandaloneChar;
                     }
                     else
                     {
                         // surrogate pair - extract supplementary code point
-                        sb.AppendFormat(CultureInfo.InvariantCulture, "{0:X4} ", (uint)char.ConvertToUtf32(thisChar, secondChar));
+                        sb.Append($"{(uint)char.ConvertToUtf32(thisChar, secondChar):X4} ");
                     }
                 }
             }

@@ -9,36 +9,40 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CryptMsgGetParam(
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool CryptMsgGetParam(
             SafeCryptMsgHandle hCryptMsg,
             CryptMsgParamType dwParamType,
             int dwIndex,
             out int pvData,
-            [In, Out] ref int pcbData);
+            ref int pcbData);
 
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CryptMsgGetParam(
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static unsafe partial bool CryptMsgGetParam(
+            SafeCryptMsgHandle hCryptMsg,
+            CryptMsgParamType dwParamType,
+            int dwIndex,
+            byte* pvData,
+            ref int pcbData);
+
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool CryptMsgGetParam(
             SafeCryptMsgHandle hCryptMsg,
             CryptMsgParamType dwParamType,
             int dwIndex,
             out CryptMsgType pvData,
-            [In, Out] ref int pcbData);
+            ref int pcbData);
 
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CryptMsgGetParam(
-            SafeCryptMsgHandle hCryptMsg,
-            CryptMsgParamType dwParamType,
-            int dwIndex,
-            [Out] byte[]? pvData,
-            [In, Out] ref int pcbData);
-
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CryptMsgGetParam(
+        [LibraryImport(Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool CryptMsgGetParam(
             SafeCryptMsgHandle hCryptMsg,
             CryptMsgParamType dwParamType,
             int dwIndex,
             IntPtr pvData,
-            [In, Out] ref int pcbData);
+            ref int pcbData);
     }
 }

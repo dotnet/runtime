@@ -10,6 +10,8 @@
 **
 ===========================================================*/
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System
 {
     /// <summary>
@@ -21,6 +23,7 @@ namespace System
         /// <summary>
         /// The composite format string.
         /// </summary>
+        [StringSyntax(StringSyntaxAttribute.CompositeFormat)]
         public abstract string Format { get; }
 
         /// <summary>
@@ -44,10 +47,8 @@ namespace System
         /// </summary>
         public abstract string ToString(IFormatProvider? formatProvider);
 
-        string IFormattable.ToString(string? ignored, IFormatProvider? formatProvider)
-        {
-            return ToString(formatProvider);
-        }
+        string IFormattable.ToString(string? ignored, IFormatProvider? formatProvider) =>
+            ToString(formatProvider);
 
         /// <summary>
         /// Format the given object in the invariant culture. This static method may be
@@ -64,11 +65,7 @@ namespace System
         /// </summary>
         public static string Invariant(FormattableString formattable)
         {
-            if (formattable == null)
-            {
-                throw new ArgumentNullException(nameof(formattable));
-            }
-
+            ArgumentNullException.ThrowIfNull(formattable);
             return formattable.ToString(Globalization.CultureInfo.InvariantCulture);
         }
 
@@ -87,17 +84,11 @@ namespace System
         /// </summary>
         public static string CurrentCulture(FormattableString formattable)
         {
-            if (formattable == null)
-            {
-                throw new ArgumentNullException(nameof(formattable));
-            }
-
+            ArgumentNullException.ThrowIfNull(formattable);
             return formattable.ToString(Globalization.CultureInfo.CurrentCulture);
         }
 
-        public override string ToString()
-        {
-            return ToString(Globalization.CultureInfo.CurrentCulture);
-        }
+        public override string ToString() =>
+            ToString(Globalization.CultureInfo.CurrentCulture);
     }
 }

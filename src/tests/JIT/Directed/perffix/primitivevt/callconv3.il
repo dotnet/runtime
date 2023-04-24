@@ -6,12 +6,13 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern helper {}
 .assembly callconv3 {}
 .namespace PrimitiveVT
 {
-  .class private auto ansi beforefieldinit CallConv3
+  .class public auto ansi beforefieldinit CallConv3
          extends [mscorlib]System.Object
   {
     .field private static class [mscorlib]System.Random rand
@@ -262,9 +263,11 @@
       IL_002d:  ret
     } 
 
-    .method private hidebysig static int32 
-            Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  6
       .locals init (int32 V_0,

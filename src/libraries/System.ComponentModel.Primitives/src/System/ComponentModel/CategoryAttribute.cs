@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     /// <summary>
@@ -39,7 +41,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Action
         {
-            get => s_action ?? (s_action = new CategoryAttribute(nameof(Action)));
+            get => s_action ??= new CategoryAttribute(nameof(Action));
         }
 
         /// <summary>
@@ -47,7 +49,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Appearance
         {
-            get => s_appearance ?? (s_appearance = new CategoryAttribute(nameof(Appearance)));
+            get => s_appearance ??= new CategoryAttribute(nameof(Appearance));
         }
 
         /// <summary>
@@ -55,7 +57,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Asynchronous
         {
-            get => s_asynchronous ?? (s_asynchronous = new CategoryAttribute(nameof(Asynchronous)));
+            get => s_asynchronous ??= new CategoryAttribute(nameof(Asynchronous));
         }
 
         /// <summary>
@@ -63,7 +65,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Behavior
         {
-            get => s_behavior ?? (s_behavior = new CategoryAttribute(nameof(Behavior)));
+            get => s_behavior ??= new CategoryAttribute(nameof(Behavior));
         }
 
         /// <summary>
@@ -71,7 +73,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Data
         {
-            get => s_data ?? (s_data = new CategoryAttribute(nameof(Data)));
+            get => s_data ??= new CategoryAttribute(nameof(Data));
         }
 
         /// <summary>
@@ -79,7 +81,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Default
         {
-            get => s_defAttr ?? (s_defAttr = new CategoryAttribute());
+            get => s_defAttr ??= new CategoryAttribute();
         }
 
         /// <summary>
@@ -87,7 +89,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Design
         {
-            get => s_design ?? (s_design = new CategoryAttribute(nameof(Design)));
+            get => s_design ??= new CategoryAttribute(nameof(Design));
         }
 
         /// <summary>
@@ -95,7 +97,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute DragDrop
         {
-            get => s_dragDrop ?? (s_dragDrop = new CategoryAttribute(nameof(DragDrop)));
+            get => s_dragDrop ??= new CategoryAttribute(nameof(DragDrop));
         }
 
         /// <summary>
@@ -103,7 +105,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Focus
         {
-            get => s_focus ?? (s_focus = new CategoryAttribute(nameof(Focus)));
+            get => s_focus ??= new CategoryAttribute(nameof(Focus));
         }
 
         /// <summary>
@@ -111,7 +113,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Format
         {
-            get => s_format ?? (s_format = new CategoryAttribute(nameof(Format)));
+            get => s_format ??= new CategoryAttribute(nameof(Format));
         }
 
         /// <summary>
@@ -119,7 +121,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Key
         {
-            get => s_key ?? (s_key = new CategoryAttribute(nameof(Key)));
+            get => s_key ??= new CategoryAttribute(nameof(Key));
         }
 
         /// <summary>
@@ -127,7 +129,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Layout
         {
-            get => s_layout ?? (s_layout = new CategoryAttribute(nameof(Layout)));
+            get => s_layout ??= new CategoryAttribute(nameof(Layout));
         }
 
         /// <summary>
@@ -135,7 +137,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute Mouse
         {
-            get => s_mouse ?? (s_mouse = new CategoryAttribute(nameof(Mouse)));
+            get => s_mouse ??= new CategoryAttribute(nameof(Mouse));
         }
 
         /// <summary>
@@ -143,7 +145,7 @@ namespace System.ComponentModel
         /// </summary>
         public static CategoryAttribute WindowStyle
         {
-            get => s_windowStyle ?? (s_windowStyle = new CategoryAttribute(nameof(WindowStyle)));
+            get => s_windowStyle ??= new CategoryAttribute(nameof(WindowStyle));
         }
 
         /// <summary>
@@ -189,7 +191,7 @@ namespace System.ComponentModel
             }
         }
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is CategoryAttribute other && other.Category == Category;
 
         public override int GetHashCode() => Category?.GetHashCode() ?? 0;
@@ -197,7 +199,31 @@ namespace System.ComponentModel
         /// <summary>
         /// Looks up the localized name of a given category.
         /// </summary>
-        protected virtual string? GetLocalizedString(string value) => SR.GetResourceString("PropertyCategory" + value);
+        protected virtual string? GetLocalizedString(string value) => value switch
+        {
+            "Action" => SR.PropertyCategoryAction,
+            "Appearance" => SR.PropertyCategoryAppearance,
+            "Asynchronous" => SR.PropertyCategoryAsynchronous,
+            "Behavior" => SR.PropertyCategoryBehavior,
+            "Config" => SR.PropertyCategoryConfig,
+            "Data" => SR.PropertyCategoryData,
+            "DDE" => SR.PropertyCategoryDDE,
+            "Default" => SR.PropertyCategoryDefault,
+            "Design" => SR.PropertyCategoryDesign,
+            "DragDrop" => SR.PropertyCategoryDragDrop,
+            "Focus" => SR.PropertyCategoryFocus,
+            "Font" => SR.PropertyCategoryFont,
+            "Format" => SR.PropertyCategoryFormat,
+            "Key" => SR.PropertyCategoryKey,
+            "Layout" => SR.PropertyCategoryLayout,
+            "List" => SR.PropertyCategoryList,
+            "Mouse" => SR.PropertyCategoryMouse,
+            "Position" => SR.PropertyCategoryPosition,
+            "Scale" => SR.PropertyCategoryScale,
+            "Text" => SR.PropertyCategoryText,
+            "WindowStyle" => SR.PropertyCategoryWindowStyle,
+            _ => null
+        };
 
         public override bool IsDefaultAttribute() => Category == Default.Category;
     }

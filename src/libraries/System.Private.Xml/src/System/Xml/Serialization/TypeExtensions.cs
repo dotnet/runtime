@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-
     internal static class TypeExtensions
     {
         private const string ImplicitCastOperatorName = "op_Implicit";
@@ -16,10 +16,7 @@ namespace System.Xml.Serialization
             this Type targetType,
             object? data, out object? returnValue)
         {
-            if (targetType == null)
-            {
-                throw new ArgumentNullException(nameof(targetType));
-            }
+            ArgumentNullException.ThrowIfNull(targetType);
 
             returnValue = null;
 

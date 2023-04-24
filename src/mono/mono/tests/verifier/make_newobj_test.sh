@@ -1,7 +1,7 @@
 #! /bin/sh
 
 SED="sed"
-if [ `which gsed 2> /dev/null` ] ; then 
+if [ `which gsed 2> /dev/null` ]; then
 	SED="gsed"
 fi
 
@@ -16,7 +16,7 @@ TEST_FILE=${TEST_NAME}_generated.il
 echo $TEST_FILE
 $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST1_TYPE}/g" -e "s/TYPE2/${TEST2_TYPE}/g" -e "s/OPCODE/${TEST_OP}/g" > $TEST_FILE <<//EOF
 
-// VALIDITY CIL which breaks the ECMA-335 rules. 
+// VALIDITY CIL which breaks the ECMA-335 rules.
 // this CIL should fail verification by a conforming CLI verifier.
 
 .assembly '${TEST_NAME}_generated'
@@ -33,28 +33,28 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST1_TYPE}/g" -e "s/TYPE2
 
 .class ClassA extends [mscorlib]System.Object
 {
-	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
-		ret 
+		ret
 	}
 
-	.method public hidebysig  specialname  rtspecialname instance default void .ctor (TYPE2 tp)  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void .ctor (TYPE2 tp)  cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
-		ret 
+		ret
 	}
 
-	.method public hidebysig  specialname  rtspecialname instance default void .ctor (TYPE2 a1, TYPE2 a2)  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void .ctor (TYPE2 a1, TYPE2 a2)  cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
-		ret 
+		ret
 	}
 
 	.method public instance void ctor(TYPE2 tp)
@@ -69,10 +69,10 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST1_TYPE}/g" -e "s/TYPE2
 		ret
 	}
 
-	.method public hidebysig  specialname  rtspecialname static default void .cctor ()  cil managed 
+	.method public hidebysig  specialname  rtspecialname static default void .cctor ()  cil managed
 	{
 		.maxstack 8
-		ret 
+		ret
 	}
 
 	.method public instance void Method1()
@@ -94,12 +94,12 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST1_TYPE}/g" -e "s/TYPE2
 
 .class abstract AbsClass extends [mscorlib]System.Object
 {
-	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed 
+	.method public hidebysig  specialname  rtspecialname instance default void .ctor ()  cil managed
 	{
 		.maxstack 8
-		ldarg.0 
+		ldarg.0
 		call instance void object::.ctor()
-		ret 
+		ret
 	}
 }
 
@@ -107,10 +107,10 @@ $SED -e "s/VALIDITY/${TEST_VALIDITY}/g" -e "s/TYPE1/${TEST1_TYPE}/g" -e "s/TYPE2
 {
 	.field private int32 v
 
-	.method public hidebysig specialname rtspecialname instance default void .ctor ()  cil managed 
+	.method public hidebysig specialname rtspecialname instance default void .ctor ()  cil managed
 	{
 		.maxstack 8
-		ret 
+		ret
 	}
 }
 

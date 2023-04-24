@@ -18,6 +18,7 @@ namespace System.Reflection
 
         public bool IsInitOnly => (Attributes & FieldAttributes.InitOnly) != 0;
         public bool IsLiteral => (Attributes & FieldAttributes.Literal) != 0;
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public bool IsNotSerialized => (Attributes & FieldAttributes.NotSerialized) != 0;
         public bool IsPinvokeImpl => (Attributes & FieldAttributes.PinvokeImpl) != 0;
         public bool IsSpecialName => (Attributes & FieldAttributes.SpecialName) != 0;
@@ -46,12 +47,11 @@ namespace System.Reflection
             // so it can become a simple test
             if (right is null)
             {
-                // return true/false not the test result https://github.com/dotnet/runtime/issues/4207
-                return (left is null) ? true : false;
+                return left is null;
             }
 
             // Try fast reference equality and opposite null check prior to calling the slower virtual Equals
-            if ((object?)left == (object)right)
+            if (ReferenceEquals(left, right))
             {
                 return true;
             }
@@ -74,6 +74,8 @@ namespace System.Reflection
         public virtual object? GetValueDirect(TypedReference obj) { throw new NotSupportedException(SR.NotSupported_AbstractNonCLS); }
 
         public virtual object? GetRawConstantValue() { throw new NotSupportedException(SR.NotSupported_AbstractNonCLS); }
+
+        public virtual Type GetModifiedFieldType() => throw new NotSupportedException();
 
         public virtual Type[] GetOptionalCustomModifiers() { throw NotImplemented.ByDesign; }
         public virtual Type[] GetRequiredCustomModifiers() { throw NotImplemented.ByDesign; }

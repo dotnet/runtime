@@ -15,31 +15,34 @@ namespace System.Reflection
             const int PUBLIC_KEY_TOKEN_LEN = 8;
             Debug.Assert(name.Length != 0);
 
-            StringBuilder sb = new StringBuilder();
-            sb.AppendQuoted(name);
+            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            vsb.AppendQuoted(name);
 
             if (version != null)
             {
-                Version canonicalizedVersion = version.CanonicalizeVersion();
-                if (canonicalizedVersion.Major != ushort.MaxValue)
+                ushort major = (ushort)version.Major;
+                if (major != ushort.MaxValue)
                 {
-                    sb.Append(", Version=");
-                    sb.Append(canonicalizedVersion.Major);
+                    vsb.Append(", Version=");
+                    vsb.AppendSpanFormattable(major);
 
-                    if (canonicalizedVersion.Minor != ushort.MaxValue)
+                    ushort minor = (ushort)version.Minor;
+                    if (minor != ushort.MaxValue)
                     {
-                        sb.Append('.');
-                        sb.Append(canonicalizedVersion.Minor);
+                        vsb.Append('.');
+                        vsb.AppendSpanFormattable(minor);
 
-                        if (canonicalizedVersion.Build != ushort.MaxValue)
+                        ushort build = (ushort)version.Build;
+                        if (build != ushort.MaxValue)
                         {
-                            sb.Append('.');
-                            sb.Append(canonicalizedVersion.Build);
+                            vsb.Append('.');
+                            vsb.AppendSpanFormattable(build);
 
-                            if (canonicalizedVersion.Revision != ushort.MaxValue)
+                            ushort revision = (ushort)version.Revision;
+                            if (revision != ushort.MaxValue)
                             {
-                                sb.Append('.');
-                                sb.Append(canonicalizedVersion.Revision);
+                                vsb.Append('.');
+                                vsb.AppendSpanFormattable(revision);
                             }
                         }
                     }
@@ -50,8 +53,8 @@ namespace System.Reflection
             {
                 if (cultureName.Length == 0)
                     cultureName = "neutral";
-                sb.Append(", Culture=");
-                sb.AppendQuoted(cultureName);
+                vsb.Append(", Culture=");
+                vsb.AppendQuoted(cultureName);
             }
 
             if (pkt != null)
@@ -59,27 +62,29 @@ namespace System.Reflection
                 if (pkt.Length > PUBLIC_KEY_TOKEN_LEN)
                     throw new ArgumentException();
 
-                sb.Append(", PublicKeyToken=");
+                vsb.Append(", PublicKeyToken=");
                 if (pkt.Length == 0)
-                    sb.Append("null");
+                {
+                    vsb.Append("null");
+                }
                 else
                 {
-                    sb.Append(HexConverter.ToString(pkt, HexConverter.Casing.Lower));
+                    HexConverter.EncodeToUtf16(pkt, vsb.AppendSpan(pkt.Length * 2), HexConverter.Casing.Lower);
                 }
             }
 
             if (0 != (flags & AssemblyNameFlags.Retargetable))
-                sb.Append(", Retargetable=Yes");
+                vsb.Append(", Retargetable=Yes");
 
             if (contentType == AssemblyContentType.WindowsRuntime)
-                sb.Append(", ContentType=WindowsRuntime");
+                vsb.Append(", ContentType=WindowsRuntime");
 
             // NOTE: By design (desktop compat) AssemblyName.FullName and ToString() do not include ProcessorArchitecture.
 
-            return sb.ToString();
+            return vsb.ToString();
         }
 
-        private static void AppendQuoted(this StringBuilder sb, string s)
+        private static void AppendQuoted(this ref ValueStringBuilder vsb, string s)
         {
             bool needsQuoting = false;
             const char quoteChar = '\"';
@@ -90,7 +95,7 @@ namespace System.Reflection
                 needsQuoting = true;
 
             if (needsQuoting)
-                sb.Append(quoteChar);
+                vsb.Append(quoteChar);
 
             for (int i = 0; i < s.Length; i++)
             {
@@ -101,37 +106,24 @@ namespace System.Reflection
                     case '=':
                     case '\'':
                     case '"':
-                        sb.Append('\\');
+                        vsb.Append('\\');
                         break;
                     case '\t':
-                        sb.Append("\\t");
+                        vsb.Append("\\t");
                         continue;
                     case '\r':
-                        sb.Append("\\r");
+                        vsb.Append("\\r");
                         continue;
                     case '\n':
-                        sb.Append("\\n");
+                        vsb.Append("\\n");
                         continue;
                 }
 
-                sb.Append(s[i]);
+                vsb.Append(s[i]);
             }
 
             if (needsQuoting)
-                sb.Append(quoteChar);
-        }
-
-        private static Version CanonicalizeVersion(this Version version)
-        {
-            ushort major = (ushort)version.Major;
-            ushort minor = (ushort)version.Minor;
-            ushort build = (ushort)version.Build;
-            ushort revision = (ushort)version.Revision;
-
-            if (major == version.Major && minor == version.Minor && build == version.Build && revision == version.Revision)
-                return version;
-
-            return new Version(major, minor, build, revision);
+                vsb.Append(quoteChar);
         }
     }
 }

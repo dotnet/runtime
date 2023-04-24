@@ -8,9 +8,27 @@
 
 #include "assert.h"
 
+#include <minipal/utils.h>
+
 #define MEMORY_MAPPED_STRESSLOG
 
-int ParseCommandLine(wchar_t* s, wchar_t** argv, int maxArgc)
+#ifdef HOST_WINDOWS
+#define MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS (void*)0x400000000000
+#else
+#define MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS nullptr
+#endif
+
+// This macro is used to standardize the wide character string literals between UNIX and Windows.
+// Unix L"" is UTF32, and on windows it's UTF16.  Because of built-in assumptions on the size
+// of string literals, it's important to match behaviour between Unix and Windows.  Unix will be defined
+// as u"" (char16_t)
+#ifdef TARGET_UNIX
+#define W(str)  u##str
+#else // TARGET_UNIX
+#define W(str)  L##str
+#endif // TARGET_UNIX
+
+int ParseCommandLine(char* s, char** argv, int maxArgc)
 {
     int argc = 0;
     bool prevWasSpace = true;
@@ -51,16 +69,30 @@ int ParseCommandLine(wchar_t* s, wchar_t** argv, int maxArgc)
     return argc;
 }
 
-int wmain(int argc, wchar_t *argv[])
+int ProcessStressLog(void* baseAddress, int argc, char* argv[]);
+
+int main(int argc, char *argv[])
 {
-    if (argc < 2 || wcscmp(argv[1], L"-?") == 0)
+#ifdef HOST_UNIX
+    int exitCode = PAL_Initialize(argc, argv);
+    if (exitCode != 0)
+    {
+        fprintf(stderr, "PAL initialization FAILED %d\n", exitCode);
+        return exitCode;
+    }
+#endif
+
+    if (argc < 2 || strcmp(argv[1], "-?") == 0)
     {
         printf("Usage: StressLog <log file> <options>\n");
         printf("       StressLog <log file> -? for list of options\n");
         return 1;
     }
+    WCHAR filename[MAX_PATH];
+    if (MultiByteToWideChar(CP_ACP, 0, argv[1], -1, filename, MAX_PATH) == 0)
+        return 1;
 
-    HANDLE file = CreateFile(argv[1], GENERIC_READ, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE file = CreateFile(filename, GENERIC_READ, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (file == INVALID_HANDLE_VALUE)
     {
         printf("file not found\n");
@@ -81,7 +113,7 @@ int wmain(int argc, wchar_t *argv[])
         printf("could not create file mapping\n");
         return 1;
     }
-    void* baseAddress = MapViewOfFileEx(map, FILE_MAP_READ, 0, 0, size, (void*)0x400000000000);
+    void* baseAddress = MapViewOfFileEx(map, FILE_MAP_READ, 0, 0, size, MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS);
     if (baseAddress == nullptr)
     {
         printf("could not map view of file\n");
@@ -117,30 +149,11 @@ int wmain(int argc, wchar_t *argv[])
 #endif
     argc -= 2;
     argv += 2;
-    wchar_t* largv[128];
+    char* largv[128];
     memset(largv, 0, sizeof(largv));
     while (true)
     {
-        typedef int ProcessStresslog(void* baseAddress, int argc, wchar_t* argv[]);
-
-        HMODULE plugin = LoadLibrary(L"StressLogPlugin.dll");
-
-        if (plugin == nullptr)
-        {
-            printf("could not load StressLogPlugin.dll");
-            return 1;
-        }
-
-        ProcessStresslog* processStressLog = (ProcessStresslog*)GetProcAddress(plugin, "ProcessStresslog");
-        if (processStressLog == nullptr)
-        {
-            printf("could not find entry point ProcessStresslog in StressLogPlugin.dll");
-            return 1;
-        }
-
-        int error = processStressLog(baseAddress, argc, argv);
-
-        FreeLibrary(plugin);
+        int error = ProcessStressLog(baseAddress, argc, argv);
 
         if (error != 0)
         {
@@ -148,11 +161,11 @@ int wmain(int argc, wchar_t *argv[])
         }
 
         bool runAgain = false;
-        wchar_t s[1024];
+        char s[1024];
         while (true)
         {
             printf("'q' to quit, 'r' to run again\n>");
-            if (fgetws(s, 1023, stdin) == nullptr)
+            if (fgets(s, 1023, stdin) == nullptr)
                 continue;
             switch (s[0])
             {
@@ -172,7 +185,7 @@ int wmain(int argc, wchar_t *argv[])
         }
         if (runAgain)
         {
-            int largc = ParseCommandLine(&s[1], largv, _countof(largv));
+            int largc = ParseCommandLine(&s[1], largv, ARRAY_SIZE(largv));
             if (largc > 0)
             {
                 argc = largc;
@@ -184,4 +197,6 @@ int wmain(int argc, wchar_t *argv[])
             break;
         }
     }
+
+    return 0;
 }

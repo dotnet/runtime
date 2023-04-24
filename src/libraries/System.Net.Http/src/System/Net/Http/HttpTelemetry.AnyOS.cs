@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Threading;
 
@@ -16,8 +15,10 @@ namespace System.Net.Http
         private PollingCounter? _failedRequestsCounter;
         private PollingCounter? _totalHttp11ConnectionsCounter;
         private PollingCounter? _totalHttp20ConnectionsCounter;
+        private PollingCounter? _totalHttp30ConnectionsCounter;
         private EventCounter? _http11RequestsQueueDurationCounter;
         private EventCounter? _http20RequestsQueueDurationCounter;
+        private EventCounter? _http30RequestsQueueDurationCounter;
 
         [NonEvent]
         public void Http11RequestLeftQueue(double timeOnQueueMilliseconds)
@@ -31,6 +32,13 @@ namespace System.Net.Http
         {
             _http20RequestsQueueDurationCounter!.WriteMetric(timeOnQueueMilliseconds);
             RequestLeftQueue(timeOnQueueMilliseconds, versionMajor: 2, versionMinor: 0);
+        }
+
+        [NonEvent]
+        public void Http30RequestLeftQueue(double timeOnQueueMilliseconds)
+        {
+            _http30RequestsQueueDurationCounter!.WriteMetric(timeOnQueueMilliseconds);
+            RequestLeftQueue(timeOnQueueMilliseconds, versionMajor: 3, versionMinor: 0);
         }
 
         protected override void OnEventCommand(EventCommandEventArgs command)
@@ -55,7 +63,7 @@ namespace System.Net.Http
 
                 // The cumulative number of HTTP requests failed since the process started.
                 // Failed means that an exception occurred during the handler's Send(Async) call as a result of a connection related error, timeout, or explicitly cancelled.
-                // In case of using HttpClient's SendAsync(and friends) with buffering, this includes exceptions that occured while buffering the response content
+                // In case of using HttpClient's SendAsync(and friends) with buffering, this includes exceptions that occurred while buffering the response content
                 // In case of using HttpClient's helper methods (GetString/ByteArray/Stream), this includes responses with non-success status codes
                 _failedRequestsCounter ??= new PollingCounter("requests-failed", this, () => Interlocked.Read(ref _failedRequests))
                 {
@@ -87,6 +95,11 @@ namespace System.Net.Http
                     DisplayName = "Current Http 2.0 Connections"
                 };
 
+                _totalHttp30ConnectionsCounter ??= new PollingCounter("http30-connections-current-total", this, () => Interlocked.Read(ref _openedHttp30Connections))
+                {
+                    DisplayName = "Current Http 3.0 Connections"
+                };
+
                 _http11RequestsQueueDurationCounter ??= new EventCounter("http11-requests-queue-duration", this)
                 {
                     DisplayName = "HTTP 1.1 Requests Queue Duration",
@@ -96,6 +109,12 @@ namespace System.Net.Http
                 _http20RequestsQueueDurationCounter ??= new EventCounter("http20-requests-queue-duration", this)
                 {
                     DisplayName = "HTTP 2.0 Requests Queue Duration",
+                    DisplayUnits = "ms"
+                };
+
+                _http30RequestsQueueDurationCounter ??= new EventCounter("http30-requests-queue-duration", this)
+                {
+                    DisplayName = "HTTP 3.0 Requests Queue Duration",
                     DisplayUnits = "ms"
                 };
             }

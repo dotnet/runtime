@@ -169,7 +169,7 @@ rehash_table (MonoConcGHashTable *hash_table, int multiplier)
 	hash_table->overflow_count = (int)(new_table->table_size * LOAD_FACTOR);
 	hash_table->element_count -= hash_table->tombstone_count;
 	hash_table->tombstone_count = 0;
-	conc_table_lf_free (old_table);	
+	conc_table_lf_free (old_table);
 }
 
 
@@ -305,7 +305,7 @@ mono_conc_g_hash_table_foreach (MonoConcGHashTable *hash_table, GHFunc func, gpo
 		if (table->keys [i] && !key_is_tombstone (hash_table, table->keys [i])) {
 			func (table->keys [i], table->values [i], user_data);
 		}
-	}	
+	}
 }
 
 void
@@ -359,13 +359,12 @@ mono_conc_g_hash_table_insert (MonoConcGHashTable *hash_table, gpointer key, gpo
 				if (is_tombstone)
 					--hash_table->tombstone_count;
 				else
-					++hash_table->element_count;	
+					++hash_table->element_count;
 
 				return NULL;
 			}
 			if (key == cur_key) {
-				gpointer value = table->values [i];
-				return value;
+				return table->values [i];
 			}
 			i = (i + 1) & table_mask;
 		}
@@ -382,13 +381,12 @@ mono_conc_g_hash_table_insert (MonoConcGHashTable *hash_table, gpointer key, gpo
 				if (is_tombstone)
 					--hash_table->tombstone_count;
 				else
-					++hash_table->element_count;	
+					++hash_table->element_count;
 
 				return NULL;
 			}
 			if (equal (key, cur_key)) {
-				gpointer value = table->values [i];
-				return value;
+				return table->values [i];
 			}
 			i = (i + 1) & table_mask;
 		}

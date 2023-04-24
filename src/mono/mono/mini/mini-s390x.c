@@ -31,8 +31,9 @@ if (ins->inst_true_bb->native_offset) { 					\
 		s390_jcl (code, cond, displace); 				\
 	}									\
 } else { 									\
-	mono_add_patch_info (cfg, code - cfg->native_code, 			\
-			     MONO_PATCH_INFO_BB, ins->inst_true_bb); 		\
+	mono_add_patch_info_rel (cfg, code - cfg->native_code, 			\
+			         MONO_PATCH_INFO_BB, ins->inst_true_bb, 	\
+				 MONO_R_S390_RELINS);				\
 	s390_jcl (code, cond, 0);						\
 } 										\
 }
@@ -49,8 +50,9 @@ if (ins->inst_target_bb->native_offset) { 					\
 		s390_jcl (code, S390_CC_UN, displace); 				\
 	}									\
 } else { 									\
-	mono_add_patch_info (cfg, code - cfg->native_code, 			\
-			     MONO_PATCH_INFO_BB, ins->inst_target_bb); 		\
+	mono_add_patch_info_rel (cfg, code - cfg->native_code, 			\
+			         MONO_PATCH_INFO_BB, ins->inst_target_bb, 	\
+				 MONO_R_S390_RELINS);				\
 	s390_jcl (code, S390_CC_UN, 0);						\
 } 										\
 }
@@ -60,7 +62,7 @@ if (ins->inst_target_bb->native_offset) { 					\
 		mono_add_patch_info (cfg, code - cfg->native_code,   	\
 				     MONO_PATCH_INFO_EXC, exc_name);  	\
 		s390_jcl (code, cond, 0);				\
-	} while (0); 
+	} while (0);
 
 #define EMIT_COMP_AND_BRANCH(ins, cab, cmp)					\
 {										\
@@ -79,8 +81,9 @@ if (ins->inst_true_bb->native_offset) { 					\
 	}									\
 } else { 									\
 	s390_##cmp (code, ins->sreg1, ins->sreg2);				\
-	mono_add_patch_info (cfg, code - cfg->native_code, 			\
-			     MONO_PATCH_INFO_BB, ins->inst_true_bb); 		\
+	mono_add_patch_info_rel (cfg, code - cfg->native_code, 			\
+			         MONO_PATCH_INFO_BB, ins->inst_true_bb, 	\
+				 MONO_R_S390_RELINS);				\
 	s390_jcl (code, ins->sreg3, 0);						\
 } 										\
 }
@@ -119,8 +122,9 @@ if (ins->inst_true_bb->native_offset) { 					\
 		S390_SET (code, s390_r0, ins->backend.data);			\
 		s390_##cmp (code, ins->sreg1, s390_r0);				\
 	}									\
-	mono_add_patch_info (cfg, code - cfg->native_code, 			\
-			     MONO_PATCH_INFO_BB, ins->inst_true_bb); 		\
+	mono_add_patch_info_rel (cfg, code - cfg->native_code, 			\
+			         MONO_PATCH_INFO_BB, ins->inst_true_bb, 	\
+				 MONO_R_S390_RELINS);				\
 	s390_jcl (code, ins->sreg3, 0);						\
 } 										\
 }
@@ -209,7 +213,7 @@ if (ins->inst_true_bb->native_offset) { 					\
 		}							\
 		s390_ ## op (code, ins->dreg, ins->sreg2, m, s390_f14); \
 	}								\
-	s390_ldgr (code, s390_f14, s390_r1);			
+	s390_ldgr (code, s390_f14, s390_r1);
 
 #undef DEBUG
 #define DEBUG(a) if (cfg->verbose_level > 1) a
@@ -255,7 +259,6 @@ if (ins->inst_true_bb->native_offset) { 					\
 
 #include "mini-s390x.h"
 #include "cpu-s390x.h"
-#include "support-s390x.h"
 #include "jit-icalls.h"
 #include "ir-emit.h"
 #include "mini-gc.h"
@@ -276,7 +279,7 @@ typedef struct {
 	      code_size,
 	      parm_size,
 	      retStruct;
-} size_data;	
+} size_data;
 
 /**
  * ABI - register use in calls etc.
@@ -341,6 +344,11 @@ static CallInfo * get_call_info (MonoMemPool *, MonoMethodSignature *);
 static guchar * emit_float_to_int (MonoCompile *, guchar *, int, int, int, gboolean);
 static __inline__ void emit_unwind_regs(MonoCompile *, guint8 *, int, int, long);
 static void compare_and_branch(MonoBasicBlock *, MonoInst *, int, gboolean);
+static __inline__ guint8 * emit_call(MonoCompile *, guint8 *, MonoJumpInfoType, gconstpointer);
+static guint8 * emit_thunk(guint8 *, gconstpointer);
+static void create_thunk(MonoCompile *, guint8 *, guint8 *, gpointer);
+static void update_thunk(MonoCompile *, guint8 *, gpointer);
+static void emit_patch_full (MonoCompile *, MonoJumpInfo *, guint8 *, gpointer, int);
 
 /*========================= End of Prototypes ======================*/
 
@@ -382,7 +390,7 @@ static const char * fpNames[] = {
  * Constants used in debugging - map vector register names
  */
 static const char * vrNames[] = {
-	"vr0",  "vr1",  "vr2",  "vr3",  "vr4",  "vr5",  "vr6",  "vr7", 
+	"vr0",  "vr1",  "vr2",  "vr3",  "vr4",  "vr5",  "vr6",  "vr7",
 	"vr8",  "vr9",  "vr10", "vr11", "vr12", "vr13", "vr14", "vr15",
 	"vr16", "vr17", "vr18", "vr19", "vr20", "vr21", "vr22", "vr23",
 	"vr24", "vr25", "vr26", "vr27", "vr28", "vr29", "vr30", "vr31"
@@ -392,16 +400,19 @@ static const char * vrNames[] = {
 /**
  * Constants used in debugging - ABI register types
  */
-static const char *typeParm[] = { "General", "Base", "FPR8", "FPR4", "StructByVal", 
+static const char *typeParm[] = { "General", "Base", "FPR8", "FPR4", "StructByVal",
                                   "StructByValInFP", "ByAddr"};
 #endif
 
 /*====================== End of Global Variables ===================*/
 
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (mathf, "System", "MathF")
+
 /**
- *  
+ *
  * @brief Return general register name
- * 
+ *
  * @param[in] register number
  * @returns Name of register
  *
@@ -409,7 +420,7 @@ static const char *typeParm[] = { "General", "Base", "FPR8", "FPR4", "StructByVa
  */
 
 const char*
-mono_arch_regname (int reg) 
+mono_arch_regname (int reg)
 {
 	if (reg >= 0 && reg < 16)
 		return grNames [reg];
@@ -420,9 +431,9 @@ mono_arch_regname (int reg)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Return floating point register name
- * 
+ *
  * @param[in] register number
  * @returns Name of register
  *
@@ -430,7 +441,7 @@ mono_arch_regname (int reg)
  */
 
 const char*
-mono_arch_fregname (int reg) 
+mono_arch_fregname (int reg)
 {
 	if (reg >= 0 && reg < 16)
 		return fpNames [reg];
@@ -441,9 +452,9 @@ mono_arch_fregname (int reg)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Return vector register name
- * 
+ *
  * @param[in] register number
  * @returns Name of register
  *
@@ -462,28 +473,28 @@ mono_arch_xregname (int reg)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific return argument information
- * 
+ *
  * @param[in] @csig - Method signature
  * @param[in] @param_count - Number of parameters to consider
  * @param[out] @arg_info - An array in which to store results
  * @returns Size of the activation frame
  *
- * Gathers information on parameters such as size, alignment, and padding. 
- * arg_info should be large * enough to hold param_count + 1 entries.	    
+ * Gathers information on parameters such as size, alignment, and padding.
+ * arg_info should be large * enough to hold param_count + 1 entries.
  */
 
 int
-mono_arch_get_argument_info (MonoMethodSignature *csig, 
-			     int param_count, 
+mono_arch_get_argument_info (MonoMethodSignature *csig,
+			     int param_count,
 			     MonoJitArgumentInfo *arg_info)
 {
 	int k, frame_size = 0;
 	int size, align, pad;
 	int offset = 8;
 
-	if (MONO_TYPE_ISSTRUCT (csig->ret)) { 
+	if (MONO_TYPE_ISSTRUCT (csig->ret)) {
 		frame_size += sizeof (target_mgreg_t);
 		offset += 8;
 	}
@@ -498,13 +509,13 @@ mono_arch_get_argument_info (MonoMethodSignature *csig,
 	arg_info [0].size = frame_size;
 
 	for (k = 0; k < param_count; k++) {
-		
-		if (csig->pinvoke)
+
+		if (csig->pinvoke && !csig->marshalling_disabled)
 			size = mono_type_native_stack_size (csig->params [k], (guint32 *) &align);
 		else
 			size = mini_type_stack_size (csig->params [k], &align);
 
-		frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);	
+		frame_size += pad = (align - (frame_size & (align - 1))) & (align - 1);
 		arg_info [k].pad = pad;
 		frame_size += size;
 		arg_info [k + 1].pad = 0;
@@ -524,9 +535,9 @@ mono_arch_get_argument_info (MonoMethodSignature *csig,
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Emit an s390x move operation
- * 
+ *
  * @param[in] @cfg - MonoCompile control block
  * @param[in] @dr - Destination register
  * @param[in] @ins - Current instruction
@@ -542,10 +553,10 @@ emit_new_move(MonoCompile *cfg, int dr, MonoInst *ins, MonoInst *src)
 	ArgInfo *ainfo = (ArgInfo *) ins->inst_p1;
 	MonoInst *vtcopy = mono_compile_create_var (cfg, m_class_get_byval_arg (src->klass), OP_LOCAL);
 	MonoInst *load;
-	MonoInst *move; 						
+	MonoInst *move;
 	int size;
-	
-	if (call->signature->pinvoke) {
+
+	if (call->signature->pinvoke && !call->signature->marshalling_disabled) {
 		size = mono_type_native_stack_size (m_class_get_byval_arg (src->klass), NULL);
 		vtcopy->backend.is_pinvoke = 1;
 	} else {
@@ -559,26 +570,26 @@ emit_new_move(MonoCompile *cfg, int dr, MonoInst *ins, MonoInst *src)
 	move->inst_offset  = 0;
 	move->sreg1	       = src->dreg;
 	move->inst_imm	   = 0;
-	move->backend.size = size;	
-	MONO_ADD_INS (cfg->cbb, move);	
+	move->backend.size = size;
+	MONO_ADD_INS (cfg->cbb, move);
 	if (dr != 0)
 		MONO_EMIT_NEW_UNALU(cfg, OP_MOVE, dr, load->dreg);
 	else
 		MONO_EMIT_NEW_STORE_MEMBASE(cfg, OP_STORE_MEMBASE_REG,
 			ainfo->reg, ainfo->offset, load->dreg);
-} 
+}
 
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Generate output sequence for VT register parameters
- * 
+ *
  * @param[in] @cfg - MonoCompile control block
  * @param[in] @dr - Destination register
  * @param[in] @ins - Current instruction
- * @param[in] @src - Instruction representing the source 
- * 
+ * @param[in] @src - Instruction representing the source
+ *
  * Emit the output of structures for calls whose address is placed in a register.
  */
 
@@ -609,7 +620,7 @@ emit_outarg_vtr(MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOADI8_MEMBASE,
 				reg, src->dreg, 0);
 		break;
-		default: 
+		default:
 			emit_new_move (cfg, reg, ins, src);
 	}
 	mono_call_inst_add_outarg_reg(cfg, call, reg, ainfo->reg, FALSE);
@@ -618,14 +629,14 @@ emit_outarg_vtr(MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Generate output sequence for VT stack parameters
- * 
+ *
  * @param[in] @cfg - MonoCompile control block
  * @param[in] @dr - Destination register
  * @param[in] @ins - Current instruction
- * @param[in] @src - Instruction representing the source 
- * 
+ * @param[in] @src - Instruction representing the source
+ *
  * Emit the output of structures for calls whose address is placed on the stack
  */
 
@@ -633,12 +644,12 @@ static void __inline__
 emit_outarg_vts(MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 {
 	ArgInfo *ainfo = (ArgInfo *) ins->inst_p1;
-	int tmpr = mono_alloc_preg (cfg); 
+	int tmpr = mono_alloc_preg (cfg);
 
 	switch (ins->backend.size) {
 		case 0:
 			MONO_EMIT_NEW_ICONST(cfg, tmpr, 0);
-			MONO_EMIT_NEW_STORE_MEMBASE(cfg, OP_STORE_MEMBASE_REG, 
+			MONO_EMIT_NEW_STORE_MEMBASE(cfg, OP_STORE_MEMBASE_REG,
 				ainfo->reg, ainfo->offset, tmpr);
 		break;
 		case 1:
@@ -674,15 +685,15 @@ emit_outarg_vts(MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Generate unwind information for range of registers
- * 
+ *
  * @param[in] @cfg - MonoCompile control block
  * @param[in] @code - Location of code
  * @param[in] @start - Starting register
  * @param[in] @end - Ending register
  * @param[in] @offset - Offset in stack
- * 
+ *
  * Emit unwind information for a range of registers.
  */
 
@@ -701,13 +712,13 @@ emit_unwind_regs(MonoCompile *cfg, guint8 *code, int start, int end, long offset
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Get previous stack frame pointer
- * 
+ *
  * @param[in] @cfg - MonoCompile control block
  * @param[in] @code - Location of code
  * @returns Previous stack pointer
- * 
+ *
  * Retrieve the stack pointer of the previous frame
  */
 
@@ -740,9 +751,9 @@ backUpStackPtr(MonoCompile *cfg, guint8 *code)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific CPU initialization
- * 
+ *
  * Perform CPU specific initialization to execute managed code.
  */
 
@@ -754,10 +765,10 @@ mono_arch_cpu_init (void)
 /*========================= End of Function ========================*/
 
 /**
- *  
- * @brief Archictecture specific initialization
- * 
- * 
+ *
+ * @brief Architecture specific initialization
+ *
+ *
  * Initialize architecture specific code:
  * - Define trigger pages for debugger
  * - Generate breakpoint code stub
@@ -775,10 +786,10 @@ mono_arch_init (void)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific cleaup code
- * 
- * 
+ *
+ *
  * Clean up before termination:
  * - Free the trigger pages
  */
@@ -791,12 +802,12 @@ mono_arch_cleanup (void)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific check for fast TLS access
- * 
+ *
  * @returns True
- * 
- * Returns whether we use fast inlined thread local storage managed access, 
+ *
+ * Returns whether we use fast inlined thread local storage managed access,
  * instead of falling back to native code.
  */
 
@@ -809,12 +820,12 @@ mono_arch_have_fast_tls (void)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific check of mono optimizations
- * 
+ *
  * @param[out] @exclude_mask - Optimization exclusion mask
  * @returns Optimizations supported on this CPU
- * 
+ *
  * Returns the optimizations supported on this CPU
  */
 
@@ -826,19 +837,19 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 	/*
          * No s390-specific optimizations yet
 	 */
-	*exclude_mask = MONO_OPT_LINEARS;
+	*exclude_mask = 0;
 	return opts;
 }
 
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific allocation of integer variables
- * 
+ *
  * @param[in] @cfg - MonoCompile control block
  * @returns A list of integer variables
- * 
+ *
  * Returns a list of allocatable integer variables
  */
 
@@ -856,7 +867,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 		if (vmv->range.first_use.abs_pos >= vmv->range.last_use.abs_pos)
 			continue;
 
-		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) || 
+		if (ins->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT) ||
 		    (ins->opcode != OP_LOCAL && ins->opcode != OP_ARG))
 			continue;
 
@@ -874,12 +885,12 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific determination of usable integer registers
- * 
+ *
  * @param[in] @cfg - MonoCompile control block
  * @returns A list of allocatable registers
- * 
+ *
  * Returns a list of usable integer registers
  */
 
@@ -898,7 +909,7 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 	/* FIXME: s390_r12 is reserved for bkchain_reg. Only reserve it if needed */
 	top = 12;
 	for (i = 8; i < top; ++i) {
-		if ((cfg->frame_reg != i) && 
+		if ((cfg->frame_reg != i) &&
 		    //!((cfg->uses_rgctx_reg) && (i == MONO_ARCH_IMT_REG)))
 		    (i != MONO_ARCH_IMT_REG))
 			regs = g_list_prepend (regs, GUINT_TO_POINTER (i));
@@ -910,12 +921,12 @@ mono_arch_get_global_int_regs (MonoCompile *cfg)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific flush of instruction cache
- * 
+ *
  * @param[in] @code - Start of code
  * @param[in] @size - Amount to be flushed
- * 
+ *
  * Flush the CPU icache.
  */
 
@@ -927,13 +938,13 @@ mono_arch_flush_icache (guint8 *code, gint size)
 /*========================= End of Function ========================*/
 
 /**
- *  
- * @brief Add an integer register parameter 
- * 
+ *
+ * @brief Add an integer register parameter
+ *
  * @param[in] @gr - Address of current register number
  * @param[in] @sz - Stack size data
  * @param[in] @ainfo - Parameter information
- * 
+ *
  * Assign a parameter to a general register or spill it onto the stack
  */
 
@@ -946,11 +957,11 @@ add_general (guint *gr, size_data *sz, ArgInfo *ainfo)
 		ainfo->reg	    = STK_BASE;
 		ainfo->regtype  = RegTypeBase;
 		sz->stack_size += sizeof(long);
-		sz->code_size  += 12;    
+		sz->code_size  += 12;
 	} else {
 		ainfo->reg      = *gr;
 		ainfo->regtype  = RegTypeGeneral;
-		sz->code_size  += 8;    
+		sz->code_size  += 8;
 	}
 	(*gr) ++;
 }
@@ -958,15 +969,15 @@ add_general (guint *gr, size_data *sz, ArgInfo *ainfo)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Add a structure variable to parameter list
- * 
+ *
  * @param[in] @gr - Address of current register number
  * @param[in] @sz - Stack size data
  * @param[in] @ainfo - Parameter information
  * @param[in] @size - Size of parameter
  * @param[in] @type - Type of stack parameter (reference or value)
- * 
+ *
  * Assign a structure address to a register or spill it onto the stack
  */
 
@@ -992,14 +1003,14 @@ add_stackParm (guint *gr, size_data *sz, ArgInfo *ainfo, gint size, ArgStorage t
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Add a floating point register parameter
- * 
+ *
  * @param[in] @fr - Address of current register number
  * @param[in] @sz - Stack size data
  * @param[in] @ainfo - Parameter information
  * @param[in] @isDouble - Precision of parameter
- * 
+ *
  * Assign a parameter to a FP register or spill it onto the stack
  */
 
@@ -1027,15 +1038,15 @@ add_float (guint *fr,  size_data *sz, ArgInfo *ainfo, gboolean isDouble)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Extract information about call parameters and stack use
- * 
+ *
  * @param[in] @mp - Mono Memory Pool
  * @param[in] @sig - Mono Method Signature
  * @returns Information about the parameters and stack usage for a call
- * 
- * Determine the amount of space required for code and stack. In addition 
- * determine starting points for stack-based parameters, and area for 
+ *
+ * Determine the amount of space required for code and stack. In addition
+ * determine starting points for stack-based parameters, and area for
  * structures being returned on the stack.
  */
 
@@ -1119,8 +1130,8 @@ enum_retvalue:
 				simpleType = mono_class_enum_basetype_internal (klass)->type;
 				goto enum_retvalue;
 			}
-			size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke);
-	
+			size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke && !sig->marshalling_disabled);
+
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
 			cinfo->ret.vtsize = size;
@@ -1128,13 +1139,11 @@ enum_retvalue:
 		}
 		case MONO_TYPE_TYPEDBYREF: {
 			MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
-			size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke);
-	
+			size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke && !sig->marshalling_disabled);
+
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
 			cinfo->ret.vtsize = size;
-			// cinfo->ret.reg = s390_r2;
-			// sz->code_size += 4;
 	    }
 			break;
 		case MONO_TYPE_VOID:
@@ -1152,9 +1161,9 @@ enum_retvalue:
 	 * are sometimes made using calli without sig->hasthis set, like in the delegate
 	 * invoke wrappers.
 	 */
-	if (cinfo->struct_ret && !is_pinvoke && 
-	    (sig->hasthis || 
-             (sig->param_count > 0 && 
+	if (cinfo->struct_ret && !is_pinvoke &&
+	    (sig->hasthis ||
+             (sig->param_count > 0 &&
 	      MONO_TYPE_IS_REFERENCE (mini_get_underlying_type (sig->params [0]))))) {
 		if (sig->hasthis) {
 			cinfo->args[nParm].size = sizeof (target_mgreg_t);
@@ -1210,7 +1219,7 @@ enum_retvalue:
 			add_general (&gr, sz, &cinfo->sigCookie);
 		}
 
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
 			add_general (&gr, sz, cinfo->args+nParm);
 			cinfo->args[nParm].size = sizeof(gpointer);
 			nParm++;
@@ -1279,7 +1288,7 @@ enum_retvalue:
 			MonoMarshalType *info;
 			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
 
-			if (sig->pinvoke)
+			if (sig->pinvoke && !sig->marshalling_disabled)
 				size = mono_class_native_size(klass, NULL);
 			else
 				size = mono_class_value_size(klass, NULL);
@@ -1322,7 +1331,7 @@ enum_retvalue:
 				case 8:
 					add_general(&gr, sz, cinfo->args+nParm);
 					cinfo->args[nParm].size    = size;
-					cinfo->args[nParm].regtype = RegTypeStructByVal; 
+					cinfo->args[nParm].regtype = RegTypeStructByVal;
 					nParm++;
 					break;
 				default:
@@ -1353,23 +1362,14 @@ enum_retvalue:
 		add_general (&gr, sz, &cinfo->sigCookie);
 	}
 
-	/*----------------------------------------------------------*/
-	/* If we are passing a structure back then if it won't be   */
-	/* in a register(s) then we make room at the end of the     */
-	/* parameters that may have been placed on the stack        */
-	/*----------------------------------------------------------*/
+	/*
+	 * If we are passing a structure back then we make room at
+	 * the end of the parameters that may have been placed on
+	 * the stack
+	 */
 	if (cinfo->struct_ret) {
 		cinfo->ret.offset = sz->stack_size;
-		switch (cinfo->ret.size) {
-		case 0:
-		case 1:
-		case 2:
-		case 4:
-		case 8:
-			break;
-		default:
-			sz->stack_size   += S390_ALIGN(cinfo->ret.size, align);
-		}
+		sz->stack_size   += S390_ALIGN(cinfo->ret.size, align);
 	}
 
 	cinfo->lastgr   = gr;
@@ -1382,13 +1382,13 @@ enum_retvalue:
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific allocation of variables
- * 
+ *
  * @param[in] @cfg - Compile control block
- * 
- * Set var information according to the calling convention for s390x. 
- * 
+ *
+ * Set var information according to the calling convention for s390x.
+ *
  */
 
 void
@@ -1406,8 +1406,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	cfg->flags |= MONO_CFG_HAS_SPILLUP;
 
-	/*---------------------------------------------------------*/	 
-	/* We use the frame register also for any method that has  */ 
+	/*---------------------------------------------------------*/
+	/* We use the frame register also for any method that has  */
 	/* filter clauses. This way, when the handlers are called, */
 	/* the code will reference local variables using the frame */
 	/* reg instead of the stack pointer: if we had to restore  */
@@ -1415,7 +1415,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	/* are already on the stack (since filters get called      */
 	/* before stack unwinding happens) when the filter code    */
 	/* would call any method.				   */
-	/*---------------------------------------------------------*/	 
+	/*---------------------------------------------------------*/
 	if ((cfg->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
 		frame_reg = s390_r11;
 
@@ -1423,12 +1423,14 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 	cfg->arch.bkchain_reg = -1;
 
-	if (frame_reg != STK_BASE) 
-		cfg->used_int_regs |= (1LL << frame_reg);		
+	if (frame_reg != STK_BASE)
+		cfg->used_int_regs |= (1LL << frame_reg);
 
 	sig   = mono_method_signature_internal (cfg->method);
-	
-	cinfo = get_call_info (cfg->mempool, sig);
+
+	if (!cfg->arch.cinfo)
+		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);
+	cinfo = cfg->arch.cinfo;
 
 	/*--------------------------------------------------------------*/
 	/* local vars are at a positive offset from the stack pointer 	*/
@@ -1523,7 +1525,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
                                         switch(size) {
                                         case 0: case 1: case 2: case 4: case 8:
                                                 offStruct = (size < 8 ? sizeof(uintptr_t) - size : 0);
-                                        default: 
+                                        default:
                                                 inst->opcode = OP_REGOFFSET;
                                                 inst->dreg = mono_alloc_preg (cfg);
                                                 inst->inst_basereg = cfg->arch.bkchain_reg;
@@ -1550,9 +1552,9 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			default :
 				if (cinfo->args [iParm].reg == STK_BASE) {
 					/*
-					 * These arguments are in the previous frame, so we can't 
+					 * These arguments are in the previous frame, so we can't
 					 * compute their offset from the current frame pointer right
-					 * now, since cfg->stack_offset is not yet known, so dedicate a 
+					 * now, since cfg->stack_offset is not yet known, so dedicate a
 					 * register holding the previous frame pointer.
 					 */
 					cfg->arch.bkchain_reg = s390_r12;
@@ -1569,10 +1571,10 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 					inst->opcode 	   = OP_REGOFFSET;
 					inst->inst_basereg = frame_reg;
 					size = (cinfo->args[iParm].size < 8
-					        ? sizeof(int)  
+					        ? sizeof(int)
 						: sizeof(long));
 					offset = S390_ALIGN(offset, size);
-					if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) 
+					if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
 						inst->inst_offset  = offset;
 					else
 						inst->inst_offset  = offset + (8 - size);
@@ -1588,7 +1590,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	curinst = cfg->locals_start;
 	for (iVar = curinst; iVar < cfg->num_varinfo; ++iVar) {
 		inst = cfg->varinfo [iVar];
-		if ((inst->flags & MONO_INST_IS_DEAD) || 
+		if ((inst->flags & MONO_INST_IS_DEAD) ||
 		    (inst->opcode == OP_REGVAR))
 			continue;
 
@@ -1598,7 +1600,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		/* when they call functions returning structure     */
 		/*--------------------------------------------------*/
 		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype))
-			size = mono_class_native_size (mono_class_from_mono_type_internal (inst->inst_vtype), 
+			size = mono_class_native_size (mono_class_from_mono_type_internal (inst->inst_vtype),
 						       (guint32 *) &align);
 		else
 			size = mono_type_size (inst->inst_vtype, &align);
@@ -1608,7 +1610,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		inst->opcode 	   = OP_REGOFFSET;
 		inst->inst_basereg = frame_reg;
 		offset 		  += size;
-		DEBUG (g_print("allocating local %d to %ld, size: %d\n", 
+		DEBUG (g_print("allocating local %d to %ld, size: %d\n",
 				iVar, inst->inst_offset, size));
 	}
 	offset = S390_ALIGN(offset, sizeof(uintptr_t));
@@ -1642,21 +1644,26 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific creation of variables
- * 
+ *
  * @param[in] @cfg - Compile control block
- * 
+ *
  * Create variables for the method.
- * 
+ *
  */
 
 void
 mono_arch_create_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
+	CallInfo *cinfo;
 
-	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
+	if (!cfg->arch.cinfo)
+		cfg->arch.cinfo = get_call_info (cfg->mempool, sig);
+	cinfo = cfg->arch.cinfo;
+
+	if (cinfo->struct_ret) {
 		cfg->vret_addr = mono_compile_create_var (cfg, mono_get_int_type (), OP_ARG);
 		if (G_UNLIKELY (cfg->verbose_level > 1)) {
 			printf ("vret_addr = ");
@@ -1680,15 +1687,15 @@ mono_arch_create_vars (MonoCompile *cfg)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Add a register to the call operation
- * 
+ *
  * @param[in] @cfg - Compile control block
  * @param[in] @call - Call Instruction
  * @param[in] @storage - Register use type
  * @param[in] @reg - Register number
  * @param[in] @tree - Call arguments
- * 
+ *
  * Add register use information to the call sequence
  */
 
@@ -1727,13 +1734,13 @@ add_outarg_reg2 (MonoCompile *cfg, MonoCallInst *call, ArgStorage storage, int r
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Emit a signature cookine
- * 
+ *
  * @param[in] @cfg - Compile control block
  * @param[in] @call - Call Instruction
  * @param[in] @cinfo - Call Information
- * 
+ *
  * Emit the signature cooke as a parameter
  */
 
@@ -1742,7 +1749,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 {
 	MonoMethodSignature *tmpSig;
 	MonoInst *sig_arg;
-			
+
 	cfg->disable_aot = TRUE;
 
 	/*
@@ -1755,8 +1762,8 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	tmpSig->param_count -= call->signature->sentinelpos;
 	tmpSig->sentinelpos  = 0;
 	if (tmpSig->param_count > 0)
-		memcpy (tmpSig->params, 
-			call->signature->params + call->signature->sentinelpos, 
+		memcpy (tmpSig->params,
+			call->signature->params + call->signature->sentinelpos,
 			tmpSig->param_count * sizeof(MonoType *));
 
 	MONO_INST_NEW (cfg, sig_arg, OP_ICONST);
@@ -1764,20 +1771,20 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 	sig_arg->inst_p0 = tmpSig;
 	MONO_ADD_INS (cfg->cbb, sig_arg);
 
-	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, STK_BASE, 
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, STK_BASE,
 				     cinfo->sigCookie.offset, sig_arg->dreg);
 }
 
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific emission of a call operation
- * 
+ *
  * @param[in] @cfg - Compile control block
  * @param[in] @call - Call Instruction
- * 
- * Process all parameters for a call and generate the sequence of 
+ *
+ * Process all parameters for a call and generate the sequence of
  * operations to perform the call according to the s390x ABI.
  */
 
@@ -1790,12 +1797,12 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	int i, n, lParamArea;
 	CallInfo *cinfo;
 	ArgInfo *ainfo = NULL;
-	int stackSize;    
+	int stackSize;
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
 	DEBUG (g_print ("Call requires: %d parameters\n",n));
-	
+
 	cinfo = get_call_info (cfg->mempool, sig);
 
 	stackSize         = cinfo->sz.stack_size + cinfo->sz.parm_size;
@@ -1862,12 +1869,12 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			break;
 		}
 		case RegTypeBase :
-			if (!t->byref && t->type == MONO_TYPE_R4) {
-				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, 
+			if (!m_type_is_byref (t) && t->type == MONO_TYPE_R4) {
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG,
 							     STK_BASE, ainfo->offset + 4,
 						  	     in->dreg);
-			} else if (!t->byref && (t->type == MONO_TYPE_R8)) {
-				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, 
+			} else if (!m_type_is_byref (t) && (t->type == MONO_TYPE_R8)) {
+				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG,
 						  	     STK_BASE, ainfo->offset,
 							     in->dreg);
 			} else {
@@ -1885,7 +1892,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	}
 
 	/*
-	 * Handle the case where there are no implicit arguments 
+	 * Handle the case where there are no implicit arguments
 	 */
 	if ((sig->call_convention == MONO_CALL_VARARG) &&
 	    (!sig->pinvoke) &&
@@ -1898,13 +1905,13 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific Value Type parameter processing
- * 
+ *
  * @param[in] @cfg - Compile control block
  * @param[in] @call - Call Instruction
  * @param[in] @src - Source parameter
- * 
+ *
  * Process value type parameters for a call operation
  */
 
@@ -1919,7 +1926,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			emit_outarg_vtr (cfg, ins, src);
 		} else {
 			emit_outarg_vts (cfg, ins, src);
-		}	
+		}
 	} else if (ainfo->regtype == RegTypeStructByValInFP) {
 		int dreg = mono_alloc_freg (cfg);
 
@@ -1943,7 +1950,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		guint32 size;
 
 		/* FIXME: alignment? */
-		if (call->signature->pinvoke) {
+		if (call->signature->pinvoke && !call->signature->marshalling_disabled) {
 			size = mono_type_native_stack_size (m_class_get_byval_arg (src->klass), NULL);
 			vtcopy->backend.is_pinvoke = 1;
 		} else {
@@ -1978,13 +1985,13 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific call value return processing
- * 
+ *
  * @param[in] @cfg - Compile control block
  * @param[in] @method - Method
  * @param[in] @val - Instruction representing the result returned to method
- * 
+ *
  * Create the sequence to unload the value returned from a call
  */
 
@@ -1993,7 +2000,7 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
 
-	if (!ret->byref) {
+	if (!m_type_is_byref (ret)) {
 		if (ret->type == MONO_TYPE_R4) {
 			MONO_EMIT_NEW_UNALU (cfg, OP_S390_SETF4RET, s390_f0, val->dreg);
 			return;
@@ -2002,21 +2009,21 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 			return;
 		}
 	}
-			
+
 	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
 }
 
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Replace compound compare/branch operations with single operation
- * 
+ *
  * @param[in] @bb - Basic block
  * @param[in] @ins - Current instruction
  * @param[in] @cc - Condition code of branch
  * @param[in] @logical - Whether comparison is signed or logical
- * 
+ *
  * Form a peephole pass at the code looking for simple optimizations
  * that will combine compare/branch instructions into a single operation.
  */
@@ -2071,12 +2078,12 @@ compare_and_branch(MonoBasicBlock *bb, MonoInst *ins, int cc, gboolean logical)
 /*========================= End of Function ========================*/
 
 /**
- *  
- * @brief Architecure-specific peephole pass 1 processing
- * 
+ *
+ * @brief Architecture-specific peephole pass 1 processing
+ *
  * @param[in] @cfg - Compile control block
  * @param[in] @bb - Basic block
- * 
+ *
  * Form a peephole pass at the code looking for compare and branch
  * optimizations.
  */
@@ -2138,12 +2145,12 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 /*========================= End of Function ========================*/
 
 /**
- *  
- * @brief Architecure-specific peephole pass 2 processing
- * 
+ *
+ * @brief Architecture-specific peephole pass 2 processing
+ *
  * @param[in] @cfg - Compile control block
  * @param[in] @bb - Basic block
- * 
+ *
  * Form a peephole pass at the code looking for simple optimizations.
  */
 
@@ -2171,12 +2178,12 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 /*========================= End of Function ========================*/
 
 /**
- *  
- * @brief Architecure-specific lowering pass processing
- * 
+ *
+ * @brief Architecture-specific lowering pass processing
+ *
  * @param[in] @cfg - Compile control block
  * @param[in] @bb - Basic block
- * 
+ *
  * Form a lowering pass at the code looking for simple optimizations.
  */
 
@@ -2216,9 +2223,9 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Emit float-to-int sequence
- * 
+ *
  * @param[in] @cfg - Compile control block
  * @param[in] @code - Current instruction area
  * @param[in] @dreg - Destination general register
@@ -2226,7 +2233,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
  * @param[in] @size - Size of destination
  * @param[in] @is_signed - Destination is signed/unsigned
  * @returns Next instruction location
- * 
+ *
  * Emit instructions to convert a single precision floating point value to an integer
  */
 
@@ -2269,7 +2276,7 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 		PTRSLOT (code, o[0]);
 		s390_cfebr  (code, dreg, 5, sreg);
 		switch (size) {
-		case 1: 
+		case 1:
 			s390_lghi (code, s390_r0, 0xff);
 			s390_ngr  (code, dreg, s390_r0);
 			break;
@@ -2287,9 +2294,9 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Emit double-to-int sequence
- * 
+ *
  * @param[in] @cfg - Compile control block
  * @param[in] @code - Current instruction area
  * @param[in] @dreg - Destination general register
@@ -2297,7 +2304,7 @@ emit_float_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size,
  * @param[in] @size - Size of destination
  * @param[in] @is_signed - Destination is signed/unsigned
  * @returns Next instruction location
- * 
+ *
  * Emit instructions to convert a single precision floating point value to an integer
  */
 
@@ -2340,7 +2347,7 @@ emit_double_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size
 		PTRSLOT (code, o[0]);
 		s390_cfdbr  (code, dreg, 5, sreg);
 		switch (size) {
-		case 1: 
+		case 1:
 			s390_lghi (code, s390_r0, 0xff);
 			s390_ngr  (code, dreg, s390_r0);
 			break;
@@ -2358,21 +2365,21 @@ emit_double_to_int (MonoCompile *cfg, guchar *code, int dreg, int sreg, int size
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Check if branch is for unsigned comparison
- * 
+ *
  * @param[in] @next - Next instruction
  * @returns True if the branch is for an unsigned comparison
- * 
+ *
  * Determine if next instruction is a branch for an unsigned comparison
  */
 
-static gboolean 
+static gboolean
 is_unsigned (MonoInst *next)
 {
-	if ((next) && 
+	if ((next) &&
 		(((next->opcode >= OP_IBNE_UN) &&
-		  (next->opcode <= OP_IBLT_UN)) || 
+		  (next->opcode <= OP_IBLT_UN)) ||
 		 ((next->opcode >= OP_LBNE_UN) &&
 		  (next->opcode <= OP_LBLT_UN)) ||
 		 ((next->opcode >= OP_COND_EXC_NE_UN) &&
@@ -2395,12 +2402,12 @@ is_unsigned (MonoInst *next)
 /*========================= End of Function ========================*/
 
 /**
- *  
- * @brief Architecutre-specific processing of a basic block
- * 
+ *
+ * @brief Architecture-specific processing of a basic block
+ *
  * @param[in] @cfg - Compile control block
  * @param[in] @bb - Basic block
- * 
+ *
  * Process instructions within basic block emitting s390x instructions
  * based on the VM operation codes
  */
@@ -2429,47 +2436,47 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		switch (ins->opcode) {
 		case OP_STOREI1_MEMBASE_IMM: {
 			s390_lghi (code, s390_r0, ins->inst_imm);
-			S390_LONG (code, stcy, stc, s390_r0, 0, 
+			S390_LONG (code, stcy, stc, s390_r0, 0,
 				   ins->inst_destbasereg, ins->inst_offset);
 		}
 			break;
 		case OP_STOREI2_MEMBASE_IMM: {
 			s390_lghi (code, s390_r0, ins->inst_imm);
-			S390_LONG (code, sthy, sth, s390_r0, 0, 
+			S390_LONG (code, sthy, sth, s390_r0, 0,
 				   ins->inst_destbasereg, ins->inst_offset);
 		}
 			break;
 		case OP_STOREI4_MEMBASE_IMM: {
 			s390_lgfi (code, s390_r0, ins->inst_imm);
-			S390_LONG (code, sty, st, s390_r0, 0, 
+			S390_LONG (code, sty, st, s390_r0, 0,
 				   ins->inst_destbasereg, ins->inst_offset);
 		}
 			break;
 		case OP_STORE_MEMBASE_IMM:
 		case OP_STOREI8_MEMBASE_IMM: {
 			S390_SET (code, s390_r0, ins->inst_imm);
-			S390_LONG (code, stg, stg, s390_r0, 0, 
+			S390_LONG (code, stg, stg, s390_r0, 0,
 				   ins->inst_destbasereg, ins->inst_offset);
 		}
 			break;
 		case OP_STOREI1_MEMBASE_REG: {
-			S390_LONG (code, stcy, stc, ins->sreg1, 0, 
+			S390_LONG (code, stcy, stc, ins->sreg1, 0,
 				   ins->inst_destbasereg, ins->inst_offset);
 		}
 			break;
 		case OP_STOREI2_MEMBASE_REG: {
-			S390_LONG (code, sthy, sth, ins->sreg1, 0, 
+			S390_LONG (code, sthy, sth, ins->sreg1, 0,
 				   ins->inst_destbasereg, ins->inst_offset);
 		}
 			break;
 		case OP_STOREI4_MEMBASE_REG: {
-			S390_LONG (code, sty, st, ins->sreg1, 0, 
+			S390_LONG (code, sty, st, ins->sreg1, 0,
 				   ins->inst_destbasereg, ins->inst_offset);
 		}
 			break;
 		case OP_STORE_MEMBASE_REG:
 		case OP_STOREI8_MEMBASE_REG: {
-			S390_LONG (code, stg, stg, ins->sreg1, 0, 
+			S390_LONG (code, stg, stg, ins->sreg1, 0,
 				   ins->inst_destbasereg, ins->inst_offset);
 		}
 			break;
@@ -2478,37 +2485,37 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LOAD_MEMBASE:
 		case OP_LOADI8_MEMBASE: {
-			S390_LONG (code, lg, lg, ins->dreg, 0, 
+			S390_LONG (code, lg, lg, ins->dreg, 0,
 				   ins->inst_basereg, ins->inst_offset);
 		}
 			break;
 		case OP_LOADI4_MEMBASE: {
-			S390_LONG (code, lgf, lgf, ins->dreg, 0, 
+			S390_LONG (code, lgf, lgf, ins->dreg, 0,
 				   ins->inst_basereg, ins->inst_offset);
 		}
 			break;
 		case OP_LOADU4_MEMBASE: {
-			S390_LONG (code, llgf, llgf, ins->dreg, 0, 
+			S390_LONG (code, llgf, llgf, ins->dreg, 0,
 				   ins->inst_basereg, ins->inst_offset);
 		}
 			break;
 		case OP_LOADU1_MEMBASE: {
-			S390_LONG (code, llgc, llgc, ins->dreg, 0, 
+			S390_LONG (code, llgc, llgc, ins->dreg, 0,
 				   ins->inst_basereg, ins->inst_offset);
 		}
 			break;
 		case OP_LOADI1_MEMBASE: {
-			S390_LONG (code, lgb, lgb, ins->dreg, 0, 
+			S390_LONG (code, lgb, lgb, ins->dreg, 0,
 				   ins->inst_basereg, ins->inst_offset);
 		}
 			break;
 		case OP_LOADU2_MEMBASE: {
-			S390_LONG (code, llgh, llgh, ins->dreg, 0, 
+			S390_LONG (code, llgh, llgh, ins->dreg, 0,
 				   ins->inst_basereg, ins->inst_offset);
 		}
 			break;
 		case OP_LOADI2_MEMBASE: {
-			S390_LONG (code, lgh, lgh, ins->dreg, 0, 
+			S390_LONG (code, lgh, lgh, ins->dreg, 0,
 				   ins->inst_basereg, ins->inst_offset);
 		}
 			break;
@@ -2552,7 +2559,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lgfr (code, ins->dreg, ins->sreg1);
 		}
 			break;
-		case OP_COMPARE: 
+		case OP_COMPARE:
 		case OP_LCOMPARE: {
 			if (is_unsigned (ins->next))
 				s390_clgr (code, ins->sreg1, ins->sreg2);
@@ -2595,10 +2602,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_BREAK: {
-			mono_add_patch_info (cfg, code - cfg->native_code,
-					     MONO_PATCH_INFO_JIT_ICALL_ID,
-					     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_break));
-			S390_CALL_TEMPLATE (code, s390_r14);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
+					  GUINT_TO_POINTER (MONO_JIT_ICALL_mono_break));
 		}
 			break;
 		case OP_ADDCC: {
@@ -2655,7 +2660,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					S390_SET  (code, s390_r0, ins->inst_imm);
 					s390_agrk (code, ins->dreg, ins->sreg1, s390_r0);
 				}
-			} else { 	
+			} else {
 				if (ins->dreg != ins->sreg1) {
 					s390_lgr  (code, ins->dreg, ins->sreg1);
 				}
@@ -2801,10 +2806,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				if (ins->sreg1 == ins->dreg) {
 					s390_ngr  (code, ins->dreg, ins->sreg2);
-				} else { 
-					if (ins->sreg2 == ins->dreg) { 
+				} else {
+					if (ins->sreg2 == ins->dreg) {
 						s390_ngr (code, ins->dreg, ins->sreg1);
-					} else { 
+					} else {
 						s390_lgr (code, ins->dreg, ins->sreg1);
 						s390_ngr (code, ins->dreg, ins->sreg2);
 					}
@@ -2867,10 +2872,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				if (ins->sreg1 == ins->dreg) {
 					s390_ogr  (code, ins->dreg, ins->sreg2);
-				} else { 
-					if (ins->sreg2 == ins->dreg) { 
+				} else {
+					if (ins->sreg2 == ins->dreg) {
 						s390_ogr (code, ins->dreg, ins->sreg1);
-					} else { 
+					} else {
 						s390_lgr (code, ins->dreg, ins->sreg1);
 						s390_ogr (code, ins->dreg, ins->sreg2);
 					}
@@ -2896,12 +2901,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				if (ins->sreg1 == ins->dreg) {
 					s390_xgr  (code, ins->dreg, ins->sreg2);
-				} 
-				else { 
-					if (ins->sreg2 == ins->dreg) { 
+				}
+				else {
+					if (ins->sreg2 == ins->dreg) {
 						s390_xgr (code, ins->dreg, ins->sreg1);
 					}
-					else { 
+					else {
 						s390_lgr (code, ins->dreg, ins->sreg1);
 						s390_xgr (code, ins->dreg, ins->sreg2);
 					}
@@ -2926,7 +2931,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_sllg (code, ins->dreg, ins->dreg, src2, 0);
 		}
 			break;
-		case OP_SHL_IMM: 
+		case OP_SHL_IMM:
 		case OP_LSHL_IMM: {
 			if (ins->sreg1 != ins->dreg) {
 				s390_lgr   (code, ins->dreg, ins->sreg1);
@@ -2947,7 +2952,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_srag  (code, ins->dreg, ins->dreg, 0, (ins->inst_imm & 0x3f));
 		}
 			break;
-		case OP_SHR_UN_IMM: 
+		case OP_SHR_UN_IMM:
 		case OP_LSHR_UN_IMM: {
 			if (ins->sreg1 != ins->dreg) {
 				s390_lgr   (code, ins->dreg, ins->sreg1);
@@ -2977,7 +2982,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_msgr (code, ins->dreg, src2);
 		}
 			break;
-		case OP_MUL_IMM: 
+		case OP_MUL_IMM:
 		case OP_LMUL_IMM: {
 			if (ins->dreg != ins->sreg1) {
 				s390_lgr  (code, ins->dreg, ins->sreg1);
@@ -3015,7 +3020,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				s390_srlg (code, s390_r0, s390_r0, 0, 63);
 				s390_ltgr (code, s390_r0, s390_r0);
 				EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NZ, "OverflowException");
-				PTRSLOT	  (code, o[0]); 
+				PTRSLOT	  (code, o[0]);
 				PTRSLOT   (code, o[1]);
 				s390_lgr  (code, ins->dreg, s390_r1);
 			}
@@ -3061,7 +3066,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IADC_IMM: {
 			if (ins->dreg != ins->sreg1) {
 				s390_lgfr (code, ins->dreg, ins->sreg1);
-			} 
+			}
 			if (s390_is_imm16 (ins->inst_imm)) {
 				s390_lghi  (code, s390_r0, ins->inst_imm);
 				s390_alcgr (code, ins->dreg, s390_r0);
@@ -3075,7 +3080,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_S390_LADD_OVF: {
 			if (mono_hwcap_s390x_has_mlt) {
 				s390_agrk (code, ins->dreg, ins->sreg1, ins->sreg2);
-			} else { 
+			} else {
 				CHECK_SRCDST_COM;
 				s390_agr    (code, ins->dreg, src2);
 			}
@@ -3086,7 +3091,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_S390_LADD_OVF_UN: {
 			if (mono_hwcap_s390x_has_mlt) {
 				s390_algrk (code, ins->dreg, ins->sreg1, ins->sreg2);
-			} else { 
+			} else {
 				CHECK_SRCDST_COM;
 				s390_algr  (code, ins->dreg, src2);
 			}
@@ -3137,7 +3142,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (mono_hwcap_s390x_has_mlt) {
 				s390_srk (code, ins->dreg, ins->sreg1, ins->sreg2);
 				EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
-			} else { 
+			} else {
 				CHECK_SRCDST_NCOM;
 				s390_sr   (code, ins->dreg, src2);
 				EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
@@ -3388,19 +3393,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lgfr (code, ins->dreg, s390_r1);
 		}
 			break;
-		case OP_ICONST: 
+		case OP_ICONST:
 		case OP_I8CONST: {
 			S390_SET (code, ins->dreg, ins->inst_c0);
 		}
 			break;
 		case OP_AOTCONST: {
-			mono_add_patch_info (cfg, code - cfg->native_code, 
+			mono_add_patch_info (cfg, code - cfg->native_code,
 				(MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
 			S390_LOAD_TEMPLATE (code, ins->dreg);
 		}
 			break;
 		case OP_JUMP_TABLE: {
-			mono_add_patch_info (cfg, code - cfg->native_code, 
+			mono_add_patch_info (cfg, code - cfg->native_code,
 				(MonoJumpInfoType)ins->inst_i1, ins->inst_p0);
 			S390_LOAD_TEMPLATE (code, ins->dreg);
 		}
@@ -3440,36 +3445,40 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_LT, "OverflowException");
 			s390_lgfr (code, ins->dreg, ins->sreg1);
 			break;
+               case OP_RCONV_TO_R4:
+                       if (ins->dreg != ins->sreg1)
+                               s390_ler (code, ins->dreg, ins->sreg1);
+                       break;
+               case OP_RCONV_TO_R8:
+                       s390_ldebr (code, ins->dreg, ins->sreg1);
+                       break;
 		case OP_FMOVE:
-			if (ins->dreg != ins->sreg1) {
+			if (ins->dreg != ins->sreg1)
 				s390_ldr   (code, ins->dreg, ins->sreg1);
-			}
 			break;
-		case OP_MOVE_F_TO_I8: 
+		case OP_RMOVE:
+			if (ins->dreg != ins->sreg1)
+				s390_ldr   (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_MOVE_F_TO_I8:
 			s390_lgdr (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_MOVE_I8_TO_F: 
+		case OP_MOVE_I8_TO_F:
 			s390_ldgr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MOVE_F_TO_I4:
-			s390_ledbr (code, s390_f0, ins->sreg1);
-			s390_lgdr (code, ins->dreg, s390_f0);
+			s390_lgdr (code, ins->dreg, ins->sreg1);
 			s390_srag (code, ins->dreg, ins->dreg, 0, 32);
 			break;
-		case OP_MOVE_I4_TO_F: 
+		case OP_MOVE_I4_TO_F:
 			s390_slag (code, s390_r0, ins->sreg1, 0, 32);
 			s390_ldgr (code, ins->dreg, s390_r0);
-			if (!cfg->r4fp)
-				s390_ldebr (code, ins->dreg, ins->dreg);
 			break;
 		case OP_FCONV_TO_R4:
 			s390_ledbr (code, ins->dreg, ins->sreg1);
-			if (!cfg->r4fp)
-				s390_ldebr (code, ins->dreg, ins->dreg);
 			break;
 		case OP_S390_SETF4RET:
-			if (!cfg->r4fp)
-				s390_ledbr (code, ins->dreg, ins->sreg1);
+			s390_ldr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_TLS_GET: {
 			if (s390_is_imm16 (ins->inst_offset)) {
@@ -3507,17 +3516,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_TAILCALL :
 		case OP_TAILCALL_REG :
 		case OP_TAILCALL_MEMBASE : {
-			MonoCallInst *call = (MonoCallInst *) ins;
+			call = (MonoCallInst *) ins;
 
 			/*
 			 * Restore SP to caller's SP
-			 */ 
+			 */
 			code = backUpStackPtr(cfg, code);
 
 			/*
 			 * If the destination is specified as a register or membase then
 			 * save destination so it doesn't get overwritten by the restores
-			 */ 
+			 */
 			if (ins->opcode != OP_TAILCALL)
 				s390_lgr (code, s390_r1, ins->sreg1);
 
@@ -3540,7 +3549,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/*
 			 * Restore any FP registers that have been altered
-			 */ 
+			 */
 			if (cfg->arch.fpSize != 0) {
 				int fpOffset = -cfg->arch.fpSize;
 				for (int i = 8; i < 16; i++) {
@@ -3553,7 +3562,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			if (ins->opcode == OP_TAILCALL_REG) {
 				s390_br (code, s390_r1);
-			} else { 
+			} else {
 				if (ins->opcode == OP_TAILCALL_MEMBASE) {
 					if (mono_hwcap_s390x_has_mie2) {
 						s390_bi (code, 0, s390_r1, ins->inst_offset);
@@ -3562,18 +3571,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 						s390_br (code, s390_r1);
 					}
 				} else {
-					mono_add_patch_info (cfg, code - cfg->native_code, 
-						 MONO_PATCH_INFO_METHOD_JUMP, 
-						 call->method);
+					mono_add_patch_info_rel (cfg, code - cfg->native_code,
+						 MONO_PATCH_INFO_METHOD_JUMP,
+						 call->method, MONO_R_S390_THUNKED);
 					S390_BR_TEMPLATE (code, s390_r1);
+					cfg->thunk_area += THUNK_SIZE;
 				}
 			}
 		}
 			break;
 		case OP_CHECK_THIS: {
 			/* ensure ins->sreg1 is not NULL */
-			s390_lg   (code, s390_r0, 0, ins->sreg1, 0);
-			s390_ltgr (code, s390_r0, s390_r0);
+			s390_llgc (code, s390_r0, 0, ins->sreg1, 0);
 		}
 			break;
 		case OP_ARGLIST: {
@@ -3585,56 +3594,66 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_FCALL: {
-			call = (MonoCallInst*)ins;
-
-			mono_call_add_patch_info (cfg, call, code - cfg->native_code);
-			S390_CALL_TEMPLATE (code, s390_r14);
-			if (!cfg->r4fp && call->signature->ret->type == MONO_TYPE_R4)
-				s390_ldebr (code, s390_f0, s390_f0);
+			call = (MonoCallInst *) ins;
+			const MonoJumpInfoTarget patch = mono_call_to_patch (call);
+			code = emit_call (cfg, code, patch.type, patch.target);
 		}
 			break;
+               case OP_RCALL: {
+                       call = (MonoCallInst *) ins;
+                       const MonoJumpInfoTarget patch = mono_call_to_patch (call);
+                       code = emit_call (cfg, code, patch.type, patch.target);
+                       if (ins->dreg != s390_f0)
+                               s390_ldr (code, ins->dreg, s390_f0);
+                       break;
+               }
 		case OP_LCALL:
 		case OP_VCALL:
 		case OP_VCALL2:
 		case OP_VOIDCALL:
-		case OP_RCALL:
 		case OP_CALL: {
-			call = (MonoCallInst*)ins;
-			mono_call_add_patch_info (cfg, call, code - cfg->native_code);
-			S390_CALL_TEMPLATE (code, s390_r14);
+			call = (MonoCallInst *) ins;
+			const MonoJumpInfoTarget patch = mono_call_to_patch (call);
+			code = emit_call (cfg, code, patch.type, patch.target);
 		}
 			break;
-		case OP_FCALL_REG: {
+		case OP_FCALL_REG:
 			call = (MonoCallInst*)ins;
 			s390_lgr  (code, s390_r1, ins->sreg1);
 			s390_basr (code, s390_r14, s390_r1);
-			if (!cfg->r4fp && call->signature->ret->type == MONO_TYPE_R4)
-				s390_ldebr (code, s390_f0, s390_f0);
-		}
 			break;
+               case OP_RCALL_REG:
+                       call = (MonoCallInst*)ins;
+                       s390_lgr  (code, s390_r1, ins->sreg1);
+                       s390_basr (code, s390_r14, s390_r1);
+                       if (ins->dreg != s390_f0)
+                               s390_ldr (code, ins->dreg, s390_f0);
+                        break;
 		case OP_LCALL_REG:
 		case OP_VCALL_REG:
 		case OP_VCALL2_REG:
 		case OP_VOIDCALL_REG:
-		case OP_RCALL_REG:
 		case OP_CALL_REG: {
 			s390_lgr  (code, s390_r1, ins->sreg1);
 			s390_basr (code, s390_r14, s390_r1);
 		}
 			break;
-		case OP_FCALL_MEMBASE: {
+		case OP_FCALL_MEMBASE:
 			call = (MonoCallInst*)ins;
 			s390_lg   (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
 			s390_basr (code, s390_r14, s390_r1);
-			if (!cfg->r4fp && call->signature->ret->type == MONO_TYPE_R4)
-				s390_ldebr (code, s390_f0, s390_f0);
-		}
+			break;
+		case OP_RCALL_MEMBASE:
+			call = (MonoCallInst*)ins;
+			s390_lg   (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
+			s390_basr (code, s390_r14, s390_r1);
+			if (ins->dreg != s390_f0)
+				s390_ldr (code, ins->dreg, s390_f0);
 			break;
 		case OP_LCALL_MEMBASE:
 		case OP_VCALL_MEMBASE:
 		case OP_VCALL2_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
-		case OP_RCALL_MEMBASE:
 		case OP_CALL_MEMBASE: {
 			s390_lg   (code, s390_r1, 0, ins->sreg1, ins->inst_offset);
 			s390_basr (code, s390_r14, s390_r1);
@@ -3650,53 +3669,98 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			area_offset = S390_ALIGN(area_offset, S390_STACK_ALIGNMENT);
 
-                        /*
-                         * Get alloc size and round to doubleword
-                         */  
-			s390_lgr  (code, s390_r1, ins->sreg1);
-			s390_aghi (code, s390_r1, 14);
+			/* Get current backchain pointer */
+			s390_lg  (code, s390_r13, 0, STK_BASE, 0);
+
+			/*
+			 * Round object size to doubleword
+			 */
+			s390_lgr (code, s390_r1, ins->sreg1);
+			s390_aghi (code, s390_r1, 7);
 			s390_srlg (code, s390_r1, s390_r1, 0, 3);
 			s390_sllg (code, s390_r1, s390_r1, 0, 3);
 
-                        /*
-                         * If we need to initialize then hold on to the length
-                         */ 
-			if (ins->flags & MONO_INST_INIT) 
-                                s390_lgr  (code, s390_r0, s390_r1);
+			if (mono_hwcap_s390x_has_gie) {
+				if (ins->flags & MONO_INST_INIT)
+					s390_lgr  (code, s390_r0, s390_r1);
 
-                        /*
-                         * Adjust the stack pointer and save the backchain
-                         */ 
-			s390_lg   (code, s390_r13, 0, STK_BASE, 0);
-			s390_sgr  (code, STK_BASE, s390_r1);
-			s390_stg  (code, s390_r13, 0, STK_BASE, 0);
+				s390_risbg (code, ins->dreg, s390_r1, 0, 0xb3, 0);
+				s390_sgrk (code, ins->dreg, STK_BASE, ins->dreg);
 
-                        /*
-                         * Skip the stack save requirements and point to localloc area 
-                         * and ensure it's correctly aligned
-                         */
-			s390_la   (code, ins->dreg, 0, STK_BASE, area_offset);
-			s390_aghi (code, ins->dreg, 7);
-			s390_srlg (code, ins->dreg, ins->dreg, 0, 3);
-			s390_sllg (code, ins->dreg, ins->dreg, 0, 3);
+				s390_cgr (code, STK_BASE, ins->dreg);			/* L0: */
+				s390_je (code, 9);					/* je L1 */
+				s390_aghi (code, STK_BASE, -4096);
+				s390_mvghi (code, s390_r15, 0, 0);
+				s390_j (code, -9);					/* j L0 */
+
+				s390_risbg (code, ins->dreg, s390_r1, 0x34, 0xbf, 0);	/* L1: */
+				s390_ltgr (code, ins->dreg, ins->dreg);
+				s390_jz (code, 13);					/* jz L2: */
+
+				s390_sgr (code, STK_BASE, ins->dreg);
+				s390_risbg (code, s390_r1, s390_r1, 0x34, 0xbf, 0);
+				s390_lay (code, s390_r1, s390_r1, STK_BASE, -8);
+				s390_mvghi (code, s390_r1, 0, 0);
+											/* L2: */
+			} else {
+				s390_lgr (code, ins->dreg, s390_r1);
+				s390_nill (code, ins->dreg, 0xf000);
+				s390_lgr (code, s390_r0, STK_BASE);
+				s390_sgr (code, s390_r0, ins->dreg);
+				s390_lgr (code, ins->dreg, s390_r0);
+
+				s390_cgr (code, STK_BASE, ins->dreg);			/* L0: */
+				s390_je (code, 11);					/* je L1 */
+				s390_aghi (code, STK_BASE, -4096);
+				s390_lghi (code, s390_r0, 0);
+				s390_stg (code, s390_r0, 0, STK_BASE, 4088);
+				s390_j (code, -11);					/* j L0 */
+
+				s390_lghi (code, ins->dreg, 4095);			/* L1: */
+				s390_ngr (code, ins->dreg, s390_r1);
+				s390_ltgr (code, ins->dreg, ins->dreg);
+				s390_jz (code, 7);					/* jz L2 */
+
+				s390_sgr (code, STK_BASE, ins->dreg);
+				s390_stg (code, ins->dreg, s390_r1, STK_BASE, -8);
+											/* L2: */
+				if (ins->flags & MONO_INST_INIT)
+					s390_lgr  (code, s390_r0, s390_r1);
+			}
+
+			/*
+			 * Compute address of localloc'd object
+			 */
+			s390_lgr (code, s390_r1, STK_BASE);
+			if (s390_is_imm16(area_offset))
+				s390_aghi (code, s390_r1, area_offset);
+			else
+				s390_agfi (code, s390_r1, area_offset);
+			s390_aghi (code, s390_r1, 7);
+			s390_srlg (code, s390_r1, s390_r1, 0, 3);
+			s390_sllg (code, s390_r1, s390_r1, 0, 3);
+			s390_lgr (code, ins->dreg, s390_r1);
+
+			/* Save backchain pointer */
+			s390_stg (code, s390_r13, 0, STK_BASE, 0);
 
                         /*
                          * If we need to zero the area then clear from localloc start
                          * using the length we saved earlier
-                         */ 
-			if (ins->flags & MONO_INST_INIT) {
-				s390_lgr  (code, s390_r1, s390_r0);
-				s390_lgr  (code, s390_r0, ins->dreg);
-				s390_lgr  (code, s390_r14, s390_r12);
-				s390_lghi (code, s390_r13, 0);
-				s390_mvcle(code, s390_r0, s390_r12, 0, 0);
-				s390_jo   (code, -2);
-				s390_lgr  (code, s390_r12, s390_r14);
-			}
-
-                        /*
-                         * If we have an LMF then we have to adjust its BP 
                          */
+                        if (ins->flags & MONO_INST_INIT) {
+                                s390_lgr  (code, s390_r1, s390_r0);
+                                s390_lgr  (code, s390_r0, ins->dreg);
+                                s390_lgr  (code, s390_r14, s390_r12);
+                                s390_lghi (code, s390_r13, 0);
+                                s390_mvcle(code, s390_r0, s390_r12, 0, 0);
+                                s390_jo   (code, -2);
+                                s390_lgr  (code, s390_r12, s390_r14);
+                        }
+
+			/*
+			* If we have an LMF then we have to adjust its BP
+			*/
 			if (cfg->method->save_lmf) {
 				int lmfOffset = cfg->stack_usage - sizeof(MonoLMF);
 
@@ -3708,29 +3772,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					S390_SET  (code, s390_r13, lmfOffset);
 				}
 				s390_stg (code, s390_r15, s390_r13, cfg->frame_reg,
-                                          MONO_STRUCT_OFFSET(MonoLMF, ebp));
+					  MONO_STRUCT_OFFSET(MonoLMF, ebp));
 			}
 		}
 			break;
 		case OP_THROW: {
 			s390_lgr  (code, s390_r2, ins->sreg1);
-			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID,
-					     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_throw_exception));
-			S390_CALL_TEMPLATE(code, s390_r14);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
+					  GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_throw_exception));
 		}
 			break;
 		case OP_RETHROW: {
 			s390_lgr  (code, s390_r2, ins->sreg1);
-			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID,
-					     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_rethrow_exception));
-			S390_CALL_TEMPLATE(code, s390_r14);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
+					  GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_rethrow_exception));
 		}
 			break;
 		case OP_START_HANDLER: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 
 			S390_LONG (code, stg, stg, s390_r14, 0,
-				   spvar->inst_basereg, 
+				   spvar->inst_basereg,
 				   spvar->inst_offset);
 		}
 			break;
@@ -3740,7 +3802,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->sreg1 != s390_r2)
 				s390_lgr(code, s390_r2, ins->sreg1);
 			S390_LONG (code, lg, lg, s390_r14, 0,
-				   spvar->inst_basereg, 
+				   spvar->inst_basereg,
 				   spvar->inst_offset);
 			s390_br  (code, s390_r14);
 		}
@@ -3749,14 +3811,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 
 			S390_LONG (code, lg, lg, s390_r14, 0,
-				   spvar->inst_basereg, 
+				   spvar->inst_basereg,
 				   spvar->inst_offset);
 			s390_br  (code, s390_r14);
 		}
 			break;
 		case OP_CALL_HANDLER: {
-			mono_add_patch_info (cfg, code-cfg->native_code, 
-					     MONO_PATCH_INFO_BB, ins->inst_target_bb);
+			mono_add_patch_info_rel (cfg, code-cfg->native_code,
+					         MONO_PATCH_INFO_BB, ins->inst_target_bb,
+						 MONO_R_S390_DIRECT);
 			s390_brasl (code, s390_r14, 0);
 			for (GList *tmp = ins->inst_eh_blocks; tmp != bb->clause_holes; tmp = tmp->prev)
 				mono_cfg_add_try_hole (cfg, ((MonoLeaveClause *) tmp->data)->clause, code, bb);
@@ -3805,9 +3868,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				displace = ((uintptr_t) code - (uintptr_t) o[0]) / 2;
 				o[0]->i2 = displace;
  			}
- 
-			/* 
-			 * This is the address which is saved in seq points, 
+
+			/*
+			 * This is the address which is saved in seq points,
 			 */
 			mono_add_seq_point (cfg, bb, ins, code - cfg->native_code);
 
@@ -3853,9 +3916,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_tm (code, ins->sreg1, byte_offset, bitmask);
 			s390_jo (code, 0); CODEPTR(code, jump);
 
-			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID,
-			           			 GUINT_TO_POINTER (MONO_JIT_ICALL_mono_generic_class_init));
-			S390_CALL_TEMPLATE(code, s390_r14);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
+			        	  GUINT_TO_POINTER (MONO_JIT_ICALL_mono_generic_class_init));
 
 			PTRSLOT (code, jump);
 
@@ -3863,14 +3925,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->backend.pc_offset = code - cfg->native_code;
 			break;
 		}
-		case OP_BR: 
+		case OP_BR:
 			EMIT_UNCOND_BRANCH(ins);
 			break;
 		case OP_BR_REG: {
 			s390_br	 (code, ins->sreg1);
 		}
 			break;
-		case OP_CEQ: 
+		case OP_CEQ:
 		case OP_ICEQ:
 		case OP_LCEQ: {
 			s390_lghi(code, ins->dreg, 1);
@@ -3878,7 +3940,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lghi(code, ins->dreg, 0);
 		}
 			break;
-		case OP_CLT: 
+		case OP_CLT:
 		case OP_ICLT:
 		case OP_LCLT: {
 			s390_lghi(code, ins->dreg, 1);
@@ -3894,7 +3956,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lghi(code, ins->dreg, 0);
 		}
 			break;
-		case OP_CGT: 
+		case OP_CGT:
 		case OP_ICGT:
 		case OP_LCGT: {
 			s390_lghi(code, ins->dreg, 1);
@@ -3991,29 +4053,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LBEQ:
 		case OP_IBEQ:
 			EMIT_COND_BRANCH (ins, S390_CC_EQ);
-			break;	
+			break;
 		case OP_LBNE_UN:
 		case OP_IBNE_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_NE);
-			break;	
+			break;
 		case OP_LBLT:
 		case OP_LBLT_UN:
 		case OP_IBLT:
 		case OP_IBLT_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_LT);
-			break;	
+			break;
 		case OP_LBGT:
 		case OP_LBGT_UN:
 		case OP_IBGT:
 		case OP_IBGT_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_GT);
-			break;	
+			break;
 		case OP_LBGE:
 		case OP_LBGE_UN:
 		case OP_IBGE:
 		case OP_IBGE_UN:
 			EMIT_COND_BRANCH (ins, S390_CC_GE);
-			break;	
+			break;
 		case OP_LBLE:
 		case OP_LBLE_UN:
 		case OP_IBLE:
@@ -4069,55 +4131,34 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_R4CONST: {
 			float f = *(float *) ins->inst_p0;
 			if (f == 0) {
-				if (cfg->r4fp) {
-					s390_lzer (code, ins->dreg);
-					if (mono_signbit (f) != 0)
-						s390_lnebr (code, ins->dreg, ins->dreg);
-				} else {
-					s390_lzdr (code, ins->dreg);
-					if (mono_signbit (f) != 0)
-						s390_lndbr (code, ins->dreg, ins->dreg);
-				}
+				s390_lzer (code, ins->dreg);
+				if (mono_signbit (f) != 0)
+					s390_lnebr (code, ins->dreg, ins->dreg);
 			} else {
 				S390_SET (code, s390_r13, ins->inst_p0);
 				s390_le (code, ins->dreg, 0, s390_r13, 0);
-				if (!cfg->r4fp) {
-					s390_ldebr (code, ins->dreg, ins->dreg);
-				}
+				s390_le (code, ins->dreg, 0, s390_r13, 0);
 			}
 		}
 			break;
 		case OP_STORER8_MEMBASE_REG: {
-			S390_LONG (code, stdy, std, ins->sreg1, 0, 
+			S390_LONG (code, stdy, std, ins->sreg1, 0,
 				   ins->inst_destbasereg, ins->inst_offset);
 		}
 			break;
 		case OP_LOADR8_MEMBASE: {
-			S390_LONG (code, ldy, ld, ins->dreg, 0, 
+			S390_LONG (code, ldy, ld, ins->dreg, 0,
 				   ins->inst_basereg, ins->inst_offset);
 		}
 			break;
 		case OP_STORER4_MEMBASE_REG: {
-			if (cfg->r4fp) {
-				S390_LONG (code, stey, ste, ins->sreg1, 0, 
+			S390_LONG (code, stey, ste, ins->sreg1, 0,
 					   ins->inst_destbasereg, ins->inst_offset);
-			} else {
-				s390_ledbr (code, ins->sreg1, ins->sreg1);
-				S390_LONG (code, stey, ste, ins->sreg1, 0, 
-					   ins->inst_destbasereg, ins->inst_offset);
-				s390_ldebr (code, ins->sreg1, ins->sreg1);
-			}
 		}
 			break;
 		case OP_LOADR4_MEMBASE: {
-			if (cfg->r4fp) {
-				S390_LONG (code, ley, le, ins->dreg, 0, 
+			S390_LONG (code, ley, le, ins->dreg, 0,
 					   ins->inst_basereg, ins->inst_offset);
-			} else {
-				S390_LONG (code, ley, le, ins->dreg, 0, 
-					   ins->inst_basereg, ins->inst_offset);
-				s390_ldebr (code, ins->dreg, ins->dreg);
-			}
 		}
 			break;
 		case OP_ICONV_TO_R_UN: {
@@ -4131,7 +4172,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LCONV_TO_R_UN: {
 			if (mono_hwcap_s390x_has_fpe) {
-				s390_cdlgbr (code, ins->dreg, 5, ins->sreg1, 0);
+				s390_cdlgbr (code, ins->dreg, 6, ins->sreg1, 0);
 			} else {
 				short int *jump;
 				s390_lgdr  (code, s390_r0, s390_r15);
@@ -4155,13 +4196,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ICONV_TO_R4:
 			s390_cefbr (code, ins->dreg, ins->sreg1);
-			if (!cfg->r4fp)
-				s390_ldebr (code, ins->dreg, ins->dreg);
 			break;
 		case OP_LCONV_TO_R4:
 			s390_cegbr (code, ins->dreg, ins->sreg1);
-			if (!cfg->r4fp)
-				s390_ldebr (code, ins->dreg, ins->dreg);
 			break;
 		case OP_ICONV_TO_R8:
 			s390_cdfbr (code, ins->dreg, ins->sreg1);
@@ -4204,13 +4241,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_FCONV_TO_I4:
-		case OP_FCONV_TO_I:
 			s390_cfdbr (code, ins->dreg, 5, ins->sreg1);
 			break;
 		case OP_FCONV_TO_U4:
-		case OP_FCONV_TO_U:
 			if (mono_hwcap_s390x_has_fpe) {
-				s390_clfdbr (code, ins->dreg, 5, ins->sreg1, 0);
+				s390_clgdbr (code, ins->dreg, 5, ins->sreg1, 0);
 			} else {
 				code = emit_double_to_int (cfg, code, ins->dreg, ins->sreg1, 4, FALSE);
 			}
@@ -4260,7 +4295,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_RCONV_TO_I4:
-		case OP_RCONV_TO_I:
 			s390_cfebr (code, ins->dreg, 5, ins->sreg1);
 			break;
 		case OP_RCONV_TO_U4:
@@ -4297,21 +4331,49 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_jz   (code, 0); CODEPTR(code, o[4]);
 			PTRSLOT(code, o[1]);
 			PTRSLOT(code, o[2]);
-			mono_add_patch_info (cfg, code - cfg->native_code, 
+			mono_add_patch_info (cfg, code - cfg->native_code,
 					     MONO_PATCH_INFO_EXC, "OverflowException");
 			s390_brasl (code, s390_r14, 0);
 			PTRSLOT(code, o[3]);
 			PTRSLOT(code, o[4]);
 		}
 			break;
-		case OP_ABS: {
+		case OP_ABS:
 			s390_lpdbr (code, ins->dreg, ins->sreg1);
-		}
 			break;
-		case OP_SQRT: {
+                case OP_ABSF:
+                        s390_lpebr (code, ins->dreg, ins->sreg1);
+                        break;
+                case OP_CEIL:
+                        s390_fidbra (code, ins->dreg, 6, ins->sreg1, 4);
+                        break;
+                case OP_CEILF:
+                        s390_fiebra (code, ins->dreg, 6, ins->sreg1, 4);
+                        break;
+                case OP_FLOOR:
+                        s390_fidbra (code, ins->dreg, 7, ins->sreg1, 4);
+                        break;
+                case OP_FLOORF:
+                        s390_fiebra (code, ins->dreg, 7, ins->sreg1, 4);
+                        break;
+                case OP_FCOPYSIGN:
+                        s390_cpsdr (code, ins->dreg, ins->sreg2, ins->sreg1);
+                        break;
+                case OP_ROUND:
+                        s390_fidbra (code, ins->dreg, 4, ins->sreg1, 4);
+                        break;
+		case OP_SQRT:
 			s390_sqdbr (code, ins->dreg, ins->sreg1);
-		}
 			break;
+                case OP_SQRTF:
+                        s390_sqebr (code, ins->dreg, ins->sreg1);
+                        break;
+                case OP_TRUNC:
+                        s390_fidbra (code, ins->dreg, 5, ins->sreg1, 4);
+                        break;
+                case OP_TRUNCF:
+                        s390_fiebra (code, ins->dreg, 5, ins->sreg1, 4);
+                        break;
 		case OP_FADD: {
 			CHECK_SRCDST_COM_F;
 			s390_adbr (code, ins->dreg, src2);
@@ -4325,37 +4387,37 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FSUB: {
 			CHECK_SRCDST_NCOM_F(sdbr);
 		}
-			break;		
+			break;
 		case OP_RSUB: {
 			CHECK_SRCDST_NCOM_F(sebr);
 		}
-			break;		
+			break;
 		case OP_FMUL: {
 			CHECK_SRCDST_COM_F;
 			s390_mdbr (code, ins->dreg, src2);
 		}
-			break;		
+			break;
 		case OP_RMUL: {
 			CHECK_SRCDST_COM_F;
 			s390_meer (code, ins->dreg, src2);
 		}
-			break;		
+			break;
 		case OP_FDIV: {
 			CHECK_SRCDST_NCOM_F(ddbr);
 		}
-			break;		
+			break;
 		case OP_RDIV: {
 			CHECK_SRCDST_NCOM_F(debr);
 		}
-			break;		
+			break;
 		case OP_FNEG: {
 			s390_lcdbr (code, ins->dreg, ins->sreg1);
 		}
-			break;		
+			break;
 		case OP_RNEG: {
 			s390_lcebr (code, ins->dreg, ins->sreg1);
 		}
-			break;		
+			break;
 		case OP_FREM: {
 			CHECK_SRCDST_NCOM_FR(didbr, 5);
 		}
@@ -4429,49 +4491,49 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_RCEQ: {
-			s390_cdbr  (code, ins->sreg1, ins->sreg2);
+			s390_cebr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_je    (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_RCLT: {
-			s390_cdbr  (code, ins->sreg1, ins->sreg2);
+			s390_cebr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_jl    (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_RCLT_UN: {
-			s390_cdbr  (code, ins->sreg1, ins->sreg2);
+			s390_cebr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_jlo   (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_RCGT: {
-			s390_cdbr  (code, ins->sreg1, ins->sreg2);
+			s390_cebr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_jh    (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_RCGT_UN: {
-			s390_cdbr  (code, ins->sreg1, ins->sreg2);
+			s390_cebr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_jho   (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_RCNEQ: {
-			s390_cdbr  (code, ins->sreg1, ins->sreg2);
+			s390_cebr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_jne   (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
 		}
 			break;
 		case OP_RCGE: {
-			s390_cdbr  (code, ins->sreg1, ins->sreg2);
+			s390_cebr  (code, ins->sreg1, ins->sreg2);
 			s390_lghi  (code, ins->dreg, 1);
 			s390_jhe   (code, 4);
 			s390_lghi  (code, ins->dreg, 0);
@@ -4539,7 +4601,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_lhi  (code, s390_r13, 0x7f);
 			s390_tcdb (code, ins->sreg1, 0, s390_r13, 0);
 			s390_jz   (code, 0); CODEPTR(code, o);
-			mono_add_patch_info (cfg, code - cfg->native_code, 
+			mono_add_patch_info (cfg, code - cfg->native_code,
 					     MONO_PATCH_INFO_EXC, "OverflowException");
 			s390_brasl (code, s390_r14,0);
 			PTRSLOT(code, o);
@@ -4548,7 +4610,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_S390_MOVE: {
 			if (ins->backend.size > 0) {
 				if (ins->backend.size <= 256) {
-					s390_mvc  (code, ins->backend.size, ins->sreg2, 
+					s390_mvc  (code, ins->backend.size, ins->sreg2,
 						   ins->inst_offset, ins->sreg1, ins->inst_imm);
 				} else {
 					s390_lgr  (code, s390_r0, ins->sreg2);
@@ -4606,14 +4668,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				s390_lgr (code, ins->dreg, s390_r1);
 			}
 		}
-			break;	
+			break;
 		case OP_ATOMIC_EXCHANGE_I8: {
 			s390_lg  (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
 			s390_csg (code, s390_r0, ins->sreg2, ins->inst_basereg, ins->inst_offset);
 			s390_jnz (code, -6);
 			s390_lgr (code, ins->dreg, s390_r0);
 		}
-			break;	
+			break;
 		case OP_ATOMIC_ADD_I4: {
 			if (mono_hwcap_s390x_has_ia) {
 				s390_laa (code, s390_r0, ins->sreg2, ins->inst_basereg, ins->inst_offset);
@@ -4628,14 +4690,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				s390_lgfr(code, ins->dreg, s390_r1);
 			}
 		}
-			break;	
+			break;
 		case OP_ATOMIC_EXCHANGE_I4: {
 			s390_l   (code, s390_r0, 0, ins->inst_basereg, ins->inst_offset);
 			s390_cs  (code, s390_r0, ins->sreg2, ins->inst_basereg, ins->inst_offset);
 			s390_jnz (code, -4);
 			s390_lgfr(code, ins->dreg, s390_r0);
 		}
-			break;	
+			break;
 		case OP_S390_BKCHAIN: {
 			s390_lgr  (code, ins->dreg, ins->sreg1);
 			if (s390_is_imm16 (cfg->stack_offset)) {
@@ -4647,10 +4709,36 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				s390_agr  (code, ins->dreg, s390_r13);
 			}
 		}
-			break;	
+			break;
 		case OP_MEMORY_BARRIER:
 			s390_mem (code);
 			break;
+                case OP_POPCNT32:
+                        s390_llgfr (code, s390_r1, ins->sreg1);
+                        if (mono_hwcap_s390x_has_mie3) {
+                                s390_popcnt (code, ins->dreg, 0x80, s390_r1);
+                        } else {
+                                s390_popcnt (code, s390_r0, 0, s390_r1);
+                                s390_ahhlr  (code, s390_r0, s390_r0, s390_r0);
+                                s390_sllg   (code, s390_r1, s390_r0, 0, 16);
+                                s390_algr   (code, s390_r0, s390_r1);
+                                s390_sllg   (code, s390_r1, s390_r0, 0, 8);
+                                s390_algr   (code, s390_r0, s390_r1);
+                                s390_srlg   (code, ins->dreg, s390_r0, 0, 56);
+                        }
+                        break;
+                case OP_POPCNT64:
+                        if (mono_hwcap_s390x_has_mie3) {
+                                s390_popcnt (code, ins->dreg, 0x80, ins->sreg1);
+                        } else {
+                                s390_ahhlr  (code, s390_r0, s390_r0, s390_r0);
+                                s390_sllg   (code, s390_r1, s390_r0, 0, 16);
+                                s390_algr   (code, s390_r0, s390_r1);
+                                s390_sllg   (code, s390_r1, s390_r0, 0, 8);
+                                s390_algr   (code, s390_r0, s390_r1);
+                                s390_srlg   (code, ins->dreg, s390_r0, 0, 56);
+                        }
+                        break;
 		case OP_LIVERANGE_START: {
 			if (cfg->verbose_level > 1)
 				printf ("R%d START=0x%x\n", MONO_VARINFO (cfg, ins->inst_c0)->vreg, (int)(code - cfg->native_code));
@@ -4666,11 +4754,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_GC_SAFE_POINT: {
 			short *br;
 
-			s390_ltg (code, s390_r0, 0, ins->sreg1, 0);	
+			s390_ltg (code, s390_r0, 0, ins->sreg1, 0);
 			s390_jz  (code, 0); CODEPTR(code, br);
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID,
-					     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_threads_state_poll));
-			S390_CALL_TEMPLATE (code, s390_r14);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
+					  GUINT_TO_POINTER (MONO_JIT_ICALL_mono_threads_state_poll));
 			PTRSLOT (code, br);
 			break;
 		}
@@ -4863,7 +4950,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_PMAXD_UN:
 			s390x_pmaxud (code, ins->sreg1, ins->sreg2);
 			break;
-		
+
 		case OP_PMAXB:
 			s390x_pmaxsb (code, ins->sreg1, ins->sreg2);
 			break;
@@ -5007,7 +5094,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_PSUBW_SAT:
 			s390x_psubsw (code, ins->sreg1, ins->sreg2);
 			break;
-			
+
 		case OP_PMULW:
 			s390x_pmullw (code, ins->sreg1, ins->sreg2);
 			break;
@@ -5072,22 +5159,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_PSHRQ_REG:
 			s390x_psrlq (code, ins->dreg, ins->sreg2);
 			break;
-		
+
 		/*TODO: This is appart of the sse spec but not added
 		case OP_PSARQ:
 			s390x_psraq_reg_imm (code, ins->dreg, ins->inst_imm);
 			break;
 		case OP_PSARQ_REG:
 			s390x_psraq (code, ins->dreg, ins->sreg2);
-			break;	
+			break;
 		*/
-	
+
 		case OP_PSHLQ:
 			s390x_psllq_reg_imm (code, ins->dreg, ins->inst_imm);
 			break;
 		case OP_PSHLQ_REG:
 			s390x_psllq (code, ins->dreg, ins->sreg2);
-			break;	
+			break;
 		case OP_CVTDQ2PD:
 			s390x_cvtdq2pd (code, ins->dreg, ins->sreg1);
 			break;
@@ -5132,7 +5219,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
 			if (ins->inst_c0)
 				amd64_shift_reg_imm (code, X86_SHR, ins->dreg, ins->inst_c0 * 8);
-			amd64_widen_reg (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I1, FALSE);
+			amd64_widen_reg (code, ins->dreg, ins->dreg, ins->inst_c1 == OP_EXTRACT_I1, FALSE);
 			break;
 		case OP_EXTRACT_I2:
 		case OP_EXTRACT_U2:
@@ -5140,7 +5227,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->inst_c0)
 				amd64_shift_reg_imm_size (code, X86_SHR, ins->dreg, 16, 4);*/
 			s390x_pextrw_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
-			amd64_widen_reg_size (code, ins->dreg, ins->dreg, ins->opcode == OP_EXTRACT_I2, TRUE, 4);
+			amd64_widen_reg_size (code, ins->dreg, ins->dreg, ins->inst_c1 == OP_EXTRACT_I2, TRUE, 4);
 			break;
 		case OP_EXTRACT_R8:
 			if (ins->inst_c0)
@@ -5184,33 +5271,21 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_INSERTX_R4_SLOW:
 			switch (ins->inst_c0) {
 			case 0:
-				if (cfg->r4fp)
-					s390x_movss (code, ins->dreg, ins->sreg2);
-				else
-					s390x_cvtsd2ss (code, ins->dreg, ins->sreg2);
+				s390x_movss (code, ins->dreg, ins->sreg2);
 				break;
 			case 1:
 				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
-				if (cfg->r4fp)
-					s390x_movss (code, ins->dreg, ins->sreg2);
-				else
-					s390x_cvtsd2ss (code, ins->dreg, ins->sreg2);
+				s390x_movss (code, ins->dreg, ins->sreg2);
 				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
 				break;
 			case 2:
 				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
-				if (cfg->r4fp)
-					s390x_movss (code, ins->dreg, ins->sreg2);
-				else
-					s390x_cvtsd2ss (code, ins->dreg, ins->sreg2);
+				s390x_movss (code, ins->dreg, ins->sreg2);
 				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
 				break;
 			case 3:
 				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
-				if (cfg->r4fp)
-					s390x_movss (code, ins->dreg, ins->sreg2);
-				else
-					s390x_cvtsd2ss (code, ins->dreg, ins->sreg2);
+				s390x_movss (code, ins->dreg, ins->sreg2);
 				s390x_pshufd_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
 				break;
 			}
@@ -5245,7 +5320,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/*FIXME the peephole pass should have killed this*/
 			if (ins->dreg != ins->sreg1)
 				s390x_movaps (code, ins->dreg, ins->sreg1);
-			break;		
+			break;
 		case OP_XZERO:
 			s390x_pxor (code, ins->dreg, ins->dreg);
 			break;
@@ -5272,7 +5347,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_FCONV_TO_U2:
 				amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, TRUE);
 				break;
-			}			
+			}
 			break;
 
 		case OP_EXPAND_I2:
@@ -5289,12 +5364,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390x_pshufd_imm (code, ins->dreg, ins->dreg, 0x44);
 			break;
 		case OP_EXPAND_R4:
-			if (cfg->r4fp) {
-				s390x_movsd (code, ins->dreg, ins->sreg1);
-			} else {
-				s390x_movsd (code, ins->dreg, ins->sreg1);
-				s390x_cvtsd2ss (code, ins->dreg, ins->dreg);
-			}
+			s390x_movsd (code, ins->dreg, ins->sreg1);
 			s390x_pshufd_imm (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_R8:
@@ -5320,9 +5390,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific registration of lowlevel calls
- * 
+ *
  * Register routines to register optimized lowlevel operations
  */
 
@@ -5334,50 +5404,93 @@ mono_arch_register_lowlevel_calls (void)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
+ * @brief Architecture-specific patching
+ * @param[in] @cfg - Compilation control block
+ * @param[in] @code - Start of code
+ * @param[in] @target - Target of patch
+ * @param[in] @relo - Relocation type
+ *
+ * Perform patching action
+ */
+
+static void
+emit_patch_full (MonoCompile *cfg, MonoJumpInfo *ji, guint8 *code,
+		 gpointer target, int relo)
+{
+	guint8 *ip = ji->ip.i + code;
+
+	switch (relo) {
+	case MONO_R_S390_RELINS :
+		target = S390_RELATIVE(target, ip);
+		ip += 2;
+		s390_patch_rel (ip, (guint64) target);
+		break;
+	case MONO_R_S390_THUNKED :
+		if (cfg)
+			create_thunk(cfg, ip, code, target);
+		else
+			update_thunk(cfg, code, target);
+		break;
+	case MONO_R_S390_DIRECT :
+		S390_EMIT_CALL (ip, target);
+		break;
+	case MONO_R_S390_ADDR :
+		s390_patch_addr (ip, (guint64) target);
+		break;
+	case MONO_R_S390_SWITCH :
+		S390_EMIT_LOAD (ip, target);
+		break;
+	case MONO_R_S390_REL :
+		target = S390_RELATIVE(target, ip);
+		s390_patch_rel (ip, (guint64) target);
+		break;
+	default :
+		g_assert_not_reached();
+	}
+}
+
+/*========================= End of Function ========================*/
+
+/**
+ *
  * @brief Architecture-specific patching of instructions and data
- * 
+ *
  * @param[in] @cfg - Compile control block
  * @param[in] @method - Current method
- * @param[in] @code - Current innstruction pointer
- * @param[in] @ji - Jump information 
- * @param[in] @run_cctors - Whether class constructors need to be initialized 
- * @param[in] @error - Error control block 
+ * @param[in] @code - Current code block
+ * @param[in] @ji - Jump information
+ * @param[in] @target - Target of patch
  *
- * Process the patch data created during the instruction build process. 
+ * Process the patch data created during the instruction build process.
  * This resolves jumps, calls, variables etc.
  */
 
 void
 mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
-	unsigned char *ip = ji->ip.i + code;
-	gint64 displace;
-
 	switch (ji->type) {
 	case MONO_PATCH_INFO_IP:
 	case MONO_PATCH_INFO_LDSTR:
-	case MONO_PATCH_INFO_TYPE_FROM_HANDLE: 
-	case MONO_PATCH_INFO_LDTOKEN: 
+	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_EXC:
-		s390_patch_addr (ip, (guint64) target);
+		emit_patch_full (cfg, ji, code, target, MONO_R_S390_ADDR);
 		break;
-	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
-	case MONO_PATCH_INFO_METHOD:
-	case MONO_PATCH_INFO_JIT_ICALL_ID:
+	case MONO_PATCH_INFO_BB:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_RGCTX_FETCH:
-	case MONO_PATCH_INFO_ABS: {
-		S390_EMIT_CALL (ip, target);
+	case MONO_PATCH_INFO_JIT_ICALL_ID:
+	case MONO_PATCH_INFO_METHOD:
+		emit_patch_full (cfg, ji, code, target, ji->relocation);
 		break;
-	}
-	case MONO_PATCH_INFO_SWITCH: 
-		/*----------------------------------*/
-		/* ip points at the basr r13,0/j +4 */
-		/* instruction the vtable value     */
-		/* follows this (i.e. ip+6)	    */
-		/*----------------------------------*/
-		S390_EMIT_LOAD (ip, target);
+	case MONO_PATCH_INFO_METHOD_JUMP:
+	case MONO_PATCH_INFO_RGCTX_FETCH:
+	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
+	case MONO_PATCH_INFO_ABS:
+		emit_patch_full (cfg, ji, code, target, MONO_R_S390_THUNKED);
+		break;
+	case MONO_PATCH_INFO_SWITCH:
+		emit_patch_full(cfg, ji, code, target, MONO_R_S390_SWITCH);
 		break;
 	case MONO_PATCH_INFO_METHODCONST:
 	case MONO_PATCH_INFO_CLASS:
@@ -5385,37 +5498,21 @@ mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpoi
 	case MONO_PATCH_INFO_FIELD:
 	case MONO_PATCH_INFO_IID:
 	case MONO_PATCH_INFO_EXC_NAME:
-		target = S390_RELATIVE(target, ip);
-		s390_patch_rel (ip, (guint64) target);
-		break;
-	case MONO_PATCH_INFO_R4:
-	case MONO_PATCH_INFO_R8:
-		g_assert_not_reached ();
-		break;
-	case MONO_PATCH_INFO_METHOD_JUMP:
-		displace = (gint64) S390_RELATIVE(target, ip);
-		if ((displace >= INT_MIN) && (displace <= INT_MAX)) 
-			s390_jg (ip, (gint32) displace);
-		else {
-			S390_SET (ip, s390_r1, target);
-			s390_br  (ip, s390_r1);
-		}
+		emit_patch_full(cfg, ji, code, target, MONO_R_S390_REL);
 		break;
 	case MONO_PATCH_INFO_NONE:
 		break;
 	default:
-		target = S390_RELATIVE(target, ip);
-		ip += 2;
-		s390_patch_rel (ip, (guint64) target);
+		emit_patch_full (cfg, ji, code, target, MONO_R_S390_RELINS);
 	}
 }
 
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific prolog generation
- * 
+ *
  * @param[in] @cfg - Compile control block
  * @returns Location of code code generated
  *
@@ -5450,7 +5547,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	/**
 	 * Create unwind information
-	 */ 
+	 */
 	mono_emit_unwind_op_def_cfa (cfg, code, STK_BASE, S390_CFA_OFFSET);
 	s390_stmg (code, s390_r6, s390_r15, STK_BASE, S390_REG_SAVE_OFFSET);
 	emit_unwind_regs(cfg, code, s390_r6, s390_r15, S390_REG_SAVE_OFFSET - S390_CFA_OFFSET);
@@ -5459,17 +5556,17 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	/*
 	 * If there are local allocations the R11 becomes the frame register
-	 */ 
+	 */
 	if (cfg->flags & MONO_CFG_HAS_ALLOCA) {
 		cfg->used_int_regs |= 1 << s390_r11;
 	}
 
 	/*
 	 * Check if FP registers need preserving
-	 */ 
+	 */
 	if ((cfg->arch.used_fp_regs & S390_FP_SAVE_MASK) != 0) {
 		for (int i = s390_f8; i <= s390_f15; i++) {
-			if (cfg->arch.used_fp_regs & (1 << i)) 
+			if (cfg->arch.used_fp_regs & (1 << i))
 				fpOffset += sizeof(double);
 		}
 		fpOffset = S390_ALIGN(fpOffset, sizeof(double));
@@ -5478,14 +5575,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	/*
 	 * Calculate stack requirements
-	 */ 
+	 */
 	alloc_size = cfg->stack_offset + fpOffset;
 
 	cfg->stack_usage = cfa_offset = alloc_size;
 	s390_lgr  (code, s390_r11, STK_BASE);
 	if (s390_is_imm16 (alloc_size)) {
 		s390_aghi (code, STK_BASE, -alloc_size);
-	} else if (s390_is_imm32 (alloc_size)) { 
+	} else if (s390_is_imm32 (alloc_size)) {
 		s390_agfi (code, STK_BASE, -alloc_size);
 	} else {
 		int stackSize = alloc_size;
@@ -5506,7 +5603,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		for (int i = s390_f8; i <= s390_f15; i++) {
 			if (cfg->arch.used_fp_regs & (1 << i)) {
 				s390_std (code, i, 0, s390_r1, stkOffset);
-				emit_unwind_regs(cfg, code, 16+i, 16+i, stkOffset+fpOffset - S390_CFA_OFFSET); 
+				emit_unwind_regs(cfg, code, 16+i, 16+i, stkOffset+fpOffset - S390_CFA_OFFSET);
 				stkOffset += sizeof(double);
 			}
 		}
@@ -5521,26 +5618,30 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (cfg->rgctx_var) {
 		g_assert (cfg->rgctx_var->opcode == OP_REGOFFSET);
 
-		s390_stg  (code, MONO_ARCH_RGCTX_REG, 0, 
-			       cfg->rgctx_var->inst_basereg, 
+		s390_stg  (code, MONO_ARCH_RGCTX_REG, 0,
+			       cfg->rgctx_var->inst_basereg,
     			   cfg->rgctx_var->inst_offset);
 	}
 
 #if 0
+char *methodName = getenv("MONO_TRACE_METHOD");
+if (methodName != NULL) {
 printf("ns: %s k: %s m: %s\n",method->klass->name_space,method->klass->name,method->name);fflush(stdout);
 // Tests:set_ip
-if ((strcmp(method->klass->name_space,"") == 0) && 
-    (strcmp(method->klass->name,"Tests") == 0) &&
-    (strcmp(method->name, "set_ip") == 0)) {
-    // (strcmp("CancellationToken,TaskCreationOptions,TaskContinuationOptions,TaskScheduler",mono_signature_get_desc(method->signature, FALSE)) != 0))  {
- printf("SIGNATURE: %s\n",mono_signature_get_desc(method->signature, FALSE)); fflush(stdout);
- s390_j (code, 0);
+//if ((strcmp(method->klass->name_space,"") == 0) &&
+//    (strcmp(method->klass->name,"Tests") == 0) &&
+//    (strcmp(method->name, "set_ip") == 0)) {
+// (strcmp("CancellationToken,TaskCreationOptions,TaskContinuationOptions,TaskScheduler",mono_signature_get_desc(method->signature, FALSE)) != 0))  {
+   if ((strcmp(method->name, methodName) == 0)) {
+	printf("SIGNATURE: %s\n",mono_signature_get_desc(method->signature, FALSE)); fflush(stdout);
+	s390_j (code, 0);
+   }
 }
 #endif
 
 	/* compute max_offset in order to use short forward jumps
 	 * we always do it on s390 because the immediate displacement
-	 * for jumps is too small 
+	 * for jumps is too small
 	 */
 	max_offset = 0;
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
@@ -5555,13 +5656,16 @@ if ((strcmp(method->klass->name_space,"") == 0) &&
 	sig = mono_method_signature_internal (method);
 	pos = 0;
 
-	cinfo = get_call_info (cfg->mempool, sig);
+	cinfo = cfg->arch.cinfo;
 
 	if (cinfo->struct_ret) {
 		ArgInfo *ainfo     = &cinfo->ret;
 		inst               = cfg->vret_addr;
 		inst->backend.size = ainfo->vtsize;
-		s390_stg (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
+		if (inst->opcode == OP_REGVAR)
+			s390_lgr (code, inst->dreg, ainfo->reg);
+		else
+			s390_stg (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 	}
 
 	/**
@@ -5571,7 +5675,7 @@ if ((strcmp(method->klass->name_space,"") == 0) &&
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
 		inst = cfg->args [pos];
-		
+
 		if (inst->opcode == OP_VTARG_ADDR)
 			inst = inst->inst_left;
 
@@ -5583,8 +5687,6 @@ if ((strcmp(method->klass->name_space,"") == 0) &&
 					s390_ldr   (code, inst->dreg, ainfo->reg);
 				}
 			} else if (ainfo->regtype == RegTypeFPR4) {
-					if (!cfg->r4fp) 
-						s390_ledbr (code, inst->dreg, ainfo->reg);
 			} else if (ainfo->regtype == RegTypeBase) {
 				s390_lgr  (code, s390_r13, STK_BASE);
 				s390_aghi (code, s390_r13, alloc_size);
@@ -5593,7 +5695,7 @@ if ((strcmp(method->klass->name_space,"") == 0) &&
 				g_assert_not_reached ();
 
 			if (cfg->verbose_level > 2)
-				g_print ("Argument %d assigned to register %s\n", 
+				g_print ("Argument %d assigned to register %s\n",
 					 pos, mono_arch_regname (inst->dreg));
 		} else {
 			if (ainfo->regtype == RegTypeGeneral) {
@@ -5606,7 +5708,7 @@ if ((strcmp(method->klass->name_space,"") == 0) &&
 				case 2:
 					s390_sth (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 					break;
-				case 4: 
+				case 4:
 					s390_st (code, ainfo->reg, 0, inst->inst_basereg, inst->inst_offset);
 					break;
 				case 8:
@@ -5621,7 +5723,7 @@ if ((strcmp(method->klass->name_space,"") == 0) &&
 			} else if (ainfo->regtype == RegTypeStructByVal) {
 				int doffset = inst->inst_offset;
 
-				size = (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE  
+				size = (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && sig->pinvoke &&  !sig->marshalling_disabled
 					? mono_class_native_size(mono_class_from_mono_type_internal (inst->inst_vtype), NULL)
 					: ainfo->size);
 
@@ -5656,15 +5758,15 @@ if ((strcmp(method->klass->name_space,"") == 0) &&
 
 	if (method->save_lmf) {
 		/**
-		 * Build the MonoLMF structure on the stack - see mini-s390x.h  
+		 * Build the MonoLMF structure on the stack - see mini-s390x.h
 		 */
-		lmfOffset = alloc_size - sizeof(MonoLMF);	
-											
-		s390_lgr   (code, s390_r13, cfg->frame_reg);		
-		s390_aghi  (code, s390_r13, lmfOffset);					
-											
+		lmfOffset = alloc_size - sizeof(MonoLMF);
+
+		s390_lgr   (code, s390_r13, cfg->frame_reg);
+		s390_aghi  (code, s390_r13, lmfOffset);
+
 		/*
-		 * Preserve the parameter registers while we fix up the lmf	
+		 * Preserve the parameter registers while we fix up the lmf
 		 */
 		s390_stmg  (code, s390_r2, s390_r6, s390_r13,
 			    MONO_STRUCT_OFFSET(MonoLMF, pregs));
@@ -5675,73 +5777,71 @@ if ((strcmp(method->klass->name_space,"") == 0) &&
 		/*
 		 * On return from this call r2 have the address of the &lmf
 		 */
-		mono_add_patch_info (cfg, code - cfg->native_code, 
-				MONO_PATCH_INFO_JIT_ICALL_ID,
-				GUINT_TO_POINTER (MONO_JIT_ICALL_mono_tls_get_lmf_addr_extern));
-		S390_CALL_TEMPLATE(code, s390_r1);
+		code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
+				  GUINT_TO_POINTER (MONO_JIT_ICALL_mono_tls_get_lmf_addr_extern));
 
 		/*
 		 * Set lmf.lmf_addr = jit_tls->lmf
 		 */
-		s390_stg   (code, s390_r2, 0, s390_r13, 				
-			    MONO_STRUCT_OFFSET(MonoLMF, lmf_addr));			
+		s390_stg   (code, s390_r2, 0, s390_r13,
+			    MONO_STRUCT_OFFSET(MonoLMF, lmf_addr));
 		mini_gc_set_slot_type_from_fp (cfg, lmfOffset + MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), SLOT_NOREF);
-											
+
 		/*
 		 * Get current lmf
 		 */
-		s390_lg    (code, s390_r0, 0, s390_r2, 0);				
-											
+		s390_lg    (code, s390_r0, 0, s390_r2, 0);
+
 		/*
 		 * Set our lmf as the current lmf
 		 */
-		s390_stg   (code, s390_r13, 0, s390_r2, 0);				
-											
+		s390_stg   (code, s390_r13, 0, s390_r2, 0);
+
 		/*
 		 * Have our lmf.previous_lmf point to the last lmf
 		 */
-		s390_stg   (code, s390_r0, 0, s390_r13, 				
-			    MONO_STRUCT_OFFSET(MonoLMF, previous_lmf));			
+		s390_stg   (code, s390_r0, 0, s390_r13,
+			    MONO_STRUCT_OFFSET(MonoLMF, previous_lmf));
 		mini_gc_set_slot_type_from_fp (cfg, lmfOffset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), SLOT_NOREF);
-											
+
 		/*
 		 * Save method info
 		 */
 		S390_SET   (code, s390_r1, method);
-		s390_stg   (code, s390_r1, 0, s390_r13, 				
-			    MONO_STRUCT_OFFSET(MonoLMF, method));				
+		s390_stg   (code, s390_r1, 0, s390_r13,
+			    MONO_STRUCT_OFFSET(MonoLMF, method));
 		mini_gc_set_slot_type_from_fp (cfg, lmfOffset + MONO_STRUCT_OFFSET (MonoLMF, method), SLOT_NOREF);
-										
+
 		/*
 		 * Save the current IP
 		 */
 		s390_stg   (code, STK_BASE, 0, s390_r13, MONO_STRUCT_OFFSET(MonoLMF, ebp));
 		s390_basr  (code, s390_r1, 0);
-		s390_stg   (code, s390_r1, 0, s390_r13, MONO_STRUCT_OFFSET(MonoLMF, eip));	
+		s390_stg   (code, s390_r1, 0, s390_r13, MONO_STRUCT_OFFSET(MonoLMF, eip));
 		mini_gc_set_slot_type_from_fp (cfg, lmfOffset + MONO_STRUCT_OFFSET (MonoLMF, ebp), SLOT_NOREF);
 		mini_gc_set_slot_type_from_fp (cfg, lmfOffset + MONO_STRUCT_OFFSET (MonoLMF, eip), SLOT_NOREF);
-											
+
 		/*
 		 * Save general and floating point registers
 		 */
-		s390_stmg  (code, s390_r2, s390_r12, s390_r13, 				
-			    MONO_STRUCT_OFFSET(MonoLMF, gregs) + 2 * sizeof(gulong));	
+		s390_stmg  (code, s390_r2, s390_r12, s390_r13,
+			    MONO_STRUCT_OFFSET(MonoLMF, gregs) + 2 * sizeof(gulong));
 		for (i = 0; i < 11; i++)
 			mini_gc_set_slot_type_from_fp (cfg, lmfOffset + MONO_STRUCT_OFFSET (MonoLMF, gregs) + i * sizeof(gulong), SLOT_NOREF);
 
 		fpOffset = lmfOffset + MONO_STRUCT_OFFSET (MonoLMF, fregs);
-		for (i = 0; i < 16; i++) {						
-			s390_std  (code, i, 0, s390_r13, 				
+		for (i = 0; i < 16; i++) {
+			s390_std  (code, i, 0, s390_r13,
 				   MONO_STRUCT_OFFSET(MonoLMF, fregs) + i * sizeof(gulong));
 			mini_gc_set_slot_type_from_fp (cfg, fpOffset, SLOT_NOREF);
 			fpOffset += sizeof(double);
-		}									
+		}
 
 		/*
 		 * Restore the parameter registers now that we've set up the lmf
 		 */
-		s390_lmg   (code, s390_r2, s390_r6, s390_r13, 				
-			    MONO_STRUCT_OFFSET(MonoLMF, pregs));	
+		s390_lmg   (code, s390_r2, s390_r6, s390_r13,
+			    MONO_STRUCT_OFFSET(MonoLMF, pregs));
 	}
 
 	if (cfg->method->save_lmf)
@@ -5774,9 +5874,9 @@ if ((strcmp(method->klass->name_space,"") == 0) &&
 			if (inst->opcode != OP_REGVAR) {
 				switch (ainfo->regtype) {
 				case RegTypeGeneral: {
-					if (((next->opcode == OP_LOAD_MEMBASE) || 
-					     (next->opcode == OP_LOADI4_MEMBASE)) && 
-					     next->inst_basereg == inst->inst_basereg && 
+					if (((next->opcode == OP_LOAD_MEMBASE) ||
+					     (next->opcode == OP_LOADI4_MEMBASE)) &&
+					     next->inst_basereg == inst->inst_basereg &&
 					     next->inst_offset == inst->inst_offset) {
 						if (next->dreg == ainfo->reg) {
 							NULLIFY_INS (next);
@@ -5798,8 +5898,8 @@ if ((strcmp(method->klass->name_space,"") == 0) &&
 				/* Argument allocated to (non-volatile) register */
 				switch (ainfo->regtype) {
 				case RegTypeGeneral:
-					if (next->opcode == OP_MOVE && 
-					    next->sreg1 == inst->dreg && 
+					if (next->opcode == OP_MOVE &&
+					    next->sreg1 == inst->dreg &&
 					    next->dreg == ainfo->reg) {
 						NULLIFY_INS (next);
 						match = TRUE;
@@ -5844,9 +5944,9 @@ if ((strcmp(method->klass->name_space,"") == 0) &&
 /*========================= End of Function ========================*/
 
 /**
- *  
- * @brief Architecutre-specific epilog generation
- * 
+ *
+ * @brief Architecture-specific epilog generation
+ *
  * @param[in] @cfg - Compile control block
  *
  * Create the instruction sequence for exit from a method
@@ -5859,10 +5959,10 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	guint8 *code;
 	int max_epilog_size = 96, i;
 	int fpOffset = 0;
-	
+
 	if (cfg->method->save_lmf)
 		max_epilog_size += 128;
-	
+
 	code = realloc_code (cfg, max_epilog_size);
 
 	cfg->has_unwind_info_for_epilog = TRUE;
@@ -5873,7 +5973,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	/* Save the uwind state which is needed by the out-of-line code */
 	mono_emit_unwind_op_remember_state (cfg, code);
 
-	if (method->save_lmf) 
+	if (method->save_lmf)
 		restoreLMF(code, cfg->frame_reg, cfg->stack_usage);
 
 	code = backUpStackPtr(cfg, code);
@@ -5892,12 +5992,15 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	}
 
 	s390_lmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
-	for (i = s390_r6; i < s390_r15; i++) 
+	for (i = s390_r6; i < s390_r15; i++)
 		mono_emit_unwind_op_same_value (cfg, code, i);
 	s390_br  (code, s390_r14);
 
 	/* Restore the unwind state to be the same as before the epilog */
 	mono_emit_unwind_op_restore_state (cfg, code);
+
+	/* Round up for start of any thunk entries */
+	code = (guint8 *) ((((uintptr_t) code + 7) >> 3) << 3);
 
 	set_code_cursor (cfg, code);
 
@@ -5906,16 +6009,16 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific exception emission
- * 
+ *
  * @param[in] @cfg - Compile control block
  *
  * Create the instruction sequence for exception handling
  */
 
 void
-mono_arch_emit_exceptions (MonoCompile *cfg) 
+mono_arch_emit_exceptions (MonoCompile *cfg)
 {
 	MonoJumpInfo 	*patch_info;
 	guint8		*code;
@@ -5926,8 +6029,8 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	MonoClass	*exc_classes [MAX_EXC];
 	guint8		*exc_throw_start [MAX_EXC];
 
-	for (patch_info = cfg->patch_info; 
-	     patch_info; 
+	for (patch_info = cfg->patch_info;
+	     patch_info;
 	     patch_info = patch_info->next) {
 		if (patch_info->type == MONO_PATCH_INFO_EXC)
 			exc_count++;
@@ -5938,7 +6041,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	code = realloc_code (cfg, code_size);
 
 	/*
-	 * Add code to raise exceptions 
+	 * Add code to raise exceptions
 	 */
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
@@ -5952,24 +6055,24 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			s390_patch_rel (ip + 2, (guint64) S390_RELATIVE(code,ip));
 
 			exc_class = mono_class_load_from_name (mono_defaults.corlib,
-							  "System", 
+							  "System",
 							  patch_info->data.name);
 
 			for (iExc = 0; iExc < nThrows; ++iExc)
 				if (exc_classes [iExc] == exc_class)
 					break;
-		
+
 			if (iExc < nThrows) {
-				s390_jcl (code, S390_CC_UN, 
+				s390_jcl (code, S390_CC_UN,
 					  (guint64) exc_throw_start [iExc]);
 				patch_info->type = MONO_PATCH_INFO_NONE;
 			} else {
-	
+
 				if (nThrows < MAX_EXC) {
 					exc_classes [nThrows]     = exc_class;
 					exc_throw_start [nThrows] = code;
 				}
-	
+
 				/*
 				 * Patch the parameter passed to the handler
 				 */
@@ -5985,7 +6088,9 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				patch_info->type              = MONO_PATCH_INFO_JIT_ICALL_ID;
 				patch_info->data.jit_icall_id = MONO_JIT_ICALL_mono_arch_throw_corlib_exception;
 				patch_info->ip.i	      = code - cfg->native_code;
+				patch_info->relocation	      = MONO_R_S390_THUNKED;
 				S390_BR_TEMPLATE (code, s390_r1);
+				cfg->thunk_area += THUNK_SIZE;
 			}
 			break;
 		}
@@ -5994,15 +6099,19 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			break;
 		}
 	}
+
+	/* Round up for start of any thunk entries */
+	code = (guint8 *) ((((uintptr_t) code + 7) >> 3) << 3);
+
 	set_code_cursor (cfg, code);
 }
 
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific finishing of initialization
- * 
+ *
  * Perform any architectural-specific operations at the conclusion of
  * the initialization phase
  */
@@ -6015,7 +6124,7 @@ mono_arch_finish_init (void)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific instruction emission for method
  *
  * @param[in] @cfg - Compile Control block
@@ -6023,7 +6132,7 @@ mono_arch_finish_init (void)
  * @param[in] @fsig - Method signature
  * @param[in] @args - Arguments to method
  * @returns Instruction(s) required for architecture
- * 
+ *
  * Provide any architectural shortcuts for specific methods.
  */
 
@@ -6032,26 +6141,93 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 {
 	MonoInst *ins = NULL;
 
+	int opcode = 0;
+	MonoStackType stack_type = STACK_R8;
+
+	if (cmethod->klass == mono_class_try_get_math_class ()) {
+		// unary double
+		if (fsig->param_count == 1 && fsig->params [0]->type == MONO_TYPE_R8) {
+			if (strcmp (cmethod->name, "Abs") == 0) {
+				opcode = OP_ABS;
+			} else if (strcmp (cmethod->name, "Ceiling") == 0) {
+				opcode = OP_CEIL;
+			} else if (strcmp (cmethod->name, "Floor") == 0) {
+				opcode = OP_FLOOR;
+			} else if (strcmp (cmethod->name, "Round") == 0) {
+				opcode = OP_ROUND;
+			} else if (strcmp (cmethod->name, "Sqrt") == 0) {
+				opcode = OP_SQRT;
+			} else if (strcmp (cmethod->name, "Truncate") == 0) {
+				opcode = OP_TRUNC;
+			}
+		}
+		// unary float (overloaded)
+		else if (fsig->param_count == 1 && fsig->params [0]->type == MONO_TYPE_R4) {
+			if (strcmp (cmethod->name, "Abs") == 0) {
+				opcode = OP_ABSF;
+				stack_type = STACK_R4;
+			}
+		}
+		// binary double
+		else if (fsig->param_count == 2 && fsig->params [0]->type == MONO_TYPE_R8 && fsig->params [1]->type == MONO_TYPE_R8) {
+			if (strcmp (cmethod->name, "CopySign") == 0) {
+				opcode = OP_FCOPYSIGN;
+			}
+		}
+	} else if (cmethod->klass == mono_class_try_get_mathf_class ()) {
+		if (fsig->param_count == 1) {
+			stack_type = STACK_R4;
+			if (strcmp (cmethod->name, "Abs") == 0) {
+				opcode = OP_ABSF;
+				stack_type = STACK_R4;
+			} else if (strcmp (cmethod->name, "Ceiling") == 0) {
+				opcode = OP_CEILF;
+				stack_type = STACK_R4;
+			} else if (strcmp (cmethod->name, "Floor") == 0) {
+				opcode = OP_FLOORF;
+				stack_type = STACK_R4;
+			} else if (strcmp (cmethod->name, "Sqrt") == 0) {
+				opcode = OP_SQRTF;
+				stack_type = STACK_R4;
+			} else if (strcmp (cmethod->name, "Truncate") == 0) {
+				opcode = OP_TRUNCF;
+				stack_type = STACK_R4;
+			}
+		}
+	}
+
+	if (opcode) {
+		MONO_INST_NEW (cfg, ins, opcode);
+		ins->type = stack_type;
+		ins->dreg = mono_alloc_freg (cfg);
+		ins->sreg1 = args [0]->dreg;
+		if (fsig->param_count > 1) {
+			ins->sreg2 = args [1]->dreg;
+		}
+		g_assert (fsig->param_count <= 2);
+		MONO_ADD_INS (cfg->cbb, ins);
+	}
+
 	return ins;
 }
 
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Decompose opcode into a System z operation
  *
  * @param[in] @cfg - Compile Control block
  * @param[in] @ins - Mono Instruction
- * 
+ *
  * Substitute a System z instruction for a Mono operation.
  */
 
 void
 mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 {
-	/* 
-	 * Have to rename these to avoid being decomposed normally, since the normal 
+	/*
+	 * Have to rename these to avoid being decomposed normally, since the normal
 	 * decomposition does not work on S390.
 	 */
 	switch (ins->opcode) {
@@ -6087,15 +6263,15 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Determine the cost of allocation a variable
  *
  * @param[in] @cfg - Compile Control block
  * @param[in] @vmv - Mono Method Variable
  * @returns Cost (hardcoded on s390x to 2)
- * 
- * Determine the cost, in the number of memory references, of the action 
- * of allocating the variable VMV into a register during global register  
+ *
+ * Determine the cost, in the number of memory references, of the action
+ * of allocating the variable VMV into a register during global register
  * allocation.
  *
  */
@@ -6110,14 +6286,14 @@ mono_arch_regalloc_cost (MonoCompile *cfg, MonoMethodVar *vmv)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architectural specific register window flushing
  *
  * Not applicable for s390x so we just do nothing
  *
  */
 
-void 
+void
 mono_arch_flush_register_windows (void)
 {
 }
@@ -6125,20 +6301,20 @@ mono_arch_flush_register_windows (void)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architectural specific check if value may be immediate
  *
  * @param[in] @opcode - Operation code
  * @param[in] @imm_opcode - Immediate operation code
  * @param[in] @imm - Value to be examined
  * @returns True if it is a valid immediate value
- * 
+ *
  * Determine if operand qualifies as an immediate value. For s390x
  * this is a value in the range -2**32/2**32-1
  *
  */
 
-gboolean 
+gboolean
 mono_arch_is_inst_imm (int opcode, int imm_opcode, gint64 imm)
 {
 	return s390_is_imm32 (imm);
@@ -6147,12 +6323,12 @@ mono_arch_is_inst_imm (int opcode, int imm_opcode, gint64 imm)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architectural specific patch offset value for AOT
  *
  * @param[in] @code - Location of code to check
  * @returns Offset
- * 
+ *
  * Dummy entry point if/when s390x supports AOT.
  */
 
@@ -6165,13 +6341,13 @@ mono_arch_get_patch_offset (guint8 *code)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architectural specific returning of register from context
  *
  * @param[in] @ctx - Mono context
  * @param[in] @reg - Register number to be returned
  * @returns Contents of the register from the context
- * 
+ *
  * Return a register from the context.
  */
 
@@ -6190,13 +6366,13 @@ mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architectural specific setting of a register in the context
  *
  * @param[in] @ctx - Mono context
  * @param[in] @reg - Register number to be returned
  * @param[in] @val - Value to be set
- * 
+ *
  * Set the specified register in the context with the value passed
  */
 
@@ -6209,14 +6385,14 @@ mono_arch_context_set_int_reg (MonoContext *ctx, int reg, host_mgreg_t val)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architectural specific returning of the "this" value from context
  *
  * @param[in] @ctx - Mono context
  * @param[in] @code - Current location
  * @returns Pointer to the "this" object
- * 
- * Extract register 2 from the context as for s390x this is where the 
+ *
+ * Extract register 2 from the context as for s390x this is where the
  * this parameter is passed
  */
 
@@ -6227,9 +6403,9 @@ mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
 }
 
 /*========================= End of Function ========================*/
- 
+
 /**
- *  
+ *
  * @brief Delegation trampoline processing
  *
  * @param[in] @info - Trampoline information
@@ -6237,7 +6413,7 @@ mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
  * @param[in] @param_count - Count of parameters
  * @param[in] @aot - AOT indicator
  * @returns Next instruction location
- * 
+ *
  * Process the delegation trampolines
  */
 
@@ -6279,7 +6455,7 @@ get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, MonoMethodS
 				iReg++;
 				break;
 			default :
-				s390_mvc (code, sizeof(uintptr_t), STK_BASE, offset, STK_BASE, offset+sizeof(uintptr_t)); 
+				s390_mvc (code, sizeof(uintptr_t), STK_BASE, offset, STK_BASE, offset+sizeof(uintptr_t));
 				offset += sizeof(uintptr_t);
 			}
 		}
@@ -6307,11 +6483,11 @@ get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, MonoMethodS
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific delegation trampolines processing
  *
  * @returns List of trampolines
- * 
+ *
  * Return a list of MonoTrampInfo structures for the delegate invoke impl trampolines.
  */
 
@@ -6337,13 +6513,13 @@ mono_arch_get_delegate_invoke_impls (void)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific delegation trampoline processing
  *
  * @param[in] @sig - Method signature
  * @param[in] @has_target - Whether delegation contains a target
  * @returns Trampoline
- * 
+ *
  * Return a pointer to a delegation trampoline
  */
 
@@ -6410,7 +6586,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific delegation virtual trampoline processing
  *
  * @param[in] @sig - Method signature
@@ -6418,12 +6594,12 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
  * @param[in] @offset - Offset into vtable
  * @param[in] @load_imt_reg - Whether to load the LMT register
  * @returns Trampoline
- * 
+ *
  * Return a pointer to a delegation virtual trampoline
  */
 
 gpointer
-mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method, 
+mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod *method,
 					    int offset, gboolean load_imt_reg)
 {
 	guint8 *code, *start;
@@ -6435,7 +6611,7 @@ mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod
 	 * Replace the "this" argument with the target
 	 */
 	s390_lgr  (code, s390_r1, s390_r2);
-	s390_lg   (code, s390_r2, 0, s390_r1, MONO_STRUCT_OFFSET(MonoDelegate, target));        
+	s390_lg   (code, s390_r2, 0, s390_r1, MONO_STRUCT_OFFSET(MonoDelegate, target));
 
 	/*
 	 * Load the IMT register, if needed
@@ -6463,7 +6639,7 @@ mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific build of IMT trampoline
  *
  * @param[in] @vtable - Mono VTable
@@ -6472,7 +6648,7 @@ mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig, MonoMethod
  * @param[in] @count - Count of items
  * @param[in] @fail_tramp - Pointer to a failure trampoline
  * @returns Trampoline
- * 
+ *
  * Return a pointer to an IMT trampoline
  */
 
@@ -6495,11 +6671,11 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable,
 				if (item->has_target_code)
 					item->chunk_size += BR_SIZE + JUMP_SIZE + LOADCON_SIZE;
 				else
-					item->chunk_size += BR_SIZE + JUMP_SIZE + LOADCON_SIZE + 
+					item->chunk_size += BR_SIZE + JUMP_SIZE + LOADCON_SIZE +
 							    LOAD_SIZE;
 			} else {
 				if (fail_tramp) {
-					item->chunk_size += CMP_SIZE + 2 * BR_SIZE + JUMP_SIZE + 
+					item->chunk_size += CMP_SIZE + 2 * BR_SIZE + JUMP_SIZE +
 							    2 * LOADCON_SIZE;
 					if (!item->has_target_code)
 						item->chunk_size += LOAD_SIZE;
@@ -6536,7 +6712,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable,
 				}
 				item->jmp_code = (guint8*) code;
 				s390_jcl (code, S390_CC_NE, 0);
-				
+
 				if (item->has_target_code) {
 					S390_SET (code, s390_r1, item->value.target_code);
 				} else {
@@ -6556,7 +6732,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable,
 						S390_SET (code, s390_r1, item->value.target_code);
 					} else {
 						g_assert (vtable);
-						S390_SET  (code, s390_r1, 
+						S390_SET  (code, s390_r1,
 							   (&(vtable->vtable [item->value.vtable_slot])));
 						s390_lg	  (code, s390_r1, 0, s390_r1, 0);
 					}
@@ -6583,8 +6759,8 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable,
 			s390_jcl  (code, S390_CC_GE, 0);
 		}
 	}
-	/* 
-	 * patch the branches to get to the target items 
+	/*
+	 * patch the branches to get to the target items
 	 */
 	for (i = 0; i < count; ++i) {
 		MonoIMTCheckItem *item = imt_entries [i];
@@ -6601,7 +6777,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable,
 	mono_arch_flush_icache ((guint8*)start, (code - start));
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL));
 
-	if (!fail_tramp) 
+	if (!fail_tramp)
 		UnlockedAdd (&mono_stats.imt_trampolines_size, code - start);
 
 	g_assert (code - start <= size);
@@ -6614,13 +6790,13 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable,
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific return of pointer to IMT method
  *
  * @param[in] @regs - Context registers
  * @param[in] @code - Current location
  * @returns Pointer to IMT method
- * 
+ *
  * Extract the value of the IMT register from the context
  */
 
@@ -6633,13 +6809,13 @@ mono_arch_find_imt_method (host_mgreg_t *regs, guint8 *code)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific return of pointer static call vtable.
  *
  * @param[in] @regs - Context registers
  * @param[in] @code - Current location
  * @returns Pointer to static call vtable
- * 
+ *
  * Extract the value of the RGCTX register from the context which
  * points to the static call vtable.
  */
@@ -6653,7 +6829,7 @@ mono_arch_find_static_call_vtable (host_mgreg_t *regs, guint8 *code)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific return of unwind bytecode for DWARF CIE
  *
  * @returns Unwind byte code
@@ -6676,13 +6852,13 @@ mono_arch_get_cie_program (void)
 #ifdef MONO_ARCH_SOFT_DEBUG_SUPPORTED
 
 /**
- *  
+ *
  * @brief Architecture-specific setting of a breakpoint
  *
  * @param[in] @ji - Mono JIT Information
  * @param[in] @ip - Insruction pointer
  *
- * Set a breakpoint at the native code corresponding to JI at NATIVE_OFFSET.  
+ * Set a breakpoint at the native code corresponding to JI at NATIVE_OFFSET.
  * The location should contain code emitted by OP_SEQ_POINT.
  */
 
@@ -6701,7 +6877,7 @@ mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific clearing of a breakpoint
  *
  * @param[in] @ji - Mono JIT Information
@@ -6725,7 +6901,7 @@ mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific check if this is a breakpoint event
  *
  * @param[in] @info - Signal information
@@ -6745,7 +6921,7 @@ mono_arch_is_breakpoint_event (void *info, void *sigctx)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific skip of a breakpoint
  *
  * @param[in] @ctx - Mono Context
@@ -6761,9 +6937,9 @@ mono_arch_skip_breakpoint (MonoContext *ctx, MonoJitInfo *ji)
 }
 
 /*========================= End of Function ========================*/
-	
+
 /**
- *  
+ *
  * @brief Architecture-specific start of single stepping
  *
  * Unprotect the trigger page to enable single stepping
@@ -6776,9 +6952,9 @@ mono_arch_start_single_stepping (void)
 }
 
 /*========================= End of Function ========================*/
-	
+
 /**
- *  
+ *
  * @brief Architecture-specific stop of single stepping
  *
  * Write-protect the trigger page to disable single stepping
@@ -6793,7 +6969,7 @@ mono_arch_stop_single_stepping (void)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific check if single stepping event
  *
  * @param[in] @info - Signal information
@@ -6814,7 +6990,7 @@ mono_arch_is_single_step_event (void *info, void *sigctx)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific skip of a single stepping event
  *
  * @param[in] @ctx - Mono Context
@@ -6833,14 +7009,14 @@ mono_arch_skip_single_step (MonoContext *ctx)
 /*========================= End of Function ========================*/
 
 /**
- *  
+ *
  * @brief Architecture-specific creation of sequence point information
  *
  * @param[in] @domain - Mono Domain
  * @param[in] @code - Current location pointer
  * @returns Sequence Point Information
  *
- * Return a pointer to a data struction which is used by the sequence 
+ * Return a pointer to a data struction which is used by the sequence
  * point implementation in AOTed code. A no-op on s390x until AOT is
  * ever supported.
  */
@@ -6881,7 +7057,7 @@ mono_arch_get_seq_point_info (guint8 *code)
 #endif
 
 /**
- *  
+ *
  * @brief Architecture-specific check of supported operation codes
  *
  * @param[in] @opcode - Operation code to be checked
@@ -6909,7 +7085,7 @@ mono_arch_opcode_supported (int opcode)
 #ifndef DISABLE_JIT
 
 /**
- *  
+ *
  * @brief Architecture-specific check of tailcall support
  *
  * @param[in] @cfg - Mono Compile control block
@@ -6933,7 +7109,7 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 
 	gboolean res = IS_SUPPORTED_TAILCALL (callee_info->stack_usage <= caller_info->stack_usage);
 
-	// Any call that would result in parameters being placed on the stack cannot be "tailed" as it may 
+	// Any call that would result in parameters being placed on the stack cannot be "tailed" as it may
 	// result in the callers parameter variables being overwritten.
 	ArgInfo const * const ainfo = callee_info->args + callee_sig->hasthis;
 	for (int i = 0; res && i < callee_sig->param_count; ++i) {
@@ -6987,7 +7163,7 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 #endif
 
 /**
- *  
+ *
  * @brief Architecture-specific load function
  *
  * @param[in] @jit_call_id - JIT callee identifier
@@ -7000,6 +7176,149 @@ gpointer
 mono_arch_load_function (MonoJitICallId jit_icall_id)
 {
 	return NULL;
+}
+
+/*========================= End of Function ========================*/
+
+/**
+ *
+ * @brief Emit call to thunked code
+ *
+ * @param[in] @cfg - configuration data
+ * @param[inout] @code - where to emit call
+ * @param[in] @call - call instruction
+ * @returns Pointer to next code area
+ *
+ */
+
+static __inline__ guint8*
+emit_call (MonoCompile *cfg, guint8 *code, MonoJumpInfoType type, gconstpointer target)
+{
+	mono_add_patch_info_rel (cfg, code-cfg->native_code, type,
+				 target, MONO_R_S390_THUNKED);
+	S390_CALL_TEMPLATE (code, s390_r14);
+	cfg->thunk_area += THUNK_SIZE;
+	return code;
+}
+
+/*========================= End of Function ========================*/
+
+/**
+ *
+ * @brief Emit thunk for an indirect call
+ *
+ * @param[inout] @code - where to emit thunk
+ * @param[in] @target - thunk target
+ * @returns Pointer to next code area
+ *
+ */
+
+static guint8*
+emit_thunk (guint8 *code, gconstpointer target)
+{
+	*(guint64*)code = (guint64)target;
+	code += sizeof (guint64);
+
+	return code;
+}
+
+/*========================= End of Function ========================*/
+
+/**
+ *
+ * @brief Create thunk
+ *
+ * @param[in] @cfg - Compiler configuration
+ * @param[inout] @code - where to emit thunk
+ * @param[in] @target - thunk target
+ *
+ * Create a new thunk
+ *
+ */
+
+static void
+create_thunk (MonoCompile *cfg, guint8 *ip, guint8 *code, gpointer target)
+{
+	guint8 *thunks;
+	int thunks_size;
+
+	/*
+	 * This can be called multiple times during JITting,
+	 * save the current position in cfg->arch to avoid
+	 * doing a O(n^2) search.
+	 */
+	if (!cfg->arch.thunks) {
+		cfg->arch.thunks = cfg->thunks;
+		cfg->arch.thunks_size = cfg->thunk_area;
+	}
+	thunks = (guint8 *) cfg->arch.thunks;
+	thunks_size = cfg->arch.thunks_size;
+	if (!thunks_size) {
+		g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, mono_method_full_name (cfg->method, TRUE));
+		g_assert_not_reached ();
+	}
+
+	g_assert (*(guint64 *)thunks == 0);
+	emit_thunk (thunks, target);
+
+	cfg->arch.thunks += THUNK_SIZE;
+	cfg->arch.thunks_size -= THUNK_SIZE;
+
+	S390_EMIT_CALL(ip, thunks);
+}
+
+/*========================= End of Function ========================*/
+
+/**
+ *
+ * @brief Update thunk
+ *
+ * @param[in] @cfg - Compiler configuration
+ * @param[inout] @code - where to emit thunk
+ * @param[in] @target - thunk target
+ *
+ * Update an existing thunk
+ *
+ */
+
+static void
+update_thunk (MonoCompile *cfg, guint8 *code, gpointer target)
+{
+        MonoJitInfo *ji;
+        MonoThunkJitInfo *info;
+        guint8 *thunks;
+        guint8 *orig_target;
+        guint8 *target_thunk;
+	int thunks_size;
+
+	ji = mini_jit_info_table_find ((char*)code);
+	g_assert (ji);
+	info = mono_jit_info_get_thunk_info (ji);
+	g_assert (info);
+
+	thunks = (guint8*)ji->code_start + info->thunks_offset;
+	thunks_size = info->thunks_size;
+
+	/*
+	 * We're pointing at the start of jump to thunk,
+	 * but mono_arch_get_call_target expects we're pointing
+	 * after the branch so we adjust
+	 */
+	orig_target = mono_arch_get_call_target (code + 6);
+
+	target_thunk = NULL;
+	if (orig_target >= thunks && orig_target < thunks + thunks_size) {
+		/* The call already points to a thunk, because of trampolines etc. */
+		target_thunk = orig_target;
+	} else {
+		g_print ("thunk failed %p->%p, thunk space=%d method %s",
+			 code, target, thunks_size,
+			 cfg ? mono_method_full_name (cfg->method, TRUE)
+			     : mono_method_full_name (jinfo_get_method (ji), TRUE));
+		g_assert_not_reached ();
+	}
+
+	emit_thunk (target_thunk, target);
 }
 
 /*========================= End of Function ========================*/

@@ -91,7 +91,6 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 {
 	DWORD res;
 	gpointer handles [MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS];
-	gint i;
 
 	g_assert (events);
 	g_assert (nevents > 0);
@@ -100,7 +99,7 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 	if (nevents == 1)
 		return mono_os_event_wait_one (events [0], timeout, alertable);
 
-	for (i = 0; i < nevents; ++i) {
+	for (gsize i = 0; i < nevents; ++i) {
 		g_assert (events [i]);
 		g_assert (events [i]->handle);
 		handles [i] = events [i]->handle;

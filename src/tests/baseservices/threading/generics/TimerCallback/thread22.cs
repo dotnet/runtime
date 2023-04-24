@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 interface IGen<T>
 {
@@ -15,14 +16,14 @@ class GenInt : IGen<int>
 
 	public void Target<U>(object p)
 	{			
-		if (Test.Xcounter>=Test.nThreads)
+		if (Test_thread22.Xcounter>=Test_thread22.nThreads)
 		{
 			ManualResetEvent evt = (ManualResetEvent) p;	
 			evt.Set();
 		}
 		else
 		{
-			Interlocked.Increment(ref Test.Xcounter);	
+			Interlocked.Increment(ref Test_thread22.Xcounter);	
 		}
 	}
 	
@@ -33,12 +34,12 @@ class GenInt : IGen<int>
 		IGen<int> obj = new GenInt();
 
 		TimerCallback tcb = new TimerCallback(obj.Target<U>);
-		Timer timer = new Timer(tcb,evt,Test.delay,Test.period);
+		Timer timer = new Timer(tcb,evt,Test_thread22.delay,Test_thread22.period);
 	
 		evt.WaitOne();
 		timer.Dispose();
-		Test.Eval(Test.Xcounter>=Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread22.Eval(Test_thread22.Xcounter>=Test_thread22.nThreads);
+		Test_thread22.Xcounter = 0;
 	}
 }
 
@@ -48,14 +49,14 @@ class GenDouble : IGen<double>
 
 	public void Target<U>(object p)
 	{			
-		if (Test.Xcounter>=Test.nThreads)
+		if (Test_thread22.Xcounter>=Test_thread22.nThreads)
 		{
 			ManualResetEvent evt = (ManualResetEvent) p;	
 			evt.Set();
 		}
 		else
 		{
-			Interlocked.Increment(ref Test.Xcounter);	
+			Interlocked.Increment(ref Test_thread22.Xcounter);	
 		}
 	}
 	
@@ -66,12 +67,12 @@ class GenDouble : IGen<double>
 		IGen<double> obj = new GenDouble();
 
 		TimerCallback tcb = new TimerCallback(obj.Target<U>);
-		Timer timer = new Timer(tcb,evt,Test.delay,Test.period);
+		Timer timer = new Timer(tcb,evt,Test_thread22.delay,Test_thread22.period);
 	
 		evt.WaitOne();
 		timer.Dispose();
-		Test.Eval(Test.Xcounter>=Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread22.Eval(Test_thread22.Xcounter>=Test_thread22.nThreads);
+		Test_thread22.Xcounter = 0;
 	}
 }
 
@@ -81,14 +82,14 @@ class GenString : IGen<string>
 
 	public void Target<U>(object p)
 	{			
-		if (Test.Xcounter>=Test.nThreads)
+		if (Test_thread22.Xcounter>=Test_thread22.nThreads)
 		{
 			ManualResetEvent evt = (ManualResetEvent) p;	
 			evt.Set();
 		}
 		else
 		{
-			Interlocked.Increment(ref Test.Xcounter);	
+			Interlocked.Increment(ref Test_thread22.Xcounter);	
 		}
 	}
 	
@@ -99,12 +100,12 @@ class GenString : IGen<string>
 		IGen<string> obj = new GenString();
 
 		TimerCallback tcb = new TimerCallback(obj.Target<U>);
-		Timer timer = new Timer(tcb,evt,Test.delay,Test.period);
+		Timer timer = new Timer(tcb,evt,Test_thread22.delay,Test_thread22.period);
 	
 		evt.WaitOne();
 		timer.Dispose();
-		Test.Eval(Test.Xcounter>=Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread22.Eval(Test_thread22.Xcounter>=Test_thread22.nThreads);
+		Test_thread22.Xcounter = 0;
 	}
 }
 
@@ -114,14 +115,14 @@ class GenObject : IGen<object>
 
 	public void Target<U>(object p)
 	{			
-		if (Test.Xcounter>=Test.nThreads)
+		if (Test_thread22.Xcounter>=Test_thread22.nThreads)
 		{
 			ManualResetEvent evt = (ManualResetEvent) p;	
 			evt.Set();
 		}
 		else
 		{
-			Interlocked.Increment(ref Test.Xcounter);	
+			Interlocked.Increment(ref Test_thread22.Xcounter);	
 		}
 	}
 	
@@ -132,12 +133,12 @@ class GenObject : IGen<object>
 		IGen<object> obj = new GenObject();
 
 		TimerCallback tcb = new TimerCallback(obj.Target<U>);
-		Timer timer = new Timer(tcb,evt,Test.delay,Test.period);
+		Timer timer = new Timer(tcb,evt,Test_thread22.delay,Test_thread22.period);
 	
 		evt.WaitOne();
 		timer.Dispose();
-		Test.Eval(Test.Xcounter>=Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread22.Eval(Test_thread22.Xcounter>=Test_thread22.nThreads);
+		Test_thread22.Xcounter = 0;
 	}
 }
 
@@ -147,14 +148,14 @@ class GenGuid : IGen<Guid>
 
 	public void Target<U>(object p)
 	{			
-		if (Test.Xcounter>=Test.nThreads)
+		if (Test_thread22.Xcounter>=Test_thread22.nThreads)
 		{
 			ManualResetEvent evt = (ManualResetEvent) p;	
 			evt.Set();
 		}
 		else
 		{
-			Interlocked.Increment(ref Test.Xcounter);	
+			Interlocked.Increment(ref Test_thread22.Xcounter);	
 		}
 	}
 	
@@ -165,16 +166,16 @@ class GenGuid : IGen<Guid>
 		IGen<Guid> obj = new GenGuid();
 
 		TimerCallback tcb = new TimerCallback(obj.Target<U>);
-		Timer timer = new Timer(tcb,evt,Test.delay,Test.period);
+		Timer timer = new Timer(tcb,evt,Test_thread22.delay,Test_thread22.period);
 	
 		evt.WaitOne();
 		timer.Dispose();
-		Test.Eval(Test.Xcounter>=Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread22.Eval(Test_thread22.Xcounter>=Test_thread22.nThreads);
+		Test_thread22.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread22
 {
 	public static int delay = 0;
 	public static int period = 2;
@@ -193,7 +194,8 @@ public class Test
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 	
 		GenInt.ThreadPoolTest<int>();

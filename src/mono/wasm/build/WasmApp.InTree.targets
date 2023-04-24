@@ -1,17 +1,22 @@
 <Project>
   <!-- This depends on the root Directory.Build.targets imported this file -->
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
+  <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true' and '$(ImportTargetingPacksTargetsInWasmAppTargets)' == 'true'"/>
   <Import Project="$(MSBuildThisFileDirectory)WasmApp.targets" />
 
-  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
-  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences" Condition="@(RuntimePack->Count()) != 0">
+  <!-- FIXME: use proper dependency -->
+  <Target Name="SetupAppHostConfig" BeforeTargets="_WasmGenerateAppBundle">
+    <PropertyGroup>
+      <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
+    </PropertyGroup>
     <ItemGroup>
-      <RuntimePack>
-        <PackageDirectory>$([MSBuild]::NormalizeDirectory($(ArtifactsBinDir), 'microsoft.netcore.app.runtime.browser-wasm', $(Configuration)))</PackageDirectory>
-      </RuntimePack>
+        <HostConfig Include="v8" Host="v8" js-path="$(_WasmMainJSFileName)" />
+        <HostConfig Include="node" Host="nodejs" js-path="$(_WasmMainJSFileName)" />
+        <HostConfig Include="browser" Host="browser" html-path="index.html" />
     </ItemGroup>
-    <Message Text="Using RuntimePack.PackageDirectory: %(RuntimePack.PackageDirectory)" Importance="Low" />
   </Target>
 
   <Target Name="RebuildWasmAppBuilder">
@@ -25,13 +30,13 @@
 
     <MSBuild Projects="@(WasmAppBuildProject)"
          Properties="Configuration=Debug"
-         Targets="Build;Publish"/>
+         Targets="Build"/>
   </Target>
 
   <Target Name="CopyAppZipToHelixTestDir"
-          Condition="'$(WasmCopyAppZipToHelixTestDir)' == 'true'"
+          Condition="'$(WasmCopyAppZipToHelixTestDir)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish">
+          DependsOnTargets="WasmTriggerPublishApp">
     <PropertyGroup>
       <WasmHelixTestAppRelativeDir Condition="'$(WasmHelixTestAppRelativeDir)' == ''">$(MSBuildProjectName)</WasmHelixTestAppRelativeDir>
       <!-- Helix properties -->

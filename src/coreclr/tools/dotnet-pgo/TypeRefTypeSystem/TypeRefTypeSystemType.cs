@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -119,12 +120,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
             return method;
         }
 
-        public FieldDesc GetOrAddField(string name, TypeDesc fieldType)
+        public FieldDesc GetOrAddField(string name, TypeDesc fieldType, EmbeddedSignatureData[] embeddedSigData)
         {
             FieldDesc fld = GetField(name);
             if (fld == null)
             {
-                TypeRefTypeSystemField newField = new TypeRefTypeSystemField(this, name, fieldType);
+                TypeRefTypeSystemField newField = new TypeRefTypeSystemField(this, name, fieldType, embeddedSigData);
                 fld = newField;
                 _fields.Add(newField);
             }
@@ -150,6 +151,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
         public override bool IsBeforeFieldInit => throw new NotImplementedException();
 
         public override ModuleDesc Module => _module;
+
+        public override DefType BaseType => MetadataBaseType;
 
         public override MetadataType MetadataBaseType
         {
@@ -223,7 +226,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
                      flags |= TypeFlags.Class;
                 }
 
-                // All other cases are handled during TypeSystemContext intitialization
+                // All other cases are handled during TypeSystemContext initialization
             }
 
             if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
@@ -248,5 +251,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
         }
 
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => throw new NotImplementedException();
+
+        public override int GetInlineArrayLength()
+        {
+            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
+            throw new InvalidOperationException();
+        }
     }
 }

@@ -264,7 +264,7 @@ public:
     **Arguments:  buffer -- the array to be filled.
     **Exceptions: None
     ==============================================================================*/
-    void NextBytes(__out_ecount(length) BYTE buffer[], int length)
+    void NextBytes(_Out_writes_(length) BYTE buffer[], int length)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(initialized);

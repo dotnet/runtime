@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -42,6 +43,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void Ctor_Default()
         {
             var stackTrace = new StackTrace();
@@ -49,6 +51,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(true)]
         [InlineData(false)]
         public void Ctor_FNeedFileInfo(bool fNeedFileInfo)
@@ -58,6 +61,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(0)]
         [InlineData(1)]
         public void Ctor_SkipFrames(int skipFrames)
@@ -73,7 +77,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void Ctor_LargeSkipFrames_GetFramesReturnsEmtpy()
+        public void Ctor_LargeSkipFrames_GetFramesReturnsEmpty()
         {
             var stackTrace = new StackTrace(int.MaxValue);
             Assert.Equal(0, stackTrace.FrameCount);
@@ -81,6 +85,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(0, true)]
         [InlineData(1, true)]
         [InlineData(0, false)]
@@ -108,6 +113,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void Ctor_ThrownException_GetFramesReturnsExpected()
         {
             var stackTrace = new StackTrace(InvokeException());
@@ -125,6 +131,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(true)]
         [InlineData(false)]
         public void Ctor_Bool_ThrownException_GetFramesReturnsExpected(bool fNeedFileInfo)
@@ -147,6 +154,7 @@ namespace System.Diagnostics.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31796", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(0)]
         [InlineData(1)]
         public void Ctor_Exception_SkipFrames(int skipFrames)
@@ -304,8 +312,17 @@ namespace System.Diagnostics.Tests
             Assert.Equal(Environment.NewLine, stackTrace.ToString());
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/11354", TestRuntimes.Mono)]
+        public unsafe void ToString_FunctionPointerSignature()
+        {
+            // This is separate from ToString_Invoke_ReturnsExpected since unsafe cannot be used for iterators
+            var stackTrace = FunctionPointerParameter(null);
+            // Function pointers have no Name.
+            Assert.Contains("System.Diagnostics.Tests.StackTraceTests.FunctionPointerParameter( x)", stackTrace.ToString());
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51096", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         public void ToString_ShowILOffset()
         {
             string AssemblyName = "ExceptionTestAssembly.dll";
@@ -324,7 +341,7 @@ namespace System.Diagnostics.Tests
                 catch (Exception e)
                 {
                     Assert.Contains(asmName, e.InnerException.StackTrace);
-                    Assert.True(Regex.Match(e.InnerException.StackTrace, p).Success);
+                    Assert.Matches(p, e.InnerException.StackTrace);
                 }
             }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
 
@@ -341,7 +358,7 @@ namespace System.Diagnostics.Tests
                 catch (Exception e)
                 {
                     Assert.Contains(asmName, e.InnerException.StackTrace);
-                    Assert.True(Regex.Match(e.InnerException.StackTrace, p).Success);
+                    Assert.Matches(p, e.InnerException.StackTrace);
                 }
             }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
 
@@ -365,7 +382,7 @@ namespace System.Diagnostics.Tests
                 catch (Exception e)
                 {
                     Assert.Contains("RefEmit_InMemoryManifestModule", e.InnerException.StackTrace);
-                    Assert.True(Regex.Match(e.InnerException.StackTrace, p).Success);
+                    Assert.Matches(p, e.InnerException.StackTrace);
                 }
             }, regPattern).Dispose();
         }
@@ -376,6 +393,9 @@ namespace System.Diagnostics.Tests
         private static StackTrace OneParameter(int x) => new StackTrace();
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace TwoParameters(int x, string y) => new StackTrace();
+
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+        private unsafe static StackTrace FunctionPointerParameter(delegate*<void> x) => new StackTrace();
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         private static StackTrace Generic<T>() => new StackTrace();

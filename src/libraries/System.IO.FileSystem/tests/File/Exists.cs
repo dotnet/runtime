@@ -52,9 +52,6 @@ namespace System.IO.Tests
         {
             // Checks that errors aren't thrown when calling Exists() on paths with impossible to create characters
             Assert.False(Exists(invalidPath));
-
-            Assert.False(Exists(".."));
-            Assert.False(Exists("."));
         }
 
         [Fact]
@@ -79,7 +76,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void PathEndsInAltTrailingSlash_Windows()
         {
-            string path = GetTestFilePath() + Path.DirectorySeparatorChar;
+            string path = GetTestFilePath() + Path.AltDirectorySeparatorChar;
             Assert.False(Exists(path));
         }
 
@@ -97,18 +94,7 @@ namespace System.IO.Tests
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
-            Assert.False(Exists(path + Path.DirectorySeparatorChar));
-        }
-
-        [Fact]
-        public void PathAlreadyExistsAsDirectory()
-        {
-            string path = GetTestFilePath();
-            Directory.CreateDirectory(path);
-
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(path)));
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
-            Assert.False(Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
+            Assert.False(Exists(path + Path.AltDirectorySeparatorChar));
         }
 
         [Fact]
@@ -129,11 +115,11 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(nameof(CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
-            var linkPath = GetTestFilePath();
+            var linkPath = GetRandomLinkPath();
 
             File.Create(path).Dispose();
             Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false));
@@ -166,8 +152,7 @@ namespace System.IO.Tests
 
         }
 
-        [Fact]
-        [PlatformSpecific(CaseInsensitivePlatforms)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseInsensitiveOS))]
         public void DoesCaseInsensitiveInvariantComparions()
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
@@ -177,9 +162,8 @@ namespace System.IO.Tests
             Assert.True(Exists(testFile.FullName.ToLowerInvariant()));
         }
 
-        [Fact]
-        [PlatformSpecific(CaseSensitivePlatforms)]
-        public void DoesCaseSensitiveComparions()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCaseSensitiveOS))]
+        public void DoesCaseSensitiveComparisons()
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();
@@ -222,15 +206,15 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
-        [Theory,
-            MemberData(nameof(PathsWithReservedDeviceNames))]
+        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked))] // device names
+        [MemberData(nameof(PathsWithReservedDeviceNames))]
         [OuterLoop]
-        [PlatformSpecific(TestPlatforms.Windows)] // device names
         public void PathWithReservedDeviceNameAsPath_ReturnsFalse(string component)
         {
             Assert.False(Exists(component));
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/901", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Theory,
             MemberData(nameof(UncPathsWithoutShareName))]
         public void UncPathWithoutShareNameAsPath_ReturnsFalse(string component)
@@ -246,15 +230,36 @@ namespace System.IO.Tests
             Assert.False(Exists(component));
         }
 
+        #endregion
+    }
+
+    public class File_ExistsAsDirectory : FileSystemTest
+    {
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Uses P/Invokes
+        public void DotAsPathReturnsFalse()
+        {
+            Assert.False(File.Exists("."));
+            Assert.False(File.Exists(".."));
+        }
+
+        [Fact]
+        public void PathAlreadyExistsAsDirectory()
+        {
+            string path = GetTestFilePath();
+            Directory.CreateDirectory(path);
+
+            Assert.False(File.Exists(IOServices.RemoveTrailingSlash(path)));
+            Assert.False(File.Exists(IOServices.RemoveTrailingSlash(IOServices.RemoveTrailingSlash(path))));
+            Assert.False(File.Exists(IOServices.RemoveTrailingSlash(IOServices.AddTrailingSlashIfNeeded(path))));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS)]  // Uses P/Invokes
         public void FalseForNonRegularFile()
         {
             string fileName = GetTestFilePath();
             Assert.Equal(0, mkfifo(fileName, 0));
             Assert.True(File.Exists(fileName));
         }
-
-        #endregion
     }
 }

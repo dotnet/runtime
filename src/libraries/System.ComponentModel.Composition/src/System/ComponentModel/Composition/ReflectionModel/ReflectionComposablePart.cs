@@ -335,7 +335,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return arguments;
         }
 
-        // alwayc called under a lock
+        // always called under a lock
         private bool RequiresActivation()
         {
             // If we have any imports then we need activation
@@ -566,10 +566,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
 
             int exportIndex = reflectionExport.GetIndex();
-            if (_exportsCache == null)
-            {
-                _exportsCache = new Dictionary<int, ExportingMember>();
-            }
+            _exportsCache ??= new Dictionary<int, ExportingMember>();
             if (!_exportsCache.TryGetValue(exportIndex, out ExportingMember? result))
             {
                 result = GetExportingMember(definition);

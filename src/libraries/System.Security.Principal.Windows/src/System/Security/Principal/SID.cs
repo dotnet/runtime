@@ -314,11 +314,7 @@ namespace System.Security.Principal
 
         [MemberNotNull(nameof(_binaryForm))]
         [MemberNotNull(nameof(_subAuthorities))]
-#if NETSTANDARD2_0
-        private void CreateFromParts(IdentifierAuthority identifierAuthority, int[] subAuthorities)
-#else
         private void CreateFromParts(IdentifierAuthority identifierAuthority, ReadOnlySpan<int> subAuthorities)
-#endif
         {
             //
             // Check the number of subauthorities passed in
@@ -350,11 +346,7 @@ namespace System.Security.Principal
             //
 
             _identifierAuthority = identifierAuthority;
-#if NETSTANDARD2_0
-            _subAuthorities = (int[])subAuthorities.Clone();
-#else
             _subAuthorities = subAuthorities.ToArray();
-#endif
 
             //
             // Compute and store the binary form
@@ -402,23 +394,13 @@ namespace System.Security.Principal
         [MemberNotNull(nameof(_subAuthorities))]
         private void CreateFromBinaryForm(byte[] binaryForm, int offset)
         {
-            //
-            // Give us something to work with
-            //
-
-            if (binaryForm == null)
-            {
-                throw new ArgumentNullException(nameof(binaryForm));
-            }
+            ArgumentNullException.ThrowIfNull(binaryForm);
 
             //
             // Negative offsets are not allowed
             //
 
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset), offset, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
 
             //
             // At least a minimum-size SID should fit in the buffer
@@ -462,12 +444,7 @@ namespace System.Security.Principal
                 throw new ArgumentException(SR.ArgumentOutOfRange_ArrayTooSmall, nameof(binaryForm));
             }
 
-#if NETSTANDARD2_0
-            int[] subAuthorities = new int[subAuthoritiesLength];
-#else
             Span<int> subAuthorities = stackalloc int[MaxSubAuthorities];
-#endif
-
             IdentifierAuthority authority = (IdentifierAuthority)(
                 (((long)binaryForm[offset + 2]) << 40) +
                 (((long)binaryForm[offset + 3]) << 32) +
@@ -494,11 +471,7 @@ namespace System.Security.Principal
 
             CreateFromParts(
                 authority,
-#if NETSTANDARD2_0
-                subAuthorities
-#else
                 subAuthorities.Slice(0, subAuthoritiesLength)
-#endif
             );
 
             return;
@@ -514,14 +487,7 @@ namespace System.Security.Principal
 
         public SecurityIdentifier(string sddlForm)
         {
-            //
-            // Give us something to work with
-            //
-
-            if (sddlForm == null)
-            {
-                throw new ArgumentNullException(nameof(sddlForm));
-            }
+            ArgumentNullException.ThrowIfNull(sddlForm);
 
             //
             // Call into the underlying O/S conversion routine
@@ -552,10 +518,8 @@ namespace System.Security.Principal
 
         public SecurityIdentifier(byte[] binaryForm, int offset)
         {
-            if (binaryForm is null)
-            {
-                throw new ArgumentNullException(nameof(binaryForm));
-            }
+            ArgumentNullException.ThrowIfNull(binaryForm);
+
             CreateFromBinaryForm(binaryForm, offset);
         }
 
@@ -645,7 +609,7 @@ namespace System.Security.Principal
             if (error == Interop.Errors.ERROR_INVALID_PARAMETER)
             {
 #pragma warning disable CA2208 // Instantiate argument exceptions correctly, combination of arguments used
-                throw new ArgumentException(new Win32Exception(error).Message, "sidType/domainSid");
+                throw new ArgumentException(Marshal.GetPInvokeErrorMessage(error), "sidType/domainSid");
 #pragma warning restore CS2208
             }
             else if (error != Interop.Errors.ERROR_SUCCESS)
@@ -657,11 +621,7 @@ namespace System.Security.Principal
             CreateFromBinaryForm(resultSid!, 0);
         }
 
-#if NETSTANDARD2_0
-        internal SecurityIdentifier(IdentifierAuthority identifierAuthority, int[] subAuthorities)
-#else
         internal SecurityIdentifier(IdentifierAuthority identifierAuthority, ReadOnlySpan<int> subAuthorities)
-#endif
         {
             CreateFromParts(identifierAuthority, subAuthorities);
         }
@@ -748,15 +708,6 @@ namespace System.Security.Principal
                 // otherwise you would see this: "S-1-NTAuthority-32-544"
                 //
 
-#if NETSTANDARD2_0
-                StringBuilder result = new StringBuilder();
-                result.Append("S-1-").Append((ulong)_identifierAuthority);
-                for (int i = 0; i < SubAuthorityCount; i++)
-                {
-                    result.Append('-').Append((uint)(_subAuthorities[i]));
-                }
-                _sddlForm = result.ToString();
-#else
                 // length of buffer calculation
                 // prefix = "S-1-".Length: 4;
                 // authority: ulong.MaxValue.ToString("D") : 20;
@@ -779,7 +730,6 @@ namespace System.Security.Principal
                     length += written;
                 }
                 _sddlForm = result.Slice(0, length).ToString();
-#endif
             }
 
             return _sddlForm;
@@ -855,10 +805,7 @@ namespace System.Security.Principal
 
         public override IdentityReference Translate(Type targetType)
         {
-            if (targetType == null)
-            {
-                throw new ArgumentNullException(nameof(targetType));
-            }
+            ArgumentNullException.ThrowIfNull(targetType);
 
             if (targetType == typeof(SecurityIdentifier))
             {
@@ -914,10 +861,7 @@ namespace System.Security.Principal
 
         public int CompareTo(SecurityIdentifier? sid)
         {
-            if (sid == null)
-            {
-                throw new ArgumentNullException(nameof(sid));
-            }
+            ArgumentNullException.ThrowIfNull(sid);
 
             if (this.IdentifierAuthority < sid.IdentifierAuthority)
             {
@@ -991,12 +935,9 @@ namespace System.Security.Principal
         }
 
 
-        private static IdentityReferenceCollection TranslateToNTAccounts(IdentityReferenceCollection sourceSids, out bool someFailed)
+        private static unsafe IdentityReferenceCollection TranslateToNTAccounts(IdentityReferenceCollection sourceSids, out bool someFailed)
         {
-            if (sourceSids == null)
-            {
-                throw new ArgumentNullException(nameof(sourceSids));
-            }
+            ArgumentNullException.ThrowIfNull(sourceSids);
 
             if (sourceSids.Count == 0)
             {
@@ -1032,7 +973,7 @@ namespace System.Security.Principal
                 // Open LSA policy (for lookup requires it)
                 //
 
-                LsaHandle = Win32.LsaOpenPolicy(null, PolicyRights.POLICY_LOOKUP_NAMES);
+                LsaHandle = Win32.LsaOpenPolicy(null, Interop.Advapi32.PolicyRights.POLICY_LOOKUP_NAMES);
 
                 //
                 // Perform the actual lookup
@@ -1070,8 +1011,8 @@ namespace System.Security.Principal
                 }
 
 
-                NamesPtr.Initialize((uint)sourceSids.Count, (uint)Marshal.SizeOf<Interop.LSA_TRANSLATED_NAME>());
-                Win32.InitializeReferencedDomainsPointer(ReferencedDomainsPtr);
+                NamesPtr.Initialize((uint)sourceSids.Count, (uint)sizeof(Interop.LSA_TRANSLATED_NAME));
+                ReferencedDomainsPtr.InitializeReferencedDomainsList();
 
                 //
                 // Interpret the results and generate NTAccount objects
@@ -1090,8 +1031,8 @@ namespace System.Security.Principal
 
                     for (int i = 0; i < rdl.Entries; i++)
                     {
-                        Interop.LSA_TRUST_INFORMATION ti = (Interop.LSA_TRUST_INFORMATION)Marshal.PtrToStructure<Interop.LSA_TRUST_INFORMATION>(new IntPtr((long)rdl.Domains + i * Marshal.SizeOf<Interop.LSA_TRUST_INFORMATION>()));
-                        ReferencedDomains[i] = Marshal.PtrToStringUni(ti.Name.Buffer, ti.Name.Length / sizeof(char));
+                        Interop.LSA_TRUST_INFORMATION* ti = (Interop.LSA_TRUST_INFORMATION*)rdl.Domains + i;
+                        ReferencedDomains[i] = Marshal.PtrToStringUni(ti->Name.Buffer, ti->Name.Length / sizeof(char));
                     }
 
                     Interop.LSA_TRANSLATED_NAME[] translatedNames = new Interop.LSA_TRANSLATED_NAME[sourceSids.Count];
@@ -1172,10 +1113,7 @@ namespace System.Security.Principal
 
         internal static IdentityReferenceCollection Translate(IdentityReferenceCollection sourceSids, Type targetType, out bool someFailed)
         {
-            if (sourceSids == null)
-            {
-                throw new ArgumentNullException(nameof(sourceSids));
-            }
+            ArgumentNullException.ThrowIfNull(sourceSids);
 
             if (targetType == typeof(NTAccount))
             {

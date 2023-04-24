@@ -308,7 +308,8 @@ public:
         {
             ReservationList *pNext = pList->pNext;
 
-            pList->GetStub()->DecRef();
+            ExecutableWriterHolder<Stub> stubWriterHolder(pList->GetStub(), sizeof(Stub));
+            stubWriterHolder.GetRW()->DecRef();
 
             pList = pNext;
         }
@@ -320,7 +321,8 @@ public:
 
         ReservationList *pList = ReservationList::FromStub(pStub);
 
-        pList->pNext = m_pList;
+        ExecutableWriterHolder<ReservationList> listWriterHolder(pList, sizeof(ReservationList));
+        listWriterHolder.GetRW()->pNext = m_pList;
         m_pList = pList;
     }
 };
@@ -349,6 +351,7 @@ StubLinker::StubLinker()
     m_pFirstCodeLabel   = NULL;
     m_pFirstLabelRef    = NULL;
     m_pPatchLabel       = NULL;
+    m_pTargetMethod     = NULL;
     m_stackSize         = 0;
     m_fDataOnly         = FALSE;
 #ifdef TARGET_ARM
@@ -676,7 +679,20 @@ CodeLabel* StubLinker::NewExternalCodeLabel(LPVOID pExternalAddress)
     return pCodeLabel;
 }
 
-
+//---------------------------------------------------------------
+// Set the target method for Instantiating stubs.
+//---------------------------------------------------------------
+void StubLinker::SetTargetMethod(PTR_MethodDesc pMD)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(pMD != NULL);
+    }
+    CONTRACTL_END;
+    m_pTargetMethod = pMD;
+}
 
 
 //---------------------------------------------------------------
@@ -815,56 +831,6 @@ static BOOL LabelCanReach(LabelRef *pLabelRef)
 //
 // Throws COM+ exception on failure.
 //---------------------------------------------------------------
-Stub *StubLinker::LinkInterceptor(LoaderHeap *pHeap, Stub* interceptee, void *pRealAddr)
-{
-    STANDARD_VM_CONTRACT;
-
-    int globalsize = 0;
-    int size = CalculateSize(&globalsize);
-
-    _ASSERTE(!pHeap || pHeap->IsExecutable());
-
-    StubHolder<Stub> pStub;
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    StubUnwindInfoSegmentBoundaryReservationList ReservedStubs;
-
-    for (;;)
-#endif
-    {
-        pStub = InterceptStub::NewInterceptedStub(pHeap, size, interceptee,
-                                                    pRealAddr
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-                                                    , UnwindInfoSize(globalsize)
-#endif
-                                                    );
-        bool fSuccess; fSuccess = EmitStub(pStub, globalsize, pHeap);
-
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-        if (fSuccess)
-        {
-            break;
-        }
-        else
-        {
-            ReservedStubs.AddStub(pStub);
-            pStub.SuppressRelease();
-        }
-#else
-        CONSISTENCY_CHECK_MSG(fSuccess, ("EmitStub should always return true"));
-#endif
-    }
-
-    return pStub.Extract();
-}
-
-//---------------------------------------------------------------
-// Generate the actual stub. The returned stub has a refcount of 1.
-// No other methods (other than the destructor) should be called
-// after calling Link().
-//
-// Throws COM+ exception on failure.
-//---------------------------------------------------------------
 Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags)
 {
     STANDARD_VM_CONTRACT;
@@ -872,9 +838,7 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags)
     int globalsize = 0;
     int size = CalculateSize(&globalsize);
 
-#ifndef CROSSGEN_COMPILE
     _ASSERTE(!pHeap || pHeap->IsExecutable());
-#endif
 
     StubHolder<Stub> pStub;
 
@@ -894,7 +858,7 @@ Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags)
                 );
         ASSERT(pStub != NULL);
 
-        bool fSuccess; fSuccess = EmitStub(pStub, globalsize, pHeap);
+        bool fSuccess = EmitStub(pStub, globalsize, size, pHeap);
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
         if (fSuccess)
@@ -925,7 +889,7 @@ int StubLinker::CalculateSize(int* pGlobalSize)
 
     _ASSERTE(pGlobalSize);
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
     if (m_pUnwindInfoCheckLabel)
     {
         EmitLabel(m_pUnwindInfoCheckLabel);
@@ -1055,12 +1019,17 @@ int StubLinker::CalculateSize(int* pGlobalSize)
     return globalsize + datasize;
 }
 
-bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
+bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap* pHeap)
 {
     STANDARD_VM_CONTRACT;
 
     BYTE *pCode = (BYTE*)(pStub->GetBlob());
-    BYTE *pData = pCode+globalsize; // start of data area
+
+    ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub) + totalSize);
+    Stub *pStubRW = stubWriterHolder.GetRW();
+
+    BYTE *pCodeRW = (BYTE*)(pStubRW->GetBlob());
+    BYTE *pDataRW = pCodeRW+globalsize; // start of data area
     {
         int lastCodeOffset = 0;
 
@@ -1070,7 +1039,7 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
 
             switch (pCodeElem->m_type) {
                 case CodeElement::kCodeRun:
-                    CopyMemory(pCode + pCodeElem->m_globaloffset,
+                    CopyMemory(pCodeRW + pCodeElem->m_globaloffset,
                                ((CodeRun*)pCodeElem)->m_codebytes,
                                ((CodeRun*)pCodeElem)->m_numcodebytes);
                     currOffset = pCodeElem->m_globaloffset + ((CodeRun *)pCodeElem)->m_numcodebytes;
@@ -1102,8 +1071,9 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
                         pLabelRef->m_refsize,
                         fixupval,
                         pCode + pCodeElem->m_globaloffset,
+                        pCodeRW + pCodeElem->m_globaloffset,
                         pLabelRef->m_variationCode,
-                        pData + pCodeElem->m_dataoffset);
+                        pDataRW + pCodeElem->m_dataoffset);
 
                     currOffset =
                         pCodeElem->m_globaloffset +
@@ -1120,18 +1090,30 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
 
         // Fill in zeros at the end, if necessary
         if (lastCodeOffset < globalsize)
-            ZeroMemory(pCode + lastCodeOffset, globalsize - lastCodeOffset);
+            ZeroMemory(pCodeRW + lastCodeOffset, globalsize - lastCodeOffset);
     }
 
-    // Fill in patch offset, if we have one
-    // Note that these offsets are relative to the start of the stub,
-    // not the code, so you'll have to add sizeof(Stub) to get to the
-    // right spot.
-    if (m_pPatchLabel != NULL)
+    // Set additional stub data.
+    // - Fill in the target method for the Instantiating stub.
+    //
+    // - Fill in patch offset, if we have one
+    //      Note that these offsets are relative to the start of the stub,
+    //      not the code, so you'll have to add sizeof(Stub) to get to the
+    //      right spot.
+    if (pStubRW->IsInstantiatingStub())
+    {
+        _ASSERTE(m_pTargetMethod != NULL);
+        _ASSERTE(m_pPatchLabel == NULL);
+        pStubRW->SetInstantiatedMethodDesc(m_pTargetMethod);
+
+        LOG((LF_CORDB, LL_INFO100, "SL::ES: InstantiatedMethod fd:0x%x\n",
+            pStub->GetInstantiatedMethodDesc()));
+    }
+    else if (m_pPatchLabel != NULL)
     {
         UINT32 uLabelOffset = GetLabelOffset(m_pPatchLabel);
         _ASSERTE(FitsIn<USHORT>(uLabelOffset));
-        pStub->SetPatchOffset(static_cast<USHORT>(uLabelOffset));
+        pStubRW->SetPatchOffset(static_cast<USHORT>(uLabelOffset));
 
         LOG((LF_CORDB, LL_INFO100, "SL::ES: patch offset:0x%x\n",
             pStub->GetPatchOffset()));
@@ -1140,7 +1122,7 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
     if (pStub->HasUnwindInfo())
     {
-        if (!EmitUnwindInfo(pStub, globalsize, pHeap))
+        if (!EmitUnwindInfo(pStub, pStubRW, globalsize, pHeap))
             return false;
     }
 #endif // STUBLINKER_GENERATES_UNWIND_INFO
@@ -1161,21 +1143,21 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap)
 
 // See RtlVirtualUnwind in base\ntos\rtl\amd64\exdsptch.c
 
-static_assert_no_msg(kRAX == (FIELD_OFFSET(CONTEXT, Rax) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRCX == (FIELD_OFFSET(CONTEXT, Rcx) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRDX == (FIELD_OFFSET(CONTEXT, Rdx) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRBX == (FIELD_OFFSET(CONTEXT, Rbx) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRBP == (FIELD_OFFSET(CONTEXT, Rbp) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRSI == (FIELD_OFFSET(CONTEXT, Rsi) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRDI == (FIELD_OFFSET(CONTEXT, Rdi) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR8  == (FIELD_OFFSET(CONTEXT, R8 ) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR9  == (FIELD_OFFSET(CONTEXT, R9 ) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR10 == (FIELD_OFFSET(CONTEXT, R10) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR11 == (FIELD_OFFSET(CONTEXT, R11) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR12 == (FIELD_OFFSET(CONTEXT, R12) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR13 == (FIELD_OFFSET(CONTEXT, R13) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR14 == (FIELD_OFFSET(CONTEXT, R14) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR15 == (FIELD_OFFSET(CONTEXT, R15) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRAX == (offsetof(CONTEXT, Rax) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRCX == (offsetof(CONTEXT, Rcx) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRDX == (offsetof(CONTEXT, Rdx) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRBX == (offsetof(CONTEXT, Rbx) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRBP == (offsetof(CONTEXT, Rbp) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRSI == (offsetof(CONTEXT, Rsi) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRDI == (offsetof(CONTEXT, Rdi) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR8  == (offsetof(CONTEXT, R8 ) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR9  == (offsetof(CONTEXT, R9 ) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR10 == (offsetof(CONTEXT, R10) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR11 == (offsetof(CONTEXT, R11) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR12 == (offsetof(CONTEXT, R12) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR13 == (offsetof(CONTEXT, R13) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR14 == (offsetof(CONTEXT, R14) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR15 == (offsetof(CONTEXT, R15) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
 
 VOID StubLinker::UnwindSavedReg (UCHAR reg, ULONG SPRelativeOffset)
 {
@@ -1231,11 +1213,11 @@ VOID StubLinker::UnwindAllocStack (SHORT FrameSizeIncrement)
     else
     {
         USHORT FrameOffset = (USHORT)FrameSizeIncrement;
-        BOOL fNeedExtraSlot = ((ULONG)FrameOffset != (ULONG)FrameSizeIncrement);
+        bool fNeedExtraSlot = ((ULONG)FrameOffset != (ULONG)FrameSizeIncrement);
 
-        UNWIND_CODE *pUnwindCode = AllocUnwindInfo(UWOP_ALLOC_LARGE, fNeedExtraSlot);
+        UNWIND_CODE *pUnwindCode = AllocUnwindInfo(UWOP_ALLOC_LARGE, fNeedExtraSlot ? 1 : 0);
 
-        pUnwindCode->OpInfo = fNeedExtraSlot;
+        pUnwindCode->OpInfo = fNeedExtraSlot ? 1 : 0;
 
         pUnwindCode[1].FrameOffset = FrameOffset;
 
@@ -1316,11 +1298,11 @@ bool FindBlockCallback (PTR_VOID pvArgs, PTR_VOID pvAllocationBase, SIZE_T cbRes
     return false;
 }
 
-bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
+bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, LoaderHeap* pHeap)
 {
     STANDARD_VM_CONTRACT;
 
-    BYTE *pCode = (BYTE*)(pStub->GetEntryPoint());
+    BYTE *pCode = (BYTE*)(pStubRX->GetEntryPoint());
 
     //
     // Determine the lower bound of the address space containing the stub.
@@ -1357,7 +1339,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
     // make that INT32_MAX.
     //
 
-    StubUnwindInfoHeader *pHeader = pStub->GetUnwindInfoHeader();
+    StubUnwindInfoHeader *pHeader = pStubRW->GetUnwindInfoHeader();
     _ASSERTE(IS_ALIGNED(pHeader, sizeof(void*)));
 
     BYTE *pbBaseAddress = pbRegionBaseAddress;
@@ -1384,23 +1366,23 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
     // Ensure that the first RUNTIME_FUNCTION struct ends up pointer aligned,
     // so that the StubUnwindInfoHeader struct is aligned.  UNWIND_INFO
     // includes one UNWIND_CODE.
-    _ASSERTE(IS_ALIGNED(pStub, sizeof(void*)));
-    _ASSERTE(0 == (FIELD_OFFSET(StubUnwindInfoHeader, FunctionEntry) % sizeof(void*)));
+    _ASSERTE(IS_ALIGNED(pStubRX, sizeof(void*)));
+    _ASSERTE(0 == (offsetof(StubUnwindInfoHeader, FunctionEntry) % sizeof(void*)));
 
-    StubUnwindInfoHeader * pUnwindInfoHeader = pStub->GetUnwindInfoHeader();
+    StubUnwindInfoHeader * pUnwindInfoHeader = pStubRW->GetUnwindInfoHeader();
 
 #ifdef TARGET_AMD64
 
     UNWIND_CODE *pDestUnwindCode = &pUnwindInfoHeader->UnwindInfo.UnwindCode[0];
 #ifdef _DEBUG
-    UNWIND_CODE *pDestUnwindCodeLimit = (UNWIND_CODE*)pStub->GetUnwindInfoHeaderSuffix();
+    UNWIND_CODE *pDestUnwindCodeLimit = (UNWIND_CODE*)pStubRW->GetUnwindInfoHeaderSuffix();
 #endif
 
     UINT FrameRegister = 0;
 
     //
     // Resolve the unwind operation offsets, and fill in the UNWIND_INFO and
-    // RUNTIME_FUNCTION structs preceeding the stub.  The unwind codes are recorded
+    // RUNTIME_FUNCTION structs preceding the stub.  The unwind codes are recorded
     // in decreasing address order.
     //
 
@@ -1580,7 +1562,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
     // size is 16bits when actually the opcode generated by
     // ThumbEmitPop & ThumbEMitPush will be 32bits.
     // Currently no stubs has m_cCalleeSavedRegs as 0
-    // therfore just adding the assert.
+    // therefore just adding the assert.
     _ASSERTE(m_cCalleeSavedRegs > 0);
 
     if (m_cCalleeSavedRegs <= 4)
@@ -1700,7 +1682,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
 
 
         // Emitting the unwind codes:
-        // The unwind codes are emited in Epilog order.
+        // The unwind codes are emitted in Epilog order.
         //
         // 6. Integer argument registers
         // Although we might be saving the argument registers in the prolog we don't need
@@ -1909,12 +1891,18 @@ UINT StubLinker::GetStackFrameSize()
     return m_cbStackSpace + (2 + m_cCalleeSavedRegs + m_cIntRegArgs + m_cVecRegArgs)*sizeof(void*);
 }
 
-
 #endif // ifdef TARGET_ARM, elif defined(TARGET_ARM64)
 
 #endif // #ifndef DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
+
+// Redeclaring the Stub type here and assert its size.
+// The size assertion is done here because of where CODE_SIZE_ALIGN
+// is defined - it is not included in all places where stublink.h
+// is consumed.
+class Stub;
+static_assert_no_msg((sizeof(Stub) % CODE_SIZE_ALIGN) == 0);
 
 //-------------------------------------------------------------------
 // Inc the refcount.
@@ -1929,7 +1917,7 @@ VOID Stub::IncRef()
     CONTRACTL_END;
 
     _ASSERTE(m_signature == kUsedStub);
-    FastInterlockIncrement((LONG*)&m_refcount);
+    InterlockedIncrement((LONG*)&m_refcount);
 }
 
 //-------------------------------------------------------------------
@@ -1945,13 +1933,8 @@ BOOL Stub::DecRef()
     CONTRACTL_END;
 
     _ASSERTE(m_signature == kUsedStub);
-    int count = FastInterlockDecrement((LONG*)&m_refcount);
+    int count = InterlockedDecrement((LONG*)&m_refcount);
     if (count <= 0) {
-        if(m_patchOffset & INTERCEPT_BIT)
-        {
-            ((InterceptStub*)this)->ReleaseInterceptedStub();
-        }
-
         DeleteStub();
         return TRUE;
     }
@@ -2050,21 +2033,14 @@ VOID Stub::DeleteStub()
     }
 #endif
 
-    // a size of 0 is a signal to Nirvana to flush the entire cache
-    //FlushInstructionCache(GetCurrentProcess(),0,0);
-
-    if ((m_patchOffset & LOADER_HEAP_BIT) == 0)
+    if ((m_numCodeBytesAndFlags & LOADER_HEAP_BIT) == 0)
     {
 #ifdef _DEBUG
         m_signature = kFreedStub;
-        FillMemory(this+1, m_numCodeBytes, 0xcc);
+        FillMemory(this+1, GetNumCodeBytes(), 0xcc);
 #endif
 
-#ifndef TARGET_UNIX
-        DeleteExecutable((BYTE*)GetAllocationBase());
-#else
         delete [] (BYTE*)GetAllocationBase();
-#endif
     }
 }
 
@@ -2081,11 +2057,6 @@ TADDR Stub::GetAllocationBase()
     TADDR info = dac_cast<TADDR>(this);
     SIZE_T cbPrefix = 0;
 
-    if (IsIntercept())
-    {
-        cbPrefix += 2 * sizeof(TADDR);
-    }
-
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
     if (HasUnwindInfo())
     {
@@ -2093,7 +2064,7 @@ TADDR Stub::GetAllocationBase()
             PTR_StubUnwindInfoHeaderSuffix(info - cbPrefix -
                                            sizeof(*pSuffix));
 
-        cbPrefix += StubUnwindInfoHeader::ComputeSize(pSuffix->nUnwindInfoSize);
+        cbPrefix += StubUnwindInfoHeader::ComputeAlignedSize(pSuffix->nUnwindInfoSize);
     }
 #endif // STUBLINKER_GENERATES_UNWIND_INFO
 
@@ -2115,8 +2086,10 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     CONTRACTL_END;
 
     Stub* pStub = NewStub(NULL, 0, flags | NEWSTUB_FL_EXTERNAL);
-    _ASSERTE(pStub->HasExternalEntryPoint());
 
+    // Passing NEWSTUB_FL_EXTERNAL requests the stub struct be
+    // expanded in size by a single pointer. Insert the code point at this
+    // location.
     *(PTR_VOID *)(pStub + 1) = pCode;
 
     return pStub;
@@ -2141,26 +2114,30 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     }
     CONTRACTL_END;
 
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-    _ASSERTE(!nUnwindInfoSize || !pHeap || pHeap->m_fPermitStubsWithUnwindInfo);
-#endif // STUBLINKER_GENERATES_UNWIND_INFO
-
+    // The memory layout of the allocated memory for the Stub instance is as follows:
+    //  Offset:
+    //  - 0
+    //      optional: unwind info - see nUnwindInfoSize usage.
+    //  - stubPayloadOffset
+    //      Stub instance
+    //      optional: external pointer | padding + code
+    size_t stubPayloadOffset = 0;
     S_SIZE_T size = S_SIZE_T(sizeof(Stub));
 
-    if (flags & NEWSTUB_FL_INTERCEPT)
-    {
-        size += sizeof(Stub *) + sizeof(void*);
-    }
-
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
+    _ASSERTE(!nUnwindInfoSize || !pHeap || pHeap->m_fPermitStubsWithUnwindInfo);
+
     if (nUnwindInfoSize != 0)
     {
-        size += StubUnwindInfoHeader::ComputeSize(nUnwindInfoSize);
+        // The Unwind info precedes the Stub itself.
+        stubPayloadOffset = StubUnwindInfoHeader::ComputeAlignedSize(nUnwindInfoSize);
+        size += stubPayloadOffset;
     }
-#endif
+#endif // STUBLINKER_GENERATES_UNWIND_INFO
 
     if (flags & NEWSTUB_FL_EXTERNAL)
     {
+        _ASSERTE(pHeap == NULL);
         _ASSERTE(numCodeBytes == 0);
         size += sizeof(PTR_PCODE);
     }
@@ -2178,23 +2155,30 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     BYTE *pBlock;
     if (pHeap == NULL)
     {
-#ifndef TARGET_UNIX
-        pBlock = new (executable) BYTE[totalSize];
-#else
         pBlock = new BYTE[totalSize];
-#endif
     }
     else
     {
-        pBlock = (BYTE*)(void*) pHeap->AllocAlignedMem(totalSize, CODE_SIZE_ALIGN);
+        TaggedMemAllocPtr ptr = pHeap->AllocAlignedMem(totalSize, CODE_SIZE_ALIGN);
+        pBlock = (BYTE*)(void*)ptr;
         flags |= NEWSTUB_FL_LOADERHEAP;
     }
 
-    // Make sure that the payload of the stub is aligned
-    Stub* pStub = (Stub*)((pBlock + totalSize) -
-        (sizeof(Stub) + ((flags & NEWSTUB_FL_EXTERNAL) ? sizeof(PTR_PCODE) : numCodeBytes)));
+    _ASSERTE((stubPayloadOffset % CODE_SIZE_ALIGN) == 0);
+    Stub* pStubRX = (Stub*)(pBlock + stubPayloadOffset);
+    Stub* pStubRW;
+    ExecutableWriterHolderNoLog<Stub> stubWriterHolder;
 
-    pStub->SetupStub(
+    if (pHeap == NULL)
+    {
+        pStubRW = pStubRX;
+    }
+    else
+    {
+        stubWriterHolder.AssignExecutableWriterHolder(pStubRX, sizeof(Stub));
+        pStubRW = stubWriterHolder.GetRW();
+    }
+    pStubRW->SetupStub(
             numCodeBytes,
             flags
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
@@ -2202,9 +2186,9 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
 #endif
             );
 
-    _ASSERTE((BYTE *)pStub->GetAllocationBase() == pBlock);
+    _ASSERTE((BYTE *)pStubRX->GetAllocationBase() == pBlock);
 
-    return pStub;
+    return pStubRX;
 }
 
 void Stub::SetupStub(int numCodeBytes, DWORD flags
@@ -2215,37 +2199,44 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
 #ifdef _DEBUG
     m_signature = kUsedStub;
-#else
 #ifdef HOST_64BIT
-    m_pad_code_bytes = 0;
+    m_pad_code_bytes1 = 0;
+    m_pad_code_bytes2 = 0;
+    m_pad_code_bytes3 = 0;
 #endif
 #endif
 
-    m_numCodeBytes = numCodeBytes;
+    if (((DWORD)numCodeBytes) >= MAX_CODEBYTES)
+        COMPlusThrowHR(COR_E_OVERFLOW);
+
+    m_numCodeBytesAndFlags = numCodeBytes;
 
     m_refcount = 1;
-    m_patchOffset = 0;
+    m_data = {};
 
-    if((flags & NEWSTUB_FL_INTERCEPT) != 0)
-        m_patchOffset |= INTERCEPT_BIT;
-    if((flags & NEWSTUB_FL_LOADERHEAP) != 0)
-        m_patchOffset |= LOADER_HEAP_BIT;
-    if((flags & NEWSTUB_FL_MULTICAST) != 0)
-        m_patchOffset |= MULTICAST_DELEGATE_BIT;
-    if ((flags & NEWSTUB_FL_EXTERNAL) != 0)
-        m_patchOffset |= EXTERNAL_ENTRY_BIT;
+    if (flags != NEWSTUB_FL_NONE)
+    {
+        if((flags & NEWSTUB_FL_LOADERHEAP) != 0)
+            m_numCodeBytesAndFlags |= LOADER_HEAP_BIT;
+        if((flags & NEWSTUB_FL_MULTICAST) != 0)
+            m_numCodeBytesAndFlags |= MULTICAST_DELEGATE_BIT;
+        if ((flags & NEWSTUB_FL_EXTERNAL) != 0)
+            m_numCodeBytesAndFlags |= EXTERNAL_ENTRY_BIT;
+        if ((flags & NEWSTUB_FL_INSTANTIATING_METHOD) != 0)
+            m_numCodeBytesAndFlags |= INSTANTIATING_STUB_BIT;
+    }
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
     if (nUnwindInfoSize)
     {
-        m_patchOffset |= UNWIND_INFO_BIT;
+        m_numCodeBytesAndFlags |= UNWIND_INFO_BIT;
 
         StubUnwindInfoHeaderSuffix * pSuffix = GetUnwindInfoHeaderSuffix();
         pSuffix->nUnwindInfoSize = (BYTE)nUnwindInfoSize;
@@ -2271,84 +2262,6 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO
     g_StubUnwindInfoHeapSegmentsCrst.Init(CrstStubUnwindInfoHeapSegments);
 #endif
-}
-
-/*static*/ Stub* InterceptStub::NewInterceptedStub(void* pCode,
-                                            Stub* interceptee,
-                                            void* pRealAddr)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    InterceptStub *pStub = (InterceptStub *) NewStub(pCode, NEWSTUB_FL_INTERCEPT);
-
-    *pStub->GetInterceptedStub() = interceptee;
-    *pStub->GetRealAddr() = (TADDR)pRealAddr;
-
-    LOG((LF_CORDB, LL_INFO10000, "For Stub 0x%x, set intercepted stub to 0x%x\n",
-        pStub, interceptee));
-
-    return pStub;
-}
-
-//-------------------------------------------------------------------
-// Stub allocation done here.
-//-------------------------------------------------------------------
-/*static*/ Stub* InterceptStub::NewInterceptedStub(LoaderHeap *pHeap,
-                                                   UINT numCodeBytes,
-                                                   Stub* interceptee,
-                                                   void* pRealAddr
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-                                                   , UINT nUnwindInfoSize
-#endif
-                                                   )
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    InterceptStub *pStub = (InterceptStub *) NewStub(
-            pHeap,
-            numCodeBytes,
-            NEWSTUB_FL_INTERCEPT
-#ifdef STUBLINKER_GENERATES_UNWIND_INFO
-            , nUnwindInfoSize
-#endif
-            );
-
-    *pStub->GetInterceptedStub() = interceptee;
-    *pStub->GetRealAddr() = (TADDR)pRealAddr;
-
-    LOG((LF_CORDB, LL_INFO10000, "For Stub 0x%x, set intercepted stub to 0x%x\n",
-        pStub, interceptee));
-
-    return pStub;
-}
-
-//-------------------------------------------------------------------
-// Release the stub that is owned by this stub
-//-------------------------------------------------------------------
-void InterceptStub::ReleaseInterceptedStub()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    Stub** intercepted = GetInterceptedStub();
-    // If we own the stub then decrement it. It can be null if the
-    // linked stub is actually a jitted stub.
-    if(*intercepted)
-        (*intercepted)->DecRef();
 }
 
 //-------------------------------------------------------------------
@@ -2443,7 +2356,8 @@ Stub *ArgBasedStubCache::GetStub(UINT_PTR key)
         }
     }
     if (pStub) {
-        pStub->IncRef();
+        ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub));
+        stubWriterHolder.GetRW()->IncRef();
     }
     return pStub;
 }
@@ -2495,12 +2409,14 @@ Stub* ArgBasedStubCache::AttemptToSetStub(UINT_PTR key, Stub *pStub)
 
     CrstHolder ch(&m_crst);
 
+    bool incRefForCache = false;
+
     if (key < m_numFixedSlots) {
         if (m_aStub[key]) {
             pStub = m_aStub[key];
         } else {
             m_aStub[key] = pStub;
-            pStub->IncRef();   // IncRef on cache's behalf
+            incRefForCache = true;
         }
     } else {
         SlotEntry *pSlotEntry;
@@ -2516,14 +2432,19 @@ Stub* ArgBasedStubCache::AttemptToSetStub(UINT_PTR key, Stub *pStub)
         if (!pSlotEntry) {
             pSlotEntry = new SlotEntry;
             pSlotEntry->m_pStub = pStub;
-            pStub->IncRef();   // IncRef on cache's behalf
+            incRefForCache = true;
             pSlotEntry->m_key = key;
             pSlotEntry->m_pNext = m_pSlotEntries;
             m_pSlotEntries = pSlotEntry;
         }
     }
     if (pStub) {
-        pStub->IncRef();  // IncRef because we're returning it to caller
+        ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub));
+        if (incRefForCache)
+        {
+            stubWriterHolder.GetRW()->IncRef();   // IncRef on cache's behalf
+        }
+        stubWriterHolder.GetRW()->IncRef();  // IncRef because we're returning it to caller
     }
     return pStub;
 }
@@ -2543,15 +2464,15 @@ VOID ArgBasedStubCache::Dump()
     CONTRACTL_END;
 
     printf("--------------------------------------------------------------\n");
-    printf("ArgBasedStubCache dump (%lu fixed entries):\n", m_numFixedSlots);
+    printf("ArgBasedStubCache dump (%u fixed entries):\n", m_numFixedSlots);
     for (UINT32 i = 0; i < m_numFixedSlots; i++) {
 
-        printf("  Fixed slot %lu: ", (ULONG)i);
+        printf("  Fixed slot %u: ", (ULONG)i);
         Stub *pStub = m_aStub[i];
         if (!pStub) {
             printf("empty\n");
         } else {
-            printf("%zxh   - refcount is %lu\n",
+            printf("%zxh   - refcount is %u\n",
                    (size_t)(pStub->GetEntryPoint()),
                    (ULONG)( *( ( ((ULONG*)(pStub->GetEntryPoint())) - 1))));
         }
@@ -2561,9 +2482,9 @@ VOID ArgBasedStubCache::Dump()
          pSlotEntry != NULL;
          pSlotEntry = pSlotEntry->m_pNext) {
 
-        printf("  Dyna. slot %lu: ", (ULONG)(pSlotEntry->m_key));
+        printf("  Dyna. slot %u: ", (ULONG)(pSlotEntry->m_key));
         Stub *pStub = pSlotEntry->m_pStub;
-        printf("%zxh   - refcount is %lu\n",
+        printf("%zxh   - refcount is %u\n",
                (size_t)(pStub->GetEntryPoint()),
                (ULONG)( *( ( ((ULONG*)(pStub->GetEntryPoint())) - 1))));
 

@@ -8,20 +8,21 @@
   .ver 4:0:0:0
 }
 .assembly compat_enum { }
-.namespace JitTest
+.assembly extern xunit.core {}
+.namespace JitTest_compat_enum
 {
   .class private auto ansi serializable sealed TestEnum extends [mscorlib]System.Enum
   {
     .field public specialname rtspecialname int32 value__
-    .field public static literal value class JitTest.TestEnum v = int32(0x00000000)
-    .field public static literal value class JitTest.TestEnum w = int32(0x00000001)
+    .field public static literal value class JitTest_compat_enum.TestEnum v = int32(0x00000000)
+    .field public static literal value class JitTest_compat_enum.TestEnum w = int32(0x00000001)
   }
-  .class private auto ansi beforefieldinit TestClass extends [mscorlib]System.Object
+  .class public auto ansi beforefieldinit TestClass extends [mscorlib]System.Object
   {
-    .method private hidebysig static value class JitTest.TestEnum callee() il managed
+    .method private hidebysig static value class JitTest_compat_enum.TestEnum callee() il managed
     {
 		.maxstack  8
-		.locals (value class JitTest.TestEnum V_0)
+		.locals (value class JitTest_compat_enum.TestEnum V_0)
 		ldc.i4.1
 		stloc.0
 		ldloc.0
@@ -31,18 +32,21 @@
     {
       // Code size       10 (0xa)
       .maxstack  8
-      tail. call       value class JitTest.TestEnum JitTest.TestClass::callee()
+      tail. call       value class JitTest_compat_enum.TestEnum JitTest_compat_enum.TestClass::callee()
       ret
     } // end of method TestClass::caller
 
-    .method private hidebysig static 
+    .method public hidebysig static 
             int32 Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       40 (0x28)
       .maxstack  2
       .locals (int32 V_0)
-      IL_0000:  call       int32 JitTest.TestClass::caller()
+      IL_0000:  call       int32 JitTest_compat_enum.TestClass::caller()
       IL_0005:  ldc.i4.1
       IL_0006:  bne.un.s   IL_0017
 
@@ -74,6 +78,6 @@
 
   } // end of class TestClass
 
-} // end of namespace JitTest
+} // end of namespace JitTest_compat_enum
 
 //*********** DISASSEMBLY COMPLETE ***********************

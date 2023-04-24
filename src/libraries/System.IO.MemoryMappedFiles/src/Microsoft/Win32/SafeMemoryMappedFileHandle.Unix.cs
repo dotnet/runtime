@@ -5,24 +5,16 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Threading;
 
 namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeMemoryMappedFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        /// <summary>Counter used to produce a unique handle value.</summary>
-        private static long s_counter;
+        /// <summary>File handle.</summary>
+        internal SafeFileHandle? _fileStreamHandle;
 
-        /// <summary>
-        /// The underlying FileStream.  May be null.  We hold onto the stream rather than just
-        /// onto the underlying handle to ensure that logic associated with disposing the stream
-        /// (e.g. deleting the file for DeleteOnClose) happens at the appropriate time.
-        /// </summary>
-        internal readonly FileStream? _fileStream;
-
-        /// <summary>Whether this SafeHandle owns the _fileStream and should Dispose it when disposed.</summary>
-        internal readonly bool _ownsFileStream;
+        /// <summary>Whether this instance owns the _fileStreamHandle and should Dispose it when disposed.</summary>
+        internal readonly bool _ownsFileHandle;
 
         /// <summary>The inheritability of the memory-mapped file.</summary>
         internal readonly HandleInheritability _inheritability;
@@ -37,44 +29,62 @@ namespace Microsoft.Win32.SafeHandles
         internal readonly long _capacity;
 
         /// <summary>Initializes the memory-mapped file handle.</summary>
-        /// <param name="fileStream">The underlying file stream; may be null.</param>
-        /// <param name="ownsFileStream">Whether this SafeHandle is responsible for Disposing the fileStream.</param>
+        /// <param name="fileHandle">The underlying file handle; may be null.</param>
+        /// <param name="ownsFileHandle">Whether this SafeHandle is responsible for Disposing the fileStream.</param>
         /// <param name="inheritability">The inheritability of the memory-mapped file.</param>
         /// <param name="access">The access for the memory-mapped file.</param>
         /// <param name="options">The options for the memory-mapped file.</param>
         /// <param name="capacity">The capacity of the memory-mapped file.</param>
         internal SafeMemoryMappedFileHandle(
-            FileStream? fileStream, bool ownsFileStream, HandleInheritability inheritability,
+            SafeFileHandle? fileHandle, bool ownsFileHandle, HandleInheritability inheritability,
             MemoryMappedFileAccess access, MemoryMappedFileOptions options,
             long capacity)
             : base(ownsHandle: true)
         {
-            Debug.Assert(!ownsFileStream || fileStream != null, "We can only own a FileStream we're actually given.");
+            Debug.Assert(!ownsFileHandle || fileHandle != null, "We can only own a FileStream we're actually given.");
 
             // Store the arguments.  We'll actually open the map when the view is created.
-            _fileStream = fileStream;
-            _ownsFileStream = ownsFileStream;
+            _ownsFileHandle = ownsFileHandle;
             _inheritability = inheritability;
             _access = access;
             _options = options;
             _capacity = capacity;
 
-            // Fake a unique int handle value > 0.
-            int nextHandleValue = (int)((Interlocked.Increment(ref s_counter) % (int.MaxValue - 1)) + 1);
-            SetHandle(new IntPtr(nextHandleValue));
-        }
+            IntPtr handlePtr;
 
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && _ownsFileStream)
+            if (fileHandle != null)
             {
-                // Clean up the file descriptor (either for a file on disk or a shared memory object) if we created it
-                _fileStream!.Dispose();
+                bool ignored = false;
+                fileHandle.DangerousAddRef(ref ignored);
+                _fileStreamHandle = fileHandle;
+                handlePtr = fileHandle.DangerousGetHandle();
             }
-            base.Dispose(disposing);
+            else
+            {
+                handlePtr = IntPtr.MaxValue;
+            }
+
+            SetHandle(handlePtr);
         }
 
-        protected override bool ReleaseHandle() => true; // Nothing to clean up.  We unlinked immediately after creating the backing store.
+        protected override bool ReleaseHandle()
+        {
+            if (_fileStreamHandle != null)
+            {
+                SetHandle((IntPtr) (-1));
+
+                if (_ownsFileHandle)
+                {
+                    // Clean up the file descriptor (either for a file on disk or a shared memory object) if we created it
+                    _fileStreamHandle.Dispose();
+                }
+
+                _fileStreamHandle.DangerousRelease();
+                _fileStreamHandle = null;
+            }
+
+            return true;
+        }
 
         public override bool IsInvalid => (long)handle <= 0;
     }

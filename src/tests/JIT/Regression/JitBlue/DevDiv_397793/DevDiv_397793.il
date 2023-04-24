@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly ILGEN_MODULE{}
+.assembly 'DevDiv_397793'{}
+.assembly extern xunit.core {}
 
 // This test originally failed compilation during CSE due to value numbers that were discarded during remorphing.
 // The arguments to and return value from `ILGEN_METHOD` are not meaningful; it is enough that this function
 // compiles successfully.
 
-.class ILGEN_CLASS
+.class public ILGEN_CLASS
 {
     .method static float32 ILGEN_METHOD(int16, char, char, native int)
     {
@@ -120,6 +121,9 @@
 
     .method public static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
 
         .try

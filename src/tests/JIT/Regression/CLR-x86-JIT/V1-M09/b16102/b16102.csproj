@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
+
+    <!-- The test is an empty Main method, so explicitly don't reference the generator
+         and run it as an executable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Set to 'Full' if the Debug? column is marked in the spreadsheet. Leave blank otherwise. -->

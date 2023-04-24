@@ -19,10 +19,6 @@ MONO_HWCAP_VAR(arm_has_thumb2)
 
 // Nothing here yet.
 
-#elif defined (TARGET_MIPS)
-
-// Nothing here yet.
-
 #elif defined (TARGET_POWERPC) || defined (TARGET_POWERPC64)
 
 MONO_HWCAP_VAR(ppc_has_icache_snoop)
@@ -61,13 +57,8 @@ MONO_HWCAP_VAR(s390x_has_gs)
 MONO_HWCAP_VAR(s390x_has_vef2)
 MONO_HWCAP_VAR(s390x_has_eif)
 
-#elif defined (TARGET_SPARC) || defined (TARGET_SPARC64)
-
-MONO_HWCAP_VAR(sparc_is_v9)
-
 #elif defined (TARGET_X86) || defined (TARGET_AMD64)
 
-MONO_HWCAP_VAR(x86_is_xen)
 MONO_HWCAP_VAR(x86_has_cmov)
 MONO_HWCAP_VAR(x86_has_fcmov)
 MONO_HWCAP_VAR(x86_has_sse1)
@@ -81,7 +72,9 @@ MONO_HWCAP_VAR(x86_has_lzcnt)
 MONO_HWCAP_VAR(x86_has_popcnt)
 MONO_HWCAP_VAR(x86_has_avx)
 
-gboolean
-mono_hwcap_x86_call_cpuidex (int id, int sub_id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx);
+#ifndef MONO_X86_CPUIDEX
+#define MONO_X86_CPUIDEX
+gboolean mono_hwcap_x86_call_cpuidex (int id, int sub_id, int *p_eax, int *p_ebx, int *p_ecx, int *p_edx);
+#endif
 
 #endif

@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_throw_SEH_cs
 {
     internal class Exception1 : Exception
     {
@@ -15,9 +16,10 @@ namespace JitTest
         override public String ToString() { return "Exception2"; }
     }
 
-    internal class Test
+    public class Test
     {
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             object excep = new Exception1();
 

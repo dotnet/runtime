@@ -3,10 +3,6 @@
 
 using System;
 
-using Internal.NativeFormat;
-
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem
 {
     public class UniversalCanonLayoutAlgorithm : FieldLayoutAlgorithm
@@ -32,6 +28,11 @@ namespace Internal.TypeSystem
                 Offsets = Array.Empty<FieldAndOffset>(),
                 LayoutAbiStable = true
             };
+        }
+
+        public override bool ComputeIsUnsafeValueType(DefType type)
+        {
+            throw new NotSupportedException();
         }
 
         public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind)

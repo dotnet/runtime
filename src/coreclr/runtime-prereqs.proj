@@ -1,0 +1,26 @@
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.Build.NoTargets" />
+  <PropertyGroup>
+    <NativeVersionFile Condition="$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    <NativeVersionFile Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <RuntimeVersionFile>$(ArtifactsObjDir)runtime_version.h</RuntimeVersionFile>
+    <NativeSourceLinkFile>$(ArtifactsObjDir)native.sourcelink.json</NativeSourceLinkFile>
+    <VerifySourceLinkFileExists>false</VerifySourceLinkFileExists>
+    <VerifySourceLinkFileExists Condition="'$(ContinuousIntegrationBuild)' == 'true' AND '$(EnableSourceControlManagerQueries)' == 'true'">true</VerifySourceLinkFileExists>
+    <AssemblyName>.NET Runtime</AssemblyName>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
+  <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
+
+  <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;GenerateNativeSourcelinkFile;OutputPgoPathForCI" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" />
+  <!--
+    This is relatively ugly. The NoTargets SDK sets DebugType=None, but that makes it such that the sourcelink targets
+    don't run, and we wouldn't generate the sourcelink file for native compilation. It would be better if we could call
+    the target directly and have it generate the file, but it's guarded by this property anyway...
+  -->
+  <PropertyGroup>
+    <DebugType>Portable</DebugType>
+  </PropertyGroup>
+</Project>

@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-public class Test
+public class Test_b79642
 {
     public byte m_value;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
-        Test a = new Test();
-        Test b = new Test();
+        Test_b79642 a = new Test_b79642();
+        Test_b79642 b = new Test_b79642();
 
         a.m_value = 255;
         b.m_value = 1;

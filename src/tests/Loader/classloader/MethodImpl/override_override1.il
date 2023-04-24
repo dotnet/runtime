@@ -2,18 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 // MyFoo is a normal reference type with virtual method DoFoo()
 // MyBar is a normal reference type that extends MyFoo.
 // MyBar::DoBar explicitly overrides MyFoo::DoFoo
 // MyBar::DoBarOverride explicitly overrides MyBar::DoBar
-// Expect TypeLoadException when loading MyBar because on override is being overriden.
+// Expect TypeLoadException when loading MyBar because on override is being overridden.
 
 .assembly extern mscorlib{}
 .assembly override_override1{}
 
 
 .class public auto ansi beforefieldinit MyFoo{
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -35,7 +36,7 @@
 .class public auto ansi beforefieldinit MyBar
        extends MyFoo
 {
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  DoBar()
   {
     .maxstack  1
@@ -52,7 +53,7 @@
   } // end of method MyBar::DoBar
 
 
-  .method public hidebysig newslot virtual 
+  .method public hidebysig newslot virtual
           instance int32  DoBarOverride()
   {
     // Code size       16 (0x10)
@@ -70,7 +71,7 @@
   }
 
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)
@@ -96,8 +97,11 @@
     ret
   }
 
-  .method public hidebysig static int32  Main(string[] args) cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       43 (0x2b)
     .maxstack  2
@@ -115,10 +119,10 @@
         call       void [System.Console]System.Console::WriteLine(string)
         leave.s L1
     }
-    catch [mscorlib]System.TypeLoadException{   
+    catch [mscorlib]System.TypeLoadException{
         ldstr "Caught expected TypeLoadException:"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void [System.Console]System.Console::WriteLine(object)        
+        call       void [System.Console]System.Console::WriteLine(object)
         leave.s L1
     }
 
@@ -142,7 +146,7 @@
     IL_002a:  ret
   } // end of method CMain::Main
 
-  .method public hidebysig specialname rtspecialname 
+  .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed
   {
     // Code size       7 (0x7)

@@ -137,15 +137,6 @@ namespace System.Net.WebSockets
             return webSocketContext;
         }
 
-        internal static string GetTraceMsgForParameters(int offset, int count, CancellationToken cancellationToken)
-        {
-            return string.Format(CultureInfo.InvariantCulture,
-                "offset: {0}, count: {1}, cancellationToken.CanBeCanceled: {2}",
-                offset,
-                count,
-                cancellationToken.CanBeCanceled);
-        }
-
         internal static ConfiguredTaskAwaitable SuppressContextFlow(this Task task)
         {
             // We don't flow the synchronization context within WebSocket.xxxAsync - but the calling application
@@ -173,10 +164,7 @@ namespace System.Net.WebSockets
 
         internal static void ValidateInnerStream(Stream innerStream)
         {
-            if (innerStream == null)
-            {
-                throw new ArgumentNullException(nameof(innerStream));
-            }
+            ArgumentNullException.ThrowIfNull(innerStream);
 
             if (!innerStream.CanRead)
             {

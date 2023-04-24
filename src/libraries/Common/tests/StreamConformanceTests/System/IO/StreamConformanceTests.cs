@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
@@ -114,7 +113,7 @@ namespace System.IO.Tests
             from mode in Enum.GetValues<SeekMode>()
             select new object[] { mode, value };
 
-        protected async Task<int> ReadAsync(ReadWriteMode mode, Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+        public static async Task<int> ReadAsync(ReadWriteMode mode, Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             if (mode == ReadWriteMode.SyncByte)
             {
@@ -399,10 +398,17 @@ namespace System.IO.Tests
                 Assert.Throws<IOException>(() => { stream.Seek(-1, SeekOrigin.Begin); });
                 Assert.Throws<IOException>(() => { stream.Seek(-stream.Position - 1, SeekOrigin.Current); });
                 Assert.Throws<IOException>(() => { stream.Seek(-stream.Length - 1, SeekOrigin.End); });
-                Assert.Throws<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)(-1)); });
-                Assert.Throws<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)3); });
-                Assert.Throws<ArgumentException>(() => { stream.Seek(0, ~SeekOrigin.Begin); });
-                Assert.Throws<ArgumentOutOfRangeException>(() => { stream.SetLength(-1); });
+                Assert.ThrowsAny<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)(-1)); });
+                Assert.ThrowsAny<ArgumentException>(() => { stream.Seek(0, (SeekOrigin)3); });
+                Assert.ThrowsAny<ArgumentException>(() => { stream.Seek(0, ~SeekOrigin.Begin); });
+                if (CanSetLength)
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => { stream.SetLength(-1); });
+                }
+                else
+                {
+                    Assert.Throws<NotSupportedException>(() => { stream.SetLength(0); });
+                }
             }
             else
             {
@@ -489,15 +495,6 @@ namespace System.IO.Tests
             }
         }
 
-        protected async Task AssertCanceledAsync(CancellationToken cancellationToken, Func<Task> testCode)
-        {
-            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(testCode);
-            if (cancellationToken.CanBeCanceled)
-            {
-                Assert.Equal(cancellationToken, oce.CancellationToken);
-            }
-        }
-
         protected async Task ValidatePrecanceledOperations_ThrowsCancellationException(Stream stream)
         {
             var cts = new CancellationTokenSource();
@@ -505,14 +502,14 @@ namespace System.IO.Tests
 
             if (stream.CanRead)
             {
-                await AssertCanceledAsync(cts.Token, () => stream.ReadAsync(new byte[1], 0, 1, cts.Token));
-                await AssertCanceledAsync(cts.Token, async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
+                await AssertExtensions.CanceledAsync(cts.Token, stream.ReadAsync(new byte[1], 0, 1, cts.Token));
+                await AssertExtensions.CanceledAsync(cts.Token, async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
             }
 
             if (stream.CanWrite)
             {
-                await AssertCanceledAsync(cts.Token, () => stream.WriteAsync(new byte[1], 0, 1, cts.Token));
-                await AssertCanceledAsync(cts.Token, async () => { await stream.WriteAsync(new ReadOnlyMemory<byte>(new byte[1]), cts.Token); });
+                await AssertExtensions.CanceledAsync(cts.Token, stream.WriteAsync(new byte[1], 0, 1, cts.Token));
+                await AssertExtensions.CanceledAsync(cts.Token, async () => { await stream.WriteAsync(new ReadOnlyMemory<byte>(new byte[1]), cts.Token); });
             }
 
             Exception e = await Record.ExceptionAsync(() => stream.FlushAsync(cts.Token));
@@ -522,7 +519,7 @@ namespace System.IO.Tests
             }
         }
 
-        protected async Task ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(Stream stream)
+        protected async Task ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(Stream stream, int cancellationDelay)
         {
             if (!stream.CanRead || !FullyCancelableOperations)
             {
@@ -530,12 +527,14 @@ namespace System.IO.Tests
             }
 
             var cts = new CancellationTokenSource();
+
             Task<int> t = stream.ReadAsync(new byte[1], 0, 1, cts.Token);
-            cts.Cancel();
-            await AssertCanceledAsync(cts.Token, () => t);
+
+            cts.CancelAfter(cancellationDelay);
+            await AssertExtensions.CanceledAsync(cts.Token, t);
         }
 
-        protected async Task ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(Stream stream)
+        protected async Task ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(Stream stream, int cancellationDelay)
         {
             if (!stream.CanRead || !FullyCancelableOperations)
             {
@@ -543,9 +542,11 @@ namespace System.IO.Tests
             }
 
             var cts = new CancellationTokenSource();
+
             Task<int> t = stream.ReadAsync(new byte[1], cts.Token).AsTask();
-            cts.Cancel();
-            await AssertCanceledAsync(cts.Token, () => t);
+
+            cts.CancelAfter(cancellationDelay);
+            await AssertExtensions.CanceledAsync(cts.Token, t);
         }
 
         protected async Task WhenAllOrAnyFailed(Task task1, Task task2)
@@ -616,10 +617,11 @@ namespace System.IO.Tests
             private readonly int _length;
             private IntPtr _ptr;
             public int PinRefCount;
+            private readonly string _ctorStack = Environment.StackTrace;
 
             public NativeMemoryManager(int length) => _ptr = Marshal.AllocHGlobal(_length = length);
 
-            ~NativeMemoryManager() => Assert.False(true, $"{nameof(NativeMemoryManager)} being finalized");
+            ~NativeMemoryManager() => Assert.False(true, $"{nameof(NativeMemoryManager)} being finalized. Created at {_ctorStack}");
 
             public override Memory<byte> Memory => CreateMemory(_length);
 
@@ -1295,6 +1297,31 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(AllSeekModes))]
+        public virtual async Task Seek_PastEnd_ReadReturns0(SeekMode mode)
+        {
+            if (!CanSeek)
+            {
+                return;
+            }
+
+            const int Length = 512;
+
+            byte[] expected = RandomNumberGenerator.GetBytes(Length);
+            using Stream? stream = await CreateReadOnlyStream(expected);
+            if (stream is null)
+            {
+                return;
+            }
+
+            long pos = stream.Length + 10;
+            Assert.Equal(pos, Seek(mode, stream, pos));
+
+            Assert.Equal(0, stream.Read(new byte[1], 0, 1));
+            Assert.Equal(-1, stream.ReadByte());
+        }
+
+        [Theory]
+        [MemberData(nameof(AllSeekModes))]
         public virtual async Task Seek_ReadWrite_RoundtripsExpectedData(SeekMode mode)
         {
             if (!CanSeek)
@@ -1559,11 +1586,6 @@ namespace System.IO.Tests
         /// Gets whether the stream guarantees that all data written to it will be flushed as part of Flush{Async}.
         /// </summary>
         protected virtual bool FlushGuaranteesAllDataWritten => true;
-        /// <summary>
-        /// Gets whether a stream implements an aggressive read that tries to fill the supplied buffer and only
-        /// stops when it does so or hits EOF.
-        /// </summary>
-        protected virtual bool ReadsMayBlockUntilBufferFullOrEOF => false;
         /// <summary>Gets whether reads for a count of 0 bytes block if no bytes are available to read.</summary>
         protected virtual bool BlocksOnZeroByteReads => false;
         /// <summary>
@@ -1601,6 +1623,8 @@ namespace System.IO.Tests
             streams.Stream2.CanRead && streams.Stream2.CanWrite;
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ArgumentValidation_ThrowsExpectedException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1612,6 +1636,8 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task Disposed_ThrowsObjectDisposedException()
         {
             StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1624,6 +1650,8 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadWriteAsync_PrecanceledOperations_ThrowsCancellationException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1634,25 +1662,35 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public virtual async Task ReadAsync_CancelPendingTask_ThrowsCancellationException()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        public virtual async Task ReadAsync_CancelPendingTask_ThrowsCancellationException(int cancellationDelay)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
 
-            await ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(readable);
+            await ValidateCancelableReadAsyncTask_AfterInvocation_ThrowsCancellationException(readable, cancellationDelay);
         }
 
-        [Fact]
-        public virtual async Task ReadAsync_CancelPendingValueTask_ThrowsCancellationException()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(100)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        public virtual async Task ReadAsync_CancelPendingValueTask_ThrowsCancellationException(int cancellationDelay)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
             (Stream writeable, Stream readable) = GetReadWritePair(streams);
 
-            await ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(readable);
+            await ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(readable, cancellationDelay);
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadWriteByte_Success()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1700,6 +1738,10 @@ namespace System.IO.Tests
             }
         }
 
+        public static IEnumerable<object[]> ReadWrite_Modes =>
+            from mode in Enum.GetValues<ReadWriteMode>()
+            select new object[] { mode };
+
         public static IEnumerable<object[]> ReadWrite_Success_MemberData() =>
             from mode in Enum.GetValues<ReadWriteMode>()
             from writeSize in new[] { 1, 42, 10 * 1024 }
@@ -1721,6 +1763,8 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(ReadWrite_Success_MemberData))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadWrite_Success(ReadWriteMode mode, int writeSize, bool startWithFlush)
         {
             foreach (CancellationToken nonCanceledToken in new[] { CancellationToken.None, new CancellationTokenSource().Token })
@@ -1776,8 +1820,59 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [MemberData(nameof(ReadWrite_Modes))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
+        public virtual async Task ReadWrite_MessagesSmallerThanReadBuffer_Success(ReadWriteMode mode)
+        {
+            if (!FlushGuaranteesAllDataWritten)
+            {
+                return;
+            }
+
+            foreach (CancellationToken nonCanceledToken in new[] { CancellationToken.None, new CancellationTokenSource().Token })
+            {
+                using StreamPair streams = await CreateConnectedStreamsAsync();
+
+                foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
+                {
+                    byte[] writerBytes = RandomNumberGenerator.GetBytes(512);
+                    var readerBytes = new byte[writerBytes.Length * 2];
+
+                    // Repeatedly write then read a message smaller in size than the read buffer
+                    for (int i = 0; i < 5; i++)
+                    {
+                        Task writes = Task.Run(async () =>
+                        {
+                            await WriteAsync(mode, writeable, writerBytes, 0, writerBytes.Length, nonCanceledToken);
+                            if (FlushRequiredToWriteData)
+                            {
+                                await writeable.FlushAsync();
+                            }
+                        });
+
+                        int n = 0;
+                        while (n < writerBytes.Length)
+                        {
+                            int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n);
+                            Assert.InRange(r, 1, writerBytes.Length - n);
+                            n += r;
+                        }
+
+                        Assert.Equal(writerBytes.Length, n);
+                        AssertExtensions.SequenceEqual(writerBytes, readerBytes.AsSpan(0, writerBytes.Length));
+
+                        await writes;
+                    }
+                }
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(AllReadWriteModesAndValue), false)]
         [MemberData(nameof(AllReadWriteModesAndValue), true)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task Read_Eof_Returns0(ReadWriteMode mode, bool dataAvailableFirst)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1788,7 +1883,7 @@ namespace System.IO.Tests
             {
                 write = Task.Run(async () =>
                 {
-                    await writeable.WriteAsync(Encoding.UTF8.GetBytes("hello"));
+                    await writeable.WriteAsync("hello"u8.ToArray());
                     await writeable.DisposeAsync();
                 });
             }
@@ -1816,6 +1911,8 @@ namespace System.IO.Tests
         [InlineData(ReadWriteMode.SyncArray)]
         [InlineData(ReadWriteMode.AsyncArray)]
         [InlineData(ReadWriteMode.AsyncAPM)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task Read_DataStoredAtDesiredOffset(ReadWriteMode mode)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1845,6 +1942,8 @@ namespace System.IO.Tests
         [InlineData(ReadWriteMode.SyncArray)]
         [InlineData(ReadWriteMode.AsyncArray)]
         [InlineData(ReadWriteMode.AsyncAPM)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task Write_DataReadFromDesiredOffset(ReadWriteMode mode)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1943,6 +2042,8 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(ReadAsync_ContinuesOnCurrentContextIfDesired_MemberData))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadAsync_ContinuesOnCurrentSynchronizationContextIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext)
         {
             await default(JumpToThreadPoolAwaiter); // escape xunit sync ctx
@@ -2025,6 +2126,8 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(ReadAsync_ContinuesOnCurrentContextIfDesired_MemberData))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadAsync_ContinuesOnCurrentTaskSchedulerIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext)
         {
             await default(JumpToThreadPoolAwaiter); // escape xunit sync ctx
@@ -2114,6 +2217,8 @@ namespace System.IO.Tests
         [InlineData(ReadWriteMode.AsyncMemory)]
         [InlineData(ReadWriteMode.SyncAPM)]
         [InlineData(ReadWriteMode.AsyncAPM)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ZeroByteRead_BlocksUntilDataAvailableOrNops(ReadWriteMode mode)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2129,7 +2234,7 @@ namespace System.IO.Tests
 
                         Task write = Task.Run(async () =>
                         {
-                            await writeable.WriteAsync(Encoding.UTF8.GetBytes("hello"));
+                            await writeable.WriteAsync("hello"u8.ToArray());
                             if (FlushRequiredToWriteData)
                             {
                                 if (FlushGuaranteesAllDataWritten)
@@ -2144,6 +2249,10 @@ namespace System.IO.Tests
                         });
                         Assert.Equal(0, await zeroByteRead);
 
+                        // Perform a second zero-byte read.
+                        await Task.Run(() => ReadAsync(mode, readable, Array.Empty<byte>(), 0, 0));
+
+                        // Now consume all the data.
                         var readBytes = new byte[5];
                         int count = 0;
                         while (count < readBytes.Length)
@@ -2176,9 +2285,11 @@ namespace System.IO.Tests
         [InlineData(ReadWriteMode.AsyncMemory)]
         [InlineData(ReadWriteMode.SyncAPM)]
         [InlineData(ReadWriteMode.AsyncAPM)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ZeroByteWrite_OtherDataReceivedSuccessfully(ReadWriteMode mode)
         {
-            byte[][] buffers = new[] { Array.Empty<byte>(), Encoding.UTF8.GetBytes("hello"), Array.Empty<byte>(), Encoding.UTF8.GetBytes("world") };
+            byte[][] buffers = new[] { Array.Empty<byte>(), "hello"u8.ToArray(), Array.Empty<byte>(), "world"u8.ToArray() };
 
             using StreamPair streams = await CreateConnectedStreamsAsync();
             foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
@@ -2229,6 +2340,8 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadWrite_CustomMemoryManager_Success(bool useAsync)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2293,6 +2406,8 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ConcurrentBidirectionalReadsWrites_Success()
         {
             if (!SupportsConcurrentBidirectionalUse)
@@ -2349,6 +2464,8 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(CopyToAsync_AllDataCopied_MemberData))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2377,6 +2494,8 @@ namespace System.IO.Tests
 
         [OuterLoop("May take several seconds")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task Parallel_ReadWriteMultipleStreamsConcurrently()
         {
             await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => Task.Run(async () =>
@@ -2386,6 +2505,8 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task Timeout_Roundtrips()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2420,6 +2541,8 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadTimeout_Expires_Throws()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2452,18 +2575,18 @@ namespace System.IO.Tests
 
                 cts = new CancellationTokenSource();
                 cts.Cancel();
-                await AssertCanceledAsync(cts.Token, () => readable.ReadAsync(new byte[1], 0, 1, cts.Token));
-                await AssertCanceledAsync(cts.Token, async () => { await readable.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
+                await AssertExtensions.CanceledAsync(cts.Token, readable.ReadAsync(new byte[1], 0, 1, cts.Token));
+                await AssertExtensions.CanceledAsync(cts.Token, async () => { await readable.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
 
                 cts = new CancellationTokenSource();
                 Task<int> t = readable.ReadAsync(new byte[1], 0, 1, cts.Token);
                 cts.Cancel();
-                await AssertCanceledAsync(cts.Token, () => t);
+                await AssertExtensions.CanceledAsync(cts.Token, t);
 
                 cts = new CancellationTokenSource();
                 ValueTask<int> vt = readable.ReadAsync(new Memory<byte>(new byte[1]), cts.Token);
                 cts.Cancel();
-                await AssertCanceledAsync(cts.Token, async () => await vt);
+                await AssertExtensions.CanceledAsync(cts.Token, vt.AsTask());
 
                 byte[] buffer = new byte[1];
                 vt = readable.ReadAsync(new Memory<byte>(buffer));
@@ -2534,6 +2657,8 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadAsync_DuringReadAsync_ThrowsIfUnsupported()
         {
             if (UnsupportedConcurrentExceptionType is null)
@@ -2554,6 +2679,8 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task Flush_ValidOnWriteableStreamWithNoData_Success()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2568,6 +2695,8 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task Flush_ValidOnReadableStream_Success()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2585,6 +2714,8 @@ namespace System.IO.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task Dispose_ClosesStream(int disposeMode)
         {
             if (!CansReturnFalseAfterDispose)
@@ -2592,7 +2723,7 @@ namespace System.IO.Tests
                 return;
             }
 
-            StreamPair streams = await CreateConnectedStreamsAsync();
+            using StreamPair streams = await CreateConnectedStreamsAsync();
 
             foreach (Stream stream in streams)
             {
@@ -2660,7 +2791,7 @@ namespace System.IO.Tests
         [InlineData(true, true)]
         public virtual async Task Dispose_Flushes(bool useAsync, bool leaveOpen)
         {
-            if (leaveOpen && (!SupportsLeaveOpen || ReadsMayBlockUntilBufferFullOrEOF))
+            if (leaveOpen && !SupportsLeaveOpen)
             {
                 return;
             }
@@ -2815,7 +2946,7 @@ namespace System.IO.Tests
             // (a) produce at least two readable bytes, so we can unblock the reader and read a single byte without clearing its buffer; and
             // (b) produce no more than 1K of readable bytes, so we can clear the reader buffer below.
             // If this isn't the case for some Stream(s), we can modify the data or parameterize it per Stream.
-            byte[] data = Encoding.UTF8.GetBytes("hello world");
+            byte[] data = "hello world"u8.ToArray();
 
             using StreamPair innerStreams = ConnectedStreams.CreateBidirectional();
             (Stream innerWriteable, Stream innerReadable) = GetReadWritePair(innerStreams);
@@ -2867,7 +2998,7 @@ namespace System.IO.Tests
 
                 if (FlushGuaranteesAllDataWritten)
                 {
-                    AssertExtensions.SequenceEqual(data, buffer.AsSpan().Slice(0, bytesRead));
+                    AssertExtensions.SequenceEqual(data, buffer.AsSpan(0, bytesRead));
                 }
             }
         }

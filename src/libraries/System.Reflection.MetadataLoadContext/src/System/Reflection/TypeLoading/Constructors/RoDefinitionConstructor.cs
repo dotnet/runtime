@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.TypeLoading
 {
@@ -33,9 +34,8 @@ namespace System.Reflection.TypeLoading
         protected sealed override MethodSig<RoParameter> ComputeMethodSig() => _decoder.SpecializeMethodSig(this);
         public sealed override MethodBody? GetMethodBody() => _decoder.SpecializeMethodBody(this);
         protected sealed override MethodSig<string> ComputeMethodSigStrings() => _decoder.SpecializeMethodSigStrings(TypeContext);
-        protected sealed override MethodSig<RoType> ComputeCustomModifiers() => _decoder.SpecializeCustomModifiers(TypeContext);
 
-        public sealed override bool Equals(object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is RoDefinitionConstructor<TMethodDecoder> other))
                 return false;

@@ -6,16 +6,13 @@ using System.Diagnostics.Tracing;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Authentication;
 using System.Threading;
-using Microsoft.Extensions.Internal;
 
 namespace System.Net.Security
 {
     [EventSource(Name = "System.Net.Security")]
     internal sealed class NetSecurityTelemetry : EventSource
     {
-#if !ES_BUILD_STANDALONE
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
-#endif
         public static readonly NetSecurityTelemetry Log = new NetSecurityTelemetry();
 
         private IncrementingPollingCounter? _tlsHandshakeRateCounter;
@@ -141,7 +138,8 @@ namespace System.Net.Security
         {
             if (IsEnabled(EventLevel.Informational, EventKeywords.None))
             {
-                WriteEvent(eventId: 2, protocol);
+                Debug.Assert(sizeof(SslProtocols) == 4);
+                WriteEvent(eventId: 2, (int)protocol);
             }
         }
 
@@ -153,21 +151,22 @@ namespace System.Net.Security
 
 
         [NonEvent]
-        public void HandshakeFailed(bool isServer, ValueStopwatch stopwatch, string exceptionMessage)
+        public void HandshakeFailed(bool isServer, long startingTimestamp, string exceptionMessage)
         {
             Interlocked.Increment(ref _finishedTlsHandshakes);
             Interlocked.Increment(ref _failedTlsHandshakes);
 
             if (IsEnabled(EventLevel.Error, EventKeywords.None))
             {
-                HandshakeFailed(isServer, stopwatch.GetElapsedTime().TotalMilliseconds, exceptionMessage);
+                HandshakeFailed(isServer, Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds, exceptionMessage);
             }
 
             HandshakeStop(SslProtocols.None);
         }
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         [NonEvent]
-        public void HandshakeCompleted(SslProtocols protocol, ValueStopwatch stopwatch, bool connectionOpen)
+        public void HandshakeCompleted(SslProtocols protocol, long startingTimestamp, bool connectionOpen)
         {
             Interlocked.Increment(ref _finishedTlsHandshakes);
 
@@ -179,6 +178,7 @@ namespace System.Net.Security
 
             switch (protocol)
             {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                 case SslProtocols.Tls:
                     protocolSessionsOpen = ref _sessionsOpenTls10;
                     handshakeDurationCounter = _handshakeDurationTls10Counter;
@@ -188,6 +188,7 @@ namespace System.Net.Security
                     protocolSessionsOpen = ref _sessionsOpenTls11;
                     handshakeDurationCounter = _handshakeDurationTls11Counter;
                     break;
+#pragma warning restore SYSLIB0039
 
                 case SslProtocols.Tls12:
                     protocolSessionsOpen = ref _sessionsOpenTls12;
@@ -206,12 +207,13 @@ namespace System.Net.Security
                 Interlocked.Increment(ref _sessionsOpen);
             }
 
-            double duration = stopwatch.GetElapsedTime().TotalMilliseconds;
+            double duration = Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds;
             handshakeDurationCounter?.WriteMetric(duration);
             _handshakeDurationCounter!.WriteMetric(duration);
 
             HandshakeStop(protocol);
         }
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         [NonEvent]
         public void ConnectionClosed(SslProtocols protocol)
@@ -220,6 +222,7 @@ namespace System.Net.Security
 
             switch (protocol)
             {
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                 case SslProtocols.Tls:
                     count = Interlocked.Decrement(ref _sessionsOpenTls10);
                     break;
@@ -227,6 +230,7 @@ namespace System.Net.Security
                 case SslProtocols.Tls11:
                     count = Interlocked.Decrement(ref _sessionsOpenTls11);
                     break;
+#pragma warning restore SYSLIB0039
 
                 case SslProtocols.Tls12:
                     count = Interlocked.Decrement(ref _sessionsOpenTls12);
@@ -244,91 +248,62 @@ namespace System.Net.Security
         }
 
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, bool arg1, string? arg2)
         {
-            if (IsEnabled())
+            arg2 ??= string.Empty;
+
+            fixed (char* arg2Ptr = arg2)
             {
-                arg2 ??= string.Empty;
+                const int NumEventDatas = 2;
+                EventData* descrs = stackalloc EventData[NumEventDatas];
 
-                fixed (char* arg2Ptr = arg2)
-                {
-                    const int NumEventDatas = 2;
-                    EventData* descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg1),
-                        Size = sizeof(int) // EventSource defines bool as a 32-bit type
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg2Ptr),
-                        Size = (arg2.Length + 1) * sizeof(char)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
-            }
-        }
-
-#if !ES_BUILD_STANDALONE
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
-#endif
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, SslProtocols arg1)
-        {
-            if (IsEnabled())
-            {
-                var data = new EventData
+                descrs[0] = new EventData
                 {
                     DataPointer = (IntPtr)(&arg1),
-                    Size = sizeof(SslProtocols)
+                    Size = sizeof(int) // EventSource defines bool as a 32-bit type
+                };
+                descrs[1] = new EventData
+                {
+                    DataPointer = (IntPtr)(arg2Ptr),
+                    Size = (arg2.Length + 1) * sizeof(char)
                 };
 
-                WriteEventCore(eventId, eventDataCount: 1, &data);
+                WriteEventCore(eventId, NumEventDatas, descrs);
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         [NonEvent]
         private unsafe void WriteEvent(int eventId, bool arg1, double arg2, string? arg3)
         {
-            if (IsEnabled())
+            arg3 ??= string.Empty;
+
+            fixed (char* arg3Ptr = arg3)
             {
-                arg3 ??= string.Empty;
+                const int NumEventDatas = 3;
+                EventData* descrs = stackalloc EventData[NumEventDatas];
 
-                fixed (char* arg3Ptr = arg3)
+                descrs[0] = new EventData
                 {
-                    const int NumEventDatas = 3;
-                    EventData* descrs = stackalloc EventData[NumEventDatas];
+                    DataPointer = (IntPtr)(&arg1),
+                    Size = sizeof(int) // EventSource defines bool as a 32-bit type
+                };
+                descrs[1] = new EventData
+                {
+                    DataPointer = (IntPtr)(&arg2),
+                    Size = sizeof(double)
+                };
+                descrs[2] = new EventData
+                {
+                    DataPointer = (IntPtr)(arg3Ptr),
+                    Size = (arg3.Length + 1) * sizeof(char)
+                };
 
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg1),
-                        Size = sizeof(int) // EventSource defines bool as a 32-bit type
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg2),
-                        Size = sizeof(double)
-                    };
-                    descrs[2] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg3Ptr),
-                        Size = (arg3.Length + 1) * sizeof(char)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
+                WriteEventCore(eventId, NumEventDatas, descrs);
             }
         }
     }

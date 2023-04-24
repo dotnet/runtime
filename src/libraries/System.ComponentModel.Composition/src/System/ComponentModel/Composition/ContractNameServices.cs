@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition
         {
             get
             {
-                return typeIdentityCache = typeIdentityCache ?? new Dictionary<Type, string>();
+                return typeIdentityCache ??= new Dictionary<Type, string>();
             }
         }
 
@@ -43,10 +43,7 @@ namespace System.ComponentModel.Composition
 
         internal static string GetTypeIdentity(Type type, bool formatGenericName)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             if (!TypeIdentityCache.TryGetValue(type, out string? typeIdentity))
             {

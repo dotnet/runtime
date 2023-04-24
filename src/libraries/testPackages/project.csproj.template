@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>{TargetFrameworks}</TargetFrameworks>
+    <TestPackageId>{PackageId}</TestPackageId>
+
+    <!-- Restore settings -->
+    <RestorePackagesPath>{RestorePackagesPath}</RestorePackagesPath>
+    <RestoreAdditionalProjectSources>{RestoreAdditionalProjectSources}</RestoreAdditionalProjectSources>
+
+    <!-- Used in targetingpacks.targets -->
+    <NetCoreAppCurrentVersion>{NetCoreAppCurrentVersion}</NetCoreAppCurrentVersion>
+    <NetCoreAppCurrent>{NetCoreAppCurrent}</NetCoreAppCurrent>
+    <MicrosoftNetCoreAppFrameworkName>{MicrosoftNetCoreAppFrameworkName}</MicrosoftNetCoreAppFrameworkName>
+    <MicrosoftNetCoreAppRefPackDir>{MicrosoftNetCoreAppRefPackDir}</MicrosoftNetCoreAppRefPackDir>
+
+    <NETCoreAppMaximumVersion>$(NetCoreAppCurrentVersion)</NETCoreAppMaximumVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="{PackageId}" Version="{PackageVersion}" />
+  </ItemGroup>
+
+</Project>

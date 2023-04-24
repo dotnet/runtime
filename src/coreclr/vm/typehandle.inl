@@ -66,17 +66,6 @@ inline unsigned int TypeHandle::GetRank() const
     return AsMethodTable()->GetRank();
 }
 
-inline BOOL TypeHandle::IsZapped() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-#ifdef FEATURE_PREJIT
-    return (GetZapModule() != NULL);
-#else
-    return FALSE;
-#endif
-}
-
 // Methods to allow you get get a the two possible representations
 inline PTR_MethodTable TypeHandle::AsMethodTable() const
 {
@@ -243,7 +232,7 @@ inline void TypeHandle::ForEachComponentMethodTable(T &callback) const
     }
 }
 
-#ifndef CROSSGEN_COMPILE
+#ifndef DACCESS_COMPILE
 FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
 {
     CONTRACTL
@@ -276,8 +265,7 @@ FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
             break;
 
         case ELEMENT_TYPE_FNPTR:
-            // A function pointer is mapped into typeof(IntPtr). It results in a loss of information.
-            o = CoreLibBinder::GetElementType(ELEMENT_TYPE_I)->GetManagedClassObjectIfExists();
+            o = dac_cast<PTR_FnPtrTypeDesc>(AsTypeDesc())->GetManagedClassObjectFast();
             break;
 
         default:
@@ -288,6 +276,6 @@ FORCEINLINE OBJECTREF TypeHandle::GetManagedClassObjectFast() const
 
     return o;
 }
-#endif // CROSSGEN_COMPILE
+#endif
 
 #endif  // _TYPEHANDLE_INL_

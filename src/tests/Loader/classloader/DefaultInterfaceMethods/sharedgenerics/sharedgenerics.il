@@ -1,17 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 4.6.1055.0
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-
-
-
-// Metadata version: v4.0.30319
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly sharedgenerics
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
@@ -24,7 +19,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module sharedgenerics.exe
 // MVID: {0DEEC74C-30FE-495C-9653-12BE5220327A}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -121,6 +115,9 @@
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       126 (0x7e)
     .maxstack  5

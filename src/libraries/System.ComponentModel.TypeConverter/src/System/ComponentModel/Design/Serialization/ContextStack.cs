@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
+using System.Collections.Generic;
 
 namespace System.ComponentModel.Design.Serialization
 {
@@ -23,13 +23,13 @@ namespace System.ComponentModel.Design.Serialization
     /// </summary>
     public sealed class ContextStack
     {
-        private ArrayList _contextStack;
+        private List<object>? _contextStack;
 
         /// <summary>
         /// Retrieves the current object on the stack, or null
         /// if no objects have been pushed.
         /// </summary>
-        public object Current
+        public object? Current
         {
             get
             {
@@ -45,14 +45,11 @@ namespace System.ComponentModel.Design.Serialization
         /// Retrieves the object on the stack at the given
         /// level, or null if no object exists at that level.
         /// </summary>
-        public object this[int level]
+        public object? this[int level]
         {
             get
             {
-                if (level < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(level));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(level);
                 if (_contextStack != null && level < _contextStack.Count)
                 {
                     return _contextStack[_contextStack.Count - 1 - level];
@@ -66,21 +63,18 @@ namespace System.ComponentModel.Design.Serialization
         /// inherits from or implements the given type, or
         /// null if no object on the stack implements the type.
         /// </summary>
-        public object this[Type type]
+        public object? this[Type type]
         {
             get
             {
-                if (type == null)
-                {
-                    throw new ArgumentNullException(nameof(type));
-                }
+                ArgumentNullException.ThrowIfNull(type);
 
                 if (_contextStack != null)
                 {
                     int level = _contextStack.Count;
                     while (level > 0)
                     {
-                        object value = _contextStack[--level];
+                        object value = _contextStack[--level]!;
                         if (type.IsInstanceOfType(value))
                         {
                             return value;
@@ -101,15 +95,9 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public void Append(object context)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
-            if (_contextStack == null)
-            {
-                _contextStack = new ArrayList();
-            }
+            _contextStack ??= new List<object>();
             _contextStack.Insert(0, context);
         }
 
@@ -117,9 +105,9 @@ namespace System.ComponentModel.Design.Serialization
         /// Pops the current object off of the stack, returning
         /// its value.
         /// </summary>
-        public object Pop()
+        public object? Pop()
         {
-            object context = null;
+            object? context = null;
 
             if (_contextStack != null && _contextStack.Count > 0)
             {
@@ -136,15 +124,9 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public void Push(object context)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(context);
 
-            if (_contextStack == null)
-            {
-                _contextStack = new ArrayList();
-            }
+            _contextStack ??= new List<object>();
             _contextStack.Add(context);
         }
     }

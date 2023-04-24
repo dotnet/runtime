@@ -4,14 +4,13 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using FluentAssertions;
 using Xunit;
 using Microsoft.NET.HostModel.AppHost;
 using Microsoft.DotNet.CoreSetup.Test;
+using System.Diagnostics;
 
 namespace Microsoft.NET.HostModel.Tests
 {
@@ -169,36 +168,30 @@ namespace Microsoft.NET.HostModel.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void ItGeneratesExecutableImage()
         {
-            using (TestDirectory testDirectory = TestDirectory.Create())
-            {
-                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
-                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
-                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+            using TestDirectory testDirectory = TestDirectory.Create();
+            string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+            string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+            string appBinaryFilePath = "Test/App/Binary/Path.dll";
 
-                chmod(sourceAppHostMock, Convert.ToInt32("755", 8)) // match installed permissions: -rwxr-xr-x
-                    .Should()
-                    .NotBe(-1);
+            // strip executable permissions from this AppHost template binary
+            File.SetUnixFileMode(sourceAppHostMock, UnixFileMode.UserRead | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
 
-                GetLastError()
-                    .Should()
-                    .NotBe(4); // EINTR
+            // -rwxr-xr-x
+            const UnixFileMode expectedPermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
+                UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
 
-                GetFilePermissionValue(sourceAppHostMock)
-                    .Should()
-                    .Be(Convert.ToInt32("755", 8));
+            HostWriter.CreateAppHost(
+                sourceAppHostMock,
+                destinationFilePath,
+                appBinaryFilePath,
+                windowsGraphicalUserInterface: true);
 
-                HostWriter.CreateAppHost(
-                    sourceAppHostMock,
-                    destinationFilePath,
-                    appBinaryFilePath,
-                    windowsGraphicalUserInterface: true);
-
-                GetFilePermissionValue(destinationFilePath)
-                    .Should()
-                    .Be(Convert.ToInt32("755", 8));
-            }
-
-            int GetLastError() => Marshal.GetLastWin32Error();
+            // assert that the generated app has executable permissions
+            // despite different permissions on the template binary.
+            File.GetUnixFileMode(destinationFilePath)
+                .Should()
+                .Be(expectedPermissions);
         }
 
         [Fact]
@@ -217,6 +210,110 @@ namespace Microsoft.NET.HostModel.Tests
                    windowsGraphicalUserInterface: false);
 
                 File.SetAttributes(sourceAppHostMock, FileAttributes.Normal);
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [InlineData("")]
+        [InlineData("dir with spaces")]
+        public void CanCodeSignAppHostOnMacOS(string subdir)
+        {
+            using (TestDirectory testDirectory = TestDirectory.Create(subdir))
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false,
+                   enableMacOSCodeSign: true);
+
+                const string codesign = @"/usr/bin/codesign";
+                var psi = new ProcessStartInfo()
+                {
+                    Arguments = $"-d \"{destinationFilePath}\"",
+                    FileName = codesign,
+                    RedirectStandardError = true,
+                };
+
+                using (var p = Process.Start(psi))
+                {
+                    p.Start();
+                    p.StandardError.ReadToEnd()
+                        .Should().Contain($"Executable=/private{Path.GetFullPath(destinationFilePath)}");
+                    p.WaitForExit();
+                    // Successfully signed the apphost.
+                    Assert.True(p.ExitCode == 0, $"Expected exit code was '0' but '{codesign}' returned '{p.ExitCode}' instead.");
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void ItDoesNotCodeSignAppHostByDefault()
+        {
+            using (TestDirectory testDirectory = TestDirectory.Create())
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false);
+
+                const string codesign = @"/usr/bin/codesign";
+                var psi = new ProcessStartInfo()
+                {
+                    Arguments = $"-d {destinationFilePath}",
+                    FileName = codesign,
+                    RedirectStandardError = true,
+                };
+
+                using (var p = Process.Start(psi))
+                {
+                    p.Start();
+                    p.StandardError.ReadToEnd()
+                        .Should().Contain($"{Path.GetFullPath(destinationFilePath)}: code object is not signed at all");
+                    p.WaitForExit();
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void CodeSigningFailuresThrow()
+        {
+            using (TestDirectory testDirectory = TestDirectory.Create())
+            {
+                string sourceAppHostMock = PrepareAppHostMockFile(testDirectory);
+                File.SetAttributes(sourceAppHostMock, FileAttributes.ReadOnly);
+                string destinationFilePath = Path.Combine(testDirectory.Path, "DestinationAppHost.exe.mock");
+                string appBinaryFilePath = "Test/App/Binary/Path.dll";
+                HostWriter.CreateAppHost(
+                   sourceAppHostMock,
+                   destinationFilePath,
+                   appBinaryFilePath,
+                   windowsGraphicalUserInterface: false,
+                   enableMacOSCodeSign: true);
+
+                // Run CreateAppHost again to sign the apphost a second time,
+                // causing codesign to fail.
+                var exception = Assert.Throws<AppHostSigningException>(() =>
+                    HostWriter.CreateAppHost(
+                    sourceAppHostMock,
+                    destinationFilePath,
+                    appBinaryFilePath,
+                    windowsGraphicalUserInterface: false,
+                    enableMacOSCodeSign: true));
+                Assert.Contains($"{destinationFilePath}: is already signed", exception.Message);
+                Assert.True(exception.ExitCode == 1, $"AppHostSigningException.ExitCode - expected: 1, actual: '{exception.ExitCode}'");
             }
         }
 
@@ -266,64 +363,6 @@ namespace Microsoft.NET.HostModel.Tests
             0, 112, 2, 0, 0, 4, 0, 0, 0, 0, 0, 0, 3, 0, 96, 193, 0, 0, 24,
             0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0 };
 
-        [DllImport("libc", SetLastError = true)]
-        private static extern int chmod(string pathname, int mode);
-
-        private static int GetFilePermissionValue(string path)
-        {
-            var modeValue = CoreFxFileStatusProvider.GetFileMode(path);
-
-            // st_mode is typically a 16-bits value, high 4 bits are filetype and low 12
-            // bits are permission. we will clear first 20 bits (a byte and a nibble) with
-            // the following mask:
-            modeValue &= 0x1ff;
-
-            modeValue
-                .Should()
-                .BeInRange(0, 511);
-
-            return modeValue;
-        }
-
-        private static class CoreFxFileStatusProvider
-        {
-            private static FieldInfo s_fileSystem_fileStatusField, s_fileStatus_fileStatusField, s_fileStatusModeField;
-
-            static CoreFxFileStatusProvider()
-            {
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    try
-                    {
-                        s_fileSystem_fileStatusField = typeof(FileSystemInfo).GetField("_fileStatus", BindingFlags.NonPublic | BindingFlags.Instance);
-                        s_fileStatus_fileStatusField = s_fileSystem_fileStatusField.FieldType.GetField("_fileStatus", BindingFlags.NonPublic | BindingFlags.Instance);
-                        s_fileStatusModeField = s_fileStatus_fileStatusField.FieldType.GetField("Mode", BindingFlags.NonPublic | BindingFlags.Instance);
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception("Cannot setup _fileStatus via private reflection from CoreFX. Verify if the FileSystem._fileStatus._fileStatus.Mode chain is intact in CoreFX, otherwise adjust this implementation", ex);
-                    }
-                }
-            }
-
-            public static int GetFileMode(string path)
-            {
-                try
-                {
-                    var fileInfo = new FileInfo(path);
-                    _ = fileInfo.IsReadOnly; // this is to implicitly initialize FileInfo -> FileSystem -> fielStatus instance
-
-                    return (int)s_fileStatusModeField.GetValue(
-                               s_fileStatus_fileStatusField.GetValue(
-                                   s_fileSystem_fileStatusField.GetValue(fileInfo)));
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception("Cannot get stat (2) st_mode via private reflection from CoreFX. Verify if the FileSystem._fileStatus.Initialize logic is exercised via FileInfo.IsReadOnly in CoreFX, otherwise adjust this implementation.", ex);
-                }
-            }
-        }
-
         private class TestDirectory : IDisposable
         {
             public string Path { get; private set; }
@@ -334,11 +373,12 @@ namespace Microsoft.NET.HostModel.Tests
                 Directory.CreateDirectory(path);
             }
 
-            public static TestDirectory Create([CallerMemberName] string callingMethod = "")
+            public static TestDirectory Create([CallerMemberName] string callingMethod = "", string subDir = "")
             {
                 string path = System.IO.Path.Combine(
                     System.IO.Path.GetTempPath(),
-                    "dotNetSdkUnitTest_" + callingMethod + (Guid.NewGuid().ToString().Substring(0, 8)));
+                    "dotNetSdkUnitTest_" + callingMethod + (Guid.NewGuid().ToString().Substring(0, 8)),
+                    subDir);
                 return new TestDirectory(path);
             }
 

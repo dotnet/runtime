@@ -40,7 +40,7 @@ namespace System.Net.Sockets.Tests
             new object[] { SocketType.Unknown, ProtocolType.Udp },
         };
 
-        private static bool SupportsRawSockets => AdminHelpers.IsProcessElevated();
+        private static bool SupportsRawSockets => Environment.IsPrivilegedProcess;
         private static bool NotSupportsRawSockets => !SupportsRawSockets;
 
         [OuterLoop]
@@ -274,6 +274,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(AddressFamily.InterNetworkV6, SocketType.Raw, ProtocolType.Unspecified)]
         [InlineData(AddressFamily.Packet, SocketType.Raw, ProtocolType.Raw)]
         [InlineData(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Ctor_SafeHandle_BasicPropertiesPropagate_Success(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
             bool isRawPacket = (addressFamily == AddressFamily.Packet) &&
@@ -311,8 +312,8 @@ namespace System.Net.Sockets.Tests
             if (copy.IsBound)
             {
                 // On Unix, we may successfully obtain an (empty) local end point, even though Bind wasn't called.
-                Debug.Assert(!RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) // OSX gets some strange results in some cases, e.g. "@\0\0\0\0\0\0\0\0\0\0\0\0\0" for a UDS
+                Debug.Assert(!OperatingSystem.IsWindows());
+                if (OperatingSystem.IsLinux()) // OSX gets some strange results in some cases, e.g. "@\0\0\0\0\0\0\0\0\0\0\0\0\0" for a UDS
                 {
                     switch (addressFamily)
                     {
@@ -378,12 +379,15 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(orig.ReceiveTimeout, copy.ReceiveTimeout);
             Assert.Equal(orig.SendBufferSize, copy.SendBufferSize);
             Assert.Equal(orig.SendTimeout, copy.SendTimeout);
+#pragma warning disable 0618
             Assert.Equal(orig.UseOnlyOverlappedIO, copy.UseOnlyOverlappedIO);
+#pragma warning restore 0618
         }
 
         [Theory]
         [InlineData(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)]
         [InlineData(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Ctor_SafeHandle_Tcp_SendReceive_Success(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
             using var orig = new Socket(addressFamily, socketType, protocolType);
@@ -422,7 +426,6 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(orig.SendBufferSize, client.SendBufferSize);
             Assert.Equal(orig.SendTimeout, client.SendTimeout);
             Assert.Equal(orig.Ttl, client.Ttl);
-            Assert.Equal(orig.UseOnlyOverlappedIO, client.UseOnlyOverlappedIO);
 
             // Validate setting various properties on the new instance and seeing them roundtrip back to the original.
             client.ReceiveTimeout = 42;
@@ -443,37 +446,41 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Ctor_SafeHandle_Listening_Success(bool shareSafeHandle)
         {
-            using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-            listener.Listen();
-
-            using var listenerCopy = new Socket(shareSafeHandle ? listener.SafeHandle : new SafeSocketHandle(listener.Handle, ownsHandle: false));
-            Assert.False(listenerCopy.Connected);
-            // This will throw if _isListening is set internally. (before reaching any real code)
-            Assert.Throws<InvalidOperationException>(() => listenerCopy.Connect(new IPEndPoint(IPAddress.Loopback,0)));
-
-            Assert.Equal(listener.AddressFamily, listenerCopy.AddressFamily);
-            Assert.Equal(listener.Handle, listenerCopy.Handle);
-            Assert.Equal(listener.IsBound, listenerCopy.IsBound);
-            Assert.Equal(listener.LocalEndPoint, listenerCopy.LocalEndPoint);
-            Assert.Equal(listener.ProtocolType, listenerCopy.ProtocolType);
-            Assert.Equal(listener.SocketType, listenerCopy.SocketType);
-
-            foreach (Socket listenerSocket in new[] { listener, listenerCopy })
+            await Task.Run(async () =>
             {
-                using (var client1 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                using var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen();
+
+                using var listenerCopy = new Socket(shareSafeHandle ? listener.SafeHandle : new SafeSocketHandle(listener.Handle, ownsHandle: false));
+                Assert.False(listenerCopy.Connected);
+                // This will throw if _isListening is set internally. (before reaching any real code)
+                Assert.Throws<InvalidOperationException>(() => listenerCopy.Connect(new IPEndPoint(IPAddress.Loopback, 0)));
+
+                Assert.Equal(listener.AddressFamily, listenerCopy.AddressFamily);
+                Assert.Equal(listener.Handle, listenerCopy.Handle);
+                Assert.Equal(listener.IsBound, listenerCopy.IsBound);
+                Assert.Equal(listener.LocalEndPoint, listenerCopy.LocalEndPoint);
+                Assert.Equal(listener.ProtocolType, listenerCopy.ProtocolType);
+                Assert.Equal(listener.SocketType, listenerCopy.SocketType);
+
+                foreach (Socket listenerSocket in new[] { listener, listenerCopy })
                 {
-                    Task connect1 = client1.ConnectAsync(listenerSocket.LocalEndPoint);
-                    using (Socket server1 = listenerSocket.Accept())
+                    using (var client1 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                     {
-                        await connect1;
-                        server1.Send(new byte[] { 42 });
-                        Assert.Equal(1, client1.Receive(new byte[1]));
+                        Task connect1 = client1.ConnectAsync(listenerSocket.LocalEndPoint);
+                        using (Socket server1 = listenerSocket.Accept())
+                        {
+                            await connect1;
+                            server1.Send(new byte[] { 42 });
+                            Assert.Equal(1, client1.Receive(new byte[1]));
+                        }
                     }
                 }
-            }
+            }).WaitAsync(TestSettings.PassingTestTimeout);
         }
 
         [DllImport("libc")]
@@ -534,7 +541,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct nlmsghdr
+        internal struct @nlmsghdr
         {
             internal int nlmsg_len;       /* Length of message including header */
             internal ushort nlmsg_type;   /* Type of message content */
@@ -544,13 +551,13 @@ namespace System.Net.Sockets.Tests
         };
 
         [StructLayout(LayoutKind.Sequential)]
-        private struct nlmsgerr {
+        private struct @nlmsgerr {
             internal int     error;
             internal nlmsghdr msg;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct rtmsg
+        internal unsafe struct @rtmsg
         {
             internal byte rtm_family;
             internal byte rtm_dst_len;
@@ -652,6 +659,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public unsafe void Ctor_SafeHandle_SocketPair_Success()
         {
             // This is platform dependent but it seems like this is same on all supported platforms.
@@ -678,6 +686,35 @@ namespace System.Net.Sockets.Tests
 
             close(ptr[0]);
             close(ptr[1]);
+        }
+
+        // On some Unix machines the second (manual) handle close succeeds despite Socket's/SafeSocketHandle's Dispose
+        // completing a succesful close of the same handle value previously.
+        // We may investigate this, but it doesn't indicate incorrect behavior in Socket code,
+        // so making the test PlatformSpecific seems to be good enough. The SafeSocketHandle lifecycle logic is platform cross-platform.
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Ctor_Dispose_HandleClosedIfOwnsHandle(bool ownsHandle)
+        {
+            Socket original = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            IntPtr handleValue = original.Handle;
+
+            SafeSocketHandle handleClone = new SafeSocketHandle(handleValue, ownsHandle: ownsHandle);
+            Socket socketClone = new Socket(handleClone);
+            socketClone.Dispose();
+
+            bool manualCloseSucceeded = closesocket(handleValue) == 0;
+            Assert.Equal(!ownsHandle, manualCloseSucceeded);
+
+#if DEBUG   // The finalizer will fail to close the handle which leads to an assertion failure in Debug builds.
+            GC.SuppressFinalize(original);
+            GC.SuppressFinalize(original.SafeHandle);
+#endif
+
+            [DllImport("ws2_32.dll", SetLastError = true)]
+            static extern int closesocket(IntPtr socketHandle);
         }
 
         private static void AssertEqualOrSameException<T>(Func<T> expected, Func<T> actual)

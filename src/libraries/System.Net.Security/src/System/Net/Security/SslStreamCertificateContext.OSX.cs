@@ -10,16 +10,13 @@ namespace System.Net.Security
         // No leaf, no root.
         private const bool TrimRootCertificate = true;
 
-        private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates)
+        private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates, SslCertificateTrust? trust)
         {
+            _intermediateCertificates = intermediates;
             Certificate = target;
-            IntermediateCertificates = intermediates;
+            Trust = trust;
         }
 
-        internal static SslStreamCertificateContext Create(X509Certificate2 target)
-        {
-            // On OSX we do not need to build chain unless we are asked for it.
-            return new SslStreamCertificateContext(target, Array.Empty<X509Certificate2>());
-        }
+        internal static SslStreamCertificateContext Create(X509Certificate2 target) => Create(target, null, offline: false, trust: null, noOcspFetch: true);
     }
 }

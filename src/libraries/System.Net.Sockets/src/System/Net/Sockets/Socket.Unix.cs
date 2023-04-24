@@ -5,6 +5,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
+using System.Reflection;
+using System.Collections;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -25,26 +29,6 @@ namespace System.Net.Sockets
             // requires Unix Domain Sockets. The programming model is fundamentally different,
             // and incompatible with the design of SocketInformation-related methods.
             throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
-        }
-
-        public IAsyncResult BeginAccept(int receiveSize, AsyncCallback? callback, object? state)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
-        public IAsyncResult BeginAccept(Socket? acceptSocket, int receiveSize, AsyncCallback? callback, object? state)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
-        public Socket EndAccept(out byte[] buffer, IAsyncResult asyncResult)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
-        }
-
-        public Socket EndAccept(out byte[] buffer, out int bytesTransferred, IAsyncResult asyncResult)
-        {
-            throw new PlatformNotSupportedException(SR.net_sockets_accept_receive_apm_notsupported);
         }
 
         internal bool PreferInlineCompletions
@@ -125,7 +109,7 @@ namespace System.Net.Sockets
             SocketError errorCode = ReplaceHandle();
             if (errorCode != SocketError.Success)
             {
-                throw new SocketException((int) errorCode);
+                throw new SocketException((int)errorCode);
             }
 
             _handle.LastConnectFailed = false;
@@ -154,12 +138,20 @@ namespace System.Net.Sockets
 
             // Then replace the handle with a new one
             SafeSocketHandle oldHandle = _handle;
-            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out _handle);
+            SocketError errorCode = SocketPal.CreateSocket(_addressFamily, _socketType, _protocolType, out SafeSocketHandle newHandle);
+            Volatile.Write(ref _handle, newHandle);
             oldHandle.TransferTrackedState(_handle);
             oldHandle.Dispose();
+
             if (errorCode != SocketError.Success)
             {
                 return errorCode;
+            }
+
+            if (Volatile.Read(ref _disposed) != 0)
+            {
+                _handle.Dispose();
+                throw new ObjectDisposedException(GetType().FullName);
             }
 
             // And put back the copied settings.  For DualMode, we use the value stored in the _handle
@@ -184,17 +176,26 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException(SR.net_sockets_connect_multiconnect_notsupported);
         }
 
-        private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool unused, string propertyName, out SafeSocketHandle? handle)
+#pragma warning disable IDE0060, CA1822
+        private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle? handle)
         {
-            // AcceptSocket is not supported on Unix.
             if (acceptSocket != null)
             {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_AcceptSocket);
+                if (acceptSocket._handle.HasShutdownSend)
+                {
+                    throw new SocketException((int)SocketError.InvalidArgument);
+                }
+
+                if (acceptSocket._rightEndPoint != null && (!checkDisconnected || !acceptSocket._isDisconnected))
+                {
+                    throw new InvalidOperationException(SR.Format(SR.net_sockets_namedmustnotbebound, propertyName));
+                }
             }
 
             handle = null;
-            return null;
+            return acceptSocket;
         }
+#pragma warning restore IDE0060, CA1822
 
         private static void CheckTransmitFileOptions(TransmitFileOptions flags)
         {
@@ -210,12 +211,11 @@ namespace System.Net.Sockets
         {
             CheckTransmitFileOptions(flags);
 
+            SocketError errorCode = SocketError.Success;
+
             // Open the file, if any
             // Open it before we send the preBuffer so that any exception happens first
-            FileStream? fileStream = OpenFile(fileName);
-
-            SocketError errorCode = SocketError.Success;
-            using (fileStream)
+            using (SafeFileHandle? fileHandle = OpenFileHandle(fileName))
             {
                 // Send the preBuffer, if any
                 // This will throw on error
@@ -225,10 +225,10 @@ namespace System.Net.Sockets
                 }
 
                 // Send the file, if any
-                if (fileStream != null)
+                if (fileHandle != null)
                 {
                     // This can throw ObjectDisposedException.
-                    errorCode = SocketPal.SendFile(_handle, fileStream);
+                    errorCode = SocketPal.SendFile(_handle, fileHandle);
                 }
             }
 
@@ -247,60 +247,56 @@ namespace System.Net.Sockets
             }
         }
 
-        private async Task SendFileInternalAsync(FileStream? fileStream, byte[]? preBuffer, byte[]? postBuffer)
+        internal void DisposeHandle()
         {
-            SocketError errorCode = SocketError.Success;
-            using (fileStream)
-            {
-                // Send the preBuffer, if any
-                // This will throw on error
-                if (preBuffer != null && preBuffer.Length > 0)
-                {
-                    // Using "this." makes the extension method kick in
-                    await this.SendAsync(new ArraySegment<byte>(preBuffer), SocketFlags.None).ConfigureAwait(false);
-                }
-
-                // Send the file, if any
-                if (fileStream != null)
-                {
-                    var tcs = new TaskCompletionSource<SocketError>();
-                    errorCode = SocketPal.SendFileAsync(_handle, fileStream, (_, socketError) => tcs.SetResult(socketError));
-                    if (errorCode == SocketError.IOPending)
-                    {
-                        errorCode = await tcs.Task.ConfigureAwait(false);
-                    }
-                }
-            }
-
-            if (errorCode != SocketError.Success)
-            {
-                UpdateSendSocketErrorForDisposed(ref errorCode);
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
-            }
-
-            // Send the postBuffer, if any
-            // This will throw on error
-            if (postBuffer != null && postBuffer.Length > 0)
-            {
-                // Using "this." makes the extension method kick in
-                await this.SendAsync(new ArraySegment<byte>(postBuffer), SocketFlags.None).ConfigureAwait(false);
-            }
+            _handle.Dispose();
         }
 
-        private IAsyncResult BeginSendFileInternal(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
+        internal void ClearHandle()
         {
-            CheckTransmitFileOptions(flags);
-
-            // Open the file, if any
-            // Open it before we send the preBuffer so that any exception happens first
-            FileStream? fileStream = OpenFile(fileName);
-
-            return TaskToApm.Begin(SendFileInternalAsync(fileStream, preBuffer, postBuffer), callback, state);
+            _handle = null!;
         }
 
-        private void EndSendFileInternal(IAsyncResult asyncResult)
+        internal Socket CopyStateFromSource(Socket source)
         {
-            TaskToApm.End(asyncResult);
+            _addressFamily = source._addressFamily;
+            _closeTimeout = source._closeTimeout;
+            _disposed = source._disposed;
+            _handle = source._handle;
+            _isConnected = source._isConnected;
+            _isDisconnected = source._isDisconnected;
+            _isListening = source._isListening;
+            _nonBlockingConnectInProgress = source._nonBlockingConnectInProgress;
+            _protocolType = source._protocolType;
+            _receivingPacketInformation = source._receivingPacketInformation;
+            _remoteEndPoint = source._remoteEndPoint;
+            _rightEndPoint = source._rightEndPoint;
+            _socketType = source._socketType;
+            _willBlock = source._willBlock;
+            _willBlockInternal = source._willBlockInternal;
+            _localEndPoint = source._localEndPoint;
+            _multiBufferReceiveEventArgs = source._multiBufferReceiveEventArgs;
+            _multiBufferSendEventArgs = source._multiBufferSendEventArgs;
+            _pendingConnectRightEndPoint = source._pendingConnectRightEndPoint;
+            _singleBufferReceiveEventArgs = source._singleBufferReceiveEventArgs;
+#if DEBUG
+            // Try to detect if a property gets added that we're not copying correctly.
+            foreach (PropertyInfo pi in typeof(Socket).GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            {
+                try
+                {
+                    object? origValue = pi.GetValue(source);
+                    object? cloneValue = pi.GetValue(this);
+
+                    Debug.Assert(Equals(origValue, cloneValue), $"{pi.Name}. Expected: {origValue}, Actual: {cloneValue}");
+                }
+                catch (TargetInvocationException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.OperationNotSupported)
+                {
+                    // macOS fails to retrieve DontFragment and MulticastLoopback at the moment
+                }
+            }
+#endif
+            return this;
         }
     }
 }

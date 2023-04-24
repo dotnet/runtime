@@ -21,12 +21,12 @@ namespace System.Xml.Xsl
     {
         public static uint DblHi(double dbl)
         {
-            return (uint)(BitConverter.DoubleToInt64Bits(dbl) >> 32);
+            return (uint)(BitConverter.DoubleToUInt64Bits(dbl) >> 32);
         }
 
         public static uint DblLo(double dbl)
         {
-            return unchecked((uint)BitConverter.DoubleToInt64Bits(dbl));
+            return unchecked((uint)BitConverter.DoubleToUInt64Bits(dbl));
         }
 
         // Returns true if value is infinite or NaN (exponent bits are all ones)
@@ -89,7 +89,7 @@ namespace System.Xml.Xsl
 
         // Small powers of ten. These are all the powers of ten that have an exact
         // representation in IEEE double precision format.
-        public static readonly double[] C10toN = {
+        public static ReadOnlySpan<double> C10toN => new double[] {
             1e00, 1e01, 1e02, 1e03, 1e04, 1e05, 1e06, 1e07, 1e08, 1e09,
             1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
             1e20, 1e21, 1e22,
@@ -428,7 +428,7 @@ namespace System.Xml.Xsl
                     w2 = 32 - w1;
                     _u2 = (_u2 << w1) | (_u1 >> w2);
                     _u1 = (_u1 << w1) | (_u0 >> w2);
-                    _u0 = (_u0 << w1);
+                    _u0 <<= w1;
                     _exp -= w1;
                 }
             }
@@ -659,7 +659,7 @@ namespace System.Xml.Xsl
                         AddU(ref dblHi, 1);
                     }
                 }
-                return BitConverter.Int64BitsToDouble((long)dblHi << 32 | dblLo);
+                return BitConverter.UInt64BitsToDouble((ulong)dblHi << 32 | dblLo);
             }
 
             // Lop off the integer part and return it.
@@ -1112,7 +1112,7 @@ namespace System.Xml.Xsl
                     dblHi = DblHi(dblT);
                     dblHi &= 0x000FFFFF;
                     dblHi |= 0x3FF00000;
-                    dblT = BitConverter.Int64BitsToDouble((long)dblHi << 32 | DblLo(dblT));
+                    dblT = BitConverter.UInt64BitsToDouble((ulong)dblHi << 32 | DblLo(dblT));
 
                     // Adjust wExp2 because we don't have the implicit bit.
                     wExp2++;
@@ -1123,7 +1123,7 @@ namespace System.Xml.Xsl
                     // First multiply by a power of 2 to get a normalized value.
                     dblHi &= 0x000FFFFF;
                     dblHi |= 0x3FF00000;
-                    dblT = BitConverter.Int64BitsToDouble((long)dblHi << 32 | dblLo);
+                    dblT = BitConverter.UInt64BitsToDouble((ulong)dblHi << 32 | dblLo);
 
                     // This is the power of 2.
                     w1 = wExp2 + 52;
@@ -2307,7 +2307,7 @@ namespace System.Xml.Xsl
                         }
                     }
                 }
-                return BitConverter.Int64BitsToDouble((long)dblHi << 32 | dblLo);
+                return BitConverter.UInt64BitsToDouble((ulong)dblHi << 32 | dblLo);
             }
 #endif
         };
@@ -2593,7 +2593,7 @@ namespace System.Xml.Xsl
                 // This assert was removed because it would fire on VERY rare occasions. Not
                 // repro on all machines and very hard to repro even on machines that could repro it.
                 // The numbers (dblLowPrec and dbl) were different in their two least sig bits only
-                // which is _probably_ within expected errror. I did not take the time to fully
+                // which is _probably_ within expected error. I did not take the time to fully
                 // investigate whether this really does meet the ECMA spec...
                 //
                 Debug.Assert(double.IsNaN(dblLowPrec) || dblLowPrec == dbl);
@@ -2612,7 +2612,7 @@ namespace System.Xml.Xsl
                 N * M * 2^n to N * D * 10^e (at full precision). If the binary value is
                 greater, we adjust it to be exactly half way to the next value that can
                 come from a double. We then compare again to decided whether to bump the
-                double up to the next value. Similary if the binary value is smaller,
+                double up to the next value. Similarly if the binary value is smaller,
                 we adjust it to be exactly half way to the previous representable value
                 and recompare.
             */
@@ -2961,236 +2961,14 @@ namespace System.Xml.Xsl
             }
         }
 
-        private static bool IsAsciiDigit(char ch)
-        {
-            return unchecked((uint)(ch - '0')) <= 9;
-        }
-
-        private static bool IsWhitespace(char ch)
-        {
-            return ch == '\x20' || ch == '\x9' || ch == '\xA' || ch == '\xD';
-        }
-
-        private static unsafe char* SkipWhitespace(char* pch)
-        {
-            while (IsWhitespace(*pch))
-            {
-                pch++;
-            }
-            return pch;
-        }
-
-        /*  ----------------------------------------------------------------------------
-            StringToDouble()
-
-            Converts a string to a floating point number according to XPath rules.
-            NaN is returned if the entire string is not a valid number.
-
-            This code was stolen from MSXML6 DecimalFormat::parse(). The implementation
-            depends on the fact that the String objects are always zero-terminated.
-        */
         public static unsafe double StringToDouble(string s)
         {
-            Debug.Assert(('0' & 0xF) == 0, "We use (ch & 0xF) to convert char to digit");
-            // For the mantissa digits. After leaving the state machine, pchFirstDig
-            // points to the first digit and pch points just past the last digit.
-            // numDig is the number of digits. pch - pchFirstDig may be numDig + 1
-            // (if there is a decimal point).
-
-            fixed (char* pchStart = s)
+            if (double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double result) && double.IsFinite(result))
             {
-                int numDig = 0;
-                char* pch = pchStart;
-                char* pchFirstDig = null;
-                char ch;
-
-                int sign = 1;       // sign of the mantissa
-                int expAdj = 0;     // exponent adjustment
-
-            // Enter the state machine
-
-            // Initialization
-            LRestart:
-                ch = *pch++;
-                if (IsAsciiDigit(ch))
-                {
-                    goto LGetLeft;
-                }
-
-                switch (ch)
-                {
-                    case '-':
-                        if (sign < 0)
-                        {
-                            break;
-                        }
-                        sign = -1;
-                        goto LRestart;
-                    case '.':
-                        if (IsAsciiDigit(*pch))
-                        {
-                            goto LGetRight;
-                        }
-                        break;
-                    default:
-                        // MSXML has a bug, we should not allow whitespace after a minus sign
-                        if (IsWhitespace(ch) && sign > 0)
-                        {
-                            pch = SkipWhitespace(pch);
-                            goto LRestart;
-                        }
-                        break;
-                }
-
-                // Nothing digested - set the result to NaN and exit.
-                return double.NaN;
-
-            LGetLeft:
-                // Get digits to the left of the decimal point
-                if (ch == '0')
-                {
-                    do
-                    {
-                        // Trim leading zeros
-                        ch = *pch++;
-                    } while (ch == '0');
-
-                    if (!IsAsciiDigit(ch))
-                    {
-                        goto LSkipNonZeroDigits;
-                    }
-                }
-
-                Debug.Assert(IsAsciiDigit(ch));
-                pchFirstDig = pch - 1;
-                do
-                {
-                    ch = *pch++;
-                } while (IsAsciiDigit(ch));
-                numDig = (int)(pch - pchFirstDig) - 1;
-
-            LSkipNonZeroDigits:
-                if (ch != '.')
-                {
-                    goto LEnd;
-                }
-
-            LGetRight:
-                Debug.Assert(ch == '.');
-                ch = *pch++;
-                if (pchFirstDig == null)
-                {
-                    // Count fractional leading zeros (e.g. six zeros in '0.0000005')
-                    while (ch == '0')
-                    {
-                        expAdj--;
-                        ch = *pch++;
-                    }
-                    pchFirstDig = pch - 1;
-                }
-
-                while (IsAsciiDigit(ch))
-                {
-                    expAdj--;
-                    numDig++;
-                    ch = *pch++;
-                }
-
-            LEnd:
-                pch--;
-                char* pchEnd = pchStart + s.Length;
-                Debug.Assert(*pchEnd == '\0', "String objects must be zero-terminated");
-
-                if (pch < pchEnd && SkipWhitespace(pch) < pchEnd)
-                {
-                    // If we're not at the end of the string, this is not a valid number
-                    return double.NaN;
-                }
-
-                if (numDig == 0)
-                {
-                    return 0.0;
-                }
-
-                Debug.Assert(pchFirstDig != null);
-
-                if (expAdj == 0)
-                {
-                    // Assert(StrRChrW(pchFirstDig, &pchFirstDig[numDig], '.') == null);
-
-                    // Detect special case where number is an integer
-                    if (numDig <= 9)
-                    {
-                        Debug.Assert(pchFirstDig != pch);
-                        int iNum = *pchFirstDig & 0xF; // - '0'
-                        while (--numDig != 0)
-                        {
-                            pchFirstDig++;
-                            Debug.Assert(IsAsciiDigit(*pchFirstDig));
-                            iNum = iNum * 10 + (*pchFirstDig & 0xF); // - '0'
-                        }
-                        return (double)(sign < 0 ? -iNum : iNum);
-                    }
-                }
-                else
-                {
-                    // The number has a fractional part
-                    Debug.Assert(expAdj < 0);
-                    // Assert(StrRChrW(pchStart, pch, '.') != null);
-                }
-
-                // Limit to 50 digits (double is only precise up to 17 or so digits)
-                if (numDig > FloatingDecimal.MaxDigits)
-                {
-                    pch -= (numDig - FloatingDecimal.MaxDigits);
-                    expAdj += (numDig - FloatingDecimal.MaxDigits);
-                    numDig = FloatingDecimal.MaxDigits;
-                }
-
-                // Remove trailing zero's from mantissa
-                Debug.Assert(IsAsciiDigit(*pchFirstDig) && *pchFirstDig != '0');
-                while (true)
-                {
-                    if (*--pch == '0')
-                    {
-                        numDig--;
-                        expAdj++;
-                    }
-                    else if (*pch != '.')
-                    {
-                        Debug.Assert(IsAsciiDigit(*pch) && *pch != '0');
-                        pch++;
-                        break;
-                    }
-                }
-                Debug.Assert(pch - pchFirstDig == numDig || pch - pchFirstDig == numDig + 1);
-
-                {
-                    // Construct a floating decimal from the array of digits
-                    Debug.Assert(numDig > 0 && numDig <= FloatingDecimal.MaxDigits);
-
-                    FloatingDecimal dec = new FloatingDecimal();
-                    dec.Exponent = expAdj + numDig;
-                    dec.Sign = sign;
-                    dec.MantissaSize = numDig;
-
-                    fixed (byte* pin = &dec.Mantissa[0])
-                    {
-                        byte* mantissa = pin;
-                        while (pchFirstDig < pch)
-                        {
-                            if (*pchFirstDig != '.')
-                            {
-                                *mantissa = (byte)(*pchFirstDig & 0xF); // - '0'
-                                mantissa++;
-                            }
-                            pchFirstDig++;
-                        }
-                    }
-
-                    return (double)dec;
-                }
+                return result;
             }
+
+            return double.NaN;
         }
     }
 }

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!--  CilStrip.Sources doesn't play nicely with nullability -->
+    <Nullable>disable</Nullable>
+    <!-- CS0618,SYSLIB0003,SYSLIB0037: Mono.Cecil uses a number of other obsolete types
+         CS0649: Mono.Cecil.Binary.ExportTable has some unused fields
+    -->
+    <NoWarn>$(NoWarn),CS0618,CS0649,SYSLIB0003,SYSLIB0037</NoWarn>
+    <!-- the analyzers don't like Mono.Cecil either -->
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.CilStrip.Sources" Version="$(MicrosoftDotNetCilStripSourcesVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="AssemblyStripper.cs" />
+  </ItemGroup>
+</Project>

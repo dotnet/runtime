@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Globalization;
 using System.Text;
@@ -40,6 +41,8 @@ namespace System.Runtime.InteropServices
             HResult = errorCode;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected COMException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -48,8 +51,7 @@ namespace System.Runtime.InteropServices
         {
             StringBuilder s = new StringBuilder();
 
-            string className = GetType().ToString();
-            s.Append(className).Append(" (0x").Append(HResult.ToString("X8", CultureInfo.InvariantCulture)).Append(')');
+            s.Append($"{GetType()} (0x{HResult:X8})");
 
             string message = Message;
             if (!string.IsNullOrEmpty(message))

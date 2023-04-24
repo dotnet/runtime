@@ -444,6 +444,8 @@ namespace System.Security.AccessControl
         public PrivilegeNotHeldException(string? privilege) { }
         public PrivilegeNotHeldException(string? privilege, System.Exception? inner) { }
         public string? PrivilegeName { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     [System.FlagsAttribute]
@@ -536,29 +538,29 @@ namespace System.Security.Policy
     public sealed partial class Evidence : System.Collections.ICollection, System.Collections.IEnumerable
     {
         public Evidence() { }
-        [Obsolete("This constructor is obsolete. Please use the constructor which takes arrays of EvidenceBase instead.")]
+        [System.ObsoleteAttribute("This constructor is obsolete. Use the constructor which accepts arrays of EvidenceBase instead.")]
         public Evidence(object[] hostEvidence, object[] assemblyEvidence) { }
         public Evidence(System.Security.Policy.Evidence evidence) { }
         public Evidence(System.Security.Policy.EvidenceBase[] hostEvidence, System.Security.Policy.EvidenceBase[] assemblyEvidence) { }
-        [Obsolete("Evidence should not be treated as an ICollection. Please use GetHostEnumerator and GetAssemblyEnumerator to iterate over the evidence to collect a count.")]
+        [System.ObsoleteAttribute("Evidence should not be treated as an ICollection. Use GetHostEnumerator and GetAssemblyEnumerator to iterate over the evidence to collect a count.")]
         public int Count { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
         public bool IsSynchronized { get { throw null; } }
         public bool Locked { get { throw null; } set { } }
         public object SyncRoot { get { throw null; } }
-        [Obsolete("This method is obsolete. Please use AddAssemblyEvidence instead.")]
+        [System.ObsoleteAttribute("Evidence.AddAssembly has been deprecated. Use AddAssemblyEvidence instead.")]
         public void AddAssembly(object id) { }
         public void AddAssemblyEvidence<T>(T evidence) where T : System.Security.Policy.EvidenceBase { }
-        [Obsolete("This method is obsolete. Please use AddHostEvidence instead.")]
+        [System.ObsoleteAttribute("Evidence.AddHost has been deprecated. Use AddHostEvidence instead.")]
         public void AddHost(object id) { }
         public void AddHostEvidence<T>(T evidence) where T : System.Security.Policy.EvidenceBase { }
         public void Clear() { }
         public System.Security.Policy.Evidence? Clone() { throw null; }
-        [Obsolete("Evidence should not be treated as an ICollection. Please use the GetHostEnumerator and GetAssemblyEnumerator methods rather than using CopyTo.")]
+        [System.ObsoleteAttribute("Evidence should not be treated as an ICollection. Use the GetHostEnumerator and GetAssemblyEnumerator methods rather than using CopyTo.")]
         public void CopyTo(System.Array array, int index) { }
         public System.Collections.IEnumerator GetAssemblyEnumerator() { throw null; }
-        public T? GetAssemblyEvidence<T>() where T : System.Security.Policy.EvidenceBase { throw null; }        
-        [Obsolete("GetEnumerator is obsolete. Please use GetAssemblyEnumerator and GetHostEnumerator instead.")]
+        public T? GetAssemblyEvidence<T>() where T : System.Security.Policy.EvidenceBase { throw null; }
+        [System.ObsoleteAttribute("GetEnumerator is obsolete. Use GetAssemblyEnumerator and GetHostEnumerator instead.")]
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
         public System.Collections.IEnumerator GetHostEnumerator() { throw null; }
         public T? GetHostEvidence<T>() where T : System.Security.Policy.EvidenceBase { throw null; }

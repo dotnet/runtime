@@ -67,7 +67,7 @@ are also some restrictions on the types of nodes that may appear in an HIR or LI
 
 Both HIR and LIR blocks are composed of `GenTree` nodes that define the operations performed by the block. A
 `GenTree` node may consume some number of operands and may produce a singly-defined, at-most-singly-used value as a
-result. These values are referred to interchangably as *SDSU* (single def, single use) temps or *tree* temps.
+result. These values are referred to interchangeably as *SDSU* (single def, single use) temps or *tree* temps.
 Definitions (aka, defs) of SDSU temps are represented by `GenTree` nodes themselves, and uses are represented by
 edges from the using node to the defining node. Furthermore, SDSU temps defined in one block may not be used in a
 different block. In cases where a value must be multiply-defined, multiply-used, or defined in one block and used in
@@ -131,7 +131,7 @@ bit vectors.
 ### Example of Post-Import IR
 
 For this snippet of code (extracted from
-[src/tests/JIT/CodeGenBringUpTests/DblRoots.cs](https://github.com/dotnet/runtime/blob/main/src/tests/JIT/CodeGenBringUpTests/DblRoots.cs)), with `COMPlus_TieredCompilation=0` and using the DblRoots_ro.csproj project to compile it:
+[src/tests/JIT/CodeGenBringUpTests/DblRoots.cs](https://github.com/dotnet/runtime/blob/main/src/tests/JIT/CodeGenBringUpTests/DblRoots.cs)), with `DOTNET_TieredCompilation=0` and using the DblRoots_ro.csproj project to compile it:
 
        r1 = (-b + Math.Sqrt(b*b - 4*a*c))/(2*a);
 
@@ -756,13 +756,13 @@ phase-specific information by searching for the phase name. Some useful points f
 
 ## How to create a JitDump
 
-You can enable dumps by setting the `COMPlus_JitDump` environment variable to a space-separated list of the method(s)
+You can enable dumps by setting the `DOTNET_JitDump` environment variable to a space-separated list of the method(s)
 you want to dump. For example:
 
 ```cmd
 :: Print out lots of useful info when
 :: compiling methods named Main/GetEnumerator
-set "COMPlus_JitDump=Main GetEnumerator"
+set "DOTNET_JitDump=Main GetEnumerator"
 ```
 
 See [Setting configuration variables](viewing-jit-dumps.md#setting-configuration-variables) for more
@@ -843,7 +843,7 @@ bad tree and wish to understand how it got corrupted, you can place a conditiona
 `gtNewNode` to see when it is created, and then a data breakpoint on the field that you believe is corrupted.
 
 The trees are connected by line characters (either in ASCII, by default, or in slightly more readable Unicode when
-`COMPlus_JitDumpASCII=0` is specified), to make it a bit easier to read.
+`DOTNET_JitDumpASCII=0` is specified), to make it a bit easier to read.
 
 ## Variable naming
 

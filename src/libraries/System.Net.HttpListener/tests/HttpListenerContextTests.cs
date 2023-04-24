@@ -13,7 +13,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations", RuntimeConfiguration.Checked)]
+    [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations", ~RuntimeConfiguration.Release)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerContextTests : IDisposable
@@ -101,7 +101,7 @@ namespace System.Net.Tests
         [ConditionalFact(nameof(IsNotWindows7))]
         public async Task AcceptWebSocketAsync_AuthorizationInHeaders_ThrowsNotImplementedException()
         {
-            Socket.Options.SetRequestHeader("Authorization", "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes("user:password")));
+            Socket.Options.SetRequestHeader("Authorization", "Basic " + Convert.ToBase64String("user:password"u8));
             Factory.GetListener().AuthenticationSchemes = AuthenticationSchemes.Basic;
 
             HttpListenerContext context = await GetWebSocketContext();

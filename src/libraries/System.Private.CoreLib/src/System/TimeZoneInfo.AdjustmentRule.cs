@@ -56,6 +56,12 @@ namespace System
                 _daylightTransitionEnd.Equals(other._daylightTransitionEnd) &&
                 _daylightTransitionStart.Equals(other._daylightTransitionStart);
 
+            /// <summary>Indicates whether the current instance is equal to another instance.</summary>
+            /// <param name="obj">An instance to compare with this instance.</param>
+            /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+            public override bool Equals([NotNullWhen(true)] object? obj) =>
+                obj is AdjustmentRule other && Equals(other);
+
             public override int GetHashCode() => _dateStart.GetHashCode();
 
             private AdjustmentRule(
@@ -256,10 +262,7 @@ namespace System
 
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                if (info == null)
-                {
-                    throw new ArgumentNullException(nameof(info));
-                }
+                ArgumentNullException.ThrowIfNull(info);
 
                 info.AddValue("DateStart", _dateStart); // Do not rename (binary serialization)
                 info.AddValue("DateEnd", _dateEnd); // Do not rename (binary serialization)
@@ -272,10 +275,7 @@ namespace System
 
             private AdjustmentRule(SerializationInfo info, StreamingContext context)
             {
-                if (info == null)
-                {
-                    throw new ArgumentNullException(nameof(info));
-                }
+                ArgumentNullException.ThrowIfNull(info);
 
                 _dateStart = (DateTime)info.GetValue("DateStart", typeof(DateTime))!; // Do not rename (binary serialization)
                 _dateEnd = (DateTime)info.GetValue("DateEnd", typeof(DateTime))!; // Do not rename (binary serialization)

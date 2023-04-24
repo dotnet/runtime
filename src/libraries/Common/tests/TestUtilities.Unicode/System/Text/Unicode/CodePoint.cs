@@ -40,7 +40,7 @@ namespace System.Text.Unicode
             SimpleTitlecaseMapping = value;
             SimpleUppercaseMapping = value;
 
-            if (parsedData.UnicodeDataData.TryGetValue(value, out UnicodeDataFileEntry entry))
+            if (parsedData.UnicodeDataData.TryGetValue(value, out UnicodeDataFileEntry? entry))
             {
                 GeneralCategory = entry.GeneralCategory;
                 DecimalDigitValue = entry.DecimalDigitValue;
@@ -63,7 +63,7 @@ namespace System.Text.Unicode
 
             // Can we get a better name for this code point?
 
-            if (parsedData.DerivedNameData.TryGetValue(value, out string preferredName))
+            if (parsedData.DerivedNameData.TryGetValue(value, out string? preferredName))
             {
                 Name = preferredName;
             }
@@ -109,7 +109,7 @@ namespace System.Text.Unicode
         /// <remarks>
         /// See https://www.unicode.org/reports/tr44/#PropList.txt.
         /// </remarks>
-        public CodePointFlags Flags { get; } = default; // default is "no flags"
+        public CodePointFlags Flags { get; } // default is "no flags"
 
         /// <summary>
         /// The general Unicode category of this code point.
@@ -182,9 +182,9 @@ namespace System.Text.Unicode
         /// </summary>
         public int Value { get; }
 
-        public override bool Equals(object obj) => Equals(obj as CodePoint);
+        public override bool Equals(object? obj) => Equals(obj as CodePoint);
 
-        public bool Equals(CodePoint obj)
+        public bool Equals(CodePoint? obj)
         {
             if (obj is null)
             {

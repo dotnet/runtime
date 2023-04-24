@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'test'
+.assembly 'b42387'
 {
 
 
@@ -19,11 +19,11 @@
   
   
 }
-.module 'test.exe'
+.assembly extern xunit.core {}
 // MVID: {23E3D49B-6CFD-4DA0-8C9D-A611CE0BA103}
 .namespace JitTest
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
     .method private hidebysig static void 
@@ -72,9 +72,12 @@
       IL_0029:  ret
     } // end of method 'Test::try_index'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       // Code size       38 (0x26)
       .maxstack  2

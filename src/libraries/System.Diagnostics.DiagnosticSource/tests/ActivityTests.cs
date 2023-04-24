@@ -172,7 +172,8 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestBaggageWithChainedActivities()
         {
-            RemoteExecutor.Invoke(() => {
+            RemoteExecutor.Invoke(() =>
+            {
                 Activity a1 = new Activity("a1");
                 a1.Start();
 
@@ -238,7 +239,23 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void SetParentId()
         {
-            var parent = new Activity("parent");
+            using (var a = new Activity("foo"))
+            {
+                a.Start();
+                string parentId = a.ParentId;
+                a.SetParentId("00-6e76af18746bae4eadc3581338bbe8b1-2899ebfdbdce904b-00"); // Error does nothing
+                Assert.Equal(parentId, a.ParentId);
+            }
+
+            using (var a = new Activity("foo"))
+            {
+                a.Start();
+                string parentId = a.ParentId;
+                a.SetParentId(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom()); // Nothing will happen
+                Assert.Equal(parentId, a.ParentId);
+            }
+
+            using var parent = new Activity("parent");
             parent.SetParentId(null);  // Error does nothing
             Assert.Null(parent.ParentId);
 
@@ -254,7 +271,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(parent.ParentId, parent.RootId);
             parent.Start();
 
-            var child = new Activity("child");
+            using var child = new Activity("child");
             child.Start();
 
             Assert.Equal(parent.Id, child.ParentId);
@@ -299,7 +316,6 @@ namespace System.Diagnostics.Tests
             Assert.Equal('#', activity.Id[activity.Id.Length - 1]);
         }
 
-
         /// <summary>
         /// Tests activity start and stop
         /// Checks Activity.Current correctness, Id generation
@@ -318,6 +334,51 @@ namespace System.Diagnostics.Tests
 
             activity.Stop();
             Assert.Null(Activity.Current);
+        }
+
+        /// <summary>
+        /// Tests Activity.IsStopped
+        /// </summary>
+        [Fact]
+        public void IsStoppedTest()
+        {
+            using var activity = new Activity("activity");
+            Assert.False(activity.IsStopped);
+            activity.Start();
+            Assert.False(activity.IsStopped);
+            Assert.Equal(TimeSpan.Zero, activity.Duration);
+            activity.Stop();
+            Assert.NotEqual(TimeSpan.Zero, activity.Duration);
+            Assert.True(activity.IsStopped);
+
+            using var activity1 = new Activity("activity");
+            Assert.False(activity1.IsStopped);
+            activity1.Start();
+            Assert.False(activity1.IsStopped);
+            activity1.SetEndTime(DateTime.UtcNow.AddMinutes(1)); // Setting end time shouldn't mark the activity as stopped
+            Assert.False(activity1.IsStopped);
+            activity1.Stop();
+            Assert.True(activity1.IsStopped);
+
+            //
+            // Validate when receiving Start/Stop Activity events
+            //
+
+            using ActivitySource aSource = new ActivitySource("TestActivityIsStopped");
+            using ActivityListener listener = new ActivityListener();
+
+            listener.ShouldListenTo = (activitySource) => activitySource.Name == "TestActivityIsStopped";
+            listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
+            listener.ActivityStarted = a => Assert.False(a.IsStopped);
+            listener.ActivityStopped = a => Assert.True(a.IsStopped);
+            ActivitySource.AddActivityListener(listener);
+            Activity sourceActivity;
+            using (sourceActivity = aSource.StartActivity("a1"))
+            {
+                Assert.NotNull(sourceActivity);
+                Assert.False(sourceActivity.IsStopped);
+            }
+            Assert.True(sourceActivity.IsStopped);
         }
 
         /// <summary>
@@ -353,7 +414,7 @@ namespace System.Diagnostics.Tests
 
             // In Debug builds of System.Diagnostics.DiagnosticSource, the child operation Id will be constructed as follows
             // "|parent.RootId.<child.OperationName.Replace(., -)>-childCount.".
-            // This is for debugging purposes to know which operation the child Id is comming from.
+            // This is for debugging purposes to know which operation the child Id is coming from.
             //
             // In Release builds of System.Diagnostics.DiagnosticSource, it will not contain the operation name to keep it simple and it will be as
             // "|parent.RootId.childCount.".
@@ -685,7 +746,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void IdFormat_W3CWhenTraceIdAndSpanIdProvided()
         {
-            Activity activity = new Activity("activity3");
+            using Activity activity = new Activity("activity3");
             ActivityTraceId activityTraceId = ActivityTraceId.CreateRandom();
             activity.SetParentId(activityTraceId, ActivitySpanId.CreateRandom());
             activity.Start();
@@ -719,7 +780,7 @@ namespace System.Diagnostics.Tests
             {
                 Activity activity = new Activity("activity15");
                 activity.Start();
-                 Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
+                Assert.Equal(ActivityIdFormat.Hierarchical, activity.IdFormat);
             }, new RemoteInvokeOptions() { StartInfo = psi }).Dispose();
         }
 
@@ -1124,7 +1185,7 @@ namespace System.Diagnostics.Tests
             activity.Stop();
 
             /****************************************************/
-            // Confirm that that flags are propagated to children.
+            // Confirm that the flags are propagated to children.
             activity = new Activity("activity4");
             activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01");
             activity.Start();
@@ -1165,11 +1226,11 @@ namespace System.Diagnostics.Tests
             activity.SetStartTime(DateTime.Now);    // Error Does nothing because it is not UTC
             Assert.Equal(default(DateTime), activity.StartTimeUtc);
 
-            var startTime = DateTime.UtcNow.AddSeconds(-1); // A valid time in the past that we want to be our offical start time.
+            var startTime = DateTime.UtcNow.AddSeconds(-1); // A valid time in the past that we want to be our official start time.
             activity.SetStartTime(startTime);
 
             activity.Start();
-            Assert.Equal(startTime, activity.StartTimeUtc); // we use our offical start time not the time now.
+            Assert.Equal(startTime, activity.StartTimeUtc); // we use our official start time not the time now.
             Assert.Equal(TimeSpan.Zero, activity.Duration);
 
             Thread.Sleep(35);
@@ -1539,7 +1600,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestIsAllDataRequested()
         {
-            // Activity constructor allways set IsAllDataRequested to true for compatability.
+            // Activity constructor always set IsAllDataRequested to true for compatibility.
             Activity a1 = new Activity("a1");
             Assert.True(a1.IsAllDataRequested);
             Assert.True(object.ReferenceEquals(a1, a1.AddTag("k1", "v1")));
@@ -1547,7 +1608,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TestTagObjects()
         {
             Activity activity = new Activity("TagObjects");
@@ -1568,7 +1628,7 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(tags[i].Value, tagObjects[i].Value);
             }
 
-            activity.AddTag("s4", (object) null);
+            activity.AddTag("s4", (object)null);
             Assert.Equal(4, activity.Tags.Count());
             Assert.Equal(4, activity.TagObjects.Count());
             tags = activity.Tags.ToArray();
@@ -1582,7 +1642,7 @@ namespace System.Diagnostics.Tests
             tagObjects = activity.TagObjects.ToArray();
             Assert.Equal(5, tagObjects[4].Value);
 
-            activity.AddTag(null, null); // we allow that and we keeping the behavior for the compatability reason
+            activity.AddTag(null, null); // we allow that and we keeping the behavior for the compatibility reason
             Assert.Equal(5, activity.Tags.Count());
             Assert.Equal(6, activity.TagObjects.Count());
 
@@ -1605,10 +1665,39 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(tags[i].Key, tagObjects[i].Key);
                 Assert.Equal(tags[i].Value, tagObjects[i].Value);
             }
+
+            // Test Deleting last tag
+            activity = new Activity("LastTagObjects");
+
+            activity.SetTag("hello1", "1");
+            activity.SetTag("hello2", "1");
+            activity.SetTag("hello2", null); // last tag get deleted
+            activity.SetTag("hello3", "2");
+            activity.SetTag("hello4", "3");
+
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(3, tagObjects.Length);
+            Assert.Equal("hello1", tagObjects[0].Key);
+            Assert.Equal("1", tagObjects[0].Value);
+            Assert.Equal("hello3", tagObjects[1].Key);
+            Assert.Equal("2", tagObjects[1].Value);
+            Assert.Equal("hello4", tagObjects[2].Key);
+            Assert.Equal("3", tagObjects[2].Value);
+
+            activity = new Activity("FirstLastTagObjects");
+            activity.SetTag("hello1", "1");
+            activity.SetTag("hello1", null); // Delete the first and last tag
+            activity.SetTag("hello2", "2");
+            activity.SetTag("hello3", "3");
+            tagObjects = activity.TagObjects.ToArray();
+            Assert.Equal(2, tagObjects.Length);
+            Assert.Equal("hello2", tagObjects[0].Key);
+            Assert.Equal("2", tagObjects[0].Value);
+            Assert.Equal("hello3", tagObjects[1].Key);
+            Assert.Equal("3", tagObjects[1].Value);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void TestGetTagItem()
         {
             Activity a = new Activity("GetTagItem");
@@ -1660,9 +1749,9 @@ namespace System.Diagnostics.Tests
 
 
         [Theory]
-        [InlineData("key1", null, true,  1)]
+        [InlineData("key1", null, true, 1)]
         [InlineData("key2", null, false, 0)]
-        [InlineData("key3", "v1", true,  1)]
+        [InlineData("key3", "v1", true, 1)]
         [InlineData("key4", "v2", false, 1)]
         public void TestInsertingFirstTag(string key, object value, bool add, int resultCount)
         {
@@ -1757,15 +1846,15 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityStatusCode.Error, a.Status);
             Assert.Equal("Another Error Code Description", a.StatusDescription);
 
-            a.SetStatus((ActivityStatusCode) 100, "Another Error Code Description");
-            Assert.Equal((ActivityStatusCode) 100, a.Status);
+            a.SetStatus((ActivityStatusCode)100, "Another Error Code Description");
+            Assert.Equal((ActivityStatusCode)100, a.Status);
             Assert.Null(a.StatusDescription);
         }
 
         [Fact]
         public void StructEnumerator_GenericLinkedList()
         {
-            // Note: This test verifies the presence of the struct Enumerator on LinkedList<T> used by customers dynamically to avoid allocations.
+            // Note: This test verifies the presence of the struct Enumerator on DiagLinkedList<T> used by customers dynamically to avoid allocations.
 
             Activity a = new Activity("TestActivity");
             a.AddEvent(new ActivityEvent());
@@ -1814,12 +1903,153 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ActivityCurrentEventTest()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                int count = 0;
+                Activity? previous = null;
+                Activity? current = null;
+
+                Assert.Null(Activity.Current);
+
+                //
+                // No Event handler is registered yet.
+                //
+
+                using (Activity a1 = new Activity("a1"))
+                {
+                    a1.Start();
+                    Assert.Equal(0, count);
+                } // a1 stops here
+                Assert.Equal(0, count);
+
+                Activity.CurrentChanged += CurrentChanged1;
+
+                //
+                // One Event handler is registered.
+                //
+
+                using (Activity a1 = new Activity("a1"))
+                {
+                    current = a1;
+                    a1.Start();
+                    Assert.Equal(1, count);
+                    using (Activity a2 = new Activity("a2"))
+                    {
+                        previous = a1;
+                        current = a2;
+                        a2.Start();
+                        Assert.Equal(2, count);
+                        previous = a2;
+                        current = a1;
+                    } // a2 stops here
+                    Assert.Equal(3, count);
+
+                    previous = a1;
+                    current = null;
+                } // a1 stops here
+                Assert.Equal(4, count);
+
+                Activity.CurrentChanged += CurrentChanged2;
+
+                //
+                // Two Event handlers are registered.
+                //
+
+                previous = null;
+                using (Activity a1 = new Activity("a1"))
+                {
+                    current = a1;
+                    a1.Start();
+                    Assert.Equal(6, count);
+                    using (Activity a2 = new Activity("a2"))
+                    {
+                        previous = a1;
+                        current = a2;
+                        a2.Start();
+                        Assert.Equal(8, count);
+                        previous = a2;
+                        current = a1;
+                    } // a2 stops here
+                    Assert.Equal(10, count);
+
+                    previous = a1;
+                    current = null;
+                } // a1 stops here
+                Assert.Equal(12, count);
+
+                Activity.CurrentChanged -= CurrentChanged1;
+
+                //
+                // One Event handler is registered after we removed the second handler.
+                //
+
+                previous = null;
+                using (Activity a1 = new Activity("a1"))
+                {
+                    current = a1;
+                    a1.Start();
+                    Assert.Equal(13, count);
+                    using (Activity a2 = new Activity("a2"))
+                    {
+                        previous = a1;
+                        current = a2;
+                        a2.Start();
+                        Assert.Equal(14, count);
+                        previous = a2;
+                        current = a1;
+                    } // a2 stops here
+                    Assert.Equal(15, count);
+
+                    previous = a1;
+                    current = null;
+                } // a1 stops here
+                Assert.Equal(16, count);
+
+                Activity.CurrentChanged -= CurrentChanged2;
+
+                //
+                // No Event handler is registered after we removed the remaining handler.
+                //
+
+                using (Activity a1 = new Activity("a1"))
+                {
+                    a1.Start();
+                    Assert.Equal(16, count);
+                    using (Activity a2 = new Activity("a2"))
+                    {
+                        a2.Start();
+                        Assert.Equal(16, count);
+                    } // a2 stops here
+                    Assert.Equal(16, count);
+                } // a1 stops here
+                Assert.Equal(16, count);
+
+                //
+                // Event Handlers
+                //
+
+                void CurrentChanged1(object? sender, ActivityChangedEventArgs e)
+                {
+                    count++;
+                    Assert.Null(sender);
+                    Assert.Equal(e.Current, Activity.Current);
+                    Assert.Equal(previous, e.Previous);
+                    Assert.Equal(current, e.Current);
+                }
+
+                void CurrentChanged2(object? sender, ActivityChangedEventArgs e) => CurrentChanged1(sender, e);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TraceIdCustomGenerationTest()
         {
             RemoteExecutor.Invoke(() =>
             {
                 Random random = new Random();
-                byte [] traceIdBytes = new byte[16];
+                byte[] traceIdBytes = new byte[16];
 
                 Activity.TraceIdGenerator = () =>
                 {
@@ -1839,6 +2069,227 @@ namespace System.Diagnostics.Tests
                     a.Stop();
                 }
             }).Dispose();
+        }
+
+        [Fact]
+        public void EnumerateTagObjectsTest()
+        {
+            Activity a = new Activity("Root");
+
+            var enumerator = a.EnumerateTagObjects();
+
+            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.GetEnumerator().MoveNext());
+
+            a.SetTag("key1", "value1");
+            a.SetTag("key2", "value2");
+
+            enumerator = a.EnumerateTagObjects();
+
+            List<KeyValuePair<string, object>> values = new();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(new KeyValuePair<string, object?>("key1", "value1"), enumerator.Current);
+            values.Add(enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(new KeyValuePair<string, object?>("key2", "value2"), enumerator.Current);
+            values.Add(enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(a.TagObjects, values);
+
+            foreach (ref readonly KeyValuePair<string, object?> tag in a.EnumerateTagObjects())
+            {
+                Assert.Equal(values[0], tag);
+                values.RemoveAt(0);
+            }
+        }
+
+        [Fact]
+        public void EnumerateEventsTest()
+        {
+            Activity a = new Activity("Root");
+
+            var enumerator = a.EnumerateEvents();
+
+            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.GetEnumerator().MoveNext());
+
+            a.AddEvent(new ActivityEvent("event1"));
+            a.AddEvent(new ActivityEvent("event2"));
+
+            enumerator = a.EnumerateEvents();
+
+            List<ActivityEvent> values = new();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal("event1", enumerator.Current.Name);
+            values.Add(enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal("event2", enumerator.Current.Name);
+            values.Add(enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(a.Events, values);
+
+            foreach (ref readonly ActivityEvent activityEvent in a.EnumerateEvents())
+            {
+                Assert.Equal(values[0], activityEvent);
+                values.RemoveAt(0);
+            }
+        }
+
+        [Fact]
+        public void EnumerateLinksTest()
+        {
+            Activity? a = new Activity("Root");
+
+            Assert.NotNull(a);
+
+            var enumerator = a.EnumerateLinks();
+
+            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.GetEnumerator().MoveNext());
+
+            using ActivitySource source = new ActivitySource("test");
+
+            using ActivityListener listener = new ActivityListener()
+            {
+                ShouldListenTo = (source) => true,
+                Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded
+            };
+
+            ActivitySource.AddActivityListener(listener);
+
+            var context1 = new ActivityContext(ActivityTraceId.CreateRandom(), default, ActivityTraceFlags.None);
+            var context2 = new ActivityContext(ActivityTraceId.CreateRandom(), default, ActivityTraceFlags.None);
+
+            a = source.CreateActivity(
+                name: "Root",
+                kind: ActivityKind.Internal,
+                parentContext: default,
+                links: new[] { new ActivityLink(context1), new ActivityLink(context2) });
+
+            Assert.NotNull(a);
+
+            enumerator = a.EnumerateLinks();
+
+            List<ActivityLink> values = new();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(context1.TraceId, enumerator.Current.Context.TraceId);
+            values.Add(enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(context2.TraceId, enumerator.Current.Context.TraceId);
+            values.Add(enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(a.Links, values);
+
+            foreach (ref readonly ActivityLink activityLink in a.EnumerateLinks())
+            {
+                Assert.Equal(values[0], activityLink);
+                values.RemoveAt(0);
+            }
+        }
+
+        [Fact]
+        public void EnumerateLinkTagsTest()
+        {
+            ActivityLink link = new(default);
+
+            var enumerator = link.EnumerateTagObjects();
+
+            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.GetEnumerator().MoveNext());
+
+            var tags = new List<KeyValuePair<string, object?>>()
+            {
+                new KeyValuePair<string, object?>("tag1", "value1"),
+                new KeyValuePair<string, object?>("tag2", "value2"),
+            };
+
+            link = new ActivityLink(default, new ActivityTagsCollection(tags));
+
+            enumerator = link.EnumerateTagObjects();
+
+            List<KeyValuePair<string, object?>> values = new();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(tags[0], enumerator.Current);
+            values.Add(enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(tags[1], enumerator.Current);
+            values.Add(enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(tags, values);
+
+            foreach (ref readonly KeyValuePair<string, object?> tag in link.EnumerateTagObjects())
+            {
+                Assert.Equal(values[0], tag);
+                values.RemoveAt(0);
+            }
+        }
+
+        [Fact]
+        public void CreateActivityWithNullOperationName()
+        {
+            Activity a = new Activity(operationName: null);
+            Assert.Equal(string.Empty, a.OperationName);
+
+            using ActivitySource aSource = new ActivitySource("NullOperationName");
+            using ActivityListener listener = new ActivityListener();
+            listener.ShouldListenTo = (activitySource) => activitySource == aSource;
+            listener.Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData;
+            ActivitySource.AddActivityListener(listener);
+
+            using Activity a1 = aSource.StartActivity(null, ActivityKind.Client);
+            Assert.NotNull(a1);
+            Assert.Equal(string.Empty, a1.OperationName);
+
+            using Activity a2 = aSource.CreateActivity(null, ActivityKind.Client);
+            Assert.NotNull(a2);
+            Assert.Equal(string.Empty, a2.OperationName);
+        }
+
+        [Fact]
+        public void EnumerateEventTagsTest()
+        {
+            ActivityEvent e = new("testEvent");
+
+            var enumerator = e.EnumerateTagObjects();
+
+            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.GetEnumerator().MoveNext());
+
+            var tags = new List<KeyValuePair<string, object?>>()
+            {
+                new KeyValuePair<string, object?>("tag1", "value1"),
+                new KeyValuePair<string, object?>("tag2", "value2"),
+            };
+
+            e = new ActivityEvent("testEvent", tags: new ActivityTagsCollection(tags));
+
+            enumerator = e.EnumerateTagObjects();
+
+            List<KeyValuePair<string, object?>> values = new();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(tags[0], enumerator.Current);
+            values.Add(enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(tags[1], enumerator.Current);
+            values.Add(enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(tags, values);
+
+            foreach (ref readonly KeyValuePair<string, object?> tag in e.EnumerateTagObjects())
+            {
+                Assert.Equal(values[0], tag);
+                values.RemoveAt(0);
+            }
         }
 
         public void Dispose()

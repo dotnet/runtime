@@ -7,9 +7,16 @@ using DryIoc.Microsoft.DependencyInjection;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
-    public class DryIocDependencyInjectionSpecificationTests: DependencyInjectionSpecificationTests
+    public class DryIocDependencyInjectionSpecificationTests : SkippableDependencyInjectionSpecificationTests
     {
-        protected override IServiceProvider CreateServiceProvider(IServiceCollection serviceCollection)
+        public override bool SupportsIServiceProviderIsService => false;
+
+        public override string[] SkippedTests => new[]
+        {
+            "ServiceScopeFactoryIsSingleton"
+        };
+
+        protected override IServiceProvider CreateServiceProviderImpl(IServiceCollection serviceCollection)
         {
             return new Container()
                 .WithDependencyInjectionAdapter(serviceCollection)

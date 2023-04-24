@@ -36,8 +36,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="capacity">Initial capacity of the builder.</param>
         public ReadOnlyCollectionBuilder(int capacity)
         {
-            if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity));
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             _items = new T[capacity];
         }
@@ -48,8 +47,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="collection">The collection whose elements to copy to the builder.</param>
         public ReadOnlyCollectionBuilder(IEnumerable<T> collection)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
+            ArgumentNullException.ThrowIfNull(collection);
 
             if (collection is ICollection<T> c)
             {
@@ -81,8 +79,7 @@ namespace System.Runtime.CompilerServices
             get { return _items.Length; }
             set
             {
-                if (value < _size)
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, _size);
 
                 if (value != _items.Length)
                 {
@@ -127,8 +124,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="item">The object to insert into the <see cref="ReadOnlyCollectionBuilder{T}"/>.</param>
         public void Insert(int index, T item)
         {
-            if (index > _size)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _size);
 
             if (_size == _items.Length)
             {
@@ -149,8 +145,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="index">The zero-based index of the item to remove.</param>
         public void RemoveAt(int index)
         {
-            if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
 
             _size--;
             if (index < _size)
@@ -170,15 +166,13 @@ namespace System.Runtime.CompilerServices
         {
             get
             {
-                if (index >= _size)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
 
                 return _items[index];
             }
             set
             {
-                if (index >= _size)
-                    throw new ArgumentOutOfRangeException(nameof(index));
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
 
                 _items[index] = value;
                 _version++;
@@ -221,32 +215,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="item">the object to locate in the <see cref="ReadOnlyCollectionBuilder{T}"/>.</param>
         /// <returns>true if item is found in the <see cref="ReadOnlyCollectionBuilder{T}"/>; otherwise, false.</returns>
-        public bool Contains(T item)
-        {
-            if ((object?)item == null)
-            {
-                for (int i = 0; i < _size; i++)
-                {
-                    if ((object?)_items[i] == null)
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-            else
-            {
-                EqualityComparer<T> c = EqualityComparer<T>.Default;
-                for (int i = 0; i < _size; i++)
-                {
-                    if (c.Equals(_items[i], item))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
+        public bool Contains(T item) => IndexOf(item) >= 0;
 
         /// <summary>
         /// Copies the elements of the <see cref="ReadOnlyCollectionBuilder{T}"/> to an <see cref="Array"/>,
@@ -254,10 +223,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="array">The one-dimensional <see cref="Array"/> that is the destination of the elements copied from <see cref="ReadOnlyCollectionBuilder{T}"/>.</param>
         /// <param name="arrayIndex">The zero-based index in array at which copying begins.</param>
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            Array.Copy(_items, 0, array, arrayIndex, _size);
-        }
+        public void CopyTo(T[] array, int arrayIndex) => Array.Copy(_items, 0, array, arrayIndex, _size);
 
         bool ICollection<T>.IsReadOnly => false;
 
@@ -384,8 +350,8 @@ namespace System.Runtime.CompilerServices
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
                 throw new ArgumentException(nameof(array));
 
@@ -413,10 +379,8 @@ namespace System.Runtime.CompilerServices
         /// <param name="count">The number of elements in the range to reverse.</param>
         public void Reverse(int index, int count)
         {
-            if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index));
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count));
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             Array.Reverse(_items, index, count);
             _version++;
@@ -441,6 +405,11 @@ namespace System.Runtime.CompilerServices
         /// <returns>A new instance of <see cref="ReadOnlyCollection{T}"/>.</returns>
         public ReadOnlyCollection<T> ToReadOnlyCollection()
         {
+            if (_size == 0)
+            {
+                return ReadOnlyCollection<T>.Empty;
+            }
+
             // Can we use the stored array?
             T[] items;
             if (_size == _items.Length)

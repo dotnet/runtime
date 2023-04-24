@@ -85,10 +85,8 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Debug.Assert(target != null, "The target that is supposed to be linked must not be null.");
             Debug.Assert(linkOptions != null, "The link options must not be null.");
 
-            LinkedTargetInfo? targetInfo;
-
             // If the target already exists in the registry, replace it with a new NopLinkPropagator to maintain uniqueness
-            if (_targetInformation.TryGetValue(target, out targetInfo)) target = new NopLinkPropagator(_owningSource, target);
+            if (_targetInformation.TryGetValue(target, out _)) target = new NopLinkPropagator(_owningSource, target);
 
             // Add the target to both stores, the list and the dictionary, which are used for different purposes
             var node = new LinkedTargetInfo(target, linkOptions);
@@ -98,13 +96,11 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Increment the optimization counter if needed
             Debug.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
             if (node.RemainingMessages > 0) _linksWithRemainingMessages++;
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockLinking(_owningSource, target);
             }
-#endif
         }
 
         /// <summary>Gets whether the registry contains a particular target.</summary>
@@ -161,13 +157,11 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     // Decrement the optimization counter if needed
                     if (node.RemainingMessages == 0) _linksWithRemainingMessages--;
                     Debug.Assert(_linksWithRemainingMessages >= 0, "_linksWithRemainingMessages must be non-negative at any time.");
-#if FEATURE_TRACING
                     DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
                         etwLog.DataflowBlockUnlinking(_owningSource, target);
                     }
-#endif
                 }
                 // If the target is to stay and we are counting the remaining messages for this link, decrement the counter
                 else if (node.RemainingMessages > 0)

@@ -253,8 +253,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
         }
 
-#if FEATURE_COMPILE
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void GlobalMethod()
         {
             ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.RunAndCollect).DefineDynamicModule("Module");
@@ -264,7 +263,6 @@ namespace System.Linq.Expressions.Tests
             MethodInfo globalMethodInfo = module.GetMethod(globalMethod.Name);
             AssertExtensions.Throws<ArgumentException>("propertyAccessor", () => Expression.MemberBind(globalMethodInfo));
         }
-#endif
 
         [Fact]
         public void WriteOnlyInnerProperty()

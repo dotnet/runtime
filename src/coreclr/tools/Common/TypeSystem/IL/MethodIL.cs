@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Internal.TypeSystem;
 
 namespace Internal.IL
 {
     //
-    // This duplicates types from System.Reflection.Metadata to avoid layering issues, and 
+    // This duplicates types from System.Reflection.Metadata to avoid layering issues, and
     // because of the System.Reflection.Metadata constructors are not public anyway.
     //
 
@@ -53,13 +51,40 @@ namespace Internal.IL
     /// Represents a method body.
     /// </summary>
     [System.Diagnostics.DebuggerTypeProxy(typeof(MethodILDebugView))]
-    public abstract partial class MethodIL
+    public abstract partial class MethodILScope
     {
         /// <summary>
-        /// Gets the method whose body this <see cref="MethodIL"/> represents.
+        /// Gets the method whose body this <see cref=""/> represents.
         /// </summary>
         public abstract MethodDesc OwningMethod { get; }
 
+        /// <summary>
+        /// Gets the open (uninstantiated) version of the <see cref="MethodILScope"/>.
+        /// </summary>
+        public virtual MethodILScope GetMethodILScopeDefinition()
+        {
+            return this;
+        }
+
+        /// <summary>
+        /// Resolves a token from within the method body into a type system object
+        /// (typically a <see cref="MethodDesc"/>, <see cref="FieldDesc"/>, <see cref="TypeDesc"/>,
+        /// or <see cref="MethodSignature"/>).
+        /// </summary>
+        public abstract object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw);
+
+        public override string ToString()
+        {
+            return OwningMethod.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Represents a method body.
+    /// </summary>
+    [System.Diagnostics.DebuggerTypeProxy(typeof(MethodILDebugView))]
+    public abstract partial class MethodIL : MethodILScope
+    {
         /// <summary>
         /// Gets the maximum possible stack depth this method declares.
         /// </summary>
@@ -82,16 +107,14 @@ namespace Internal.IL
         public abstract LocalVariableDefinition[] GetLocals();
 
         /// <summary>
-        /// Resolves a token from within the method body into a type system object
-        /// (typically a <see cref="MethodDesc"/>, <see cref="FieldDesc"/>, <see cref="TypeDesc"/>,
-        /// or <see cref="MethodSignature"/>).
-        /// </summary>
-        public abstract Object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw);
-
-        /// <summary>
         /// Gets a list of exception regions this method body defines.
         /// </summary>
         public abstract ILExceptionRegion[] GetExceptionRegions();
+
+        public sealed override MethodILScope GetMethodILScopeDefinition()
+        {
+            return GetMethodILDefinition();
+        }
 
         /// <summary>
         /// Gets the open (uninstantiated) version of the <see cref="MethodIL"/>.
@@ -99,11 +122,6 @@ namespace Internal.IL
         public virtual MethodIL GetMethodILDefinition()
         {
             return this;
-        }
-
-        public override string ToString()
-        {
-            return OwningMethod.ToString();
         }
     }
 }

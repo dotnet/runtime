@@ -2,12 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
-    <PackageDescription>Provides support for managing access and audit control lists for Microsoft.Win32.RegistryKey.
-
-Commonly Used Types:
-System.Security.AccessControl.RegistryAccessRule
-System.Security.AccessControl.RegistryAuditRule
-System.Security.AccessControl.RegistrySecurity</PackageDescription>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
   </PropertyGroup>
 </Project>

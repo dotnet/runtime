@@ -10,23 +10,31 @@ using System.Threading.Tasks;
 
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
+#pragma warning disable CA1844 // lack of WriteAsync(ReadOnlyMemory) override in .NET Standard 2.1 build
+
 namespace System.Net.Http
 {
     internal sealed class WinHttpRequestStream : Stream
     {
-        private static readonly byte[] s_crLfTerminator = new byte[] { 0x0d, 0x0a }; // "\r\n"
-        private static readonly byte[] s_endChunk = new byte[] { 0x30, 0x0d, 0x0a, 0x0d, 0x0a }; // "0\r\n\r\n"
+        private static readonly byte[] s_crLfTerminator = "\r\n"u8.ToArray();
+        private static readonly byte[] s_endChunk = "0\r\n\r\n"u8.ToArray();
 
         private volatile bool _disposed;
         private readonly WinHttpRequestState _state;
-        private readonly bool _chunkedMode;
+        private readonly SafeWinHttpHandle _requestHandle;
+        private readonly WinHttpChunkMode _chunkedMode;
 
         private GCHandle _cachedSendPinnedBuffer;
 
-        internal WinHttpRequestStream(WinHttpRequestState state, bool chunkedMode)
+        internal WinHttpRequestStream(WinHttpRequestState state, WinHttpChunkMode chunkedMode)
         {
             _state = state;
             _chunkedMode = chunkedMode;
+
+            // Take copy of handle from state.
+            // The state's request handle will be set to null once the response stream starts.
+            Debug.Assert(_state.RequestHandle != null);
+            _requestHandle = _state.RequestHandle;
         }
 
         public override bool CanRead
@@ -91,7 +99,7 @@ namespace System.Net.Http
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -135,10 +143,10 @@ namespace System.Net.Http
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
         public override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
 
         public override long Seek(long offset, SeekOrigin origin)
         {
@@ -160,9 +168,15 @@ namespace System.Net.Http
 
         internal async Task EndUploadAsync(CancellationToken token)
         {
-            if (_chunkedMode)
+            switch (_chunkedMode)
             {
-                await InternalWriteDataAsync(s_endChunk, 0, s_endChunk.Length, token).ConfigureAwait(false);
+                case WinHttpChunkMode.Manual:
+                    await InternalWriteDataAsync(s_endChunk, 0, s_endChunk.Length, token).ConfigureAwait(false);
+                    break;
+                case WinHttpChunkMode.Automatic:
+                    // Send empty DATA frame with END_STREAM flag.
+                    await InternalWriteEndDataAsync(token).ConfigureAwait(false);
+                    break;
             }
         }
 
@@ -195,7 +209,7 @@ namespace System.Net.Http
                 return Task.CompletedTask;
             }
 
-            return _chunkedMode ?
+            return _chunkedMode == WinHttpChunkMode.Manual ?
                 InternalWriteChunkedModeAsync(buffer, offset, count, token) :
                 InternalWriteDataAsync(buffer, offset, count, token);
         }
@@ -205,7 +219,7 @@ namespace System.Net.Http
             // WinHTTP does not fully support chunked uploads. It simply allows one to omit the 'Content-Length' header
             // and instead use the 'Transfer-Encoding: chunked' header. The caller is still required to encode the
             // request body according to chunking rules.
-            Debug.Assert(_chunkedMode);
+            Debug.Assert(_chunkedMode == WinHttpChunkMode.Manual);
             Debug.Assert(count > 0);
 
             byte[] chunkSize = Encoding.UTF8.GetBytes($"{count:x}\r\n");
@@ -236,9 +250,30 @@ namespace System.Net.Http
             lock (_state.Lock)
             {
                 if (!Interop.WinHttp.WinHttpWriteData(
-                    _state.RequestHandle,
+                    _requestHandle,
                     Marshal.UnsafeAddrOfPinnedArrayElement(buffer, offset),
                     (uint)count,
+                    IntPtr.Zero))
+                {
+                    _state.TcsInternalWriteDataToRequestStream.TrySetException(
+                        new IOException(SR.net_http_io_write, WinHttpException.CreateExceptionUsingLastError(nameof(Interop.WinHttp.WinHttpWriteData))));
+                }
+            }
+
+            return _state.TcsInternalWriteDataToRequestStream.Task;
+        }
+
+        private Task<bool> InternalWriteEndDataAsync(CancellationToken token)
+        {
+            _state.TcsInternalWriteDataToRequestStream =
+                new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            lock (_state.Lock)
+            {
+                if (!Interop.WinHttp.WinHttpWriteData(
+                    _requestHandle,
+                    IntPtr.Zero,
+                    0,
                     IntPtr.Zero))
                 {
                     _state.TcsInternalWriteDataToRequestStream.TrySetException(

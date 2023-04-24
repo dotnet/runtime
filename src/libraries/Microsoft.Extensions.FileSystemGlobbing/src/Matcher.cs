@@ -96,8 +96,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
     /// </remarks>
     public class Matcher
     {
-        private readonly IList<IPattern> _includePatterns = new List<IPattern>();
-        private readonly IList<IPattern> _excludePatterns = new List<IPattern>();
+        private readonly List<IPattern> _includePatterns = new List<IPattern>();
+        private readonly List<IPattern> _excludePatterns = new List<IPattern>();
         private readonly PatternBuilder _builder;
         private readonly StringComparison _comparison;
 
@@ -159,9 +159,11 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// Searches the directory specified for all files matching patterns added to this instance of <see cref="Matcher" />
         /// </summary>
         /// <param name="directoryInfo">The root directory for the search</param>
-        /// <returns>Always returns instance of <see cref="PatternMatchingResult" />, even if not files were matched</returns>
+        /// <returns>Always returns instance of <see cref="PatternMatchingResult" />, even if no files were matched</returns>
         public virtual PatternMatchingResult Execute(DirectoryInfoBase directoryInfo)
         {
+            ThrowHelper.ThrowIfNull(directoryInfo);
+
             var context = new MatcherContext(_includePatterns, _excludePatterns, directoryInfo, _comparison);
             return context.Execute();
         }

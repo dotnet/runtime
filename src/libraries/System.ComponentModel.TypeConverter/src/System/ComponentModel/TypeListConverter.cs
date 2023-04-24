@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel.Design.Serialization;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.ComponentModel
@@ -12,7 +13,7 @@ namespace System.ComponentModel
     public abstract class TypeListConverter : TypeConverter
     {
         private readonly Type[] _types;
-        private StandardValuesCollection _values;
+        private StandardValuesCollection? _values;
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.TypeListConverter'/> class using
@@ -28,7 +29,7 @@ namespace System.ComponentModel
         /// can convert an object in the given source type to an enumeration object using
         /// the specified context.
         /// </summary>
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
@@ -37,7 +38,7 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object
         /// to the given destination type using the context.
         /// </summary>
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
@@ -45,7 +46,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the specified value object to an enumeration object.
         /// </summary>
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string)
             {
@@ -64,18 +65,15 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to the specified destination type.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
+            ArgumentNullException.ThrowIfNull(destinationType);
 
             if (destinationType == typeof(string))
             {
                 if (value == null)
                 {
-                    return SR.none;
+                    return SR.GetResourceString(nameof(SR.none), "(none)");
                 }
                 else
                 {
@@ -89,11 +87,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a collection of standard values for the data type this validator is designed for.
         /// </summary>
-        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+        public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
         {
             if (_values == null)
             {
-                object[] objTypes;
+                object[]? objTypes;
 
                 if (_types != null)
                 {
@@ -114,12 +112,12 @@ namespace System.ComponentModel
         /// Gets a value indicating whether the list of standard values returned from
         /// <see cref='System.ComponentModel.TypeListConverter.GetStandardValues'/> is an exclusive list.
         /// </summary>
-        public override bool GetStandardValuesExclusive(ITypeDescriptorContext context) => true;
+        public override bool GetStandardValuesExclusive(ITypeDescriptorContext? context) => true;
 
         /// <summary>
         /// Gets a value indicating whether this object supports a standard set of values that can be
         /// picked from a list using the specified context.
         /// </summary>
-        public override bool GetStandardValuesSupported(ITypeDescriptorContext context) => true;
+        public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) => true;
     }
 }

@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class ByteConverter : JsonConverter<byte>
+    internal sealed class ByteConverter : JsonPrimitiveConverter<byte>
     {
         public ByteConverter()
         {
@@ -20,17 +22,18 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteNumberValue(value);
         }
 
-        internal override byte ReadWithQuotes(ref Utf8JsonReader reader)
+        internal override byte ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
             return reader.GetByteWithQuotes();
         }
 
-        internal override void WriteWithQuotes(Utf8JsonWriter writer, byte value, JsonSerializerOptions options, ref WriteStack state)
+        internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, byte value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
             writer.WritePropertyName(value);
         }
 
-        internal override byte ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+        internal override byte ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
         {
             if (reader.TokenType == JsonTokenType.String && (JsonNumberHandling.AllowReadingFromString & handling) != 0)
             {

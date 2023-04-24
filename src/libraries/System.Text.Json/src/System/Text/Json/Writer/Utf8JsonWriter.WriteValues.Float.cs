@@ -67,7 +67,7 @@ namespace System.Text.Json
         private void WriteNumberValueIndented(float value)
         {
             int indent = Indentation;
-            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+            Debug.Assert(indent <= 2 * _options.MaxDepth);
 
             int maxRequired = indent + JsonConstants.MaximumFormatSingleLength + 1 + s_newLineLength; // Optionally, 1 list separator and 1-2 bytes for new line
 
@@ -106,12 +106,10 @@ namespace System.Text.Json
             // the .NET Core 3.0 logic of forwarding to the UTF16 formatter and transcoding it back to UTF8,
             // with some additional changes to remove dependencies on Span APIs which don't exist downlevel.
 
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             return Utf8Formatter.TryFormat(value, destination, out bytesWritten);
 #else
-            const string FormatString = "G9";
-
-            string utf16Text = value.ToString(FormatString, CultureInfo.InvariantCulture);
+            string utf16Text = value.ToString(JsonConstants.SingleFormatString, CultureInfo.InvariantCulture);
 
             // Copy the value to the destination, if it's large enough.
 

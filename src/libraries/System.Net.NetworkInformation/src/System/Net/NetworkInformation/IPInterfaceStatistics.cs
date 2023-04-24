@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Net.NetworkInformation
 {
     /// <summary>
@@ -32,6 +34,7 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets the number of incoming packets with an unknown protocol.
         /// </summary>
+        [UnsupportedOSPlatform("linux")]
         public abstract long IncomingUnknownProtocolPackets { get; }
 
         /// <summary>
@@ -42,11 +45,16 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// Gets the number of non-unicast packets sent on the interface.
         /// </summary>
+        [UnsupportedOSPlatform("linux")]
         public abstract long NonUnicastPacketsSent { get; }
 
         /// <summary>
         /// Gets the number of outgoing packets that were discarded.
         /// </summary>
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract long OutgoingPacketsDiscarded { get; }
 
         /// <summary>

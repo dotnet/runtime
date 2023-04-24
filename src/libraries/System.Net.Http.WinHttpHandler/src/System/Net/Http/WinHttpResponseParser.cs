@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http.Headers;
@@ -21,8 +22,11 @@ namespace System.Net.Http
             WinHttpRequestState state,
             DecompressionMethods manuallyProcessedDecompressionMethods)
         {
-            HttpRequestMessage request = state.RequestMessage;
-            SafeWinHttpHandle requestHandle = state.RequestHandle;
+            HttpRequestMessage? request = state.RequestMessage;
+            SafeWinHttpHandle? requestHandle = state.RequestHandle;
+            Debug.Assert(request != null);
+            Debug.Assert(requestHandle != null);
+
             var response = new HttpResponseMessage();
             bool stripEncodingHeaders = false;
 
@@ -42,9 +46,10 @@ namespace System.Net.Http
                 else
                 {
                     int versionLength = GetResponseHeader(requestHandle, Interop.WinHttp.WINHTTP_QUERY_VERSION, buffer);
+                    ReadOnlySpan<char> versionSpan = buffer.AsSpan(0, versionLength);
                     response.Version =
-                        CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.1", buffer, 0, versionLength) ? HttpVersion.Version11 :
-                        CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.0", buffer, 0, versionLength) ? HttpVersion.Version10 :
+                        versionSpan.Equals("HTTP/1.1".AsSpan(), StringComparison.OrdinalIgnoreCase) ? HttpVersion.Version11 :
+                        versionSpan.Equals("HTTP/1.0".AsSpan(), StringComparison.OrdinalIgnoreCase) ? HttpVersion.Version10 :
                         WinHttpHandler.HttpVersionUnknown;
                 }
 
@@ -59,7 +64,7 @@ namespace System.Net.Http
 
                 // Create response stream and wrap it in a StreamContent object.
                 var responseStream = new WinHttpResponseStream(requestHandle, state, response);
-                state.RequestHandle = null; // ownership successfully transfered to WinHttpResponseStram.
+                state.RequestHandle = null; // ownership successfully transferred to WinHttpResponseStram.
                 Stream decompressedStream = responseStream;
 
                 if (manuallyProcessedDecompressionMethods != DecompressionMethods.None)
@@ -70,18 +75,17 @@ namespace System.Net.Http
                         Interop.WinHttp.WINHTTP_QUERY_CONTENT_ENCODING,
                         buffer);
 
-                    CharArrayHelpers.Trim(buffer, ref contentEncodingStartIndex, ref contentEncodingLength);
-
-                    if (contentEncodingLength > 0)
+                    ReadOnlySpan<char> value = new ReadOnlySpan<char>(buffer, contentEncodingStartIndex, contentEncodingLength).Trim();
+                    if (!value.IsEmpty)
                     {
                         if ((manuallyProcessedDecompressionMethods & DecompressionMethods.GZip) == DecompressionMethods.GZip &&
-                            CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(EncodingNameGzip, buffer, contentEncodingStartIndex, contentEncodingLength))
+                            value.Equals(EncodingNameGzip.AsSpan(), StringComparison.OrdinalIgnoreCase))
                         {
                             decompressedStream = new GZipStream(responseStream, CompressionMode.Decompress);
                             stripEncodingHeaders = true;
                         }
                         else if ((manuallyProcessedDecompressionMethods & DecompressionMethods.Deflate) == DecompressionMethods.Deflate &&
-                                 CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(EncodingNameDeflate, buffer, contentEncodingStartIndex, contentEncodingLength))
+                                 value.Equals(EncodingNameDeflate.AsSpan(), StringComparison.OrdinalIgnoreCase))
                         {
                             decompressedStream = new DeflateStream(responseStream, CompressionMode.Decompress);
                             stripEncodingHeaders = true;
@@ -133,9 +137,9 @@ namespace System.Net.Http
         public static unsafe bool GetResponseHeader(
             SafeWinHttpHandle requestHandle,
             uint infoLevel,
-            ref char[] buffer,
+            ref char[]? buffer,
             ref uint index,
-            out string headerValue)
+            [NotNullWhen(true)] out string? headerValue)
         {
             const int StackLimit = 128;
 
@@ -286,7 +290,7 @@ namespace System.Net.Http
 
             // If it's a known reason phrase, use the known reason phrase instead of allocating a new string.
 
-            string knownReasonPhrase = HttpStatusDescription.Get(statusCode);
+            string? knownReasonPhrase = HttpStatusDescription.Get(statusCode);
 
             return (knownReasonPhrase != null && knownReasonPhrase.AsSpan().SequenceEqual(buffer.AsSpan(0, bufferLength))) ?
                 knownReasonPhrase :
@@ -313,7 +317,7 @@ namespace System.Net.Http
             reader.ReadLine();
 
             // Parse the array of headers and split them between Content headers and Response headers.
-            while (reader.ReadHeader(out string headerName, out string headerValue))
+            while (reader.ReadHeader(out string? headerName, out string? headerValue))
             {
                 if (!responseHeaders.TryAddWithoutValidation(headerName, headerValue))
                 {
@@ -350,7 +354,7 @@ namespace System.Net.Http
             var reader = new WinHttpResponseHeaderReader(buffer, 0, bufferLength);
 
             // Parse the array of headers and split them between Content headers and Response headers.
-            while (reader.ReadHeader(out string headerName, out string headerValue))
+            while (reader.ReadHeader(out string? headerName, out string? headerValue))
             {
                 responseTrailers.TryAddWithoutValidation(headerName, headerValue);
             }

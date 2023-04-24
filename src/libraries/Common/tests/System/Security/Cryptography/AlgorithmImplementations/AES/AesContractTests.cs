@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Test.Cryptography;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Aes.Tests
@@ -160,7 +162,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(64, false)]        // smaller than default BlockSize
         [InlineData(129, false)]       // larger than default BlockSize
         // Skip on .NET Framework because change is not ported https://github.com/dotnet/runtime/issues/21236
@@ -169,6 +171,9 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         {
             if (skipOnNetfx && PlatformDetection.IsNetFramework)
                 return;
+
+            if (PlatformDetection.IstvOS && invalidIvSize == 536870928)
+                throw new SkipTestException($"https://github.com/dotnet/runtime/issues/76728 This test case flakily crashes tvOS arm64");
 
             using (Aes aes = AesFactory.Create())
             {
@@ -255,8 +260,9 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         public static void ValidateEncryptorProperties()
         {
             using (Aes aes = AesFactory.Create())
+            using (ICryptoTransform encryptor = aes.CreateEncryptor())
             {
-                ValidateTransformProperties(aes, aes.CreateEncryptor());
+                ValidateTransformProperties(aes, encryptor);
             }
         }
 
@@ -265,8 +271,9 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         public static void ValidateDecryptorProperties()
         {
             using (Aes aes = AesFactory.Create())
+            using (ICryptoTransform decryptor = aes.CreateDecryptor())
             {
-                ValidateTransformProperties(aes, aes.CreateDecryptor());
+                ValidateTransformProperties(aes, decryptor);
             }
         }
 
@@ -377,6 +384,25 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 Assert.Equal(firstBlockEncrypted, firstBlockEncryptedFromCount);
                 Assert.Equal(middleHalfEncrypted, middleHalfEncryptedFromOffsetAndCount);
+            }
+        }
+
+        [Fact]
+        public static void Cfb8ModeCanDepadCfb128Padding()
+        {
+            using (Aes aes = AesFactory.Create())
+            {
+                // 1, 2, 3, 4, 5 encrypted with CFB8 but padded with block-size padding.
+                byte[] ciphertext = "68C272ACF16BE005A361DB1C147CA3AD".HexToByteArray();
+                aes.Key = "3279CE2E9669A54E038AA62818672150D0B5A13F6757C27F378115501F83B119".HexToByteArray();
+                aes.IV = new byte[16];
+                aes.Padding = PaddingMode.PKCS7;
+                aes.Mode = CipherMode.CFB;
+                aes.FeedbackSize = 8;
+
+                using ICryptoTransform transform = aes.CreateDecryptor();
+                byte[] decrypted = transform.TransformFinalBlock(ciphertext, 0, ciphertext.Length);
+                Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, decrypted);
             }
         }
 

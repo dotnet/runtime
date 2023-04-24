@@ -9,12 +9,6 @@ namespace System.Runtime.InteropServices
     {
         private static readonly Guid CLSID_StdMarshal = new Guid("00000017-0000-0000-c000-000000000046");
 
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate int GetMarshalSizeMaxDelegate(IntPtr _this, ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags, out int pSize);
-
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate int MarshalInterfaceDelegate(IntPtr _this, IntPtr pStm, ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags);
-
         protected StandardOleMarshalObject()
         {
         }
@@ -31,7 +25,7 @@ namespace System.Runtime.InteropServices
                     int hr = Interop.Ole32.CoGetStandardMarshal(ref riid, pUnknown, dwDestContext, IntPtr.Zero, mshlflags, out pStandardMarshal);
                     if (hr == HResults.S_OK)
                     {
-                        Debug.Assert(pStandardMarshal != IntPtr.Zero, "Failed to get marshaler for interface '" + riid.ToString() + "', CoGetStandardMarshal returned S_OK");
+                        Debug.Assert(pStandardMarshal != IntPtr.Zero, $"Failed to get marshaler for interface '{riid}', CoGetStandardMarshal returned S_OK");
                         return pStandardMarshal;
                     }
                 }
@@ -60,13 +54,12 @@ namespace System.Runtime.InteropServices
                 // would trigger QIs for random IIDs and the marshaler (aka stub
                 // manager object) does not really handle these well and we would
                 // risk triggering an AppVerifier break
-                IntPtr vtable = *(IntPtr*)pStandardMarshal.ToPointer();
-
-                // GetMarshalSizeMax is 4th slot
-                IntPtr method = *((IntPtr*)vtable.ToPointer() + 4);
-
-                GetMarshalSizeMaxDelegate del = (GetMarshalSizeMaxDelegate)Marshal.GetDelegateForFunctionPointer(method, typeof(GetMarshalSizeMaxDelegate));
-                return del(pStandardMarshal, ref riid, pv, dwDestContext, pvDestContext, mshlflags, out pSize);
+                fixed (Guid* riidPtr = &riid)
+                fixed (int* pSizePtr = &pSize)
+                {
+                    // GetMarshalSizeMax is 5th slot (zero-based indexing)
+                    return ((delegate* unmanaged[Stdcall]<IntPtr, Guid*, IntPtr, int, IntPtr, int, int*, int>)(*(IntPtr**)pStandardMarshal)[4])(pStandardMarshal, riidPtr, pv, dwDestContext, pvDestContext, mshlflags, pSizePtr);
+                }
             }
             finally
             {
@@ -85,11 +78,11 @@ namespace System.Runtime.InteropServices
                 // would trigger QIs for random IIDs and the marshaler (aka stub
                 // manager object) does not really handle these well and we would
                 // risk triggering an AppVerifier break
-                IntPtr vtable = *(IntPtr*)pStandardMarshal.ToPointer();
-                IntPtr method = *((IntPtr*)vtable.ToPointer() + 5); // MarshalInterface is 5th slot
-
-                MarshalInterfaceDelegate del = (MarshalInterfaceDelegate)Marshal.GetDelegateForFunctionPointer(method, typeof(MarshalInterfaceDelegate));
-                return del(pStandardMarshal, pStm, ref riid, pv, dwDestContext, pvDestContext, mshlflags);
+                fixed (Guid* riidPtr = &riid)
+                {
+                    // MarshalInterface is 6th slot (zero-based indexing)
+                    return ((delegate* unmanaged[Stdcall]<IntPtr, IntPtr, Guid*, IntPtr, int, IntPtr, int, int>)(*(IntPtr**)pStandardMarshal)[5])(pStandardMarshal, pStm, riidPtr, pv, dwDestContext, pvDestContext, mshlflags);
+                }
             }
             finally
             {

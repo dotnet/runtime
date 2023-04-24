@@ -44,30 +44,35 @@ namespace System.Net.Mime
         // the two-digit value that is parsed can't exceed the max value of hours, which is 99
         internal const int MaxMinuteValue = 59;
 
-        // possible valid values for a date string
-        // these do NOT include the timezone
-        internal const string DateFormatWithDayOfWeek = "ddd, dd MMM yyyy HH:mm:ss";
-        internal const string DateFormatWithoutDayOfWeek = "dd MMM yyyy HH:mm:ss";
-        internal const string DateFormatWithDayOfWeekAndNoSeconds = "ddd, dd MMM yyyy HH:mm";
-        internal const string DateFormatWithoutDayOfWeekAndNoSeconds = "dd MMM yyyy HH:mm";
-
         #endregion
 
         #region static fields
 
         // array of all possible date time values
+        // these do NOT include the timezone
         // if a string matches any one of these it will be parsed correctly
         internal static readonly string[] s_validDateTimeFormats = new string[]
         {
-            DateFormatWithDayOfWeek,
-            DateFormatWithoutDayOfWeek,
-            DateFormatWithDayOfWeekAndNoSeconds,
-            DateFormatWithoutDayOfWeekAndNoSeconds
+            "ddd, dd MMM yyyy HH:mm:ss", // with day of week
+            "dd MMM yyyy HH:mm:ss",      // without day of week
+            "ddd, dd MMM yyyy HH:mm",    // with day of week and without seconds
+            "dd MMM yyyy HH:mm"          // without day of week and without seconds
         };
 
-        internal static readonly char[] s_allowedWhiteSpaceChars = new char[] { ' ', '\t' };
-
-        internal static readonly Dictionary<string, TimeSpan> s_timeZoneOffsetLookup = InitializeShortHandLookups();
+        internal static readonly Dictionary<string, TimeSpan> s_timeZoneOffsetLookup = new Dictionary<string, TimeSpan>()
+        {
+            // all well-known short hand time zone values and their semantic equivalents
+            { "UT", TimeSpan.Zero },           // +0000
+            { "GMT", TimeSpan.Zero },          // +0000
+            { "EDT", new TimeSpan(-4, 0, 0) }, // -0400
+            { "EST", new TimeSpan(-5, 0, 0) }, // -0500
+            { "CDT", new TimeSpan(-5, 0, 0) }, // -0500
+            { "CST", new TimeSpan(-6, 0, 0) }, // -0600
+            { "MDT", new TimeSpan(-6, 0, 0) }, // -0600
+            { "MST", new TimeSpan(-7, 0, 0) }, // -0700
+            { "PDT", new TimeSpan(-7, 0, 0) }, // -0700
+            { "PST", new TimeSpan(-8, 0, 0) }, // -0800
+        };
 
         // a TimeSpan must be between these two values in order for it to be within the range allowed
         // by RFC 2822
@@ -75,28 +80,6 @@ namespace System.Net.Mime
 
         // allowed max values for each digit.  min value is always 0
         internal const int OffsetMaxValue = 9959;
-
-        #endregion
-
-        #region static initializers
-
-        internal static Dictionary<string, TimeSpan> InitializeShortHandLookups()
-        {
-            var tempTimeZoneOffsetLookup = new Dictionary<string, TimeSpan>();
-
-            // all well-known short hand time zone values and their semantic equivalents
-            tempTimeZoneOffsetLookup.Add("UT", TimeSpan.Zero); // +0000
-            tempTimeZoneOffsetLookup.Add("GMT", TimeSpan.Zero); // +0000
-            tempTimeZoneOffsetLookup.Add("EDT", new TimeSpan(-4, 0, 0)); // -0400
-            tempTimeZoneOffsetLookup.Add("EST", new TimeSpan(-5, 0, 0)); // -0500
-            tempTimeZoneOffsetLookup.Add("CDT", new TimeSpan(-5, 0, 0)); // -0500
-            tempTimeZoneOffsetLookup.Add("CST", new TimeSpan(-6, 0, 0)); // -0600
-            tempTimeZoneOffsetLookup.Add("MDT", new TimeSpan(-6, 0, 0)); // -0600
-            tempTimeZoneOffsetLookup.Add("MST", new TimeSpan(-7, 0, 0)); // -0700
-            tempTimeZoneOffsetLookup.Add("PDT", new TimeSpan(-7, 0, 0)); // -0700
-            tempTimeZoneOffsetLookup.Add("PST", new TimeSpan(-8, 0, 0)); // -0800
-            return tempTimeZoneOffsetLookup;
-        }
 
         #endregion
 
@@ -169,22 +152,25 @@ namespace System.Net.Mime
             }
         }
 
-#if DEBUG
-        // this method is only called by test code
-        internal string TimeZone => _unknownTimeZone ? UnknownTimeZoneDefaultOffset : TimeSpanToOffset(_timeZone);
-#endif
-
         #endregion
 
         #region internals
 
         // outputs the RFC 2822 formatted date string including time zone
-        public override string ToString() =>
-            FormatDate(_date) + " " + (_unknownTimeZone ? UnknownTimeZoneDefaultOffset : TimeSpanToOffset(_timeZone));
+        public override string ToString()
+        {
+            TimeSpan timeZone = _timeZone;
+            Debug.Assert(timeZone.Seconds == 0, "Span had seconds value");
+            Debug.Assert(timeZone.Milliseconds == 0, "Span had milliseconds value");
+
+            return _unknownTimeZone || timeZone.Ticks == 0 ?
+                string.Create(CultureInfo.InvariantCulture, $"{_date:ddd, dd MMM yyyy HH:mm:ss} {(_unknownTimeZone ? UnknownTimeZoneDefaultOffset : UtcDefaultTimeZoneOffset)}") :
+                string.Create(CultureInfo.InvariantCulture, $"{_date:ddd, dd MMM yyyy HH:mm:ss} {(timeZone.Ticks > 0 ? '+' : '-')}{timeZone:hhmm}");
+        }
 
         // returns true if the offset is of the form [+|-]dddd and
         // within the range 0000 to 9959
-        internal void ValidateAndGetTimeZoneOffsetValues(string offset, out bool positive, out int hours, out int minutes)
+        internal static void ValidateAndGetTimeZoneOffsetValues(string offset, out bool positive, out int hours, out int minutes)
         {
             Debug.Assert(!string.IsNullOrEmpty(offset), "violation of precondition: offset must not be null or empty");
             Debug.Assert(offset != UnknownTimeZoneDefaultOffset, "Violation of precondition: do not pass an unknown offset");
@@ -219,7 +205,7 @@ namespace System.Net.Mime
         }
 
         // returns true if the time zone short hand is all alphabetical characters
-        internal void ValidateTimeZoneShortHandValue(string value)
+        internal static void ValidateTimeZoneShortHandValue(string value)
         {
             // time zones can't be empty
             Debug.Assert(!string.IsNullOrEmpty(value), "violation of precondition: offset must not be null or empty");
@@ -234,15 +220,12 @@ namespace System.Net.Mime
             }
         }
 
-        // formats a date only.  Does not include time zone
-        internal string FormatDate(DateTime value) => value.ToString("ddd, dd MMM yyyy HH:mm:ss", CultureInfo.InvariantCulture);
-
         // parses the date and time zone
         // postconditions:
         // return value is valid DateTime representation of the Date portion of data
         // timeZone is the portion of data which should contain the time zone data
         // timeZone is NOT evaluated by ParseValue
-        internal DateTime ParseValue(string data, out string timeZone)
+        internal static DateTime ParseValue(string data, out string timeZone)
         {
             // check that there is something to parse
             if (string.IsNullOrEmpty(data))
@@ -264,15 +247,15 @@ namespace System.Net.Mime
             // that MUST be the separator between the time portion and the timezone portion
             // timezone may have additional spaces, characters, or comments after it but
             // this is ok since we'll parse that whole section later
-            int indexOfTimeZoneSeparator = data.IndexOfAny(s_allowedWhiteSpaceChars, indexOfHourSeparator);
-
-            if (indexOfTimeZoneSeparator == -1)
+            int indexOfTimeZoneSeparator = data.AsSpan(indexOfHourSeparator).IndexOfAny(' ', '\t');
+            if (indexOfTimeZoneSeparator < 0)
             {
                 throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data));
             }
+            indexOfTimeZoneSeparator += indexOfHourSeparator;
 
             // extract the time portion and remove all leading and trailing whitespace
-            string date = data.AsSpan(0, indexOfTimeZoneSeparator).Trim().ToString();
+            ReadOnlySpan<char> date = data.AsSpan(0, indexOfTimeZoneSeparator).Trim();
 
             // attempt to parse the DateTime component.
             DateTime dateValue;
@@ -286,30 +269,29 @@ namespace System.Net.Mime
 
             // extract the second half of the string. This will start with at least one whitespace character.
             // Trim the string to remove these characters.
-            string timeZoneString = data.AsSpan(indexOfTimeZoneSeparator).Trim().ToString();
+            ReadOnlySpan<char> timeZoneSpan = data.AsSpan(indexOfTimeZoneSeparator).Trim();
 
             // find, if any, the first whitespace character after the timezone.
             // These will be CFWS and must be ignored. Remove them.
-            int endOfTimeZoneOffset = timeZoneString.IndexOfAny(s_allowedWhiteSpaceChars);
-
-            if (endOfTimeZoneOffset != -1)
+            int endOfTimeZoneOffset = timeZoneSpan.IndexOfAny(' ', '\t');
+            if (endOfTimeZoneOffset >= 0)
             {
-                timeZoneString = timeZoneString.Substring(0, endOfTimeZoneOffset);
+                timeZoneSpan = timeZoneSpan.Slice(0, endOfTimeZoneOffset);
             }
 
-            if (string.IsNullOrEmpty(timeZoneString))
+            if (timeZoneSpan.IsEmpty)
             {
                 throw new FormatException(SR.MailDateInvalidFormat);
             }
 
-            timeZone = timeZoneString;
+            timeZone = timeZoneSpan.ToString();
 
             return dateValue;
         }
 
         // if this returns true, timeZone is the correct TimeSpan representation of the input
         // if it returns false then the time zone is unknown and so timeZone must be ignored
-        internal bool TryParseTimeZoneString(string timeZoneString, out TimeSpan timeZone)
+        internal static bool TryParseTimeZoneString(string timeZoneString, out TimeSpan timeZone)
         {
             // see if the zone is the special unspecified case, a numeric offset, or a shorthand string
             if (timeZoneString == UnknownTimeZoneDefaultOffset)
@@ -352,7 +334,7 @@ namespace System.Net.Mime
             }
         }
 
-        internal TimeSpan ValidateAndGetSanitizedTimeSpan(TimeSpan span)
+        internal static TimeSpan ValidateAndGetSanitizedTimeSpan(TimeSpan span)
         {
             // sanitize the time span by removing the seconds and milliseconds.  Days are not handled here
             TimeSpan sanitizedTimeSpan = new TimeSpan(span.Days, span.Hours, span.Minutes, 0, 0);
@@ -364,46 +346,6 @@ namespace System.Net.Mime
             }
 
             return sanitizedTimeSpan;
-        }
-
-        // precondition:  span must be sanitized and within a valid range
-        internal string TimeSpanToOffset(TimeSpan span)
-        {
-            Debug.Assert(span.Seconds == 0, "Span had seconds value");
-            Debug.Assert(span.Milliseconds == 0, "Span had milliseconds value");
-
-            if (span.Ticks == 0)
-            {
-                return UtcDefaultTimeZoneOffset;
-            }
-            else
-            {
-                // get the total number of hours since TimeSpan.Hours won't go beyond 24
-                // ensure that it's a whole number since the fractional part represents minutes
-                uint hours = (uint)Math.Abs(Math.Floor(span.TotalHours));
-                uint minutes = (uint)Math.Abs(span.Minutes);
-
-                Debug.Assert((hours != 0) || (minutes != 0), "Input validation ensures hours or minutes isn't zero");
-
-                string output = span.Ticks > 0 ? "+" : "-";
-
-                // hours and minutes must be two digits
-                if (hours < 10)
-                {
-                    output += "0";
-                }
-
-                output += hours.ToString();
-
-                if (minutes < 10)
-                {
-                    output += "0";
-                }
-
-                output += minutes.ToString();
-
-                return output;
-            }
         }
 
         #endregion

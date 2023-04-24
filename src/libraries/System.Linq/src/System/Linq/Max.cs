@@ -2,50 +2,37 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
+using System.Runtime.Intrinsics;
 
 namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static int Max(this IEnumerable<int> source)
+        public static int Max(this IEnumerable<int> source) => MinMaxInteger<int, MaxCalc<int>>(source);
+
+        public static long Max(this IEnumerable<long> source) => MinMaxInteger<long, MaxCalc<long>>(source);
+
+        private readonly struct MaxCalc<T> : IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
         {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            int value;
-            using (IEnumerator<int> e = source.GetEnumerator())
-            {
-                if (!e.MoveNext())
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
-
-                value = e.Current;
-                while (e.MoveNext())
-                {
-                    int x = e.Current;
-                    if (x > value)
-                    {
-                        value = x;
-                    }
-                }
-            }
-
-            return value;
+            public static bool Compare(T left, T right) => left > right;
+            public static Vector128<T> Compare(Vector128<T> left, Vector128<T> right) => Vector128.Max(left, right);
+            public static Vector256<T> Compare(Vector256<T> left, Vector256<T> right) => Vector256.Max(left, right);
         }
 
-        public static int? Max(this IEnumerable<int?> source)
+        public static int? Max(this IEnumerable<int?> source) => MaxInteger(source);
+
+        public static long? Max(this IEnumerable<long?> source) => MaxInteger(source);
+
+        private static T? MaxInteger<T>(this IEnumerable<T?> source) where T : struct, IBinaryInteger<T>
         {
             if (source == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            int? value = null;
-            using (IEnumerator<int?> e = source.GetEnumerator())
+            T? value = null;
+            using (IEnumerator<T?> e = source.GetEnumerator())
             {
                 do
                 {
@@ -58,19 +45,19 @@ namespace System.Linq
                 }
                 while (!value.HasValue);
 
-                int valueVal = value.GetValueOrDefault();
-                if (valueVal >= 0)
+                T valueVal = value.GetValueOrDefault();
+                if (valueVal >= T.Zero)
                 {
-                    // We can fast-path this case where we know HasValue will
-                    // never affect the outcome, without constantly checking
-                    // if we're in such a state. Similar fast-paths could
-                    // be done for other cases, but as all-positive
-                    // or mostly-positive integer values are quite common in real-world
-                    // uses, it's only been done in this direction for int? and long?.
+                    // To avoid having to check cur.HasValue every iteration of the loop,
+                    // we special-case the circumstance where the first value we found
+                    // is >= 0.  We can then compare its value against the value stored in
+                    // all subsequent nullables, regardless of whether they're null or not,
+                    // because if they are null, the value will be 0 and the comparison will
+                    // still be accurate.
                     while (e.MoveNext())
                     {
-                        int? cur = e.Current;
-                        int x = cur.GetValueOrDefault();
+                        T? cur = e.Current;
+                        T x = cur.GetValueOrDefault();
                         if (x > valueVal)
                         {
                             valueVal = x;
@@ -82,8 +69,8 @@ namespace System.Linq
                 {
                     while (e.MoveNext())
                     {
-                        int? cur = e.Current;
-                        int x = cur.GetValueOrDefault();
+                        T? cur = e.Current;
+                        T x = cur.GetValueOrDefault();
 
                         // Do not replace & with &&. The branch prediction cost outweighs the extra operation
                         // unless nulls either never happen or always happen.
@@ -99,206 +86,57 @@ namespace System.Linq
             return value;
         }
 
-        public static long Max(this IEnumerable<long> source)
+        public static double Max(this IEnumerable<double> source) => MaxFloat(source);
+
+        public static double? Max(this IEnumerable<double?> source) => MaxFloat(source);
+
+        public static float Max(this IEnumerable<float> source) => MaxFloat(source);
+
+        public static float? Max(this IEnumerable<float?> source) => MaxFloat(source);
+
+        private static T MaxFloat<T>(this IEnumerable<T> source) where T : struct, IFloatingPointIeee754<T>
         {
-            if (source == null)
+            T value;
+
+            if (source.TryGetSpan(out ReadOnlySpan<T> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                if (span.IsEmpty)
+                {
+                    ThrowHelper.ThrowNoElementsException();
+                }
+
+                int i;
+                for (i = 0; i < span.Length && T.IsNaN(span[i]); i++) ;
+
+                if (i == span.Length)
+                {
+                    return span[^1];
+                }
+
+                for (value = span[i]; (uint)i < (uint)span.Length; i++)
+                {
+                    if (span[i] > value)
+                    {
+                        value = span[i];
+                    }
+                }
+
+                return value;
             }
 
-            long value;
-            using (IEnumerator<long> e = source.GetEnumerator())
+            using (IEnumerator<T> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
                 {
                     ThrowHelper.ThrowNoElementsException();
                 }
 
-                value = e.Current;
-                while (e.MoveNext())
-                {
-                    long x = e.Current;
-                    if (x > value)
-                    {
-                        value = x;
-                    }
-                }
-            }
-
-            return value;
-        }
-
-        public static long? Max(this IEnumerable<long?> source)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            long? value = null;
-            using (IEnumerator<long?> e = source.GetEnumerator())
-            {
-                do
-                {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    value = e.Current;
-                }
-                while (!value.HasValue);
-
-                long valueVal = value.GetValueOrDefault();
-                if (valueVal >= 0)
-                {
-                    while (e.MoveNext())
-                    {
-                        long? cur = e.Current;
-                        long x = cur.GetValueOrDefault();
-                        if (x > valueVal)
-                        {
-                            valueVal = x;
-                            value = cur;
-                        }
-                    }
-                }
-                else
-                {
-                    while (e.MoveNext())
-                    {
-                        long? cur = e.Current;
-                        long x = cur.GetValueOrDefault();
-
-                        // Do not replace & with &&. The branch prediction cost outweighs the extra operation
-                        // unless nulls either never happen or always happen.
-                        if (cur.HasValue & x > valueVal)
-                        {
-                            valueVal = x;
-                            value = cur;
-                        }
-                    }
-                }
-            }
-
-            return value;
-        }
-
-        public static double Max(this IEnumerable<double> source)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            double value;
-            using (IEnumerator<double> e = source.GetEnumerator())
-            {
-                if (!e.MoveNext())
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
-
-                value = e.Current;
-
-                // As described in a comment on Min(this IEnumerable<double>) NaN is ordered
+                // As described in a comment on Min(this IEnumerable<T>) NaN is ordered
                 // less than all other values. We need to do explicit checks to ensure this, but
                 // once we've found a value that is not NaN we need no longer worry about it,
                 // so first loop until such a value is found (or not, as the case may be).
-                while (double.IsNaN(value))
-                {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    value = e.Current;
-                }
-
-                while (e.MoveNext())
-                {
-                    double x = e.Current;
-                    if (x > value)
-                    {
-                        value = x;
-                    }
-                }
-            }
-
-            return value;
-        }
-
-        public static double? Max(this IEnumerable<double?> source)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            double? value = null;
-            using (IEnumerator<double?> e = source.GetEnumerator())
-            {
-                do
-                {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    value = e.Current;
-                }
-                while (!value.HasValue);
-
-                double valueVal = value.GetValueOrDefault();
-                while (double.IsNaN(valueVal))
-                {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    double? cur = e.Current;
-                    if (cur.HasValue)
-                    {
-                        valueVal = (value = cur).GetValueOrDefault();
-                    }
-                }
-
-                while (e.MoveNext())
-                {
-                    double? cur = e.Current;
-                    double x = cur.GetValueOrDefault();
-
-                    // Do not replace & with &&. The branch prediction cost outweighs the extra operation
-                    // unless nulls either never happen or always happen.
-                    if (cur.HasValue & x > valueVal)
-                    {
-                        valueVal = x;
-                        value = cur;
-                    }
-                }
-            }
-
-            return value;
-        }
-
-        public static float Max(this IEnumerable<float> source)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            float value;
-            using (IEnumerator<float> e = source.GetEnumerator())
-            {
-                if (!e.MoveNext())
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
-
                 value = e.Current;
-                while (float.IsNaN(value))
+                while (T.IsNaN(value))
                 {
                     if (!e.MoveNext())
                     {
@@ -310,7 +148,7 @@ namespace System.Linq
 
                 while (e.MoveNext())
                 {
-                    float x = e.Current;
+                    T x = e.Current;
                     if (x > value)
                     {
                         value = x;
@@ -321,15 +159,15 @@ namespace System.Linq
             return value;
         }
 
-        public static float? Max(this IEnumerable<float?> source)
+        private static T? MaxFloat<T>(this IEnumerable<T?> source) where T : struct, IFloatingPointIeee754<T>
         {
             if (source == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            float? value = null;
-            using (IEnumerator<float?> e = source.GetEnumerator())
+            T? value = null;
+            using (IEnumerator<T?> e = source.GetEnumerator())
             {
                 do
                 {
@@ -342,15 +180,15 @@ namespace System.Linq
                 }
                 while (!value.HasValue);
 
-                float valueVal = value.GetValueOrDefault();
-                while (float.IsNaN(valueVal))
+                T valueVal = value.GetValueOrDefault();
+                while (T.IsNaN(valueVal))
                 {
                     if (!e.MoveNext())
                     {
                         return value;
                     }
 
-                    float? cur = e.Current;
+                    T? cur = e.Current;
                     if (cur.HasValue)
                     {
                         valueVal = (value = cur).GetValueOrDefault();
@@ -359,8 +197,8 @@ namespace System.Linq
 
                 while (e.MoveNext())
                 {
-                    float? cur = e.Current;
-                    float x = cur.GetValueOrDefault();
+                    T? cur = e.Current;
+                    T x = cur.GetValueOrDefault();
 
                     // Do not replace & with &&. The branch prediction cost outweighs the extra operation
                     // unless nulls either never happen or always happen.
@@ -377,12 +215,27 @@ namespace System.Linq
 
         public static decimal Max(this IEnumerable<decimal> source)
         {
-            if (source == null)
+            decimal value;
+
+            if (source.TryGetSpan(out ReadOnlySpan<decimal> span))
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+                if (span.IsEmpty)
+                {
+                    ThrowHelper.ThrowNoElementsException();
+                }
+
+                value = span[0];
+                for (int i = 1; (uint)i < (uint)span.Length; i++)
+                {
+                    if (span[i] > value)
+                    {
+                        value = span[i];
+                    }
+                }
+
+                return value;
             }
 
-            decimal value;
             using (IEnumerator<decimal> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
@@ -403,6 +256,7 @@ namespace System.Linq
 
             return value;
         }
+
 
         public static decimal? Max(this IEnumerable<decimal?> source)
         {
@@ -442,6 +296,19 @@ namespace System.Linq
         }
 
         public static TSource? Max<TSource>(this IEnumerable<TSource> source) => Max(source, comparer: null);
+
+        /// <summary>Returns the maximum value in a generic sequence.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <param name="source">A sequence of values to determine the maximum value of.</param>
+        /// <param name="comparer">The <see cref="IComparer{T}" /> to compare values.</param>
+        /// <returns>The maximum value in the sequence.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">No object in <paramref name="source" /> implements the <see cref="System.IComparable" /> or <see cref="System.IComparable{T}" /> interface.</exception>
+        /// <remarks>
+        /// <para>If type <typeparamref name="TSource" /> implements <see cref="System.IComparable{T}" />, the <see cref="Max{T}(IEnumerable{T})" /> method uses that implementation to compare values. Otherwise, if type <typeparamref name="TSource" /> implements <see cref="System.IComparable" />, that implementation is used to compare values.</para>
+        /// <para>If <typeparamref name="TSource" /> is a reference type and the source sequence is empty or contains only values that are <see langword="null" />, this method returns <see langword="null" />.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</para>
+        /// </remarks>
         public static TSource? Max<TSource>(this IEnumerable<TSource> source, IComparer<TSource>? comparer)
         {
             if (source == null)
@@ -450,6 +317,17 @@ namespace System.Linq
             }
 
             comparer ??= Comparer<TSource>.Default;
+
+            if (typeof(TSource) == typeof(byte) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<byte, MaxCalc<byte>>((IEnumerable<byte>)source);
+            if (typeof(TSource) == typeof(sbyte) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<sbyte, MaxCalc<sbyte>>((IEnumerable<sbyte>)source);
+            if (typeof(TSource) == typeof(ushort) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<ushort, MaxCalc<ushort>>((IEnumerable<ushort>)source);
+            if (typeof(TSource) == typeof(short) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<short, MaxCalc<short>>((IEnumerable<short>)source);
+            if (typeof(TSource) == typeof(uint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<uint, MaxCalc<uint>>((IEnumerable<uint>)source);
+            if (typeof(TSource) == typeof(int) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<int, MaxCalc<int>>((IEnumerable<int>)source);
+            if (typeof(TSource) == typeof(ulong) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<ulong, MaxCalc<ulong>>((IEnumerable<ulong>)source);
+            if (typeof(TSource) == typeof(long) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<long, MaxCalc<long>>((IEnumerable<long>)source);
+            if (typeof(TSource) == typeof(nuint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<nuint, MaxCalc<nuint>>((IEnumerable<nuint>)source);
+            if (typeof(TSource) == typeof(nint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<nint, MaxCalc<nint>>((IEnumerable<nint>)source);
 
             TSource? value = default;
             using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -512,7 +390,31 @@ namespace System.Linq
             return value;
         }
 
+        /// <summary>Returns the maximum value in a generic sequence according to a specified key selector function.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <typeparam name="TKey">The type of key to compare elements by.</typeparam>
+        /// <param name="source">A sequence of values to determine the maximum value of.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <returns>The value with the maximum key in the sequence.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="System.IComparable{TKey}" /> interface.</exception>
+        /// <remarks>
+        /// <para>If <typeparamref name="TKey" /> is a reference type and the source sequence is empty or contains only values that are <see langword="null" />, this method returns <see langword="null" />.</para>
+        /// </remarks>
         public static TSource? MaxBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) => MaxBy(source, keySelector, null);
+
+        /// <summary>Returns the maximum value in a generic sequence according to a specified key selector function.</summary>
+        /// <typeparam name="TSource">The type of the elements of <paramref name="source" />.</typeparam>
+        /// <typeparam name="TKey">The type of key to compare elements by.</typeparam>
+        /// <param name="source">A sequence of values to determine the maximum value of.</param>
+        /// <param name="keySelector">A function to extract the key for each element.</param>
+        /// <param name="comparer">The <see cref="IComparer{TKey}" /> to compare keys.</param>
+        /// <returns>The value with the maximum key in the sequence.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException">No key extracted from <paramref name="source" /> implements the <see cref="IComparable" /> or <see cref="IComparable{TKey}" /> interface.</exception>
+        /// <remarks>
+        /// <para>If <typeparamref name="TKey" /> is a reference type and the source sequence is empty or contains only values that are <see langword="null" />, this method returns <see langword="null" />.</para>
+        /// </remarks>
         public static TSource? MaxBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IComparer<TKey>? comparer)
         {
             if (source == null)
@@ -527,29 +429,63 @@ namespace System.Linq
 
             comparer ??= Comparer<TKey>.Default;
 
-            TKey? key = default;
-            TSource? value = default;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+
+            if (!e.MoveNext())
+            {
+                if (default(TSource) is null)
+                {
+                    return default;
+                }
+                else
+                {
+                    ThrowHelper.ThrowNoElementsException();
+                }
+            }
+
+            TSource value = e.Current;
+            TKey key = keySelector(value);
+
+            if (default(TKey) is null)
             {
                 if (key == null)
                 {
+                    TSource firstValue = value;
+
                     do
                     {
                         if (!e.MoveNext())
                         {
-                            return value;
+                            // All keys are null, surface the first element.
+                            return firstValue;
                         }
 
                         value = e.Current;
                         key = keySelector(value);
                     }
                     while (key == null);
+                }
 
+                while (e.MoveNext())
+                {
+                    TSource nextValue = e.Current;
+                    TKey nextKey = keySelector(nextValue);
+                    if (nextKey != null && comparer.Compare(nextKey, key) > 0)
+                    {
+                        key = nextKey;
+                        value = nextValue;
+                    }
+                }
+            }
+            else
+            {
+                if (comparer == Comparer<TKey>.Default)
+                {
                     while (e.MoveNext())
                     {
                         TSource nextValue = e.Current;
                         TKey nextKey = keySelector(nextValue);
-                        if (nextKey != null && comparer.Compare(nextKey, key) > 0)
+                        if (Comparer<TKey>.Default.Compare(nextKey, key) > 0)
                         {
                             key = nextKey;
                             value = nextValue;
@@ -558,37 +494,14 @@ namespace System.Linq
                 }
                 else
                 {
-                    if (!e.MoveNext())
+                    while (e.MoveNext())
                     {
-                        ThrowHelper.ThrowNoElementsException();
-                    }
-
-                    value = e.Current;
-                    key = keySelector(value);
-                    if (comparer == Comparer<TSource>.Default)
-                    {
-                        while (e.MoveNext())
+                        TSource nextValue = e.Current;
+                        TKey nextKey = keySelector(nextValue);
+                        if (comparer.Compare(nextKey, key) > 0)
                         {
-                            TSource nextValue = e.Current;
-                            TKey nextKey = keySelector(nextValue);
-                            if (Comparer<TKey>.Default.Compare(nextKey, key) > 0)
-                            {
-                                key = nextKey;
-                                value = nextValue;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        while (e.MoveNext())
-                        {
-                            TSource nextValue = e.Current;
-                            TKey nextKey = keySelector(nextValue);
-                            if (comparer.Compare(nextKey, key) > 0)
-                            {
-                                key = nextKey;
-                                value = nextValue;
-                            }
+                            key = nextKey;
+                            value = nextValue;
                         }
                     }
                 }
@@ -597,7 +510,15 @@ namespace System.Linq
             return value;
         }
 
-        public static int Max<TSource>(this IEnumerable<TSource> source, Func<TSource, int> selector)
+        public static int Max<TSource>(this IEnumerable<TSource> source, Func<TSource, int> selector) => MaxInteger(source, selector);
+
+        public static int? Max<TSource>(this IEnumerable<TSource> source, Func<TSource, int?> selector) => MaxInteger(source, selector);
+
+        public static long Max<TSource>(this IEnumerable<TSource> source, Func<TSource, long> selector) => MaxInteger(source, selector);
+
+        public static long? Max<TSource>(this IEnumerable<TSource> source, Func<TSource, long?> selector) => MaxInteger(source, selector);
+
+        private static TResult MaxInteger<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector) where TResult : struct, IBinaryInteger<TResult>
         {
             if (source == null)
             {
@@ -609,7 +530,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
-            int value;
+            TResult value;
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
@@ -620,7 +541,7 @@ namespace System.Linq
                 value = selector(e.Current);
                 while (e.MoveNext())
                 {
-                    int x = selector(e.Current);
+                    TResult x = selector(e.Current);
                     if (x > value)
                     {
                         value = x;
@@ -631,7 +552,7 @@ namespace System.Linq
             return value;
         }
 
-        public static int? Max<TSource>(this IEnumerable<TSource> source, Func<TSource, int?> selector)
+        private static TResult? MaxInteger<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult?> selector) where TResult : struct, IBinaryInteger<TResult>
         {
             if (source == null)
             {
@@ -643,7 +564,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
-            int? value = null;
+            TResult? value = null;
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 do
@@ -657,8 +578,8 @@ namespace System.Linq
                 }
                 while (!value.HasValue);
 
-                int valueVal = value.GetValueOrDefault();
-                if (valueVal >= 0)
+                TResult valueVal = value.GetValueOrDefault();
+                if (valueVal >= TResult.Zero)
                 {
                     // We can fast-path this case where we know HasValue will
                     // never affect the outcome, without constantly checking
@@ -668,8 +589,8 @@ namespace System.Linq
                     // uses, it's only been done in this direction for int? and long?.
                     while (e.MoveNext())
                     {
-                        int? cur = selector(e.Current);
-                        int x = cur.GetValueOrDefault();
+                        TResult? cur = selector(e.Current);
+                        TResult x = cur.GetValueOrDefault();
                         if (x > valueVal)
                         {
                             valueVal = x;
@@ -681,8 +602,8 @@ namespace System.Linq
                 {
                     while (e.MoveNext())
                     {
-                        int? cur = selector(e.Current);
-                        int x = cur.GetValueOrDefault();
+                        TResult? cur = selector(e.Current);
+                        TResult x = cur.GetValueOrDefault();
 
                         // Do not replace & with &&. The branch prediction cost outweighs the extra operation
                         // unless nulls either never happen or always happen.
@@ -698,7 +619,15 @@ namespace System.Linq
             return value;
         }
 
-        public static long Max<TSource>(this IEnumerable<TSource> source, Func<TSource, long> selector)
+        public static float Max<TSource>(this IEnumerable<TSource> source, Func<TSource, float> selector) => MaxFloat(source, selector);
+
+        public static float? Max<TSource>(this IEnumerable<TSource> source, Func<TSource, float?> selector) => MaxFloat(source, selector);
+
+        public static double Max<TSource>(this IEnumerable<TSource> source, Func<TSource, double> selector) => MaxFloat(source, selector);
+
+        public static double? Max<TSource>(this IEnumerable<TSource> source, Func<TSource, double?> selector) => MaxFloat(source, selector);
+
+        private static TResult MaxFloat<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector) where TResult : struct, IFloatingPointIeee754<TResult>
         {
             if (source == null)
             {
@@ -710,7 +639,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
-            long value;
+            TResult value;
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 if (!e.MoveNext())
@@ -719,9 +648,19 @@ namespace System.Linq
                 }
 
                 value = selector(e.Current);
+                while (TResult.IsNaN(value))
+                {
+                    if (!e.MoveNext())
+                    {
+                        return value;
+                    }
+
+                    value = selector(e.Current);
+                }
+
                 while (e.MoveNext())
                 {
-                    long x = selector(e.Current);
+                    TResult x = selector(e.Current);
                     if (x > value)
                     {
                         value = x;
@@ -732,7 +671,7 @@ namespace System.Linq
             return value;
         }
 
-        public static long? Max<TSource>(this IEnumerable<TSource> source, Func<TSource, long?> selector)
+        private static TResult? MaxFloat<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult?> selector) where TResult : struct, IFloatingPointIeee754<TResult>
         {
             if (source == null)
             {
@@ -744,7 +683,7 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
-            long? value = null;
+            TResult? value = null;
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
                 do
@@ -758,120 +697,15 @@ namespace System.Linq
                 }
                 while (!value.HasValue);
 
-                long valueVal = value.GetValueOrDefault();
-                if (valueVal >= 0)
-                {
-                    while (e.MoveNext())
-                    {
-                        long? cur = selector(e.Current);
-                        long x = cur.GetValueOrDefault();
-                        if (x > valueVal)
-                        {
-                            valueVal = x;
-                            value = cur;
-                        }
-                    }
-                }
-                else
-                {
-                    while (e.MoveNext())
-                    {
-                        long? cur = selector(e.Current);
-                        long x = cur.GetValueOrDefault();
-
-                        // Do not replace & with &&. The branch prediction cost outweighs the extra operation
-                        // unless nulls either never happen or always happen.
-                        if (cur.HasValue & x > valueVal)
-                        {
-                            valueVal = x;
-                            value = cur;
-                        }
-                    }
-                }
-            }
-
-            return value;
-        }
-
-        public static float Max<TSource>(this IEnumerable<TSource> source, Func<TSource, float> selector)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            if (selector == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
-            }
-
-            float value;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
-            {
-                if (!e.MoveNext())
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
-
-                value = selector(e.Current);
-                while (float.IsNaN(value))
+                TResult valueVal = value.GetValueOrDefault();
+                while (TResult.IsNaN(valueVal))
                 {
                     if (!e.MoveNext())
                     {
                         return value;
                     }
 
-                    value = selector(e.Current);
-                }
-
-                while (e.MoveNext())
-                {
-                    float x = selector(e.Current);
-                    if (x > value)
-                    {
-                        value = x;
-                    }
-                }
-            }
-
-            return value;
-        }
-
-        public static float? Max<TSource>(this IEnumerable<TSource> source, Func<TSource, float?> selector)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            if (selector == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
-            }
-
-            float? value = null;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
-            {
-                do
-                {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    value = selector(e.Current);
-                }
-                while (!value.HasValue);
-
-                float valueVal = value.GetValueOrDefault();
-                while (float.IsNaN(valueVal))
-                {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    float? cur = selector(e.Current);
+                    TResult? cur = selector(e.Current);
                     if (cur.HasValue)
                     {
                         valueVal = (value = cur).GetValueOrDefault();
@@ -880,116 +714,8 @@ namespace System.Linq
 
                 while (e.MoveNext())
                 {
-                    float? cur = selector(e.Current);
-                    float x = cur.GetValueOrDefault();
-
-                    // Do not replace & with &&. The branch prediction cost outweighs the extra operation
-                    // unless nulls either never happen or always happen.
-                    if (cur.HasValue & x > valueVal)
-                    {
-                        valueVal = x;
-                        value = cur;
-                    }
-                }
-            }
-
-            return value;
-        }
-
-        public static double Max<TSource>(this IEnumerable<TSource> source, Func<TSource, double> selector)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            if (selector == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
-            }
-
-            double value;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
-            {
-                if (!e.MoveNext())
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
-
-                value = selector(e.Current);
-
-                // As described in a comment on Min(this IEnumerable<double>) NaN is ordered
-                // less than all other values. We need to do explicit checks to ensure this, but
-                // once we've found a value that is not NaN we need no longer worry about it,
-                // so first loop until such a value is found (or not, as the case may be).
-                while (double.IsNaN(value))
-                {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    value = selector(e.Current);
-                }
-
-                while (e.MoveNext())
-                {
-                    double x = selector(e.Current);
-                    if (x > value)
-                    {
-                        value = x;
-                    }
-                }
-            }
-
-            return value;
-        }
-
-        public static double? Max<TSource>(this IEnumerable<TSource> source, Func<TSource, double?> selector)
-        {
-            if (source == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-            }
-
-            if (selector == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
-            }
-
-            double? value = null;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
-            {
-                do
-                {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    value = selector(e.Current);
-                }
-                while (!value.HasValue);
-
-                double valueVal = value.GetValueOrDefault();
-                while (double.IsNaN(valueVal))
-                {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    double? cur = selector(e.Current);
-                    if (cur.HasValue)
-                    {
-                        valueVal = (value = cur).GetValueOrDefault();
-                    }
-                }
-
-                while (e.MoveNext())
-                {
-                    double? cur = selector(e.Current);
-                    double x = cur.GetValueOrDefault();
+                    TResult? cur = selector(e.Current);
+                    TResult x = cur.GetValueOrDefault();
 
                     // Do not replace & with &&. The branch prediction cost outweighs the extra operation
                     // unless nulls either never happen or always happen.

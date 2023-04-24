@@ -36,6 +36,7 @@ namespace System.IO
             if (handle.IsInvalid)
             {
                 Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+                handle.Dispose();
                 switch (error.Error)
                 {
                     case Interop.Error.EMFILE:
@@ -324,9 +325,8 @@ namespace System.IO
                     // against the handle, so we'd deadlock if we relied on that approach.  Instead, we want to follow
                     // the approach of removing all watches when we're done, which means we also don't want to
                     // add any new watches once the count hits zero.
-                    if (parent == null || _wdToPathMap.Count > 0)
+                    if (_wdToPathMap.Count > 0)
                     {
-                        Debug.Assert(parent != null || _wdToPathMap.Count == 0);
                         AddDirectoryWatchUnlocked(parent, directoryName);
                     }
                 }
@@ -337,27 +337,39 @@ namespace System.IO
             /// <param name="directoryName">The new directory path to monitor, relative to the root.</param>
             private void AddDirectoryWatchUnlocked(WatchedDirectory? parent, string directoryName)
             {
-                string fullPath = parent != null ? parent.GetPath(false, directoryName) : directoryName;
+                bool hasParent = parent != null;
+                string fullPath = hasParent ? parent!.GetPath(false, directoryName) : directoryName;
 
                 // inotify_add_watch will fail if this is a symlink, so check that we didn't get a symlink
-                Interop.Sys.FileStatus status = default(Interop.Sys.FileStatus);
-                if ((Interop.Sys.LStat(fullPath, out status) == 0) &&
+                // with the exception of the watched directory where we try to dereference the path.
+                if (hasParent &&
+                    (Interop.Sys.LStat(fullPath, out Interop.Sys.FileStatus status) == 0) &&
                     ((status.Mode & (uint)Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK))
                 {
                     return;
                 }
 
                 // Add a watch for the full path.  If the path is already being watched, this will return
-                // the existing descriptor.  This works even in the case of a rename. We also add the DONT_FOLLOW
+                // the existing descriptor.  This works even in the case of a rename. We also add the DONT_FOLLOW (for subdirectories only)
                 // and EXCL_UNLINK flags to keep parity with Windows where we don't pickup symlinks or unlinked
                 // files (which don't exist in Windows)
-                int wd = Interop.Sys.INotifyAddWatch(_inotifyHandle, fullPath, (uint)(this._watchFilters | Interop.Sys.NotifyEvents.IN_DONT_FOLLOW | Interop.Sys.NotifyEvents.IN_EXCL_UNLINK));
+                uint mask = (uint)(_watchFilters | Interop.Sys.NotifyEvents.IN_EXCL_UNLINK | (hasParent ? Interop.Sys.NotifyEvents.IN_DONT_FOLLOW : 0));
+                int wd = Interop.Sys.INotifyAddWatch(_inotifyHandle, fullPath, mask);
                 if (wd == -1)
                 {
                     // If we get an error when trying to add the watch, don't let that tear down processing.  Instead,
                     // raise the Error event with the exception and let the user decide how to handle it.
 
                     Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+
+                    // Don't report an error when we can't add a watch because the child directory
+                    // was removed or replaced by a file.
+                    if (hasParent && (error.Error == Interop.Error.ENOENT ||
+                                      error.Error == Interop.Error.ENOTDIR))
+                    {
+                        return;
+                    }
+
                     Exception exc;
                     if (error.Error == Interop.Error.ENOSPC)
                     {
@@ -400,9 +412,9 @@ namespace System.IO
                         }
 
                         directoryEntry.Parent = parent;
-                        if (parent != null)
+                        if (hasParent)
                         {
-                            parent.InitializedChildren.Add (directoryEntry);
+                            parent!.InitializedChildren.Add(directoryEntry);
                         }
                     }
                     directoryEntry.Name = directoryName;
@@ -416,9 +428,9 @@ namespace System.IO
                         WatchDescriptor = wd,
                         Name = directoryName
                     };
-                    if (parent != null)
+                    if (hasParent)
                     {
-                        parent.InitializedChildren.Add (directoryEntry);
+                        parent!.InitializedChildren.Add(directoryEntry);
                     }
                     _wdToPathMap.Add(wd, directoryEntry);
                     isNewDirectory = true;
@@ -429,16 +441,30 @@ namespace System.IO
                 // asked for subdirectories to be included.
                 if (isNewDirectory && _includeSubdirectories)
                 {
-                    // This method is recursive.  If we expect to see hierarchies
-                    // so deep that it would cause us to overflow the stack, we could
-                    // consider using an explicit stack object rather than recursion.
-                    // This is unlikely, however, given typical directory names
-                    // and max path limits.
-                    foreach (string subDir in Directory.EnumerateDirectories(fullPath))
+                    try
                     {
-                        AddDirectoryWatchUnlocked(directoryEntry, System.IO.Path.GetFileName(subDir));
-                        // AddDirectoryWatchUnlocked will add the new directory to
-                        // this.Children, so we don't have to / shouldn't also do it here.
+                        // This method is recursive.  If we expect to see hierarchies
+                        // so deep that it would cause us to overflow the stack, we could
+                        // consider using an explicit stack object rather than recursion.
+                        // This is unlikely, however, given typical directory names
+                        // and max path limits.
+                        foreach (string subDir in Directory.EnumerateDirectories(fullPath))
+                        {
+                            AddDirectoryWatchUnlocked(directoryEntry, System.IO.Path.GetFileName(subDir));
+                            // AddDirectoryWatchUnlocked will add the new directory to
+                            // this.Children, so we don't have to / shouldn't also do it here.
+                        }
+                    }
+                    catch (DirectoryNotFoundException)
+                    { } // The child directory was removed.
+                    catch (IOException ex) when (ex.HResult == Interop.Error.ENOTDIR.Info().RawErrno)
+                    { } // The child directory was replaced by a file.
+                    catch (Exception ex)
+                    {
+                        if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
+                        {
+                            watcher.OnError(new ErrorEventArgs(ex));
+                        }
                     }
                 }
             }
@@ -543,8 +569,6 @@ namespace System.IO
                         }
 
                         uint mask = nextEvent.mask;
-                        ReadOnlySpan<char> expandedName = ReadOnlySpan<char>.Empty;
-                        WatchedDirectory? associatedDirectoryEntry = null;
 
                         // An overflow event means that we can't trust our state without restarting since we missed events and
                         // some of those events could be a directory create, meaning we wouldn't have added the directory to the
@@ -560,23 +584,23 @@ namespace System.IO
                             }
                             break;
                         }
-                        else
+
+                        // Look up the directory information for the supplied wd
+                        WatchedDirectory? associatedDirectoryEntry = null;
+                        lock (SyncObj)
                         {
-                            // Look up the directory information for the supplied wd
-                            lock (SyncObj)
+                            if (!_wdToPathMap.TryGetValue(nextEvent.wd, out associatedDirectoryEntry))
                             {
-                                if (!_wdToPathMap.TryGetValue(nextEvent.wd, out associatedDirectoryEntry))
-                                {
-                                    // The watch descriptor could be missing from our dictionary if it was removed
-                                    // due to cancellation, or if we already removed it and this is a related event
-                                    // like IN_IGNORED.  In any case, just ignore it... even if for some reason we
-                                    // should have the value, there's little we can do about it at this point,
-                                    // and there's no more processing of this event we can do without it.
-                                    continue;
-                                }
+                                // The watch descriptor could be missing from our dictionary if it was removed
+                                // due to cancellation, or if we already removed it and this is a related event
+                                // like IN_IGNORED.  In any case, just ignore it... even if for some reason we
+                                // should have the value, there's little we can do about it at this point,
+                                // and there's no more processing of this event we can do without it.
+                                continue;
                             }
-                            expandedName = associatedDirectoryEntry.GetPath(true, nextEvent.name);
                         }
+
+                        ReadOnlySpan<char> expandedName = associatedDirectoryEntry.GetPath(true, nextEvent.name);
 
                         // To match Windows, ignore all changes that happen on the root folder itself
                         if (expandedName.IsEmpty)
@@ -763,8 +787,7 @@ namespace System.IO
                         {
                             fixed (byte* buf = &_buffer[0])
                             {
-                                _bufferAvailable = Interop.CheckIo(Interop.Sys.Read(_inotifyHandle, buf, this._buffer.Length),
-                                    isDirectory: true);
+                                _bufferAvailable = Interop.CheckIo(Interop.Sys.Read(_inotifyHandle, buf, this._buffer.Length));
                                 Debug.Assert(_bufferAvailable <= this._buffer.Length);
                             }
                         }
@@ -818,16 +841,11 @@ namespace System.IO
                 Debug.Assert(position > 0);
                 Debug.Assert(nameLength >= 0 && (position + nameLength) <= _buffer.Length);
 
-                int lengthWithoutNullTerm = nameLength;
-                for (int i = 0; i < nameLength; i++)
+                int lengthWithoutNullTerm = _buffer.AsSpan(position, nameLength).IndexOf((byte)'\0');
+                if (lengthWithoutNullTerm < 0)
                 {
-                    if (_buffer[position + i] == '\0')
-                    {
-                        lengthWithoutNullTerm = i;
-                        break;
-                    }
+                    lengthWithoutNullTerm = nameLength;
                 }
-                Debug.Assert(lengthWithoutNullTerm <= nameLength); // should be null terminated or empty
 
                 return lengthWithoutNullTerm > 0 ?
                     Encoding.UTF8.GetString(_buffer, position, lengthWithoutNullTerm) :

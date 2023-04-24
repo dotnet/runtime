@@ -69,15 +69,26 @@ namespace System.Linq.Tests
         [Fact]
         public void SingleOrDefault1()
         {
-            var val = (new int[] { 2 }).AsQueryable().SingleOrDefault();
+            var val = new[] { 2 }.AsQueryable().SingleOrDefault();
             Assert.Equal(2, val);
         }
 
         [Fact]
         public void SingleOrDefault2()
         {
-            var val = (new int[] { 2 }).AsQueryable().SingleOrDefault(n => n > 1);
+            var val = new[] { 2 }.AsQueryable().SingleOrDefault(n => n > 1);
             Assert.Equal(2, val);
+        }
+
+        [Fact]
+        public void SingleOrDefault_OverloadResolution_Regression()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/65419
+            object? result = new object[] { 1, "" }.AsQueryable().SingleOrDefault(x => x is string);
+            Assert.IsType<string>(result);
+
+            result = Array.Empty<object>().AsQueryable().SingleOrDefault(1);
+            Assert.IsType<int>(result);
         }
     }
 }

@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
@@ -31,9 +33,13 @@ namespace System
         private static bool s_isErrorTextWriterRedirected;
 
         private static ConsoleCancelEventHandler? s_cancelCallbacks;
-        private static ConsolePal.ControlCHandlerRegistrar? s_registrar;
+        private static PosixSignalRegistration? s_sigIntRegistration;
+        private static PosixSignalRegistration? s_sigQuitRegistration;
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static TextReader In
         {
             get
@@ -57,7 +63,10 @@ namespace System
             }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static Encoding InputEncoding
         {
             get
@@ -78,7 +87,7 @@ namespace System
             }
             set
             {
-                CheckNonNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 lock (s_syncObject)
                 {
@@ -113,9 +122,12 @@ namespace System
                 }
                 return encoding;
             }
+            [UnsupportedOSPlatform("android")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             set
             {
-                CheckNonNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 lock (s_syncObject)
                 {
@@ -154,13 +166,19 @@ namespace System
             }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static ConsoleKeyInfo ReadKey()
         {
             return ConsolePal.ReadKey(false);
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static ConsoleKeyInfo ReadKey(bool intercept)
         {
             return ConsolePal.ReadKey(intercept);
@@ -217,16 +235,16 @@ namespace System
 
         private static TextWriter CreateOutputWriter(Stream outputStream)
         {
-            return TextWriter.Synchronized(outputStream == Stream.Null ?
-                StreamWriter.Null :
-                new StreamWriter(
+            return outputStream == Stream.Null ?
+                TextWriter.Null :
+                TextWriter.Synchronized(new StreamWriter(
                     stream: outputStream,
                     encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
                     bufferSize: WriteBufferSize,
                     leaveOpen: true)
-                {
-                    AutoFlush = true
-                });
+                    {
+                        AutoFlush = true
+                    });
         }
 
         private static StrongBox<bool>? _isStdInRedirected;
@@ -280,7 +298,10 @@ namespace System
 
         public static int CursorSize
         {
+            [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.CursorSize; }
             [SupportedOSPlatform("windows")]
             set { ConsolePal.CursorSize = value; }
@@ -300,21 +321,30 @@ namespace System
 
         internal const ConsoleColor UnknownColor = (ConsoleColor)(-1);
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static ConsoleColor BackgroundColor
         {
             get { return ConsolePal.BackgroundColor; }
             set { ConsolePal.BackgroundColor = value; }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static ConsoleColor ForegroundColor
         {
             get { return ConsolePal.ForegroundColor; }
             set { ConsolePal.ForegroundColor = value; }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static void ResetColor()
         {
             ConsolePal.ResetColor();
@@ -322,7 +352,10 @@ namespace System
 
         public static int BufferWidth
         {
+            [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.BufferWidth; }
             [SupportedOSPlatform("windows")]
             set { ConsolePal.BufferWidth = value; }
@@ -330,7 +363,10 @@ namespace System
 
         public static int BufferHeight
         {
+            [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.BufferHeight; }
             [SupportedOSPlatform("windows")]
             set { ConsolePal.BufferHeight = value; }
@@ -356,20 +392,44 @@ namespace System
             set { ConsolePal.WindowTop = value; }
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int WindowWidth
         {
-            [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.WindowWidth; }
-            [SupportedOSPlatform("windows")]
-            set { ConsolePal.WindowWidth = value; }
+            set
+            {
+                if (Console.IsOutputRedirected)
+                {
+                    throw new IOException(SR.InvalidOperation_SetWindowSize);
+                }
+
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+
+                ConsolePal.WindowWidth = value;
+            }
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int WindowHeight
         {
-            [UnsupportedOSPlatform("browser")]
             get { return ConsolePal.WindowHeight; }
-            [SupportedOSPlatform("windows")]
-            set { ConsolePal.WindowHeight = value; }
+            set
+            {
+                if (Console.IsOutputRedirected)
+                {
+                    throw new IOException(SR.InvalidOperation_SetWindowSize);
+                }
+
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+
+                ConsolePal.WindowHeight = value;
+            }
         }
 
         [SupportedOSPlatform("windows")]
@@ -378,19 +438,36 @@ namespace System
             ConsolePal.SetWindowPosition(left, top);
         }
 
-        [SupportedOSPlatform("windows")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static void SetWindowSize(int width, int height)
         {
+            if (Console.IsOutputRedirected)
+            {
+                throw new IOException(SR.InvalidOperation_SetWindowSize);
+            }
+
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+
             ConsolePal.SetWindowSize(width, height);
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int LargestWindowWidth
         {
             get { return ConsolePal.LargestWindowWidth; }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int LargestWindowHeight
         {
             get { return ConsolePal.LargestWindowHeight; }
@@ -400,18 +477,27 @@ namespace System
         {
             [SupportedOSPlatform("windows")]
             get { return ConsolePal.CursorVisible; }
+            [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             set { ConsolePal.CursorVisible = value; }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int CursorLeft
         {
             get { return ConsolePal.GetCursorPosition().Left; }
             set { SetCursorPosition(value, CursorTop); }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int CursorTop
         {
             get { return ConsolePal.GetCursorPosition().Top; }
@@ -423,7 +509,10 @@ namespace System
         /// <remarks>
         /// Columns are numbered from left to right starting at 0. Rows are numbered from top to bottom starting at 0.
         /// </remarks>
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static (int Left, int Top) GetCursorPosition()
         {
             return ConsolePal.GetCursorPosition();
@@ -433,14 +522,20 @@ namespace System
         {
             [SupportedOSPlatform("windows")]
             get { return ConsolePal.Title; }
+            [UnsupportedOSPlatform("android")]
             [UnsupportedOSPlatform("browser")]
+            [UnsupportedOSPlatform("ios")]
+            [UnsupportedOSPlatform("tvos")]
             set
             {
                 ConsolePal.Title = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static void Beep()
         {
             ConsolePal.Beep();
@@ -464,12 +559,18 @@ namespace System
             ConsolePal.MoveBufferArea(sourceLeft, sourceTop, sourceWidth, sourceHeight, targetLeft, targetTop, sourceChar, sourceForeColor, sourceBackColor);
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static void Clear()
         {
             ConsolePal.Clear();
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static void SetCursorPosition(int left, int top)
         {
             // Basic argument validation.  The PAL implementation may provide further validation.
@@ -481,7 +582,10 @@ namespace System
             ConsolePal.SetCursorPosition(left, top);
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static event ConsoleCancelEventHandler? CancelKeyPress
         {
             add
@@ -493,11 +597,14 @@ namespace System
                 {
                     s_cancelCallbacks += value;
 
-                    // If we haven't registered our control-C handler, do it.
-                    if (s_registrar == null)
+                    // If we haven't registered our control-C/Break handlers, do it.
+                    if (s_sigIntRegistration is null)
                     {
-                        s_registrar = new ConsolePal.ControlCHandlerRegistrar();
-                        s_registrar.Register();
+                        Debug.Assert(s_sigQuitRegistration is null);
+
+                        Action<PosixSignalContext> handler = HandlePosixSignal;
+                        s_sigIntRegistration = PosixSignalRegistration.Create(PosixSignal.SIGINT, handler);
+                        s_sigQuitRegistration = PosixSignalRegistration.Create(PosixSignal.SIGQUIT, handler);
                     }
                 }
             }
@@ -506,36 +613,43 @@ namespace System
                 lock (s_syncObject)
                 {
                     s_cancelCallbacks -= value;
-                    if (s_registrar != null && s_cancelCallbacks == null)
+
+                    // If there are no more callbacks, unregister registered posix signal handlers.
+                    if (s_cancelCallbacks == null)
                     {
-                        s_registrar.Unregister();
-                        s_registrar = null;
+                        s_sigIntRegistration?.Dispose();
+                        s_sigQuitRegistration?.Dispose();
+                        s_sigIntRegistration = s_sigQuitRegistration = null;
                     }
                 }
             }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static bool TreatControlCAsInput
         {
             get { return ConsolePal.TreatControlCAsInput; }
             set { ConsolePal.TreatControlCAsInput = value; }
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static Stream OpenStandardInput()
         {
             return ConsolePal.OpenStandardInput();
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static Stream OpenStandardInput(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
             return ConsolePal.OpenStandardInput();
         }
 
@@ -547,10 +661,7 @@ namespace System
         public static Stream OpenStandardOutput(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
             return ConsolePal.OpenStandardOutput();
         }
 
@@ -562,17 +673,18 @@ namespace System
         public static Stream OpenStandardError(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
             return ConsolePal.OpenStandardError();
         }
 
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static void SetIn(TextReader newIn)
         {
-            CheckNonNull(newIn, nameof(newIn));
+            ArgumentNullException.ThrowIfNull(newIn);
+
             newIn = SyncTextReader.GetSynchronizedTextReader(newIn);
             lock (s_syncObject)
             {
@@ -582,8 +694,17 @@ namespace System
 
         public static void SetOut(TextWriter newOut)
         {
-            CheckNonNull(newOut, nameof(newOut));
-            newOut = TextWriter.Synchronized(newOut);
+            ArgumentNullException.ThrowIfNull(newOut);
+
+            // Ensure all access to the writer is synchronized. If it's the known Null
+            // singleton writer, which may be used if someone wants to suppress all
+            // console output, we needn't add synchronization because all operations
+            // are nops.
+            if (newOut != TextWriter.Null)
+            {
+                newOut = TextWriter.Synchronized(newOut);
+            }
+
             lock (s_syncObject)
             {
                 s_isOutTextWriterRedirected = true;
@@ -593,19 +714,19 @@ namespace System
 
         public static void SetError(TextWriter newError)
         {
-            CheckNonNull(newError, nameof(newError));
-            newError = TextWriter.Synchronized(newError);
+            ArgumentNullException.ThrowIfNull(newError);
+
+            // Ensure all access to the writer is synchronized. See comment in SetOut.
+            if (newError != TextWriter.Null)
+            {
+                newError = TextWriter.Synchronized(newError);
+            }
+
             lock (s_syncObject)
             {
                 s_isErrorTextWriterRedirected = true;
                 Volatile.Write(ref s_error, newError);
             }
-        }
-
-        private static void CheckNonNull(object obj, string paramName)
-        {
-            if (obj == null)
-                throw new ArgumentNullException(paramName);
         }
 
         //
@@ -616,6 +737,7 @@ namespace System
         // the inlined console writelines from them.
         //
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static int Read()
         {
@@ -623,6 +745,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
+        [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         public static string? ReadLine()
         {
@@ -716,25 +839,25 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, object? arg0)
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             Out.WriteLine(format, arg0);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, object? arg0, object? arg1)
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             Out.WriteLine(format, arg0, arg1);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, object? arg0, object? arg1, object? arg2)
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             Out.WriteLine(format, arg0, arg1, arg2);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void WriteLine(string format, params object?[]? arg)
+        public static void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? arg)
         {
             if (arg == null)                       // avoid ArgumentNullException from String.Format
                 Out.WriteLine(format, null, null); // faster than Out.WriteLine(format, (Object)arg);
@@ -743,25 +866,25 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, object? arg0)
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             Out.Write(format, arg0);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, object? arg0, object? arg1)
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             Out.Write(format, arg0, arg1);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, object? arg0, object? arg1, object? arg2)
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             Out.Write(format, arg0, arg1, arg2);
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Write(string format, params object?[]? arg)
+        public static void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? arg)
         {
             if (arg == null)                   // avoid ArgumentNullException from String.Format
                 Out.Write(format, null, null); // faster than Out.Write(format, (Object)arg);
@@ -849,17 +972,17 @@ namespace System
             Out.Write(value);
         }
 
-        internal static bool HandleBreakEvent(ConsoleSpecialKey controlKey)
+        private static void HandlePosixSignal(PosixSignalContext ctx)
         {
-            ConsoleCancelEventHandler? handler = s_cancelCallbacks;
-            if (handler == null)
-            {
-                return false;
-            }
+            Debug.Assert(ctx.Signal == PosixSignal.SIGINT || ctx.Signal == PosixSignal.SIGQUIT);
 
-            var args = new ConsoleCancelEventArgs(controlKey);
-            handler(null, args);
-            return args.Cancel;
+            if (s_cancelCallbacks is ConsoleCancelEventHandler handler)
+            {
+                var args = new ConsoleCancelEventArgs(ctx.Signal == PosixSignal.SIGINT ? ConsoleSpecialKey.ControlC : ConsoleSpecialKey.ControlBreak);
+                args.Cancel = ctx.Cancel;
+                handler(null, args);
+                ctx.Cancel = args.Cancel;
+            }
         }
     }
 }

@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Numerics;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 
 namespace System.Data.Common
 {
@@ -140,20 +141,17 @@ namespace System.Data.Common
 
         public override void SetCapacity(int capacity)
         {
-            BigInteger[] newValues = new BigInteger[capacity];
-            if (null != _values)
-            {
-                Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
-            }
-            _values = newValues;
+            Array.Resize(ref _values, capacity);
             base.SetCapacity(capacity);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override object ConvertXmlToObject(string s)
         {
             return BigInteger.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override string ConvertObjectToXml(object value)
         {
             return ((BigInteger)value).ToString("D", System.Globalization.CultureInfo.InvariantCulture);

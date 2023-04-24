@@ -49,6 +49,7 @@ namespace System.Xml.Xsl
     /// As visits to each node in the tree start and end, various Analyzers are invoked.  These Analyzers incrementally
     /// collect and store information that is later used to generate faster and smaller code.
     /// </remarks>
+    [RequiresDynamicCode("Creates DynamicMethods")]
     internal sealed class XmlILGenerator
     {
         private QilExpression? _qil;
@@ -352,12 +353,12 @@ namespace System.Xml.Xsl
         public void CreateTypeInitializer(XmlQueryStaticData staticData)
         {
             byte[] data;
-            Type[] ebTypes;
+            Type[]? ebTypes;
             FieldInfo fldInitData, fldData, fldTypes;
             ConstructorInfo cctor;
 
             staticData.GetObjectData(out data, out ebTypes);
-            fldInitData = _module!.DefineInitializedData("__" + XmlQueryStaticData.DataFieldName, data);
+            fldInitData = _module!.DefineInitializedData($"__{XmlQueryStaticData.DataFieldName}", data);
             fldData = _module.DefineField(XmlQueryStaticData.DataFieldName, typeof(object));
             fldTypes = _module.DefineField(XmlQueryStaticData.TypesFieldName, typeof(Type[]));
 

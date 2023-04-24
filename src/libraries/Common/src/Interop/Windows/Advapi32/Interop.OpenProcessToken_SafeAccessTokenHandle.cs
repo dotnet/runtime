@@ -10,7 +10,11 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Interop.Libraries.Advapi32, SetLastError = true)]
-        internal static extern bool OpenProcessToken(IntPtr ProcessToken, TokenAccessLevels DesiredAccess, out SafeAccessTokenHandle TokenHandle);
+        [LibraryImport(Interop.Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool OpenProcessToken(
+            IntPtr ProcessToken,
+            TokenAccessLevels DesiredAccess,
+            out SafeAccessTokenHandle TokenHandle);
     }
 }

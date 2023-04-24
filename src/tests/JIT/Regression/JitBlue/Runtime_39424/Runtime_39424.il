@@ -4,16 +4,17 @@
 
 // The test was showing some rare cases of `IND(LCL_FLD_ADDR)` under HW intrinsic nodes.
 
-.assembly extern System.Runtime {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Runtime.Intrinsics {}
 .assembly extern System.Runtime.Extensions {}
 .assembly extern System.Numerics.Vectors {}
 .assembly extern System.Numerics.Extensions {}
 .assembly extern System.Runtime.CompilerServices.Unsafe {}
 
-.assembly Runtime_39424.exe {}
+.assembly Runtime_39424 {}
+.assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit Runtime_39424
+.class public auto ansi beforefieldinit Runtime_39424
        extends [System.Runtime]System.Object
 {
   .class sequential ansi sealed nested private beforefieldinit Container
@@ -164,6 +165,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       18 (0x12)
     .maxstack  8

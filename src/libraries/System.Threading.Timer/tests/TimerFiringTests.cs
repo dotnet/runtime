@@ -236,7 +236,7 @@ namespace System.Threading.Tests
             t.Dispose(allTicksCompleted);
             Assert.True(allTicksCompleted.WaitOne(MaxPositiveTimeoutInMs));
             Assert.Equal(0, tickCount);
-            Assert.Throws<ObjectDisposedException>(() => t.Change(0, 0));
+            Assert.False(t.Change(0, 0));
         }
 
         [OuterLoop("Incurs seconds delay to wait for events that should never happen")]
@@ -339,12 +339,11 @@ namespace System.Threading.Tests
                             select groupedByDueTime;
 
                         var sb = new StringBuilder();
-                        sb.AppendFormat("{0}% out of {1} timer firings were off by more than {2}ms",
-                            percOutOfRange, totalTimers, MillisecondsPadding);
+                        sb.Append($"{percOutOfRange}% out of {totalTimers} timer firings were off by more than {MillisecondsPadding}ms");
                         foreach (IGrouping<int, KeyValuePair<int, long>> result in results)
                         {
                             sb.AppendLine();
-                            sb.AppendFormat("Expected: {0}, Actuals: {1}", result.Key, string.Join(", ", result.Select(k => k.Value)));
+                            sb.Append($"Expected: {result.Key}, Actuals: {string.Join(", ", result.Select(k => k.Value))}");
                         }
 
                         Assert.True(false, sb.ToString());

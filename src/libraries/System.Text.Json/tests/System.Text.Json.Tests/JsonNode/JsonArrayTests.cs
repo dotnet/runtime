@@ -5,9 +5,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
-namespace System.Text.Json.Node.Tests
+namespace System.Text.Json.Nodes.Tests
 {
     public static class JsonArrayTests
     {
@@ -42,19 +43,20 @@ namespace System.Text.Json.Node.Tests
             Assert.Throws<ArgumentNullException>(() => new JsonArray().WriteTo(null));
         }
 
-        [Fact]
-        public static void WriteTo()
+        [Theory]
+        [InlineData("[]")]
+        [InlineData("[42]")]
+        [InlineData("[42,43]")]
+        public static void WriteTo(string json)
         {
-            const string Json = "[42]";
-
-            JsonArray jArray = JsonNode.Parse(Json).AsArray();
+            JsonArray jArray = JsonNode.Parse(json).AsArray();
             var stream = new MemoryStream();
             var writer = new Utf8JsonWriter(stream);
             jArray.WriteTo(writer);
             writer.Flush();
 
-            string json = Encoding.UTF8.GetString(stream.ToArray());
-            Assert.Equal(Json, json);
+            string result = Encoding.UTF8.GetString(stream.ToArray());
+            Assert.Equal(json, result);
         }
 
         [Fact]
@@ -196,6 +198,48 @@ namespace System.Text.Json.Node.Tests
         }
 
         [Fact]
+        public static void ConvertJSONArrayToIListOfJsonNode()
+        {
+            JsonArray obj = JsonSerializer.Deserialize<JsonArray>("[42]");
+            Assert.Equal(42, (int)obj[0]);
+
+            IList<JsonNode> ilist = obj;
+            Assert.NotNull(ilist);
+            Assert.Equal(42, (int)ilist[0]);
+        }
+
+        [Fact]
+        public static void ConvertJSONArrayToJsonArray()
+        {
+            JsonArray nodes = JsonSerializer.Deserialize<JsonArray>("[1,1.1,\"Hello\"]");
+            Assert.Equal(1, (long)nodes[0]);
+            Assert.Equal(1.1, (double)nodes[1]);
+            Assert.Equal("Hello", (string)nodes[2]);
+        }
+
+        [Fact]
+        public static void ConvertJSONArrayToJsonNodeArray()
+        {
+            // Instead of JsonArray, use array of JsonNodes
+            JsonNode[] nodes = JsonSerializer.Deserialize<JsonNode[]>("[1,1.1,\"Hello\"]");
+            Assert.Equal(1, (long)nodes[0]);
+            Assert.Equal(1.1, (double)nodes[1]);
+            Assert.Equal("Hello", (string)nodes[2]);
+        }
+
+        [Fact]
+        public static void ConvertJSONArrayToObjectArray()
+        {
+            // Instead of JsonArray, use array of objects
+            JsonSerializerOptions options = new();
+            options.UnknownTypeHandling = Serialization.JsonUnknownTypeHandling.JsonNode;
+            object[] nodes = JsonSerializer.Deserialize<object[]>("[1,1.1,\"Hello\"]", options);
+            Assert.Equal(1, (long)(JsonNode)nodes[0]);
+            Assert.Equal(1.1, (double)(JsonNode)nodes[1]);
+            Assert.Equal("Hello", (string)(JsonNode)nodes[2]);
+        }
+
+        [Fact]
         public static void ReAddSameNode_Throws()
         {
             var jValue = JsonValue.Create(1);
@@ -334,7 +378,7 @@ namespace System.Text.Json.Node.Tests
         }
 
         [Fact]
-        public static void AccesingNestedJsonArray()
+        public static void AccessingNestedJsonArray()
         {
             var issues = new JsonObject
             {
@@ -429,6 +473,18 @@ namespace System.Text.Json.Node.Tests
             Assert.Equal(1, ((JsonValue)jArrayEnumerator.Current).GetValue<int>());
             Assert.True(jArrayEnumerator.MoveNext());
             Assert.Equal("value", ((JsonValue)jArrayEnumerator.Current).GetValue<string>());
+        }
+
+        [Fact]
+        public static void LazyInitializationIsThreadSafe()
+        {
+            string arrayText = "[\"elem0\",\"elem1\"]";
+            JsonArray node = Assert.IsType<JsonArray>(JsonNode.Parse(arrayText));
+            Parallel.For(0, 128, i =>
+            {
+                Assert.Equal("elem0", (string)node[0]);
+                Assert.Equal("elem1", (string)node[1]);
+            });
         }
     }
 }

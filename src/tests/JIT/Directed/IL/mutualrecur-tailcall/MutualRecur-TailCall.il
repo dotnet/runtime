@@ -6,8 +6,9 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly mutualrecurtailcall
+.assembly 'MutualRecur-TailCall'
 {
 }
 
@@ -3409,8 +3410,12 @@
   IL_003d:  ret
 } 
 
+.class public auto ansi MutualRecur_TailCall {
 .method public static int32 main() il managed 
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  2
   .locals (int32 V_0)
@@ -4636,3 +4641,4 @@
   IL_0e47:  ldc.i4     0x64
   IL_0e4c:  ret
 } 
+}

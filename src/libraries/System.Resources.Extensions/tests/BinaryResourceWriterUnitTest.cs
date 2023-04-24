@@ -10,12 +10,16 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Resources.Extensions.Tests
 {
     public class PreserializedResourceWriterTests
     {
+        public static bool AllowsCustomResourceTypes => AppContext.TryGetSwitch("System.Resources.ResourceManager.AllowCustomResourceTypes", out bool isEnabled) ? isEnabled : true;
+
         [Fact]
         public static void ExceptionforNullStream()
         {
@@ -69,36 +73,36 @@ namespace System.Resources.Extensions.Tests
             {
                 writer.AddResource("duplicate", "value");
 
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", "value"));
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", new object()));
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", new byte[0]));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", "value"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", new object()));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", new byte[0]));
 
                 using (var stream = new MemoryStream())
                 {
-                    Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", stream));
-                    Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", stream, true));
-                    Assert.Throws<ArgumentException>(null, () => writer.AddActivatorResource("duplicate", stream, "System.DayOfWeek", false));
+                    AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", stream));
+                    AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", stream, true));
+                    AssertExtensions.Throws<ArgumentException>(null, () => writer.AddActivatorResource("duplicate", stream, "System.DayOfWeek", false));
                 }
 
-                Assert.Throws<ArgumentException>(null, () => writer.AddBinaryFormattedResource("duplicate", new byte[1], "System.DayOfWeek"));
-                Assert.Throws<ArgumentException>(null, () => writer.AddTypeConverterResource("duplicate", new byte[1], "System.DayOfWeek"));
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", "Monday", "System.DayOfWeek"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddBinaryFormattedResource("duplicate", new byte[1], "System.DayOfWeek"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddTypeConverterResource("duplicate", new byte[1], "System.DayOfWeek"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicate", "Monday", "System.DayOfWeek"));
 
 
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("Duplicate", "value"));
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("dUplicate", new object()));
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("duPlicate", new byte[0]));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("Duplicate", "value"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("dUplicate", new object()));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duPlicate", new byte[0]));
 
                 using (var stream = new MemoryStream())
                 {
-                    Assert.Throws<ArgumentException>(null, () => writer.AddResource("dupLicate", stream));
-                    Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplIcate", stream, true));
-                    Assert.Throws<ArgumentException>(null, () => writer.AddActivatorResource("dupliCate", stream, "System.DayOfWeek", false));
+                    AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("dupLicate", stream));
+                    AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplIcate", stream, true));
+                    AssertExtensions.Throws<ArgumentException>(null, () => writer.AddActivatorResource("dupliCate", stream, "System.DayOfWeek", false));
                 }
 
-                Assert.Throws<ArgumentException>(null, () => writer.AddBinaryFormattedResource("duplicAte", new byte[1], "System.DayOfWeek"));
-                Assert.Throws<ArgumentException>(null, () => writer.AddTypeConverterResource("duplicaTe", new byte[1], "System.DayOfWeek"));
-                Assert.Throws<ArgumentException>(null, () => writer.AddResource("duplicatE", "Monday", "System.DayOfWeek"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddBinaryFormattedResource("duplicAte", new byte[1], "System.DayOfWeek"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddTypeConverterResource("duplicaTe", new byte[1], "System.DayOfWeek"));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.AddResource("duplicatE", "Monday", "System.DayOfWeek"));
             }
         }
 
@@ -148,7 +152,6 @@ namespace System.Resources.Extensions.Tests
 
             Assert.Equal(writerBuffer, binaryWriterBuffer);
         }
-
 
         [Fact]
         public static void PrimitiveResources()
@@ -265,6 +268,7 @@ namespace System.Resources.Extensions.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50934", TestPlatforms.Android)]
         public static void BinaryFormattedResources()
         {
             var values = TestData.BinaryFormatted;
@@ -303,6 +307,7 @@ namespace System.Resources.Extensions.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50934", TestPlatforms.Android)]
         public static void BinaryFormattedResourcesWithoutTypeName()
         {
             var values = TestData.BinaryFormatted;
@@ -337,7 +342,7 @@ namespace System.Resources.Extensions.Tests
                 }
             }
         }
-        [Fact]
+        [ConditionalFact(nameof(AllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void TypeConverterByteArrayResources()
         {
@@ -370,7 +375,7 @@ namespace System.Resources.Extensions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(AllowsCustomResourceTypes))]
         public static void TypeConverterStringResources()
         {
             var values = TestData.StringConverter;
@@ -400,7 +405,7 @@ namespace System.Resources.Extensions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(AllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34495", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public static void StreamResources()
@@ -437,6 +442,7 @@ namespace System.Resources.Extensions.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50934", TestPlatforms.Android)]
         public static void CanReadViaResourceManager()
         {
             ResourceManager resourceManager = new ResourceManager(typeof(TestData));
@@ -465,7 +471,7 @@ namespace System.Resources.Extensions.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(AllowsCustomResourceTypes))]
         public static void ResourceManagerLoadsCorrectReader()
         {
             ResourceManager resourceManager = new ResourceManager(typeof(TestData));
@@ -475,6 +481,7 @@ namespace System.Resources.Extensions.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50934", TestPlatforms.Android)]
         public static void EmbeddedResourcesAreUpToDate()
         {
             // this is meant to catch a case where our embedded test resources are out of date with respect to the current writer.
@@ -490,6 +497,50 @@ namespace System.Resources.Extensions.Tests
                     // Some types rely on SerializationInfo.SetType on .NETCore
                     // which result in a different binary format
                     Assert.Equal(expectedData.ToArray(), actualData.ToArray());
+                }
+            }
+        }
+
+        /// <summary>
+        /// This test has multiple threads simultaneously loop over the keys of a moderately-sized resx using
+        /// <see cref="ResourceManager"/> and call <see cref="ResourceManager.GetString(string)"/> for each key.
+        /// This has historically been prone to thread-safety bugs because of the shared cache state and internal
+        /// method calls between RuntimeResourceSet and <see cref="DeserializingResourceReader"/>.
+        ///
+        /// Running with <paramref name="useEnumeratorEntry"/> TRUE replicates https://github.com/dotnet/runtime/issues/74868,
+        /// while running with FALSE replicates the error from https://github.com/dotnet/runtime/issues/74052.
+        /// </summary>
+        /// <param name="useEnumeratorEntry">
+        /// Whether to use <see cref="IDictionaryEnumerator.Entry"/> vs. <see cref="IDictionaryEnumerator.Key"/> when enumerating;
+        /// these follow fairly different code paths.
+        /// </param>]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TestResourceManagerIsSafeForConcurrentAccessAndEnumeration(bool useEnumeratorEntry)
+        {
+            ResourceManager manager = new(
+                typeof(TestData).FullName,
+                typeof(TestData).Assembly,
+                typeof(DeserializingResourceReader).Assembly.GetType("System.Resources.Extensions.RuntimeResourceSet", throwOnError: true));
+
+            const int Threads = 10;
+            using Barrier barrier = new(Threads);
+            Task task = Task.WhenAll(Enumerable.Range(0, Threads).Select(_ => Task.Run(WaitForBarrierThenEnumerateResources)));
+
+            Assert.True(task.Wait(TimeSpan.FromSeconds(30)));
+
+            void WaitForBarrierThenEnumerateResources()
+            {
+                barrier.SignalAndWait();
+
+                ResourceSet set = manager.GetResourceSet(CultureInfo.InvariantCulture, createIfNotExists: true, tryParents: true);
+                IDictionaryEnumerator enumerator = set.GetEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    object key = useEnumeratorEntry ? enumerator.Entry.Key : enumerator.Key;
+                    manager.GetObject((string)key);
+                    Thread.Sleep(1);
                 }
             }
         }
@@ -531,5 +582,4 @@ namespace System.Resources.Extensions.Tests
             }
         }
     }
-
 }

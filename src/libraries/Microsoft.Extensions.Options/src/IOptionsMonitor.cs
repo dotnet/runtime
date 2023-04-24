@@ -18,15 +18,17 @@ namespace Microsoft.Extensions.Options
         TOptions CurrentValue { get; }
 
         /// <summary>
-        /// Returns a configured <typeparamref name="TOptions"/> instance with the given name.
+        /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
-        TOptions Get(string name);
+        /// <param name="name">The name of the <typeparamref name="TOptions"/> instance, if a <see langword="null"/> <see cref="Options.DefaultName"/> is used.</param>
+        /// <returns>The <typeparamref name="TOptions"/> instance that matches the given <paramref name="name"/>.</returns>
+        TOptions Get(string? name);
 
         /// <summary>
         /// Registers a listener to be called whenever a named <typeparamref name="TOptions"/> changes.
         /// </summary>
         /// <param name="listener">The action to be invoked when <typeparamref name="TOptions"/> has changed.</param>
         /// <returns>An <see cref="IDisposable"/> which should be disposed to stop listening for changes.</returns>
-        IDisposable OnChange(Action<TOptions, string> listener);
+        IDisposable? OnChange(Action<TOptions, string?> listener);
     }
 }

@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Reflection.Context.Virtual
 {
     internal abstract class VirtualMethodBase : MethodInfo
     {
-        private ParameterInfo _returnParameter;
+        private ParameterInfo? _returnParameter;
 
         protected abstract Type[] GetParameterTypes();
 
@@ -17,22 +18,22 @@ namespace System.Reflection.Context.Virtual
             get { return MethodAttributes.Public | MethodAttributes.HideBySig; }
         }
 
-        public override sealed CallingConventions CallingConvention
+        public sealed override CallingConventions CallingConvention
         {
             get { return CallingConventions.HasThis | CallingConventions.Standard; }
         }
 
-        public override sealed bool ContainsGenericParameters
+        public sealed override bool ContainsGenericParameters
         {
             get { return false; }
         }
 
-        public override sealed bool IsGenericMethod
+        public sealed override bool IsGenericMethod
         {
             get { return false; }
         }
 
-        public override sealed bool IsGenericMethodDefinition
+        public sealed override bool IsGenericMethodDefinition
         {
             get { return false; }
         }
@@ -42,42 +43,42 @@ namespace System.Reflection.Context.Virtual
             get { throw new NotSupportedException(); }
         }
 
-        public override sealed Module Module
+        public sealed override Module Module
         {
-            get { return DeclaringType.Module; }
+            get { return DeclaringType!.Module; }
         }
 
-        public override sealed Type ReflectedType
+        public sealed override Type? ReflectedType
         {
             get { return DeclaringType; }
         }
 
-        public override sealed ParameterInfo ReturnParameter
+        public sealed override ParameterInfo ReturnParameter
         {
-            get { return _returnParameter ?? (_returnParameter = new VirtualReturnParameter(this)); }
+            get { return _returnParameter ??= new VirtualReturnParameter(this); }
         }
 
-        public override sealed ICustomAttributeProvider ReturnTypeCustomAttributes
+        public sealed override ICustomAttributeProvider ReturnTypeCustomAttributes
         {
             get { return ReturnParameter; }
         }
 
-        public override sealed MethodInfo GetBaseDefinition()
+        public sealed override MethodInfo GetBaseDefinition()
         {
             return this;
         }
 
-        public override sealed Type[] GetGenericArguments()
+        public sealed override Type[] GetGenericArguments()
         {
             return CollectionServices.Empty<Type>();
         }
 
-        public override sealed MethodInfo GetGenericMethodDefinition()
+        public sealed override MethodInfo GetGenericMethodDefinition()
         {
             throw new InvalidOperationException();
         }
 
-        public override sealed MethodImplAttributes GetMethodImplementationFlags()
+        public sealed override MethodImplAttributes GetMethodImplementationFlags()
         {
             return MethodImplAttributes.IL;
         }
@@ -87,7 +88,8 @@ namespace System.Reflection.Context.Virtual
             return CollectionServices.Empty<ParameterInfo>();
         }
 
-        public override sealed MethodInfo MakeGenericMethod(params Type[] typeArguments)
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+        public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             throw new InvalidOperationException(SR.Format(SR.InvalidOperation_NotGenericMethodDefinition, this));
         }
@@ -112,20 +114,20 @@ namespace System.Reflection.Context.Virtual
             return false;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             // We don't need to compare the invokees
             // But do we need to compare the contexts and return types?
             return obj is VirtualMethodBase other &&
                 Name == other.Name &&
-                DeclaringType.Equals(other.DeclaringType) &&
+                DeclaringType!.Equals(other.DeclaringType) &&
                 CollectionServices.CompareArrays(GetParameterTypes(), other.GetParameterTypes());
         }
 
         public override int GetHashCode()
         {
             return Name.GetHashCode() ^
-                DeclaringType.GetHashCode() ^
+                DeclaringType!.GetHashCode() ^
                 CollectionServices.GetArrayHashCode(GetParameterTypes());
         }
 

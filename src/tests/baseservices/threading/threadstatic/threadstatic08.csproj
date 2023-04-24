@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="threadstatic08.cs" />
+  </ItemGroup>
+</Project>

@@ -102,8 +102,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (de != null)
-                    de.Dispose();
+                de?.Dispose();
             }
         }
 
@@ -143,8 +142,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (de != null)
-                    de.Dispose();
+                de?.Dispose();
             }
         }
 
@@ -169,7 +167,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ActiveDirectorySubnet(DirectoryContext context, string subnetName, string? siteName, bool existing)
         {
-            Debug.Assert(existing == true);
+            Debug.Assert(existing);
 
             this.context = context;
             _name = subnetName;
@@ -365,8 +363,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (disposing)
             {
                 // free other state (managed objects)
-                if (cachedEntry != null)
-                    cachedEntry.Dispose();
+                cachedEntry?.Dispose();
             }
 
             // free your own state (unmanaged objects)

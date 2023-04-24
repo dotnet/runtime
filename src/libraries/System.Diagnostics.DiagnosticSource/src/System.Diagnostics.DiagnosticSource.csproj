@@ -1,42 +1,28 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>$(NoWarn);SA1205</NoWarn>
-    <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent);net5.0;netstandard1.1;netstandard1.3;net45;net46;netstandard2.0</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
+    <EnableTrimAnalyzer Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">false</EnableTrimAnalyzer>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides Classes that allow you to decouple code logging rich (unserializable) diagnostics/telemetry (e.g. framework) from code that consumes it (e.g. tools)
+
+Commonly Used Types:
+System.Diagnostics.DiagnosticListener
+System.Diagnostics.DiagnosticSource</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-      <!-- To allow this library to work on V4.5 runtimes and other old platforms
-         we also have a separate complilation of this DLL that works for V4.5
-         (which is netstandard1.1).  Again we duplicate in a portable-* folder
-         to work with older NuGet clients -->
-    <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
-    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'net45'">$(DefineConstants);NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
-    <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1'">$(DefineConstants);EVENTSOURCE_ACTIVITY_SUPPORT</DefineConstants>
-    <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);EVENTSOURCE_ENUMERATE_SUPPORT</DefineConstants>
-    <DefineConstants Condition="$(TargetFramework.StartsWith('net4'))">$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS;ENABLE_HTTP_HANDLER</DefineConstants>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0'">true</ExcludeFromPackage>
-    <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);W3C_DEFAULT_ID_FORMAT</DefineConstants>
+    <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(DefineConstants);ENABLE_HTTP_HANDLER</DefineConstants>
+    <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);W3C_DEFAULT_ID_FORMAT;MEMORYMARSHAL_SUPPORT;OS_ISBROWSER_SUPPORT</DefineConstants>
+    <IncludePlatformAttributes>true</IncludePlatformAttributes>
   </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
-    <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
-    <Compile Include="System\Diagnostics\DiagnosticSourceEventSource.cs" />
-    <None Include="DiagnosticSourceUsersGuide.md" />
-  </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1'">
-    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="System\Diagnostics\Activity.cs" />
+    <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
     <Compile Include="System\Diagnostics\ActivityStatusCode.cs" />
     <Compile Include="System\Diagnostics\ActivityTagsCollection.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.cs" />
@@ -47,64 +33,107 @@
     <Compile Include="System\Diagnostics\ActivityLink.cs" />
     <Compile Include="System\Diagnostics\ActivityListener.cs" />
     <Compile Include="System\Diagnostics\ActivitySource.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
+    <Compile Include="System\Diagnostics\DiagnosticSourceEventSource.cs" />
+    <Compile Include="System\Diagnostics\DiagLinkedList.cs" />
+    <Compile Include="System\Diagnostics\DistributedContextPropagator.cs" />
+    <Compile Include="System\Diagnostics\LegacyPropagator.cs" />
+    <Compile Include="System\Diagnostics\NoOutputPropagator.cs" />
+    <Compile Include="System\Diagnostics\PassThroughPropagator.cs" />
     <Compile Include="System\Diagnostics\RandomNumberGenerator.cs" />
+    <Compile Include="System\Diagnostics\Metrics\AggregationManager.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Aggregator.cs" />
+    <Compile Include="System\Diagnostics\Metrics\AggregatorStore.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Counter.cs" />
+    <Compile Include="System\Diagnostics\Metrics\ExponentialHistogramAggregator.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Histogram.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Instrument.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Instrument.common.cs" />
+    <Compile Include="System\Diagnostics\Metrics\InstrumentState.cs" />
+    <Compile Include="System\Diagnostics\Metrics\LastValueAggregator.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Measurement.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Meter.cs" />
+    <Compile Include="System\Diagnostics\Metrics\MeterListener.cs" />
+    <Compile Include="System\Diagnostics\Metrics\MetricsEventSource.cs" />
+    <Compile Include="System\Diagnostics\Metrics\ObjectSequence.cs" />
+    <Compile Include="System\Diagnostics\Metrics\ObservableCounter.cs" />
+    <Compile Include="System\Diagnostics\Metrics\ObservableGauge.cs" />
+    <Compile Include="System\Diagnostics\Metrics\ObservableInstrument.cs" />
+    <Compile Include="System\Diagnostics\Metrics\ObservableUpDownCounter.cs" />
+    <Compile Include="System\Diagnostics\Metrics\CounterAggregator.cs" />
+    <Compile Include="System\Diagnostics\Metrics\StringSequence.cs" />
+    <Compile Include="System\Diagnostics\Metrics\TagList.cs" />
+    <Compile Include="System\Diagnostics\Metrics\UpDownCounter.cs" />
+
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
+
+    <None Include="DiagnosticSourceUsersGuide.md" />
     <None Include="ActivityUserGuide.md" />
   </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">
-    <Compile Include="System\Diagnostics\LocalAppContextSwitches.cs" />
-    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
-      <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'net45' And '$(TargetFramework)' != 'netstandard1.1'">
-    <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
-    <Compile Include="System\Diagnostics\Activity.Current.net45.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp' or
-                        '$(TargetFramework)' == 'netstandard1.1' or
-                        '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
-    <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp' or
-                        '$(TargetFramework)' == 'netstandard2.1'">
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netcoreapp.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.netcoreapp.cs" />
     <Compile Include="System\Diagnostics\ActivityLink.netcoreapp.cs" />
+    <Compile Include="System\Diagnostics\LocalAppContextSwitches.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Instrument.netcore.cs" />
+    <Compile Include="System\Diagnostics\Metrics\ObjectSequence.netcore.cs" />
+    <Compile Include="System\Diagnostics\Metrics\StringSequence.netcore.cs" />
+    <Compile Include="System\Diagnostics\System.Diagnostics.DiagnosticSource.Typeforwards.netcoreapp.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="Common\System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp' and
-                        '$(TargetFramework)' != 'netstandard2.1' and
-                        '$(TargetFramework)' != 'netstandard1.1'">
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netfx.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.netfx.cs" />
     <Compile Include="System\Diagnostics\ActivityLink.netfx.cs" />
+    <Compile Include="System\Diagnostics\Metrics\Instrument.netfx.cs" />
+    <Compile Include="System\Diagnostics\Metrics\ObjectSequence.netfx.cs" />
+    <Compile Include="System\Diagnostics\Metrics\StringSequence.netfx.cs" />
+
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicDependencyAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMembersAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" >
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' or
+                        '$(TargetFramework)' == 'netstandard2.0'">
+    <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
-    <Compile Include="AssemblyInfo.netfx.cs" />
     <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Reflection" />
     <Reference Include="System.Runtime" />
-    <Reference Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Threading.Thread" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1' and
-                        $([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" >
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
 </Project>

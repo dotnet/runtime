@@ -55,7 +55,6 @@ extern char                    g_szAsmCodeIndent[];
 
 extern DWORD                   g_Mode;
 
-extern char*                    g_pszExeFile;
 extern char                     g_szInputFile[]; // in UTF-8
 extern WCHAR                    g_wszFullInputFile[]; // in UTF-16
 extern char                     g_szOutputFile[]; // in UTF-8
@@ -63,9 +62,7 @@ extern char*                    g_pszObjFileName;
 extern FILE*                    g_pFile;
 
 extern BOOL                 g_fLimitedVisibility;
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-extern BOOL                 g_fNGenNativeMetadata;
-#endif
+extern BOOL                 g_fR2RNativeManifestMetadata;
 extern BOOL                 g_fHidePub;
 extern BOOL                 g_fHidePriv;
 extern BOOL                 g_fHideFam;
@@ -91,28 +88,28 @@ HANDLE                      hConsoleErr=NULL;
 BOOL Init();
 void Uninit();
 void Cleanup();
-void DumpMetaInfo(__in __nullterminated const WCHAR* pszFileName, __in __nullterminated const char* pszObjFileName, void* GUICookie);
-FILE* OpenOutput(__in __nullterminated const char* szFileName);
+void DumpMetaInfo(_In_ __nullterminated const WCHAR* pszFileName, _In_ __nullterminated const char* pszObjFileName, void* GUICookie);
+FILE* OpenOutput(_In_ __nullterminated const char* szFileName);
 
 void PrintLogo()
 {
-    printf("Microsoft (R) .NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
-    printf("\n%S\n\n", VER_LEGALCOPYRIGHT_LOGO_STR_L);
+    printf(".NET IL Disassembler.  Version " CLR_PRODUCT_VERSION);
+    printf("\n%s\n\n", VER_LEGALCOPYRIGHT_LOGO_STR);
 }
 
 void SyntaxCon()
 {
     DWORD l;
 
-    for(l=IDS_USAGE_01; l<= IDS_USAGE_23; l++) printf(RstrANSI(l));
+    for(l=IDS_USAGE_01; l<= IDS_USAGE_23; l++) printf("%s", RstrANSI(l));
     if(g_fTDC)
     {
-        for(l=IDS_USAGE_24; l<= IDS_USAGE_32; l++) printf(RstrANSI(l));
-        for(l=IDS_USAGE_34; l<= IDS_USAGE_36; l++) printf(RstrANSI(l));
-        for(l=IDS_USAGE_37; l<= IDS_USAGE_39; l++) printf(RstrANSI(l));
+        for(l=IDS_USAGE_24; l<= IDS_USAGE_32; l++) printf("%s", RstrANSI(l));
+        for(l=IDS_USAGE_34; l<= IDS_USAGE_36; l++) printf("%s", RstrANSI(l));
+        for(l=IDS_USAGE_37; l<= IDS_USAGE_39; l++) printf("%s", RstrANSI(l));
     }
-    else printf(RstrANSI(IDS_USAGE_40));
-    for(l=IDS_USAGE_41; l<= IDS_USAGE_42; l++) printf(RstrANSI(l));
+    else printf("  /ALL        Combination of /HEADER, /BYTES, /TOKENS\n\n");
+    for(l=IDS_USAGE_41; l<= IDS_USAGE_42; l++) printf("%s", RstrANSI(l));
 
 }
 
@@ -127,7 +124,7 @@ char* CheckForDQuotes(__inout __nullterminated char* sz)
     return ret;
 }
 
-char* EqualOrColon(__in __nullterminated char* szArg)
+char* EqualOrColon(_In_ __nullterminated char* szArg)
 {
     char* pchE = strchr(szArg,'=');
     char* pchC = strchr(szArg,':');
@@ -153,7 +150,7 @@ void GetInputFileFullPath()
     VDELETE(wzArg);
 }
 
-int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileName)
+int ProcessOneArg(_In_ __nullterminated char* szArg, _Out_ char** ppszObjFileName)
 {
     char        szOpt[128];
     if(strlen(szArg) == 0) return 0;
@@ -248,12 +245,11 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
             g_fLimitedVisibility = TRUE;
             g_fHidePub = FALSE;
         }
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-        else if (_stricmp(szOpt, "nat") == 0)
+        else if (_stricmp(szOpt, "r2r") == 0)
         {
-            g_fNGenNativeMetadata = TRUE;
+             g_fR2RNativeManifestMetadata = TRUE;
+             g_fDumpMetaInfo = TRUE;
         }
-#endif
         else if (_stricmp(szOpt, "pre") == 0)
         {
             //g_fPrettyPrint = TRUE;
@@ -407,7 +403,7 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
         else
         {
             PrintLogo();
-            printf(RstrANSI(IDS_E_INVALIDOPTION),szArg); //"INVALID COMMAND LINE OPTION: %s\n\n",szArg);
+            printf("INVALID COMMAND LINE OPTION: %s\n\n",szArg);
             return -1;
         }
     }
@@ -416,7 +412,7 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
         if(g_szInputFile[0])
         {
             PrintLogo();
-            printf(RstrANSI(IDS_E_MULTIPLEINPUT)); //"MULTIPLE INPUT FILES SPECIFIED\n\n");
+            printf("MULTIPLE INPUT FILES SPECIFIED\n\n");
             return -1; // check if it was already specified
         }
         szArg = CheckForDQuotes(szArg);
@@ -427,37 +423,10 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
     return 0;
 }
 
-char* UTF8toANSI(__in __nullterminated char* szUTF)
+#ifdef HOST_WINDOWS
+int ParseCmdLineW(int argc, _In_ __nullterminated wchar_t* argv[], _Out_ char** ppszObjFileName)
 {
-    ULONG32 L = (ULONG32) strlen(szUTF)+16;
-    WCHAR* wzUnicode = new WCHAR[L];
-    memset(wzUnicode,0,L*sizeof(WCHAR));
-    WszMultiByteToWideChar(CP_UTF8,0,szUTF,-1,wzUnicode,L);
-    L <<= 2;
-    char* szANSI = new char[L];
-    memset(szANSI,0,L);
-    WszWideCharToMultiByte(g_uConsoleCP,0,wzUnicode,-1,szANSI,L,NULL,NULL);
-    VDELETE(wzUnicode);
-    return szANSI;
-}
-char* ANSItoUTF8(__in __nullterminated char* szANSI)
-{
-    ULONG32 L = (ULONG32) strlen(szANSI)+16;
-    WCHAR* wzUnicode = new WCHAR[L];
-    memset(wzUnicode,0,L*sizeof(WCHAR));
-    WszMultiByteToWideChar(g_uConsoleCP,0,szANSI,-1,wzUnicode,L);
-    L *= 3;
-    char* szUTF = new char[L];
-    memset(szUTF,0,L);
-    WszWideCharToMultiByte(CP_UTF8,0,wzUnicode,-1,szUTF,L,NULL,NULL);
-    VDELETE(wzUnicode);
-    return szUTF;
-}
-
-int ParseCmdLineW(__in __nullterminated WCHAR* wzCmdLine, __out char** ppszObjFileName)
-{
-    int     argc,ret=0;
-    LPWSTR* argv= SegmentCommandLine(wzCmdLine, (DWORD*)&argc);
+    int     ret=0;
     char*   szArg = new char[2048];
     for(int i=1; i < argc; i++)
     {
@@ -468,59 +437,32 @@ int ParseCmdLineW(__in __nullterminated WCHAR* wzCmdLine, __out char** ppszObjFi
     VDELETE(szArg);
     return ret;
 }
-
-int ParseCmdLineA(__in __nullterminated char* szCmdLine, __out char** ppszObjFileName)
+#else
+int ParseCmdLine(int argc, _In_ __nullterminated char* argv[], _Out_ char** ppszObjFileName)
 {
-    if((szCmdLine == NULL)||(*szCmdLine == 0)) return 0;
-
-    // ANSI to UTF-8
-    char*       szCmdLineUTF = ANSItoUTF8(szCmdLine);
-
-    // Split into argv[]
-    int argc=0, ret = 0;
-    DynamicArray<char*> argv;
-    char*       pch;
-    char*       pchend;
-    bool        bUnquoted = true;
-
-    pch = szCmdLineUTF;
-    pchend = pch+strlen(szCmdLineUTF);
-    while(pch)
+    int     ret = 0;
+    char* szArg = new char[2048];
+    for (int i = 1; i < argc; i++)
     {
-        for(; *pch == ' '; pch++); // skip the blanks
-        argv[argc++] = pch;
-        for(; pch < pchend; pch++)
-        {
-            if(*pch == '"') bUnquoted = !bUnquoted;
-            else if((*pch == ' ')&&bUnquoted) break;
-        }
-
-        if(pch < pchend) *pch++ = 0;
-        else break;
+        if ((ret = ProcessOneArg(argv[i], ppszObjFileName)) != 0) break;
     }
-
-    for(int i=1; i < argc; i++)
-    {
-        if((ret = ProcessOneArg(argv[i],ppszObjFileName)) != 0) break;
-    }
-    VDELETE(szCmdLineUTF);
+    VDELETE(szArg);
     return ret;
 }
+#endif
 
-int __cdecl main(int nCmdShow, char* lpCmdLine[])
+#ifdef HOST_WINDOWS
+int __cdecl wmain(int argc, wchar_t* argv[])
+#else
+int main(int argc, char* argv[])
+#endif
 {
 #if defined(TARGET_UNIX)
-    if (0 != PAL_Initialize(nCmdShow, lpCmdLine))
+    if (0 != PAL_Initialize(argc, argv))
     {
         printError(g_pFile, "Error: Fail to PAL_Initialize\n");
         exit(1);
     }
-    g_pszExeFile = lpCmdLine[0];
-#endif
-
-#ifdef HOST_WINDOWS
-    // SWI has requested that the exact form of the function call below be used. For details see http://swi/SWI%20Docs/Detecting%20Heap%20Corruption.doc
-    (void)HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
 #endif
 
 #ifdef _DEBUG
@@ -555,7 +497,12 @@ int __cdecl main(int nCmdShow, char* lpCmdLine[])
     g_hResources = WszGetModuleHandle(NULL);
 #endif
 
-    iCommandLineParsed = ParseCmdLineW((wzCommandLine = GetCommandLineW()),&g_pszObjFileName);
+
+#ifdef HOST_WINDOWS
+    iCommandLineParsed = ParseCmdLineW(argc, argv, &g_pszObjFileName);
+#else
+    iCommandLineParsed = ParseCmdLine(argc, argv, &g_pszObjFileName);
+#endif
 
     if(!g_fLimitedVisibility)
     {

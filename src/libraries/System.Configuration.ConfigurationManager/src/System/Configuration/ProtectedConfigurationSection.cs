@@ -61,7 +61,7 @@ namespace System.Configuration
             return coll;
         }
 
-        private ProtectedConfigurationProvider CreateAndInitializeProviderWithAssert(Type t, ProviderSettings pn)
+        private static ProtectedConfigurationProvider CreateAndInitializeProviderWithAssert(Type t, ProviderSettings pn)
         {
             ProtectedConfigurationProvider provider =
                 (ProtectedConfigurationProvider)TypeUtil.CreateInstance(t);
@@ -74,7 +74,7 @@ namespace System.Configuration
             return provider;
         }
 
-        private ProtectedConfigurationProvider InstantiateProvider(ProviderSettings pn)
+        private static ProtectedConfigurationProvider InstantiateProvider(ProviderSettings pn)
         {
             Type t = TypeUtil.GetType(pn.Type, true);
             if (!typeof(ProtectedConfigurationProvider).IsAssignableFrom(t))
@@ -95,7 +95,7 @@ namespace System.Configuration
         {
             return string.Format(CultureInfo.InvariantCulture, EncryptedSectionTemplate,
                 sectionName, // The section to encrypt
-                BaseConfigurationRecord.ProtectionProviderAttibute, // protectionProvider keyword
+                BaseConfigurationRecord.ProtectionProviderAttribute, // protectionProvider keyword
                 providerName, // The provider name
                 encryptedXml // the encrypted xml
                 );

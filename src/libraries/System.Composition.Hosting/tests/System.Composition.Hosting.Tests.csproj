@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Composition\Hosting\Core\CompositionDependencyTests.cs" />
@@ -15,7 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\src\System.Composition.Hosting.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
 </Project>

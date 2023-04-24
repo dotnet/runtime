@@ -1,5 +1,5 @@
 // App.cs created with MonoDevelop
-// User: lluis at 15:46 18/05/2007
+// User: lluis at 15:46 18/05/2007
 //
 
 using System;
@@ -30,7 +30,7 @@ namespace Application
 			return 1;
 		}
 	}
-	
+
 	class MyClass: IMyInterface
 	{
 		public void Run ()

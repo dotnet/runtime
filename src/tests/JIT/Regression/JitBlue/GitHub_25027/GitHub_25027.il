@@ -4,15 +4,19 @@
 // GitHub 25027: Tail call stress shouldn't cause asserts 
 // in the presence of invalid IL
 
-.assembly extern System.Runtime { auto }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern mscorlib { auto }
 .assembly GitHub_25027 {}
+.assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit X
+.class public auto ansi beforefieldinit X
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init ([0] int32 result)
     ldc.i4.m1

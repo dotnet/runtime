@@ -183,7 +183,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 () => signer.CheckSignature(null, false));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void CheckSignature_ExtraStore_IsAdditional()
         {
             SignedCms cms = new SignedCms();
@@ -212,7 +212,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             signer.CheckSignature(true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void CheckSignature_SHA1WithRSA()
         {
             SignedCms cms = new SignedCms();
@@ -296,7 +296,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             signer.CheckSignature(true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug in matching logic")]
         public static void RemoveCounterSignature_MatchesIssuerAndSerialNumber()
         {
@@ -327,7 +327,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckHash();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug in matching logic")]
         public static void RemoveCounterSignature_MatchesSubjectKeyIdentifier()
         {
@@ -360,7 +360,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckHash();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug in matching logic")]
         public static void RemoveCounterSignature_MatchesNoSignature()
         {
@@ -392,7 +392,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug in matching logic")]
         public static void RemoveCounterSignature_UsesLiveState()
         {
@@ -444,6 +444,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(0)]
         [InlineData(1)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug")]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void RemoveCounterSignature_EncodedInSingleAttribute(int indexToRemove)
         {
             SignedCms cms = new SignedCms();
@@ -528,7 +529,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignerInfo signer = cms.SignerInfos[0];
             SignerInfo counterSigner = signer.CounterSignerInfos[1];
 
-            // This succeeeds, but reduces the real count to 1.
+            // This succeeds, but reduces the real count to 1.
             signer.RemoveCounterSignature(counterSigner);
             Assert.Equal(2, signer.CounterSignerInfos.Count);
             Assert.Single(cms.SignerInfos[0].CounterSignerInfos);
@@ -566,7 +567,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 () => signer.RemoveCounterSignature(0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void AddCounterSigner_DuplicateCert_RSA()
         {
             SignedCms cms = new SignedCms();
@@ -612,7 +613,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(true);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber)]
         [InlineData(SubjectIdentifierType.SubjectKeyIdentifier)]
         public static void AddCounterSigner_RSA(SubjectIdentifierType identifierType)
@@ -697,7 +698,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void AddCounterSigner_DSA()
         {
             SignedCms cms = new SignedCms();
@@ -756,7 +758,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(true);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, Oids.Sha1)]
         [InlineData(SubjectIdentifierType.SubjectKeyIdentifier, Oids.Sha1)]
@@ -827,7 +829,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void AddFirstCounterSigner_NoSignature_NoPrivateKey()
         {
             SignedCms cms = new SignedCms();
@@ -860,7 +862,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         public static void AddFirstCounterSigner_NoSignature()
         {
             SignedCms cms = new SignedCms();
@@ -910,7 +912,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         [InlineData(false)]
         [InlineData(true)]
         public static void AddSecondCounterSignature_NoSignature_WithCert(bool addExtraCert)
@@ -918,7 +920,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             AddSecondCounterSignature_NoSignature(withCertificate: true, addExtraCert);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
         // On .NET Framework it will prompt for the counter-signer's certificate if it's null,
         // even if the signature type is NoSignature, so don't run the test there.
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
@@ -1027,7 +1029,16 @@ namespace System.Security.Cryptography.Pkcs.Tests
         public static void EnsureExtraCertsAdded()
         {
             SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.OneDsa1024);
+
+            // DSA is not supported on mobile Apple platforms, so use ECDsa signed document instead
+            if (PlatformDetection.UsesMobileAppleCrypto)
+            {
+                cms.Decode(SignedDocuments.SHA256ECDSAWithRsaSha256DigestIdentifier);
+            }
+            else
+            {
+                cms.Decode(SignedDocuments.OneDsa1024);
+            }
 
             int preCount = cms.Certificates.Count;
 

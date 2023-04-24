@@ -156,7 +156,7 @@ if [ ! -d "$testRootDir" ]; then
     exit $EXIT_CODE_EXCEPTION
 fi
 
-if [ ! -z "$testEnv" ] && [ ! -e "$testEnv" ]; then
+if [[ -n "$testEnv" && ! -e "$testEnv" ]]; then
     echo "File specified by --playlist does not exist: $testEnv"
     exit $EXIT_CODE_EXCEPTION
 fi

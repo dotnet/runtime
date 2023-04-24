@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [DllImport(Libraries.User32)]
-        public static extern bool IsWindowVisible(IntPtr hWnd);
+        [LibraryImport(Libraries.User32)]
+        public static partial BOOL IsWindowVisible(IntPtr hWnd);
     }
 }

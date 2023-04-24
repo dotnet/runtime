@@ -3,9 +3,11 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -41,13 +43,15 @@ namespace System.Net.Security.Tests
 
     public class SslStreamNetworkStreamTest : IClassFixture<CertificateSetup>
     {
+        private static bool SupportsRenegotiation => TestConfiguration.SupportsRenegotiation;
+
         readonly ITestOutputHelper _output;
-        readonly CertificateSetup certificates;
+        readonly CertificateSetup _certificates;
 
         public SslStreamNetworkStreamTest(ITestOutputHelper output, CertificateSetup setup)
         {
             _output = output;
-            certificates = setup;
+            _certificates = setup;
         }
 
         [ConditionalFact]
@@ -61,7 +65,9 @@ namespace System.Net.Security.Tests
             if (PlatformDetection.SupportsTls12 && (PlatformDetection.SupportsTls10 || PlatformDetection.SupportsTls11))
             {
                 // OpenSSL 1.0 where new is Tls12
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                 clientProtocol = SslProtocols.Tls | SslProtocols.Tls11;
+#pragma warning restore SYSLIB0039
                 serverProtocol = SslProtocols.Tls12;
             }
             else if (PlatformDetection.SupportsTls12 && PlatformDetection.SupportsTls13)
@@ -118,6 +124,13 @@ namespace System.Net.Security.Tests
                     Assert.Contains("SSL_ERROR_SSL", e.InnerException.Message);
                     Assert.NotNull(e.InnerException.InnerException);
                     Assert.Contains("protocol", e.InnerException.InnerException.Message);
+
+                    e = await Assert.ThrowsAsync<AuthenticationException>(() => clientAuthenticationTask);
+
+                    Assert.NotNull(e.InnerException);
+                    Assert.Contains("SSL_ERROR_SSL", e.InnerException.Message);
+                    Assert.NotNull(e.InnerException.InnerException);
+                    Assert.Contains("protocol", e.InnerException.InnerException.Message);
                 }
             }
 
@@ -141,10 +154,11 @@ namespace System.Net.Security.Tests
             Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await s.ConnectAsync(Configuration.Security.TlsRenegotiationServer, 443);
             using (NetworkStream ns = new NetworkStream(s))
+            using (X509Certificate2 clientCert = Configuration.Certificates.GetClientCertificate())
             using (SslStream ssl = new SslStream(ns, true, validationCallback))
             {
                 X509CertificateCollection certBundle = new X509CertificateCollection();
-                certBundle.Add(Configuration.Certificates.GetClientCertificate());
+                certBundle.Add(clientCert);
 
                 // Perform handshake to establish secure connection.
                 await ssl.AuthenticateAsClientAsync(Configuration.Security.TlsRenegotiationServer, certBundle, SslProtocols.Tls12, false);
@@ -152,7 +166,7 @@ namespace System.Net.Security.Tests
                 Assert.True(ssl.IsEncrypted);
 
                 // Issue request that triggers regotiation from server.
-                byte[] message = Encoding.UTF8.GetBytes("GET /EchoClientCertificate.ashx HTTP/1.1\r\nHost: corefx-net-tls.azurewebsites.net\r\n\r\n");
+                byte[] message = "GET /EchoClientCertificate.ashx HTTP/1.1\r\nHost: corefx-net-tls.azurewebsites.net\r\n\r\n"u8.ToArray();
                 if (useSync)
                 {
                     ssl.Write(message, 0, message.Length);
@@ -171,6 +185,498 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [ConditionalTheory(nameof(SupportsRenegotiation))]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task SslStream_NegotiateClientCertificateAsync_Succeeds(bool sendClientCertificate)
+        {
+            bool negotiateClientCertificateCalled = false;
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
+                    EnabledSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
+#pragma warning restore SYSLIB0039
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
+                {
+                    return sendClientCertificate ? clientCertificate : null;
+                };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    if (negotiateClientCertificateCalled && sendClientCertificate)
+                    {
+                        Assert.Equal(clientCertificate.GetCertHash(), certificate?.GetCertHash());
+                    }
+                    else
+                    {
+                        Assert.Null(certificate);
+                    }
+
+                    return true;
+                };
+
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
+                Assert.Null(server.RemoteCertificate);
+
+                // Client needs to be reading for renegotiation to happen.
+                byte[] buffer = new byte[TestHelper.s_ping.Length];
+                ValueTask<int> t = client.ReadAsync(buffer, cts.Token);
+
+                negotiateClientCertificateCalled = true;
+                await server.NegotiateClientCertificateAsync(cts.Token);
+                if (sendClientCertificate)
+                {
+                    Assert.NotNull(server.RemoteCertificate);
+                }
+                else
+                {
+                    Assert.Null(server.RemoteCertificate);
+                }
+
+                // Finish the client's read
+                await server.WriteAsync(TestHelper.s_ping, cts.Token);
+                await t;
+
+                // verify that the session is usable with or without client's certificate
+                await TestHelper.PingPong(client, server, cts.Token);
+                await TestHelper.PingPong(server, client, cts.Token);
+
+                server.RemoteCertificate?.Dispose();
+            }
+        }
+
+        [ConditionalTheory(nameof(SupportsRenegotiation))]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task SslStream_NegotiateClientCertificateAsyncNoRenego_Succeeds(bool sendClientCertificate)
+        {
+            bool negotiateClientCertificateCalled = false;
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
+                    EnabledSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
+#pragma warning restore SYSLIB0039
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
+                {
+                    return sendClientCertificate ? clientCertificate : null;
+                };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
+                {
+                    ServerCertificate = serverCertificate,
+                    AllowRenegotiation = false
+                };
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    if (negotiateClientCertificateCalled && sendClientCertificate)
+                    {
+                        Assert.Equal(clientCertificate.GetCertHash(), certificate?.GetCertHash());
+                    }
+                    else
+                    {
+                        Assert.Null(certificate);
+                    }
+
+                    return true;
+                };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
+                Assert.Null(server.RemoteCertificate);
+
+                // Client needs to be reading for renegotiation to happen.
+                byte[] buffer = new byte[TestHelper.s_ping.Length];
+                ValueTask<int> t = client.ReadAsync(buffer, cts.Token);
+
+                negotiateClientCertificateCalled = true;
+                await server.NegotiateClientCertificateAsync(cts.Token);
+                if (sendClientCertificate)
+                {
+                    Assert.NotNull(server.RemoteCertificate);
+                }
+                else
+                {
+                    Assert.Null(server.RemoteCertificate);
+                }
+                // Finish the client's read
+                await server.WriteAsync(TestHelper.s_ping, cts.Token);
+                await t;
+                // verify that the session is usable with or without client's certificate
+                await TestHelper.PingPong(client, server, cts.Token);
+                await TestHelper.PingPong(server, client, cts.Token);
+
+                server.RemoteCertificate?.Dispose();
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task SslStream_NegotiateClientCertificateAsync_ClientWriteData()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
+                    EnabledSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
+#pragma warning restore SYSLIB0039
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
+                Assert.Null(server.RemoteCertificate);
+
+                var t = server.NegotiateClientCertificateAsync(cts.Token);
+
+                // Send application data instead of Client hello.
+                await client.WriteAsync(new byte[500], cts.Token);
+                // Fail as it is not allowed to receive non handshake frames during handshake.
+                await Assert.ThrowsAsync<InvalidOperationException>(() => t);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsRenegotiation))]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task SslStream_NegotiateClientCertificateAsync_IncompleteIncomingTlsFrame_Throws()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+
+            // use ManualChunkingStream in the middle to enforce partial TLS frame receive later
+            ManualChunkingStream clientChunkingStream = new ManualChunkingStream(clientStream, false);
+
+            using (SslStream server = new SslStream(serverStream))
+            using (SslStream client = new SslStream(clientChunkingStream))
+            {
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
+                    EnabledSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
+#pragma warning restore SYSLIB0039
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
+                {
+                    return clientCertificate;
+                };
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+                Assert.Null(server.RemoteCertificate);
+
+                // manually approve all future writes
+                clientChunkingStream.SetWriteChunking(true);
+
+                // TLS packets are maximum 16 kB, sending 20 kB of data guarantees at least 2 packets to be sent
+                byte[] buffer = new byte[20 * 1024];
+                client.Write(buffer);
+
+                // delay receiving last few B so that only an incomplete TLS frame is received
+                await clientChunkingStream.CommitWriteAsync(clientChunkingStream.PendingWriteLength - 100);
+                int read = await server.ReadAsync(buffer, cts.Token);
+
+                // Fail as there are still some undrained data (incomplete incoming TLS frame)
+                await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                    server.NegotiateClientCertificateAsync(cts.Token)
+                );
+
+                // no more delaying needed, drain client data.
+                clientChunkingStream.SetWriteChunking(false);
+                while (read < buffer.Length)
+                {
+                    read += await server.ReadAsync(buffer);
+                }
+
+                // Verify that the session is usable even renego request failed.
+                await TestHelper.PingPong(client, server, cts.Token);
+                await TestHelper.PingPong(server, client, cts.Token);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsRenegotiation))]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task SslStream_NegotiateClientCertificateAsync_PendingDecryptedData_Throws()
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            {
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    ClientCertificates = new X509CertificateCollection(new X509Certificate2[] { clientCertificate })
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
+                await TestHelper.PingPong(client, server, cts.Token);
+                Assert.Null(server.RemoteCertificate);
+
+                // This should go out in single TLS frame
+                await client.WriteAsync(new byte[200], cts.Token);
+                byte[] readBuffer = new byte[10];
+                // when we read part of the frame, remaining part should left decrypted
+                int read = await server.ReadAsync(readBuffer, cts.Token);
+
+                await Assert.ThrowsAsync<InvalidOperationException>(() => server.NegotiateClientCertificateAsync(cts.Token));
+
+                while (read < 200)
+                {
+                    read += await server.ReadAsync(readBuffer, cts.Token);
+                }
+
+                // verify that the session is usable with or without client's certificate
+                await TestHelper.PingPong(client, server, cts.Token);
+                await TestHelper.PingPong(server, client, cts.Token);
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [InlineData(true)]
+        [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Android, "SslStream Renegotiate is not supported in SslStream on Android")]
+        public async Task SslStream_NegotiateClientCertificateAsyncTls13_Succeeds(bool sendClientCertificate)
+        {
+            bool negotiateClientCertificateCalled = false;
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    EnabledSslProtocols = SslProtocols.Tls13,
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
+                {
+                    return sendClientCertificate ? clientCertificate : null;
+                };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                {
+                    if (negotiateClientCertificateCalled && sendClientCertificate)
+                    {
+                        Assert.Equal(clientCertificate.GetCertHash(), certificate?.GetCertHash());
+                    }
+                    else
+                    {
+                        Assert.Null(certificate);
+                    }
+
+                    return true;
+                };
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+                // need this to complete TLS 1.3 handshake
+                await TestHelper.PingPong(client, server);
+                Assert.Null(server.RemoteCertificate);
+
+                // Client needs to be reading for renegotiation to happen.
+                byte[] buffer = new byte[TestHelper.s_ping.Length];
+                ValueTask<int> t = client.ReadAsync(buffer, cts.Token);
+
+                negotiateClientCertificateCalled = true;
+                await server.NegotiateClientCertificateAsync(cts.Token);
+                if (sendClientCertificate)
+                {
+                    Assert.NotNull(server.RemoteCertificate);
+                }
+                else
+                {
+                    Assert.Null(server.RemoteCertificate);
+                }
+                // Finish the client's read
+                await server.WriteAsync(TestHelper.s_ping, cts.Token);
+                await t;
+                // verify that the session is usable with or without client's certificate
+                await TestHelper.PingPong(client, server, cts.Token);
+                await TestHelper.PingPong(server, client, cts.Token);
+
+                server.RemoteCertificate?.Dispose();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task SslStream_SecondNegotiateClientCertificateAsync_Throws(bool sendClientCertificate)
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
+                    EnabledSslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12,
+#pragma warning restore SYSLIB0039
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                clientOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) =>
+                {
+                    return sendClientCertificate ? clientCertificate : null;
+                };
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
+                await TestHelper.PingPong(client, server, cts.Token);
+                Assert.Null(server.RemoteCertificate);
+
+                // Client needs to be reading for renegotiation to happen.
+                byte[] buffer = new byte[TestHelper.s_ping.Length];
+                ValueTask<int> t = client.ReadAsync(buffer, cts.Token);
+
+                await server.NegotiateClientCertificateAsync(cts.Token);
+                if (sendClientCertificate)
+                {
+                    Assert.NotNull(server.RemoteCertificate);
+                }
+                else
+                {
+                    Assert.Null(server.RemoteCertificate);
+                }
+                // Finish the client's read
+                await server.WriteAsync(TestHelper.s_ping, cts.Token);
+                await t;
+
+                await Assert.ThrowsAsync<InvalidOperationException>(() => server.NegotiateClientCertificateAsync());
+
+                server.RemoteCertificate?.Dispose();
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task SslStream_NegotiateClientCertificateAsyncConcurrentIO_Throws(bool doRead)
+        {
+            using CancellationTokenSource cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+            using (client)
+            using (server)
+            using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+            using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
+            {
+                SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions()
+                {
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                    ClientCertificates = new X509CertificateCollection(new X509Certificate2[] { clientCertificate })
+                };
+                clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions() { ServerCertificate = serverCertificate };
+                serverOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, cts.Token),
+                                server.AuthenticateAsServerAsync(serverOptions, cts.Token));
+
+                await TestHelper.PingPong(client, server, cts.Token);
+                Assert.Null(server.RemoteCertificate);
+
+                Task t = server.NegotiateClientCertificateAsync(cts.Token);
+                if (doRead)
+                {
+                    byte[] buffer = new byte[TestHelper.s_ping.Length];
+                    await Assert.ThrowsAsync<NotSupportedException>(() => server.ReadAsync(buffer).AsTask());
+                }
+                else
+                {
+                    await Assert.ThrowsAsync<NotSupportedException>(() => server.WriteAsync(TestHelper.s_ping).AsTask());
+                }
+            }
+        }
+
         [Fact]
         public async Task SslStream_NestedAuth_Throws()
         {
@@ -186,9 +692,11 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName)
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName, bool useCallback)
         {
             string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
             int count = 0;
@@ -215,14 +723,21 @@ namespace System.Net.Security.Tests
                     };
 
                 SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions();
-                serverOptions.ServerCertificateSelectionCallback =
-                    (sender, name) =>
-                    {
-                        SslStream stream = (SslStream)sender;
-                        Assert.Equal(targetName, stream.TargetHostName);
+                if (useCallback)
+                {
+                    serverOptions.ServerCertificateSelectionCallback =
+                        (sender, name) =>
+                        {
+                            SslStream stream = (SslStream)sender;
+                            Assert.Equal(targetName, stream.TargetHostName);
 
-                        return certificate;
-                    };
+                            return certificate;
+                        };
+                }
+                else
+                {
+                    serverOptions.ServerCertificate = certificate;
+                }
 
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                                 client.AuthenticateAsClientAsync(clientOptions),
@@ -239,33 +754,27 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
-        public async Task SslStream_UntrustedCaWithCustomCallback_OK(bool usePartialChain)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        public async Task SslStream_ServerUntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
-            int split = Random.Shared.Next(0, certificates.serverChain.Count - 1);
+            int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
 
-            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
-            clientOptions.RemoteCertificateValidationCallback =
-                (sender, certificate, chain, sslPolicyErrors) =>
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            clientOptions.CertificateChainPolicy = new X509ChainPolicy()
+            {
+                RevocationMode = X509RevocationMode.NoCheck,
+                TrustMode = X509ChainTrustMode.CustomRootTrust
+            };
+            clientOptions.CertificateChainPolicy.CustomTrustStore.Add(_certificates.serverChain[_certificates.serverChain.Count - 1]);
+            // Add only one CA to verify that peer did send intermediate CA cert.
+            // In case of partial chain, we need to make missing certs available.
+            if (usePartialChain)
+            {
+                for (int i = split; i < _certificates.serverChain.Count - 1; i++)
                 {
-                    // add our custom root CA
-                    chain.ChainPolicy.CustomTrustStore.Add(certificates.serverChain[certificates.serverChain.Count - 1]);
-                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                    // Add only one CA to verify that peer did send intermediate CA cert.
-                    // In case of partial chain, we need to make missing certs available.
-                    if (usePartialChain)
-                    {
-                        for (int i = split; i < certificates.serverChain.Count - 1; i++)
-                        {
-                            chain.ChainPolicy.ExtraStore.Add(certificates.serverChain[i]);
-                        }
-                    }
-
-                    bool result = chain.Build((X509Certificate2)certificate);
-                    Assert.True(result);
-
-                    return result;
-                };
+                    clientOptions.CertificateChainPolicy.ExtraStore.Add(_certificates.serverChain[i]);
+                }
+            }
 
             var serverOptions = new SslServerAuthenticationOptions();
             X509Certificate2Collection serverChain;
@@ -275,15 +784,15 @@ namespace System.Net.Security.Tests
                 serverChain = new X509Certificate2Collection();
                 for (int i = 0; i < split; i++)
                 {
-                    serverChain.Add(certificates.serverChain[i]);
+                    serverChain.Add(_certificates.serverChain[i]);
                 }
             }
             else
             {
-                serverChain = certificates.serverChain;
+                serverChain = _certificates.serverChain;
             }
 
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificates.serverCert, certificates.serverChain);
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(_certificates.serverCert, serverChain);
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -298,87 +807,9 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [InlineData(true)]
-        [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
-        public async Task SslStream_UntrustedCaWithCustomCallback_Throws(bool customCallback)
-        {
-            string errorMessage;
-            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost" };
-            if (customCallback)
-            {
-                clientOptions.RemoteCertificateValidationCallback =
-                    (sender, certificate, chain, sslPolicyErrors) =>
-                    {
-                        // Add only root CA to verify that peer did send intermediate CA cert.
-                        chain.ChainPolicy.CustomTrustStore.Add(certificates.serverChain[certificates.serverChain.Count - 1]);
-                        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                        // This should work and we should be able to trust the chain.
-                        Assert.True(chain.Build((X509Certificate2)certificate));
-                        // Reject it in custom callback to simulate for example pinning.
-                        return false;
-                    };
-
-                errorMessage = "RemoteCertificateValidationCallback";
-            }
-            else
-            {
-                // On Windows we hand whole chain to OS so they can always see the root CA.
-                errorMessage = PlatformDetection.IsWindows ? "UntrustedRoot" : "PartialChain";
-            }
-
-            var serverOptions = new SslServerAuthenticationOptions();
-            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(certificates.serverCert, certificates.serverChain);
-
-            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
-            using (clientStream)
-            using (serverStream)
-            using (SslStream client = new SslStream(clientStream))
-            using (SslStream server = new SslStream(serverStream))
-            {
-                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
-                Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
-
-                var e = await Assert.ThrowsAsync<AuthenticationException>(() => t1);
-                Assert.Contains(errorMessage, e.Message);
-                // Server side should finish since we run custom callback after handshake is done.
-                await t2;
-            }
-        }
-
-        [ConditionalFact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46837", TestPlatforms.OSX)]
-        public async Task SslStream_ClientCertificate_SendsChain()
+        private async Task SslStream_ClientSendsChain_Core(SslClientAuthenticationOptions clientOptions, X509Certificate2Collection clientChain)
         {
             List<SslStream> streams = new List<SslStream>();
-            TestHelper.CleanupCertificates();
-            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates("SslStream_ClinetCertificate_SendsChain", serverCertificate: false);
-            using (X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser))
-            {
-                // add chain certificate so we can construct chain since there is no way how to pass intermediates directly.
-                store.Open(OpenFlags.ReadWrite);
-                store.AddRange(clientChain);
-                store.Close();
-            }
-
-            using (var chain = new X509Chain())
-            {
-                chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
-                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-                chain.ChainPolicy.DisableCertificateDownloads = false;
-                bool chainStatus = chain.Build(clientCertificate);
-                // Verify we can construct full chain
-                if (chain.ChainElements.Count < clientChain.Count)
-                {
-                    throw new SkipTestException($"chain cannot be built {chain.ChainElements.Count}");
-                }
-            }
-
-            var clientOptions = new  SslClientAuthenticationOptions() { TargetHost = "localhost",  };
-            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
-            clientOptions.LocalCertificateSelectionCallback = (sender, target, certificates, remoteCertificate, issuers) => clientCertificate;
 
             var serverOptions = new SslServerAuthenticationOptions() { ClientCertificateRequired = true };
             serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null);
@@ -393,7 +824,10 @@ namespace System.Net.Security.Tests
                     _output.WriteLine("received {0}", c.Subject);
                 }
 
-                Assert.True(chain.ChainPolicy.ExtraStore.Count >= clientChain.Count - 1, "client did not sent expected chain");
+                // We may get completed chain from OS even if client sent less.
+                // As minimum, it should send more than the leaf cert
+                Assert.True(chain.ChainPolicy.ExtraStore.Count >= clientChain.Count - 1);
+                Assert.Contains(clientChain[0], chain.ChainPolicy.ExtraStore);
                 return true;
             };
 
@@ -406,24 +840,289 @@ namespace System.Net.Security.Tests
 
                 Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
                 Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
-                await Task.WhenAll(t1, t2).WaitAsync(TestConfiguration.PassingTestTimeout);
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
                 // hold to the streams so they stay in credential cache
                 streams.Add(client);
                 streams.Add(server);
             }
 
-            TestHelper.CleanupCertificates();
+            foreach (SslStream s in streams)
+            {
+                s.Dispose();
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73862", TestPlatforms.OSX)]
+        public async Task SslStream_ClientCertificate_SendsChain()
+        {
+            // macOS ignores CertificateAuthority
+            // https://github.com/dotnet/runtime/issues/48207
+            StoreName storeName = OperatingSystem.IsMacOS() ? StoreName.My : StoreName.CertificateAuthority;
+            List<SslStream> streams = new List<SslStream>();
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates(nameof(SslStream_ClientCertificate_SendsChain), serverCertificate: false);
+
+            using (X509Store store = new X509Store(storeName, StoreLocation.CurrentUser))
+            {
+                // add chain certificate so we can construct chain since there is no way how to pass intermediates directly.
+                store.Open(OpenFlags.ReadWrite);
+                store.AddRange(clientChain);
+                store.Close();
+            }
+
+            // make sure we can build chain. There may be some race conditions after certs being added to the store.
+            int retries = 10;
+            int delay = 100;
+            while (retries > 0)
+            {
+                using (var chain = new X509Chain())
+                {
+                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllFlags;
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                    chain.ChainPolicy.DisableCertificateDownloads = true;
+                    bool chainStatus = chain.Build(clientCertificate);
+                    if (chainStatus && chain.ChainElements.Count >= clientChain.Count)
+                    {
+                        break;
+                    }
+                }
+
+                Thread.Sleep(delay);
+                delay *= 2;
+                retries--;
+            }
+
+            Assert.NotEqual(0, retries);
+
+            var clientOptions = new SslClientAuthenticationOptions()
+            {
+                TargetHost = "localhost",
+            };
+            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            clientOptions.LocalCertificateSelectionCallback = (sender, target, certificates, remoteCertificate, issuers) => clientCertificate;
+
+            await SslStream_ClientSendsChain_Core(clientOptions, clientChain);
+
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificate_SendsChain), storeName);
             clientCertificate.Dispose();
             foreach (X509Certificate c in clientChain)
             {
                 c.Dispose();
             }
+        }
 
-            foreach (SslStream s in  streams)
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        public async Task SslStream_ClientCertificateContext_SendsChain()
+        {
+            (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates(nameof(SslStream_ClientCertificateContext_SendsChain), serverCertificate: false);
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificateContext_SendsChain));
+
+            var clientOptions = new SslClientAuthenticationOptions()
             {
-                s.Dispose();
+                TargetHost = "localhost",
+            };
+            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+            clientOptions.ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, clientChain);
+
+            await SslStream_ClientSendsChain_Core(clientOptions, clientChain);
+
+            TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificateContext_SendsChain));
+            clientCertificate.Dispose();
+            foreach (X509Certificate c in clientChain)
+            {
+                c.Dispose();
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task SslStream_EphemeralKey_Throws()
+        {
+            (X509Certificate2 serverCertificate, X509Certificate2Collection chain) = TestHelper.GenerateCertificates(nameof(SslStream_EphemeralKey_Throws), ephemeralKey: true);
+            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
+
+            var clientOptions = new SslClientAuthenticationOptions()
+            {
+                TargetHost = "localhost",
+                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true
+            };
+
+            var serverOptions = new SslServerAuthenticationOptions()
+            {
+                ServerCertificate = serverCertificate
+            };
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+
+            Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+            Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+
+            AuthenticationException e = await Assert.ThrowsAsync<AuthenticationException>(() => t2);
+            Assert.Contains("ephemeral", e.Message);
+            server.Dispose();
+            await Assert.ThrowsAsync<IOException>(() => t1);
+            client.Dispose();
+
+            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
+            serverCertificate.Dispose();
+            foreach (X509Certificate c in chain)
+            {
+                c.Dispose();
+            }
+        }
+
+        [Theory]
+        [InlineData(16384 * 100, 4096, 1024, false)]
+        [InlineData(16384 * 100, 4096, 1024, true)]
+        [InlineData(16384 * 100, 1024 * 20, 1024, true)]
+        [InlineData(16384, 3, 3, true)]
+        public async Task SslStream_RandomSizeWrites_OK(int bufferSize, int readBufferSize, int writeBufferSize, bool useAsync)
+        {
+            byte[] dataToCopy = RandomNumberGenerator.GetBytes(bufferSize);
+            byte[] dataReceived = new byte[dataToCopy.Length + readBufferSize]; // make the buffer bigger to have chance to read more
+
+            var clientOptions = new SslClientAuthenticationOptions() { TargetHost = "localhost" };
+            clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+
+            var serverOptions = new SslServerAuthenticationOptions();
+            serverOptions.ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null);
+
+            (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedTcpStreams();
+            using (clientStream)
+            using (serverStream)
+            using (SslStream client = new SslStream(new RandomReadWriteSizeStream(clientStream, readBufferSize)))
+            using (SslStream server = new SslStream(new RandomReadWriteSizeStream(serverStream)))
+            {
+                Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+                Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
+
+                Task writer = Task.Run(async () =>
+                {
+                    Memory<byte> data = new Memory<byte>(dataToCopy);
+                    while (data.Length > 0)
+                    {
+                        int writeLength = Math.Min(data.Length, writeBufferSize);
+                        if (useAsync)
+                        {
+                            await server.WriteAsync(data.Slice(0, writeLength));
+                        }
+                        else
+                        {
+                            server.Write(data.Span.Slice(0, writeLength));
+                            await Task.CompletedTask;
+                        }
+
+                        data = data.Slice(Math.Min(writeBufferSize, data.Length));
+                    }
+
+                    server.ShutdownAsync().GetAwaiter().GetResult();
+                });
+
+                Task reader = Task.Run(async () =>
+                {
+                    Memory<byte> readBuffer = new Memory<byte>(dataReceived);
+                    int totalLength = 0;
+                    int readLength;
+
+                    while (true)
+                    {
+                        if (useAsync)
+                        {
+                            readLength = await client.ReadAsync(readBuffer.Slice(totalLength, readBufferSize));
+                        }
+                        else
+                        {
+                            readLength = client.Read(readBuffer.Span.Slice(totalLength, readBufferSize));
+                            await Task.CompletedTask;
+                        }
+
+                        if (readLength == 0)
+                        {
+                            break;
+                        }
+
+                        totalLength += readLength;
+                        Assert.True(totalLength <= bufferSize);
+                    }
+
+                    Assert.Equal(bufferSize, totalLength);
+                    AssertExtensions.SequenceEqual(dataToCopy.AsSpan(), dataReceived.AsSpan(0, totalLength));
+                });
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(writer, reader);
+            }
+
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls10))]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task SslStream_UnifiedHello_Ok(bool useOptionCallback)
+        {
+            (Stream client, Stream server) = TestHelper.GetConnectedTcpStreams();
+            SslStream ssl = new SslStream(server);
+
+            var cts = new CancellationTokenSource();
+            cts.CancelAfter(TestConfiguration.PassingTestTimeout);
+            bool callbackCalled = false;
+            Task serverTask;
+
+            var options = new SslServerAuthenticationOptions();
+            if (useOptionCallback)
+            {
+                serverTask = ssl.AuthenticateAsServerAsync((ssl, info, o, ct) =>
+                {
+                    callbackCalled = true;
+                    options.ServerCertificate = Configuration.Certificates.GetServerCertificate();
+                    return new ValueTask<SslServerAuthenticationOptions>(options);
+                }, null, cts.Token);
+
+            }
+            else
+            {
+                options.ServerCertificateSelectionCallback = (o, name) =>
+                {
+                    callbackCalled = true;
+                    return Configuration.Certificates.GetServerCertificate();
+                };
+
+                serverTask = ssl.AuthenticateAsServerAsync(options, cts.Token);
+            }
+
+            Task.WaitAny(client.WriteAsync(TlsFrameHelperTests.s_UnifiedHello).AsTask(), serverTask);
+            if (serverTask.IsCompleted)
+            {
+                // Something failed. Raise exception.
+                await serverTask;
+            }
+
+            byte[] buffer = new byte[1024];
+            Task<int> readTask = client.ReadAsync(buffer, cts.Token).AsTask();
+            Task.WaitAny(readTask, serverTask);
+            if (serverTask.IsCompleted)
+            {
+                // Something failed. Raise exception.
+                await serverTask;
+            }
+
+            int readLength = await readTask;
+            // We should get back ServerHello
+            Assert.True(readLength > 0);
+            Assert.True(callbackCalled);
+            Assert.Equal(22, buffer[0]); // Handshake Protocol
+            Assert.Equal(2, buffer[5]);  // ServerHello
+
+            // Handshake should not be finished at this point.
+            Assert.False(serverTask.IsCompleted);
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => serverTask);
         }
 
         private static bool ValidateServerCertificate(

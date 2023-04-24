@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using System.Runtime.Serialization;
 using Interlocked = System.Threading.Interlocked;
 
@@ -82,10 +84,7 @@ namespace System.Collections.Generic
         public SortedSet(IEnumerable<T> collection, IComparer<T>? comparer)
             : this(comparer)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
+            ArgumentNullException.ThrowIfNull(collection);
 
             // These are explicit type checks in the mold of HashSet. It would have worked better with
             // something like an ISorted<T> interface. (We could make this work for SortedList.Keys, etc.)
@@ -127,6 +126,8 @@ namespace System.Collections.Generic
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected SortedSet(SerializationInfo info, StreamingContext context) => siInfo = info;
 
         #endregion
@@ -465,7 +466,6 @@ namespace System.Collections.Generic
                             {
                                 parentOfMatch = newGrandParent;
                             }
-                            grandParent = newGrandParent;
                         }
                     }
                 }
@@ -512,20 +512,11 @@ namespace System.Collections.Generic
 
         public void CopyTo(T[] array, int index, int count)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             if (count > array.Length - index)
             {
@@ -548,10 +539,7 @@ namespace System.Collections.Generic
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Rank != 1)
             {
@@ -563,10 +551,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Arg_NonZeroLowerBound, nameof(array));
             }
 
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
 
             if (array.Length - index < Count)
             {
@@ -583,7 +568,7 @@ namespace System.Collections.Generic
                 object?[]? objects = array as object[];
                 if (objects == null)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
 
                 try
@@ -596,7 +581,7 @@ namespace System.Collections.Generic
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
+                    throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                 }
             }
         }
@@ -609,7 +594,7 @@ namespace System.Collections.Generic
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
 
         #endregion
 
@@ -822,7 +807,7 @@ namespace System.Collections.Generic
                 return set1.Count == set2.Count && set1.SetEquals(set2);
             }
 
-            bool found = false;
+            bool found;
             foreach (T item1 in set1)
             {
                 found = false;
@@ -860,10 +845,7 @@ namespace System.Collections.Generic
 
         public void UnionWith(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             SortedSet<T>? asSorted = other as SortedSet<T>;
             TreeSubSet? treeSubset = this as TreeSubSet;
@@ -1003,10 +985,7 @@ namespace System.Collections.Generic
 
         public virtual void IntersectWith(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (Count == 0)
                 return;
@@ -1088,10 +1067,7 @@ namespace System.Collections.Generic
 
         public void ExceptWith(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (count == 0)
                 return;
@@ -1129,10 +1105,7 @@ namespace System.Collections.Generic
 
         public void SymmetricExceptWith(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (Count == 0)
             {
@@ -1199,10 +1172,7 @@ namespace System.Collections.Generic
 
         public bool IsSubsetOf(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (Count == 0)
             {
@@ -1237,10 +1207,7 @@ namespace System.Collections.Generic
 
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (other is ICollection c)
             {
@@ -1264,10 +1231,7 @@ namespace System.Collections.Generic
 
         public bool IsSupersetOf(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (other is ICollection c && c.Count == 0)
                 return true;
@@ -1294,10 +1258,7 @@ namespace System.Collections.Generic
 
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (Count == 0)
                 return false;
@@ -1329,10 +1290,7 @@ namespace System.Collections.Generic
 
         public bool SetEquals(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             SortedSet<T>? asSorted = other as SortedSet<T>;
             if (asSorted != null && HasEqualComparer(asSorted))
@@ -1360,10 +1318,7 @@ namespace System.Collections.Generic
 
         public bool Overlaps(IEnumerable<T> other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ArgumentNullException.ThrowIfNull(other);
 
             if (Count == 0)
                 return false;
@@ -1472,10 +1427,8 @@ namespace System.Collections.Generic
 
         public int RemoveWhere(Predicate<T> match)
         {
-            if (match == null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
+            ArgumentNullException.ThrowIfNull(match);
+
             List<T> matches = new List<T>(this.Count);
 
             BreadthFirstTreeWalk(n =>
@@ -1579,10 +1532,7 @@ namespace System.Collections.Generic
 
         protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
+            ArgumentNullException.ThrowIfNull(info);
 
             info.AddValue(CountName, count); // This is the length of the bucket array.
             info.AddValue(ComparerName, comparer, typeof(IComparer<T>));
@@ -1680,41 +1630,27 @@ namespace System.Collections.Generic
 #if DEBUG
                 Debug.Assert(count == GetCount());
 #endif
-
-                // Breadth-first traversal to recreate nodes, preorder traversal to replicate nodes.
-
-                var originalNodes = new Stack<Node>(2 * Log2(count) + 2);
-                var newNodes = new Stack<Node>(2 * Log2(count) + 2);
                 Node newRoot = ShallowClone();
 
-                Node? originalCurrent = this;
-                Node newCurrent = newRoot;
+                var pendingNodes = new Stack<(Node source, Node target)>(2 * Log2(count) + 2);
+                pendingNodes.Push((this, newRoot));
 
-                while (originalCurrent != null)
+                while (pendingNodes.TryPop(out var next))
                 {
-                    originalNodes.Push(originalCurrent);
-                    newNodes.Push(newCurrent);
-                    newCurrent.Left = originalCurrent.Left?.ShallowClone();
-                    originalCurrent = originalCurrent.Left;
-                    newCurrent = newCurrent.Left!;
-                }
+                    Node clonedNode;
 
-                while (originalNodes.Count != 0)
-                {
-                    originalCurrent = originalNodes.Pop();
-                    newCurrent = newNodes.Pop();
-
-                    Node? originalRight = originalCurrent.Right;
-                    Node? newRight = originalRight?.ShallowClone();
-                    newCurrent.Right = newRight;
-
-                    while (originalRight != null)
+                    if (next.source.Left is Node left)
                     {
-                        originalNodes.Push(originalRight);
-                        newNodes.Push(newRight!);
-                        newRight!.Left = originalRight.Left?.ShallowClone();
-                        originalRight = originalRight.Left;
-                        newRight = newRight.Left;
+                        clonedNode = left.ShallowClone();
+                        next.target.Left = clonedNode;
+                        pendingNodes.Push((left, clonedNode));
+                    }
+
+                    if (next.source.Right is Node right)
+                    {
+                        clonedNode = right.ShallowClone();
+                        next.target.Right = clonedNode;
+                        pendingNodes.Push((right, clonedNode));
                     }
                 }
 
@@ -1936,7 +1872,7 @@ namespace System.Collections.Generic
             {
                 _current = null;
                 Node? node = _tree.root;
-                Node? next = null, other = null;
+                Node? next, other;
                 while (node != null)
                 {
                     next = (_reverse ? node.Right : node.Left);
@@ -1975,7 +1911,7 @@ namespace System.Collections.Generic
 
                 _current = _stack.Pop();
                 Node? node = (_reverse ? _current.Left : _current.Right);
-                Node? next = null, other = null;
+                Node? next, other;
                 while (node != null)
                 {
                     next = (_reverse ? node.Right : node.Left);
@@ -2075,16 +2011,7 @@ namespace System.Collections.Generic
         }
 
         // Used for set checking operations (using enumerables) that rely on counting
-        private static int Log2(int value)
-        {
-            int result = 0;
-            while (value > 0)
-            {
-                result++;
-                value >>= 1;
-            }
-            return result;
-        }
+        private static int Log2(int value) => BitOperations.Log2((uint) value);
 
         #endregion
     }

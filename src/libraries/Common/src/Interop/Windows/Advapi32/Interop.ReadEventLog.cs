@@ -12,9 +12,9 @@ internal static partial class Interop
         internal const int FORWARDS_READ = 0x4;
         internal const int BACKWARDS_READ = 0x8;
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Libraries.Advapi32, EntryPoint = "ReadEventLogW", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool ReadEventLog(
+        public static partial bool ReadEventLog(
             SafeEventLogReadHandle hEventLog,
             int dwReadFlags,
             int dwRecordOffset,

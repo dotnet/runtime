@@ -72,7 +72,7 @@ namespace System.Runtime.CompilerServices.Tests
         public static void InitializeArray()
         {
             // Void RuntimeHelpers.InitializeArray(Array, RuntimeFieldHandle)
-            char[] expected = new char[] { 'a', 'b', 'c' }; // Compiler will use RuntimeHelpers.InitializeArrary these
+            char[] expected = new char[] { 'a', 'b', 'c' }; // Compiler will use RuntimeHelpers.InitializeArray these
         }
 
         [Fact]
@@ -104,7 +104,11 @@ namespace System.Runtime.CompilerServices.Tests
                 RuntimeHelpers.PrepareMethod(m.MethodHandle);
 
             Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(default(RuntimeMethodHandle)));
-            Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(IList).GetMethod("Add").MethodHandle));
+
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                Assert.ThrowsAny<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(IList).GetMethod("Add").MethodHandle));
+            }
         }
 
         [Fact]
@@ -124,13 +128,16 @@ namespace System.Runtime.CompilerServices.Tests
             RuntimeHelpers.PrepareMethod(typeof(List<int>).GetMethod("Add").MethodHandle,
                 null);
 
-            // Generic definition without instantiation is invalid
-            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(List<>).GetMethod("Add").MethodHandle,
-                null));
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                // Generic definition without instantiation is invalid
+                Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(List<>).GetMethod("Add").MethodHandle,
+                    null));
 
-            // Wrong instantiation
-            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(List<>).GetMethod("Add").MethodHandle,
-                new RuntimeTypeHandle[] { typeof(TestStruct).TypeHandle, typeof(TestStruct).TypeHandle }));
+                // Wrong instantiation
+                Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(List<>).GetMethod("Add").MethodHandle,
+                    new RuntimeTypeHandle[] { typeof(TestStruct).TypeHandle, typeof(TestStruct).TypeHandle }));
+            }
 
             //
             // Method instantiations
@@ -145,13 +152,16 @@ namespace System.Runtime.CompilerServices.Tests
                     .MakeGenericMethod(new Type[] { typeof(TestStruct) }).MethodHandle,
                 null);
 
-            // Generic definition without instantiation is invalid
-            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(Array).GetMethod("Resize").MethodHandle,
-                null));
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                // Generic definition without instantiation is invalid
+                Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(Array).GetMethod("Resize").MethodHandle,
+                    null));
 
-            // Wrong instantiation
-            Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(Array).GetMethod("Resize").MethodHandle,
-                new RuntimeTypeHandle[] { typeof(TestStruct).TypeHandle, typeof(TestStruct).TypeHandle }));
+                // Wrong instantiation
+                Assert.Throws<ArgumentException>(() => RuntimeHelpers.PrepareMethod(typeof(Array).GetMethod("Resize").MethodHandle,
+                    new RuntimeTypeHandle[] { typeof(TestStruct).TypeHandle, typeof(TestStruct).TypeHandle }));
+            }
         }
 
         [Fact]
@@ -226,7 +236,7 @@ namespace System.Runtime.CompilerServices.Tests
             Type canonType = typeof(object).Assembly.GetType("System.__Canon", throwOnError: false);
             if (canonType != null)
             {
-                yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations                
+                yield return new[] { typeof(List<>).MakeGenericType(canonType), typeof(NotSupportedException) }; // shared by generic instantiations
             }
 
             Type comObjType = typeof(object).Assembly.GetType("System.__ComObject", throwOnError: false);
@@ -273,8 +283,9 @@ namespace System.Runtime.CompilerServices.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [Fact]
-        public static void GetUninitalizedObject_DoesNotRunBeforeFieldInitCctors()
+        public static void GetUninitializedObject_DoesNotRunBeforeFieldInitCctors()
         {
             object o = RuntimeHelpers.GetUninitializedObject(typeof(ClassWithBeforeFieldInitCctor));
             Assert.IsType<ClassWithBeforeFieldInitCctor>(o);
@@ -283,7 +294,7 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        public static void GetUninitalizedObject_RunsNormalStaticCtors()
+        public static void GetUninitializedObject_RunsNormalStaticCtors()
         {
             object o = RuntimeHelpers.GetUninitializedObject(typeof(ClassWithNormalCctor));
             Assert.IsType<ClassWithNormalCctor>(o);
@@ -359,10 +370,12 @@ namespace System.Runtime.CompilerServices.Tests
 
         [Fact]
         [SkipOnMono("Not presently implemented on Mono")]
-        public static void AllocateTypeAssociatedMemoryValidArguments()
+        public static unsafe void AllocateTypeAssociatedMemoryValidArguments()
         {
             IntPtr memory = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(RuntimeHelpersTests), 32);
             Assert.NotEqual(memory, IntPtr.Zero);
+            // Validate that the memory is zeroed out
+            Assert.True(new Span<byte>((void*)memory, 32).SequenceEqual(new byte[32]));
         }
 
         [StructLayoutAttribute(LayoutKind.Sequential)]

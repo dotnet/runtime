@@ -2,23 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 class Gen<T> 
 {
 	public static void Target<U>(object p)
 	{		
 			//dummy line to avoid warnings
-			Test.Eval(typeof(U)!=p.GetType());
+			Test_thread27.Eval(typeof(U)!=p.GetType());
 			ManualResetEvent evt = (ManualResetEvent) p;
-			Interlocked.Increment(ref Test.Xcounter);
+			Interlocked.Increment(ref Test_thread27.Xcounter);
 			evt.Set();
 	}
 	public static void ThreadPoolTest<U>()
 	{
-		ManualResetEvent[] evts = new ManualResetEvent[Test.nThreads];
-		WaitHandle[] hdls = new WaitHandle[Test.nThreads];
+		ManualResetEvent[] evts = new ManualResetEvent[Test_thread27.nThreads];
+		WaitHandle[] hdls = new WaitHandle[Test_thread27.nThreads];
 
-		for (int i=0; i<Test.nThreads; i++)
+		for (int i=0; i<Test_thread27.nThreads; i++)
 		{
 			evts[i] = new ManualResetEvent(false);
 			hdls[i] = (WaitHandle) evts[i];
@@ -26,19 +27,19 @@ class Gen<T>
 
 		Gen<T> obj = new Gen<T>();
 
-		for (int i = 0; i < Test.nThreads; i++)
+		for (int i = 0; i < Test_thread27.nThreads; i++)
 		{	
 			WaitCallback cb = new WaitCallback(Gen<T>.Target<U>);
 			ThreadPool.QueueUserWorkItem(cb,evts[i]);
 		}
 
 		WaitHandle.WaitAll(hdls);
-		Test.Eval(Test.Xcounter==Test.nThreads);
-		Test.Xcounter = 0;
+		Test_thread27.Eval(Test_thread27.Xcounter==Test_thread27.nThreads);
+		Test_thread27.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread27
 {
 	public static int nThreads =50;
 	public static int counter = 0;
@@ -55,7 +56,8 @@ public class Test
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Gen<int>.ThreadPoolTest<object>();
 		Gen<double>.ThreadPoolTest<string>();

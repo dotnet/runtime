@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-
     <!-- Set IsStableBuild to mimic https://github.com/dotnet/arcade/blob/694d59f090b743f894779d04a7ffe11cbaf352e7/src/Microsoft.DotNet.Arcade.Sdk/tools/Publish.proj#L30-L31 -->
     <IsStableBuild>false</IsStableBuild>
     <IsStableBuild Condition="'$(DotNetFinalVersionKind)' == 'release'">true</IsStableBuild>
@@ -14,7 +12,7 @@
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Feed" Version="$(MicrosoftDotNetBuildTasksFeedVersion)" />
     <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksVersion)" />
   </ItemGroup>
-  
+
   <!-- When doing post build sign, pull in the arcade sign.props file, which will
        create some initial sign groups and then pulls in the repo's custom Signing.props overrides.
        Before importing the signing props. Set PrepareArtifactst=true. Depending on context (SDK project vs. not),
@@ -59,19 +57,33 @@
   </ItemGroup>
 
   <!--
+    Run Arcade's signing project directly. The 'eng/Signing.props' extensibility props file checks
+    if '$(<StageName>)' == 'true' and points Arcade to the correct files.
+  -->
+  <Target Name="SignArtifacts"
+          Condition="'$(PostBuildSign)' != 'true'" >
+    <MSBuild
+      Projects="$(ArcadeSdkSignProject)"
+      Targets="Sign"
+      Properties="
+        DownloadDirectory=$(DownloadDirectory);
+        PrepareArtifacts=$(PrepareArtifacts)" />
+  </Target>
+
+  <!--
     Take assets from the build jobs, prepare them for publishing (signing, arrangement) then upload
     them to the pipeline for Arcade and custom steps to publish.
   -->
   <Target Name="PreparePublishToAzureBlobFeed"
           AfterTargets="Build"
-          DependsOnTargets="GetProductVersions;FindDownloadedArtifacts;CreateChecksums">
+          DependsOnTargets="GetProductVersions;FindDownloadedArtifacts;SignArtifacts;CreateChecksums">
     <PropertyGroup>
       <AssetManifestFilename>Manifest.xml</AssetManifestFilename>
       <AssetManifestFile>$(ArtifactsLogDir)AssetManifest/$(AssetManifestFilename)</AssetManifestFile>
 
       <!-- Create temp dir to store generated asset manifest, per Arcade guidance. -->
       <TempWorkingDir>$(ArtifactsObjDir)TempWorkingDir\$([System.Guid]::NewGuid())\</TempWorkingDir>
-      
+
       <ProductVersionTxtContents Condition="'$(StabilizePackageVersion)'=='true'">$(ProductionVersion)</ProductVersionTxtContents>
       <ProductVersionTxtContents Condition="'$(StabilizePackageVersion)'!='true'">$(ProductVersion)</ProductVersionTxtContents>
     </PropertyGroup>
@@ -89,14 +101,14 @@
       Lines="$(ProductVersionTxtContents)"
       Overwrite="true"
       Encoding="ASCII" />
-      
+
     <ItemGroup>
       <ItemsToPush Remove="@(ItemsToPush)" />
 
       <ItemsToPush Include="@(ShippingNupkgToPublishFile)" />
       <ItemsToPush Include="@(NonShippingNupkgToPublishFile)" ManifestArtifactData="NonShipping=true" />
       <ItemsToPush Include="@(SymbolNupkgToPublishFile)" />
-      
+
       <ItemsToPush
         Include="@(UploadToBlobStorageFile)"
         Exclude="@(NupkgToPublishFile);@(SymbolNupkgToPublishFile)">
@@ -120,6 +132,14 @@
         <PublishFlatContainer>true</PublishFlatContainer>
       </ItemsToPush>
 
+      <ItemsToPush Include="@(WorkloadsVSInsertionFile)">
+        <RelativeBlobPath>$(InstallersRelativePath)workloads/%(Filename)%(Extension)</RelativeBlobPath>
+        <PublishFlatContainer>true</PublishFlatContainer>
+      </ItemsToPush>
+
+      <!-- Source build intermediated packages will be pushed and signed by the sourcebuild leg. -->
+      <ItemsToPush Remove="@(ItemsToPush)" Condition="$([System.String]::new('%(Identity)').Contains('Microsoft.SourceBuild.Intermediate'))" />
+      <ItemsToSignPostBuild Remove="@(ItemsToSignPostBuild)" Condition="$([System.String]::new('%(Identity)').Contains('Microsoft.SourceBuild.Intermediate'))" />
     </ItemGroup>
 
     <!-- Push items to AzDO as build artifacts, generating the asset manifest as a side effect. -->
@@ -173,6 +193,7 @@
 
       <DownloadedSymbolNupkgFile Include="$(DownloadDirectory)**\*.symbols.nupkg" />
       <DownloadedWixPdbFile Include="$(DownloadDirectory)**\*.wixpdb" />
+      <DownloadedWorkloadsVSInsertionFile Include="$(DownloadDirectory)*\workloads-vs\**\*" />
       <DownloadedNupkgFile
         Include="$(DownloadDirectory)**\*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
@@ -180,7 +201,7 @@
       <!-- Add files that are not affected by filtering. -->
       <UploadToBlobStorageFile
         Include="@(DownloadedArtifactFile)"
-        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile);@(DownloadedWixPdbFile)" />
+        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile);@(DownloadedWixPdbFile);@(DownloadedWorkloadsVSInsertionFile)" />
 
       <!--
         Filter out the RID-specific (Runtime) nupkgs and RID-agnostic nupkgs. RID-specific packages
@@ -202,6 +223,14 @@
         Exclude="@(DownloadedSymbolNupkgFile)" />
 
       <!--
+        Workloads VS insertion artifacts produced by src/workloads/workloads.csproj. Only grab
+        the zip artifacts as they're grouped by SDK feature band which correlates with specific VS versions.
+      -->
+      <WorkloadsVSInsertionFile
+        Include="
+          $(DownloadDirectory)*\workloads-vs\**\*.zip"/>
+
+      <!--
         Runtime packages associated with some identity packages. Need to exclude "runtime.native.*"
         because Libraries produces some "runtime.native.Foo" packages with
         "runtime.<rid>.runtime.native.Foo" identity packages.
@@ -218,6 +247,8 @@
       -->
       <RidAgnosticNupkgToPublishFile
         Include="
+          $(DownloadDirectory)**\Microsoft.NET.Workload.Mono.Toolchain.*Manifest-*.nupkg;
+          $(DownloadDirectory)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;
           $(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromPlatform)\**\*.nupkg;
           $(DownloadDirectory)*\*AllConfigurations\**\*.nupkg"
         Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />
@@ -248,7 +279,7 @@
       <SymbolNupkgToPublishFile
         Include="@(PotentialSymbolNupkgToPublishFile -> Distinct())"
         Condition="Exists('%(Identity)')" />
-    
+
       <!-- Split nupkgs into shipping/nonshipping for BAR categorization. -->
       <ShippingNupkgToPublishFile
         Include="@(NupkgToPublishFile)"

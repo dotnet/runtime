@@ -39,7 +39,7 @@ namespace System.Text
             // If we had a buffer already we're being recursive, throw, it's probably at the suspect
             // character in our array.
             // Shouldn't be able to get here for all of our code pages, table would have to be messed up.
-            Debug.Assert(_iCount < 1, "[EncoderLatin1BestFitFallbackBuffer.Fallback(non surrogate)] Fallback char " + ((int)_cBestFit).ToString("X4", CultureInfo.InvariantCulture) + " caused recursive fallback");
+            Debug.Assert(_iCount < 1, $"[EncoderLatin1BestFitFallbackBuffer.Fallback(non surrogate)] Fallback char {(int)_cBestFit:X4} caused recursive fallback");
 
             _iCount = _iSize = 1;
             _cBestFit = TryBestFit(charUnknown);
@@ -65,7 +65,7 @@ namespace System.Text
             // If we had a buffer already we're being recursive, throw, it's probably at the suspect
             // character in our array.  0 is processing last character, < 0 is not falling back
             // Shouldn't be able to get here, table would have to be messed up.
-            Debug.Assert(_iCount < 1, "[EncoderLatin1BestFitFallbackBuffer.Fallback(surrogate)] Fallback char " + ((int)_cBestFit).ToString("X4", CultureInfo.InvariantCulture) + " caused recursive fallback");
+            Debug.Assert(_iCount < 1, $"[EncoderLatin1BestFitFallbackBuffer.Fallback(surrogate)] Fallback char {(int)_cBestFit:X4} caused recursive fallback");
 
             // Go ahead and get our fallback, surrogates don't have best fit
             _cBestFit = '?';
@@ -123,8 +123,7 @@ namespace System.Text
         {
             // Need to figure out our best fit character, low is beginning of array, high is 1 AFTER end of array
             int lowBound = 0;
-            Debug.Assert(s_arrayCharBestFit != null);
-            int highBound = s_arrayCharBestFit.Length;
+            int highBound = ArrayCharBestFit.Length;
             int index;
 
             // Binary search the array
@@ -136,13 +135,13 @@ namespace System.Text
                 // Also note that index can never == highBound (because diff is rounded down)
                 index = ((iDiff / 2) + lowBound) & 0xFFFE;
 
-                char cTest = s_arrayCharBestFit[index];
+                char cTest = ArrayCharBestFit[index];
                 if (cTest == cUnknown)
                 {
                     // We found it
-                    Debug.Assert(index + 1 < s_arrayCharBestFit.Length,
+                    Debug.Assert(index + 1 < ArrayCharBestFit.Length,
                         "[EncoderLatin1BestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
-                    return s_arrayCharBestFit[index + 1];
+                    return ArrayCharBestFit[index + 1];
                 }
                 else if (cTest < cUnknown)
                 {
@@ -158,12 +157,12 @@ namespace System.Text
 
             for (index = lowBound; index < highBound; index += 2)
             {
-                if (s_arrayCharBestFit[index] == cUnknown)
+                if (ArrayCharBestFit[index] == cUnknown)
                 {
                     // We found it
-                    Debug.Assert(index + 1 < s_arrayCharBestFit.Length,
+                    Debug.Assert(index + 1 < ArrayCharBestFit.Length,
                         "[EncoderLatin1BestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
-                    return s_arrayCharBestFit[index + 1];
+                    return ArrayCharBestFit[index + 1];
                 }
             }
 

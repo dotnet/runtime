@@ -7,10 +7,11 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 .assembly extern legacy library mscorlib {}
 .assembly legacy library ldfldstatic1 { }
-.class private auto ansi beforefieldinit ldfldstatic1
+.class public auto ansi beforefieldinit ldfldstatic1
        extends [mscorlib]System.Object
 {
   .field private static int32 fld
@@ -29,6 +30,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  1
     .locals init (class ldfldstatic1 V_0,

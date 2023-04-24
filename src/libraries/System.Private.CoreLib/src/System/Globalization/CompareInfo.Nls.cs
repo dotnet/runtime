@@ -68,7 +68,7 @@ namespace System.Globalization
                 Debug.Assert(ret >= -1 && ret <= source.Length);
 
                 // SetLastError is only performed under debug builds.
-                Debug.Assert(ret >= 0 || Marshal.GetLastWin32Error() == Interop.Errors.ERROR_SUCCESS);
+                Debug.Assert(ret >= 0 || Marshal.GetLastPInvokeError() == Interop.Errors.ERROR_SUCCESS);
 
                 return ret;
             }
@@ -300,7 +300,7 @@ namespace System.Globalization
                 Debug.Assert(result >= -1 && result <= lpStringSource.Length);
 
                 // SetLastError is only performed under debug builds.
-                Debug.Assert(result >= 0 || Marshal.GetLastWin32Error() == Interop.Errors.ERROR_SUCCESS);
+                Debug.Assert(result >= 0 || Marshal.GetLastPInvokeError() == Interop.Errors.ERROR_SUCCESS);
 
                 return result;
             }
@@ -368,10 +368,10 @@ namespace System.Globalization
 
         private unsafe SortKey NlsCreateSortKey(string source, CompareOptions options)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-
-            if (source == null) { throw new ArgumentNullException(nameof(source)); }
 
             if ((options & ValidCompareMaskOffFlags) != 0)
             {
@@ -506,7 +506,7 @@ namespace System.Globalization
                 // to allocate a temporary buffer large enough to hold intermediate state,
                 // or the destination buffer being too small.
 
-                if (Marshal.GetLastWin32Error() == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
+                if (Marshal.GetLastPInvokeError() == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                 {
                     ThrowHelper.ThrowArgumentException_DestinationTooShort();
                 }

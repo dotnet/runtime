@@ -9,20 +9,7 @@
 #endif
 #include "ep-getter-setter.h"
 
-#include <stdlib.h>
-#include <stdint.h>
-#ifndef __cplusplus
-#include <stdbool.h>
-#endif  // __cplusplus
-
-typedef char ep_char8_t;
-
-/*
- * IPC Stream Structs.
- */
-
-typedef struct _IpcStream IpcStream;
-typedef struct _IpcStreamVtable IpcStreamVtable;
+#include "ep-ipc-pal-types-forward.h"
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_IPC_PAL_TYPES_H__ */

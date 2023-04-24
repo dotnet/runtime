@@ -1,6 +1,15 @@
+include(CheckCXXSourceCompiles)
+include(CheckCXXSourceRuns)
+include(CheckCXXSymbolExists)
+include(CheckFunctionExists)
+include(CheckPrototypeDefinition)
+include(CheckIncludeFiles)
+include(CheckStructHasMember)
+include(CheckTypeSize)
+include(CheckLibraryExists)
+
 check_include_files(sys/time.h HAVE_SYS_TIME_H)
 check_include_files(sys/mman.h HAVE_SYS_MMAN_H)
-check_include_files(numa.h HAVE_NUMA_H)
 check_include_files(pthread_np.h HAVE_PTHREAD_NP_H)
 
 check_function_exists(vm_allocate HAVE_VM_ALLOCATE)
@@ -18,8 +27,13 @@ check_cxx_source_compiles("
     }
     " HAVE_PTHREAD_THREADID_NP)
 
+if(HAVE_PTHREAD_NP_H)
+  set(PTHREAD_NP_H_INCLUDE "#include <pthread_np.h>")
+endif()
+
 check_cxx_source_compiles("
     #include <pthread.h>
+    ${PTHREAD_NP_H_INCLUDE}
     #include <stdint.h>
 
     int main()
@@ -69,22 +83,42 @@ check_cxx_source_runs("
     }
     " HAVE_SCHED_GETCPU)
 
-check_library_exists(pthread pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
-
 check_symbol_exists(
     clock_gettime_nsec_np
     time.h
     HAVE_CLOCK_GETTIME_NSEC_NP)
 
+check_cxx_source_runs("
+#include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
+
+int main()
+{
+  int ret;
+  struct timespec ts;
+  ret = clock_gettime(CLOCK_MONOTONIC, &ts);
+
+  exit(ret);
+}" HAVE_CLOCK_MONOTONIC)
+
+check_symbol_exists(
+    posix_madvise
+    sys/mman.h
+    HAVE_POSIX_MADVISE)
+
 check_library_exists(c sched_getaffinity "" HAVE_SCHED_GETAFFINITY)
 check_library_exists(c sched_setaffinity "" HAVE_SCHED_SETAFFINITY)
 check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
+check_library_exists(c pthread_create "" HAVE_PTHREAD_IN_LIBC)
 
 if (HAVE_LIBPTHREAD)
   set(PTHREAD_LIBRARY pthread)
 elseif (HAVE_PTHREAD_IN_LIBC)
   set(PTHREAD_LIBRARY c)
 endif()
+
+check_library_exists(${PTHREAD_LIBRARY} pthread_condattr_setclock "" HAVE_PTHREAD_CONDATTR_SETCLOCK)
 
 check_library_exists(${PTHREAD_LIBRARY} pthread_setaffinity_np "" HAVE_PTHREAD_SETAFFINITY_NP)
 

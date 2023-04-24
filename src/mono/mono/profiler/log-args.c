@@ -232,7 +232,7 @@ proflog_parse_args (ProfilerConfig *config, const char *desc)
 			break;
 		}
 	}
-		
+
 	if (buffer_pos != 0) {
 		buffer [buffer_pos] = 0;
 		parse_arg (buffer, config);

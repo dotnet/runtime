@@ -239,7 +239,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task ConsumedGreatherThanExaminedThrows()
+        public async Task ConsumedGreaterThanExaminedThrows()
         {
             _pipe.Writer.WriteEmpty(10);
             await _pipe.Writer.FlushAsync();
@@ -276,6 +276,20 @@ namespace System.IO.Pipelines.Tests
 
             ReadResult result = await _pipe.Reader.ReadAsync();
             _pipe.Reader.AdvanceTo(default, default);
+        }
+
+        [Fact]
+        public async Task AdvanceFollowedByWriteAsyncTest()
+        {
+            Memory<byte> buffer = new byte[26];
+            Pipe pipe = new(new PipeOptions(minimumSegmentSize: 1));
+
+            var mem = pipe.Writer.GetMemory(14)[..14];
+            buffer[..14].CopyTo(mem);
+            pipe.Writer.Advance(14);
+            await pipe.Writer.WriteAsync(buffer[14..]);
+            ReadResult res = await pipe.Reader.ReadAsync();
+            Assert.Equal(res.Buffer.Length, buffer.Length);
         }
     }
 }

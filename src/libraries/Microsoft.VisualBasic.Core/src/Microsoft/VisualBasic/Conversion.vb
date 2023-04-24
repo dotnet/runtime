@@ -2,6 +2,7 @@
 ' The .NET Foundation licenses this file to you under the MIT license.
 
 Imports System
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Runtime.Versioning
 
 Imports Microsoft.VisualBasic.CompilerServices
@@ -47,6 +48,7 @@ Namespace Microsoft.VisualBasic
         Private Const TYPE_INDICATOR_INT32 As Char = "&"c
         Private Const TYPE_INDICATOR_SINGLE As Char = "!"c
         Private Const TYPE_INDICATOR_DECIMAL As Char = "@"c
+        Private Const ConversionTrimmerMessage As String = "The Expression's underlying type cannot be statically analyzed and its members may be trimmed"
 
         '============================================================================
         ' Error message functions.
@@ -336,7 +338,7 @@ RangeCheck:
                         If (LongValue > 0) Then
                             Return Hex(LongValue)
                         Else
-                            'For VB6 compatability, format as Int32 value
+                            'For VB6 compatibility, format as Int32 value
                             ' unless it overflows into an Int64
                             If (LongValue >= System.Int32.MinValue) Then
                                 Return Hex(CInt(LongValue))
@@ -447,7 +449,7 @@ RangeCheck:
                         If (LongValue > 0) Then
                             Return Oct(LongValue)
                         Else
-                            'For VB6 compatability, format as Int32 value
+                            'For VB6 compatibility, format as Int32 value
                             ' unless it overflows into an Int64
                             If (LongValue >= System.Int32.MinValue) Then
                                 Return Oct(CInt(LongValue))
@@ -925,8 +927,10 @@ NextOctCharacter:
 
         End Function
 
+
         <ResourceExposure(ResourceScope.None)>
         <ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)>
+        <RequiresUnreferencedCode("Calls UnsafeNativeMethods.VariantChangeType")>
         Friend Function ParseInputField(ByVal Value As Object, ByVal vtInput As VariantType) As Object
 #If TARGET_WINDOWS Then
             Dim numprsPtr() As Byte
@@ -987,7 +991,7 @@ NextOctCharacter:
                     vtSuffix = VariantType.Integer
                     cDecMax = 0
                 Case "@"c
-                    'Convert currency to Decimal            
+                    'Convert currency to Decimal
                     'vtSuffix = VariantType.Currency
                     vtSuffix = VariantType.Decimal
                     cDecMax = 4
@@ -1055,7 +1059,7 @@ NextOctCharacter:
 
         Private Function ShiftVTBits(ByVal vt As Integer) As Integer
             Select Case vt
-                'Case VariantType.Empty     
+                'Case VariantType.Empty
                 'Case VariantType.Null
                 Case VariantType.Short
                     Return VTBIT_I2
@@ -1094,12 +1098,17 @@ NextOctCharacter:
             End Select
         End Function
 
-        Public Function CTypeDynamic(ByVal Expression As Object, ByVal TargetType As System.Type) As Object
+        <RequiresUnreferencedCode(ConversionTrimmerMessage)>
+        Public Function CTypeDynamic(
+                ByVal Expression As Object,
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)>
+                ByVal TargetType As System.Type) As Object
             Return Conversions.ChangeType(Expression, TargetType, True)
         End Function
 
+        <RequiresUnreferencedCode(ConversionTrimmerMessage)>
         Public Function CTypeDynamic(Of TargetType)(ByVal Expression As Object) As TargetType
-            return DirectCast(Conversions.ChangeType(Expression, GetType(TargetType), True), TargetType)
+            Return DirectCast(Conversions.ChangeType(Expression, GetType(TargetType), True), TargetType)
         End Function
     End Module
 End Namespace

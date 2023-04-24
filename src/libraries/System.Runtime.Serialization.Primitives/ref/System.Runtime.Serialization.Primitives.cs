@@ -66,6 +66,8 @@ namespace System.Runtime.Serialization
     public partial class InvalidDataContractException : System.Exception
     {
         public InvalidDataContractException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected InvalidDataContractException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidDataContractException(string? message) { }
         public InvalidDataContractException(string? message, System.Exception? innerException) { }
@@ -75,6 +77,13 @@ namespace System.Runtime.Serialization
         object GetDeserializedObject(object obj, System.Type targetType);
         object GetObjectToSerialize(object obj, System.Type targetType);
         System.Type GetSurrogateType(System.Type type);
+    }
+    public interface ISerializationSurrogateProvider2 : ISerializationSurrogateProvider
+    {
+        object? GetCustomDataToExport(Reflection.MemberInfo memberInfo, Type dataContractType);
+        object? GetCustomDataToExport(Type runtimeType, Type dataContractType);
+        void GetKnownCustomDataTypes(Collections.ObjectModel.Collection<Type> customDataTypes);
+        Type? GetReferencedTypeOnImport(string typeName, string typeNamespace, object? customData);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited=true, AllowMultiple=true)]
     public sealed partial class KnownTypeAttribute : System.Attribute

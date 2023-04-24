@@ -17,33 +17,29 @@ namespace System.Diagnostics
     {
         private static readonly object s_createProcessLock = new object();
 
+        private string? _processName;
+
         /// <summary>
         /// Creates an array of <see cref="Process"/> components that are associated with process resources on a
         /// remote computer. These process resources share the specified process name.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
-            if (processName == null)
+            bool isRemoteMachine = ProcessManager.IsRemoteMachine(machineName);
+
+            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processName, machineName);
+            Process[] processes = new Process[processInfos.Length];
+
+            for (int i = 0; i < processInfos.Length; i++)
             {
-                processName = string.Empty;
+                ProcessInfo processInfo = processInfos[i];
+                processes[i] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);
             }
 
-            Process[] procs = GetProcesses(machineName);
-            var list = new List<Process>();
-
-            for (int i = 0; i < procs.Length; i++)
-            {
-                if (string.Equals(processName, procs[i].ProcessName, StringComparison.OrdinalIgnoreCase))
-                {
-                    list.Add(procs[i]);
-                }
-                else
-                {
-                    procs[i].Dispose();
-                }
-            }
-
-            return list.ToArray();
+            return processes;
         }
 
         [CLSCompliant(false)]
@@ -91,6 +87,7 @@ namespace System.Diagnostics
         /// <summary>Terminates the associated process immediately.</summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public void Kill()
         {
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_TERMINATE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, throwIfExited: false))
@@ -123,13 +120,11 @@ namespace System.Diagnostics
             _haveMainWindow = false;
             _mainWindowTitle = null;
             _haveResponding = false;
+            _processName = null;
         }
 
         /// <summary>Additional logic invoked when the Process is closed.</summary>
-        private void CloseCore()
-        {
-            // Nop
-        }
+        partial void CloseCore();
 
         /// <devdoc>
         ///     Make sure we are watching for a process exit.
@@ -213,46 +208,14 @@ namespace System.Diagnostics
                 if (handle.IsInvalid)
                 {
                     _exited = true;
+                    return;
                 }
-                else
-                {
-                    int localExitCode;
 
-                    // Although this is the wrong way to check whether the process has exited,
-                    // it was historically the way we checked for it, and a lot of code then took a dependency on
-                    // the fact that this would always be set before the pipes were closed, so they would read
-                    // the exit code out after calling ReadToEnd() or standard output or standard error. In order
-                    // to allow 259 to function as a valid exit code and to break as few people as possible that
-                    // took the ReadToEnd dependency, we check for an exit code before doing the more correct
-                    // check to see if we have been signaled.
-                    if (Interop.Kernel32.GetExitCodeProcess(handle, out localExitCode) && localExitCode != Interop.Kernel32.HandleOptions.STILL_ACTIVE)
-                    {
-                        _exitCode = localExitCode;
-                        _exited = true;
-                    }
-                    else
-                    {
-                        // The best check for exit is that the kernel process object handle is invalid,
-                        // or that it is valid and signaled.  Checking if the exit code != STILL_ACTIVE
-                        // does not guarantee the process is closed,
-                        // since some process could return an actual STILL_ACTIVE exit code (259).
-                        if (!_signaled) // if we just came from WaitForExit, don't repeat
-                        {
-                            using (var wh = new Interop.Kernel32.ProcessWaitHandle(handle))
-                            {
-                                _signaled = wh.WaitOne(0);
-                            }
-                        }
-                        if (_signaled)
-                        {
-                            if (!Interop.Kernel32.GetExitCodeProcess(handle, out localExitCode))
-                                throw new Win32Exception();
+                if (!ProcessManager.HasExited(handle, ref _signaled, out int localExitCode))
+                    return;
 
-                            _exitCode = localExitCode;
-                            _exited = true;
-                        }
-                    }
-                }
+                _exited = true;
+                _exitCode = localExitCode;
             }
         }
 
@@ -263,6 +226,9 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
             get { return GetProcessTimes().PrivilegedProcessorTime; }
@@ -279,6 +245,9 @@ namespace System.Diagnostics
         /// It is the sum of the <see cref='System.Diagnostics.Process.UserProcessorTime'/> and
         /// <see cref='System.Diagnostics.Process.PrivilegedProcessorTime'/>.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get { return GetProcessTimes().TotalProcessorTime; }
@@ -288,6 +257,9 @@ namespace System.Diagnostics
         /// Gets the amount of time the associated process has spent running code
         /// inside the application portion of the process (not the operating system core).
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get { return GetProcessTimes().UserProcessorTime; }
@@ -523,6 +495,12 @@ namespace System.Diagnostics
                         startupInfo.dwFlags = Interop.Advapi32.StartupInfoOptions.STARTF_USESTDHANDLES;
                     }
 
+                    if (startInfo.WindowStyle != ProcessWindowStyle.Normal)
+                    {
+                        startupInfo.wShowWindow = (short)GetShowWindowFromWindowStyle(startInfo.WindowStyle);
+                        startupInfo.dwFlags |= Interop.Advapi32.StartupInfoOptions.STARTF_USESHOWWINDOW;
+                    }
+
                     // set up the creation flags parameter
                     int creationFlags = 0;
                     if (startInfo.CreateNoWindow) creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_NO_WINDOW;
@@ -552,9 +530,17 @@ namespace System.Diagnostics
                         }
 
                         Interop.Advapi32.LogonFlags logonFlags = (Interop.Advapi32.LogonFlags)0;
-                        if (startInfo.LoadUserProfile)
+                        if (startInfo.LoadUserProfile && startInfo.UseCredentialsForNetworkingOnly)
+                        {
+                            throw new ArgumentException(SR.CantEnableConflictingLogonFlags, nameof(startInfo));
+                        }
+                        else if (startInfo.LoadUserProfile)
                         {
                             logonFlags = Interop.Advapi32.LogonFlags.LOGON_WITH_PROFILE;
+                        }
+                        else if (startInfo.UseCredentialsForNetworkingOnly)
+                        {
+                            logonFlags = Interop.Advapi32.LogonFlags.LOGON_NETCREDENTIALS_ONLY;
                         }
 
                         fixed (char* passwordInClearTextPtr = startInfo.PasswordInClearText ?? string.Empty)
@@ -618,12 +604,20 @@ namespace System.Diagnostics
 
                     if (!retVal)
                     {
-                        if (errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH)
-                        {
-                            throw new Win32Exception(errorCode, SR.InvalidApplication);
-                        }
-                        throw new Win32Exception(errorCode);
+                        string nativeErrorMessage = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
+                            ? SR.InvalidApplication
+                            : GetErrorMessage(errorCode);
+
+                        throw CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, workingDirectory);
                     }
+                }
+                catch
+                {
+                    parentInputPipeHandle?.Dispose();
+                    parentOutputPipeHandle?.Dispose();
+                    parentErrorPipeHandle?.Dispose();
+                    procSH.Dispose();
+                    throw;
                 }
                 finally
                 {
@@ -653,14 +647,17 @@ namespace System.Diagnostics
             commandLine.Dispose();
 
             if (procSH.IsInvalid)
+            {
+                procSH.Dispose();
                 return false;
+            }
 
             SetProcessHandle(procSH);
             SetProcessId((int)processInfo.dwProcessId);
             return true;
         }
 
-        private static Encoding GetEncoding(int codePage)
+        private static ConsoleEncoding GetEncoding(int codePage)
         {
             Encoding enc = EncodingHelper.GetSupportedConsoleEncoding(codePage);
             return new ConsoleEncoding(enc); // ensure encoding doesn't output a preamble
@@ -749,10 +746,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                if (hToken != null)
-                {
-                    hToken.Dispose();
-                }
+                hToken?.Dispose();
             }
         }
 
@@ -818,7 +812,7 @@ namespace System.Diagnostics
         // methods such as WriteLine as well as native CRT functions like printf) which are making an
         // assumption that the console standard handles (obtained via GetStdHandle()) are opened
         // for synchronous I/O and hence they can work fine with ReadFile/WriteFile synchronously!
-        private void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
+        private static void CreatePipe(out SafeFileHandle parentHandle, out SafeFileHandle childHandle, bool parentInputs)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributesParent = default;
             securityAttributesParent.bInheritHandle = Interop.BOOL.TRUE;
@@ -882,6 +876,41 @@ namespace System.Diagnostics
             }
 
             return result.ToString();
+        }
+
+        private static string GetErrorMessage(int error) => Interop.Kernel32.GetMessage(error);
+
+        /// <summary>Gets the friendly name of the process.</summary>
+        public string ProcessName
+        {
+            get
+            {
+                if (_processName == null)
+                {
+                    // If we already have the name via a populated ProcessInfo
+                    // then use that one.
+                    if (_processInfo?.ProcessName != null)
+                    {
+                        _processName = _processInfo!.ProcessName;
+                    }
+                    else
+                    {
+                        // Ensure that the process is not yet exited
+                        EnsureState(State.HaveNonExitedId);
+                        _processName = ProcessManager.GetProcessName(_processId, _machineName);
+
+                        // Fallback to slower ProcessInfo implementation if optimized way did not return a
+                        // process name (e.g. in case of missing permissions for Non-Admin users)
+                        if (_processName == null)
+                        {
+                            EnsureState(State.HaveProcessInfo);
+                            _processName = _processInfo!.ProcessName;
+                        }
+                    }
+                }
+
+                return _processName;
+            }
         }
     }
 }

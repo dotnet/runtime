@@ -1,7 +1,33 @@
 <Project>
   <PropertyGroup>
     <!-- The trailing semicolon is important for each entry! -->
+    <NetFxReference>
+      mscorlib;
+      Microsoft.VisualBasic;
+      System;
+      System.ComponentModel.DataAnnotations;
+      System.Configuration;
+      System.Core;
+      System.Data;
+      System.Drawing;
+      System.IO.Compression.FileSystem;
+      System.Net;
+      System.Numerics;
+      System.Runtime.Serialization;
+      System.Security;
+      System.ServiceProcess;
+      System.ServiceModel.Web;
+      System.Transactions;
+      System.Web;
+      System.Windows;
+      System.Xml;
+      System.Xml.Serialization;
+      System.Xml.Linq;
+      WindowsBase;
+    </NetFxReference>
     <NetCoreAppLibrary>
+      $(NetFxReference)
+      netstandard;
       Microsoft.CSharp;
       Microsoft.VisualBasic.Core;
       Microsoft.Win32.Primitives;
@@ -34,6 +60,7 @@
       System.Drawing.Primitives;
       System.Dynamic.Runtime;
       System.Formats.Asn1;
+      System.Formats.Tar;
       System.Globalization;
       System.Globalization.Calendars;
       System.Globalization.Extensions;
@@ -76,8 +103,8 @@
       System.Net.WebSockets.Client;
       System.Numerics.Vectors;
       System.ObjectModel;
+      System.Private.CoreLib;
       System.Private.DataContractSerialization;
-      System.Private.Runtime.InteropServices.JavaScript;
       System.Private.Uri;
       System.Private.Xml;
       System.Private.Xml.Linq;
@@ -99,6 +126,7 @@
       System.Runtime.Extensions;
       System.Runtime.Handles;
       System.Runtime.InteropServices;
+      System.Runtime.InteropServices.JavaScript;
       System.Runtime.InteropServices.RuntimeInformation;
       System.Runtime.Intrinsics;
       System.Runtime.Loader;
@@ -109,6 +137,7 @@
       System.Runtime.Serialization.Xml;
       System.Security.AccessControl;
       System.Security.Claims;
+      System.Security.Cryptography;
       System.Security.Cryptography.Algorithms;
       System.Security.Cryptography.Cng;
       System.Security.Cryptography.Csp;
@@ -146,18 +175,85 @@
       System.Xml.XPath.XDocument;
     </NetCoreAppLibrary>
     <NetCoreAppLibraryNoReference>
-      Microsoft.Win32.Registry;
-      System.IO.FileSystem.AccessControl;
-      System.IO.Pipes.AccessControl;
-      System.Security.AccessControl;
-      System.Security.Cryptography.Cng;
-      System.Security.Cryptography.OpenSsl;
-      System.Security.Principal.Windows;
+      System.Private.CoreLib;
+      System.Private.DataContractSerialization;
+      System.Private.Uri;
+      System.Private.Xml;
+      System.Private.Xml.Linq;
     </NetCoreAppLibraryNoReference>
+    <!-- List .NETCoreApp shared framework generator project names below. -->
+    <NetCoreAppLibraryGenerator>
+      ComInterfaceGenerator;
+      LibraryImportGenerator;
+      JSImportGenerator;
+      Microsoft.Interop.SourceGeneration;
+      System.Text.Json.SourceGeneration.Roslyn4.4;
+      System.Text.RegularExpressions.Generator;
+    </NetCoreAppLibraryGenerator>
+    <AspNetCoreAppLibrary>
+      Microsoft.Extensions.Caching.Abstractions;
+      Microsoft.Extensions.Caching.Memory;
+      Microsoft.Extensions.Configuration;
+      Microsoft.Extensions.Configuration.Abstractions;
+      Microsoft.Extensions.Configuration.Binder;
+      Microsoft.Extensions.Configuration.CommandLine;
+      Microsoft.Extensions.Configuration.EnvironmentVariables;
+      Microsoft.Extensions.Configuration.FileExtensions;
+      Microsoft.Extensions.Configuration.Ini;
+      Microsoft.Extensions.Configuration.Json;
+      Microsoft.Extensions.Configuration.UserSecrets;
+      Microsoft.Extensions.Configuration.Xml;
+      Microsoft.Extensions.DependencyInjection;
+      Microsoft.Extensions.DependencyInjection.Abstractions;
+      Microsoft.Extensions.FileProviders.Abstractions;
+      Microsoft.Extensions.FileProviders.Composite;
+      Microsoft.Extensions.FileProviders.Physical;
+      Microsoft.Extensions.FileSystemGlobbing;
+      Microsoft.Extensions.Hosting;
+      Microsoft.Extensions.Hosting.Abstractions;
+      Microsoft.Extensions.Http;
+      Microsoft.Extensions.Logging;
+      Microsoft.Extensions.Logging.Abstractions;
+      Microsoft.Extensions.Logging.Configuration;
+      Microsoft.Extensions.Logging.Console;
+      Microsoft.Extensions.Logging.Debug;
+      Microsoft.Extensions.Logging.EventLog;
+      Microsoft.Extensions.Logging.EventSource;
+      Microsoft.Extensions.Logging.TraceSource;
+      Microsoft.Extensions.Options;
+      Microsoft.Extensions.Options.ConfigurationExtensions;
+      Microsoft.Extensions.Options.DataAnnotations;
+      Microsoft.Extensions.Primitives;
+      System.Diagnostics.EventLog;
+      System.IO.Pipelines;
+      System.Security.Cryptography.Xml;
+      System.Threading.RateLimiting;
+    </AspNetCoreAppLibrary>
+    <WindowsDesktopCoreAppLibrary>
+      Microsoft.Win32.Registry.AccessControl;
+      Microsoft.Win32.SystemEvents;
+      System.CodeDom;
+      System.Configuration.ConfigurationManager;
+      System.Diagnostics.EventLog;
+      System.Diagnostics.PerformanceCounter;
+      System.DirectoryServices;
+      System.IO.Packaging;
+      System.Resources.Extensions;
+      System.Security.Cryptography.Pkcs;
+      System.Security.Cryptography.ProtectedData;
+      System.Security.Cryptography.Xml;
+      System.Security.Permissions;
+      System.Threading.AccessControl;
+      System.Windows.Extensions;
+    </WindowsDesktopCoreAppLibrary>
   </PropertyGroup>
-  <!-- Make NetCoreAppLibrary available as an item. -->
+  <!-- Make available as an item. -->
   <ItemGroup>
+    <NetFxReference Include="$(NetFxReference)" />
     <NetCoreAppLibrary Include="$(NetCoreAppLibrary)" />
     <NetCoreAppLibraryNoReference Include="$(NetCoreAppLibraryNoReference)" />
+    <NetCoreAppLibraryGenerator Include="$(NetCoreAppLibraryGenerator)" />
+    <AspNetCoreAppLibrary Include="$(AspNetCoreAppLibrary)" />
+    <WindowsDesktopCoreAppLibrary Include="$(WindowsDesktopCoreAppLibrary)" />
   </ItemGroup>
 </Project>

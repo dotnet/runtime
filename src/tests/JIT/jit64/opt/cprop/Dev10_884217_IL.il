@@ -6,6 +6,7 @@
  
 // Metadata version: v4.0.20926
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -14,7 +15,6 @@
 .assembly Dev10_884217_IL
 {
 }
-.module Dev10_884217_IL.exe
 .subsystem 0x0003       // WINDOWS_CUI
 .corflags 0x00000001    //  ILONLY
 // Image base: 0x0000000000170000
@@ -22,7 +22,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private abstract auto ansi sealed beforefieldinit Repro
+.class public abstract auto ansi sealed beforefieldinit Repro
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 
@@ -56,9 +56,11 @@
     IL_0017:  ret
   } // end of method Repro::CbitLowZero
 
-  .method private hidebysig static int32 
-          Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       81 (0x51)
     .maxstack  3

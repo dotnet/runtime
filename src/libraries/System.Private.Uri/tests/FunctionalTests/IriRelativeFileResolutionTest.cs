@@ -19,7 +19,7 @@ namespace System.PrivateUri.Tests
         private static readonly bool s_isWindowsSystem = PlatformDetection.IsWindows;
 
         [Fact]
-        public void IriRelativeResolution_CompareImplcitAndExplicitFileWithNoUnicode_AllPropertiesTheSame()
+        public void IriRelativeResolution_CompareImplicitAndExplicitFileWithNoUnicode_AllPropertiesTheSame()
         {
             string nonUnicodeImplicitTestFile = s_isWindowsSystem ? @"c:\path\path3\test.txt" : "/path/path3/test.txt";
             string nonUnicodeImplicitFileBase = s_isWindowsSystem ? @"c:\path\file.txt" : "/path/file.txt";
@@ -30,7 +30,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public void IriRelativeResolution_CompareImplcitAndExplicitFileWithReservedChar_AllPropertiesTheSame()
+        public void IriRelativeResolution_CompareImplicitAndExplicitFileWithReservedChar_AllPropertiesTheSame()
         {
             string nonUnicodeImplicitTestFile = s_isWindowsSystem ? @"c:\path\path3\test.txt%25%" : "/path/path3/test.txt%25%";
             string nonUnicodeImplicitFileBase = s_isWindowsSystem ? @"c:\path\file.txt" : "/path/file.txt";
@@ -42,7 +42,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public void IriRelativeResolution_CompareImplcitAndExplicitFileWithUnicodeIriOn_AllPropertiesTheSame()
+        public void IriRelativeResolution_CompareImplicitAndExplicitFileWithUnicodeIriOn_AllPropertiesTheSame()
         {
             string unicodeImplicitTestFile = s_isWindowsSystem ? @"c:\path\\u30AF\path3\\u30EB\u30DE.text" : "/path//u30AF/path3//u30EB/u30DE.text";
             string nonUnicodeImplicitFileBase = s_isWindowsSystem ? @"c:\path\file.txt" : "/path/file.txt";
@@ -53,7 +53,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public void IriRelativeResolution_CompareImplcitAndExplicitFileWithUnicodeAndReservedCharIriOn_AllPropertiesTheSame()
+        public void IriRelativeResolution_CompareImplicitAndExplicitFileWithUnicodeAndReservedCharIriOn_AllPropertiesTheSame()
         {
             string unicodeImplicitTestFile = s_isWindowsSystem ? @"c:\path\\u30AF\path3\\u30EB\u30DE.text%25%" : "/path//u30AF/path3//u30EB/u30DE.text%25%";
             string nonUnicodeImplicitFileBase = s_isWindowsSystem ? @"c:\path\file.txt" : "/path/file.txt";
@@ -65,7 +65,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public void IriRelativeResolution_CompareImplcitAndExplicitUncWithNoUnicode_AllPropertiesTheSame()
+        public void IriRelativeResolution_CompareImplicitAndExplicitUncWithNoUnicode_AllPropertiesTheSame()
         {
             string nonUnicodeImplicitTestUnc = @"\\c\path\path3\test.txt";
             string nonUnicodeImplicitUncBase = @"\\c/path/file.txt";
@@ -78,7 +78,7 @@ namespace System.PrivateUri.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unc paths must start with '\' on Unix
-        public void IriRelativeResolution_CompareImplcitAndExplicitUncForwardSlashesWithNoUnicode_AllPropertiesTheSame()
+        public void IriRelativeResolution_CompareImplicitAndExplicitUncForwardSlashesWithNoUnicode_AllPropertiesTheSame()
         {
             string nonUnicodeImplicitTestUnc = @"//c/path/path3/test.txt";
             string nonUnicodeImplicitUncBase = @"//c/path/file.txt";
@@ -90,7 +90,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public void IriRelativeResolution_CompareImplcitAndExplicitUncWithUnicodeIriOn_AllPropertiesTheSame()
+        public void IriRelativeResolution_CompareImplicitAndExplicitUncWithUnicodeIriOn_AllPropertiesTheSame()
         {
             string unicodeImplicitTestUnc = @"\\c\path\\u30AF\path3\\u30EB\u30DE.text";
             string nonUnicodeImplicitUncBase = @"\\c\path\file.txt";
@@ -123,8 +123,7 @@ namespace System.PrivateUri.Tests
                 if (!(implicitValue.Equals(explicitValue) || (fileSchemePrefix + implicitValue).Equals(explicitValue)))
                 {
                     errorCount++;
-                    testResults.Append("Property mismatch: " + info.Name + ", implicit value: " + implicitValue
-                        + ", explicit value: " + explicitValue + "; ");
+                    testResults.Append($"Property mismatch: {info.Name}, implicit value: {implicitValue}, explicit value: {explicitValue}; ");
                 }
             }
 
@@ -133,8 +132,7 @@ namespace System.PrivateUri.Tests
             if (!implicitString.Equals(explicitString))
             {
                 errorCount++;
-                testResults.Append("ToString mismatch; implicit value: " + implicitString
-                    + ", explicit value: " + explicitString);
+                testResults.Append($"ToString mismatch; implicit value: {implicitString}, explicit value: {explicitString}");
             }
 
             errors = testResults.ToString();
@@ -142,7 +140,7 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        public void IriRelativeResolution_CompareImplcitAndOriginalFileWithNoUnicode_AllPropertiesTheSame()
+        public void IriRelativeResolution_CompareImplicitAndOriginalFileWithNoUnicode_AllPropertiesTheSame()
         {
             string nonUnicodeImplicitTestFile = s_isWindowsSystem ? @"c:\path\path3\test.txt" : "/path/path3/test.txt";
             string nonUnicodeImplicitFileBase = s_isWindowsSystem ? @"c:\path\file.txt" : "/path/file.txt";
@@ -275,8 +273,7 @@ namespace System.PrivateUri.Tests
                 if (!resultValue.Equals(startValue))
                 {
                     errorCount++;
-                    testResults.Append("Property mismatch: " + info.Name + ", result value: "
-                        + resultValue + ", start value: " + startValue + "; ");
+                    testResults.Append($"Property mismatch: {info.Name}, result value: {resultValue}, start value: {startValue}; ");
                 }
             }
 
@@ -285,8 +282,7 @@ namespace System.PrivateUri.Tests
             if (!resultString.Equals(startString))
             {
                 errorCount++;
-                testResults.Append("ToString mismatch; result value: " + resultString
-                    + ", start value: " + startString);
+                testResults.Append($"ToString mismatch; result value: {resultString}, start value: {startString}");
             }
 
             errors = testResults.ToString();

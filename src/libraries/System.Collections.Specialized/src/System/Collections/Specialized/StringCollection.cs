@@ -71,10 +71,8 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public void AddRange(string[] value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
+
             data.AddRange(value);
         }
 
@@ -237,12 +235,10 @@ namespace System.Collections.Specialized
     public class StringEnumerator
     {
         private readonly System.Collections.IEnumerator _baseEnumerator;
-        private readonly System.Collections.IEnumerable _temp;
 
         internal StringEnumerator(StringCollection mappings)
         {
-            _temp = (IEnumerable)(mappings);
-            _baseEnumerator = _temp.GetEnumerator();
+            _baseEnumerator = ((IEnumerable)mappings).GetEnumerator();
         }
 
         public string? Current

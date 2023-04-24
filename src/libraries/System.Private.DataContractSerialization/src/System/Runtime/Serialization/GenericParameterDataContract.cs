@@ -3,51 +3,47 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
-namespace System.Runtime.Serialization
+namespace System.Runtime.Serialization.DataContracts
 {
     internal sealed class GenericParameterDataContract : DataContract
     {
         private readonly GenericParameterDataContractCriticalHelper _helper;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal GenericParameterDataContract(Type type)
             : base(new GenericParameterDataContractCriticalHelper(type))
         {
             _helper = (base.Helper as GenericParameterDataContractCriticalHelper)!;
         }
 
-        internal int ParameterPosition
-        {
-            get
-            { return _helper.ParameterPosition; }
-        }
+        internal int ParameterPosition => _helper.ParameterPosition;
 
-        public override bool IsBuiltInDataContract
-        {
-            get
-            {
-                return true;
-            }
-        }
+        public override bool IsBuiltInDataContract => true;
 
         private sealed class GenericParameterDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
             private readonly int _parameterPosition;
 
-            internal GenericParameterDataContractCriticalHelper(Type type)
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+            internal GenericParameterDataContractCriticalHelper(
+                [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
+                Type type)
                 : base(type)
             {
-                SetDataContractName(DataContract.GetStableName(type));
+                SetDataContractName(DataContract.GetXmlName(type));
                 _parameterPosition = type.GenericParameterPosition;
             }
 
-            internal int ParameterPosition
-            {
-                get { return _parameterPosition; }
-            }
+            internal int ParameterPosition => _parameterPosition;
         }
 
-        internal DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract> boundContracts)
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        internal override DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract>? boundContracts = null)
         {
             return paramContracts[ParameterPosition];
         }

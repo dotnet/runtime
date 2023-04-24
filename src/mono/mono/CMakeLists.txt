@@ -1,12 +1,12 @@
 project(mono)
 
-set(subdirs mini profiler)
-
-if(ENABLE_PERFTRACING)
-  list(APPEND subdirs
-    eventpipe/test
-  )
-endif(ENABLE_PERFTRACING)
+set(subdirs
+  eglib
+  utils
+  sgen
+  metadata
+  mini
+  profiler)
 
 foreach(dir ${subdirs})
   add_subdirectory(${dir})

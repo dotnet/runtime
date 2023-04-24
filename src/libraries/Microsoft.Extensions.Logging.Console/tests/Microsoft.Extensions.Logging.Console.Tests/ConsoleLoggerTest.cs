@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Test.Console;
@@ -45,32 +47,30 @@ namespace Microsoft.Extensions.Logging.Console.Test
             var errorSink = new ConsoleSink();
             var console = new TestConsole(sink);
             var errorConsole = new TestConsole(errorSink);
-            var consoleLoggerProcessor = new TestLoggerProcessor();
-            consoleLoggerProcessor.Console = console;
-            consoleLoggerProcessor.ErrorConsole = errorConsole;
 
-            var logger = new ConsoleLogger(_loggerName, consoleLoggerProcessor);
-            logger.ScopeProvider = new LoggerExternalScopeProvider();
-            logger.Options = options ?? new ConsoleLoggerOptions();
             var formatters = new ConcurrentDictionary<string, ConsoleFormatter>(GetFormatters().ToDictionary(f => f.Name));
 
+            ConsoleFormatter? formatter = null;
+            var loggerOptions = options ?? new ConsoleLoggerOptions();
+            var consoleLoggerProcessor = new TestLoggerProcessor(console, errorConsole, loggerOptions.QueueFullMode, loggerOptions.MaxQueueLength);
             Func<LogLevel, string> levelAsString;
             int writesPerMsg;
-            switch (logger.Options.Format)
+            switch (loggerOptions.Format)
             {
                 case ConsoleLoggerFormat.Default:
                     levelAsString = LogLevelAsStringDefault;
                     writesPerMsg = 2;
-                    logger.Formatter = formatters[ConsoleFormatterNames.Simple];
+                    formatter = formatters[ConsoleFormatterNames.Simple];
                     break;
                 case ConsoleLoggerFormat.Systemd:
                     levelAsString = GetSyslogSeverityString;
                     writesPerMsg = 1;
-                    logger.Formatter = formatters[ConsoleFormatterNames.Systemd];
+                    formatter = formatters[ConsoleFormatterNames.Systemd];
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(logger.Options.Format));
+                    throw new ArgumentOutOfRangeException(nameof(loggerOptions.Format));
             }
+            var logger = new ConsoleLogger(_loggerName, consoleLoggerProcessor, formatter, new LoggerExternalScopeProvider(), loggerOptions);
 
             UpdateFormatterOptions(logger.Formatter, logger.Options);
             VerifyDeprecatedPropertiesUsedOnNullFormatterName(logger);
@@ -413,6 +413,36 @@ namespace Microsoft.Extensions.Logging.Console.Test
             write = sink.Writes[1];
             Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public void AddConsole_IsOutputRedirected_ColorDisabled()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                // Arrange
+                var sink = new ConsoleSink();
+                var console = new TestConsole(sink);
+                var loggerOptions = new ConsoleLoggerOptions();
+                var consoleLoggerProcessor = new TestLoggerProcessor(console, null!, loggerOptions.QueueFullMode, loggerOptions.MaxQueueLength);
+
+                var loggerProvider = new ServiceCollection()
+                    .AddLogging(builder => builder
+                        .AddConsole()
+                    )
+                    .BuildServiceProvider()
+                    .GetRequiredService<ILoggerProvider>();
+
+                var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
+                var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
+
+                // Assert
+                Assert.True(System.Console.IsOutputRedirected);
+                Assert.Null(logger.Options.FormatterName);
+                var formatter = Assert.IsType<SimpleConsoleFormatter>(logger.Formatter);
+                Assert.Equal(LoggerColorBehavior.Default, formatter.FormatterOptions.ColorBehavior);
+
+            }, new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardOutput = true } }).Dispose();
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -1110,29 +1140,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void LogAfterDisposeWritesLog()
-        {
-            // Arrange
-            var sink = new ConsoleSink();
-            var console = new TestConsole(sink);
-            var processor = new ConsoleLoggerProcessor();
-            processor.Console = console;
-            var formatters = new ConcurrentDictionary<string, ConsoleFormatter>(GetFormatters().ToDictionary(f => f.Name));
-
-            var logger = new ConsoleLogger(_loggerName, loggerProcessor: processor);
-            logger.Options = new ConsoleLoggerOptions();
-            Assert.Null(logger.Options.FormatterName);
-            logger.Formatter = formatters[ConsoleFormatterNames.Simple];
-            UpdateFormatterOptions(logger.Formatter, logger.Options);
-            // Act
-            processor.Dispose();
-            logger.LogInformation("Logging after dispose");
-
-            // Assert
-            Assert.True(sink.Writes.Count == 2);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void IsEnabledReturnsCorrectValue()
         {
             var logger = SetUp().Logger;
@@ -1166,8 +1173,21 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Throws<ArgumentOutOfRangeException>(() => new ConsoleLoggerOptions() { Format = (ConsoleLoggerFormat)10 });
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(-1)]
+        [InlineData(0)]
+        public void ConsoleLoggerOptions_SetInvalidMaxQueueLength_Throws(int invalidMaxQueueLength)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ConsoleLoggerOptions() { MaxQueueLength = invalidMaxQueueLength });
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49110 ", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
+        public void ConsoleLoggerOptions_SetInvalidBufferMode_Throws()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ConsoleLoggerOptions() { QueueFullMode = (ConsoleLoggerQueueFullMode)10 });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConsoleLoggerOptions_DisableColors_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] { new KeyValuePair<string, string>("Console:DisableColors", "true") }).Build();
@@ -1199,7 +1219,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49110 ", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void ConsoleLoggerOptions_TimeStampFormat_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] { new KeyValuePair<string, string>("Console:TimeStampFormat", "yyyyMMddHHmmss") }).Build();
@@ -1245,7 +1264,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49110 ", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void ConsoleLoggerOptions_LogAsErrorLevel_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] { new KeyValuePair<string, string>("Console:LogToStandardErrorThreshold", "Warning") }).Build();
@@ -1277,6 +1295,25 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void ConsoleLoggerOptions_UpdateQueueOptions_UpdatesConsoleLoggerProcessorProperties()
+        {
+            // Arrange
+            var monitor = new TestOptionsMonitor(new ConsoleLoggerOptions());
+            var loggerProvider = new ConsoleLoggerProvider(monitor);
+            var logger = (ConsoleLogger)loggerProvider.CreateLogger("Name");
+
+            // Act & Assert
+            Assert.Equal(ConsoleLoggerQueueFullMode.Wait, logger.Options.QueueFullMode);
+            Assert.Equal(ConsoleLoggerOptions.DefaultMaxQueueLengthValue, logger.Options.MaxQueueLength);
+            monitor.Set(new ConsoleLoggerOptions() {
+                QueueFullMode = ConsoleLoggerQueueFullMode.DropWrite,
+                MaxQueueLength = 10
+            });
+            Assert.Equal(ConsoleLoggerQueueFullMode.DropWrite, logger.Options.QueueFullMode);
+            Assert.Equal(10, logger.Options.MaxQueueLength);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void ConsoleLoggerOptions_UseUtcTimestamp_IsAppliedToLoggers()
         {
             // Arrange
@@ -1291,7 +1328,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49110 ", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void ConsoleLoggerOptions_IncludeScopes_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] { new KeyValuePair<string, string>("Console:IncludeScopes", "true") }).Build();
@@ -1374,11 +1410,15 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     throw new ArgumentOutOfRangeException(nameof(format));
             }
         }
+
+        public static bool IsThreadingAndRemoteExecutorSupported =>
+            PlatformDetection.IsThreadingSupported && RemoteExecutor.IsSupported;
     }
 
     internal class TestLoggerProcessor : ConsoleLoggerProcessor
     {
-        public TestLoggerProcessor()
+        public TestLoggerProcessor(IConsole console, IConsole errorConsole, ConsoleLoggerQueueFullMode fullMode, int maxQueueLength)
+            : base(console, errorConsole, fullMode, maxQueueLength)
         {
         }
 

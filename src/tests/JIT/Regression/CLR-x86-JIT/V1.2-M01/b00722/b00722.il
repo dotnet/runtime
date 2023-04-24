@@ -7,8 +7,9 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0x195e59cd {}
-.class ILGEN_0x195e59cd {
+.assembly 'b00722' {}
+.assembly extern xunit.core {}
+.class public ILGEN_0x195e59cd {
 .field static	int16[] field_0x0
 .field static	int64 field_0x1
 .method static int32 Method_0x24dd30a(float64 Arg_0x0, native int Arg_0x1, int64 Arg_0x2, native int Arg_0x3, native int Arg_0x4, int8 Arg_0x5, unsigned int32 Arg_0x6, int32 Arg_0x7, unsigned int16 Arg_0x8, unsigned int8 Arg_0x9, int8 Arg_0xa, unsigned int64 Arg_0xb, unsigned int32 Arg_0xc, float64 Arg_0xd, native int Arg_0xe) {
@@ -95,7 +96,10 @@ End_Orphan_20:
 
 EOM: ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	20
 .try

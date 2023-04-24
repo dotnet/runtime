@@ -30,7 +30,9 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Contains all the keys in the collection that hash to the same value.
         /// </summary>
+#pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
         internal readonly struct HashBucket
+#pragma warning restore CA1066
         {
             /// <summary>
             /// One of the values in this bucket.
@@ -181,11 +183,7 @@ namespace System.Collections.Immutable
                     int index = _additionalElements.IndexOf(value, valueComparer);
                     if (index >= 0)
                     {
-#if !NETSTANDARD1_0
                         existingValue = _additionalElements.ItemRef(index);
-#else
-                        existingValue = _additionalElements[index];
-#endif
                         return true;
                     }
                 }
@@ -244,10 +242,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal void Freeze()
             {
-                if (_additionalElements != null)
-                {
-                    _additionalElements.Freeze();
-                }
+                _additionalElements?.Freeze();
             }
 
             /// <summary>

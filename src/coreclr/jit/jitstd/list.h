@@ -1,14 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ==++==
-//
-
-//
-
-//
-// ==--==
-
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
@@ -67,7 +59,6 @@ public:
         bool operator==(const const_iterator& it) const;
         bool operator!=(const const_iterator& it) const;
         const T& operator*() const;
-        const T* operator&() const;
         const T* operator->() const;
         operator const T*() const;
 
@@ -93,7 +84,6 @@ public:
         bool operator==(const iterator& it);
         bool operator!=(const iterator& it);
         T& operator*();
-        T* operator&();
         T* operator->();
         operator T*();
 
@@ -123,7 +113,6 @@ public:
         bool operator==(const const_reverse_iterator& it) const;
         bool operator!=(const const_reverse_iterator& it) const;
         const T& operator*() const;
-        const T* operator&() const;
         const T* operator->() const;
         operator const T*() const;
 
@@ -150,7 +139,6 @@ public:
         bool operator==(const reverse_iterator& it);
         bool operator!=(const reverse_iterator& it);
         T& operator*();
-        T* operator&();
         T* operator->();
         operator T*();
         friend class list<T, Allocator>::const_reverse_iterator;
@@ -159,6 +147,17 @@ public:
         friend class list<T, Allocator>;
         Node* m_pNode;
     };
+
+#ifdef DEBUG
+    void init(const Allocator& a)
+    {
+        m_pHead = nullptr;
+        m_pTail = nullptr;
+        m_nSize = 0;
+        m_allocator = a;
+        m_nodeAllocator = a;
+    }
+#endif
 
     explicit list(const Allocator&);
     list(size_type n, const T& value, const Allocator&);
@@ -968,12 +967,6 @@ T& list<T, Allocator>::iterator::operator*()
 }
 
 template <typename T, typename Allocator>
-T* list<T, Allocator>::iterator::operator&()
-{
-    return &(m_pNode->m_value);
-}
-
-template <typename T, typename Allocator>
 T* list<T, Allocator>::iterator::operator->()
 {
     return &(m_pNode->m_value);
@@ -1060,12 +1053,6 @@ const T& list<T, Allocator>::const_iterator::operator*() const
 }
 
 template <typename T, typename Allocator>
-const T* list<T, Allocator>::const_iterator::operator&() const
-{
-    return &(m_pNode->m_value);
-}
-
-template <typename T, typename Allocator>
 const T* list<T, Allocator>::const_iterator::operator->() const
 {
     return &(m_pNode->m_value);
@@ -1142,12 +1129,6 @@ template <typename T, typename Allocator>
 T& list<T, Allocator>::reverse_iterator::operator*()
 {
     return m_pNode->m_value;
-}
-
-template <typename T, typename Allocator>
-T* list<T, Allocator>::reverse_iterator::operator&()
-{
-    return &(m_pNode->m_value);
 }
 
 template <typename T, typename Allocator>
@@ -1231,12 +1212,6 @@ template <typename T, typename Allocator>
 const T& list<T, Allocator>::const_reverse_iterator::operator*() const
 {
     return m_pNode->m_value;
-}
-
-template <typename T, typename Allocator>
-const T* list<T, Allocator>::const_reverse_iterator::operator&() const
-{
-    return &(m_pNode->m_value);
 }
 
 template <typename T, typename Allocator>

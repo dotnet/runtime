@@ -74,7 +74,7 @@ Success_RWCLAS:
         pop    rdx
         jmp    rax
 
-Promote_RWCLAS:                  // Move this entry to head postion of the chain
+Promote_RWCLAS:                  // Move this entry to head position of the chain
         // be quick to reset the counter so we don't get a bunch of contending threads
         mov    qword ptr [rdx], INITIAL_SUCCESS_COUNT
         or     r11, PROMOTE_CHAIN_FLAG
@@ -87,22 +87,3 @@ Fail_RWCLAS:
 
 LEAF_END ResolveWorkerChainLookupAsmStub, _TEXT
 
-#ifdef FEATURE_PREJIT
-NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
-
-        PROLOG_WITH_TRANSITION_BLOCK 0, 0, 0, 0, 0
-
-        lea             rdi, [rsp + __PWTB_TransitionBlock] // pTransitionBlock
-        mov             rsi, r11                            // indirection cell address
-
-        mov             rdx,0                               // sectionIndex
-        mov             rcx,0                               // pModule
-
-        call            C_FUNC(StubDispatchFixupWorker)
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-PATCH_LABEL StubDispatchFixupPatchLabel
-        TAILJMP_RAX
-
-NESTED_END StubDispatchFixupStub, _TEXT
-#endif

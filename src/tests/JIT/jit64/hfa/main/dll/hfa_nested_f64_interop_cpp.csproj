@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Needed for CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <OutputType>Library</OutputType>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <GenerateRunScript>false</GenerateRunScript>
@@ -13,6 +15,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="hfa_nested_f64_common.csproj" />
-    <ProjectReference Include="CMakelists.txt" />
+    <CMakeProjectReference Include="CMakelists.txt" />
   </ItemGroup>
 </Project>

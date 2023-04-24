@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
-.assembly shl.exe{}
+.assembly 'shl'{}
 
 .class public _shl {
 
@@ -18,7 +19,10 @@
 	ret
 }
 
-.method public static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
 	ldc.i4	0x7FFFFFFF

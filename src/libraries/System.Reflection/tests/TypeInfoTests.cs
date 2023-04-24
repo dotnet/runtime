@@ -5,6 +5,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -456,6 +458,24 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void GetEnumValuesAsUnderlyingType_Int()
+        {
+            GetEnumValuesAsUnderlyingType(typeof(IntEnum), new int[] { 1, 2, 10, 18, 45 });
+        }
+
+        [Fact]
+        public static void GetEnumValuesAsUnderlyingType_UInt()
+        {
+            GetEnumValuesAsUnderlyingType(typeof(UIntEnum), new uint[] { 1, 10 });
+        }
+
+        private static void GetEnumValuesAsUnderlyingType(Type enumType, Array expected)
+        {
+            Assert.Equal(expected, enumType.GetTypeInfo().GetEnumValuesAsUnderlyingType());
+        }
+
+
+        [Fact]
         public void GetEnumValues_TypeNotEnum_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumUnderlyingType());
@@ -591,6 +611,7 @@ namespace System.Reflection.Tests
         static volatile object s_boxedInt32;
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67568", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void IsAssignableNullable()
         {
             Type nubInt = typeof(Nullable<int>);
@@ -680,7 +701,7 @@ namespace System.Reflection.Tests
             Assert.True(a1.IsAssignableTo(ie));
         }
 
-        public static IEnumerable<object[]> IsEquivilentTo_TestData()
+        public static IEnumerable<object[]> IsEquivalentTo_TestData()
         {
             yield return new object[] { typeof(string), typeof(string), true };
             yield return new object[] { typeof(object), typeof(string), false };
@@ -691,7 +712,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [MemberData(nameof(IsEquivilentTo_TestData))]
+        [MemberData(nameof(IsEquivalentTo_TestData))]
         public void IsEquivalentTo(Type type, Type other, bool expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().IsEquivalentTo(other));
@@ -1171,6 +1192,54 @@ namespace System.Reflection.Tests
             Assert.True(pointerType.IsPointer);
         }
 
+        public static IEnumerable<object[]> ByRefPonterTypes_IsPublicIsVisible_TestData()
+        {
+            yield return new object[] { typeof(int).MakeByRefType(), true, true };
+            yield return new object[] { typeof(int).MakePointerType(), true, true };
+            yield return new object[] { typeof(List<int>), true, true };
+            yield return new object[] { typeof(int), true, true };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass).MakeByRefType(), true, false };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass).MakePointerType(), true, false };
+            yield return new object[] { typeof(List<TI_BaseClass.InternalNestedClass>), true, false };
+            yield return new object[] { typeof(TI_BaseClass.InternalNestedClass), false, false };
+            yield return new object[] { typeof(TI_BaseClass).MakeByRefType(), true, true };
+            yield return new object[] { typeof(TI_BaseClass).MakePointerType(), true, true };
+            yield return new object[] { typeof(List<TI_BaseClass>), true, true };
+        }
+
+        [Theory]
+        [MemberData(nameof(ByRefPonterTypes_IsPublicIsVisible_TestData))]
+        public void ByRefPonterTypesTypes_IsPublicIsVisible(Type type, bool isPublic, bool isVisible)
+        {
+            Assert.Equal(isPublic, type.IsPublic);
+            Assert.Equal(!isPublic, type.IsNestedAssembly);
+            Assert.Equal(isVisible, type.IsVisible);
+        }
+
+        public delegate void PublicDelegate(string str);
+        internal delegate void InternalDelegate(string str);
+
+        [Fact]
+        public void DelegateTypesIsPublic()
+        {
+            Assert.True(typeof(Delegate).IsPublic);
+            Assert.False(typeof(Delegate).IsNotPublic);
+            Assert.True(typeof(PublicDelegate).IsNestedPublic);
+            Assert.True(typeof(InternalDelegate).IsNestedAssembly);
+            Assert.False(typeof(InternalDelegate).IsPublic);
+            Assert.False(typeof(InternalDelegate).MakePointerType().IsNestedAssembly);
+            Assert.True(typeof(InternalDelegate).MakePointerType().IsPublic);
+            Assert.True(typeof(Delegate).MakePointerType().IsPublic);
+            Assert.False(typeof(Delegate).MakePointerType().IsNotPublic);
+        }
+
+        [Fact]
+        public void FunctionPointerTypeIsPublic()
+        {
+            Assert.True(typeof(delegate*<string, int>).IsPublic);
+            Assert.True(typeof(delegate*<string, int>).MakePointerType().IsPublic);
+        }
+
         [Fact]
         public void MakePointerType_TypeAlreadyByRef_ThrowsTypeLoadException()
         {
@@ -1405,7 +1474,8 @@ namespace System.Reflection.Tests
         [InlineData(typeof(int), "System")]
         [InlineData(typeof(TI_BaseClass[]), "System.Reflection.Tests")]
         [InlineData(typeof(TI_BaseClass.PublicNestedClass1[]), "System.Reflection.Tests")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42633", TestRuntimes.Mono)]
+        [InlineData(typeof(TI_BaseClass.PublicNestedClass1[][]), "System.Reflection.Tests")]
+        [InlineData(typeof(TI_Struct*), "System.Reflection.Tests")]
         public void Namespace(Type type, string expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().Namespace);
@@ -1488,9 +1558,9 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData(typeof(StructWithoutExplicitStructLayout), LayoutKind.Sequential, CharSet.Ansi, 8)]
+        [InlineData(typeof(StructWithoutExplicitStructLayout), LayoutKind.Sequential, CharSet.Ansi, 0)]
         [InlineData(typeof(StructWithExplicitStructLayout), LayoutKind.Explicit, CharSet.Ansi, 1)]
-        [InlineData(typeof(ClassWithoutExplicitStructLayout), LayoutKind.Auto, CharSet.Ansi, 8)]
+        [InlineData(typeof(ClassWithoutExplicitStructLayout), LayoutKind.Auto, CharSet.Ansi, 0)]
         [InlineData(typeof(ClassWithExplicitStructLayout), LayoutKind.Explicit, CharSet.Unicode, 2)]
         public void StructLayoutAttribute(Type type, LayoutKind kind, CharSet charset, int pack)
         {
@@ -1563,6 +1633,71 @@ namespace System.Reflection.Tests
         public void IsSZArray(Type type, bool expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().IsSZArray);
+        }
+
+        public static IEnumerable<object[]> GetMemberWithSameMetadataDefinitionAsData()
+        {
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_GenericTypeWithAllMembers<int>), true };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>), true};
+
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_TypeDerivedFromGenericTypeWithAllMembers<int>), false };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_TypeDerivedFromGenericTypeWithAllMembers<ClassWithMultipleConstructors>), false };
+
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_TypeDerivedFromGenericTypeWithAllMembersClosed), false };
+
+            static TypeInfo GetTypeDelegator(Type t) => new TypeDelegator(t);
+            yield return new object[] { GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<>)), typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>), true };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>)), true };
+            yield return new object[] { GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<>)), GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>)), true };
+
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                (Type generatedType1, Type generatedType2) = CreateGeneratedTypes();
+
+                yield return new object[] { generatedType1, generatedType2, true };
+                yield return new object[] { generatedType2, generatedType1, true };
+            }
+        }
+
+        private static (Type, Type) CreateGeneratedTypes()
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("GetMemberWithSameMetadataDefinitionAsGeneratedAssembly"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("GetMemberWithSameMetadataDefinitionAsGeneratedModule");
+            TypeBuilder genericType = module.DefineType("GenericGeneratedType");
+            genericType.DefineGenericParameters("T0");
+            genericType.DefineField("_int", typeof(int), FieldAttributes.Private);
+            genericType.DefineProperty("Prop", PropertyAttributes.None, typeof(string), null);
+
+            Type builtGenericType = genericType.CreateType();
+            Type closedType = builtGenericType.MakeGenericType(typeof(int));
+
+            return (genericType, closedType);
+        }
+
+        [Theory, MemberData(nameof(GetMemberWithSameMetadataDefinitionAsData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69244", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public void GetMemberWithSameMetadataDefinitionAs(Type openGenericType, Type closedGenericType, bool checkDeclaringType)
+        {
+            BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+            foreach (MemberInfo openGenericMember in openGenericType.GetMembers(all))
+            {
+                MemberInfo closedGenericMember = closedGenericType.GetMemberWithSameMetadataDefinitionAs(openGenericMember);
+                Assert.True(closedGenericMember != null, $"'{openGenericMember.Name}' was not found");
+                Assert.True(closedGenericMember.HasSameMetadataDefinitionAs(openGenericMember));
+                Assert.Equal(closedGenericMember.Name, openGenericMember.Name);
+                if (checkDeclaringType && openGenericMember is not Type)
+                {
+                    Assert.True(closedGenericMember.DeclaringType.Equals(closedGenericType), $"'{closedGenericMember.Name}' doesn't have the right DeclaringType");
+                }
+            }
+
+            MemberInfo toString = closedGenericType.GetMemberWithSameMetadataDefinitionAs(typeof(object).GetMethod("ToString"));
+            Assert.NotNull(toString);
+            Assert.IsAssignableFrom<MethodInfo>(toString);
+            Assert.Equal("ToString", toString.Name);
+
+            Assert.Throws<ArgumentNullException>(() => openGenericType.GetMemberWithSameMetadataDefinitionAs(null));
+            Assert.Throws<ArgumentException>(() => openGenericType.GetMemberWithSameMetadataDefinitionAs(typeof(string).GetMethod("get_Length")));
         }
 
 #pragma warning disable 0067, 0169
@@ -1730,6 +1865,10 @@ namespace System.Reflection.Tests
             public short y;
         }
     }
+    public struct TI_Struct
+    {
+        public int _field;
+    }
     public class TI_BaseClass
     {
         static TI_BaseClass() { }
@@ -1815,6 +1954,54 @@ namespace System.Reflection.Tests
         public abstract class AbstractSubClass : AbstractBaseClass { }
         public class AbstractSubSubClass : AbstractSubClass { }
     }
+
+    public class TI_GenericTypeWithAllMembers<T>
+    {
+        private static event EventHandler<T> PrivateStaticEvent;
+        private static T PrivateStaticField;
+        private static T PrivateStaticProperty { get; set; }
+        private static T PrivateStaticMethod(T t) => default;
+        private static T PrivateStaticMethod(T t, T t2) => default;
+
+        public static event EventHandler<T> PublicStaticEvent;
+        public static T PublicStaticField;
+        public static T PublicStaticProperty { get; set; }
+        public static T PublicStaticMethod(T t) => default;
+        public static T PublicStaticMethod(T t, T t2) => default;
+
+        static TI_GenericTypeWithAllMembers() { }
+
+        public TI_GenericTypeWithAllMembers(T t) { }
+        private TI_GenericTypeWithAllMembers() { }
+
+        public event EventHandler<T> PublicInstanceEvent;
+        public T PublicInstanceField;
+        public T PublicInstanceProperty { get; set; }
+        public T PublicInstanceMethod(T t) => default;
+        public T PublicInstanceMethod(T t, T t2) => default;
+
+        private event EventHandler<T> PrivateInstanceEvent;
+        private T PrivateInstanceField;
+        private T PrivateInstanceProperty { get; set; }
+        private T PrivateInstanceMethod(T t) => default;
+        private T PrivateInstanceMethod(T t1, T t2) => default;
+
+        public class Nested
+        {
+            public T NestedField;
+        }
+    }
+
+    public class TI_TypeDerivedFromGenericTypeWithAllMembers<T> : TI_GenericTypeWithAllMembers<T>
+    {
+        public TI_TypeDerivedFromGenericTypeWithAllMembers(T t) : base(t) { }
+    }
+
+    public class TI_TypeDerivedFromGenericTypeWithAllMembersClosed : TI_TypeDerivedFromGenericTypeWithAllMembers<int>
+    {
+        public TI_TypeDerivedFromGenericTypeWithAllMembersClosed(int t) : base(t) { }
+    }
+
 #pragma warning restore 0067, 0169
 
     public class OutsideTypeInfoTests

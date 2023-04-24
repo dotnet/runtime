@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
@@ -11,6 +10,6 @@
     <Compile Include="rethrowinfinallyaftercatch.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\common\common.csproj" />
+    <ProjectReference Include="..\..\..\common\eh_common.csproj" />
   </ItemGroup>
 </Project>

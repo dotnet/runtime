@@ -18,7 +18,6 @@ namespace Internal.TypeSystem.Ecma
             public const int InitOnly               = 0x0004;
             public const int Literal                = 0x0008;
             public const int HasRva                 = 0x0010;
-            public const int NotSerialized          = 0x0020;
 
             public const int AttributeMetadataCache = 0x0100;
             public const int ThreadStatic           = 0x0200;
@@ -113,6 +112,19 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        // This is extremely rarely needed. Don't cache it at all.
+        public override EmbeddedSignatureData[] GetEmbeddedSignatureData()
+        {
+            var metadataReader = MetadataReader;
+            BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetFieldDefinition(_handle).Signature);
+
+            EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader, NotFoundBehavior.Throw);
+            var fieldType = parser.ParseFieldSignature(out var embeddedSig);
+            Debug.Assert(fieldType == FieldType);
+            return embeddedSig;
+        }
+
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private int InitializeFieldFlags(int mask)
         {
@@ -133,9 +145,6 @@ namespace Internal.TypeSystem.Ecma
 
                 if ((fieldAttributes & FieldAttributes.HasFieldRVA) != 0)
                     flags |= FieldFlags.HasRva;
-
-                if ((fieldAttributes & FieldAttributes.NotSerialized) != 0)
-                    flags |= FieldFlags.NotSerialized;
 
                 flags |= FieldFlags.BasicMetadataCache;
             }

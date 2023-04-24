@@ -9,7 +9,7 @@ namespace ILCompiler
 {
     // Validates types to the extent that is required to make sure the compilation won't fail
     // in unpredictable spots.
-    partial class CompilerTypeSystemContext
+    public partial class CompilerTypeSystemContext
     {
         /// <summary>
         /// Ensures that the type can be fully loaded. The method will throw one of the type system
@@ -33,7 +33,7 @@ namespace ILCompiler
             }
         }
 
-        class ValidTypeHashTable : LockFreeReaderHashtable<TypeDesc, TypeDesc>
+        private sealed class ValidTypeHashTable : LockFreeReaderHashtable<TypeDesc, TypeDesc>
         {
             protected override bool CompareKeyToValue(TypeDesc key, TypeDesc value) => key == value;
             protected override bool CompareValueToValue(TypeDesc value1, TypeDesc value2) => value1 == value2;
@@ -71,12 +71,6 @@ namespace ILCompiler
 
                 if (parameterizedType.IsArray)
                 {
-                    if (parameterType.IsFunctionPointer)
-                    {
-                        // Arrays of function pointers are not currently supported
-                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
-                    }
-
                     LayoutInt elementSize = parameterType.GetElementSize();
                     if (!elementSize.IsIndeterminate && elementSize.AsInt >= ushort.MaxValue)
                     {
@@ -101,14 +95,20 @@ namespace ILCompiler
             }
             else if (type.IsFunctionPointer)
             {
-                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                var functionPointer = ((FunctionPointerType)type).Signature;
+                ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(functionPointer.ReturnType);
+
+                foreach (TypeDesc param in functionPointer)
+                {
+                    ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(param);
+                }
             }
             else
             {
                 // Validate classes, structs, enums, interfaces, and delegates
                 Debug.Assert(type.IsDefType);
 
-                // Don't validate generic definitons
+                // Don't validate generic definitions
                 if (type.IsGenericDefinition)
                 {
                     return type;
@@ -149,14 +149,20 @@ namespace ILCompiler
                     if (typeArg.IsByRef
                         || typeArg.IsPointer
                         || typeArg.IsFunctionPointer
-                        || typeArg.IsVoid
-                        || typeArg.IsByRefLike)
+                        || typeArg.IsVoid)
                     {
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
-
-                    // TODO: validate constraints
                 }
+
+                // Don't validate constraints with crossgen2 - the type system is not set up correctly
+                // and doesn't see generic interfaces on arrays.
+#if !READYTORUN
+                if (!defType.IsCanonicalSubtype(CanonicalFormKind.Any) && !defType.CheckConstraints())
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                }
+#endif
 
                 // Check the type doesn't have bogus MethodImpls or overrides and we can get the finalizer.
                 defType.GetFinalizer();

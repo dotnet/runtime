@@ -1,0 +1,47 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>ILCompiler.Compiler.Tests</AssemblyName>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Configurations>Debug;Release;Checked</Configurations>
+    <!-- This seems to be required for supporting assemblies to be copied into the output -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <TestRunnerAdditionalArguments>-notrait category=failing</TestRunnerAdditionalArguments>
+    <!-- xunit.runner.visualstudio is restored for .NET Framework instead of Core-->
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
+    <!-- By default the subdirectories containing CoreTestAssembly and ILTestAssembly would be
+         included in compilation of this project -->
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <Platforms>x86;x64</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ILCompiler.Compiler\ILCompiler.Compiler.csproj" />
+    <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
+    <ProjectReference Include="..\ILCompiler.RyuJit\ILCompiler.RyuJit.csproj" />
+    <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+
+    <ProjectReference Include="..\..\..\nativeaot\Test.CoreLib\src\Test.CoreLib.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="ILCompiler.Compiler.Tests.Assets\ILCompiler.Compiler.Tests.Assets.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="DependencyGraphTests.cs" />
+    <Compile Include="DevirtualizationTests.cs" />
+  </ItemGroup>
+</Project>

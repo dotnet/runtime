@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-class Test
+public class Test_baduwinfo
 {
     private static TestUtil.TestLog testLog;
-    static Test()
+    static Test_baduwinfo()
     {
         // Create test writer object to hold expected output
         System.IO.StringWriter expectedOut = new System.IO.StringWriter();
@@ -113,7 +114,8 @@ class Test
         }
         return ret;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         String s = "Test1";
 
@@ -122,7 +124,7 @@ class Test
         {
             if (100 != foo()) Console.WriteLine("foo() Failed");
 
-            if (s != "Test1") Console.WriteLine("s!=\"Test\" Failed");
+            if (s != "Test1") Console.WriteLine("s!=\"Test_baduwinfo\" Failed");
         }
         catch
         {

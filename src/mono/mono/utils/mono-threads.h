@@ -23,6 +23,7 @@
 #include <mono/utils/refcount.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/w32subset.h>
+#include <mono/utils/mono-compiler.h>
 
 #include <glib.h>
 #include <config.h>
@@ -97,7 +98,7 @@ typedef struct {
 } MonoThreadHandle;
 
 /*
-THREAD_INFO_TYPE is a way to make the mono-threads module parametric - or sort of.
+THREAD_INFO_TYPE is a way to make the mono-threads module parameteric - or sort of.
 The GC using mono-threads might extend the MonoThreadInfo struct to add its own
 data, this avoid a pointer indirection on what is on a lot of hot paths.
 
@@ -406,7 +407,7 @@ mono_thread_info_set_tid (THREAD_INFO_TYPE *info, MonoNativeThreadId tid)
 
 /*
  * @thread_info_size is sizeof (GcThreadInfo), a struct the GC defines to make it possible to have
- * a single block with info from both camps. 
+ * a single block with info from both camps.
  */
 void
 mono_thread_info_init (size_t thread_info_size);
@@ -451,9 +452,7 @@ mono_thread_info_unset_internal_thread_gchandle (THREAD_INFO_TYPE *info);
 gboolean
 mono_thread_info_is_exiting (void);
 
-#ifdef HOST_WIN32
-G_EXTERN_C // due to THREAD_INFO_TYPE varying
-#endif
+MONO_COMPONENT_API
 THREAD_INFO_TYPE *
 mono_thread_info_current (void);
 
@@ -470,6 +469,7 @@ mono_thread_info_current_unchecked (void);
 MONO_API int
 mono_thread_info_get_small_id (void);
 
+MONO_COMPONENT_API
 MonoLinkedListSet*
 mono_thread_info_list_head (void);
 
@@ -479,7 +479,7 @@ mono_thread_info_lookup (MonoNativeThreadId id);
 gboolean
 mono_thread_info_resume (MonoNativeThreadId tid);
 
-void
+MONO_COMPONENT_API void
 mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt_kernel, MonoSuspendThreadCallback callback, gpointer user_data);
 
 void
@@ -491,13 +491,10 @@ mono_thread_info_suspend_lock (void);
 void
 mono_thread_info_suspend_unlock (void);
 
-void
-mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid);
-
-void
+MONO_COMPONENT_API void
 mono_thread_info_set_is_async_context (gboolean async_context);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_info_is_async_context (void);
 
 void
@@ -506,7 +503,7 @@ mono_thread_info_get_stack_bounds (guint8 **staddr, size_t *stsize);
 MONO_API gboolean
 mono_thread_info_yield (void);
 
-gint
+MONO_COMPONENT_API gint
 mono_thread_info_sleep (guint32 ms, gboolean *alerted);
 
 gint
@@ -539,7 +536,7 @@ mono_thread_info_self_interrupt (void);
 void
 mono_thread_info_clear_self_interrupt (void);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_info_is_interrupt_state (THREAD_INFO_TYPE *info);
 
 void
@@ -552,7 +549,7 @@ mono_thread_info_is_live (THREAD_INFO_TYPE *info);
 int
 mono_thread_info_get_system_max_stack_size (void);
 
-MonoThreadHandle*
+MONO_COMPONENT_API MonoThreadHandle*
 mono_threads_open_thread_handle (MonoThreadHandle *handle);
 
 void
@@ -624,7 +621,7 @@ gint mono_threads_suspend_get_suspend_signal (void);
 gint mono_threads_suspend_get_restart_signal (void);
 gint mono_threads_suspend_get_abort_signal (void);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data,
 	gsize* const stack_size, MonoNativeThreadId *tid);
 
@@ -647,14 +644,12 @@ mono_native_thread_id_main_thread_known (MonoNativeThreadId *main_thread_tid);
 /*
  * This does _not_ return the same value as mono_native_thread_id_get, except on Windows.
  * On POSIX, mono_native_thread_id_get returns the value from pthread_self, which is then
- * passed around as an identifier to other pthread functions. However this function, where 
- * possible, returns the OS-unique thread id value, fetched in a platform-specific manner. 
+ * passed around as an identifier to other pthread functions. However this function, where
+ * possible, returns the OS-unique thread id value, fetched in a platform-specific manner.
  * It will not work with the various pthread functions, should never be used as a
  * MonoNativeThreadId, and is intended solely to match the output of various diagonistic tools.
  */
 guint64 mono_native_thread_os_id_get (void);
-
-gint32 mono_native_thread_processor_id_get (void);
 
 MONO_API gboolean
 mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2);
@@ -763,7 +758,7 @@ gboolean mono_threads_transition_peek_blocking_suspend_requested (THREAD_INFO_TY
 void mono_threads_transition_begin_no_safepoints (THREAD_INFO_TYPE* info, const char *func);
 void mono_threads_transition_end_no_safepoints (THREAD_INFO_TYPE* info, const char *func);
 
-G_EXTERN_C // due to THREAD_INFO_TYPE varying
+MONO_COMPONENT_API
 MonoThreadUnwindState* mono_thread_info_get_suspend_state (THREAD_INFO_TYPE *info);
 
 gpointer
@@ -772,8 +767,7 @@ mono_threads_enter_gc_unsafe_region_cookie (void);
 
 void mono_thread_info_wait_for_resume (THREAD_INFO_TYPE *info);
 /* Advanced suspend API, used for suspending multiple threads as once. */
-G_EXTERN_C // due to THREAD_INFO_TYPE varying
-gboolean mono_thread_info_is_running (THREAD_INFO_TYPE *info);
+MONO_COMPONENT_API gboolean mono_thread_info_is_running (THREAD_INFO_TYPE *info);
 gboolean mono_thread_info_is_live (THREAD_INFO_TYPE *info);
 G_EXTERN_C // due to THREAD_INFO_TYPE varying
 int mono_thread_info_suspend_count (THREAD_INFO_TYPE *info);
@@ -876,7 +870,7 @@ mono_win32_abort_blocking_io_call (THREAD_INFO_TYPE *info);
 	const DWORD _last_error_restore_point = GetLastError ();
 
 #define W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT \
-		/* Only restore if changed to prevent unecessary writes. */ \
+		/* Only restore if changed to prevent unnecessary writes. */ \
 		if (GetLastError () != _last_error_restore_point) \
 			mono_SetLastError (_last_error_restore_point);
 

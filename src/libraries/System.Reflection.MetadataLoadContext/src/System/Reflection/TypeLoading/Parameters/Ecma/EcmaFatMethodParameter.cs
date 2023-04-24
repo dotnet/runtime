@@ -37,7 +37,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         protected sealed override IEnumerable<CustomAttributeData> GetTrueCustomAttributes() => Parameter.GetCustomAttributes().ToTrueCustomAttributes(GetEcmaModule());
 
-        public sealed override bool HasDefaultValue => TryGetRawDefaultValue(out object _);
+        public sealed override bool HasDefaultValue => TryGetRawDefaultValue(out _);
 
         public sealed override object? RawDefaultValue
         {
@@ -51,7 +51,6 @@ namespace System.Reflection.TypeLoading.Ecma
 
         private bool TryGetRawDefaultValue(out object? rawDefaultValue)
         {
-            rawDefaultValue = null;
             MetadataReader reader = Reader;
             ConstantHandle ch = Parameter.GetDefaultValue();
             if (!ch.IsNil)

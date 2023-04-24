@@ -4,6 +4,7 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -42,16 +43,9 @@ namespace System.Data
 
         public override Type PropertyType => Column.DataType;
 
-        public override bool Equals(object other)
-        {
-            if (other is DataColumnPropertyDescriptor)
-            {
-                DataColumnPropertyDescriptor descriptor = (DataColumnPropertyDescriptor)other;
-                return (descriptor.Column == Column);
-            }
-
-            return false;
-        }
+        public override bool Equals([NotNullWhen(true)] object? other) =>
+            other is DataColumnPropertyDescriptor descriptor &&
+            descriptor.Column == Column;
 
         public override int GetHashCode() => Column.GetHashCode();
 
@@ -66,9 +60,9 @@ namespace System.Data
             return (!DataStorage.IsObjectNull(dataRowView.GetColumnValue(Column)));
         }
 
-        public override object GetValue(object component)
+        public override object GetValue(object? component)
         {
-            DataRowView dataRowView = (DataRowView)component;
+            DataRowView dataRowView = (DataRowView)component!;
             return dataRowView.GetColumnValue(Column);
         }
 
@@ -78,9 +72,9 @@ namespace System.Data
             dataRowView.SetColumnValue(Column, DBNull.Value); // no need to ccheck for the col type and set Sql...Null!
         }
 
-        public override void SetValue(object component, object? value)
+        public override void SetValue(object? component, object? value)
         {
-            DataRowView dataRowView = (DataRowView)component;
+            DataRowView dataRowView = (DataRowView)component!;
             dataRowView.SetColumnValue(Column, value);
             OnValueChanged(component, EventArgs.Empty);
         }

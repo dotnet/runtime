@@ -104,6 +104,7 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_HttpClientHandler_DefaultProxyCredentials_Test(ITestOutputHelper output) : base(output) { }
     }
 
+    [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
     public sealed class PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
         public PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Test(ITestOutputHelper output) : base(output) { }
@@ -132,11 +133,6 @@ namespace System.Net.Http.Functional.Tests
     public sealed class PlatformHandler_HttpClientHandler_Proxy_Test : HttpClientHandler_Proxy_Test
     {
         public PlatformHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
-    }
-
-    public sealed class PlatformHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
-    {
-        public PlatformHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
     }
 
     public sealed class PlatformHandler_HttpClientHandlerTest : HttpClientHandlerTest
@@ -260,6 +256,7 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_HttpClientHandler_DefaultProxyCredentials_Http2_Test(ITestOutputHelper output) : base(output) { }
     }
 
+    [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
     public sealed class PlatformHandler_HttpClientHandler_MaxConnectionsPerServer_Http2_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
         protected override Version UseVersion => HttpVersion20.Value;
@@ -271,8 +268,9 @@ namespace System.Net.Http.Functional.Tests
     {
         protected override Version UseVersion => HttpVersion20.Value;
 
-        public PlatformHandler_HttpClientHandler_ServerCertificates_Http2_Test(ITestOutputHelper output) : base(output) {
-            AllowAllHttp2Certificates = false;
+        public PlatformHandler_HttpClientHandler_ServerCertificates_Http2_Test(ITestOutputHelper output) : base(output)
+        {
+            AllowAllCertificates = false;
         }
     }
 
@@ -295,13 +293,6 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion20.Value;
 
         public PlatformHandler_HttpClientHandler_Proxy_Http2_Test(ITestOutputHelper output) : base(output) { }
-    }
-
-    public sealed class PlatformHandler_SchSendAuxRecordHttp_Http2_Test : SchSendAuxRecordHttpTest
-    {
-        protected override Version UseVersion => HttpVersion20.Value;
-
-        public PlatformHandler_SchSendAuxRecordHttp_Http2_Test(ITestOutputHelper output) : base(output) { }
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
@@ -342,6 +333,7 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandlerTest_Cookies_Http11_Http2(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
     public sealed class PlatformHandler_HttpClientHandler_MaxResponseHeadersLength_Http2_Test : HttpClientHandler_MaxResponseHeadersLength_Test
     {
         protected override Version UseVersion => HttpVersion20.Value;

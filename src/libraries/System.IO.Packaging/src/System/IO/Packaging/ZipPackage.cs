@@ -109,11 +109,8 @@ namespace System.IO.Packaging
 
             string partZipName = GetZipItemNameFromOpcName(PackUriHelper.GetStringForPartUri(partUri));
             ZipArchiveEntry? zipArchiveEntry = _zipArchive.GetEntry(partZipName);
-            if (zipArchiveEntry != null)
-            {
-                // Case of an atomic part.
-                zipArchiveEntry.Delete();
-            }
+            // Case of an atomic part.
+            zipArchiveEntry?.Delete();
 
             //Delete the content type for this part if it was specified as an override
             _contentTypeHelper.DeleteContentType((PackUriHelper.ValidatedPartUri)partUri);
@@ -172,7 +169,7 @@ namespace System.IO.Packaging
                             // part, it will be detected at this point because the part's Uri (which
                             // is independent of interleaving) will already be in the dictionary.
                             parts.Add(new ZipPackagePart(this, zipArchiveEntry.Archive, zipArchiveEntry,
-                                _zipStreamManager, validatedPartUri, contentType.ToString(), GetCompressionOptionFromZipFileInfo(zipArchiveEntry)));
+                                _zipStreamManager, validatedPartUri, contentType.ToString(), GetCompressionOptionFromZipFileInfo()));
                         }
                     }
                     //If not valid part uri we can completely ignore this zip file item. Even if later someone adds
@@ -209,29 +206,14 @@ namespace System.IO.Packaging
             {
                 if (disposing)
                 {
-                    if (_contentTypeHelper != null)
-                    {
-                        _contentTypeHelper.SaveToFile();
-                    }
-
-                    if (_zipStreamManager != null)
-                    {
-                        _zipStreamManager.Dispose();
-                    }
-
-                    if (_zipArchive != null)
-                    {
-                        _zipArchive.Dispose();
-                    }
+                    _contentTypeHelper?.SaveToFile();
+                    _zipArchive?.Dispose();
 
                     // _containerStream may be opened given a file name, in which case it should be closed here.
                     // _containerStream may be passed into the constructor, in which case, it should not be closed here.
                     if (_shouldCloseContainerStream)
                     {
                         _containerStream.Dispose();
-                    }
-                    else
-                    {
                     }
                     _containerStream = null!;
                 }
@@ -260,7 +242,7 @@ namespace System.IO.Packaging
             : base(packageFileAccess)
         {
             ZipArchive? zipArchive = null;
-            ContentTypeHelper? contentTypeHelper = null;
+            ContentTypeHelper? contentTypeHelper;
             _packageFileMode = packageFileMode;
             _packageFileAccess = packageFileAccess;
 
@@ -302,7 +284,7 @@ namespace System.IO.Packaging
             : base(packageFileAccess)
         {
             ZipArchive? zipArchive = null;
-            ContentTypeHelper? contentTypeHelper = null;
+            ContentTypeHelper? contentTypeHelper;
             _packageFileMode = packageFileMode;
             _packageFileAccess = packageFileAccess;
 
@@ -354,10 +336,7 @@ namespace System.IO.Packaging
             }
             catch
             {
-                if (zipArchive != null)
-                {
-                    zipArchive.Dispose();
-                }
+                zipArchive?.Dispose();
 
                 throw;
             }
@@ -442,7 +421,7 @@ namespace System.IO.Packaging
         //returns a boolean indicating if the underlying zip item is a valid metro part or piece
         // This mainly excludes the content type item, as well as entries with leading or trailing
         // slashes.
-        private bool IsZipItemValidOpcPartOrPiece(string zipItemName)
+        private static bool IsZipItemValidOpcPartOrPiece(string zipItemName)
         {
             Debug.Assert(zipItemName != null, "The parameter zipItemName should not be null");
 
@@ -473,7 +452,7 @@ namespace System.IO.Packaging
         }
 
         // convert from Zip CompressionMethodEnum and DeflateOptionEnum to XPS CompressionOption
-        private static CompressionOption GetCompressionOptionFromZipFileInfo(ZipArchiveEntry zipFileInfo)
+        private static CompressionOption GetCompressionOptionFromZipFileInfo()
         {
             // Note: we can't determine compression method / level from the ZipArchiveEntry.
             CompressionOption result = CompressionOption.Normal;
@@ -522,7 +501,7 @@ namespace System.IO.Packaging
                 //with the rules for comparing/normalizing partnames.
                 //Refer to PackUriHelper.ValidatedPartUri.GetNormalizedPartUri method.
                 //Currently normalization just involves upper-casing ASCII and hence the simplification.
-                return (string.CompareOrdinal(extensionA.ToUpperInvariant(), extensionB.ToUpperInvariant()) == 0);
+                return extensionA.ToUpperInvariant() == extensionB.ToUpperInvariant();
             }
 
             int IEqualityComparer<string>.GetHashCode(string extension)
@@ -606,9 +585,8 @@ namespace System.IO.Packaging
 
                 // Need to create an override entry?
                 if (extension.Length == 0
-                    || (_defaultDictionary.ContainsKey(extension)
-                        && !(foundMatchingDefault =
-                               _defaultDictionary[extension].AreTypeAndSubTypeEqual(contentType))))
+                    || (_defaultDictionary.TryGetValue(extension, out ContentType? value)
+                        && !(foundMatchingDefault = value.AreTypeAndSubTypeEqual(contentType))))
                 {
                     AddOverrideElement(partUri, contentType);
                 }
@@ -629,16 +607,16 @@ namespace System.IO.Packaging
                 //partUri provided. Override takes precedence over the default entries
                 if (_overrideDictionary != null)
                 {
-                    if (_overrideDictionary.ContainsKey(partUri))
-                        return _overrideDictionary[partUri];
+                    if (_overrideDictionary.TryGetValue(partUri, out ContentType? val))
+                        return val;
                 }
 
                 //Step 2: Check if there is a default entry corresponding to the
                 //extension of the partUri provided.
                 string extension = partUri.PartUriExtension;
 
-                if (_defaultDictionary.ContainsKey(extension))
-                    return _defaultDictionary[extension];
+                if (_defaultDictionary.TryGetValue(extension, out ContentType? value))
+                    return value;
 
                 //Step 3: If we did not find an entry in the override and the default
                 //dictionaries, this is an error condition
@@ -671,12 +649,11 @@ namespace System.IO.Packaging
                         // if the XML is shorter than the existing content part.
                         var contentTypefullName = _contentTypeZipArchiveEntry!.FullName;
                         var thisArchive = _contentTypeZipArchiveEntry.Archive;
-                        _zipStreamManager.Close(_contentTypeZipArchiveEntry);
                         _contentTypeZipArchiveEntry.Delete();
                         _contentTypeZipArchiveEntry = thisArchive.CreateEntry(contentTypefullName);
                     }
 
-                    using (Stream s = _zipStreamManager.Open(_contentTypeZipArchiveEntry, _packageFileMode, FileAccess.ReadWrite))
+                    using (Stream s = _zipStreamManager.Open(_contentTypeZipArchiveEntry, FileAccess.ReadWrite))
                     {
                         // use UTF-8 encoding by default
                         using (XmlWriter writer = XmlWriter.Create(s, new XmlWriterSettings { Encoding = System.Text.Encoding.UTF8 }))
@@ -718,8 +695,7 @@ namespace System.IO.Packaging
             {
                 // The part Uris are stored in the Override Dictionary in their original form , but they are compared
                 // in a normalized manner using the PartUriComparer
-                if (_overrideDictionary == null)
-                    _overrideDictionary = new Dictionary<PackUriHelper.ValidatedPartUri, ContentType>(OverrideDictionaryInitialSize);
+                _overrideDictionary ??= new Dictionary<PackUriHelper.ValidatedPartUri, ContentType>(OverrideDictionaryInitialSize);
             }
 
             private void ParseContentTypesFile(System.Collections.ObjectModel.ReadOnlyCollection<ZipArchiveEntry> zipFiles)
@@ -751,8 +727,8 @@ namespace System.IO.Packaging
                     // Make sure that the current node read is an Element
                     if ((reader.NodeType == XmlNodeType.Element)
                         && (reader.Depth == 0)
-                        && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
-                        && (string.CompareOrdinal(reader.Name, TypesTagName) == 0))
+                        && (reader.NamespaceURI == TypesNamespaceUri)
+                        && (reader.Name == TypesTagName))
                     {
                         //There should be a namespace Attribute present at this level.
                         //Also any other attribute on the <Types> tag is an error including xml: and xsi: attributes
@@ -777,19 +753,19 @@ namespace System.IO.Packaging
                             // Currently we expect the Default and Override Tag at Depth 1
                             if (reader.NodeType == XmlNodeType.Element
                                 && reader.Depth == 1
-                                && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
-                                && (string.CompareOrdinal(reader.Name, DefaultTagName) == 0))
+                                && (reader.NamespaceURI == TypesNamespaceUri)
+                                && (reader.Name == DefaultTagName))
                             {
                                 ProcessDefaultTagAttributes(reader);
                             }
                             else if (reader.NodeType == XmlNodeType.Element
                                      && reader.Depth == 1
-                                     && (string.CompareOrdinal(reader.NamespaceURI, TypesNamespaceUri) == 0)
-                                     && (string.CompareOrdinal(reader.Name, OverrideTagName) == 0))
+                                     && (reader.NamespaceURI == TypesNamespaceUri)
+                                     && (reader.Name == OverrideTagName))
                             {
                                 ProcessOverrideTagAttributes(reader);
                             }
-                            else if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == 0 && string.CompareOrdinal(reader.Name, TypesTagName) == 0)
+                            else if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == 0 && reader.Name == TypesTagName)
                             {
                                 continue;
                             }
@@ -834,7 +810,7 @@ namespace System.IO.Packaging
                 if (_contentTypeZipArchiveEntry != null)
                 {
                     _contentTypeStreamExists = true;
-                    return _zipStreamManager.Open(_contentTypeZipArchiveEntry, _packageFileMode, FileAccess.ReadWrite);
+                    return _zipStreamManager.Open(_contentTypeZipArchiveEntry, FileAccess.ReadWrite);
                 }
 
                 // No content type stream was found.
@@ -851,17 +827,17 @@ namespace System.IO.Packaging
 
                 // get the required Extension and ContentType attributes
 
-                string extensionAttributeValue = reader.GetAttribute(ExtensionAttributeName);
+                string? extensionAttributeValue = reader.GetAttribute(ExtensionAttributeName);
                 ValidateXmlAttribute(ExtensionAttributeName, extensionAttributeValue, DefaultTagName, reader);
 
-                string contentTypeAttributeValue = reader.GetAttribute(ContentTypeAttributeName);
+                string? contentTypeAttributeValue = reader.GetAttribute(ContentTypeAttributeName);
                 ThrowIfXmlAttributeMissing(ContentTypeAttributeName, contentTypeAttributeValue, DefaultTagName, reader);
 
                 // The extensions are stored in the Default Dictionary in their original form , but they are compared
                 // in a normalized manner using the ExtensionComparer.
                 PackUriHelper.ValidatedPartUri temporaryUri = PackUriHelper.ValidatePartUri(
                     new Uri(TemporaryPartNameWithoutExtension + extensionAttributeValue, UriKind.Relative));
-                _defaultDictionary.Add(temporaryUri.PartUriExtension, new ContentType(contentTypeAttributeValue));
+                _defaultDictionary.Add(temporaryUri.PartUriExtension, new ContentType(contentTypeAttributeValue!));
 
                 //Skip the EndElement for Default Tag
                 if (!reader.IsEmptyElement)
@@ -878,20 +854,20 @@ namespace System.IO.Packaging
 
                 // get the required Extension and ContentType attributes
 
-                string partNameAttributeValue = reader.GetAttribute(PartNameAttributeName);
+                string? partNameAttributeValue = reader.GetAttribute(PartNameAttributeName);
                 ValidateXmlAttribute(PartNameAttributeName, partNameAttributeValue, OverrideTagName, reader);
 
-                string contentTypeAttributeValue = reader.GetAttribute(ContentTypeAttributeName);
+                string? contentTypeAttributeValue = reader.GetAttribute(ContentTypeAttributeName);
                 ThrowIfXmlAttributeMissing(ContentTypeAttributeName, contentTypeAttributeValue, OverrideTagName, reader);
 
-                PackUriHelper.ValidatedPartUri partUri = PackUriHelper.ValidatePartUri(new Uri(partNameAttributeValue, UriKind.Relative));
+                PackUriHelper.ValidatedPartUri partUri = PackUriHelper.ValidatePartUri(new Uri(partNameAttributeValue!, UriKind.Relative));
 
                 //Lazy initializing - ensure that the override dictionary has been initialized
                 EnsureOverrideDictionary();
 
                 // The part Uris are stored in the Override Dictionary in their original form , but they are compared
                 // in a normalized manner using PartUriComparer.
-                _overrideDictionary.Add(partUri, new ContentType(contentTypeAttributeValue));
+                _overrideDictionary.Add(partUri, new ContentType(contentTypeAttributeValue!));
 
                 //Skip the EndElement for Override Tag
                 if (!reader.IsEmptyElement)
@@ -899,7 +875,7 @@ namespace System.IO.Packaging
             }
 
             //If End element is present for Relationship then we process it
-            private void ProcessEndElement(XmlReader reader, string elementName)
+            private static void ProcessEndElement(XmlReader reader, string elementName)
             {
                 Debug.Assert(!reader.IsEmptyElement, "This method should only be called it the Relationship Element is not empty");
 
@@ -908,7 +884,7 @@ namespace System.IO.Packaging
                 //Skips over the following - ProcessingInstruction, DocumentType, Comment, Whitespace, or SignificantWhitespace
                 reader.MoveToContent();
 
-                if (reader.NodeType == XmlNodeType.EndElement && string.CompareOrdinal(elementName, reader.LocalName) == 0)
+                if (reader.NodeType == XmlNodeType.EndElement && elementName == reader.LocalName)
                     return;
                 else
                     throw new XmlException(SR.Format(SR.ElementIsNotEmptyElement, elementName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
@@ -939,7 +915,7 @@ namespace System.IO.Packaging
                 _dirty = true;
             }
 
-            private void WriteOverrideElement(XmlWriter xmlWriter, PackUriHelper.ValidatedPartUri partUri, ContentType contentType)
+            private static void WriteOverrideElement(XmlWriter xmlWriter, PackUriHelper.ValidatedPartUri partUri, ContentType contentType)
             {
                 xmlWriter.WriteStartElement(OverrideTagName);
                 xmlWriter.WriteAttributeString(PartNameAttributeName,
@@ -948,7 +924,7 @@ namespace System.IO.Packaging
                 xmlWriter.WriteEndElement();
             }
 
-            private void WriteDefaultElement(XmlWriter xmlWriter, string extension, ContentType contentType)
+            private static void WriteDefaultElement(XmlWriter xmlWriter, string extension, ContentType contentType)
             {
                 xmlWriter.WriteStartElement(DefaultTagName);
                 xmlWriter.WriteAttributeString(ExtensionAttributeName, extension);
@@ -957,19 +933,19 @@ namespace System.IO.Packaging
             }
 
             //Validate if the required XML attribute is present and not an empty string
-            private void ValidateXmlAttribute(string attributeName, string attributeValue, string tagName, XmlReader reader)
+            private static void ValidateXmlAttribute(string attributeName, string? attributeValue, string tagName, XmlReader reader)
             {
                 ThrowIfXmlAttributeMissing(attributeName, attributeValue, tagName, reader);
 
                 //Checking for empty attribute
-                if (attributeValue.Length == 0)
+                if (attributeValue!.Length == 0)
                     throw new XmlException(SR.Format(SR.RequiredAttributeEmpty, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);
             }
 
 
             //Validate if the required Content type XML attribute is present
             //Content type of a part can be empty
-            private void ThrowIfXmlAttributeMissing(string attributeName, string attributeValue, string tagName, XmlReader reader)
+            private static void ThrowIfXmlAttributeMissing(string attributeName, string? attributeValue, string tagName, XmlReader reader)
             {
                 if (attributeValue == null)
                     throw new XmlException(SR.Format(SR.RequiredAttributeMissing, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);

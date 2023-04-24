@@ -50,7 +50,11 @@ namespace System.Globalization
             index = _sWindowsName.IndexOf(ICU_COLLATION_KEYWORD, StringComparison.Ordinal);
             if (index >= 0)
             {
-                _sName = string.Concat(_sWindowsName.AsSpan(0, index), "_", alternateSortName);
+                // Use original culture name if alternateSortName is not set, which is possible even if the normalized
+                // culture name has "@collation=".
+                // "zh-TW-u-co-zhuyin" is a good example. The term "u-co-" means the following part will be the sort name
+                // and it will be treated in ICU as "zh-TW@collation=zhuyin".
+                _sName = alternateSortName.Length == 0 ? realNameBuffer : string.Concat(_sWindowsName.AsSpan(0, index), "_", alternateSortName);
             }
             else
             {
@@ -103,17 +107,17 @@ namespace System.Globalization
             return true;
         }
 
-        private string IcuGetLocaleInfo(LocaleStringData type)
+        private string IcuGetLocaleInfo(LocaleStringData type, string? uiCultureName = null)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(_sWindowsName != null, "[CultureData.IcuGetLocaleInfo] Expected _sWindowsName to be populated already");
-            return IcuGetLocaleInfo(_sWindowsName, type);
+            return IcuGetLocaleInfo(_sWindowsName, type, uiCultureName);
         }
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
-        private unsafe string IcuGetLocaleInfo(string localeName, LocaleStringData type)
+        private unsafe string IcuGetLocaleInfo(string localeName, LocaleStringData type, string? uiCultureName = null)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
             Debug.Assert(localeName != null, "[CultureData.IcuGetLocaleInfo] Expected localeName to be not be null");
@@ -127,7 +131,7 @@ namespace System.Globalization
             }
 
             char* buffer = stackalloc char[ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY];
-            bool result = Interop.Globalization.GetLocaleInfoString(localeName, (uint)type, buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
+            bool result = Interop.Globalization.GetLocaleInfoString(localeName, (uint)type, buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY, uiCultureName);
             if (!result)
             {
                 // Failed, just use empty string
@@ -204,22 +208,13 @@ namespace System.Globalization
             return ConvertIcuTimeFormatString(span.Slice(0, span.IndexOf('\0')));
         }
 
-        private static CultureData? IcuGetCultureDataFromRegionName(string? regionName)
-        {
-            // no support to lookup by region name, other than the hard-coded list in CultureData
-            return null;
-        }
+        // no support to lookup by region name, other than the hard-coded list in CultureData
+        private static CultureData? IcuGetCultureDataFromRegionName() => null;
 
-        private static string IcuGetLanguageDisplayName(string cultureName)
-        {
-            return new CultureInfo(cultureName)._cultureData.IcuGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName);
-        }
+        private string IcuGetLanguageDisplayName(string cultureName) => IcuGetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName, CultureInfo.CurrentUICulture.Name);
 
-        private static string? IcuGetRegionDisplayName()
-        {
-            // use the fallback which is to return NativeName
-            return null;
-        }
+        // use the fallback which is to return NativeName
+        private static string? IcuGetRegionDisplayName() => null;
 
         internal static bool IcuIsEnsurePredefinedLocaleName(string name)
         {
@@ -237,13 +232,14 @@ namespace System.Globalization
 
             for (int i = 0; i < icuFormatString.Length; i++)
             {
-                switch (icuFormatString[i])
+                char current = icuFormatString[i];
+                switch (current)
                 {
                     case '\'':
                         result[resultPos++] = icuFormatString[i++];
                         while (i < icuFormatString.Length)
                         {
-                            char current = icuFormatString[i];
+                            current = icuFormatString[i];
                             result[resultPos++] = current;
                             if (current == '\'')
                             {
@@ -259,13 +255,10 @@ namespace System.Globalization
                     case 'h':
                     case 'm':
                     case 's':
-                        result[resultPos++] = icuFormatString[i];
-                        break;
-
                     case ' ':
-                    case '\u00A0':
-                        // Convert nonbreaking spaces into regular spaces
-                        result[resultPos++] = ' ';
+                    case '\u00A0': // no-break space
+                    case '\u202F': // narrow no-break space
+                        result[resultPos++] = current;
                         break;
 
                     case 'a': // AM/PM
@@ -436,7 +429,7 @@ namespace System.Globalization
             {
                 char c = subject[i];
 
-                if ((uint)(c - 'A') <= ('Z' - 'A') || (uint)(c - 'a') <= ('z' - 'a') || (uint)(c - '0') <= ('9' - '0') || c == '\0')
+                if (char.IsAsciiLetterOrDigit(c) || c == '\0')
                 {
                     continue;
                 }

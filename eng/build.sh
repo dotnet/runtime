@@ -17,7 +17,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --arch                          Target platform: x86, x64, arm, armel, arm64 or wasm."
+  echo "  --arch (-a)                     Target platform: x86, x64, arm, armv6, armel, arm64, loongarch64, riscv64, s390x, ppc64le or wasm."
   echo "                                  [Default: Your machine's architecture.]"
   echo "  --binaryLog (-bl)               Output binary log."
   echo "  --cross                         Optional argument to signify cross compilation."
@@ -26,11 +26,14 @@ usage()
   echo "                                  compiled with optimizations enabled."
   echo "                                  [Default: Debug]"
   echo "  --help (-h)                     Print help and exit."
+  echo "  --hostConfiguration (-hc)       Host build configuration: Debug, Release or Checked."
+  echo "                                  [Default: Debug]"
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
-  echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS,"
-  echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, NetBSD, illumos or Solaris."
+  echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
+  echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos or solaris."
   echo "                                  [Default: Your machine's OS.]"
+  echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
   echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -56,14 +59,14 @@ usage()
   echo "  --restore (-r)             Restore dependencies."
   echo "  --sign                     Sign build outputs."
   echo "  --test (-t)                Incrementally builds and runs tests."
-  echo "                             Use in conjuction with --testnobuild to only run tests."
+  echo "                             Use in conjunction with --testnobuild to only run tests."
   echo ""
 
   echo "Libraries settings:"
   echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net6.0 or net48."
-  echo "                             [Default: net6.0]"
+  echo "  --framework (-f)           Build framework: net8.0 or net48."
+  echo "                             [Default: net8.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -136,7 +139,7 @@ initDistroRid()
     local isPortableBuild="$4"
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not OSX that doesn't use rootfs
-    if [[ $isCrossBuild == 1 && "$targetOs" != "OSX" ]]; then
+    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
     initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
@@ -166,7 +169,7 @@ while [[ $# > 0 ]]; do
   opt="$(echo "${1/#--/-}" | tr "[:upper:]" "[:lower:]")"
 
   if [[ $firstArgumentChecked -eq 0 && $opt =~ ^[a-zA-Z.+]+$ ]]; then
-    if [ $opt == "help" ]; then
+    if [[ "$opt" == "help" ]]; then
       showSubsetHelp
       exit 0
     fi
@@ -190,7 +193,7 @@ while [[ $# > 0 ]]; do
         exit 0
       else
         passedSubset="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
-        if [ $passedSubset == "help" ]; then
+        if [[ "$passedSubset" == "help" ]]; then
           showSubsetHelp
           exit 0
         fi
@@ -199,19 +202,19 @@ while [[ $# > 0 ]]; do
       fi
       ;;
 
-     -arch)
+     -arch|-a)
       if [ -z ${2+x} ]; then
         echo "No architecture supplied. See help (--help) for supported architectures." 1>&2
         exit 1
       fi
       passedArch="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
       case "$passedArch" in
-        x64|x86|arm|armel|arm64|wasm)
+        x64|x86|arm|armv6|armel|arm64|loongarch64|riscv64|s390x|ppc64le|wasm)
           arch=$passedArch
           ;;
         *)
           echo "Unsupported target architecture '$2'."
-          echo "The allowed values are x86, x64, arm, armel, arm64, and wasm."
+          echo "The allowed values are x86, x64, arm, armv6, armel, arm64, loongarch64, riscv64, s390x, ppc64le and wasm."
           exit 1
           ;;
       esac
@@ -258,32 +261,34 @@ while [[ $# > 0 ]]; do
         windows)
           os="windows" ;;
         linux)
-          os="Linux" ;;
+          os="linux" ;;
         freebsd)
-          os="FreeBSD" ;;
+          os="freebsd" ;;
         osx)
-          os="OSX" ;;
+          os="osx" ;;
         maccatalyst)
-          os="MacCatalyst" ;;
+          os="maccatalyst" ;;
         tvos)
-          os="tvOS" ;;
+          os="tvos" ;;
         tvossimulator)
-          os="tvOSSimulator" ;;
+          os="tvossimulator" ;;
         ios)
-          os="iOS" ;;
+          os="ios" ;;
         iossimulator)
-          os="iOSSimulator" ;;
+          os="iossimulator" ;;
         android)
-          os="Android" ;;
+          os="android" ;;
         browser)
-          os="Browser" ;;
+          os="browser" ;;
+        wasi)
+          os="wasi" ;;
         illumos)
           os="illumos" ;;
         solaris)
-          os="Solaris" ;;
+          os="solaris" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS, tvOSSimulator, iOS, iOSSimulator, Android, Browser, illumos and Solaris."
+          echo "The allowed values are windows, linux, freebsd, osx, maccatalyst, tvos, tvossimulator, ios, iossimulator, android, browser, wasi, illumos and solaris."
           exit 1
           ;;
       esac
@@ -375,14 +380,41 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
+     -hostconfiguration|-hc)
+      if [ -z ${2+x} ]; then
+        echo "No host configuration supplied. See help (--help) for supported host configurations." 1>&2
+        exit 1
+      fi
+      passedHostConf="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      case "$passedHostConf" in
+        debug|release|checked)
+          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedHostConf:0:1})${passedHostConf:1}"
+          ;;
+        *)
+          echo "Unsupported host configuration '$2'."
+          echo "The allowed values are Debug, Release, and Checked."
+          exit 1
+          ;;
+      esac
+      arguments="$arguments /p:HostConfiguration=$val"
+      shift 2
+      ;;
+
      -cross)
       crossBuild=1
       arguments="$arguments /p:CrossBuild=True"
       shift 1
       ;;
 
+     *crossbuild=true*)
+      crossBuild=1
+      extraargs="$extraargs $1"
+      shift 1
+      ;;
+
      -clang*)
-      arguments="$arguments /p:Compiler=$opt"
+      compiler="${opt/#-/}" # -clang-9 => clang-9 or clang-9 => (unchanged)
+      arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
       shift 1
       ;;
 
@@ -391,13 +423,23 @@ while [[ $# > 0 ]]; do
         echo "No cmake args supplied." 1>&2
         exit 1
       fi
-      cmakeargs="${cmakeargs} ${opt} $2"
+      cmakeargs="${cmakeargs} $2"
       shift 2
       ;;
 
      -gcc*)
-      arguments="$arguments /p:Compiler=$opt"
+      compiler="${opt/#-/}" # -gcc-9 => gcc-9 or gcc-9 => (unchanged)
+      arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
       shift 1
+      ;;
+
+     -outputrid)
+      if [ -z ${2+x} ]; then
+        echo "No value for outputrid is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      arguments="$arguments /p:OutputRid=$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      shift 2
       ;;
 
      -portablebuild)
@@ -461,12 +503,24 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
-if [ "$os" = "Browser" ] && [ "$arch" != "wasm" ]; then
+if [[ "$os" == "browser" ]]; then
     # override default arch for Browser, we only support wasm
     arch=wasm
 fi
+if [[ "$os" == "wasi" ]]; then
+    # override default arch for wasi, we only support wasm
+    arch=wasm
+fi
+
+if [[ "${TreatWarningsAsErrors:-}" == "false" ]]; then
+    arguments="$arguments -warnAsError 0"
+fi
 
 initDistroRid $os $arch $crossBuild $portableBuild
+
+# Disable targeting pack caching as we reference a partially constructed targeting pack and update it later.
+# The later changes are ignored when using the cache.
+export DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
 
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.

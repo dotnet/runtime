@@ -64,6 +64,14 @@ namespace System.Collections.ObjectModel.Tests
             AssertExtensions.Throws<ArgumentNullException>("dictionary", () => new ReadOnlyDictionary<int, string>(null));
         }
 
+        [Fact]
+        public static void Empty_Idempotent()
+        {
+            Assert.NotNull(ReadOnlyDictionary<string, int>.Empty);
+            Assert.Equal(0, ReadOnlyDictionary<string, int>.Empty.Count);
+            Assert.Same(ReadOnlyDictionary<string, int>.Empty, ReadOnlyDictionary<string, int>.Empty);
+        }
+
         /// <summary>
         /// Tests that true is returned when the key exists in the dictionary
         /// and false otherwise.
@@ -224,6 +232,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void DebuggerAttributeTests()
         {
             ReadOnlyDictionary<int, int> dict = new ReadOnlyDictionary<int, int>(new Dictionary<int, int>{{1, 2}, {2, 4}, {3, 6}});
@@ -247,6 +256,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void DebuggerAttribute_NullDictionary_ThrowsArgumentNullException()
         {
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() =>   DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>), null));
@@ -255,6 +265,7 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57588", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void DebuggerAttribute_NullDictionaryKeys_ThrowsArgumentNullException()
         {
             TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>.KeyCollection), new Type[] { typeof(int) }, null));

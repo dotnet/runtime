@@ -78,12 +78,12 @@ gchar *
 g_string_free (GString *string, gboolean free_segment)
 {
 	gchar *data;
-	
+
 	g_return_val_if_fail (string != NULL, NULL);
 
 	data = string->str;
 	g_free(string);
-	
+
 	if(!free_segment) {
 		return data;
 	}
@@ -125,7 +125,7 @@ g_string_append_c (GString *string, gchar c)
 	g_return_val_if_fail(string != NULL, NULL);
 
 	GROW_IF_NECESSARY(string, 1);
-	
+
 	string->str[string->len] = c;
 	string->str[string->len + 1] = 0;
 	string->len++;
@@ -138,12 +138,12 @@ g_string_append_unichar (GString *string, gunichar c)
 {
 	gchar utf8[6];
 	gint len;
-	
+
 	g_return_val_if_fail (string != NULL, NULL);
-	
+
 	if ((len = g_unichar_to_utf8 (c, utf8)) <= 0)
 		return string;
-	
+
 	return g_string_append_len (string, utf8, len);
 }
 
@@ -152,7 +152,7 @@ g_string_append_printf (GString *string, const gchar *format, ...)
 {
 	char *ret;
 	va_list args;
-	
+
 	g_return_if_fail (string != NULL);
 	g_return_if_fail (format != NULL);
 
@@ -181,12 +181,12 @@ void
 g_string_printf (GString *string, const gchar *format, ...)
 {
 	va_list args;
-	
+
 	g_return_if_fail (string != NULL);
 	g_return_if_fail (format != NULL);
 
 	g_free (string->str);
-	
+
 	va_start (args, format);
 	string->str = g_strdup_vprintf (format, args);
 	va_end (args);
@@ -203,7 +203,7 @@ g_string_truncate (GString *string, gsize len)
 	/* Silent return */
 	if (len >= string->len)
 		return string;
-	
+
 	string->len = len;
 	string->str[len] = 0;
 	return string;
@@ -215,7 +215,7 @@ g_string_set_size (GString *string, gsize len)
 	g_return_val_if_fail (string != NULL, string);
 
 	GROW_IF_NECESSARY(string, len);
-	
+
 	string->len = len;
 	string->str[len] = 0;
 	return string;

@@ -204,12 +204,29 @@ LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
     ldr w17, [x16, CONTEXT_Cpsr]
     msr nzcv, x17
     ldp fp, lr, [x16, CONTEXT_Fp]
-    ldr x17, [x16, CONTEXT_Sp]
-    mov sp, x17
-    ldr x17, [x16, CONTEXT_Pc]
+    ldp x16, x17, [x16, CONTEXT_Sp] // Context_Pc is right after Context_Sp
+    mov sp, x16
     br x17
 
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):
-   ret
+    ret
 
 LEAF_END RtlRestoreContext, _TEXT
+
+#ifdef __APPLE__
+
+// Incoming:
+//  x0: Context*
+//  x1: Exception*
+//
+LEAF_ENTRY RestoreCompleteContext, _TEXT
+    // We cannot restore all registers in the user mode code, so we rely on a help from kernel here. 
+    // The following instruction is an undefined instruction. In the hardware exception handler, we check
+    // if the faulting address is the RtlRestoreContext and in case it is, we update the context of
+    // the faulting thread using the CONTEXT pointed to by the x0 register.
+    // While this could be used for the full fidelity RtlRestoreContext implementation, it is too
+    // expensive for general usage of the RtlRestoreContext.
+    UDF #0
+LEAF_END RestoreCompleteContext, _TEXT
+
+#endif // __APPLE__

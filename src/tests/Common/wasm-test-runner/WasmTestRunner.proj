@@ -1,32 +1,42 @@
-<!-- This project requires an explicit SDK version number because it is used on Helix,
-      and global.json is not available. -->
-<Project Sdk="Microsoft.Build.NoTargets/1.0.53" DefaultTargets="WasmBuildApp">
+<Project DefaultTargets="WasmBuildApp">
+  <PropertyGroup>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(TestBinDir)\obj\</IntermediateOutputPath>
+  </PropertyGroup>
+
   <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.props" />
   <PropertyGroup>
+    <ImportTargetingPacksTargetsInWasmAppTargets>false</ImportTargetingPacksTargetsInWasmAppTargets>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)\runtimepack-non-existent</MicrosoftNetCoreAppRuntimePackDir>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
+    <IsBrowserWasmProject>true</IsBrowserWasmProject>
+    <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
 
     <WasmAppBuilderTasksAssemblyPath>$(CORE_ROOT)\WasmAppBuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$(CORE_ROOT)\MonoAOTCompiler\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
+    <MonoTargetsTasksAssemblyPath>$(CORE_ROOT)\MonoTargetsTasks\MonoTargetsTasks.dll</MonoTargetsTasksAssemblyPath>
+    <WasmBuildAppDependsOn>BuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
 
-  <Target Name="BuildApp" BeforeTargets="WasmBuildApp">
+  <Target Name="BuildApp">
     <PropertyGroup>
       <WasmMainAssemblyFileName>$(TestAssemblyFileName)</WasmMainAssemblyFileName>
       <WasmAppDir>$(AppDir)</WasmAppDir>
-      <WasmMainJSPath>$(CORE_ROOT)\runtime-test\runtime-test.js</WasmMainJSPath>
+      <WasmMainJSPath>$(CORE_ROOT)\runtime-test\test-main.js</WasmMainJSPath>
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
       <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
       <WasmSkipMissingAssemblies>true</WasmSkipMissingAssemblies>
     </PropertyGroup>
 
     <ItemGroup>
+      <WasmExtraFilesToDeploy Include="$(CORE_ROOT)\runtime-test\index.html" />
+      <WasmExtraFilesToDeploy Include="$(CORE_ROOT)\runtime-test\test-main.js" />
       <WasmAssembliesToBundle Include="$(TestBinDir)\*.dll" />
-      <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Private.Runtime.InteropServices.JavaScript.dll" />
+      <WasmAssembliesToBundle Include="$(CORE_ROOT)\System.Runtime.InteropServices.JavaScript.dll" />
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)"/>
       <WasmAssemblySearchPaths Include="$(CORE_ROOT)/TargetingPack" />

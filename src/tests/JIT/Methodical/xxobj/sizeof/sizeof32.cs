@@ -3,9 +3,10 @@
 
 
 using System;
+using Xunit;
 
 
-namespace JitTest
+namespace JitTest_sizeof32_sizeof_cs
 {
     internal struct SimpleStruct
     {
@@ -26,9 +27,10 @@ namespace JitTest
         public SimpleStruct ss2;
     }
 
-    internal struct Test
+    public struct Test
     {
-        private static unsafe int Main()
+        [Fact]
+        public static unsafe int TestEntryPoint()
         {
             int l = (sbyte)sizeof(RefComplexStruct);
             l += sizeof(RefComplexStruct) + new RefComplexStruct().ss1.m_sbyte;

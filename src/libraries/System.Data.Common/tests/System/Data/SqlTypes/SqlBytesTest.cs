@@ -66,9 +66,9 @@ namespace System.Data.Tests.SqlTypes
         {
             byte[] b = null;
             SqlBytes bytes = new SqlBytes();
-            Assert.Equal(bytes.MaxLength, -1);
+            Assert.Equal(-1, bytes.MaxLength);
             bytes = new SqlBytes(b);
-            Assert.Equal(bytes.MaxLength, -1);
+            Assert.Equal(-1, bytes.MaxLength);
             b = new byte[10];
             bytes = new SqlBytes(b);
             Assert.Equal(10, bytes.MaxLength);
@@ -372,6 +372,35 @@ namespace System.Data.Tests.SqlTypes
             SqlBytes bytes = new SqlBytes(b2);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => bytes.Write(0, b1, 0, -1));
+        }
+
+        [Fact]
+        public void SqlBytes_FromStream_BufferContainsExpectedData()
+        {
+            var bytes = new SqlBytes(new TrickleStream(new byte[] { 1, 2, 3, 4, 5 }));
+            Assert.Equal("01-02-03-04-05", BitConverter.ToString(bytes.Buffer));
+        }
+
+        [Fact]
+        public void SqlBytes_FromStream_ValueContainsExpectedData()
+        {
+            var bytes = new SqlBytes(new TrickleStream(new byte[] { 1, 2, 3, 4, 5 }));
+            Assert.Equal("01-02-03-04-05", BitConverter.ToString(bytes.Value));
+        }
+
+        [Fact]
+        public void SqlBytes_FromStream_ReadReturnsExpectedCount()
+        {
+            var bytes = new SqlBytes(new TrickleStream(new byte[] { 1, 2, 3, 4, 5 }));
+            byte[] buffer = new byte[5];
+            long bytesRead = bytes.Read(0, buffer, 0, buffer.Length);
+            Assert.Equal(1, bytesRead);
+        }
+
+        private sealed class TrickleStream : MemoryStream
+        {
+            public TrickleStream(byte[] bytes) : base(bytes) { }
+            public override int Read(byte[] buffer, int offset, int count) => base.Read(buffer, offset, Math.Min(count, 1));
         }
     }
 }

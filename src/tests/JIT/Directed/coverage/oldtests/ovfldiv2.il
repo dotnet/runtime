@@ -3,17 +3,21 @@
 
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
 .assembly ovfldiv2 {}
-.class private auto ansi beforefieldinit ovfldiv2
+.class public auto ansi beforefieldinit ovfldiv2
        extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32  Main(string[] args) cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  10
     

@@ -369,8 +369,6 @@ namespace System.Threading.Tasks
         // internal helper function breaks out logic used by TaskCompletionSource
         internal bool TrySetResult(TResult? result)
         {
-            Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
-
             bool returnValue = false;
 
             // "Reserve" the completion for this task, while making sure that: (1) No prior reservation
@@ -378,8 +376,8 @@ namespace System.Threading.Tasks
             // been recorded, and (4) Cancellation has not been requested.
             //
             // If the reservation is successful, then set the result and finish completion processing.
-            if (AtomicStateUpdate(TASK_STATE_COMPLETION_RESERVED,
-                    TASK_STATE_COMPLETION_RESERVED | TASK_STATE_RAN_TO_COMPLETION | TASK_STATE_FAULTED | TASK_STATE_CANCELED))
+            if (AtomicStateUpdate((int)TaskStateFlags.CompletionReserved,
+                    (int)TaskStateFlags.CompletionReserved | (int)TaskStateFlags.RanToCompletion | (int)TaskStateFlags.Faulted | (int)TaskStateFlags.Canceled))
             {
                 m_result = result;
 
@@ -390,7 +388,7 @@ namespace System.Threading.Tasks
                 // However, that goes through a windy code path, involves many non-inlineable functions
                 // and which can be summarized more concisely with the following snippet from
                 // FinishStageTwo, omitting everything that doesn't pertain to TrySetResult.
-                Interlocked.Exchange(ref m_stateFlags, m_stateFlags | TASK_STATE_RAN_TO_COMPLETION);
+                Interlocked.Exchange(ref m_stateFlags, m_stateFlags | (int)TaskStateFlags.RanToCompletion);
                 ContingentProperties? props = m_contingentProperties;
                 if (props != null)
                 {
@@ -425,7 +423,7 @@ namespace System.Threading.Tasks
             else
             {
                 m_result = result;
-                m_stateFlags |= TASK_STATE_RAN_TO_COMPLETION;
+                m_stateFlags |= (int)TaskStateFlags.RanToCompletion;
             }
         }
 
@@ -516,7 +514,6 @@ namespace System.Threading.Tasks
 
         /// <summary>Gets an awaiter used to await this <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
         /// <returns>An awaiter instance.</returns>
-        /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
         public new TaskAwaiter<TResult> GetAwaiter()
         {
             return new TaskAwaiter<TResult>(this);
@@ -539,22 +536,47 @@ namespace System.Threading.Tasks
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
         /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
         public new Task<TResult> WaitAsync(CancellationToken cancellationToken) =>
-            WaitAsync(Timeout.UnsignedInfinite, cancellationToken);
+            WaitAsync(Timeout.UnsignedInfinite, TimeProvider.System, cancellationToken);
 
         /// <summary>Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes or when the specified timeout expires.</summary>
         /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
         /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
         public new Task<TResult> WaitAsync(TimeSpan timeout) =>
-            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), default);
+            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), TimeProvider.System, default);
+
+        /// <summary>
+        /// Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes or when the specified timeout expires.
+        /// </summary>
+        /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="timeout"/>.</param>
+        /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        public new Task<TResult> WaitAsync(TimeSpan timeout, TimeProvider timeProvider)
+        {
+            ArgumentNullException.ThrowIfNull(timeProvider);
+            return WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), timeProvider, default);
+        }
 
         /// <summary>Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes, when the specified timeout expires, or when the specified <see cref="CancellationToken"/> has cancellation requested.</summary>
         /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
         /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
         public new Task<TResult> WaitAsync(TimeSpan timeout, CancellationToken cancellationToken) =>
-            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), cancellationToken);
+            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), TimeProvider.System, cancellationToken);
 
-        private Task<TResult> WaitAsync(uint millisecondsTimeout, CancellationToken cancellationToken)
+        /// <summary>
+        /// Gets a <see cref="Task{TResult}"/> that will complete when this <see cref="Task{TResult}"/> completes, when the specified timeout expires, or when the specified <see cref="CancellationToken"/> has cancellation requested.
+        /// </summary>
+        /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="timeout"/>.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
+        /// <returns>The <see cref="Task{TResult}"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        public new Task<TResult> WaitAsync(TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(timeProvider);
+            return WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), timeProvider, cancellationToken);
+        }
+
+        private Task<TResult> WaitAsync(uint millisecondsTimeout, TimeProvider timeProvider, CancellationToken cancellationToken)
         {
             if (IsCompleted || (!cancellationToken.CanBeCanceled && millisecondsTimeout == Timeout.UnsignedInfinite))
             {
@@ -571,7 +593,7 @@ namespace System.Threading.Tasks
                 return FromException<TResult>(new TimeoutException());
             }
 
-            return new CancellationPromise<TResult>(this, millisecondsTimeout, cancellationToken);
+            return new CancellationPromise<TResult>(this, millisecondsTimeout, timeProvider, cancellationToken);
         }
         #endregion
 
@@ -617,9 +639,6 @@ namespace System.Threading.Tasks
         /// </remarks>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
-        /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
-        /// has already been disposed.
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>> continuationAction, CancellationToken cancellationToken)
         {
@@ -722,9 +741,6 @@ namespace System.Threading.Tasks
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
         /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
-        /// has already been disposed.
-        /// </exception>
         public Task ContinueWith(Action<Task<TResult>> continuationAction, CancellationToken cancellationToken,
                                  TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
         {
@@ -805,9 +821,6 @@ namespace System.Threading.Tasks
         /// </remarks>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="continuationAction"/> argument is null.
-        /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
-        /// has already been disposed.
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>, object?> continuationAction, object? state, CancellationToken cancellationToken)
         {
@@ -912,9 +925,6 @@ namespace System.Threading.Tasks
         /// </exception>
         /// <exception cref="System.ArgumentNullException">
         /// The <paramref name="scheduler"/> argument is null.
-        /// </exception>
-        /// <exception cref="System.ObjectDisposedException">The provided <see cref="System.Threading.CancellationToken">CancellationToken</see>
-        /// has already been disposed.
         /// </exception>
         public Task ContinueWith(Action<Task<TResult>, object?> continuationAction, object? state, CancellationToken cancellationToken,
                                  TaskContinuationOptions continuationOptions, TaskScheduler scheduler)

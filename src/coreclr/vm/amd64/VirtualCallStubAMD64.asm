@@ -9,11 +9,6 @@ CHAIN_SUCCESS_COUNTER  equ ?g_dispatch_cache_chain_success_counter@@3_KA
         extern  VSD_ResolveWorker:proc
         extern  CHAIN_SUCCESS_COUNTER:dword
 
-ifdef FEATURE_PREJIT
-        extern  StubDispatchFixupWorker:proc
-        extern  ProcessCLRException:proc
-endif
-
 BACKPATCH_FLAG                  equ    1        ;; Also known as SDF_ResolveBackPatch    in the EE
 PROMOTE_CHAIN_FLAG              equ    2        ;; Also known as SDF_ResolvePromoteChain in the EE
 INITIAL_SUCCESS_COUNT           equ  100h
@@ -75,7 +70,7 @@ Success:
         pop    rdx
         jmp    rax
 
-Promote:                         ;; Move this entry to head postion of the chain
+Promote:                         ;; Move this entry to head position of the chain
         ;; be quick to reset the counter so we don't get a bunch of contending threads
         mov    [CHAIN_SUCCESS_COUNTER], INITIAL_SUCCESS_COUNT
         or     r11, PROMOTE_CHAIN_FLAG
@@ -87,26 +82,5 @@ Fail:
         jmp    ResolveWorkerAsmStub
 
 LEAF_END ResolveWorkerChainLookupAsmStub, _TEXT
-
-
-ifdef FEATURE_PREJIT
-NESTED_ENTRY StubDispatchFixupStub, _TEXT, ProcessCLRException
-
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        lea             rcx, [rsp + __PWTB_TransitionBlock] ; pTransitionBlock
-        mov             rdx, r11                            ; indirection cell address
-
-        mov             r8,0                                ; sectionIndex
-        mov             r9,0                                ; pModule
-
-        call            StubDispatchFixupWorker
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-PATCH_LABEL StubDispatchFixupPatchLabel
-        TAILJMP_RAX
-
-NESTED_END StubDispatchFixupStub, _TEXT
-endif
 
         end

@@ -95,7 +95,7 @@ ep_json_file_write_event_data (
 	ep_timestamp_t timestamp,
 	ep_rt_thread_id_t thread_id,
 	const ep_char8_t *message,
-	EventPipeStackContents *stack_contents)
+	EventPipeStackContentsInstance *stack_contents)
 {
 	ep_return_void_if_nok (json_file != NULL);
 	ep_return_void_if_nok (json_file->file_stream != NULL && !json_file->write_error_encountered );
@@ -111,8 +111,8 @@ ep_json_file_write_event_data (
 	ep_char8_t buffer [MAX_BUFFER_SIZE];
 	int32_t characters_written = -1;
 
-	characters_written = ep_rt_utf8_string_snprintf (buffer, EP_ARRAY_SIZE (buffer), "{\"Time\" : \"%f\", \"Metric\" : \"1\",\n\"Stack\": [\n\"", millis_since_trace_start);
-	if (characters_written > 0 && characters_written < (int32_t)EP_ARRAY_SIZE (buffer))
+	characters_written = ep_rt_utf8_string_snprintf (buffer, ARRAY_SIZE (buffer), "{\"Time\" : \"%f\", \"Metric\" : \"1\",\n\"Stack\": [\n\"", millis_since_trace_start);
+	if (characters_written > 0 && characters_written < (int32_t)ARRAY_SIZE (buffer))
 		json_file_write_string (json_file, buffer);
 
 	if (message)
@@ -123,26 +123,26 @@ ep_json_file_write_event_data (
 	ep_char8_t assembly_name [MAX_ASSEMBLY_NAME_LEN];
 	ep_char8_t method_name [MAX_METHOD_NAME_LEN];
 
-	for (uint32_t i = 0; i < ep_stack_contents_get_length (stack_contents); ++i) {
-		ep_rt_method_desc_t *method = ep_stack_contents_get_method (stack_contents, i);
+	for (uint32_t i = 0; i < ep_stack_contents_instance_get_length (stack_contents); ++i) {
+		ep_rt_method_desc_t *method = ep_stack_contents_instance_get_method (stack_contents, i);
 
-		if (!ep_rt_method_get_simple_assembly_name (method, assembly_name, EP_ARRAY_SIZE (assembly_name))) {
+		if (!ep_rt_method_get_simple_assembly_name (method, assembly_name, ARRAY_SIZE (assembly_name))) {
 			assembly_name [0] = '?';
 			assembly_name [1] = 0;
 		}
 
-		if (!ep_rt_method_get_full_name (method, method_name, EP_ARRAY_SIZE (method_name))) {
+		if (!ep_rt_method_get_full_name (method, method_name, ARRAY_SIZE (method_name))) {
 			method_name [0] = '?';
 			method_name [1] = 0;
 		}
 
-		characters_written = ep_rt_utf8_string_snprintf (buffer, EP_ARRAY_SIZE (buffer), "\"%s!%s\",\n", assembly_name, method_name);
-		if (characters_written > 0 && characters_written < (int32_t)EP_ARRAY_SIZE (buffer))
+		characters_written = ep_rt_utf8_string_snprintf (buffer, ARRAY_SIZE (buffer), "\"%s!%s\",\n", assembly_name, method_name);
+		if (characters_written > 0 && characters_written < (int32_t)ARRAY_SIZE (buffer))
 			json_file_write_string (json_file, buffer);
 	}
 
-	characters_written = ep_rt_utf8_string_snprintf (buffer, EP_ARRAY_SIZE (buffer), "\"Thread (%" PRIu64 ")\"]},", ep_rt_thread_id_t_to_uint64_t (thread_id));
-	if (characters_written > 0 && characters_written < (int32_t)EP_ARRAY_SIZE (buffer))
+	characters_written = ep_rt_utf8_string_snprintf (buffer, ARRAY_SIZE (buffer), "\"Thread (%" PRIu64 ")\"]},", ep_rt_thread_id_t_to_uint64_t (thread_id));
+	if (characters_written > 0 && characters_written < (int32_t)ARRAY_SIZE (buffer))
 		json_file_write_string (json_file, buffer);
 }
 
@@ -150,9 +150,7 @@ ep_json_file_write_event_data (
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_CHECKED_BUILD
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_json_file;
 const char quiet_linker_empty_file_warning_eventpipe_json_file = 0;
-#endif
 #endif

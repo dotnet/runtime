@@ -65,7 +65,7 @@ void ThreadLocalBlock::FreeTLM(SIZE_T i, BOOL isThreadShuttingdown)
                     pThreadLocalModule->m_pDynamicClassTable[k].m_pDynamicEntry = NULL;
                 }
             }
-            delete pThreadLocalModule->m_pDynamicClassTable;
+            delete[] pThreadLocalModule->m_pDynamicClassTable;
             pThreadLocalModule->m_pDynamicClassTable = NULL;
         }
 
@@ -97,7 +97,7 @@ void ThreadLocalBlock::FreeTable()
         SpinLock::Holder lock(&m_TLMTableLock);
 
         // Free the table itself
-        delete m_pTLMTable;
+        delete[] m_pTLMTable;
         m_pTLMTable = NULL;
     }
 
@@ -136,7 +136,7 @@ void ThreadLocalBlock::EnsureModuleIndex(ModuleIndex index)
 
     // If this allocation fails, we will throw. If it succeeds,
     // then we are good to go
-    PTR_TLMTableEntry pNewModuleSlots = (PTR_TLMTableEntry) (void*) new BYTE[sizeof(TLMTableEntry) * aModuleIndices];
+    PTR_TLMTableEntry pNewModuleSlots = new TLMTableEntry[aModuleIndices];
 
     // Zero out the new TLM table
     memset(pNewModuleSlots, 0 , sizeof(TLMTableEntry) * aModuleIndices);
@@ -464,7 +464,7 @@ void    ThreadLocalModule::EnsureDynamicClassIndex(DWORD dwID)
 
     // If this allocation fails, we throw. If it succeeds,
     // then we are good to go
-    pNewDynamicClassTable = (DynamicClassInfo*)(void*)new BYTE[sizeof(DynamicClassInfo) * aDynamicEntries];
+    pNewDynamicClassTable = new DynamicClassInfo[aDynamicEntries];
 
     // Zero out the dynamic class table
     memset(pNewDynamicClassTable, 0, sizeof(DynamicClassInfo) * aDynamicEntries);
@@ -487,7 +487,7 @@ void    ThreadLocalModule::EnsureDynamicClassIndex(DWORD dwID)
     m_aDynamicEntries = aDynamicEntries;
 
     if (pOldDynamicClassTable != NULL)
-        delete pOldDynamicClassTable;
+        delete[] pOldDynamicClassTable;
 }
 
 void    ThreadLocalModule::AllocateDynamicClass(MethodTable *pMT)
@@ -525,32 +525,22 @@ void    ThreadLocalModule::AllocateDynamicClass(MethodTable *pMT)
     {
         if (pDynamicStatics == NULL)
         {
-            SIZE_T dynamicEntrySize;
+            // If these allocations fail, we will throw
             if (pMT->Collectible())
             {
-                dynamicEntrySize = sizeof(CollectibleDynamicEntry);
+                pDynamicStatics = new CollectibleDynamicEntry(pMT->GetLoaderAllocator());
             }
             else
             {
-                dynamicEntrySize = DynamicEntry::GetOffsetOfDataBlob() + dwStaticBytes;
+                pDynamicStatics = new({dwStaticBytes}) NormalDynamicEntry();
             }
 
-            // If this allocation fails, we will throw
-            pDynamicStatics = (DynamicEntry*)new BYTE[dynamicEntrySize];
 
 #ifdef FEATURE_64BIT_ALIGNMENT
             // The memory block has be aligned at MAX_PRIMITIVE_FIELD_SIZE to guarantee alignment of statics
             static_assert_no_msg(sizeof(NormalDynamicEntry) % MAX_PRIMITIVE_FIELD_SIZE == 0);
             _ASSERTE(IS_ALIGNED(pDynamicStatics, MAX_PRIMITIVE_FIELD_SIZE));
 #endif
-
-            // Zero out the new DynamicEntry
-            memset((BYTE*)pDynamicStatics, 0, dynamicEntrySize);
-
-            if (pMT->Collectible())
-            {
-                ((CollectibleDynamicEntry*)pDynamicStatics)->m_pLoaderAllocator = pMT->GetLoaderAllocator();
-            }
 
             // Save the DynamicEntry in the DynamicClassTable
             m_pDynamicClassTable[dwID].m_pDynamicEntry = pDynamicStatics;
@@ -646,7 +636,7 @@ PTR_ThreadLocalModule ThreadStatics::AllocateAndInitTLM(ModuleIndex index, PTR_T
     _ASSERTE(pThreadLocalBlock != NULL);
     _ASSERTE(pModule != NULL);
 
-    NewArrayHolder<ThreadLocalModule> pThreadLocalModule = AllocateTLM(pModule);
+    NewHolder<ThreadLocalModule> pThreadLocalModule = AllocateTLM(pModule);
 
     pThreadLocalBlock->AllocateThreadStaticHandles(pModule, pThreadLocalModule);
 
@@ -704,9 +694,7 @@ PTR_ThreadLocalModule ThreadStatics::AllocateTLM(Module * pModule)
 
     SIZE_T size = pModule->GetThreadLocalModuleSize();
 
-    _ASSERTE(size >= ThreadLocalModule::OffsetOfDataBlob());
-
-    PTR_ThreadLocalModule pThreadLocalModule = (ThreadLocalModule*)new BYTE[size];
+    PTR_ThreadLocalModule pThreadLocalModule = new({ pModule }) ThreadLocalModule;
 
     // We guarantee alignment for 64-bit regular thread statics on 32-bit platforms even without FEATURE_64BIT_ALIGNMENT for performance reasons.
 

@@ -38,15 +38,7 @@ namespace System.Linq.Parallel
             _keySelector = keySelector;
 
             // If a comparer wasn't supplied, we use the default one for the key type.
-            if (comparer == null)
-            {
-                _comparer = Util.GetDefaultComparer<TSortKey>();
-            }
-            else
-            {
-                _comparer = comparer;
-            }
-
+            _comparer = comparer ?? Util.GetDefaultComparer<TSortKey>();
             if (descending)
             {
                 _comparer = new ReverseComparer<TSortKey>(_comparer);
@@ -62,7 +54,7 @@ namespace System.Linq.Parallel
         IOrderedEnumerable<TInputOutput> IOrderedEnumerable<TInputOutput>.CreateOrderedEnumerable<TKey2>(
             Func<TInputOutput, TKey2> key2Selector, IComparer<TKey2>? key2Comparer, bool descending)
         {
-            key2Comparer = key2Comparer ?? Util.GetDefaultComparer<TKey2>();
+            key2Comparer ??= Util.GetDefaultComparer<TKey2>();
 
             if (descending)
             {
@@ -126,7 +118,7 @@ namespace System.Linq.Parallel
 
     internal sealed class SortQueryOperatorResults<TInputOutput, TSortKey> : QueryResults<TInputOutput>
     {
-        private QueryResults<TInputOutput> _childQueryResults; // Results of the child query
+        private readonly QueryResults<TInputOutput> _childQueryResults; // Results of the child query
         private readonly SortQueryOperator<TInputOutput, TSortKey> _op; // Operator that generated these results
         private QuerySettings _settings; // Settings collected from the query
 

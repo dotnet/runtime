@@ -520,7 +520,7 @@ private:
     static HRESULT __stdcall ReleaseAllInterfacesCallBack(LPVOID pData);
 
     //---------------------------------------------------------------------
-    // Helper function called from ReleaseAllInterfaces_CallBack do do the
+    // Helper function called from ReleaseAllInterfaces_CallBack to do the
     // actual releases.
     void ReleaseAllInterfaces();
 
@@ -727,7 +727,7 @@ public:
 
     //--------------------------------------------------------------
     // Init the ComClassFactory
-    void Init(__in_opt PCWSTR wszServer, MethodTable* pClassMT);
+    void Init(_In_opt_ PCWSTR wszServer, MethodTable* pClassMT);
 
     //-------------------------------------------------------------
     // create instance, calls IClassFactory::CreateInstance
@@ -738,11 +738,9 @@ public:
     void Cleanup();
 
 protected :
-#ifndef CROSSGEN_COMPILE
     //-------------------------------------------------------------
     // Create instance. Overridable from child classes
     virtual IUnknown *CreateInstanceInternal(IUnknown *pOuter, BOOL *pfDidContainment);
-#endif
     //-------------------------------------------------------------
     // Throw exception message
     void ThrowHRMsg(HRESULT hr, DWORD dwMsgResID);

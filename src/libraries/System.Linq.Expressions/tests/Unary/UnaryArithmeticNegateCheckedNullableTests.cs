@@ -201,8 +201,7 @@ namespace System.Linq.Expressions.Tests
 
         #endregion
 
-#if FEATURE_COMPILE
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public static void VerifyIL_NullableShortNegateChecked()
         {
@@ -213,7 +212,7 @@ namespace System.Linq.Expressions.Tests
             f.VerifyIL(
                 @".method valuetype [System.Private.CoreLib]System.Nullable`1<int16> ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,valuetype [System.Private.CoreLib]System.Nullable`1<int16>)
                 {
-                    .maxstack 4
+                    .maxstack 3
                     .locals init (
                         [0] valuetype [System.Private.CoreLib]System.Nullable`1<int16>
                     )
@@ -234,7 +233,5 @@ namespace System.Linq.Expressions.Tests
                     IL_001d: ret
                 }");
         }
-#endif
-
     }
 }

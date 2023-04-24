@@ -1,0 +1,5 @@
+#pragma once
+
+#cmakedefine01 HAVE_OPENSSL_EC2M
+#cmakedefine01 HAVE_OPENSSL_ALPN
+#cmakedefine01 HAVE_OPENSSL_CHACHA20POLY1305

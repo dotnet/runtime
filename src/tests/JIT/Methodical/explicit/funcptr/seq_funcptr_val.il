@@ -11,7 +11,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly funcptr_val
+.assembly 'seq_funcptr_val'
 {
 
 
@@ -19,7 +19,7 @@
   
   
 }
-.module test.exe
+.assembly extern xunit.core {}
 // MVID: {CF23CD68-3FF2-4D1F-B49B-866DA656D91D}
 
 
@@ -44,7 +44,9 @@
 //   note that class flags, 'extends' and 'implements' clauses
 //          are provided here for information only
 
-.class private sequential ansi sealed beforefieldinit AA
+.namespace Test_seq_funcptr_val
+{
+.class public sequential ansi sealed beforefieldinit AA
        extends [mscorlib]System.ValueType
 {
   .field public unsigned int8 tmp1
@@ -59,28 +61,32 @@
     .maxstack  1
     ldc.i4.s   100
     ret
-  } // end of method AA::ret_code
+  } // end of method Test_seq_funcptr_val.AA::ret_code
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       31 (0x1f)
     .maxstack  3
-    .locals init (valuetype AA V_0, int32 V_1)
+    .locals init (valuetype Test_seq_funcptr_val.AA V_0, int32 V_1)
     ldloca.s   V_0
-    ldftn      int32 AA::ret_code()
-    stfld      native int AA::func_ptr
+    ldftn      int32 Test_seq_funcptr_val.AA::ret_code()
+    stfld      native int Test_seq_funcptr_val.AA::func_ptr
     ldloca.s   V_0
-    ldfld      native int AA::func_ptr
+    ldfld      native int Test_seq_funcptr_val.AA::func_ptr
     calli       int32 *()
     ret
-  } // end of method AA::Main
+  } // end of method Test_seq_funcptr_val.AA::Main
 
-} // end of class AA
+} // end of class Test_seq_funcptr_val.AA
 
 
 // =============================================================
 
 //*********** DISASSEMBLY COMPLETE ***********************
 // WARNING: Created Win32 resource file funcptr_val.res
+}

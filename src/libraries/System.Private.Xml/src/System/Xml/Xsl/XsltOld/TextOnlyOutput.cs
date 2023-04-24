@@ -26,10 +26,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal TextOnlyOutput(Processor processor, Stream stream)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            ArgumentNullException.ThrowIfNull(stream);
 
             _processor = processor;
             _writer = new StreamWriter(stream, Output.Encoding);
@@ -37,10 +34,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal TextOnlyOutput(Processor processor, TextWriter writer)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             _processor = processor;
             _writer = writer;

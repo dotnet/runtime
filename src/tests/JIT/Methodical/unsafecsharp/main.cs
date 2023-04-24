@@ -3,6 +3,8 @@
 
 using System;
 
+namespace UnsafeCSharp
+{
 public struct A
 {
     public long m_aval;
@@ -40,4 +42,5 @@ public struct AA
     public unsafe static long get_i1(long* pi) { return *pi; }
     public unsafe static long get_i2(long i) { return i; }
     public unsafe static long get_i3(ref long ri) { return ri; }
+}
 }

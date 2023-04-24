@@ -8,13 +8,13 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 namespace NativeVarargsTest
 {
     class NativeVarargsTest
     {
-        static int Main(string[] args)
+        static int Main()
         {
             if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7 || TestLibrary.Utilities.IsWindowsNanoServer)
             {
@@ -26,7 +26,7 @@ namespace NativeVarargsTest
 
             try
             {
-                Assembly ijwNativeDll = IjwHelper.LoadIjwAssembly("IjwNativeVarargs");
+                Assembly ijwNativeDll = Assembly.Load("IjwNativeVarargs");
                 Type testType = ijwNativeDll.GetType("TestClass");
                 object testInstance = Activator.CreateInstance(testType);
                 MethodInfo testMethod = testType.GetMethod("RunTests");

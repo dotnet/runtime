@@ -37,7 +37,7 @@ namespace System.Security.AccessControl.Tests
             rawAcl.InsertAce(index, ace);
             //verify the count number increase one
             Assert.True(rawAcl.Count == count + 1);
-            //verify the inserted ace is equal to the originial ace
+            //verify the inserted ace is equal to the original ace
             aceVerifier = rawAcl[index];
             Assert.True(ace == aceVerifier);
 
@@ -55,7 +55,7 @@ namespace System.Security.AccessControl.Tests
             rawAcl.InsertAce(index, ace);
             //verify the count number increase one
             Assert.True(rawAcl.Count == count + 1);
-            //verify the inserted ace is equal to the originial ace
+            //verify the inserted ace is equal to the original ace
             aceVerifier = rawAcl[index];
             Assert.True(ace == aceVerifier);
 
@@ -74,7 +74,7 @@ namespace System.Security.AccessControl.Tests
 
             //verify the count number increase one
             Assert.True(rawAcl.Count == count + 1);
-            //verify the inserted ace is equal to the originial ace
+            //verify the inserted ace is equal to the original ace
             aceVerifier = rawAcl[index];
             Assert.True(ace == aceVerifier);
 
@@ -96,7 +96,7 @@ namespace System.Security.AccessControl.Tests
             rawAcl.InsertAce(index, ace);
             //verify the count number increase one
             Assert.True(rawAcl.Count == count + 1);
-            //verify the inserted ace is equal to the originial ace
+            //verify the inserted ace is equal to the original ace
             aceVerifier = rawAcl[index];
             Assert.True(ace == aceVerifier);
 

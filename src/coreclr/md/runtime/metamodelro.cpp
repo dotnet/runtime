@@ -11,7 +11,6 @@
 #include "metamodelro.h"
 #include <posterror.h>
 #include <corerror.h>
-#include "metadatatracker.h"
 
 //*****************************************************************************
 // Set the pointers to consecutive areas of a large buffer.
@@ -42,12 +41,6 @@ CMiniMd::InitializeTables(
             return CLDB_E_FILE_CORRUPT;
         }
         _ASSERTE(cbTableSize.Value() == tableData.GetSize());
-
-        METADATATRACKER_ONLY(MetaDataTracker::NoteSection(
-            i,
-            tableData.GetDataPointer(),
-            tableData.GetSize(),
-            m_TableDefs[i].m_cbRec));
 
         IfFailRet(m_Tables[i].Initialize(
             m_TableDefs[i].m_cbRec,
@@ -116,7 +109,7 @@ CMiniMd::Impl_GetStringW(
 
     if (*szString == 0)
     {
-        // If emtpy string "", return pccBuffer 0
+        // If empty string "", return pccBuffer 0
         if ((szOut != NULL) && (cchBuffer != 0))
             szOut[0] = W('\0');
         if (pcchBuffer != NULL)
@@ -263,11 +256,6 @@ CMiniMd::vSearchTable(
     ULONG   val;            // Value from a row.
     int     lo, mid, hi;    // binary search indices.
 
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // If you change the rows touched while searching, please update
-    // CMiniMdRW::GetHotMetadataTokensSearchAware
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
     // Start with entire table.
     lo = 1;
     hi = GetCountRecs(ixTbl);
@@ -281,7 +269,6 @@ CMiniMd::vSearchTable(
         if (val == ulTarget)
         {
             *pRid = mid;
-            METADATATRACKER_ONLY(MetaDataTracker::NoteSearch(pRow));
             return S_OK;
         }
         // If middle item is too small, search the top half.
@@ -293,7 +280,6 @@ CMiniMd::vSearchTable(
     // Didn't find anything that matched.
     *pRid = 0;
 
-    METADATATRACKER_ONLY(MetaDataTracker::NoteSearch(pRow));
     return S_OK;
 } // CMiniMd::vSearchTable
 
@@ -317,11 +303,6 @@ CMiniMd::vSearchTableNotGreater(
     ULONG  lo, mid = 0, hi;     // binary search indices.
 
     cRecs = GetCountRecs(ixTbl);
-
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // If you change the rows touched while searching, please update
-    // CMiniMdRW::GetHotMetadataTokensSearchAware
-    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     // Start with entire table.
     lo = 1;
@@ -347,8 +328,6 @@ CMiniMd::vSearchTableNotGreater(
         else // but if middle is to big, search bottom half.
             hi = mid - 1;
     }
-
-    METADATATRACKER_ONLY(MetaDataTracker::NoteSearch(pRow));
 
     // May or may not have found anything that matched.  Mid will be close, but may
     //  be to high or too low.  It should point to the highest acceptable

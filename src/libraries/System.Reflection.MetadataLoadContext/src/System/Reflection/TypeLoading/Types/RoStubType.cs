@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using StructLayoutAttribute = System.Runtime.InteropServices.StructLayoutAttribute;
 
 namespace System.Reflection.TypeLoading
@@ -20,6 +21,8 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsVariableBoundArray => throw null!;
         protected sealed override bool IsByRefImpl() => throw null!;
         protected sealed override bool IsPointerImpl() => throw null!;
+        public sealed override bool IsFunctionPointer => throw null!;
+        public sealed override bool IsUnmanagedFunctionPointer => throw null!;
         public sealed override bool IsConstructedGenericType => throw null!;
         public sealed override bool IsGenericParameter => throw null!;
         public sealed override bool IsGenericTypeParameter => throw null!;
@@ -54,18 +57,21 @@ namespace System.Reflection.TypeLoading
         internal sealed override RoType[] GetGenericTypeParametersNoCopy() => throw null!;
         internal sealed override RoType[] GetGenericTypeArgumentsNoCopy() => throw null!;
         protected internal sealed override RoType[] GetGenericArgumentsNoCopy() => throw null!;
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override Type MakeGenericType(params Type[] typeArguments) => throw null!;
 
         public sealed override GenericParameterAttributes GenericParameterAttributes => throw null!;
         public sealed override int GenericParameterPosition => throw null!;
         public sealed override Type[] GetGenericParameterConstraints() => throw null!;
+        public sealed override Type GetFunctionPointerReturnType() => throw null!;
+        public sealed override Type[] GetFunctionPointerParameterTypes() => throw null!;
 
         public sealed override Guid GUID => throw null!;
         public sealed override StructLayoutAttribute StructLayoutAttribute => throw null!;
         protected internal sealed override RoType ComputeEnumUnderlyingType() => throw null!;
 
-        protected sealed override RoType ComputeBaseTypeWithoutDesktopQuirk() => throw null!;
-        protected sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces() => throw null!;
+        internal sealed override RoType ComputeBaseTypeWithoutDesktopQuirk() => throw null!;
+        internal sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces() => throw null!;
 
         // Low level support for the BindingFlag-driven enumerator apis.
         internal sealed override IEnumerable<ConstructorInfo> GetConstructorsCore(NameFilter? filter) => throw null!;

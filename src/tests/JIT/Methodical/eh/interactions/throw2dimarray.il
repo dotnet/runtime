@@ -13,16 +13,16 @@
 {
   .ver 0:0:0:0
 }
-.assembly extern common{}
+.assembly extern eh_common{}
 .assembly extern System.Windows.Forms
 {
   .ver 0:0:0:0
 }
-.assembly Except
+.assembly 'throw2dimarray'
 {
   .ver 0:0:0:0
 }
-.module Except.EXE
+.assembly extern xunit.core {}
 .imagebase 0x00400000
 .subsystem 0x00000003
 .file alignment 512
@@ -35,11 +35,16 @@
 
 
 
-.class private auto ansi beforefieldinit App
+.namespace Test_throw2dimarray
+{
+.class public auto ansi beforefieldinit App
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  4
     .locals init (int32[,] V_0,
@@ -49,7 +54,7 @@
              int32[,] V_4,
              object V_5,
              class [mscorlib]System.IO.StringWriter expectedOut,
-			 class [common]TestUtil.TestLog testLog
+			 class [eh_common]TestUtil.TestLog testLog
 		)
 
     newobj     instance void [mscorlib]System.IO.StringWriter::.ctor()
@@ -125,11 +130,11 @@
     callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
    
     ldloc.s    expectedOut
-    newobj     instance void [common]TestUtil.TestLog::.ctor(object)
+    newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
     stloc.s    testLog
 
     ldloc.s    testLog
-    callvirt   instance void [common]TestUtil.TestLog::StartRecording()
+    callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
 
     IL_0000:  ldnull
@@ -370,10 +375,10 @@
     }
     IL_00a3:  
        ldloc.s    testLog
-		callvirt   instance void [common]TestUtil.TestLog::StopRecording()
+		callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
   
 		ldloc.s    testLog
-		callvirt   instance int32 [common]TestUtil.TestLog::VerifyOutput()
+		callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
     IL_00a4:  ret
   } 
 
@@ -405,3 +410,4 @@
   } 
 
 } 
+}

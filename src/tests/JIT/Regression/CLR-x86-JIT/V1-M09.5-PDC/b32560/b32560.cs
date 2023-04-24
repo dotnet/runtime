@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         double[] m_adField1 = new double[7];
         float m_fField3 = 366.56f;
@@ -30,7 +31,8 @@ namespace Test
                 }
             } while (param1[2]);
         }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

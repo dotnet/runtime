@@ -65,7 +65,7 @@ namespace System.ServiceProcess.Tests
                 }
                 else
                 {
-                    Console.WriteLine("EROOR: Invalid Service verb. Only suppot create or delete.");
+                    Console.WriteLine("EROOR: Invalid Service verb. Only support create or delete.");
                     return 2;
                 }
             }

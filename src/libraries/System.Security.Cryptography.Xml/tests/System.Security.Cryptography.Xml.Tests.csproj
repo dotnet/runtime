@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="AssertCrypto.cs" />
     <Compile Include="CipherDataTests.cs" />
     <Compile Include="DataObjectTest.cs" />
@@ -30,6 +33,7 @@
     <Compile Include="Samples\SigningVerifyingX509Cert.cs" />
     <Compile Include="Samples\SigningVerifying.cs" />
     <Compile Include="Samples\EncryptingDecryptingSymmetric.cs" />
+    <Compile Include="SignatureSupport.cs" />
     <Compile Include="SignatureTest.cs" />
     <Compile Include="SignedInfoTest.cs" />
     <Compile Include="SignedXmlTest.cs" />
@@ -49,7 +53,7 @@
     <Compile Include="XmlLicenseEncryptedRef.cs" />
     <Compile Include="XmlLicenseTransformTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="KeyInfo_ArbitraryElements.cs" />
     <Compile Include="Reference_ArbitraryElements.cs" />
     <Compile Include="Signature_ArbitraryElements.cs" />
@@ -67,7 +71,7 @@
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.Cryptography.Xml.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />
   </ItemGroup>
 </Project>

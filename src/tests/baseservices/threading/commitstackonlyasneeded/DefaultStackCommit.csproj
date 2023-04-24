@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for CLRTestTargetUnsupported -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Test unsupported outside of windows -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>

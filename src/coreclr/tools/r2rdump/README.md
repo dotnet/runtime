@@ -75,19 +75,19 @@ A array of RVAs. For x64, each RuntimeFunction has RVAs to the start of the asse
 
 ### READYTORUN_SECTION_METHODDEF_ENTRYPOINTS
 
-A [NativeArray](NativeArray.cs) used for finding the index of the entrypoint RuntimeFunction for each method. The NativeArray is index by is the rowId-1 of a method. Each element in the NativeArray is an offset pointing to the RuntimeFunction index.
+A [NativeArray](../aot/ILCompiler.Reflection.ReadyToRun/NativeArray.cs) used for finding the index of the entrypoint RuntimeFunction for each method. The NativeArray is index by is the rowId-1 of a method. Each element in the NativeArray is an offset pointing to the RuntimeFunction index.
 
 ### READYTORUN_SECTION_AVAILABLE_TYPES
 
-A [NativeHashtable](NativeHashtable.cs) mapping type hashcodes of types defined in the program to the rowIds. The hashcode is calculated with [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(namespace) ^ [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(name)
+A [NativeHashtable](../aot/ILCompiler.Reflection.ReadyToRun/NativeHashtable.cs) mapping type hashcodes of types defined in the program to the rowIds. The hashcode is calculated with [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(namespace) ^ [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(name)
 
 ### READYTORUN_SECTION_ATTRIBUTEPRESENCE
 
-A [NativeCuckooFilter](NativeHashtable.cs) to discover which tokens have which "System.Runtime." prefixed attributes. The System.Runtime.CompilerServices.NullableAttribute is not used in this calculation. The filter is composed of a name hash of the type name using [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(namespace + name) hash combined with a hash of each token that produced it. In addition the upper 16 bits is used as the fingerprint in the filter.
+A [NativeCuckooFilter](../aot/ILCompiler.Reflection.ReadyToRun/NativeHashtable.cs) to discover which tokens have which "System.Runtime." prefixed attributes. The System.Runtime.CompilerServices.NullableAttribute is not used in this calculation. The filter is composed of a name hash of the type name using [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(namespace + name) hash combined with a hash of each token that produced it. In addition the upper 16 bits is used as the fingerprint in the filter.
 
 ### READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS
 
-A [NativeHashtable](NativeHashtable.cs) mapping type hashcodes of generic instances to the (methodFlags, methodRowId, list of types, runtimeFunctionId). Each type in the list of types corresponds to a generic type in the method.
+A [NativeHashtable](../aot/ILCompiler.Reflection.ReadyToRun/NativeHashtable.cs) mapping type hashcodes of generic instances to the (methodFlags, methodRowId, list of types, runtimeFunctionId). Each type in the list of types corresponds to a generic type in the method.
 
 Eg. GenericMethod&lt;S, T&gt;(T arg1, S arg2) instantiated for &lt;int, UserDefinedStruct&gt; is in the hashtable as:
 
@@ -126,7 +126,7 @@ In x64/Arm/Arm64, GcTransitions are grouped into chunks where each chunk covers 
 >> Array of bits indicating if each slot is live at the end of the chunk
 
 >> For each slot that changed state in the chunk:
->>> Array of elements consisting of a bit set to 1 and the normCodeOffsetDelta indicating all the code offsets where the slot changed state in the chunk. CodeOffset = normCodeOffsetDelta + normChunkBaseCodeOffset + currentRangeStartOffset - cumInterruptibleLength, where normChunkBaseCodeOffset is the sum of the sizes of all preceeding chunks, currentRangeStartOffset is the start offset of the interruptible range that the transition falls under and cumInterruptibleLength is the sum of the lengths of interruptible ranges that came before it
+>>> Array of elements consisting of a bit set to 1 and the normCodeOffsetDelta indicating all the code offsets where the slot changed state in the chunk. CodeOffset = normCodeOffsetDelta + normChunkBaseCodeOffset + currentRangeStartOffset - cumInterruptibleLength, where normChunkBaseCodeOffset is the sum of the sizes of all preceding chunks, currentRangeStartOffset is the start offset of the interruptible range that the transition falls under and cumInterruptibleLength is the sum of the lengths of interruptible ranges that came before it
 
 ## Todo
 

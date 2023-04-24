@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -10,8 +11,9 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Convert the provided value into a <see cref="string"/>.
+        /// Converts the provided value into a <see cref="string"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <returns>A <see cref="string"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
@@ -20,16 +22,19 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         /// <remarks>Using a <see cref="string"/> is not as efficient as using UTF-8
-        /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
-        /// and <see cref="SerializeAsync"/>.
+        /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes{TValue}(TValue, JsonSerializerOptions?)"/>
+        /// and <see cref="SerializeAsync{TValue}(IO.Stream, TValue, JsonSerializerOptions?, Threading.CancellationToken)"/>.
         /// </remarks>
-        public static string Serialize<[DynamicallyAccessedMembers(MembersAccessedOnWrite)] TValue>(TValue value, JsonSerializerOptions? options = null)
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        public static string Serialize<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
-            return Serialize<TValue>(value, typeof(TValue), options);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            return WriteString(value, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="string"/>.
+        /// Converts the provided value into a <see cref="string"/>.
         /// </summary>
         /// <returns>A <see cref="string"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
@@ -42,131 +47,142 @@ namespace System.Text.Json
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="inputType"/> is <see langword="null"/>.
+        /// </exception>
         /// <remarks>Using a <see cref="string"/> is not as efficient as using UTF-8
-        /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
-        /// and <see cref="SerializeAsync"/>.
+        /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes(object?, Type, JsonSerializerOptions?)"/>
+        /// and <see cref="SerializeAsync(IO.Stream, object?, Type, JsonSerializerOptions?, Threading.CancellationToken)"/>.
         /// </remarks>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static string Serialize(
             object? value,
-            [DynamicallyAccessedMembers(MembersAccessedOnWrite)] Type inputType,
+            Type inputType,
             JsonSerializerOptions? options = null)
         {
-            if (inputType == null)
-            {
-                throw new ArgumentNullException(nameof(inputType));
-            }
-
-            if (value != null && !inputType.IsAssignableFrom(value.GetType()))
-            {
-                ThrowHelper.ThrowArgumentException_DeserializeWrongType(inputType, value);
-            }
-
-            return Serialize<object?>(value, inputType, options);
-        }
-
-        private static string Serialize<TValue>(in TValue value, Type inputType, JsonSerializerOptions? options)
-        {
-            if (options == null)
-            {
-                options = JsonSerializerOptions.s_defaultOptions;
-            }
-
-            options.RootBuiltInConvertersAndTypeInfoCreator();
-
-            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
-            {
-                using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
-                {
-                    WriteCore(writer, value, inputType, options);
-                }
-
-                return JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
-            }
+            ValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType, fallBackToNearestAncestorType: true);
+            return WriteStringAsObject(value, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="string"/>.
+        /// Converts the provided value into a <see cref="string"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <returns>A <see cref="string"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
-        /// <exception cref="NotSupportedException">
-        /// There is no compatible <see cref="Serialization.JsonConverter"/>
-        /// for <typeparamref name="TValue"/> or its serializable members.
-        /// </exception>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
         /// </exception>
         /// <remarks>Using a <see cref="string"/> is not as efficient as using UTF-8
-        /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
-        /// and <see cref="SerializeAsync"/>.
+        /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes{TValue}(TValue, JsonTypeInfo{TValue})"/>
+        /// and <see cref="SerializeAsync{TValue}(IO.Stream, TValue, JsonTypeInfo{TValue}, Threading.CancellationToken)"/>.
         /// </remarks>
         public static string Serialize<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            return SerializeUsingMetadata(value, jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return WriteString(value, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Convert the provided value into a <see cref="string"/>.
+        /// Converts the provided value into a <see cref="string"/>.
+        /// </summary>
+        /// <returns>A <see cref="string"/> representation of the value.</returns>
+        /// <param name="value">The value to convert.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="InvalidCastException">
+        /// <paramref name="value"/> does not match the type of <paramref name="jsonTypeInfo"/>.
+        /// </exception>
+        /// <remarks>Using a <see cref="string"/> is not as efficient as using UTF-8
+        /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes(object?, JsonTypeInfo)"/>
+        /// and <see cref="SerializeAsync(IO.Stream, object?, JsonTypeInfo, Threading.CancellationToken)"/>.
+        /// </remarks>
+        public static string Serialize(object? value, JsonTypeInfo jsonTypeInfo)
+        {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return WriteStringAsObject(value, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Converts the provided value into a <see cref="string"/>.
         /// </summary>
         /// <returns>A <see cref="string"/> representation of the value.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="inputType">The type of the <paramref name="value"/> to convert.</param>
-        /// <param name="jsonSerializerContext">A metadata provider for serializable types.</param>
+        /// <param name="context">A metadata provider for serializable types.</param>
         /// <exception cref="NotSupportedException">
         /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
         /// for <paramref name="inputType"/> or its serializable members.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// The <see cref="JsonSerializerContext.GetTypeInfo(Type)"/> method of the provided
-        /// <paramref name="jsonSerializerContext"/> returns <see langword="null"/> for the type to convert.
+        /// <paramref name="context"/> returns <see langword="null"/> for the type to convert.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="inputType"/> or <paramref name="context"/> is <see langword="null"/>.
         /// </exception>
         /// <remarks>Using a <see cref="string"/> is not as efficient as using UTF-8
-        /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
-        /// and <see cref="SerializeAsync"/>.
+        /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes(object?, Type, JsonSerializerContext)"/>
+        /// and <see cref="SerializeAsync(IO.Stream, object?, Type, JsonSerializerContext, Threading.CancellationToken)"/>.
         /// </remarks>
-        public static string Serialize(object? value, Type inputType, JsonSerializerContext jsonSerializerContext)
+        public static string Serialize(object? value, Type inputType, JsonSerializerContext context)
         {
-            if (inputType == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(inputType));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
-            if (jsonSerializerContext == null)
-            {
-                throw new ArgumentNullException(nameof(jsonSerializerContext));
-            }
-
-            Type type = inputType == typeof(object) && value != null
-                ? value.GetType()
-                : inputType;
-
-            return SerializeUsingMetadata(
-                value,
-                JsonHelpers.GetJsonTypeInfo(jsonSerializerContext, type));
+            ValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);
+            return WriteStringAsObject(value, jsonTypeInfo);
         }
 
-        private static string SerializeUsingMetadata<TValue>(in TValue value, JsonTypeInfo? jsonTypeInfo)
+        private static string WriteString<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo == null)
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(jsonTypeInfo.Options, out PooledByteBufferWriter output);
+
+            try
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
-            }
-
-            JsonSerializerOptions options = jsonTypeInfo.Options;
-
-            WriteStack state = default;
-            state.Initialize(jsonTypeInfo, options, supportContinuation: false);
-
-            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
-            {
-                using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
-                {
-                    JsonConverter? jsonConverter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
-                    WriteCore(jsonConverter, writer, value, options, ref state);
-                }
-
+                jsonTypeInfo.Serialize(writer, value);
                 return JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
+        }
+
+        private static string WriteStringAsObject(object? value, JsonTypeInfo jsonTypeInfo)
+        {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(jsonTypeInfo.Options, out PooledByteBufferWriter output);
+
+            try
+            {
+                jsonTypeInfo.SerializeAsObject(writer, value);
+                return JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
             }
         }
     }

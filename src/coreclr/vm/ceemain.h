@@ -26,13 +26,16 @@ HRESULT EnsureEEStarted();
 //    shutdown normally ends. "Shutdown" methods that take this action as an argument
 //    do not return when SCA_ExitProcessWhenShutdownComplete is passed.
 //
-// 2. Return after performing all shutdown processing. This is a special case used
+// 2. Terminate process and generate a dump if enabled.
+//
+// 3. Return after performing all shutdown processing. This is a special case used
 //    by a shutdown initiated via the Shim, and is used to ensure that all runtimes
 //    loaded SxS are shutdown gracefully. "Shutdown" methods that take this action
 //    as an argument return when SCA_ReturnWhenShutdownComplete is passed.
 enum ShutdownCompleteAction
 {
     SCA_ExitProcessWhenShutdownComplete,
+    SCA_TerminateProcessWhenShutdownComplete,
     SCA_ReturnWhenShutdownComplete
 };
 
@@ -42,6 +45,8 @@ void ForceEEShutdown(ShutdownCompleteAction sca = SCA_ExitProcessWhenShutdownCom
 // Notification of a DLL_THREAD_DETACH or a Thread Terminate.
 void ThreadDetaching();
 
+void EnsureTlsDestructionMonitor();
+
 void SetLatchedExitCode (INT32 code);
 INT32 GetLatchedExitCode (void);
 
@@ -49,5 +54,10 @@ INT32 GetLatchedExitCode (void);
 // Stronger than IsGCHeapInitialized
 BOOL IsGarbageCollectorFullyInitialized();
 
+// Specifies whether coreclr is embedded or standalone
+extern bool g_coreclr_embedded;
+
+// Specifies whether hostpolicy is embedded in executable or standalone
+extern bool g_hostpolicy_embedded;
 
 #endif

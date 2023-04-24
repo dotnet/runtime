@@ -21,7 +21,7 @@ typedef DPTR(const struct HardCodedMetaSig) PTR_HARDCODEDMETASIG;
 struct HardCodedMetaSig
 {
     const BYTE* m_pMetaSig; // metasig prefixed with INT8 length:
-                            // length > 0 - resolved, lenght < 0 - has unresolved type references
+                            // length > 0 - resolved, length < 0 - has unresolved type references
 };
 
 #define DEFINE_METASIG(body)            extern const body
@@ -120,9 +120,6 @@ struct CoreLibFieldDescription
 class CoreLibBinder
 {
   public:
-#ifdef DACCESS_COMPILE
-    friend class NativeImageDumper;
-#endif
 
     //
     // Note that the frequently called methods are intentionally static to reduce code bloat.
@@ -142,7 +139,7 @@ class CoreLibBinder
     static FieldDesc * GetField(BinderFieldID id);
 
     //
-    // A slighly faster version that assumes that the class was fetched
+    // A slightly faster version that assumes that the class was fetched
     // by the binder earlier.
     //
     static PTR_MethodTable GetExistingClass(BinderClassID id);
@@ -236,16 +233,6 @@ class CoreLibBinder
     // These are called by initialization code:
     //
     static void AttachModule(Module *pModule);
-
-#ifdef FEATURE_PREJIT
-    //
-    // Store the binding arrays to a prejit image
-    // so we don't have to do name lookup at runtime
-    //
-    void BindAll();
-    void Save(DataImage *image);
-    void Fixup(DataImage *image);
-#endif
 
 #ifdef _DEBUG
     void Check();
@@ -346,7 +333,7 @@ FORCEINLINE PTR_MethodTable CoreLibBinder::GetClass(BinderClassID id)
     }
     CONTRACTL_END;
 
-    // Force a GC here under stress because type loading could trigger GC nondeterminsticly
+    // Force a GC here under stress because type loading could trigger GC nondeterministicly
     INDEBUG(TriggerGCUnderStress());
 
     PTR_MethodTable pMT = VolatileLoad(&((&g_CoreLib)->m_pClasses[id]));
@@ -368,7 +355,7 @@ FORCEINLINE MethodDesc * CoreLibBinder::GetMethod(BinderMethodID id)
     }
     CONTRACTL_END;
 
-    // Force a GC here under stress because type loading could trigger GC nondeterminsticly
+    // Force a GC here under stress because type loading could trigger GC nondeterministicly
     INDEBUG(TriggerGCUnderStress());
 
     MethodDesc * pMD = VolatileLoad(&((&g_CoreLib)->m_pMethods[id]));
@@ -390,7 +377,7 @@ FORCEINLINE FieldDesc * CoreLibBinder::GetField(BinderFieldID id)
     }
     CONTRACTL_END;
 
-    // Force a GC here under stress because type loading could trigger GC nondeterminsticly
+    // Force a GC here under stress because type loading could trigger GC nondeterministicly
     INDEBUG(TriggerGCUnderStress());
 
     FieldDesc * pFD = VolatileLoad(&((&g_CoreLib)->m_pFields[id]));

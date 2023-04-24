@@ -38,18 +38,12 @@ namespace System.Net
         public void CopyTo(Array array, int offset)
         {
             _httpListener.CheckDisposed();
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
             if (Count > array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(array), SR.net_array_too_small);
             }
-            if (offset + Count > array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, array.Length - Count);
             int index = 0;
             foreach (string uriPrefix in _httpListener.PrefixCollection)
             {
@@ -60,18 +54,12 @@ namespace System.Net
         public void CopyTo(string[] array, int offset)
         {
             _httpListener.CheckDisposed();
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
             if (Count > array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(array), SR.net_array_too_small);
             }
-            if (offset + Count > array.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, array.Length - Count);
             int index = 0;
             foreach (string uriPrefix in _httpListener.PrefixCollection)
             {

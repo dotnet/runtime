@@ -56,13 +56,13 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             Max = Qualifier
         }
 
-        public static RID Parse(string runtimeIdentifier)
+        public static RID Parse(string runtimeIdentifier, bool noQualifier)
         {
             string[] parts = new string[(int)RIDPart.Max + 1];
             bool omitVersionDelimiter = true;
             RIDPart parseState = RIDPart.Base;
 
-            int partStart = 0, partLength = 0;
+            int partStart = 0, partLength;
 
             // qualifier is indistinguishable from arch so we cannot distinguish it for parsing purposes
             Debug.Assert(ArchitectureDelimiter == QualifierDelimiter);
@@ -90,6 +90,15 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
                         // version might be omitted
                         else if (current == ArchitectureDelimiter)
                         {
+                            // The qualifier delimiter and architecture delimiter are the same.
+                            // When there is no qualifier, there will be one delimiter past the base part
+                            // for the architecture.
+                            // So if we see another delimiter later in the string (for the architecture),
+                            // extend the base part instead of starting the architecture part.
+                            if (noQualifier && runtimeIdentifier.IndexOf(ArchitectureDelimiter, i + 1) != -1)
+                            {
+                                break;
+                            }
                             // ensure there's no version later in the string
                             if (runtimeIdentifier.IndexOf(VersionDelimiter, i) != -1)
                             {

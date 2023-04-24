@@ -24,27 +24,27 @@ namespace Internal.TypeSystem
         public override bool Equals(object o)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(o is not TypeDesc || object.ReferenceEquals(((TypeDesc)o).Context, this.Context));
-            return object.ReferenceEquals(this, o);
+            Debug.Assert(o is not TypeDesc || ReferenceEquals(((TypeDesc)o).Context, this.Context));
+            return ReferenceEquals(this, o);
         }
 
 #if DEBUG
         public static bool operator ==(TypeDesc left, TypeDesc right)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(left is null || right is null || object.ReferenceEquals(left.Context, right.Context));
-            return object.ReferenceEquals(left, right);
+            Debug.Assert(left is null || right is null || ReferenceEquals(left.Context, right.Context));
+            return ReferenceEquals(left, right);
         }
 
         public static bool operator !=(TypeDesc left, TypeDesc right)
         {
             // Its only valid to compare two TypeDescs in the same context
-            Debug.Assert(left is null || right is null || object.ReferenceEquals(left.Context, right.Context));
-            return !object.ReferenceEquals(left, right);
+            Debug.Assert(left is null || right is null || ReferenceEquals(left.Context, right.Context));
+            return !ReferenceEquals(left, right);
         }
 #endif
 
-        // The most frequently used type properties are cached here to avoid excesive virtual calls
+        // The most frequently used type properties are cached here to avoid excessive virtual calls
         private TypeFlags _typeFlags;
 
         /// <summary>
@@ -117,7 +117,6 @@ namespace Internal.TypeSystem
                 case WellKnownType.RuntimeMethodHandle:
                 case WellKnownType.RuntimeFieldHandle:
                 case WellKnownType.TypedReference:
-                case WellKnownType.ByReferenceOfT:
                     flags = TypeFlags.ValueType;
                     break;
 
@@ -217,6 +216,8 @@ namespace Internal.TypeSystem
                     case TypeFlags.UInt32:
                     case TypeFlags.Int64:
                     case TypeFlags.UInt64:
+                    case TypeFlags.IntPtr:
+                    case TypeFlags.UIntPtr:
                     case TypeFlags.Single:
                     case TypeFlags.Double:
                         return true;
@@ -284,6 +285,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool IsTypedReference
+        {
+            get
+            {
+                return this.IsWellKnownType(WellKnownType.TypedReference);
+            }
+        }
+
         /// <summary>
         /// Gets a value indicating whether this is a generic definition, or
         /// an instance of System.Nullable`1.
@@ -293,18 +302,6 @@ namespace Internal.TypeSystem
             get
             {
                 return this.GetTypeDefinition().IsWellKnownType(WellKnownType.Nullable);
-            }
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether this is a generic definition, or
-        /// an instance of System.ByReference`1.
-        /// </summary>
-        public bool IsByReferenceOfT
-        {
-            get
-            {
-                return this.GetTypeDefinition().IsWellKnownType(WellKnownType.ByReferenceOfT);
             }
         }
 
@@ -475,7 +472,6 @@ namespace Internal.TypeSystem
                 if (!this.IsEnum)
                     return this;
 
-                // TODO: Cache the result?
                 foreach (var field in this.GetFields())
                 {
                     if (!field.IsStatic)
@@ -506,6 +502,16 @@ namespace Internal.TypeSystem
         public virtual IEnumerable<MethodDesc> GetMethods()
         {
             return MethodDesc.EmptyMethods;
+        }
+
+        /// <summary>
+        /// Gets a subset of methods returned by <see cref="GetMethods"/> that are virtual.
+        /// </summary>
+        public virtual IEnumerable<MethodDesc> GetVirtualMethods()
+        {
+            foreach (MethodDesc method in GetMethods())
+                if (method.IsVirtual)
+                    yield return method;
         }
 
         /// <summary>

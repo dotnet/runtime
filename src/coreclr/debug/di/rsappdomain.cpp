@@ -12,9 +12,6 @@
 
 #include "check.h"
 
-#include <tlhelp32.h>
-#include "wtsapi32.h"
-
 #ifndef SM_REMOTESESSION
 #define SM_REMOTESESSION 0x1000
 #endif
@@ -280,7 +277,7 @@ HRESULT CordbAppDomain::EnumerateThreads(ICorDebugThreadEnum **ppThreads)
         RSInitHolder<CordbHashTableEnum> pEnum;
         GetProcess()->BuildThreadEnum(this, NULL, pEnum.GetAddr());
 
-        // This builds up auxillary list. don't need pEnum after this.
+        // This builds up auxiliary list. don't need pEnum after this.
         hr = pThreadEnum->Init(pEnum, this);
         IfFailThrow(hr);
 
@@ -700,7 +697,7 @@ HRESULT CordbAppDomain::Attach()
  */
 HRESULT CordbAppDomain::GetName(ULONG32 cchName,
                                 ULONG32 *pcchName,
-                                __out_ecount_part_opt(cchName, *pcchName) WCHAR szName[])
+                                _Out_writes_to_opt_(cchName, *pcchName) WCHAR szName[])
 {
     HRESULT hr = S_OK;
     PUBLIC_API_BEGIN(this)
@@ -829,7 +826,7 @@ CordbAssembly * CordbAppDomain::LookupOrCreateAssembly(VMPTR_Assembly vmAssembly
 // Lookup or create a module within the appdomain
 //
 // Arguments:
-//    vmDomainFile - non-null module to lookup
+//    vmDomainAssembly - non-null module to lookup
 //
 // Returns:
 //    a CordbModule object for the given cookie. Object may be from the cache, or created
@@ -839,26 +836,26 @@ CordbAssembly * CordbAppDomain::LookupOrCreateAssembly(VMPTR_Assembly vmAssembly
 // Notes:
 //    If you don't know which appdomain the module is in, use code:CordbProcess::LookupOrCreateModule.
 //
-CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Module vmModule, VMPTR_DomainFile vmDomainFile)
+CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Module vmModule, VMPTR_DomainAssembly vmDomainAssembly)
 {
     INTERNAL_API_ENTRY(this);
     CordbModule * pModule;
 
     RSLockHolder lockHolder(GetProcess()->GetProcessLock()); // @dbgtodo  locking: push this up.
 
-    _ASSERTE(!vmDomainFile.IsNull() || !vmModule.IsNull());
+    _ASSERTE(!vmDomainAssembly.IsNull() || !vmModule.IsNull());
 
     // check to see if the module is present in this app domain
-    pModule = m_modules.GetBase(vmDomainFile.IsNull() ? VmPtrToCookie(vmModule) : VmPtrToCookie(vmDomainFile));
+    pModule = m_modules.GetBase(vmDomainAssembly.IsNull() ? VmPtrToCookie(vmModule) : VmPtrToCookie(vmDomainAssembly));
     if (pModule != NULL)
     {
         return pModule;
     }
 
     if (vmModule.IsNull())
-        GetProcess()->GetDAC()->GetModuleForDomainFile(vmDomainFile, &vmModule);
+        GetProcess()->GetDAC()->GetModuleForDomainAssembly(vmDomainAssembly, &vmModule);
 
-    RSInitHolder<CordbModule> pModuleInit(new CordbModule(GetProcess(), vmModule, vmDomainFile));
+    RSInitHolder<CordbModule> pModuleInit(new CordbModule(GetProcess(), vmModule, vmDomainAssembly));
     pModule = pModuleInit.TransferOwnershipToHash(&m_modules);
 
     // The appdomains should match.
@@ -868,12 +865,12 @@ CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_Module vmModule, VMPTR_D
 }
 
 
-CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_DomainFile vmDomainFile)
+CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_DomainAssembly vmDomainAssembly)
 {
     INTERNAL_API_ENTRY(this);
 
-    _ASSERTE(!vmDomainFile.IsNull());
-    return LookupOrCreateModule(VMPTR_Module::NullPtr(), vmDomainFile);
+    _ASSERTE(!vmDomainAssembly.IsNull());
+    return LookupOrCreateModule(VMPTR_Module::NullPtr(), vmDomainAssembly);
 }
 
 
@@ -890,7 +887,7 @@ CordbModule* CordbAppDomain::LookupOrCreateModule(VMPTR_DomainFile vmDomainFile)
 //    invokes this callback.
 
 // static
-void CordbAppDomain::ModuleEnumerationCallback(VMPTR_DomainFile vmModule, void * pUserData)
+void CordbAppDomain::ModuleEnumerationCallback(VMPTR_DomainAssembly vmModule, void * pUserData)
 {
     CONTRACTL
     {
@@ -1085,8 +1082,9 @@ HRESULT CordbAppDomain::GetObjectForCCW(CORDB_ADDRESS ccwPointer, ICorDebugValue
 
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
-
     VALIDATE_POINTER_TO_OBJECT(ppManagedObject, ICorDebugValue **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+
     HRESULT hr = S_OK;
 
     *ppManagedObject = NULL;

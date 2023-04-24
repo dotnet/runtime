@@ -328,14 +328,14 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
 
     // Static value classes are stored as handles so that GC can deal with them properly.  Thus, we need to follow the
     // handle like an objectref.  Do this by forcing CreateValueByType to think this is an objectref. Note: we don't do
-    // this for value classes that have an RVA, since they're layed out at the RVA with no handle.
+    // this for value classes that have an RVA, since they're laid out at the RVA with no handle.
     bool fIsBoxed = (fIsValueClass &&
                      !pFieldData->m_fFldIsRVA &&
                      !pFieldData->m_fFldIsPrimitive &&
                      !pFieldData->m_fFldIsTLS);
 
     TargetBuffer remoteValue(pRmtStaticValue, CordbValue::GetSizeForType(pType, fIsBoxed ? kBoxed : kUnboxed));
-    ICorDebugValue * pValue;
+    ICorDebugValue * pValue = NULL;
 
     EX_TRY
     {
@@ -588,7 +588,7 @@ HRESULT CordbClass::SetJMCStatus(BOOL fIsUserCode)
         pImport = pModule->GetMetaDataImporter();
         do
         {
-            hr = pImport->EnumMethods(&phEnum, m_token, rTokens, NumItems(rTokens), &count);
+            hr = pImport->EnumMethods(&phEnum, m_token, rTokens, ARRAY_SIZE(rTokens), &count);
             IfFailThrow(hr);
 
             for (i = 0; i < count; i++)
@@ -618,10 +618,10 @@ HRESULT CordbClass::SetJMCStatus(BOOL fIsUserCode)
 }
 
 //-----------------------------------------------------------------------------
-// We have to go the the EE to find out if a class is a value
+// We have to go the EE to find out if a class is a value
 // class or not.  This is because there is no flag for this, but rather
 // it depends on whether the class subclasses System.ValueType (apart
-// from System.Enum...).  Replicating all that resoultion logic
+// from System.Enum...).  Replicating all that resolution logic
 // does not seem like a good plan.
 //
 // We also accept other "evidence" that the class is or isn't a VC, in
@@ -781,11 +781,11 @@ void CordbClass::Init(ClassLoadLevel desiredLoadLevel)
         if(desiredLoadLevel == FullInfo)
         {
             VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
-            VMPTR_DomainFile vmDomainFile = m_pModule->GetRuntimeDomainFile();
-            if (!vmDomainFile.IsNull())
+            VMPTR_DomainAssembly vmDomainAssembly = m_pModule->GetRuntimeDomainAssembly();
+            if (!vmDomainAssembly.IsNull())
             {
-                DomainFileInfo info;
-                pDac->GetDomainFileData(vmDomainFile, &info);
+                DomainAssemblyInfo info;
+                pDac->GetDomainAssemblyData(vmDomainAssembly, &info);
                 vmAppDomain = info.vmAppDomain;
             }
             pDac->GetClassInfo(vmAppDomain, vmTypeHandle, &m_classInfo);
@@ -920,7 +920,7 @@ HRESULT FieldData::GetFieldSignature(CordbModule *pModule,
 // Initializes an instance of EnCHangingFieldInfo.
 // Arguments:
 //     input:  fStatic       - flag to indicate whether the EnC field is static
-//             pObject       - For instance fields, the Object instance containing the the sync-block.
+//             pObject       - For instance fields, the Object instance containing the sync-block.
 //                             For static fields (if this is being called from GetStaticFieldValue) object is NULL.
 //             fieldToken    - token for the EnC field
 //             metadataToken - metadata token for this instance of CordbClass
@@ -941,7 +941,7 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
                         fieldToken,
                         ELEMENT_TYPE_MAX,
                         classToken,
-                        m_pModule->GetRuntimeDomainFile());
+                        m_pModule->GetRuntimeDomainAssembly());
     }
     else
     {
@@ -966,7 +966,7 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
                                                                     // This is used only for log messages, and could
                                                                     // be removed.
                         classToken,                                 // metadata token for the class
-                        m_pModule->GetRuntimeDomainFile());         // Domain file for the class
+                        m_pModule->GetRuntimeDomainAssembly());         // Domain file for the class
     }
 } // CordbClass::InitFieldData
 
@@ -974,7 +974,7 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
 // Get information via the DAC about a field added with Edit and Continue.
 // Arguments:
 //     input: fStatic       - flag to indicate whether the EnC field is static
-//            pObject       - For instance fields, the Object instance containing the the sync-block.
+//            pObject       - For instance fields, the Object instance containing the sync-block.
 //                            For static fields (if this is being called from GetStaticFieldValue) object is NULL.
 //            fieldToken    - token for the EnC field
 //     output: pointer to an initialized instance of FieldData that has been added to the appropriate table
@@ -1029,7 +1029,7 @@ FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
 //
 // Arguments:
 //     input:  fldToken - field of interest to get.
-//             pObject  - For instance fields, the Object instance containing the the sync-block.
+//             pObject  - For instance fields, the Object instance containing the sync-block.
 //                        For static fields (if this is being called from GetStaticFieldValue) object is NULL.
 //     output: ppFieldData - the FieldData matching the fldToken.
 //

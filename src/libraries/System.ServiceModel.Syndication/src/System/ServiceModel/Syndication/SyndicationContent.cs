@@ -20,7 +20,7 @@ namespace System.ServiceModel.Syndication
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions
         {
-            get => _attributeExtensions ?? (_attributeExtensions = new Dictionary<XmlQualifiedName, string>());
+            get => _attributeExtensions ??= new Dictionary<XmlQualifiedName, string>();
         }
 
         public abstract string Type { get; }
@@ -69,10 +69,11 @@ namespace System.ServiceModel.Syndication
 
         public void WriteTo(XmlWriter writer, string outerElementName, string outerElementNamespace)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
+
             if (string.IsNullOrEmpty(outerElementName))
             {
                 throw new ArgumentException(SR.OuterElementNameNotSpecified, nameof(outerElementName));
@@ -98,7 +99,7 @@ namespace System.ServiceModel.Syndication
 
         internal void CopyAttributeExtensions(SyndicationContent source)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }

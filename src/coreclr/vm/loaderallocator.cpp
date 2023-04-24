@@ -13,15 +13,13 @@
 #endif
 #include "comcallablewrapper.h"
 
-#ifndef CROSSGEN_COMPILE
 #define STUBMANAGER_RANGELIST(stubManager) (stubManager::g_pManager->GetRangeList())
-#else
-#define STUBMANAGER_RANGELIST(stubManager) (NULL)
-#endif
 
 UINT64 LoaderAllocator::cLoaderAllocatorsCreated = 1;
 
-LoaderAllocator::LoaderAllocator()
+LoaderAllocator::LoaderAllocator(bool collectible) : 
+    m_stubPrecodeRangeList(STUB_CODE_BLOCK_STUBPRECODE, collectible),
+    m_fixupPrecodeRangeList(STUB_CODE_BLOCK_FIXUPPRECODE, collectible)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -49,9 +47,7 @@ LoaderAllocator::LoaderAllocator()
     m_pFatTokenSet = NULL;
 #endif
 
-#ifndef CROSSGEN_COMPILE
     m_pVirtualCallStubManager = NULL;
-#endif
 
 #ifdef FEATURE_TIERED_COMPILATION
     m_callCountingManager = NULL;
@@ -72,7 +68,7 @@ LoaderAllocator::LoaderAllocator()
     m_pLastUsedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
     m_pJumpStubCache = NULL;
-    m_IsCollectible = false;
+    m_IsCollectible = collectible;
 
     m_pMarshalingData = NULL;
 
@@ -96,7 +92,7 @@ LoaderAllocator::~LoaderAllocator()
         DESTRUCTOR_CHECK;
     }
     CONTRACTL_END;
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     Terminate();
 
     // Assert that VSD is not still active when the destructor is called.
@@ -121,7 +117,7 @@ void LoaderAllocator::AddReference()
     CONTRACTL_END;
 
     _ASSERTE((m_cReferences > (UINT32)0) && (m_cReferences != (UINT32)-1));
-    FastInterlockIncrement((LONG *)&m_cReferences);
+    InterlockedIncrement((LONG *)&m_cReferences);
 }
 #endif //!DACCESS_COMPILE
 
@@ -152,7 +148,7 @@ BOOL LoaderAllocator::AddReferenceIfAlive()
             return FALSE;
         }
 
-        UINT32 cOriginalReferences = FastInterlockCompareExchange(
+        UINT32 cOriginalReferences = InterlockedCompareExchange(
             (LONG *)&m_cReferences,
             cReferencesLocalSnapshot + 1,
             cReferencesLocalSnapshot);
@@ -187,7 +183,7 @@ BOOL LoaderAllocator::Release()
 #ifndef DACCESS_COMPILE
 
     _ASSERTE((m_cReferences > (UINT32)0) && (m_cReferences != (UINT32)-1));
-    LONG cNewReferences = FastInterlockDecrement((LONG *)&m_cReferences);
+    LONG cNewReferences = InterlockedDecrement((LONG *)&m_cReferences);
     return (cNewReferences == 0);
 #else //DACCESS_COMPILE
 
@@ -196,7 +192,6 @@ BOOL LoaderAllocator::Release()
 } // LoaderAllocator::Release
 
 #ifndef DACCESS_COMPILE
-#ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------------------------------------
 //
 BOOL LoaderAllocator::CheckAddReference_Unlocked(LoaderAllocator *pOtherLA)
@@ -292,7 +287,6 @@ BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
         TypeHandle arg = inst[i];
-        _ASSERTE(!arg.IsEncodedFixup());
         LoaderAllocator *pOtherLA = arg.GetLoaderModule()->GetLoaderAllocator();
 
         if (pOtherLA == this)
@@ -306,19 +300,7 @@ BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation
 
     return fNewReferenceNeeded;
 }
-#else // CROSSGEN_COMPILE
-BOOL LoaderAllocator::EnsureReference(LoaderAllocator *pOtherLA)
-{
-    return FALSE;
-}
 
-BOOL LoaderAllocator::EnsureInstantiation(Module *pDefiningModule, Instantiation inst)
-{
-    return FALSE;
-}
-#endif // !CROSSGEN_COMPILE
-
-#ifndef CROSSGEN_COMPILE
 bool LoaderAllocator::Marked()
 {
     LIMITED_METHOD_CONTRACT;
@@ -379,7 +361,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         while (iData.Next_Unlocked(pDomainAssembly.This()))
         {
             // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
-            Assembly * pAssembly = pDomainAssembly->GetLoadedAssembly();
+            Assembly * pAssembly = pDomainAssembly->GetAssembly();
 
             if (pAssembly != NULL)
             {
@@ -401,8 +383,9 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
 #endif //0
 
     AppDomain::AssemblyIterator i;
-    // Iterate through every loader allocator, marking as we go
     {
+        // Iterate through every loader allocator, marking as we go
+        CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
         CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
 
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
@@ -412,7 +395,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
         while (i.Next_Unlocked(pDomainAssembly.This()))
         {
             // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
-            Assembly * pAssembly = pDomainAssembly->GetLoadedAssembly();
+            Assembly * pAssembly = pDomainAssembly->GetAssembly();
 
             if (pAssembly != NULL)
             {
@@ -424,22 +407,16 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                 }
             }
         }
-    }
 
-    // Iterate through every loader allocator, unmarking marked loaderallocators, and
-    // build a free list of unmarked ones
-    {
-        CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
-        CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
-
+        // Iterate through every loader allocator, unmarking marked loaderallocators, and
+        // build a free list of unmarked ones
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
 
         while (i.Next_Unlocked(pDomainAssembly.This()))
         {
             // The assembly could be collected (ref-count = 0), do not use holder which calls add-ref
-            Assembly * pAssembly = pDomainAssembly->GetLoadedAssembly();
+            Assembly * pAssembly = pDomainAssembly->GetAssembly();
 
             if (pAssembly != NULL)
             {
@@ -500,11 +477,10 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
 
             if (!domainAssemblyToRemove->GetAssembly()->IsDynamic())
             {
-                pAppDomain->RemoveFileFromCache(domainAssemblyToRemove->GetFile());
+                pAppDomain->RemoveFileFromCache(domainAssemblyToRemove->GetPEAssembly());
                 AssemblySpec spec;
-                spec.InitializeSpec(domainAssemblyToRemove->GetFile());
+                spec.InitializeSpec(domainAssemblyToRemove->GetPEAssembly());
                 VERIFY(pAppDomain->RemoveAssemblyFromCache(domainAssemblyToRemove));
-                pAppDomain->RemoveNativeImageDependency(&spec);
             }
 
             domainAssemblyIt++;
@@ -597,13 +573,17 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
 
         pDomainLoaderAllocatorDestroyIterator->ReleaseManagedAssemblyLoadContext();
 
+        // The native objects in dependent handles may refer to the virtual call stub manager's heaps, so clear the dependent
+        // handles first
+        pDomainLoaderAllocatorDestroyIterator->CleanupDependentHandlesToNativeObjects();
+
         // The following code was previously happening on delete ~DomainAssembly->Terminate
         // We are moving this part here in order to make sure that we can unload a LoaderAllocator
         // that didn't have a DomainAssembly
         // (we have now a LoaderAllocator with 0-n DomainAssembly)
 
         // This cleanup code starts resembling parts of AppDomain::Terminate too much.
-        // It would be useful to reduce duplication and also establish clear responsibilites
+        // It would be useful to reduce duplication and also establish clear responsibilities
         // for LoaderAllocator::Destroy, Assembly::Terminate, LoaderAllocator::Terminate
         // and LoaderAllocator::~LoaderAllocator. We need to establish how these
         // cleanup paths interact with app-domain unload and process tear-down, too.
@@ -653,14 +633,8 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
 //---------------------------------------------------------------------------------------
 //
 //static
-BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
+BOOL LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
 {
-    QCALL_CONTRACT;
-
-    BOOL ret = FALSE;
-
-    BEGIN_QCALL;
-
     if (ObjectHandleIsNull(pLoaderAllocator->GetLoaderAllocatorObjectHandle()))
     {
         STRESS_LOG1(LF_CLASSLOADER, LL_INFO100, "Begin LoaderAllocator::Destroy for loader allocator %p\n", reinterpret_cast<void *>(static_cast<PTR_LoaderAllocator>(pLoaderAllocator)));
@@ -698,7 +672,7 @@ BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllo
         DomainAssembly* pDomainAssembly = (DomainAssembly*)(pID->GetDomainAssemblyIterator());
         if (pDomainAssembly != NULL)
         {
-            Assembly *pAssembly = pDomainAssembly->GetCurrentAssembly();
+            Assembly *pAssembly = pDomainAssembly->GetAssembly();
             pLoaderAllocator->m_pFirstDomainAssemblyFromSameALCToDelete = pAssembly->GetDomainAssembly();
         }
 
@@ -725,13 +699,26 @@ BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllo
         }
         STRESS_LOG1(LF_CLASSLOADER, LL_INFO100, "End LoaderAllocator::Destroy for loader allocator %p\n", reinterpret_cast<void *>(static_cast<PTR_LoaderAllocator>(pLoaderAllocator)));
 
-        ret = TRUE;
+        return TRUE;
     }
+
+    return FALSE;
+} // LoaderAllocator::Destroy
+
+extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
+{
+    QCALL_CONTRACT;
+
+    BOOL ret = FALSE;
+
+    BEGIN_QCALL;
+
+    ret = LoaderAllocator::Destroy(pLoaderAllocator);
 
     END_QCALL;
 
     return ret;
-} // LoaderAllocator::Destroy
+}
 
 #define MAX_LOADERALLOCATOR_HANDLE 0x40000000
 
@@ -748,15 +735,17 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
 
     LOADERHANDLE retVal;
 
-    struct _gc
+    struct
     {
         OBJECTREF value;
         LOADERALLOCATORREF loaderAllocator;
         PTRARRAYREF handleTable;
         PTRARRAYREF handleTableOld;
     } gc;
-
-    ZeroMemory(&gc, sizeof(gc));
+    gc.value = NULL;
+    gc.loaderAllocator = NULL;
+    gc.handleTable = NULL;
+    gc.handleTableOld = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -918,14 +907,16 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
 
     OBJECTREF retVal;
 
-    struct _gc
+    struct
     {
         OBJECTREF value;
         OBJECTREF compare;
         OBJECTREF previous;
     } gc;
+    gc.value = NULL;
+    gc.compare = NULL;
+    gc.previous = NULL;
 
-    ZeroMemory(&gc, sizeof(gc));
     GCPROTECT_BEGIN(gc);
 
     gc.value = valueUNSAFE;
@@ -934,10 +925,11 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
     if ((((UINT_PTR)handle) & 1) != 0)
     {
         OBJECTREF *ptr = (OBJECTREF *)(((UINT_PTR)handle) - 1);
-        gc.previous = *ptr;
-        if ((*ptr) == gc.compare)
+
+        gc.previous = ObjectToOBJECTREF(InterlockedCompareExchangeT((Object **)ptr, OBJECTREFToObject(gc.value), OBJECTREFToObject(gc.compare)));
+        if (gc.previous == gc.compare)
         {
-            SetObjectReference(ptr, gc.value);
+            ErectWriteBarrier(ptr, gc.value);
         }
     }
     else
@@ -1054,7 +1046,6 @@ void LoaderAllocator::ActivateManagedTracking()
     LOADERALLOCATORREF loaderAllocator = (LOADERALLOCATORREF)ObjectFromHandle(m_hLoaderAllocatorObjectHandle);
     loaderAllocator->SetNativeLoaderAllocator(this);
 }
-#endif // !CROSSGEN_COMPILE
 
 
 // We don't actually allocate a low frequency heap for collectible types.
@@ -1062,8 +1053,8 @@ void LoaderAllocator::ActivateManagedTracking()
 #define COLLECTIBLE_LOW_FREQUENCY_HEAP_SIZE        (0 * GetOsPageSize())
 #define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (3 * GetOsPageSize())
 #define COLLECTIBLE_STUB_HEAP_SIZE                 GetOsPageSize()
-#define COLLECTIBLE_CODEHEAP_SIZE                  (7 * GetOsPageSize())
-#define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (5 * GetOsPageSize())
+#define COLLECTIBLE_CODEHEAP_SIZE                  (10 * GetOsPageSize())
+#define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (2 * GetOsPageSize())
 
 void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 {
@@ -1077,9 +1068,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     m_ComCallWrapperCrst.Init(CrstCOMCallWrapper);
 #endif
 
-#ifndef CROSSGEN_COMPILE
     m_methodDescBackpatchInfoTracker.Initialize(this);
-#endif
 
     //
     // Initialize the heaps
@@ -1132,12 +1121,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     dwTotalReserveMemSize = (DWORD) ALIGN_UP(dwTotalReserveMemSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
-#if !defined(HOST_64BIT)
-    // Make sure that we reserve as little as possible on 32-bit to save address space
-    _ASSERTE(dwTotalReserveMemSize <= VIRTUAL_ALLOC_RESERVE_GRANULARITY);
-#endif
-
-    BYTE * initReservedMem = ClrVirtualAllocExecutable(dwTotalReserveMemSize, MEM_RESERVE, PAGE_NOACCESS);
+    BYTE * initReservedMem = (BYTE*)ExecutableAllocator::Instance()->Reserve(dwTotalReserveMemSize);
 
     m_InitialReservedMemForLoaderHeaps = initReservedMem;
 
@@ -1177,7 +1161,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
                                                                       initReservedMem,
                                                                       dwExecutableHeapReserveSize,
                                                                       NULL,
-                                                                      TRUE /* Make heap executable */
+                                                                      UnlockedLoaderHeap::HeapKind::Executable
                                                                       );
         initReservedMem += dwExecutableHeapReserveSize;
     }
@@ -1200,7 +1184,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
                                                        initReservedMem,
                                                        dwStubHeapReserveSize,
                                                        STUBMANAGER_RANGELIST(StubLinkStubManager),
-                                                       TRUE /* Make heap executable */);
+                                                       UnlockedLoaderHeap::HeapKind::Executable);
 
     initReservedMem += dwStubHeapReserveSize;
 
@@ -1208,11 +1192,23 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     m_pStubHeap->m_fPermitStubsWithUnwindInfo = TRUE;
 #endif
 
-#ifdef CROSSGEN_COMPILE
-    m_pPrecodeHeap = new (&m_PrecodeHeapInstance) LoaderHeap(GetOsPageSize(), GetOsPageSize());
-#else
     m_pPrecodeHeap = new (&m_PrecodeHeapInstance) CodeFragmentHeap(this, STUB_CODE_BLOCK_PRECODE);
-#endif
+
+    m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
+                                                                           2 * GetStubCodePageSize(),
+                                                                           &m_stubPrecodeRangeList,
+                                                                           UnlockedLoaderHeap::HeapKind::Interleaved,
+                                                                           false /* fUnlocked */,
+                                                                           StubPrecode::GenerateCodePage,
+                                                                           StubPrecode::CodeSize);
+
+    m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) LoaderHeap(2 * GetStubCodePageSize(),
+                                                                       2 * GetStubCodePageSize(),
+                                                                       &m_fixupPrecodeRangeList,
+                                                                       UnlockedLoaderHeap::HeapKind::Interleaved,
+                                                                       false /* fUnlocked */,
+                                                                       FixupPrecode::GenerateCodePage,
+                                                                       FixupPrecode::CodeSize);
 
     // Initialize the EE marshaling data to NULL.
     m_pMarshalingData = NULL;
@@ -1237,7 +1233,6 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_READYTORUN
 PTR_CodeFragmentHeap LoaderAllocator::GetDynamicHelpersHeap()
@@ -1397,6 +1392,18 @@ void LoaderAllocator::Terminate()
         m_pPrecodeHeap = NULL;
     }
 
+    if (m_pFixupPrecodeHeap != NULL)
+    {
+        m_pFixupPrecodeHeap->~LoaderHeap();
+        m_pFixupPrecodeHeap = NULL;
+    }
+
+    if (m_pNewStubPrecodeHeap != NULL)
+    {
+        m_pNewStubPrecodeHeap->~LoaderHeap();
+        m_pNewStubPrecodeHeap = NULL;
+    }
+
 #ifdef FEATURE_READYTORUN
     if (m_pDynamicHelpersHeap != NULL)
     {
@@ -1414,7 +1421,7 @@ void LoaderAllocator::Terminate()
     // This was the block reserved by BaseDomain::Init for the loaderheaps.
     if (m_InitialReservedMemForLoaderHeaps)
     {
-        ClrVirtualFree (m_InitialReservedMemForLoaderHeaps, 0, MEM_RELEASE);
+        ExecutableAllocator::Instance()->Release(m_InitialReservedMemForLoaderHeaps);
         m_InitialReservedMemForLoaderHeaps=NULL;
     }
 
@@ -1437,7 +1444,6 @@ void LoaderAllocator::Terminate()
     LOG((LF_CLASSLOADER, LL_INFO100, "End LoaderAllocator::Terminate for loader allocator %p\n", reinterpret_cast<void *>(static_cast<PTR_LoaderAllocator>(this))));
 }
 
-#endif // !CROSSGEN_COMPILE
 
 
 #else //DACCESS_COMPILE
@@ -1445,6 +1451,7 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
     DAC_ENUM_DTHIS();
+    EMEM_OUT(("MEM: %p LoaderAllocator\n", dac_cast<TADDR>(this)));
     if (m_pLowFrequencyHeap.IsValid())
     {
         m_pLowFrequencyHeap->EnumMemoryRegions(flags);
@@ -1461,9 +1468,27 @@ void LoaderAllocator::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         m_pPrecodeHeap->EnumMemoryRegions(flags);
     }
-    if (m_pPrecodeHeap.IsValid())
+    if (m_pExecutableHeap.IsValid())
     {
-        m_pPrecodeHeap->EnumMemoryRegions(flags);
+        m_pExecutableHeap->EnumMemoryRegions(flags);
+    }
+#ifdef FEATURE_READYTORUN
+    if (m_pDynamicHelpersHeap.IsValid())
+    {
+        m_pDynamicHelpersHeap->EnumMemoryRegions(flags);
+    }
+#endif
+    if (m_pFixupPrecodeHeap.IsValid())
+    {
+        m_pFixupPrecodeHeap->EnumMemoryRegions(flags);
+    }
+    if (m_pNewStubPrecodeHeap.IsValid())
+    {
+        m_pNewStubPrecodeHeap->EnumMemoryRegions(flags);
+    }
+    if (m_pVirtualCallStubManager.IsValid())
+    {
+        m_pVirtualCallStubManager->EnumMemoryRegions(flags);
     }
 }
 #endif //DACCESS_COMPILE
@@ -1480,17 +1505,14 @@ SIZE_T LoaderAllocator::EstimateSize()
         retval+=m_pStubHeap->GetSize();
     if(m_pStringLiteralMap)
         retval+=m_pStringLiteralMap->GetSize();
-#ifndef CROSSGEN_COMPILE
     if(m_pVirtualCallStubManager)
         retval+=m_pVirtualCallStubManager->GetSize();
-#endif
 
     return retval;
 }
 
 #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 
 DispatchToken LoaderAllocator::GetDispatchToken(
     UINT32 typeId, UINT32 slotNumber)
@@ -1515,7 +1537,7 @@ DispatchToken LoaderAllocator::GetDispatchToken(
             SimpleWriteLockHolder lock(pFatTokenSetLock);
             NewHolder<FatTokenSet> pFatTokenSet = new FatTokenSet;
 
-            if (FastInterlockCompareExchangePointer(
+            if (InterlockedCompareExchangeT(
                     &m_pFatTokenSetLock, pFatTokenSetLock.GetValue(), NULL) != NULL)
             {   // Someone beat us to it
                 lock.Release();
@@ -1594,7 +1616,6 @@ void LoaderAllocator::UninitVirtualCallStubManager()
     }
 }
 
-#endif // !CROSSGEN_COMPILE
 
 EEMarshalingData *LoaderAllocator::GetMarshalingData()
 {
@@ -1668,29 +1689,33 @@ void DomainAssemblyIterator::operator++()
     pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetNextDomainAssemblyInSameALC() : NULL;
 }
 
-void AssemblyLoaderAllocator::SetCollectible()
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    m_IsCollectible = true;
 #ifndef DACCESS_COMPILE
-    m_pShuffleThunkCache = new ShuffleThunkCache(m_pStubHeap);
-#endif
+
+void AssemblyLoaderAllocator::Init(AppDomain* pAppDomain)
+{
+    m_Id.Init();
+
+    // This is CRST_UNSAFE_ANYMODE to enable registering/unregistering dependent handles to native objects without changing the
+    // GC mode, in case the caller requires that
+    m_dependentHandleToNativeObjectSetCrst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
+
+    LoaderAllocator::Init((BaseDomain *)pAppDomain);
+    if (IsCollectible())
+    {
+        // TODO: the ShuffleThunkCache should really be using the m_pStubHeap, however the unloadability support
+        // doesn't track the stubs or the related delegate classes and so we get crashes when a stub is used after
+        // the AssemblyLoaderAllocator is gone (the stub memory is unmapped).
+        // https://github.com/dotnet/runtime/issues/55697 tracks this issue.
+        m_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
+    }
 }
 
-#ifndef DACCESS_COMPILE
-
-#ifndef CROSSGEN_COMPILE
 
 AssemblyLoaderAllocator::~AssemblyLoaderAllocator()
 {
     if (m_binderToRelease != NULL)
     {
-        VERIFY(m_binderToRelease->Release() == 0);
+        delete m_binderToRelease;
         m_binderToRelease = NULL;
     }
 
@@ -1698,7 +1723,7 @@ AssemblyLoaderAllocator::~AssemblyLoaderAllocator()
     m_pShuffleThunkCache = NULL;
 }
 
-void AssemblyLoaderAllocator::RegisterBinder(CLRPrivBinderAssemblyLoadContext* binderToRelease)
+void AssemblyLoaderAllocator::RegisterBinder(CustomAssemblyBinder* binderToRelease)
 {
     // When the binder is registered it will be released by the destructor
     // of this instance
@@ -1706,7 +1731,7 @@ void AssemblyLoaderAllocator::RegisterBinder(CLRPrivBinderAssemblyLoadContext* b
     m_binderToRelease = binderToRelease;
 }
 
-STRINGREF *LoaderAllocator::GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData)
+STRINGREF *LoaderAllocator::GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData, void** ppPinnedString)
 {
     CONTRACTL
     {
@@ -1722,7 +1747,7 @@ STRINGREF *LoaderAllocator::GetStringObjRefPtrFromUnicodeString(EEStringData *pS
         LazyInitStringLiteralMap();
     }
     _ASSERTE(m_pStringLiteralMap);
-    return m_pStringLiteralMap->GetStringLiteral(pStringData, TRUE, !CanUnload());
+    return m_pStringLiteralMap->GetStringLiteral(pStringData, TRUE, CanUnload(), ppPinnedString);
 }
 
 //*****************************************************************************
@@ -1780,7 +1805,7 @@ STRINGREF *LoaderAllocator::IsStringInterned(STRINGREF *pString)
         LazyInitStringLiteralMap();
     }
     _ASSERTE(m_pStringLiteralMap);
-    return m_pStringLiteralMap->GetInternedString(pString, FALSE, !CanUnload());
+    return m_pStringLiteralMap->GetInternedString(pString, FALSE, CanUnload());
 }
 
 STRINGREF *LoaderAllocator::GetOrInternString(STRINGREF *pString)
@@ -1799,7 +1824,7 @@ STRINGREF *LoaderAllocator::GetOrInternString(STRINGREF *pString)
         LazyInitStringLiteralMap();
     }
     _ASSERTE(m_pStringLiteralMap);
-    return m_pStringLiteralMap->GetInternedString(pString, TRUE, !CanUnload());
+    return m_pStringLiteralMap->GetInternedString(pString, TRUE, CanUnload());
 }
 
 void AssemblyLoaderAllocator::RegisterHandleForCleanup(OBJECTHANDLE objHandle)
@@ -1866,6 +1891,70 @@ void AssemblyLoaderAllocator::CleanupHandles()
     {
         HandleCleanupListItem * pItem = m_handleCleanupList.RemoveHead();
         DestroyTypedHandle(pItem->m_handle);
+    }
+}
+
+void AssemblyLoaderAllocator::RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(dependentHandle != nullptr);
+
+    CrstHolder setLockHolder(&m_dependentHandleToNativeObjectSetCrst);
+
+    _ASSERTE(m_dependentHandleToNativeObjectSet.Lookup(dependentHandle) == NULL);
+    m_dependentHandleToNativeObjectSet.Add(dependentHandle);
+}
+
+void AssemblyLoaderAllocator::UnregisterDependentHandleToNativeObjectFromCleanup(LADependentHandleToNativeObject *dependentHandle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(dependentHandle != nullptr);
+
+    CrstHolder setLockHolder(&m_dependentHandleToNativeObjectSetCrst);
+
+    _ASSERTE(m_dependentHandleToNativeObjectSet.Lookup(dependentHandle) != NULL);
+    m_dependentHandleToNativeObjectSet.Remove(dependentHandle);
+}
+
+void AssemblyLoaderAllocator::CleanupDependentHandlesToNativeObjects()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    // Locks under which dependent handles may be used must all be taken here to ensure that a thread using a dependent handle
+    // would either observe it cleared, or that the dependent object remains valid under those locks. In particular, any locks
+    // used to synchronize uses of CrossLoaderAllocatorHash instances must also be taken here.
+    CrstHolder jitInlineTrackingMapLockHolder(JITInlineTrackingMap::GetMapCrst());
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+
+    CrstHolder setLockHolder(&m_dependentHandleToNativeObjectSetCrst);
+
+    for (DependentHandleToNativeObjectSet::Iterator it = m_dependentHandleToNativeObjectSet.Begin(),
+            itEnd = m_dependentHandleToNativeObjectSet.End();
+        it != itEnd;
+        ++it)
+    {
+        LADependentHandleToNativeObject *dependentHandle = *it;
+        dependentHandle->Clear();
     }
 }
 
@@ -1983,7 +2072,7 @@ UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
     {
         UMEntryThunkCache *pUMEntryThunkCache = new UMEntryThunkCache(GetAppDomain());
 
-        if (FastInterlockCompareExchangePointer(&m_pUMEntryThunkCache, pUMEntryThunkCache, NULL) != NULL)
+        if (InterlockedCompareExchangeT(&m_pUMEntryThunkCache, pUMEntryThunkCache, NULL) != NULL)
         {
             // some thread swooped in and set the field
             delete pUMEntryThunkCache;
@@ -2031,7 +2120,6 @@ PTR_LoaderAllocator LoaderAllocator::GetAssociatedLoaderAllocator_Unsafe(TADDR p
     return NULL;
 }
 
-#endif // !CROSSGEN_COMPILE
 
 #ifdef FEATURE_COMINTEROP
 
@@ -2096,7 +2184,7 @@ PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
     {
         OnStackReplacementManager * newManager = new OnStackReplacementManager(this);
 
-        if (FastInterlockCompareExchangePointer(&m_onStackReplacementManager, newManager, NULL) != NULL)
+        if (InterlockedCompareExchangeT(&m_onStackReplacementManager, newManager, NULL) != NULL)
         {
             // some thread swooped in and set the field
             delete newManager;

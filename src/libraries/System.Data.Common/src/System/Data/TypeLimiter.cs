@@ -16,7 +16,7 @@ namespace System.Data
         [ThreadStatic]
         private static Scope? s_activeScope;
 
-        private Scope m_instanceScope;
+        private readonly Scope m_instanceScope;
 
         private const string AppDomainDataSetDefaultAllowedTypesKey = "System.Data.DataSetDefaultAllowedTypes";
 
@@ -118,7 +118,7 @@ namespace System.Data
         private static IEnumerable<Type> GetPreviouslyDeclaredDataTypes(DataSet dataSet)
         {
             return (dataSet != null)
-                ? dataSet.Tables.Cast<DataTable>().SelectMany(table => GetPreviouslyDeclaredDataTypes(table))
+                ? dataSet.Tables.Cast<DataTable>().SelectMany(GetPreviouslyDeclaredDataTypes)
                 : Enumerable.Empty<Type>();
         }
 
@@ -183,7 +183,7 @@ namespace System.Data
             /// <summary>
             /// Types which are allowed within the context of this scope.
             /// </summary>
-            private HashSet<Type> m_allowedTypes;
+            private readonly HashSet<Type> m_allowedTypes;
 
             /// <summary>
             /// This thread's previous scope.

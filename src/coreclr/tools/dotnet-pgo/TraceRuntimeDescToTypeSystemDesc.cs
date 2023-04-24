@@ -93,15 +93,17 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         class ModuleDescInfo
         {
-            public ModuleDescInfo(long id, TraceManagedModule traceManagedModule)
+            public ModuleDescInfo(long id, string assemblyName, bool isDynamic)
             {
                 ID = id;
-                TraceManagedModule = traceManagedModule;
+                AssemblyName = assemblyName;
+                IsDynamic = isDynamic;
             }
 
             public readonly long ID;
             public ModuleDesc Module;
-            public readonly TraceManagedModule TraceManagedModule;
+            public readonly string AssemblyName;
+            public readonly bool IsDynamic;
         }
 
         private readonly Dictionary<long, MethodDescInfo> _methods = new Dictionary<long, MethodDescInfo>();
@@ -222,9 +224,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
 
             Dictionary<long, int> assemblyToCLRInstanceIDMap = new Dictionary<long, int>();
+            Dictionary<long, string> assemblyToFullyQualifiedAssemblyName = new Dictionary<long, string>();
+            Dictionary<long, bool> assemblyToIsDynamic = new Dictionary<long, bool>();
+
             foreach (var assemblyLoadTrace in _traceProcess.EventsInProcess.ByEventType<AssemblyLoadUnloadTraceData>())
             {
                 assemblyToCLRInstanceIDMap[assemblyLoadTrace.AssemblyID] = assemblyLoadTrace.ClrInstanceID;
+                assemblyToFullyQualifiedAssemblyName[assemblyLoadTrace.AssemblyID] = assemblyLoadTrace.FullyQualifiedAssemblyName;
+                assemblyToIsDynamic[assemblyLoadTrace.AssemblyID] = ((assemblyLoadTrace.AssemblyFlags & Tracing.Parsers.Clr.AssemblyFlags.Dynamic) == Tracing.Parsers.Clr.AssemblyFlags.Dynamic);
             }
 
             foreach (var moduleFile in _traceProcess.LoadedModules)
@@ -240,24 +247,30 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     if (clrInstanceIDModule != _clrInstanceID)
                         continue;
 
-                    if (managedModule.ModuleFile != null)
-                    {
-                        ModuleDescInfo currentInfo;
-                        if (_modules.TryGetValue(managedModule.ModuleID, out currentInfo))
-                        {
-                            continue;
-                        }
-                        currentInfo = new ModuleDescInfo(managedModule.ModuleID, managedModule);
+                    var currentInfo = new ModuleDescInfo(managedModule.ModuleID, assemblyToFullyQualifiedAssemblyName[managedModule.AssemblyID], assemblyToIsDynamic[managedModule.AssemblyID]);
+                    if (!_modules.ContainsKey(managedModule.ModuleID))
                         _modules.Add(managedModule.ModuleID, currentInfo);
-                    }
                 }
             }
+        }
 
-
+        // Call before any api other than ResolveModuleID will work
+        public void Init()
+        {
             // Fill in all the types
             foreach (var entry in _types)
             {
-                ResolveTypeHandle(entry.Key, false);
+                bool nonLoadableModule = false;
+                ResolveTypeHandle(entry.Key, ref nonLoadableModule, false);
+            }
+        }
+
+        public void RemoveModuleIDFromLoader(long handle)
+        {
+            lock (_lock)
+            {
+                var moduleDesc = _modules[handle];
+                _modules.Remove(handle);
             }
         }
 
@@ -271,14 +284,14 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     if (minfo.Module != null)
                         return minfo.Module;
 
-                    string simpleName = minfo.TraceManagedModule.Name;
-
-                    if (!File.Exists(minfo.TraceManagedModule.FilePath) && minfo.TraceManagedModule.FilePath.EndsWith(".il.dll") && simpleName.EndsWith(".il"))
+                    if (minfo.IsDynamic)
                     {
-                        simpleName = simpleName.Substring(0, simpleName.Length - 3);
+                        if (throwIfNotFound)
+                            throw new Exception("Attempt to load dynamic module in pgo processing logic");
+                        return null;
                     }
 
-                    minfo.Module = _context.ResolveAssembly(new AssemblyName(simpleName), throwIfNotFound);
+                    minfo.Module = _context.ResolveAssembly(new AssemblyName(minfo.AssemblyName), throwIfNotFound);
                     return minfo.Module;
                 }
                 else
@@ -290,7 +303,23 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
-        public TypeDesc ResolveTypeHandle(long handle, bool throwIfNotFound = true)
+        public bool IsDynamicModuleID(long handle)
+        {
+            lock (_lock)
+            {
+                ModuleDescInfo minfo;
+                if (_modules.TryGetValue(handle, out minfo))
+                {
+                    return minfo.IsDynamic;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
+        public TypeDesc ResolveTypeHandle(long handle, ref bool dependsOnKnownNonLoadableType, bool throwIfNotFound = true)
         {
             lock(_lock)
             {
@@ -307,7 +336,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             throw new Exception("Bad format for BulkType");
                         }
 
-                        TypeDesc elementType = ResolveTypeHandle((long)tinfo.TypeValue.TypeParameters[0], throwIfNotFound);
+                        TypeDesc elementType = ResolveTypeHandle((long)tinfo.TypeValue.TypeParameters[0], ref dependsOnKnownNonLoadableType, throwIfNotFound);
                         if (elementType == null)
                             return null;
 
@@ -328,7 +357,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             throw new Exception("Bad format for BulkType");
                         }
 
-                        TypeDesc elementType = ResolveTypeHandle((long)tinfo.TypeValue.TypeParameters[0], throwIfNotFound);
+                        TypeDesc elementType = ResolveTypeHandle((long)tinfo.TypeValue.TypeParameters[0], ref dependsOnKnownNonLoadableType, throwIfNotFound);
                         if (elementType == null)
                             return null;
 
@@ -341,7 +370,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             throw new Exception("Bad format for BulkType");
                         }
 
-                        TypeDesc elementType = ResolveTypeHandle((long)tinfo.TypeValue.TypeParameters[0], throwIfNotFound);
+                        TypeDesc elementType = ResolveTypeHandle((long)tinfo.TypeValue.TypeParameters[0], ref dependsOnKnownNonLoadableType, throwIfNotFound);
                         if (elementType == null)
                             return null;
 
@@ -356,7 +385,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         // Must be class type or instantiated type.
                         ModuleDesc module = ResolveModuleID((long)tinfo.TypeValue.ModuleID, throwIfNotFound);
                         if (module == null)
+                        {
+                            if (this.IsDynamicModuleID((long)tinfo.TypeValue.ModuleID))
+                                dependsOnKnownNonLoadableType = true;
+
                             return null;
+                        }
 
                         EcmaModule ecmaModule = module as EcmaModule;
                         if (ecmaModule == null)
@@ -384,7 +418,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             TypeDesc[] instantiation = new TypeDesc[tinfo.TypeValue.TypeParameters.Length];
                             for (int i = 0; i < instantiation.Length; i++)
                             {
-                                instantiation[i] = ResolveTypeHandle((long)tinfo.TypeValue.TypeParameters[i], throwIfNotFound);
+                                instantiation[i] = ResolveTypeHandle((long)tinfo.TypeValue.TypeParameters[i], ref dependsOnKnownNonLoadableType, throwIfNotFound);
                                 if (instantiation[i] == null)
                                     return null;
                             }
@@ -419,8 +453,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
-        public MethodDesc ResolveMethodID(long handle, bool throwIfNotFound = true)
+        public MethodDesc ResolveMethodID(long handle, out bool nonLoadableModuleInvolvedInMethod, bool throwIfNotFound = true)
         {
+            nonLoadableModuleInvolvedInMethod = false;
             lock (_lock)
             {
                 MethodDescInfo minfo;
@@ -429,7 +464,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     if (minfo.Method != null)
                         return minfo.Method;
 
-                    TypeDesc owningType = ResolveTypeHandle(minfo.MethodDetailsTraceData.TypeID, throwIfNotFound);
+                    TypeDesc owningType = ResolveTypeHandle(minfo.MethodDetailsTraceData.TypeID, ref nonLoadableModuleInvolvedInMethod, throwIfNotFound);
                     if (owningType == null)
                         return null;
 
@@ -482,7 +517,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         TypeDesc[] instantiation = new TypeDesc[minfo.MethodDetailsTraceData.TypeParameters.Length];
                         for (int i = 0; i < instantiation.Length; i++)
                         {
-                            instantiation[i] = ResolveTypeHandle((long)minfo.MethodDetailsTraceData.TypeParameters[i], throwIfNotFound);
+                            instantiation[i] = ResolveTypeHandle((long)minfo.MethodDetailsTraceData.TypeParameters[i], ref nonLoadableModuleInvolvedInMethod, throwIfNotFound);
                             if (instantiation[i] == null)
                                 return null;
                         }

@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { auto }
-.assembly extern System.Runtime { auto }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Console { auto }
 
 .assembly DevDiv_541648 { }
+.assembly extern xunit.core {}
 
 // The test originally hit a bug in the handling of an addressing mode (LEA) under a block
 // store, which must not be contained. This was created because the address used as the source
@@ -85,6 +86,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       59 (0x3b)
     .maxstack  2

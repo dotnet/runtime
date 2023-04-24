@@ -1,14 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
-    [DebuggerDisplay("ConverterStrategy.{JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {JsonTypeInfo.Type.Name}")]
+    [StructLayout(LayoutKind.Auto)]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct ReadStackFrame
     {
         // Current property values.
@@ -25,28 +29,50 @@ namespace System.Text.Json
         // Stores the non-string dictionary keys for continuation.
         public object? DictionaryKey;
 
+#if DEBUG
         // Validation state.
         public int OriginalDepth;
         public JsonTokenType OriginalTokenType;
+#endif
 
         // Current object (POCO or IEnumerable).
         public object? ReturnValue; // The current return value used for re-entry.
         public JsonTypeInfo JsonTypeInfo;
         public StackFrameObjectState ObjectState; // State tracking the current object.
 
-        // Validate EndObject token on array with preserve semantics.
-        public bool ValidateEndTokenOnArray;
+        // Current object can contain metadata
+        public bool CanContainMetadata;
+        public MetadataPropertyName LatestMetadataPropertyName;
+        public MetadataPropertyName MetadataPropertyNames;
+
+        // Serialization state for value serialized by the current frame.
+        public PolymorphicSerializationState PolymorphicSerializationState;
+
+        // Holds any entered polymorphic JsonTypeInfo metadata.
+        public JsonTypeInfo? PolymorphicJsonTypeInfo;
+
+        // Gets the initial JsonTypeInfo metadata used when deserializing the current value.
+        public JsonTypeInfo BaseJsonTypeInfo
+            => PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntryStarted
+                ? PolymorphicJsonTypeInfo!
+                : JsonTypeInfo;
 
         // For performance, we order the properties by the first deserialize and PropertyIndex helps find the right slot quicker.
         public int PropertyIndex;
         public List<PropertyRef>? PropertyRefCache;
 
         // Holds relevant state when deserializing objects with parameterized constructors.
-        public int CtorArgumentStateIndex;
         public ArgumentState? CtorArgumentState;
 
         // Whether to use custom number handling.
         public JsonNumberHandling? NumberHandling;
+
+        // Represents required properties which have value assigned.
+        // Each bit corresponds to a required property.
+        // False means that property is not set (not yet occured in the payload).
+        // Length of the BitArray is equal to number of required properties.
+        // Every required JsonPropertyInfo has RequiredPropertyIndex property which maps to an index in this BitArray.
+        public BitArray? RequiredPropertiesSet;
 
         public void EndConstructorParameter()
         {
@@ -61,7 +87,6 @@ namespace System.Text.Json
             JsonPropertyName = null;
             JsonPropertyNameAsString = null;
             PropertyState = StackFramePropertyState.None;
-            ValidateEndTokenOnArray = false;
 
             // No need to clear these since they are overwritten each time:
             //  NumberHandling
@@ -79,7 +104,7 @@ namespace System.Text.Json
         /// </summary>
         public bool IsProcessingDictionary()
         {
-            return (JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy & ConverterStrategy.Dictionary) != 0;
+            return JsonTypeInfo.Kind is JsonTypeInfoKind.Dictionary;
         }
 
         /// <summary>
@@ -87,22 +112,45 @@ namespace System.Text.Json
         /// </summary>
         public bool IsProcessingEnumerable()
         {
-            return (JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy & ConverterStrategy.Enumerable) != 0;
+            return JsonTypeInfo.Kind is JsonTypeInfoKind.Enumerable;
         }
 
-        public void Reset()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void MarkRequiredPropertyAsRead(JsonPropertyInfo propertyInfo)
         {
-            CtorArgumentStateIndex = 0;
-            CtorArgumentState = null;
-            JsonTypeInfo = null!;
-            ObjectState = StackFrameObjectState.None;
-            OriginalDepth = 0;
-            OriginalTokenType = JsonTokenType.None;
-            PropertyIndex = 0;
-            PropertyRefCache = null;
-            ReturnValue = null;
-
-            EndProperty();
+            if (propertyInfo.IsRequired)
+            {
+                Debug.Assert(RequiredPropertiesSet != null);
+                RequiredPropertiesSet[propertyInfo.RequiredPropertyIndex] = true;
+            }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void InitializeRequiredPropertiesValidationState(JsonTypeInfo typeInfo)
+        {
+            Debug.Assert(RequiredPropertiesSet == null);
+
+            if (typeInfo.NumberOfRequiredProperties > 0)
+            {
+                RequiredPropertiesSet = new BitArray(typeInfo.NumberOfRequiredProperties);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ValidateAllRequiredPropertiesAreRead(JsonTypeInfo typeInfo)
+        {
+            if (typeInfo.NumberOfRequiredProperties > 0)
+            {
+                Debug.Assert(RequiredPropertiesSet != null);
+
+                if (!RequiredPropertiesSet.HasAllSet())
+                {
+                    ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesSet);
+                }
+            }
+        }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private string DebuggerDisplay => $"ConverterStrategy.{JsonTypeInfo?.Converter.ConverterStrategy}, {JsonTypeInfo?.Type.Name}";
     }
 }

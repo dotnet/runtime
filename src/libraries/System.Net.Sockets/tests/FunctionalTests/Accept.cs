@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -144,7 +145,6 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
         public async Task Accept_WithTargetSocket_Success()
         {
             if (!SupportsAcceptIntoExistingSocket)
@@ -166,7 +166,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
         [OuterLoop]
         [Theory]
         [InlineData(false)]
@@ -221,8 +220,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
-        public void Accept_WithAlreadyBoundTargetSocket_Fails()
+        public async Task Accept_WithAlreadyBoundTargetSocket_Fails()
         {
             if (!SupportsAcceptIntoExistingSocket)
                 return;
@@ -236,13 +234,12 @@ namespace System.Net.Sockets.Tests
 
                 server.BindToAnonymousPort(IPAddress.Loopback);
 
-                Assert.Throws<InvalidOperationException>(() => { AcceptAsync(listener, server); });
+                await Assert.ThrowsAsync<InvalidOperationException>(() => AcceptAsync(listener, server));
             }
         }
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/1483", TestPlatforms.AnyUnix)]
         public async Task Accept_WithInUseTargetSocket_Fails()
         {
             if (!SupportsAcceptIntoExistingSocket)
@@ -262,7 +259,7 @@ namespace System.Net.Sockets.Tests
                 Assert.Same(server, accepted);
                 Assert.True(accepted.Connected);
 
-                Assert.Throws<InvalidOperationException>(() => { AcceptAsync(listener, server); });
+                await Assert.ThrowsAsync<InvalidOperationException>(() => AcceptAsync(listener, server));
             }
         }
 
@@ -290,23 +287,35 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        public static readonly TheoryData<IPAddress> AcceptGetsCanceledByDispose_Data = new TheoryData<IPAddress>
+        public static readonly TheoryData<IPAddress, bool> AcceptGetsCanceledByDispose_Data = new TheoryData<IPAddress, bool>
         {
-            { IPAddress.Loopback },
-            { IPAddress.IPv6Loopback },
-            { IPAddress.Loopback.MapToIPv6() }
+            { IPAddress.Loopback, true },
+            { IPAddress.IPv6Loopback, true },
+            { IPAddress.Loopback.MapToIPv6(), true },
+            { IPAddress.Loopback, false },
+            { IPAddress.IPv6Loopback, false },
+            { IPAddress.Loopback.MapToIPv6(), false }
         };
 
         [Theory]
         [MemberData(nameof(AcceptGetsCanceledByDispose_Data))]
-        public async Task AcceptGetsCanceledByDispose(IPAddress loopback)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/73536", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        public async Task AcceptGetsCanceledByDispose(IPAddress loopback, bool owning)
         {
+            // Aborting sync operations for non-owning handles is not supported on Unix.
+            if (!owning && UsesSync && !PlatformDetection.IsWindows)
+            {
+                return;
+            }
+
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
                 var listener = new Socket(loopback.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                using SafeSocketHandle? owner = ReplaceWithNonOwning(ref listener, owning);
+
                 if (loopback.IsIPv4MappedToIPv6) listener.DualMode = true;
                 listener.Bind(new IPEndPoint(loopback, 0));
                 listener.Listen(1);
@@ -322,7 +331,7 @@ namespace System.Net.Sockets.Tests
                 await disposeTask;
 
                 SocketError? localSocketError = null;
-                bool disposedException = false;
+
                 try
                 {
                     await acceptTask;
@@ -331,17 +340,8 @@ namespace System.Net.Sockets.Tests
                 {
                     localSocketError = se.SocketErrorCode;
                 }
-                catch (ObjectDisposedException)
-                {
-                    disposedException = true;
-                }
 
-                if (UsesApm)
-                {
-                    Assert.Null(localSocketError);
-                    Assert.True(disposedException);
-                }
-                else if (UsesSync)
+                if (UsesSync)
                 {
                     Assert.Equal(SocketError.Interrupted, localSocketError);
                 }
@@ -353,8 +353,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public async Task AcceptReceive_Windows_Success()
+        public async Task AcceptReceive_Success()
         {
             if (!SupportsAcceptReceive)
             {
@@ -374,25 +373,7 @@ namespace System.Net.Sockets.Tests
             sender.Send(new byte[] { 42 });
 
             (_, byte[] recvBuffer) = await acceptTask;
-            Assert.Equal(new byte[] { 42 }, recvBuffer);
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void AcceptReceive_Unix_ThrowsPlatformNotSupportedException()
-        {
-            if (!SupportsAcceptReceive)
-            {
-                // Currently only supported by APM and EAP
-                return;
-            }
-
-            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            int port = listener.BindToAnonymousPort(IPAddress.Loopback);
-            IPEndPoint listenerEndpoint = new IPEndPoint(IPAddress.Loopback, port);
-            listener.Listen(100);
-
-            Assert.ThrowsAsync<PlatformNotSupportedException>(() => AcceptAsync(listener, 1) );
+            AssertExtensions.SequenceEqual(new byte[] { 42 }, recvBuffer);
         }
     }
 
@@ -410,26 +391,97 @@ namespace System.Net.Sockets.Tests
     {
         public AcceptApm(ITestOutputHelper output) : base(output) {}
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void EndAccept_AcceptReceiveUnix_ThrowsPlatformNotSupportedException()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void AbortedByDispose_LeaksNoUnobservedExceptions()
         {
-            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            RemoteExecutor.Invoke(static async () =>
+            {
+                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.BindToAnonymousPort(IPAddress.Loopback);
+                socket.Listen(10);
 
-            // Creating a fake IAsyncResult:
-            int port = listener.BindToAnonymousPort(IPAddress.Loopback);
-            IPEndPoint listenerEndpoint = new IPEndPoint(IPAddress.Loopback, port);
-            listener.Listen(100);
-            IAsyncResult iar = listener.BeginAccept(callback: null, state: null);
+                bool unobservedThrown = false;
+                TaskScheduler.UnobservedTaskException += (_, __) => unobservedThrown = true;
 
-            Assert.Throws<PlatformNotSupportedException>(() => listener.EndAccept(out _, iar));
-            Assert.Throws<PlatformNotSupportedException>(() => listener.EndAccept(out _, out _, iar));
+                await Task.Run(() =>
+                {
+                    socket.BeginAccept(asyncResult =>
+                    {
+                        try
+                        {
+                            socket.EndAccept(asyncResult);
+                        }
+                        catch
+                        {
+                        }
+                    }, socket);
+                });
+
+                // Give some time for the Accept operation to start
+                await Task.Delay(30);
+
+                // Close the socket aborting Accept
+                socket.Dispose();
+
+                // Wait for the internal AcceptAsync Task to complete with the exception.
+                await Task.Delay(30);
+
+                // Ensure that the internal TaskExceptionHolder is finalized and the exception published to UnobservedTaskException.
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                Assert.False(unobservedThrown);
+            }).Dispose();   
         }
     }
 
     public sealed class AcceptTask : Accept<SocketHelperTask>
     {
         public AcceptTask(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class AcceptCancellableTask : Accept<SocketHelperCancellableTask>
+    {
+        public AcceptCancellableTask(ITestOutputHelper output) : base(output) { }
+
+        [Fact]
+        public async Task AcceptAsync_Precanceled_Throws()
+        {
+            using (Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = listen.BindToAnonymousPort(IPAddress.Loopback);
+                listen.Listen(1);
+
+                var cts = new CancellationTokenSource();
+                cts.Cancel();
+
+                var acceptTask = listen.AcceptAsync(cts.Token);
+                Assert.True(acceptTask.IsCompleted);
+
+                var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await acceptTask);
+                Assert.Equal(cts.Token, oce.CancellationToken);
+            }
+        }
+
+        [Fact]
+        public async Task AcceptAsync_CanceledDuringOperation_Throws()
+        {
+            using (Socket listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = listen.BindToAnonymousPort(IPAddress.Loopback);
+                listen.Listen(1);
+
+                var cts = new CancellationTokenSource();
+
+                var acceptTask = listen.AcceptAsync(cts.Token);
+                Assert.False(acceptTask.IsCompleted);
+
+                cts.Cancel();
+
+                var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await acceptTask);
+                Assert.Equal(cts.Token, oce.CancellationToken);
+            }
+        }
     }
 
     public sealed class AcceptEap : Accept<SocketHelperEap>

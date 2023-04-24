@@ -64,7 +64,7 @@ namespace System.Xml
         private readonly XmlResolver? _xmlResolver;
         private readonly ValidationEventHandler? _validationEvent;
         private ValidatingReaderState _validationState;
-        private XmlValueGetter _valueGetter;
+        private readonly XmlValueGetter _valueGetter;
 
         // namespace management
         private readonly XmlNamespaceManager? _nsManager;
@@ -81,14 +81,14 @@ namespace System.Xml
         private int _coreReaderAttributeCount;
         private int _currentAttrIndex;
         private AttributePSVIInfo[] _attributePSVINodes;
-        private ArrayList _defaultAttributes;
+        private readonly ArrayList _defaultAttributes;
 
         // Inline Schema
         private Parser? _inlineSchemaParser;
 
         // Typed Value & PSVI
         private object? _atomicValue;
-        private XmlSchemaInfo _xmlSchemaInfo;
+        private readonly XmlSchemaInfo _xmlSchemaInfo;
 
         // original string of the atomic value
         private string? _originalAtomicValueString;
@@ -101,14 +101,14 @@ namespace System.Xml
         private ValidatingReaderNodeData? _textNode;
 
         // To avoid SchemaNames creation
-        private string _nsXmlNs;
-        private string _nsXs;
-        private string _nsXsi;
-        private string _xsiType;
-        private string _xsiNil;
-        private string _xsdSchema;
-        private string _xsiSchemaLocation;
-        private string _xsiNoNamespaceSchemaLocation;
+        private readonly string _nsXmlNs;
+        private readonly string _nsXs;
+        private readonly string _nsXsi;
+        private readonly string _xsiType;
+        private readonly string _xsiNil;
+        private readonly string _xsdSchema;
+        private readonly string _xsiSchemaLocation;
+        private readonly string _xsiNoNamespaceSchemaLocation;
 
         // Underlying reader's IXmlLineInfo
         private IXmlLineInfo? _lineInfo;
@@ -135,7 +135,7 @@ namespace System.Xml
                 _manageNamespaces = true;
             }
 
-            _thisNSResolver = this as IXmlNamespaceResolver;
+            _thisNSResolver = this;
             _xmlResolver = xmlResolver;
             _processInlineSchema = (readerSettings.ValidationFlags & XmlSchemaValidationFlags.ProcessInlineSchema) != 0;
 
@@ -165,7 +165,7 @@ namespace System.Xml
             : this(reader, xmlResolver, readerSettings, null)
         { }
 
-        [MemberNotNull("_validator")]
+        [MemberNotNull(nameof(_validator))]
         private void SetupValidator(XmlReaderSettings readerSettings, XmlReader reader, XmlSchemaObject? partialValidationType)
         {
             _validator = new XmlSchemaValidator(_coreReaderNameTable, readerSettings.Schemas, _thisNSResolver, readerSettings.ValidationFlags);
@@ -244,7 +244,7 @@ namespace System.Xml
                     string? prefix = _validator.GetDefaultAttributePrefix(_cachedNode.Namespace);
                     if (prefix != null && prefix.Length != 0)
                     {
-                        return prefix + ":" + _cachedNode.LocalName;
+                        return $"{prefix}:{_cachedNode.LocalName}";
                     }
 
                     return _cachedNode.LocalName;
@@ -741,7 +741,7 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    // special-case convertions to DateTimeOffset; typedValue is by default a DateTime
+                    // special-case conversions to DateTimeOffset; typedValue is by default a DateTime
                     // which cannot preserve time zone, so we need to convert from the original string
                     if (returnType == typeof(DateTimeOffset) && xmlType.Datatype is Datatype_dateTimeBase)
                     {
@@ -1075,7 +1075,7 @@ namespace System.Xml
             {
                 if (xmlType != null)
                 {
-                    // special-case convertions to DateTimeOffset; typedValue is by default a DateTime
+                    // special-case conversions to DateTimeOffset; typedValue is by default a DateTime
                     // which cannot preserve time zone, so we need to convert from the original string
                     if (returnType == typeof(DateTimeOffset) && xmlType.Datatype is Datatype_dateTimeBase)
                     {
@@ -1163,10 +1163,8 @@ namespace System.Xml
         // Gets the value of the attribute with the specified index.
         public override string GetAttribute(int i)
         {
-            if (i < 0 || i >= _attributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attributeCount);
 
             if (i < _coreReaderAttributeCount)
             {
@@ -1273,10 +1271,8 @@ namespace System.Xml
         // Moves to the attribute with the specified index
         public override void MoveToAttribute(int i)
         {
-            if (i < 0 || i >= _attributeCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(i));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(i);
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attributeCount);
 
             _currentAttrIndex = i;
             if (i < _coreReaderAttributeCount)
@@ -2015,12 +2011,12 @@ namespace System.Xml
 
                 case XmlNodeType.Whitespace:
                 case XmlNodeType.SignificantWhitespace:
-                    _validator.ValidateWhitespace(GetStringValue);
+                    _validator.ValidateWhitespace(_valueGetter);
                     break;
 
                 case XmlNodeType.Text:          // text inside a node
                 case XmlNodeType.CDATA:         // <![CDATA[...]]>
-                    _validator.ValidateText(GetStringValue);
+                    _validator.ValidateText(_valueGetter);
                     break;
 
                 case XmlNodeType.EndElement:
@@ -2239,7 +2235,7 @@ namespace System.Xml
         {
             Debug.Assert(_coreReaderNameTable.Get(localName) != null);
             Debug.Assert(_coreReaderNameTable.Get(ns) != null);
-            AttributePSVIInfo? attInfo = null;
+            AttributePSVIInfo? attInfo;
 
             for (int i = 0; i < _coreReaderAttributeCount; i++)
             {
@@ -2284,7 +2280,7 @@ namespace System.Xml
         {
             Debug.Assert(_coreReaderNameTable.Get(attrLocalName) != null);
             Debug.Assert(_coreReaderNameTable.Get(ns) != null);
-            ValidatingReaderNodeData? defaultNode = null;
+            ValidatingReaderNodeData? defaultNode;
 
             for (int i = 0; i < _defaultAttributes.Count; i++)
             {
@@ -2305,7 +2301,7 @@ namespace System.Xml
 
         private AttributePSVIInfo AddAttributePSVI(int attIndex)
         {
-            Debug.Assert(attIndex <= _attributePSVINodes.Length);
+            Debug.Assert(attIndex < _attributePSVINodes.Length);
             AttributePSVIInfo attInfo = _attributePSVINodes[attIndex];
             if (attInfo != null)
             {
@@ -2321,14 +2317,7 @@ namespace System.Xml
                 _attributePSVINodes = newPSVINodes;
             }
 
-            attInfo = _attributePSVINodes[attIndex];
-            if (attInfo == null)
-            {
-                attInfo = new AttributePSVIInfo();
-                _attributePSVINodes[attIndex] = attInfo;
-            }
-
-            return attInfo;
+            return _attributePSVINodes[attIndex] ??= new AttributePSVIInfo();
         }
 
         private bool IsXSDRoot(string localName, string ns)
@@ -2383,7 +2372,7 @@ namespace System.Xml
                     if (_validationState == ValidatingReaderState.OnDefaultAttribute)
                     {
                         XmlSchemaAttribute schemaAttr = _attributePSVI.attributeSchemaInfo.SchemaAttribute!;
-                        originalStringValue = (schemaAttr.DefaultValue != null) ? schemaAttr.DefaultValue : schemaAttr.FixedValue!;
+                        originalStringValue = schemaAttr.DefaultValue ?? schemaAttr.FixedValue!;
                     }
 
                     return ReturnBoxedValue(_attributePSVI.typedAttributeValue, AttributeSchemaInfo.XmlType!, unwrapTypedValue);
@@ -2449,7 +2438,7 @@ namespace System.Xml
         private object? InternalReadElementContentAsObject(out XmlSchemaType? xmlType, bool unwrapTypedValue, out string? originalString)
         {
             Debug.Assert(this.NodeType == XmlNodeType.Element);
-            object? typedValue = null;
+            object? typedValue;
             xmlType = null;
 
             // If its an empty element, can have default/fixed value
@@ -2543,12 +2532,12 @@ namespace System.Xml
 
                         case XmlNodeType.Text:
                         case XmlNodeType.CDATA:
-                            _validator.ValidateText(GetStringValue);
+                            _validator.ValidateText(_valueGetter);
                             break;
 
                         case XmlNodeType.Whitespace:
                         case XmlNodeType.SignificantWhitespace:
-                            _validator.ValidateWhitespace(GetStringValue);
+                            _validator.ValidateWhitespace(_valueGetter);
                             break;
 
                         case XmlNodeType.Comment:
@@ -2611,12 +2600,12 @@ namespace System.Xml
 
                     case XmlNodeType.Text:
                     case XmlNodeType.CDATA:
-                        _validator.ValidateText(GetStringValue);
+                        _validator.ValidateText(_valueGetter);
                         break;
 
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
-                        _validator.ValidateWhitespace(GetStringValue);
+                        _validator.ValidateWhitespace(_valueGetter);
                         break;
 
                     case XmlNodeType.Comment:
@@ -2672,12 +2661,12 @@ namespace System.Xml
 
                             case XmlNodeType.Text:
                             case XmlNodeType.CDATA:
-                                _validator.ValidateText(GetStringValue);
+                                _validator.ValidateText(_valueGetter);
                                 break;
 
                             case XmlNodeType.Whitespace:
                             case XmlNodeType.SignificantWhitespace:
-                                _validator.ValidateWhitespace(GetStringValue);
+                                _validator.ValidateWhitespace(_valueGetter);
                                 break;
 
                             case XmlNodeType.Comment:
@@ -2772,10 +2761,7 @@ namespace System.Xml
 
         internal ValidatingReaderNodeData CreateDummyTextNode(string attributeValue, int depth)
         {
-            if (_textNode == null)
-            {
-                _textNode = new ValidatingReaderNodeData(XmlNodeType.Text);
-            }
+            _textNode ??= new ValidatingReaderNodeData(XmlNodeType.Text);
 
             _textNode.Depth = depth;
             _textNode.RawValue = attributeValue;
@@ -2796,7 +2782,7 @@ namespace System.Xml
                 XmlSchemaElement? schemaElem = _xmlSchemaInfo.SchemaElement;
                 if (schemaElem != null)
                 {
-                    return (schemaElem.DefaultValue != null) ? schemaElem.DefaultValue : schemaElem.FixedValue;
+                    return schemaElem.DefaultValue ?? schemaElem.FixedValue;
                 }
             }
             else

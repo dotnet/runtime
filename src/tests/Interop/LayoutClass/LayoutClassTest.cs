@@ -3,7 +3,7 @@ using System.Security;
 using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
 namespace PInvokeTests
 {
@@ -13,11 +13,27 @@ namespace PInvokeTests
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public class EmptyBase2 : EmptyBase
+    {
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public class SeqDerivedClass : EmptyBase
     {
         public int a;
 
         public SeqDerivedClass(int _a)
+        {
+            a = _a;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public class SeqDerivedClass2 : EmptyBase2
+    {
+        public int a;
+
+        public SeqDerivedClass2(int _a)
         {
             a = _a;
         }
@@ -159,6 +175,12 @@ namespace PInvokeTests
         private static extern bool SealedBlittableSeqLayoutClassByOutAttr([Out] SealedBlittable p);
 
         [DllImport("LayoutClassNative")]
+        private static extern bool PointersEqual(SealedBlittable obj, ref int field);
+
+        [DllImport("LayoutClassNative")]
+        private static extern bool PointersEqual(Blittable obj, ref int field);
+
+        [DllImport("LayoutClassNative")]
         private static extern bool SimpleNestedLayoutClassByValue(NestedLayout p);
 
         [DllImport("LayoutClassNative", EntryPoint = "Invalid")]
@@ -170,14 +192,14 @@ namespace PInvokeTests
 
             string s = "before";
             var p = new SeqClass(0, false, s);
-            Assert.IsTrue(SimpleSeqLayoutClassByRef(p));
+            Assert.True(SimpleSeqLayoutClassByRef(p));
         }
 
         public static void SequentialClassNull()
         {
             Console.WriteLine($"Running {nameof(SequentialClassNull)}...");
 
-            Assert.IsTrue(SimpleSeqLayoutClassByRefNull(null));
+            Assert.True(SimpleSeqLayoutClassByRefNull(null));
         }
 
         public static void DerivedClassWithEmptyBase()
@@ -185,8 +207,8 @@ namespace PInvokeTests
             Console.WriteLine($"Running {nameof(DerivedClassWithEmptyBase)}...");
 
             string s = "before";
-            var p = new SeqDerivedClass(42);
-            Assert.IsTrue(DerivedSeqLayoutClassByRef(p, 42));
+            Assert.True(DerivedSeqLayoutClassByRef(new SeqDerivedClass(42), 42));
+            Assert.True(DerivedSeqLayoutClassByRef(new SeqDerivedClass2(42), 42));
         }
 
         public static void ExplicitClass()
@@ -194,7 +216,7 @@ namespace PInvokeTests
             Console.WriteLine($"Running {nameof(ExplicitClass)}...");
 
             var p = new ExpClass(DialogResult.None, 10);
-            Assert.IsTrue(SimpleExpLayoutClassByRef(p));
+            Assert.True(SimpleExpLayoutClassByRef(p));
         }
 
         private static void ValidateBlittableClassInOut(Func<Blittable, bool> pinvoke)
@@ -202,8 +224,8 @@ namespace PInvokeTests
             int a = 10;
             int expected = a + 1;
             Blittable p = new Blittable(a);
-            Assert.IsTrue(pinvoke(p));
-            Assert.AreEqual(expected, p.a);
+            Assert.True(pinvoke(p));
+            Assert.Equal(expected, p.a);
         }
 
         public static void BlittableClass()
@@ -217,7 +239,7 @@ namespace PInvokeTests
         {
             // [Compat] Marshalled with [In, Out] behaviour by default
             Console.WriteLine($"Running {nameof(BlittableClassNull)}...");
-            Assert.IsTrue(SimpleBlittableSeqLayoutClass_Null(null));
+            Assert.True(SimpleBlittableSeqLayoutClass_Null(null));
         }
 
         public static void BlittableClassByInAttr()
@@ -239,8 +261,8 @@ namespace PInvokeTests
             int a = 10;
             int expected = a + 1;
             SealedBlittable p = new SealedBlittable(a);
-            Assert.IsTrue(pinvoke(p));
-            Assert.AreEqual(expected, p.a);
+            Assert.True(pinvoke(p));
+            Assert.Equal(expected, p.a);
         }
 
         public static void SealedBlittableClass()
@@ -264,6 +286,20 @@ namespace PInvokeTests
             ValidateSealedBlittableClassInOut(SealedBlittableSeqLayoutClassByOutAttr);
         }
 
+        public static void SealedBlittablePinned()
+        {
+            Console.WriteLine($"Running {nameof(SealedBlittablePinned)}...");
+            var blittable = new SealedBlittable(1);
+            Assert.True(PointersEqual(blittable, ref blittable.a));
+        }
+
+        public static void BlittablePinned()
+        {
+            Console.WriteLine($"Running {nameof(BlittablePinned)}...");
+            var blittable = new Blittable(1);
+            Assert.True(PointersEqual(blittable, ref blittable.a));
+        }
+
         public static void NestedLayoutClass()
         {
             Console.WriteLine($"Running {nameof(NestedLayoutClass)}...");
@@ -274,7 +310,7 @@ namespace PInvokeTests
             {
                 value = p
             };
-            Assert.IsTrue(SimpleNestedLayoutClassByValue(target));
+            Assert.True(SimpleNestedLayoutClassByValue(target));
         }
 
         public static void RecursiveNativeLayout()
@@ -284,7 +320,7 @@ namespace PInvokeTests
             Assert.Throws<TypeLoadException>(() => RecursiveNativeLayoutInvalid(new RecursiveTestStruct()));
         }
 
-        public static int Main(string[] argv)
+        public static int Main()
         {
             try
             {
@@ -301,6 +337,8 @@ namespace PInvokeTests
                 SealedBlittableClassByOutAttr();
                 NestedLayoutClass();
                 RecursiveNativeLayout();
+                SealedBlittablePinned();
+                BlittablePinned();
             }
             catch (Exception e)
             {

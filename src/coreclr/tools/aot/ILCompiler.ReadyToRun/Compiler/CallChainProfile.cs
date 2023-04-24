@@ -125,7 +125,7 @@ namespace ILCompiler
         private MethodDesc ResolveMethodName(CompilerTypeSystemContext context, string methodName)
         {
             // Example method name entries. Can we parse them as custom attribute formatted names?
-            // mscorlib.ni.dll!System.Runtime.ExceptionServices.ExceptionDispatchInfo..ctor
+            // System.Private.CoreLib.ni.dll!System.Runtime.ExceptionServices.ExceptionDispatchInfo..ctor
             // System.Core.ni.dll!System.Linq.Enumerable+WhereSelectEnumerableIterator`2[System.__Canon,System.__Canon].MoveNext
             // Microsoft.Azure.Monitoring.WarmPath.FrontEnd.Middleware.SecurityMiddlewareBase`1+<Invoke>d__6[System.__Canon]!MoveNext
             // System.Runtime.CompilerServices.AsyncTaskMethodBuilder!Start
@@ -190,7 +190,7 @@ namespace ILCompiler
 #endif
                     return resolvedMethod;
                 }
-                    
+
             }
             else
             {
@@ -200,7 +200,7 @@ namespace ILCompiler
                 // System.Runtime.CompilerServices.AsyncTaskMethodBuilder!Start
                 string namespaceAndTypeName = splitMethodName[0];
                 string methodNameWithoutType = splitMethodName[1];
-                
+
                 foreach (var module in _referenceableModules)
                 {
                     var resolvedMethod = ResolveMethodName(context, module, namespaceAndTypeName, methodNameWithoutType);
@@ -211,7 +211,7 @@ namespace ILCompiler
 #endif
                         return resolvedMethod;
                     }
-                        
+
                 }
             }
 
@@ -226,11 +226,8 @@ namespace ILCompiler
         /// <returns>MethodDesc if found, null otherwise</returns>
         private MethodDesc ResolveMethodName(CompilerTypeSystemContext context, ModuleDesc module, string namespaceAndTypeName, string methodName)
         {
-            TypeDesc resolvedType = module.GetTypeByCustomAttributeTypeName(namespaceAndTypeName, false, (typeDefName, module, throwIfNotFound) =>
-            {
-                return (MetadataType)context.GetCanonType(typeDefName)
-                    ?? CustomAttributeTypeNameParser.ResolveCustomAttributeTypeDefinitionName(typeDefName, module, throwIfNotFound);
-            });
+            TypeDesc resolvedType = module.GetTypeByCustomAttributeTypeName(namespaceAndTypeName, false,
+                (module, typeDefName) => (MetadataType)module.Context.GetCanonType(typeDefName));
 
             if (resolvedType != null)
             {
@@ -252,7 +249,7 @@ namespace ILCompiler
             using (JsonDocument document = JsonDocument.Parse(stream.BaseStream))
             {
                 JsonElement root = document.RootElement;
-                
+
                 foreach (JsonProperty methodAndCallees in root.EnumerateObject())
                 {
                     string keyParts = methodAndCallees.Name;

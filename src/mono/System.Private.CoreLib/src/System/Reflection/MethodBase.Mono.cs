@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Reflection
@@ -18,7 +19,7 @@ namespace System.Reflection
 
             Type? declaringType = m.DeclaringType;
             if (declaringType != null && declaringType.IsGenericType)
-                throw new ArgumentException(string.Format(SR.Argument_MethodDeclaringTypeGeneric,
+                throw new ArgumentException(SR.Format(SR.Argument_MethodDeclaringTypeGeneric,
                                                             m, declaringType.GetGenericTypeDefinition()));
 
             return m;
@@ -34,6 +35,7 @@ namespace System.Reflection
             return m;
         }
 
+        [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern MethodBase? GetCurrentMethod();
 
@@ -57,18 +59,7 @@ namespace System.Reflection
             throw new NotImplementedException();
         }
 
-        internal virtual Type[] GetParameterTypes()
-        {
-            ParameterInfo[] paramInfo = GetParametersNoCopy();
-
-            Type[] parameterTypes = new Type[paramInfo.Length];
-            for (int i = 0; i < paramInfo.Length; i++)
-                parameterTypes[i] = paramInfo[i].ParameterType;
-
-            return parameterTypes;
-        }
-
-        internal virtual int get_next_table_index(object obj, int table, int count)
+        internal virtual int get_next_table_index(int table, int count)
         {
             throw new NotImplementedException();
         }

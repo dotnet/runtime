@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 namespace ILCompiler.Sorting.Implementation
@@ -39,8 +38,8 @@ namespace ILCompiler.Sorting.Implementation
         public void SwapElements(List<T> dataStructure, int i, int i2)
         {
             T temp = dataStructure[i];
-            dataStructure[i] = dataStructure[i + 1];
-            dataStructure[i + 1] = temp;
+            dataStructure[i] = dataStructure[i2];
+            dataStructure[i2] = temp;
         }
     }
 }

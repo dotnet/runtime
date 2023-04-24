@@ -66,7 +66,7 @@ namespace System.Text.Encodings.Web.Tests
                         }
                         else
                         {
-                            sbOutput.AppendFormat(CultureInfo.InvariantCulture, "[{0:X4}]", i);
+                            sbOutput.Append($"[{i:X4}]");
                         }
                     }
 

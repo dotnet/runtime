@@ -109,10 +109,7 @@ namespace System.Collections.Immutable
                 // Although this is a lazy-init pattern, no lock is required because
                 // this instance is immutable otherwise, and a double-assignment from multiple
                 // threads is harmless.
-                if (_backwardsReversed == null)
-                {
-                    _backwardsReversed = _backwards.Reverse();
-                }
+                _backwardsReversed ??= _backwards.Reverse();
 
                 Debug.Assert(_backwardsReversed != null);
                 return _backwardsReversed;
@@ -133,7 +130,6 @@ namespace System.Collections.Immutable
             return _forwards.Peek();
         }
 
-#if !NETSTANDARD1_0
         /// <summary>
         /// Gets a read-only reference to the element at the front of the queue.
         /// </summary>
@@ -147,7 +143,6 @@ namespace System.Collections.Immutable
 
             return ref _forwards.PeekRef();
         }
-#endif
 
         /// <summary>
         /// Adds an element to the back of the queue.

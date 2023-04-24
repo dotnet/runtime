@@ -119,15 +119,26 @@ namespace System.Linq.Tests
         [Fact]
         public void FirstOrDefault1()
         {
-            var val = (new int[] { 1, 2 }).AsQueryable().FirstOrDefault();
+            var val = new[] { 1, 2 }.AsQueryable().FirstOrDefault();
             Assert.Equal(1, val);
         }
 
         [Fact]
         public void FirstOrDefault2()
         {
-            var val = (new int[] { 0, 1, 2 }).AsQueryable().FirstOrDefault(n => n > 1);
+            var val = new[] { 0, 1, 2 }.AsQueryable().FirstOrDefault(n => n > 1);
             Assert.Equal(2, val);
+        }
+
+        [Fact]
+        public void FirstOrDefault_OverloadResolution_Regression()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/65419
+            object? result = new object[] { 1, "" }.AsQueryable().FirstOrDefault(x => x is string);
+            Assert.IsType<string>(result);
+
+            result = Array.Empty<object>().AsQueryable().FirstOrDefault(1);
+            Assert.IsType<int>(result);
         }
     }
 }

@@ -1,7 +1,0 @@
-﻿<Project>
-  <Import Project="..\Directory.Build.props" />
-  <PropertyGroup>
-    <PackageDescription>Provides additional configuration specific functionality related to Options.</PackageDescription>
-    <IsAspNetCoreApp>true</IsAspNetCoreApp>
-  </PropertyGroup>
-</Project>

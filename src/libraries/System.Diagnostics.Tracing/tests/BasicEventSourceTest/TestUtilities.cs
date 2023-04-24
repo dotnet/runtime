@@ -15,10 +15,6 @@ namespace BasicEventSourceTests
 {
     internal class TestUtilities
     {
-        // Specifies whether the process is elevated or not.
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
-        internal static bool IsProcessElevated => s_isElevated.Value;
-
         /// <summary>
         /// Confirms that there are no EventSources running.
         /// </summary>
@@ -39,7 +35,12 @@ namespace BasicEventSourceTests
                     eventSource.Name != "System.Runtime.InteropServices.InteropEventProvider" &&
                     eventSource.Name != "System.Reflection.Runtime.Tracing" &&
                     eventSource.Name != "Microsoft-Windows-DotNETRuntime" &&
-                    eventSource.Name != "System.Runtime"
+                    eventSource.Name != "System.Runtime" &&
+
+                    // These event sources show up when hosted in the VS test runner
+                    eventSource.Name != "System.Net.Sockets" &&
+                    eventSource.Name != "Private.InternalDiagnostics.System.Net.Sockets" &&
+                    eventSource.Name != "TestPlatform"
                     )
                 {
                     eventSourceNames += eventSource.Name + " ";

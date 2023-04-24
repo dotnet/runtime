@@ -49,6 +49,11 @@ ipc_get_process_id_disambiguation_key (
 #include <kvm.h>
 #endif
 
+#ifdef __FreeBSD__
+#include <sys/sysctl.h>
+#include <sys/user.h>
+#endif
+
 /*
 Get a numeric value that can be used to disambiguate between processes with the same PID,
 provided that one of them is still running. The numeric value can mean different things
@@ -68,7 +73,7 @@ ipc_get_process_id_disambiguation_key (
 
 	*key = 0;
 
-#if defined (__APPLE__)
+#if defined (__APPLE__) || defined (__FreeBSD__)
 	// On OS X, we return the process start time expressed in Unix time (the number of seconds
 	// since the start of the Unix epoch).
 	struct kinfo_proc info = {};
@@ -77,7 +82,11 @@ ipc_get_process_id_disambiguation_key (
 
 	const int result_sysctl = sysctl (mib, sizeof(mib)/sizeof(*mib), &info, &size, NULL, 0);
 	if (result_sysctl == 0) {
+#if defined (__APPLE__)
 		struct timeval proc_starttime = info.kp_proc.p_starttime;
+#else // __FreeBSD__
+		struct timeval proc_starttime = info.ki_start;
+#endif
 		long seconds_since_epoch = proc_starttime.tv_sec;
 		*key = seconds_since_epoch;
 		return true;
@@ -149,7 +158,7 @@ ipc_get_process_id_disambiguation_key (
 
 	// All the format specifiers for the fields in the stat file are provided by 'man proc'.
 	int result_sscanf = sscanf (scan_start_position,
-		"%*c %*d %*d %*d %*d %*d %*u %*lu %*lu %*lu %*lu %*lu %*lu %*ld %*ld %*ld %*ld %*ld %*ld %llu \n",
+		"%*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %*u %*u %*d %*d %*d %*d %*d %*d %llu \n",
 		&start_time);
 
 	if (result_sscanf != 1) {

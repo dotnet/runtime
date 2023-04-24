@@ -307,8 +307,7 @@ namespace System.Diagnostics
         {
             get
             {
-                int? ignored;
-                return GetExited(out ignored, refresh: true);
+                return GetExited(out _, refresh: true);
             }
         }
 
@@ -426,7 +425,7 @@ namespace System.Diagnostics
                     // We're in a polling loop... determine how much time remains
                     int remainingTimeout = millisecondsTimeout == Timeout.Infinite ?
                         Timeout.Infinite :
-                        (int)Math.Max(millisecondsTimeout - ((Stopwatch.GetTimestamp() - startTime) / (double)Stopwatch.Frequency * 1000), 0);
+                        (int)Math.Max(millisecondsTimeout - Stopwatch.GetElapsedTime(startTime).TotalMilliseconds, 0);
 
                     lock (_gate)
                     {
@@ -552,7 +551,25 @@ namespace System.Diagnostics
             }, cancellationToken);
         }
 
-        private bool TryReapChild()
+        private void ChildReaped(int exitCode, bool configureConsole)
+        {
+            lock (_gate)
+            {
+                Debug.Assert(!_exited);
+
+                _exitCode = exitCode;
+
+                if (_usesTerminal)
+                {
+                    // Update terminal settings before calling SetExited.
+                    Process.ConfigureTerminalForChildProcesses(-1, configureConsole);
+                }
+
+                SetExited();
+            }
+        }
+
+        private bool TryReapChild(bool configureConsole)
         {
             lock (_gate)
             {
@@ -567,16 +584,7 @@ namespace System.Diagnostics
 
                 if (waitResult == _processId)
                 {
-                    _exitCode = exitCode;
-
-                    if (_usesTerminal)
-                    {
-                        // Update terminal settings before calling SetExited.
-                        Process.ConfigureTerminalForChildProcesses(-1);
-                    }
-
-                    SetExited();
-
+                    ChildReaped(exitCode, configureConsole);
                     return true;
                 }
                 else if (waitResult == 0)
@@ -593,7 +601,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal static void CheckChildren(bool reapAll)
+        internal static void CheckChildren(bool reapAll, bool configureConsole)
         {
             // This is called on SIGCHLD from a native thread.
             // A lock in Process ensures no new processes are spawned while we are checking.
@@ -612,7 +620,7 @@ namespace System.Diagnostics
                         if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
                         {
                             // Known Process.
-                            if (pws.TryReapChild())
+                            if (pws.TryReapChild(configureConsole))
                             {
                                 pws.ReleaseRef();
                             }
@@ -637,7 +645,7 @@ namespace System.Diagnostics
                     }
                 } while (pid > 0);
 
-                if (checkAll)
+                if (checkAll && !reapAll)
                 {
                     // We track things to unref so we don't invalidate our iterator by changing s_childProcessWaitStates.
                     ProcessWaitState? firstToRemove = null;
@@ -645,7 +653,7 @@ namespace System.Diagnostics
                     foreach (KeyValuePair<int, ProcessWaitState> kv in s_childProcessWaitStates)
                     {
                         ProcessWaitState pws = kv.Value;
-                        if (pws.TryReapChild())
+                        if (pws.TryReapChild(configureConsole))
                         {
                             if (firstToRemove == null)
                             {
@@ -653,10 +661,7 @@ namespace System.Diagnostics
                             }
                             else
                             {
-                                if (additionalToRemove == null)
-                                {
-                                    additionalToRemove = new List<ProcessWaitState>();
-                                }
+                                additionalToRemove ??= new List<ProcessWaitState>();
                                 additionalToRemove.Add(pws);
                             }
                         }
@@ -681,7 +686,18 @@ namespace System.Diagnostics
                     {
                         int exitCode;
                         pid = Interop.Sys.WaitPidExitedNoHang(-1, out exitCode);
-                    } while (pid > 0);
+                        if (pid <= 0)
+                        {
+                            break;
+                        }
+
+                        // Check if the process is a child that has just terminated.
+                        if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
+                        {
+                            pws.ChildReaped(exitCode, configureConsole);
+                            pws.ReleaseRef();
+                        }
+                    } while (true);
                 }
             }
         }

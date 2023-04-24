@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Resources;
@@ -16,6 +17,8 @@ namespace System.Xml.Xsl
             : base(CreateMessage(res, args), inner)
         { }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public XslTransformException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -56,7 +59,7 @@ namespace System.Xml.Xsl
             StringBuilder sb = new StringBuilder(res);
             if (args != null && args.Length > 0)
             {
-                Debug.Fail("Resource string '" + res + "' was not found");
+                Debug.Fail($"Resource string '{res}' was not found");
                 sb.Append('(');
                 sb.Append(args[0]);
                 for (int idx = 1; idx < args.Length; idx++)
@@ -81,11 +84,11 @@ namespace System.Xml.Xsl
             string info = FormatDetailedMessage();
             if (info != null && info.Length > 0)
             {
-                result += ": " + info;
+                result += $": {info}";
             }
             if (InnerException != null)
             {
-                result += " ---> " + InnerException.ToString() + Environment.NewLine + "   " + CreateMessage(SR.Xml_EndOfInnerExceptionStack);
+                result += $" ---> {InnerException}{Environment.NewLine}   {CreateMessage(SR.Xml_EndOfInnerExceptionStack)}";
             }
             if (StackTrace != null)
             {
@@ -110,6 +113,7 @@ namespace System.Xml.Xsl
             SetSourceLineInfo(lineInfo);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         internal XslLoadException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -161,6 +165,8 @@ namespace System.Xml.Xsl
             _lineInfo = lineInfo;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -178,7 +184,7 @@ namespace System.Xml.Xsl
 
         public override string? SourceUri
         {
-            get { return _lineInfo != null ? _lineInfo.Uri : null; }
+            get { return _lineInfo?.Uri; }
         }
 
         public override int LineNumber

@@ -6,14 +6,14 @@
  * An exception should be thrown for -1, but no other value
  *
  * Notes:
- *    -passes with complus_jitminops
+ *    -passes with DOTNET_jitminops
  *    -passes with debug
- *    -passes with complus_gcstress
+ *    -passes with DOTNET_gcstress
  */
 
 using System;
 
-public class Test
+public class Test_Collect_fail
 {
     public static int Main()
     {

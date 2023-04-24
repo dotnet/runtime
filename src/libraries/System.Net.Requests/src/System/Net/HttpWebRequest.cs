@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Net.Cache;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.Serialization;
@@ -168,27 +170,28 @@ namespace System.Net
         private const string ChunkedHeader = "chunked";
 
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected HttpWebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for HttpWebRequest.")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
         }
 
+        [Obsolete("Serialization has been deprecated for HttpWebRequest.")]
         protected override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
         }
 
-#pragma warning disable SYSLIB0014
         internal HttpWebRequest(Uri uri)
         {
             _requestUri = uri;
         }
-#pragma warning restore SYSLIB0014
 
         private void SetSpecialHeaders(string HeaderName, string? value)
         {
@@ -232,10 +235,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
-                if (value < 0 && value != System.Threading.Timeout.Infinite)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_toosmall);
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, System.Threading.Timeout.Infinite);
                 _maximumResponseHeadersLen = value;
             }
         }
@@ -248,10 +248,7 @@ namespace System.Net
             }
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentException(SR.net_toosmall, nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
                 _maximumAllowedRedirections = value;
             }
         }
@@ -319,10 +316,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_writestarted);
                 }
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_clsmall);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 SetSpecialHeaders(HttpKnownHeaderNames.ContentLength, value.ToString());
             }
         }
@@ -354,7 +348,7 @@ namespace System.Net
                 Uri hostUri = _hostUri ?? Address;
                 return (_hostUri == null || !_hostHasPort) && Address.IsDefaultPort ?
                     hostUri.Host :
-                    hostUri.Host + ":" + hostUri.Port;
+                    $"{hostUri.Host}:{hostUri.Port}";
             }
             set
             {
@@ -362,10 +356,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_writestarted);
                 }
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 Uri? hostUri;
                 if ((value.Contains('/')) || (!TryGetHostUri(value, out hostUri)))
@@ -691,7 +682,21 @@ namespace System.Net
             get; set;
         }
 
-        public static new RequestCachePolicy? DefaultCachePolicy { get; set; } = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+        private static RequestCachePolicy? _defaultCachePolicy = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+        private static bool _isDefaultCachePolicySet;
+
+        public static new RequestCachePolicy? DefaultCachePolicy
+        {
+            get
+            {
+                return _defaultCachePolicy;
+            }
+            set
+            {
+                _isDefaultCachePolicySet = true;
+                _defaultCachePolicy = value;
+            }
+        }
 
         public DateTime IfModifiedSince
         {
@@ -758,9 +763,7 @@ namespace System.Net
             }
         }
 
-#pragma warning disable SYSLIB0014
         public ServicePoint ServicePoint => _servicePoint ??= ServicePointManager.FindServicePoint(Address, Proxy);
-#pragma warning restore SYSLIB0014
 
         public RemoteCertificateValidationCallback? ServerCertificateValidationCallback { get; set; }
 
@@ -773,7 +776,11 @@ namespace System.Net
         public X509CertificateCollection ClientCertificates
         {
             get => _clientCertificates ??= new X509CertificateCollection();
-            set => _clientCertificates = value ?? throw new ArgumentNullException(nameof(value));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _clientCertificates = value;
+            }
         }
 
         // HTTP Version
@@ -1141,6 +1148,8 @@ namespace System.Net
                     request.Headers.Host = Host;
                 }
 
+                AddCacheControlHeaders(request);
+
                 // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
                 // HttpRequestMessage.Content.Headers.
                 foreach (string headerName in _webHeaderCollection)
@@ -1150,11 +1159,8 @@ namespace System.Net
                     // are only allowed in the request headers collection and not in the request content headers collection.
                     if (IsWellKnownContentHeader(headerName))
                     {
-                        if (request.Content == null)
-                        {
-                            // Create empty content so that we can send the entity-body header.
-                            request.Content = new ByteArrayContent(Array.Empty<byte>());
-                        }
+                        // Create empty content so that we can send the entity-body header.
+                        request.Content ??= new ByteArrayContent(Array.Empty<byte>());
 
                         request.Content.Headers.TryAddWithoutValidation(headerName, _webHeaderCollection[headerName!]);
                     }
@@ -1203,6 +1209,118 @@ namespace System.Net
                 {
                     client?.Dispose();
                 }
+            }
+        }
+
+        private void AddCacheControlHeaders(HttpRequestMessage request)
+        {
+            RequestCachePolicy? policy = GetApplicableCachePolicy();
+
+            if (policy != null && policy.Level != RequestCacheLevel.BypassCache)
+            {
+                CacheControlHeaderValue? cacheControl = null;
+                HttpHeaderValueCollection<NameValueHeaderValue> pragmaHeaders = request.Headers.Pragma;
+
+                if (policy is HttpRequestCachePolicy httpRequestCachePolicy)
+                {
+                    switch (httpRequestCachePolicy.Level)
+                    {
+                        case HttpRequestCacheLevel.NoCacheNoStore:
+                            cacheControl = new CacheControlHeaderValue
+                            {
+                                NoCache = true,
+                                NoStore = true
+                            };
+                            pragmaHeaders.Add(new NameValueHeaderValue("no-cache"));
+                            break;
+                        case HttpRequestCacheLevel.Reload:
+                            cacheControl = new CacheControlHeaderValue
+                            {
+                                NoCache = true
+                            };
+                            pragmaHeaders.Add(new NameValueHeaderValue("no-cache"));
+                            break;
+                        case HttpRequestCacheLevel.CacheOnly:
+                            throw new WebException(SR.CacheEntryNotFound, WebExceptionStatus.CacheEntryNotFound);
+                        case HttpRequestCacheLevel.CacheOrNextCacheOnly:
+                            cacheControl = new CacheControlHeaderValue
+                            {
+                                OnlyIfCached = true
+                            };
+                            break;
+                        case HttpRequestCacheLevel.Default:
+                            cacheControl = new CacheControlHeaderValue();
+
+                            if (httpRequestCachePolicy.MinFresh > TimeSpan.Zero)
+                            {
+                                cacheControl.MinFresh = httpRequestCachePolicy.MinFresh;
+                            }
+
+                            if (httpRequestCachePolicy.MaxAge != TimeSpan.MaxValue)
+                            {
+                                cacheControl.MaxAge = httpRequestCachePolicy.MaxAge;
+                            }
+
+                            if (httpRequestCachePolicy.MaxStale > TimeSpan.Zero)
+                            {
+                                cacheControl.MaxStale = true;
+                                cacheControl.MaxStaleLimit = httpRequestCachePolicy.MaxStale;
+                            }
+
+                            break;
+                        case HttpRequestCacheLevel.Refresh:
+                            cacheControl = new CacheControlHeaderValue
+                            {
+                                MaxAge = TimeSpan.Zero
+                            };
+                            pragmaHeaders.Add(new NameValueHeaderValue("no-cache"));
+                            break;
+                    }
+                }
+                else
+                {
+                    switch (policy.Level)
+                    {
+                        case RequestCacheLevel.NoCacheNoStore:
+                            cacheControl = new CacheControlHeaderValue
+                            {
+                                NoCache = true,
+                                NoStore = true
+                            };
+                            pragmaHeaders.Add(new NameValueHeaderValue("no-cache"));
+                            break;
+                        case RequestCacheLevel.Reload:
+                            cacheControl = new CacheControlHeaderValue
+                            {
+                                NoCache = true
+                            };
+                            pragmaHeaders.Add(new NameValueHeaderValue("no-cache"));
+                            break;
+                        case RequestCacheLevel.CacheOnly:
+                            throw new WebException(SR.CacheEntryNotFound, WebExceptionStatus.CacheEntryNotFound);
+                    }
+                }
+
+                if (cacheControl != null)
+                {
+                    request.Headers.CacheControl = cacheControl;
+                }
+            }
+        }
+
+        private RequestCachePolicy? GetApplicableCachePolicy()
+        {
+            if (CachePolicy != null)
+            {
+                return CachePolicy;
+            }
+            else if (_isDefaultCachePolicySet && DefaultCachePolicy != null)
+            {
+                return DefaultCachePolicy;
+            }
+            else
+            {
+                return WebRequest.DefaultCachePolicy;
             }
         }
 
@@ -1304,14 +1422,8 @@ namespace System.Net
 
         public void AddRange(string rangeSpecifier, long from, long to)
         {
-            //
-            // Do some range checking before assembling the header
-            //
+            ArgumentNullException.ThrowIfNull(rangeSpecifier);
 
-            if (rangeSpecifier == null)
-            {
-                throw new ArgumentNullException(nameof(rangeSpecifier));
-            }
             if ((from < 0) || (to < 0))
             {
                 throw new ArgumentOutOfRangeException(from < 0 ? nameof(from) : nameof(to), SR.net_rangetoosmall);
@@ -1337,10 +1449,8 @@ namespace System.Net
 
         public void AddRange(string rangeSpecifier, long range)
         {
-            if (rangeSpecifier == null)
-            {
-                throw new ArgumentNullException(nameof(rangeSpecifier));
-            }
+            ArgumentNullException.ThrowIfNull(rangeSpecifier);
+
             if (!HttpValidationHelpers.IsValidToken(rangeSpecifier))
             {
                 throw new ArgumentException(SR.net_nottoken, nameof(rangeSpecifier));
@@ -1405,7 +1515,7 @@ namespace System.Net
             HttpKnownHeaderNames.LastModified
         };
 
-        private bool IsWellKnownContentHeader(string header)
+        private static bool IsWellKnownContentHeader(string header)
         {
             foreach (string contentHeaderName in s_wellKnownContentHeaders)
             {
@@ -1438,10 +1548,9 @@ namespace System.Net
 
         private void SetDateHeaderHelper(string headerName, DateTime dateTime)
         {
-            if (dateTime == DateTime.MinValue)
-                SetSpecialHeaders(headerName, null); // remove header
-            else
-                SetSpecialHeaders(headerName, HttpDateParser.DateToString(dateTime.ToUniversalTime()));
+            SetSpecialHeaders(headerName, dateTime == DateTime.MinValue ?
+                null : // remove header
+                dateTime.ToUniversalTime().ToString("r"));
         }
 
         private bool TryGetHostUri(string hostName, [NotNullWhen(true)] out Uri? hostUri)

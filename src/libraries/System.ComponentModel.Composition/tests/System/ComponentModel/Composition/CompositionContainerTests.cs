@@ -1699,7 +1699,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void GetExports2_TypeAsMetadataViewTypeArgument_IsUsedAsMetadataConstraint()
         {
             var metadata = new Dictionary<string, object>();
@@ -2476,7 +2475,7 @@ namespace System.ComponentModel.Composition
 
             CompositionBatch batch2 = new CompositionBatch();
             batch2.RemovePart(valueKey);
-            // removing entry from wrong container, shoudl be a no-op
+            // removing entry from wrong container, should be a no-op
             d2.Compose(batch2);
         }
 

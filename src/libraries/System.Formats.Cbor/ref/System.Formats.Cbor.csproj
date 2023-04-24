@@ -1,18 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net5.0</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Formats.Cbor.cs" />
+    <Compile Include="System.Formats.Cbor.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0'">
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Numerics" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'net5.0'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Numerics\ref\System.Runtime.Numerics.csproj" />
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 </Project>

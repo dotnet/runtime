@@ -23,15 +23,18 @@ namespace Microsoft.VisualBasic.Tests
             base.Dispose(disposing);
         }
 
-        // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
-        // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
-        // path that followed the symlink.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50572", TestPlatforms.Android)]
         public void ChDir()
         {
             var savedDirectory = System.IO.Directory.GetCurrentDirectory();
             FileSystem.ChDir(TestDirectory);
-            Assert.Equal(TestDirectory, System.IO.Directory.GetCurrentDirectory());
+
+            // If the test directory has symlinks, setting the current directory to a symlinked path will result
+            // in GetCurrentDirectory returning the absolute path that followed the symlink. We can only verify
+            // the test directory name in that case.
+            Assert.Equal(System.IO.Path.GetFileName(TestDirectory), System.IO.Path.GetFileName(System.IO.Directory.GetCurrentDirectory()));
+
             FileSystem.ChDir(savedDirectory);
             Assert.Equal(savedDirectory, System.IO.Directory.GetCurrentDirectory());
         }
@@ -41,7 +44,6 @@ namespace Microsoft.VisualBasic.Tests
         //   public static void ChDrive(string Drive){ throw null; }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void CloseAllFiles()
         {
             var fileName1 = GetTestFilePath();
@@ -82,8 +84,8 @@ namespace Microsoft.VisualBasic.Tests
             }
         }
 
-        // Can't get current directory on OSX before setting it.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50572", TestPlatforms.Android)]
         public void CurDir()
         {
             Assert.Equal(FileSystem.CurDir(), System.IO.Directory.GetCurrentDirectory());
@@ -178,6 +180,7 @@ namespace Microsoft.VisualBasic.Tests
         //   public static OpenMode FileAttr(int FileNumber){ throw null; }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53815", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void FileClose()
         {
             int fileNumber = FileSystem.FreeFile();
@@ -372,6 +375,7 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53815", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void FileOpen()
         {
             // OpenMode.Append:
@@ -615,8 +619,7 @@ namespace Microsoft.VisualBasic.Tests
                         }
                     },
                     fileName,
-                    text,
-                    new RemoteInvokeOptions() { ExpectedExitCode = 0 }).Dispose();
+                    text).Dispose();
             }
         }
 
@@ -702,6 +705,7 @@ namespace Microsoft.VisualBasic.Tests
         //   public static void WriteLine(int FileNumber, params object[] Output) { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53815", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void Write_ArgumentException()
         {
             int fileNumber = FileSystem.FreeFile();

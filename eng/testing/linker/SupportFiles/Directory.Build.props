@@ -1,23 +1,16 @@
 <Project>
   <PropertyGroup>
     <SkipConfigureTrimming>true</SkipConfigureTrimming>
-    <UseDefaultBlazorWASMFeatureSwitches>false</UseDefaultBlazorWASMFeatureSwitches>
-    <UseDefaultAndroidFeatureSwitches>false</UseDefaultAndroidFeatureSwitches>
-    <UseDefaultiOSFeatureSwitches>false</UseDefaultiOSFeatureSwitches>
     <PublishTrimmed>true</PublishTrimmed>
-    <SkipImportRepoLinkerTargets>true</SkipImportRepoLinkerTargets>
-    <TrimMode>link</TrimMode>
+    <TrimMode>full</TrimMode>
     <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
     <SelfContained>true</SelfContained>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <PlatformManifestFile />
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- Enable NuGet static graph evaluation to optimize incremental restore -->
     <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
+    <!-- Suppress analyzer and trimming warnings as these are tests -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
-
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.NETCore.App" />
-  </ItemGroup>
 </Project>

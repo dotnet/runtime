@@ -10,7 +10,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
@@ -149,6 +148,22 @@ namespace System.Tests
             Assert.Equal(expected, result);
         }
 
+        [Fact]
+        public static void Create_InterpolatedString_ConstructsStringAndClearsBuilder()
+        {
+            Span<char> initialBuffer = stackalloc char[16];
+
+            DefaultInterpolatedStringHandler handler = new DefaultInterpolatedStringHandler(0, 0, CultureInfo.InvariantCulture, initialBuffer);
+            handler.AppendLiteral("hello");
+            Assert.Equal("hello", string.Create(CultureInfo.InvariantCulture, initialBuffer, ref handler));
+            Assert.Equal("", string.Create(CultureInfo.InvariantCulture, initialBuffer, ref handler));
+
+            handler = new DefaultInterpolatedStringHandler(0, 0, CultureInfo.InvariantCulture);
+            handler.AppendLiteral("hello");
+            Assert.Equal("hello", string.Create(CultureInfo.InvariantCulture, ref handler));
+            Assert.Equal("", string.Create(CultureInfo.InvariantCulture, ref handler));
+        }
+
         [Theory]
         [InlineData("Hello", 'H', true)]
         [InlineData("Hello", 'Z', false)]
@@ -200,9 +215,9 @@ namespace System.Tests
         [InlineData("Hello", 'e', StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("Hello", 'E', StringComparison.OrdinalIgnoreCase, true)]
         [InlineData("", 'H', StringComparison.OrdinalIgnoreCase, false)]
-        public static void Contains_Char_StringComparison(string s, char value, StringComparison comparisionType, bool expected)
+        public static void Contains_Char_StringComparison(string s, char value, StringComparison comparisonType, bool expected)
         {
-            Assert.Equal(expected, s.Contains(value, comparisionType));
+            Assert.Equal(expected, s.Contains(value, comparisonType));
         }
 
         public static IEnumerable<object[]> Contains_String_StringComparison_TestData()
@@ -300,6 +315,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void Contains_StringComparison_TurkishI()
         {
             const string Source = "\u0069\u0130";
@@ -508,6 +524,69 @@ namespace System.Tests
             Assert.Equal(expected, enumeratedValues);
         }
 
+        [Fact]
+        public static void ReplaceLineEndings_NullReplacementText_Throws()
+        {
+            Assert.Throws<ArgumentNullException>("replacementText", () => "Hello!".ReplaceLineEndings(null));
+        }
+
+        [Theory]
+        [InlineData("", new[] { "" })]
+        [InlineData("abc", new[] { "abc" })]
+        [InlineData("<CR>", new[] { "", "" })] // empty sequences before and after the CR
+        [InlineData("<CR><CR>", new[] { "", "", "" })] // empty sequences before and after the CR (CR doesn't consume CR)
+        [InlineData("<CR><LF>", new[] { "", "" })] // CR should swallow any LF which follows
+        [InlineData("a<CR><LF><LF>z", new[] { "a", "", "z" })] // CR should swallow only a single LF which follows
+        [InlineData("a<CR>b<LF>c", new[] { "a", "b", "c" })] // CR shouldn't swallow anything other than LF
+        [InlineData("aa<CR>bb<LF><CR>cc", new[] { "aa", "bb", "", "cc" })] // LF shouldn't swallow CR which follows
+        [InlineData("a<CR>b<VT>c<LF>d<NEL>e<FF>f<PS>g<LS>h", new[] { "a", "b<VT>c", "d", "e", "f", "g", "h" })] // VT not recognized as NLF
+        [InlineData("xyz<NEL>", new[] { "xyz", "" })] // sequence at end produces empty string
+        [InlineData("<NEL>xyz", new[] { "", "xyz" })] // sequence at beginning produces empty string
+        [InlineData("abc<NAK>%def", new[] { "abc<NAK>%def" })] // we don't recognize EBCDIC encodings for LF (see Unicode Standard, Sec. 5.8, Table 5-1)
+        public static void ReplaceLineEndings(string input, string[] expectedSegments)
+        {
+            input = FixupSequences(input);
+            expectedSegments = Array.ConvertAll(expectedSegments, FixupSequences);
+
+            // Try Environment.NewLine (and parameterless ctor)
+
+            string expectedEnvNewLineConcat = string.Join(Environment.NewLine, expectedSegments);
+            Assert.Equal(expectedEnvNewLineConcat, input.ReplaceLineEndings());
+            Assert.Equal(expectedEnvNewLineConcat, input.ReplaceLineEndings(Environment.NewLine));
+
+            // Try removing newlines entirely
+
+            Assert.Equal(string.Concat(expectedSegments) /* no joiner */, input.ReplaceLineEndings(""));
+
+            // And try using a custom separator
+
+            Assert.Equal(string.Join("<SEPARATOR>", expectedSegments), input.ReplaceLineEndings("<SEPARATOR>"));
+
+            if (expectedSegments.Length == 1)
+            {
+                // If no newline sequences at all, we should return the original string instance as an optimization
+                Assert.Same(input, input.ReplaceLineEndings());
+                Assert.Same(input, input.ReplaceLineEndings(Environment.NewLine));
+                Assert.Same(input, input.ReplaceLineEndings(""));
+                Assert.Same(input, input.ReplaceLineEndings("<SEPARATOR>"));
+            }
+
+            static string FixupSequences(string input)
+            {
+                // We use <XYZ> markers so that the original strings show up better in the xunit test runner
+                // <VT> is included as a negative test; we *do not* want ReplaceLineEndings to honor it
+
+                return input.Replace("<CR>", "\r")
+                    .Replace("<LF>", "\n")
+                    .Replace("<VT>", "\v")
+                    .Replace("<FF>", "\f")
+                    .Replace("<NAK>", "\u0015")
+                    .Replace("<NEL>", "\u0085")
+                    .Replace("<LS>", "\u2028")
+                    .Replace("<PS>", "\u2029");
+            }
+        }
+
         [Theory]
         [InlineData("Hello", 'H', true)]
         [InlineData("Hello", 'h', false)]
@@ -704,6 +783,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public void Replace_StringComparison_TurkishI()
         {
             const string Source = "\u0069\u0130";
@@ -748,8 +828,14 @@ namespace System.Tests
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", false, CultureInfo.InvariantCulture, "def" };
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", true, CultureInfo.InvariantCulture, "def" };
 
-                yield return new object[] { "\u0069\u0130", "\u0069", "a", false, new CultureInfo("tr-TR"), "a\u0130" };
-                yield return new object[] { "\u0069\u0130", "\u0069", "a", true, new CultureInfo("tr-TR"), "aa" };
+                // Android has different results w/ tr-TR
+                // See https://github.com/dotnet/runtime/issues/60568
+                if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
+                {
+                    yield return new object[] { "\u0069\u0130", "\u0069", "a", false, new CultureInfo("tr-TR"), "a\u0130" };
+                    yield return new object[] { "\u0069\u0130", "\u0069", "a", true, new CultureInfo("tr-TR"), "aa" };
+                }
+
                 yield return new object[] { "\u0069\u0130", "\u0069", "a", false, CultureInfo.InvariantCulture, "a\u0130" };
                 yield return new object[] { "\u0069\u0130", "\u0069", "a", true, CultureInfo.InvariantCulture, "a\u0130" };
             }
@@ -1026,6 +1112,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void IndexOf_TurkishI_TurkishCulture_Char()
         {
             using (new ThreadCultureChange("tr-TR"))
@@ -1801,14 +1888,14 @@ namespace System.Tests
             string source = "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
                             "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
                             "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
-                            "сентября Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
+                            "\u0441\u0435\u043D\u0442\u044F\u0431\u0440\u044F Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
                             "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh " +
                             "Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh Abcdefgh ";
 
-            string source1 = "сентября Abcdefgh сентября ";
+            string source1 = "\u0441\u0435\u043D\u0442\u044F\u0431\u0440\u044F Abcdefgh \u0441\u0435\u043D\u0442\u044F\u0431\u0440\u044F ";
 
-            string pattern = "сентября ";
-            string pattern1 = "сентябряnone";
+            string pattern = "\u0441\u0435\u043D\u0442\u044F\u0431\u0440\u044F ";
+            string pattern1 = "\u0441\u0435\u043D\u0442\u044F\u0431\u0440\u044Fnone";
 
             CompareInfo ci = CultureInfo.CurrentCulture.CompareInfo;
 
@@ -1881,6 +1968,23 @@ namespace System.Tests
                     }
                 }
             }
+        }
+
+        [Theory]
+        [InlineData("a", "A", 0)]
+        [InlineData("A", "a", 0)]
+        [InlineData("Ab", "aB", 0)]
+        [InlineData("aB", "Ab", 0)]
+        [InlineData("aB", "Aa", 1)]
+        [InlineData("aa", "aB", -1)]
+        [InlineData("\u0160a", "\u0160A", 0)]
+        [InlineData("\u0160a", "\u0160B", -1)]
+        [InlineData("\u0160b", "\u0160A", 1)]
+        [InlineData("\u0160b\u0160\u0160\u0160", "\u0160A\u0160\u0160\u0160", 1)]
+        [InlineData("\u0160A\u0160\u0160\u0160", "\u0160b\u0160\u0160\u0160", -1)]
+        public static void TestCompareOrdinalIgnoreCase(string a, string b, int sign)
+        {
+            Assert.Equal(sign, Math.Sign(string.Compare(a, b, StringComparison.OrdinalIgnoreCase)));
         }
     }
 }

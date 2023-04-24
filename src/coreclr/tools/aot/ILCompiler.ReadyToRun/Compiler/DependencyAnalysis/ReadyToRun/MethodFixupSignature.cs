@@ -21,8 +21,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly MethodWithToken _method;
 
-        private readonly bool _isInstantiatingStub;
-
         public MethodFixupSignature(
             ReadyToRunFixupKind fixupKind, 
             MethodWithToken method,
@@ -30,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             _fixupKind = fixupKind;
             _method = method;
-            _isInstantiatingStub = isInstantiatingStub;
+            IsInstantiatingStub = isInstantiatingStub;
 
             // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
             CompilerTypeSystemContext compilerContext = (CompilerTypeSystemContext)method.Method.Context;
@@ -42,10 +40,29 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         public MethodDesc Method => _method.Method;
+        public bool IsInstantiatingStub { get; }
 
         public override int ClassCode => 150063499;
 
         public bool IsUnboxingStub => _method.Unboxing;
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList list = base.ComputeNonRelocationBasedDependencies(factory);
+            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
+                !Method.IsAbstract &&
+                !Method.HasInstantiation &&
+                Method.GetCanonMethodTarget(CanonicalFormKind.Specific) is var canonMethod &&
+                !factory.CompilationModuleGroup.VersionsWithMethodBody(canonMethod) &&
+                factory.CompilationModuleGroup.CrossModuleCompileable(canonMethod) &&
+                factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
+            {
+                list = list ?? new DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList();
+                list.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
+            }
+
+            return list;
+        }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
@@ -61,7 +78,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Optimize some of the fixups into a more compact form
             ReadyToRunFixupKind fixupKind = _fixupKind;
             bool optimized = false;
-            if (!_method.Unboxing && !_isInstantiatingStub && _method.ConstrainedType == null &&
+            if (!_method.Unboxing && !IsInstantiatingStub && _method.ConstrainedType == null &&
                 fixupKind == ReadyToRunFixupKind.MethodEntry)
             {
                 if (!_method.Method.HasInstantiation && !_method.Method.OwningType.HasInstantiation && !_method.Method.OwningType.IsArray)
@@ -88,13 +105,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
                 {
-                    method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing, null);
+                    method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method), method.ConstrainedType, unboxing: _method.Unboxing, null);
                 }
                 else if (!optimized && (method.Token.TokenType == CorTokenType.mdtMemberRef))
                 {
                     if (method.Method.OwningType.GetTypeDefinition() is EcmaType)
                     {
-                        method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing, null);
+                        method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method), method.ConstrainedType, unboxing: _method.Unboxing, null);
                     }
                 }
             }
@@ -111,7 +128,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             else
             {
-                dataBuilder.EmitMethodSignature(method, enforceDefEncoding: false, enforceOwningType: false, innerContext, _isInstantiatingStub);
+                dataBuilder.EmitMethodSignature(method, enforceDefEncoding: false, enforceOwningType: false, innerContext, IsInstantiatingStub);
             }
 
             return dataBuilder.ToObjectData();
@@ -122,7 +139,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append($@"MethodFixupSignature(");
             sb.Append(_fixupKind.ToString());
-            if (_isInstantiatingStub)
+            if (IsInstantiatingStub)
             {
                 sb.Append(" [INST]");
             }
@@ -137,7 +154,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            result = _isInstantiatingStub.CompareTo(otherNode._isInstantiatingStub);
+            result = IsInstantiatingStub.CompareTo(otherNode.IsInstantiatingStub);
             if (result != 0)
                 return result;
 

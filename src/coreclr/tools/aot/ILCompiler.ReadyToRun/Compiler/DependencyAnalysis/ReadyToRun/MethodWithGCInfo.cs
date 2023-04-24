@@ -4,10 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
+using System.Linq;
 using Internal.JitInterface;
+using Internal.Pgo;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -19,6 +21,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
+        private FrameInfo[] _coldFrameInfos;
         private byte[] _gcInfo;
         private ObjectData _ehInfo;
         private byte[] _debugLocInfos;
@@ -27,6 +30,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<ISymbolNode> _fixups;
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
+        private DependencyList _nonRelocationDependencies;
 
         public MethodWithGCInfo(MethodDesc methodDesc)
         {
@@ -43,8 +47,38 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 SetCode(new ObjectNode.ObjectData(Array.Empty<byte>(), null, 1, Array.Empty<ISymbolDefinitionNode>()));
                 InitializeFrameInfos(Array.Empty<FrameInfo>());
+                InitializeColdFrameInfos(Array.Empty<FrameInfo>());
             }
             _lateTriggeredCompilation = context.CompilationCurrentPhase != 0;
+            RegisterInlineeModuleIndices(context);
+        }
+
+        private void RegisterInlineeModuleIndices(NodeFactory factory)
+        {
+            if (_inlinedMethods != null)
+            {
+                foreach (var inlinee in _inlinedMethods)
+                {
+                    MethodDesc inlineeDefinition = inlinee.GetTypicalMethodDefinition();
+                    if (!(inlineeDefinition is EcmaMethod ecmaInlineeDefinition))
+                    {
+                        // We don't record non-ECMA methods because they don't have tokens that
+                        // diagnostic tools could reason about anyway.
+                        continue;
+                    }
+
+                    if (!factory.CompilationModuleGroup.VersionsWithMethodBody(inlinee) && !factory.CompilationModuleGroup.CrossModuleInlineable(inlinee))
+                    {
+                        // We cannot record inlining info across version bubble as cross-bubble assemblies
+                        // are not guaranteed to preserve token values unless CrossModule inlining is in place
+                        // Otherwise non-versionable methods may be inlined across the version bubble.
+
+                        Debug.Assert(inlinee.IsNonVersionable());
+                        continue;
+                    }
+                    factory.ManifestMetadataTable.EnsureModuleIndexable(ecmaInlineeDefinition.Module);
+                }
+            }
         }
 
         public override int DependencyPhaseForDeferredStaticComputation => _lateTriggeredCompilation ? 2 : 0;
@@ -100,10 +134,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
+        public MethodColdCodeNode ColdCodeNode { get; set; }
 
         public byte[] GetFixupBlob(NodeFactory factory)
         {
             Relocation[] relocations = GetData(factory, relocsOnly: true).Relocs;
+
+            if (ColdCodeNode != null)
+            {
+                Relocation[] coldRelocations = ColdCodeNode.GetData(factory, relocsOnly: true).Relocs;
+                if (relocations == null)
+                {
+                    relocations = coldRelocations;
+                }
+                else if (coldRelocations != null)
+                {
+                    relocations = Enumerable.Concat(relocations, coldRelocations).ToArray();
+                }
+            }
 
             if (relocations == null)
             {
@@ -216,9 +264,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             DependencyList dependencyList = new DependencyList(new DependencyListEntry[] { new DependencyListEntry(GCInfoNode, "Unwind & GC info") });
 
+            if (this.ColdCodeNode != null)
+            {
+                dependencyList.Add(this.ColdCodeNode, "cold");
+            }
+
             foreach (ISymbolNode node in _fixups)
             {
                 dependencyList.Add(node, "classMustBeLoadedBeforeCodeIsRun");
+            }
+
+            if (_nonRelocationDependencies != null)
+            {
+                dependencyList.AddRange(_nonRelocationDependencies);
             }
 
             return dependencyList;
@@ -242,15 +300,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 315213488;
 
-        public override ObjectNodeSection Section
+        public override ObjectNodeSection GetSection(NodeFactory factory)
         {
-            get
-            {
-                return _method.Context.Target.IsWindows ? ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;
-            }
+            return factory.Target.IsWindows ? ObjectNodeSection.ManagedCodeWindowsContentSection : ObjectNodeSection.ManagedCodeUnixContentSection;
         }
 
         public FrameInfo[] FrameInfos => _frameInfos;
+
+        public FrameInfo[] ColdFrameInfos => _coldFrameInfos;
+
         public byte[] GCInfo => _gcInfo;
         public ObjectData EHInfo => _ehInfo;
         public MethodDesc[] InlinedMethods => _inlinedMethods;
@@ -270,6 +328,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     new FrameInfo((FrameInfoFlags)0, startOffset: 0, endOffset: 0, blobData: Array.Empty<byte>())
                 };
             }
+        }
+
+        public void InitializeColdFrameInfos(FrameInfo[] coldFrameInfos)
+        {
+            Debug.Assert(_coldFrameInfos == null);
+            _coldFrameInfos = coldFrameInfos;
+            // TODO: x86 (see InitializeFrameInfos())
         }
 
         public void InitializeGCInfo(byte[] gcInfo)
@@ -301,7 +366,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Debug.Assert(_debugVarInfos == null);
             // Process the debug info from JIT format to R2R format immediately as it is large
             // and not used in the rest of the process except to emit.
-            _debugVarInfos = DebugInfoTableNode.CreateVarBlobForMethod(debugVarInfos);
+            _debugVarInfos = DebugInfoTableNode.CreateVarBlobForMethod(debugVarInfos, _method.Context.Target);
         }
 
         public void InitializeDebugEHClauseInfos(DebugEHClauseInfo[] debugEHClauseInfos)
@@ -316,14 +381,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_method, otherNode._method);
         }
 
-        public void InitializeInliningInfo(MethodDesc[] inlinedMethods)
+        public void InitializeInliningInfo(MethodDesc[] inlinedMethods, NodeFactory factory)
         {
             Debug.Assert(_inlinedMethods == null);
             _inlinedMethods = inlinedMethods;
+            if (this.Marked)
+                RegisterInlineeModuleIndices(factory);
+        }
+
+        public void InitializeNonRelocationDependencies(DependencyList dependencies)
+        {
+            _nonRelocationDependencies = dependencies;
         }
 
         public int Offset => 0;
         public override bool IsShareable => throw new NotImplementedException();
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => IsEmpty;
+
+        public override string ToString() => _method.ToString();
     }
 }

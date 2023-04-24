@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPeerID", SetLastError = true)]
-        internal static extern int GetPeerID(SafeHandle socket, out uint euid);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPeerID", SetLastError = true)]
+        internal static partial int GetPeerID(SafeHandle socket, out uint euid);
     }
 }

@@ -17,14 +17,18 @@
 .assembly b404051
 {
 }
+.assembly extern xunit.core {}
 
 
-.class private auto ansi beforefieldinit BadHandles
+.class public auto ansi beforefieldinit BadHandles
        extends [mscorlib]System.Object
 {
   .field private static object Pass
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  8
     IL_0000:  newobj     instance void [mscorlib]System.Object::.ctor()

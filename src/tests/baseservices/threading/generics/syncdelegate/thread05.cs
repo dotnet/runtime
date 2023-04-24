@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
 using System.Threading;
+using Xunit;
 
 class Gen<T> 
 {
 	public void Target<U>()
 	{		
 		//dummy line to avoid warnings
-		Test.Eval(typeof(U)!=null);	
-		Interlocked.Increment(ref Test.Xcounter);
+		Test_thread05.Eval(typeof(U)!=null);	
+		Interlocked.Increment(ref Test_thread05.Xcounter);
 	}
 	public static void DelegateTest<U>()
 	{
@@ -17,12 +18,12 @@ class Gen<T>
 		
 		
 		d();
-		Test.Eval(Test.Xcounter==1);
-		Test.Xcounter = 0;
+		Test_thread05.Eval(Test_thread05.Xcounter==1);
+		Test_thread05.Xcounter = 0;
 	}
 }
 
-public class Test
+public class Test_thread05
 {
 	public static int nThreads =50;
 	public static int counter = 0;
@@ -39,7 +40,8 @@ public class Test
 	
 	}
 	
-	public static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		Gen<int>.DelegateTest<object>();
 		Gen<double>.DelegateTest<string>();

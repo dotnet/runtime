@@ -8,6 +8,7 @@ namespace System.Net.Security
     [StructLayout(LayoutKind.Sequential)]
     internal struct SecChannelBindings
     {
+        internal int InitiatorAddrType;
         internal int InitiatorLength;
         internal int InitiatorOffset;
         internal int AcceptorAddrType;

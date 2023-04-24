@@ -6,11 +6,10 @@ using System.Security.Principal;
 
 namespace System.Net
 {
-    internal partial class ContextAwareResult
+    internal sealed partial class ContextAwareResult
     {
         private WindowsIdentity? _windowsIdentity;
 
-        // Security: We need an assert for a call into WindowsIdentity.GetCurrent.
         private void SafeCaptureIdentity()
         {
             Debug.Assert(OperatingSystem.IsWindows());

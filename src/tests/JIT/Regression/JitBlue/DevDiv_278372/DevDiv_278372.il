@@ -12,16 +12,12 @@
 // In this case, genFnProlog was attempting to zero-init V on the stack.
 //
 // It was difficult to construct a repro; this repro requires that the test
-// be run with COMPlus_JitStressRegs=0x200 (which changes the location of
+// be run with DOTNET_JitStressRegs=0x200 (which changes the location of
 // variables at block boundaries).
 
 
 // Metadata version: v4.0.30319
-.assembly extern System.Runtime
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 4:1:0:0
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
@@ -30,10 +26,11 @@
 .assembly DevDiv_278372
 {
 }
+.assembly extern xunit.core {}
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit DevDiv_278372
+.class public auto ansi beforefieldinit DevDiv_278372
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static bool  check(int32& dummy) cil managed noinlining
@@ -121,6 +118,9 @@
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       16 (0x10)
     .maxstack  8

@@ -1,11 +1,6 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-; ==++==
-;
-
-;
-; ==--==
 ;
 ; FILE: asmhelpers.asm
 ;
@@ -43,27 +38,18 @@ EXTERN _COMPlusFrameHandlerRevCom:PROC
 endif ; FEATURE_COMINTEROP
 EXTERN __alloca_probe:PROC
 EXTERN _NDirectImportWorker@4:PROC
-EXTERN _UMThunkStubRareDisableWorker@8:PROC
 
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
 
-ifndef FEATURE_CORECLR
-EXTERN _CopyCtorCallStubWorker@4:PROC
-endif
-
 EXTERN _PreStubWorker@8:PROC
+EXTERN _TheUMEntryPrestubWorker@4:PROC
 
 ifdef FEATURE_COMINTEROP
 EXTERN _CLRToCOMWorker@8:PROC
 endif
 
 EXTERN _ExternalMethodFixupWorker@16:PROC
-
-ifdef FEATURE_PREJIT
-EXTERN _VirtualMethodFixupWorker@8:PROC
-EXTERN _StubDispatchFixupWorker@16:PROC
-endif
 
 ifdef FEATURE_COMINTEROP
 EXTERN _ComPreStubWorker@8:PROC
@@ -249,7 +235,7 @@ _RestoreFPUContext@4 ENDP
 
 ; Register CLR exception handlers defined on the C++ side with SAFESEH.
 ; Note that these directives must be in a file that defines symbols that will be used during linking,
-; otherwise it's possible that the resulting .obj will completly be ignored by the linker and these
+; otherwise it's possible that the resulting .obj will completely be ignored by the linker and these
 ; directives will have no effect.
 COMPlusFrameHandler proto c
 .safeseh COMPlusFrameHandler
@@ -259,9 +245,6 @@ COMPlusNestedExceptionHandler proto c
 
 FastNExportExceptHandler proto c
 .safeseh FastNExportExceptHandler
-
-UMThunkPrestubHandler proto c
-.safeseh UMThunkPrestubHandler
 
 ifdef FEATURE_COMINTEROP
 COMPlusFrameHandlerRevCom proto c
@@ -646,7 +629,7 @@ else
 FASTCALL_FUNC HelperMethodFrameRestoreState,4
     mov         eax, ecx        ; eax = MachState*
 endif
-    ; restore the registers from the m_MachState stucture.  Note that
+    ; restore the registers from the m_MachState structure.  Note that
     ; we only do this for register that where not saved on the stack
     ; at the time the machine state snapshot was taken.
 
@@ -816,27 +799,6 @@ _NDirectImportThunk@0 proc public
         jmp     eax     ; Jump to DLL target
 _NDirectImportThunk@0 endp
 
-;==========================================================================
-; The call in fixup precode initally points to this function.
-; The pupose of this function is to load the MethodDesc and forward the call the prestub.
-_PrecodeFixupThunk@0 proc public
-
-        pop     eax         ; Pop the return address. It points right after the call instruction in the precode.
-        push    esi
-        push    edi
-
-        ; Inline computation done by FixupPrecode::GetMethodDesc()
-        movzx   esi,byte ptr [eax+2]    ; m_PrecodeChunkIndex
-        movzx   edi,byte ptr [eax+1]    ; m_MethodDescChunkIndex
-        mov     eax,dword ptr [eax+esi*8+3]
-        lea     eax,[eax+edi*4]
-
-        pop     edi
-        pop     esi
-        jmp     _ThePreStub@0
-
-_PrecodeFixupThunk@0 endp
-
 ; void __stdcall setFPReturn(int fpSize, INT64 retVal)
 _setFPReturn@12 proc public
     mov     ecx, [esp+4]
@@ -876,23 +838,6 @@ getFPReturn4:
    fstp    dword ptr [eax]
    retn    8
 _getFPReturn@8 endp
-
-; VOID __cdecl UMThunkStubRareDisable()
-;<TODO>
-; @todo: this is very similar to StubRareDisable
-;</TODO>
-_UMThunkStubRareDisable proc public
-    push    eax
-    push    ecx
-
-    push    eax          ; Push the UMEntryThunk
-    push    ecx          ; Push thread
-    call    _UMThunkStubRareDisableWorker@8
-
-    pop     ecx
-    pop     eax
-    retn
-_UMThunkStubRareDisable endp
 
 
 ; void __stdcall JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
@@ -1147,69 +1092,20 @@ _VarargPInvokeStub@0 endp
 ; Invoked for marshaling-required unmanaged CALLI calls as a stub.
 ; EAX       - the unmanaged target
 ; ECX, EDX  - arguments
-; [ESP + 4] - the VASigCookie
+; EBX       - the VASigCookie
 ;
 _GenericPInvokeCalliHelper@0 proc public
-    ; save the target
-    push    eax
 
-    ; EAX <- VASigCookie
-    mov     eax, [esp + 8]           ; skip target and retaddr
-
-    mov     eax, [eax + VASigCookie__StubOffset]
-    test    eax, eax
-
+    cmp     dword ptr [ebx + VASigCookie__StubOffset], 0
     jz      GoCallCalliWorker
-    ; ---------------------------------------
 
-    push    eax
-
-    ; stack layout at this point:
-    ;
-    ; |         ...          |
-    ; |   stack arguments    | ESP + 16
-    ; +----------------------+
-    ; |     VASigCookie*     | ESP + 12
-    ; +----------------------+
-    ; |    return address    | ESP + 8
-    ; +----------------------+
-    ; | CALLI target address | ESP + 4
-    ; +----------------------+
-    ; |   stub entry point   | ESP + 0
-    ; ------------------------
-
-    ; remove VASigCookie from the stack
-    mov     eax, [esp + 8]
-    mov     [esp + 12], eax
-
-    ; move stub entry point below the RA
-    mov     eax, [esp]
-    mov     [esp + 8], eax
-
-    ; load EAX with the target address
-    pop     eax
-    pop     eax
-
-    ; stack layout at this point:
-    ;
-    ; |         ...          |
-    ; |   stack arguments    | ESP + 8
-    ; +----------------------+
-    ; |    return address    | ESP + 4
-    ; +----------------------+
-    ; |   stub entry point   | ESP + 0
-    ; ------------------------
-
-    ; CALLI target address is in EAX
-    ret
+    ; Stub is already prepared, just jump to it
+    jmp     dword ptr [ebx + VASigCookie__StubOffset]
 
 GoCallCalliWorker:
-    ; the target is on the stack and will become m_Datum of PInvokeCalliFrame
-    ; call the stub generating worker
-    pop     eax
-
     ;
-    ; target ptr in EAX, VASigCookie ptr in EDX
+    ; call the stub generating worker
+    ; target ptr in EAX, VASigCookie ptr in EBX
     ;
 
     STUB_PROLOG
@@ -1220,7 +1116,7 @@ GoCallCalliWorker:
     push        eax
 
     push        eax                         ; unmanaged target
-    push        dword ptr [esi + 4*7]       ; pVaSigCookie (first stack argument)
+    push        ebx                         ; pVaSigCookie (first stack argument)
     push        esi                         ; pTransitionBlock
 
     call        _GenericPInvokeCalliStubWorker@12
@@ -1340,108 +1236,6 @@ FASTCALL_ENDFUNC
 
 endif ; FEATURE_COMINTEROP
 
-ifndef FEATURE_CORECLR
-
-;==========================================================================
-; This is small stub whose purpose is to record current stack pointer and
-; call CopyCtorCallStubWorker to invoke copy constructors and destructors
-; as appropriate. This stub operates on arguments already pushed to the
-; stack by JITted IL stub and must not create a new frame, i.e. it must tail
-; call to the target for it to see the arguments that copy ctors have been
-; called on.
-;
-_CopyCtorCallStub@0 proc public
-    ; there may be an argument in ecx - save it
-    push    ecx
-
-    ; push pointer to arguments
-    lea     edx, [esp + 8]
-    push    edx
-
-    call    _CopyCtorCallStubWorker@4
-
-    ; restore ecx and tail call to the target
-    pop     ecx
-    jmp     eax
-_CopyCtorCallStub@0 endp
-
-endif ; !FEATURE_CORECLR
-
-ifdef FEATURE_PREJIT
-
-;==========================================================================
-_StubDispatchFixupStub@0 proc public
-
-    STUB_PROLOG
-
-    mov         esi, esp
-
-    push        0
-    push        0
-
-    push        eax             ; siteAddrForRegisterIndirect (for tailcalls)
-    push        esi             ; pTransitionBlock
-
-    call        _StubDispatchFixupWorker@16
-
-    STUB_EPILOG
-
-_StubDispatchFixupPatchLabel@0:
-public _StubDispatchFixupPatchLabel@0
-
-    ; Tailcall target
-    jmp eax
-
-    ; This will never be executed. It is just to help out stack-walking logic
-    ; which disassembles the epilog to unwind the stack.
-    ret
-
-_StubDispatchFixupStub@0 endp
-
-endif ; FEATURE_PREJIT
-
-;==========================================================================
-_ExternalMethodFixupStub@0 proc public
-
-    pop     eax             ; pop off the return address to the stub
-                            ; leaving the actual caller's return address on top of the stack
-
-    STUB_PROLOG
-
-    mov         esi, esp
-
-    ; EAX is return address into CORCOMPILE_EXTERNAL_METHOD_THUNK. Subtract 5 to get start address.
-    sub         eax, 5
-
-    push        0
-    push        0
-
-    push        eax
-
-    ; pTransitionBlock
-    push        esi
-
-    call        _ExternalMethodFixupWorker@16
-
-    ; eax now contains replacement stub. PreStubWorker will never return
-    ; NULL (it throws an exception if stub creation fails.)
-
-    ; From here on, mustn't trash eax
-
-    STUB_EPILOG
-
-_ExternalMethodFixupPatchLabel@0:
-public _ExternalMethodFixupPatchLabel@0
-
-    ; Tailcall target
-    jmp eax
-
-    ; This will never be executed. It is just to help out stack-walking logic
-    ; which disassembles the epilog to unwind the stack.
-    ret
-
-_ExternalMethodFixupStub@0 endp
-
 ifdef FEATURE_READYTORUN
 ;==========================================================================
 _DelayLoad_MethodCall@0 proc public
@@ -1467,57 +1261,17 @@ _DelayLoad_MethodCall@0 proc public
 
     STUB_EPILOG
 
-    ; Share the patch label
-    jmp _ExternalMethodFixupPatchLabel@0
+_ExternalMethodFixupPatchLabel@0:
+public _ExternalMethodFixupPatchLabel@0
+
+    ; Tailcall target
+    jmp eax
 
     ; This will never be executed. It is just to help out stack-walking logic
     ; which disassembles the epilog to unwind the stack.
     ret
 
 _DelayLoad_MethodCall@0 endp
-endif
-
-ifdef FEATURE_PREJIT
-;=======================================================================================
-; The call in softbound vtable slots initially points to this function.
-; The pupose of this function is to transfer the control to right target and
-; to optionally patch the target of the jump so that we do not take this slow path again.
-;
-_VirtualMethodFixupStub@0 proc public
-
-        pop     eax         ; Pop the return address. It points right after the call instruction in the thunk.
-        sub     eax,5       ; Calculate the address of the thunk
-
-        ; Push ebp frame to get good callstack under debugger
-        push    ebp
-        mov     ebp, esp
-
-        ; Preserve argument registers
-        push    ecx
-        push    edx
-
-        push    eax         ; address of the thunk
-        push    ecx         ; this ptr
-        call    _VirtualMethodFixupWorker@8
-
-        ; Restore argument registers
-        pop     edx
-        pop     ecx
-
-        ; Pop ebp frame
-        pop     ebp
-
-_VirtualMethodFixupPatchLabel@0:
-public _VirtualMethodFixupPatchLabel@0
-
-        ; Proceed to execute the actual method.
-        jmp     eax
-
-        ; This will never be executed. It is just to help out stack-walking logic
-        ; which disassembles the epilog to unwind the stack.
-        ret
-
-_VirtualMethodFixupStub@0 endp
 endif
 
 ;==========================================================================
@@ -1561,6 +1315,22 @@ _ThePreStubPatchLabel@0:
 public _ThePreStubPatchLabel@0
     ret
 _ThePreStubPatch@0 endp
+
+_TheUMEntryPrestub@0 proc public
+    ; push argument registers
+    push        ecx
+    push        edx
+
+    push    eax     ; UMEntryThunk*
+    call    _TheUMEntryPrestubWorker@4
+
+    ; pop argument registers
+    pop         edx
+    pop         ecx
+
+    ; eax = PCODE
+    jmp     eax     ; Tail Jmp
+_TheUMEntryPrestub@0 endp
 
 ifdef FEATURE_COMINTEROP
 ;==========================================================================
@@ -1729,12 +1499,6 @@ ifdef FEATURE_TIERED_COMPILATION
 EXTERN _OnCallCountThresholdReached@8:proc
 
 _OnCallCountThresholdReachedStub@0 proc public
-    ; Pop the return address (the stub-identifying token) into a non-argument volatile register that can be trashed
-    pop     eax
-    jmp     _OnCallCountThresholdReachedStub2@0
-_OnCallCountThresholdReachedStub@0 endp
-
-_OnCallCountThresholdReachedStub2@0 proc public
     STUB_PROLOG
 
     mov     esi, esp
@@ -1749,7 +1513,7 @@ _OnCallCountThresholdReachedStub2@0 proc public
     ; This will never be executed. It is just to help out stack-walking logic
     ; which disassembles the epilog to unwind the stack.
     ret
-_OnCallCountThresholdReachedStub2@0 endp
+_OnCallCountThresholdReachedStub@0 endp
 
 endif ; FEATURE_TIERED_COMPILATION
 

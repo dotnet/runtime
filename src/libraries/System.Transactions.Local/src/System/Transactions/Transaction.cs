@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading;
-using System.Transactions.Distributed;
+using System.Transactions.Oletx;
 
 namespace System.Transactions
 {
@@ -81,7 +81,6 @@ namespace System.Transactions
         internal static Transaction? FastGetTransaction(TransactionScope? currentScope, ContextData contextData, out Transaction? contextTransaction)
         {
             Transaction? current = null;
-            contextTransaction = null;
 
             contextTransaction = contextData.CurrentTransaction;
 
@@ -102,19 +101,19 @@ namespace System.Transactions
                         }
                         else
                         {
-                            current = EnterpriseServices.GetContextTransaction(contextData);
+                            current = EnterpriseServices.GetContextTransaction();
                         }
                     }
                     break;
 
                 case EnterpriseServicesInteropOption.Full:
-                    current = EnterpriseServices.GetContextTransaction(contextData);
+                    current = EnterpriseServices.GetContextTransaction();
                     break;
 
                 case EnterpriseServicesInteropOption.Automatic:
                     if (EnterpriseServices.UseServiceDomainForCurrent())
                     {
-                        current = EnterpriseServices.GetContextTransaction(contextData);
+                        current = EnterpriseServices.GetContextTransaction();
                     }
                     else
                     {
@@ -159,7 +158,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "Transaction.get_Current");
                 }
 
-                GetCurrentTransactionAndScope(TxLookup.Default, out Transaction? current, out TransactionScope? currentScope, out Transaction? contextValue);
+                GetCurrentTransactionAndScope(TxLookup.Default, out Transaction? current, out TransactionScope? currentScope, out _);
 
                 if (currentScope != null)
                 {
@@ -277,7 +276,7 @@ namespace System.Transactions
             }
         }
 
-        internal Transaction(DistributedTransaction distributedTransaction)
+        internal Transaction(OletxTransaction distributedTransaction)
         {
             _isoLevel = distributedTransaction.IsolationLevel;
             _internalTransaction = new InternalTransaction(this, distributedTransaction);
@@ -287,11 +286,7 @@ namespace System.Transactions
         internal Transaction(IsolationLevel isoLevel, ISimpleTransactionSuperior superior)
         {
             TransactionManager.ValidateIsolationLevel(isoLevel);
-
-            if (superior == null)
-            {
-                throw new ArgumentNullException(nameof(superior));
-            }
+            ArgumentNullException.ThrowIfNull(superior);
 
             _isoLevel = isoLevel;
 
@@ -357,10 +352,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
 
-                if (Disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Transaction));
-                }
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 TransactionInformation? txInfo = _internalTransaction._transactionInformation;
                 if (txInfo == null)
@@ -392,10 +384,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
 
-                if (Disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Transaction));
-                }
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 if (etwLog.IsEnabled())
                 {
@@ -427,10 +416,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
                 }
 
-                if (Disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Transaction));
-                }
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 lock (_internalTransaction)
                 {
@@ -466,10 +452,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             // We always make a copy of the promotedToken stored in the internal transaction.
             byte[] internalPromotedToken;
@@ -495,20 +478,14 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (resourceManagerIdentifier == Guid.Empty)
             {
                 throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
-            if (enlistmentNotification == null)
-            {
-                throw new ArgumentNullException(nameof(enlistmentNotification));
-            }
+            ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -549,20 +526,14 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (resourceManagerIdentifier == Guid.Empty)
             {
                 throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
-            if (singlePhaseNotification == null)
-            {
-                throw new ArgumentNullException(nameof(singlePhaseNotification));
-            }
+            ArgumentNullException.ThrowIfNull(singlePhaseNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -595,13 +566,10 @@ namespace System.Transactions
             if (etwLog.IsEnabled())
             {
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
-                etwLog.TransactionRollback(this, "Transaction");
+                etwLog.TransactionRollback(TraceSourceType.TraceSourceLtm, TransactionTraceId, "Transaction");
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             lock (_internalTransaction)
             {
@@ -622,13 +590,10 @@ namespace System.Transactions
             if (etwLog.IsEnabled())
             {
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
-                etwLog.TransactionRollback(this, "Transaction");
+                etwLog.TransactionRollback(TraceSourceType.TraceSourceLtm, TransactionTraceId, "Transaction");
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             lock (_internalTransaction)
             {
@@ -653,15 +618,9 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
-            if (enlistmentNotification == null)
-            {
-                throw new ArgumentNullException(nameof(enlistmentNotification));
-            }
+            ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -698,15 +657,9 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
-            if (singlePhaseNotification == null)
-            {
-                throw new ArgumentNullException(nameof(singlePhaseNotification));
-            }
+            ArgumentNullException.ThrowIfNull(singlePhaseNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -742,10 +695,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (_complete)
             {
@@ -793,10 +743,7 @@ namespace System.Transactions
                 throw new ArgumentOutOfRangeException(nameof(cloneOption));
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (_complete)
             {
@@ -843,10 +790,7 @@ namespace System.Transactions
         {
             add
             {
-                if (Disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Transaction));
-                }
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 lock (_internalTransaction)
                 {
@@ -911,10 +855,7 @@ namespace System.Transactions
             //    etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             //}
 
-            //if (Disposed)
-            //{
-            //    throw new ObjectDisposedException(nameof(Transaction));
-            //}
+            //ObjectDisposedException.ThrowIf(Disposed, this);
 
             //if (serializationInfo == null)
             //{
@@ -986,15 +927,9 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
-            if (promotableSinglePhaseNotification == null)
-            {
-                throw new ArgumentNullException(nameof(promotableSinglePhaseNotification));
-            }
+            ArgumentNullException.ThrowIfNull(promotableSinglePhaseNotification);
 
             if (promoterType == Guid.Empty)
             {
@@ -1030,28 +965,18 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceOleTx, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             if (resourceManagerIdentifier == Guid.Empty)
             {
                 throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
-            if (promotableNotification == null)
-            {
-                throw new ArgumentNullException(nameof(promotableNotification));
-            }
-
-            if (enlistmentNotification == null)
-            {
-                throw new ArgumentNullException(nameof(enlistmentNotification));
-            }
+            ArgumentNullException.ThrowIfNull(promotableNotification);
+            ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -1071,7 +996,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, this);
+                    etwLog.MethodExit(TraceSourceType.TraceSourceOleTx, this);
                 }
 
                 return enlistment;
@@ -1087,15 +1012,9 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
-            if (promotableNotification == null)
-            {
-                throw new ArgumentNullException(nameof(promotableNotification));
-            }
+            ArgumentNullException.ThrowIfNull(promotableNotification);
 
             if (distributedTransactionIdentifier == Guid.Empty)
             {
@@ -1122,7 +1041,7 @@ namespace System.Transactions
             }
         }
 
-        internal DistributedTransaction? Promote()
+        internal OletxTransaction? Promote()
         {
             lock (_internalTransaction)
             {
@@ -1150,7 +1069,7 @@ namespace System.Transactions
     //  The TxLookup enum is used internally to detect where the ambient context needs to be stored or looked up.
     //  Default                  - Used internally when looking up Transaction.Current.
     //  DefaultCallContext - Used when TransactionScope with async flow option is enabled. Internally we will use CallContext to store the ambient transaction.
-    //  Default TLS            - Used for legacy/syncronous TransactionScope. Internally we will use TLS to store the ambient transaction.
+    //  Default TLS            - Used for legacy/synchronous TransactionScope. Internally we will use TLS to store the ambient transaction.
     //
     internal enum TxLookup
     {
@@ -1171,7 +1090,7 @@ namespace System.Transactions
         private static readonly AsyncLocal<ContextKey?> s_currentTransaction = new AsyncLocal<ContextKey?>();
 
         // ConditionalWeakTable is used to automatically remove the entries that are no longer referenced. This will help prevent leaks in async nested TransactionScope
-        // usage and when child nested scopes are not syncronized properly.
+        // usage and when child nested scopes are not synchronized properly.
         private static readonly ConditionalWeakTable<ContextKey, ContextData> s_contextDataTable = new ConditionalWeakTable<ContextKey, ContextData>();
 
         //
@@ -1247,17 +1166,7 @@ namespace System.Transactions
         [AllowNull]
         internal static ContextData TLSCurrentData
         {
-            get
-            {
-                ContextData? data = t_staticData;
-                if (data == null)
-                {
-                    data = new ContextData(false);
-                    t_staticData = data;
-                }
-
-                return data;
-            }
+            get => t_staticData ??= new ContextData(false);
             set
             {
                 if (value == null && t_staticData != null)
@@ -1277,7 +1186,7 @@ namespace System.Transactions
 
         internal static ContextData LookupContextData(TxLookup defaultLookup)
         {
-            ContextData? currentData = null;
+            ContextData? currentData;
             if (CallContextCurrentData.TryGetCurrentData(out currentData))
             {
                 if (currentData.CurrentScope == null && currentData.CurrentTransaction == null && defaultLookup != TxLookup.DefaultCallContext)

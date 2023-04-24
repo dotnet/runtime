@@ -11,7 +11,7 @@ namespace System.Net
     public enum SecurityProtocolType
     {
         SystemDefault = 0,
-        [System.ObsoleteAttribute("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("SecurityProtocolType.Ssl3 has been deprecated and is not supported.")]
         Ssl3 = 48,
         Tls = 192,
         Tls11 = 768,
@@ -57,11 +57,11 @@ namespace System.Net
         public static System.Net.SecurityProtocolType SecurityProtocol { get { throw null; } set { } }
         public static System.Net.Security.RemoteCertificateValidationCallback? ServerCertificateValidationCallback { get { throw null; } set { } }
         public static bool UseNagleAlgorithm { get { throw null; } set { } }
-        [System.ObsoleteAttribute("Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.ServicePoint FindServicePoint(string uriString, System.Net.IWebProxy? proxy) { throw null; }
-        [System.ObsoleteAttribute("Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.ServicePoint FindServicePoint(System.Uri address) { throw null; }
-        [System.ObsoleteAttribute("Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead.", DiagnosticId = "SYSLIB0014", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static System.Net.ServicePoint FindServicePoint(System.Uri address, System.Net.IWebProxy? proxy) { throw null; }
         public static void SetTcpKeepAlive(bool enabled, int keepAliveTime, int keepAliveInterval) { }
     }

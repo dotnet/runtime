@@ -11,7 +11,7 @@ class DispatchImpl : public UnknownImpl
 {
 public:
     DispatchImpl(GUID guid, void *instance, const wchar_t* tlb = nullptr);
-    virtual ~DispatchImpl();
+    virtual ~DispatchImpl() = default;
 
     DispatchImpl(const DispatchImpl&) = delete;
     DispatchImpl& operator=(const DispatchImpl&) = delete;
@@ -26,8 +26,8 @@ protected:
     HRESULT DoInvoke(DISPID dispIdMember, WORD wFlags, DISPPARAMS* pDispParams, VARIANT* pVarResult, EXCEPINFO* pExcepInfo, UINT* puArgErr);
 
 private:
-    ITypeLib *_typeLib;
-    ITypeInfo *_typeInfo;
+    ComSmartPtr<ITypeLib> _typeLib;
+    ComSmartPtr<ITypeInfo> _typeInfo;
     void *_instance;
 };
 

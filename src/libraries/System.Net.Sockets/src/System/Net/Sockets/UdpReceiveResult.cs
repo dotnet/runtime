@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Net.Sockets
 {
     /// <summary>
-    /// Presents UDP receive result information from a call to the <see cref="UdpClient.ReceiveAsync"/> method
+    /// Presents UDP receive result information from a call to the <see cref="UdpClient.ReceiveAsync()"/> and <see cref="UdpClient.ReceiveAsync(System.Threading.CancellationToken)"/> method
     /// </summary>
     public struct UdpReceiveResult : IEquatable<UdpReceiveResult>
     {
@@ -20,15 +20,8 @@ namespace System.Net.Sockets
         /// <param name="remoteEndPoint">The remote endpoint of the UDP packet</param>
         public UdpReceiveResult(byte[] buffer, IPEndPoint remoteEndPoint)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            if (remoteEndPoint == null)
-            {
-                throw new ArgumentNullException(nameof(remoteEndPoint));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentNullException.ThrowIfNull(remoteEndPoint);
 
             _buffer = buffer;
             _remoteEndPoint = remoteEndPoint;

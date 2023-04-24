@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
@@ -14,6 +15,6 @@
     <ProjectReference Include="..\dll\common.csproj" />
     <ProjectReference Include="..\dll\hfa_simple_f32_common.csproj" />
     <ProjectReference Include="..\dll\hfa_simple_f32_managed.csproj" />
-    <ProjectReference Include="..\dll\CMakelists.txt" />
+    <CMakeProjectReference Include="..\dll\CMakelists.txt" />
   </ItemGroup>
 </Project>

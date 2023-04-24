@@ -4,7 +4,7 @@ set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
 
 add_library_clr(clrjit_obj
     OBJECT
-    ${JIT_CORE_SOURCES}
+    ${JIT_SOURCES}
     ${JIT_ARCH_SOURCES}
 )
 

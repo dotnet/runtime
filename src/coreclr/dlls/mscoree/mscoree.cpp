@@ -17,7 +17,7 @@
 
 #include <dbgenginemetrics.h>
 
-#if !defined(CROSSGEN_COMPILE) && !defined(CORECLR_EMBEDDED)
+#if !defined(CORECLR_EMBEDDED)
 
 BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                        HINSTANCE    hInst,                  // Instance handle of the loaded module.
@@ -27,8 +27,6 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 //*****************************************************************************
 // Handle lifetime of loaded library.
 //*****************************************************************************
-
-#include <shlwapi.h>
 
 #ifdef TARGET_WINDOWS
 extern "C" BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved);
@@ -45,7 +43,7 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     return EEDllMain((HINSTANCE)hInstance, dwReason, lpReserved);
 }
 
-#endif // !defined(CROSSGEN_COMPILE) && !defined(CORECLR_EMBEDDED)
+#endif // !defined(CORECLR_EMBEDDED)
 
 extern void* GetClrModuleBase();
 
@@ -68,14 +66,11 @@ STDAPI DLLEXPORT MetaDataGetDispenser(            // Return HRESULT
 
     NonVMComHolder<IClassFactory> pcf(NULL);
     HRESULT hr;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     IfFailGo(MetaDataDllGetClassObject(rclsid, IID_IClassFactory, (void **) &pcf));
     hr = pcf->CreateInstance(NULL, riid, ppv);
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return (hr);
 }
 
@@ -98,13 +93,7 @@ STDAPI DLLEXPORT GetMetaDataInternalInterface(
         PRECONDITION(CheckPointer(ppv));
     } CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    hr = GetMDInternalInterface(pData, cbData, flags, riid, ppv);
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return GetMDInternalInterface(pData, cbData, flags, riid, ppv);
 }
 
 // ---------------------------------------------------------------------------
@@ -125,13 +114,7 @@ STDAPI DLLEXPORT GetMetaDataInternalInterfaceFromPublic(
         PRECONDITION(CheckPointer(ppv));
     } CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    hr = GetMDInternalInterfaceFromPublic(pv, riid, ppv);
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return GetMDInternalInterfaceFromPublic(pv, riid, ppv);
 }
 
 // ---------------------------------------------------------------------------
@@ -152,13 +135,7 @@ STDAPI DLLEXPORT GetMetaDataPublicInterfaceFromInternal(
         ENTRY_POINT;
     } CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    hr = GetMDPublicInterfaceFromInternal(pv, riid, ppv);
-
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return GetMDPublicInterfaceFromInternal(pv, riid, ppv);
 }
 
 
@@ -180,12 +157,7 @@ STDAPI ReOpenMetaDataWithMemory(
         PRECONDITION(CheckPointer(pData));
     } CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-    hr = MDReOpenMetaDataWithMemory(pUnk, pData, cbData);
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return MDReOpenMetaDataWithMemory(pUnk, pData, cbData);
 }
 
 // ---------------------------------------------------------------------------
@@ -207,18 +179,13 @@ STDAPI ReOpenMetaDataWithMemoryEx(
         PRECONDITION(CheckPointer(pData));
     } CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-    hr = MDReOpenMetaDataWithMemoryEx(pUnk, pData, cbData, dwReOpenFlags);
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return MDReOpenMetaDataWithMemoryEx(pUnk, pData, cbData, dwReOpenFlags);
 }
 
 static DWORD g_dwSystemDirectory = 0;
 static WCHAR * g_pSystemDirectory = NULL;
 
-HRESULT GetInternalSystemDirectory(__out_ecount_part_opt(*pdwLength,*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength)
+HRESULT GetInternalSystemDirectory(_Out_writes_to_opt_(*pdwLength,*pdwLength) LPWSTR buffer, __inout DWORD* pdwLength)
 {
     CONTRACTL {
         NOTHROW;
@@ -252,7 +219,7 @@ HRESULT GetInternalSystemDirectory(__out_ecount_part_opt(*pdwLength,*pdwLength) 
 }
 
 
-LPCWSTR GetInternalSystemDirectory(__out DWORD* pdwLength)
+LPCWSTR GetInternalSystemDirectory(_Out_ DWORD* pdwLength)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -311,35 +278,3 @@ HRESULT SetInternalSystemDirectory()
     return hr;
 }
 
-#if defined(CROSSGEN_COMPILE)
-void SetCoreLibPath(LPCWSTR wzSystemDirectory)
-{
-    DWORD len = (DWORD)wcslen(wzSystemDirectory);
-    bool appendSeparator = wzSystemDirectory[len-1] != DIRECTORY_SEPARATOR_CHAR_W;
-    DWORD lenAlloc = appendSeparator ? len+2 : len+1;
-    if (g_dwSystemDirectory < lenAlloc)
-    {
-        delete [] g_pSystemDirectory;
-        g_pSystemDirectory = new (nothrow) WCHAR[lenAlloc];
-
-        if (g_pSystemDirectory == NULL)
-        {
-            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-            return;
-        }
-    }
-
-    wcscpy_s(g_pSystemDirectory, len+1, wzSystemDirectory);
-
-    if(appendSeparator)
-    {
-        g_pSystemDirectory[len] = DIRECTORY_SEPARATOR_CHAR_W;
-        g_pSystemDirectory[len+1] = W('\0');
-        g_dwSystemDirectory = len + 1;
-    }
-    else
-    {
-        g_dwSystemDirectory = len;
-    }
-}
-#endif

@@ -6,7 +6,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Emit;
-using System.Runtime.ExceptionServices;
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Threading;
 
 namespace System.Reflection
@@ -44,105 +45,35 @@ namespace System.Reflection
         // It is the first field in the class and the first ctor parameter.
         private const int MethodInfosFieldAndCtorParameterIndex = 0;
 
-        // Proxies are requested for a pair of types: base type and interface type.
-        // The generated proxy will subclass the given base type and implement the interface type.
-        // We maintain a cache keyed by 'base type' containing a dictionary keyed by interface type,
-        // containing the generated proxy type for that pair.   There are likely to be few (maybe only 1)
-        // base type in use for many interface types.
-        // Note: this differs from Silverlight's RealProxy implementation which keys strictly off the
-        // interface type.  But this does not allow the same interface type to be used with more than a
-        // single base type.  The implementation here permits multiple interface types to be used with
-        // multiple base types, and the generated proxy types will be unique.
-        // This cache of generated types grows unbounded, one element per unique T/ProxyT pair.
-        // This approach is used to prevent regenerating identical proxy types for identical T/Proxy pairs,
-        // which would ultimately be a more expensive leak.
-        // Proxy instances are not cached.  Their lifetime is entirely owned by the caller of DispatchProxy.Create.
-        private static readonly Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>> s_baseTypeAndInterfaceToGeneratedProxyType = new Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>>();
-        private static readonly ProxyAssembly s_proxyAssembly = new ProxyAssembly();
+        // We group AssemblyBuilders by the ALC of the base type's assembly.
+        // This allows us to granularly unload generated proxy types.
+        private static readonly ConditionalWeakTable<AssemblyLoadContext, ProxyAssembly> s_alcProxyAssemblyMap = new();
         private static readonly MethodInfo s_dispatchProxyInvokeMethod = typeof(DispatchProxy).GetMethod("Invoke", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetRuntimeMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
-        private static readonly MethodInfo s_makeGenericMethodMethod = typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
+        private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
+        private static readonly MethodInfo s_makeGenericMethodMethod = GetGenericMethodMethodInfo();
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "MakeGenericMethod is safe here because the user code invoking the generic method will reference " +
+            "the GenericTypes being used, which will guarantee the requirements of the generic method.")]
+        private static MethodInfo GetGenericMethodMethodInfo() =>
+            typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
 
         // Returns a new instance of a proxy the derives from 'baseType' and implements 'interfaceType'
+        [RequiresDynamicCode("Defining a dynamic assembly requires generating code at runtime")]
         internal static object CreateProxyInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType,
+            string interfaceParameter, string proxyParameter)
         {
             Debug.Assert(baseType != null);
             Debug.Assert(interfaceType != null);
 
-            GeneratedTypeInfo proxiedType = GetProxyType(baseType, interfaceType);
+            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(baseType.Assembly);
+            Debug.Assert(alc != null);
+
+            ProxyAssembly proxyAssembly = s_alcProxyAssemblyMap.GetValue(alc, static x => new ProxyAssembly(x));
+            GeneratedTypeInfo proxiedType = proxyAssembly.GetProxyType(baseType, interfaceType, interfaceParameter, proxyParameter);
             return Activator.CreateInstance(proxiedType.GeneratedType, new object[] { proxiedType.MethodInfos })!;
-        }
-
-        private static GeneratedTypeInfo GetProxyType(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
-        {
-            lock (s_baseTypeAndInterfaceToGeneratedProxyType)
-            {
-                if (!s_baseTypeAndInterfaceToGeneratedProxyType.TryGetValue(baseType, out Dictionary<Type, GeneratedTypeInfo>? interfaceToProxy))
-                {
-                    interfaceToProxy = new Dictionary<Type, GeneratedTypeInfo>();
-                    s_baseTypeAndInterfaceToGeneratedProxyType[baseType] = interfaceToProxy;
-                }
-
-                if (!interfaceToProxy.TryGetValue(interfaceType, out GeneratedTypeInfo? generatedProxy))
-                {
-                    generatedProxy = GenerateProxyType(baseType, interfaceType);
-                    interfaceToProxy[interfaceType] = generatedProxy;
-                }
-
-                return generatedProxy;
-            }
-        }
-
-        // Unconditionally generates a new proxy type derived from 'baseType' and implements 'interfaceType'
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
-            Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
-        private static GeneratedTypeInfo GenerateProxyType(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
-        {
-            // Parameter validation is deferred until the point we need to create the proxy.
-            // This prevents unnecessary overhead revalidating cached proxy types.
-
-            // The interface type must be an interface, not a class
-            if (!interfaceType.IsInterface)
-            {
-                // "T" is the generic parameter seen via the public contract
-                throw new ArgumentException(SR.Format(SR.InterfaceType_Must_Be_Interface, interfaceType.FullName), "T");
-            }
-
-            // The base type cannot be sealed because the proxy needs to subclass it.
-            if (baseType.IsSealed)
-            {
-                // "TProxy" is the generic parameter seen via the public contract
-                throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Sealed, baseType.FullName), "TProxy");
-            }
-
-            // The base type cannot be abstract
-            if (baseType.IsAbstract)
-            {
-                throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Abstract, baseType.FullName), "TProxy");
-            }
-
-            // The base type must have a public default ctor
-            if (baseType.GetConstructor(Type.EmptyTypes) == null)
-            {
-                throw new ArgumentException(SR.Format(SR.BaseType_Must_Have_Default_Ctor, baseType.FullName), "TProxy");
-            }
-
-            // Create a type that derives from 'baseType' provided by caller
-            ProxyBuilder pb = s_proxyAssembly.CreateProxy("generatedProxy", baseType);
-
-            foreach (Type t in interfaceType.GetInterfaces())
-                pb.AddInterfaceImpl(t);
-
-            pb.AddInterfaceImpl(interfaceType);
-
-            GeneratedTypeInfo generatedProxyType = pb.CreateType();
-            return generatedProxyType;
         }
 
         private sealed class GeneratedTypeInfo
@@ -162,43 +93,124 @@ namespace System.Reflection
 
         private sealed class ProxyAssembly
         {
+            // Proxies are requested for a pair of types: base type and interface type.
+            // The generated proxy will subclass the given base type and implement the interface type.
+            // We maintain a cache keyed by 'base type' containing a dictionary keyed by interface type,
+            // containing the generated proxy type for that pair. There are likely to be few (maybe only 1)
+            // base type in use for many interface types.
+            // Note: this differs from Silverlight's RealProxy implementation which keys strictly off the
+            // interface type. But this does not allow the same interface type to be used with more than a
+            // single base type. The implementation here permits multiple interface types to be used with
+            // multiple base types, and the generated proxy types will be unique.
+            // This cache of generated types grows unbounded, one element per unique T/ProxyT pair.
+            // This approach is used to prevent regenerating identical proxy types for identical T/Proxy pairs,
+            // which would ultimately be a more expensive leak.
+            // Proxy instances are not cached. Their lifetime is entirely owned by the caller of DispatchProxy.Create.
+            private readonly Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>> _baseTypeAndInterfaceToGeneratedProxyType = new Dictionary<Type, Dictionary<Type, GeneratedTypeInfo>>();
+
             private readonly AssemblyBuilder _ab;
             private readonly ModuleBuilder _mb;
             private int _typeId;
 
-            private readonly HashSet<string?> _ignoresAccessAssemblyNames = new HashSet<string?>();
+            private readonly HashSet<string> _ignoresAccessAssemblyNames = new HashSet<string>();
             private ConstructorInfo? _ignoresAccessChecksToAttributeConstructor;
 
-            public ProxyAssembly()
+            [RequiresDynamicCode("Defining a dynamic assembly requires generating code at runtime")]
+            public ProxyAssembly(AssemblyLoadContext alc)
             {
-                _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ProxyBuilder"), AssemblyBuilderAccess.Run);
+                AssemblyBuilderAccess builderAccess =
+                    alc.IsCollectible ? AssemblyBuilderAccess.RunAndCollect : AssemblyBuilderAccess.Run;
+                _ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ProxyBuilder"), builderAccess);
                 _mb = _ab.DefineDynamicModule("testmod");
             }
 
             // Gets or creates the ConstructorInfo for the IgnoresAccessChecksAttribute.
             // This attribute is both defined and referenced in the dynamic assembly to
             // allow access to internal types in other assemblies.
-            internal ConstructorInfo IgnoresAccessChecksAttributeConstructor
+            internal ConstructorInfo IgnoresAccessChecksAttributeConstructor =>
+                _ignoresAccessChecksToAttributeConstructor ??= IgnoreAccessChecksToAttributeBuilder.AddToModule(_mb);
+
+            public GeneratedTypeInfo GetProxyType(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType,
+                string interfaceParameter, string proxyParameter)
             {
-                get
+                lock (_baseTypeAndInterfaceToGeneratedProxyType)
                 {
-                    if (_ignoresAccessChecksToAttributeConstructor == null)
+                    if (!_baseTypeAndInterfaceToGeneratedProxyType.TryGetValue(baseType, out Dictionary<Type, GeneratedTypeInfo>? interfaceToProxy))
                     {
-                        _ignoresAccessChecksToAttributeConstructor = IgnoreAccessChecksToAttributeBuilder.AddToModule(_mb);
+                        interfaceToProxy = new Dictionary<Type, GeneratedTypeInfo>();
+                        _baseTypeAndInterfaceToGeneratedProxyType[baseType] = interfaceToProxy;
                     }
 
-                    return _ignoresAccessChecksToAttributeConstructor;
+                    if (!interfaceToProxy.TryGetValue(interfaceType, out GeneratedTypeInfo? generatedProxy))
+                    {
+                        generatedProxy = GenerateProxyType(baseType, interfaceType, interfaceParameter, proxyParameter);
+                        interfaceToProxy[interfaceType] = generatedProxy;
+                    }
+
+                    return generatedProxy;
                 }
+            }
+
+            // Unconditionally generates a new proxy type derived from 'baseType' and implements 'interfaceType'
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2062:UnrecognizedReflectionPattern",
+                Justification = "interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.")]
+            private GeneratedTypeInfo GenerateProxyType(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type baseType,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType,
+                string interfaceParameter, string proxyParameter)
+            {
+                // Parameter validation is deferred until the point we need to create the proxy.
+                // This prevents unnecessary overhead revalidating cached proxy types.
+
+                // The interface type must be an interface, not a class
+                if (!interfaceType.IsInterface)
+                {
+                    throw new ArgumentException(SR.Format(SR.InterfaceType_Must_Be_Interface, interfaceType.FullName), interfaceParameter);
+                }
+
+                // The base type cannot be sealed because the proxy needs to subclass it.
+                if (baseType.IsSealed)
+                {
+                    throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Sealed, baseType.FullName), proxyParameter);
+                }
+
+                // The base type cannot be abstract
+                if (baseType.IsAbstract)
+                {
+                    throw new ArgumentException(SR.Format(SR.BaseType_Cannot_Be_Abstract, baseType.FullName), proxyParameter);
+                }
+
+                // The base type must have a public default ctor
+                if (baseType.GetConstructor(Type.EmptyTypes) == null)
+                {
+                    throw new ArgumentException(SR.Format(SR.BaseType_Must_Have_Default_Ctor, baseType.FullName), proxyParameter);
+                }
+
+                // Create a type that derives from 'baseType' provided by caller
+                ProxyBuilder pb = CreateProxy("generatedProxy", baseType);
+
+                foreach (Type t in interfaceType.GetInterfaces())
+                    // interfaceType is annotated as preserve All members, so any Types returned from GetInterfaces should be preserved as well once https://github.com/mono/linker/issues/1731 is fixed.
+#pragma warning disable IL2072
+                    pb.AddInterfaceImpl(t);
+#pragma warning restore IL2072
+
+                pb.AddInterfaceImpl(interfaceType);
+
+                GeneratedTypeInfo generatedProxyType = pb.CreateType();
+                return generatedProxyType;
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
                 Justification = "Only the parameterless ctor is referenced on proxyBaseType. Other members can be trimmed if unused.")]
-            public ProxyBuilder CreateProxy(
+            private ProxyBuilder CreateProxy(
                 string name,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type proxyBaseType)
             {
                 int nextId = Interlocked.Increment(ref _typeId);
-                TypeBuilder tb = _mb.DefineType(name + "_" + nextId, TypeAttributes.Public, proxyBaseType);
+                TypeBuilder tb = _mb.DefineType($"{name}_{nextId}", TypeAttributes.Public, proxyBaseType);
                 return new ProxyBuilder(this, tb, proxyBaseType);
             }
 
@@ -223,10 +235,9 @@ namespace System.Reflection
                 if (!type.IsVisible)
                 {
                     string assemblyName = type.Assembly.GetName().Name!;
-                    if (!_ignoresAccessAssemblyNames.Contains(assemblyName))
+                    if (_ignoresAccessAssemblyNames.Add(assemblyName))
                     {
                         GenerateInstanceOfIgnoresAccessChecksToAttribute(assemblyName);
-                        _ignoresAccessAssemblyNames.Add(assemblyName);
                     }
                 }
             }
@@ -270,11 +281,11 @@ namespace System.Reflection
                 ILGenerator il = cb.GetILGenerator();
 
                 // chained ctor call
-                ConstructorInfo? baseCtor = _proxyBaseType.GetConstructor(Type.EmptyTypes);
+                ConstructorInfo baseCtor = _proxyBaseType.GetConstructor(Type.EmptyTypes)!;
                 Debug.Assert(baseCtor != null);
 
                 il.Emit(OpCodes.Ldarg_0);
-                il.Emit(OpCodes.Call, baseCtor!);
+                il.Emit(OpCodes.Call, baseCtor);
 
                 // store all the fields
                 for (int i = 0; i < args.Length; i++)
@@ -290,7 +301,7 @@ namespace System.Reflection
             internal GeneratedTypeInfo CreateType()
             {
                 this.Complete();
-                return new GeneratedTypeInfo(_tb.CreateType()!, _methodInfos.ToArray());
+                return new GeneratedTypeInfo(_tb.CreateType(), _methodInfos.ToArray());
             }
 
             internal void AddInterfaceImpl([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type iface)
@@ -302,7 +313,7 @@ namespace System.Reflection
                 _tb.AddInterfaceImplementation(iface);
 
                 // AccessorMethods -> Metadata mappings.
-                var propertyMap = new Dictionary<MethodInfo, PropertyAccessorInfo>(MethodInfoEqualityComparer.Instance);
+                var propertyMap = new Dictionary<MethodInfo, PropertyAccessorInfo>();
                 foreach (PropertyInfo pi in iface.GetRuntimeProperties())
                 {
                     var ai = new PropertyAccessorInfo(pi.GetMethod, pi.SetMethod);
@@ -312,7 +323,7 @@ namespace System.Reflection
                         propertyMap[pi.SetMethod] = ai;
                 }
 
-                var eventMap = new Dictionary<MethodInfo, EventAccessorInfo>(MethodInfoEqualityComparer.Instance);
+                var eventMap = new Dictionary<MethodInfo, EventAccessorInfo>();
                 foreach (EventInfo ei in iface.GetRuntimeEvents())
                 {
                     var ai = new EventAccessorInfo(ei.AddMethod, ei.RemoveMethod, ei.RaiseMethod);
@@ -326,8 +337,8 @@ namespace System.Reflection
 
                 foreach (MethodInfo mi in iface.GetRuntimeMethods())
                 {
-                    // Skip regular/non-virtual instance methods, static methods, and methods that cannot be overriden
-                    // ("methods that cannot be overriden" includes default implementation of other interface methods).
+                    // Skip regular/non-virtual instance methods, static methods, and methods that cannot be overridden
+                    // ("methods that cannot be overridden" includes default implementation of other interface methods).
                     if (!mi.IsVirtual || mi.IsFinal)
                         continue;
 
@@ -336,7 +347,7 @@ namespace System.Reflection
                     MethodBuilder mdb = AddMethodImpl(mi, methodInfoIndex);
                     if (propertyMap.TryGetValue(mi, out PropertyAccessorInfo? associatedProperty))
                     {
-                        if (MethodInfoEqualityComparer.Instance.Equals(associatedProperty.InterfaceGetMethod, mi))
+                        if (mi.Equals(associatedProperty.InterfaceGetMethod))
                             associatedProperty.GetMethodBuilder = mdb;
                         else
                             associatedProperty.SetMethodBuilder = mdb;
@@ -344,9 +355,9 @@ namespace System.Reflection
 
                     if (eventMap.TryGetValue(mi, out EventAccessorInfo? associatedEvent))
                     {
-                        if (MethodInfoEqualityComparer.Instance.Equals(associatedEvent.InterfaceAddMethod, mi))
+                        if (mi.Equals(associatedEvent.InterfaceAddMethod))
                             associatedEvent.AddMethodBuilder = mdb;
-                        else if (MethodInfoEqualityComparer.Instance.Equals(associatedEvent.InterfaceRemoveMethod, mi))
+                        else if (mi.Equals(associatedEvent.InterfaceRemoveMethod))
                             associatedEvent.RemoveMethodBuilder = mdb;
                         else
                             associatedEvent.RaiseMethodBuilder = mdb;
@@ -357,7 +368,7 @@ namespace System.Reflection
                 {
                     PropertyAccessorInfo ai = propertyMap[pi.GetMethod ?? pi.SetMethod!];
 
-                    // If we didn't make an overriden accessor above, this was a static property, non-virtual property,
+                    // If we didn't make an overridden accessor above, this was a static property, non-virtual property,
                     // or a default implementation of a property of a different interface. In any case, we don't need
                     // to redeclare it.
                     if (ai.GetMethodBuilder == null && ai.SetMethodBuilder == null)
@@ -374,7 +385,7 @@ namespace System.Reflection
                 {
                     EventAccessorInfo ai = eventMap[ei.AddMethod ?? ei.RemoveMethod!];
 
-                    // If we didn't make an overriden accessor above, this was a static event, non-virtual event,
+                    // If we didn't make an overridden accessor above, this was a static event, non-virtual event,
                     // or a default implementation of an event of a different interface. In any case, we don't
                     // need to redeclare it.
                     if (ai.AddMethodBuilder == null && ai.RemoveMethodBuilder == null && ai.RaiseMethodBuilder == null)
@@ -512,64 +523,7 @@ namespace System.Reflection
                 return mdb;
             }
 
-            // TypeCode does not exist in ProjectK or ProjectN.
-            // This lookup method was copied from PortableLibraryThunks\Internal\PortableLibraryThunks\System\TypeThunks.cs
-            // but returns the integer value equivalent to its TypeCode enum.
-            private static int GetTypeCode(Type? type)
-            {
-                if (type == null)
-                    return 0;   // TypeCode.Empty;
-
-                if (type == typeof(bool))
-                    return 3;   // TypeCode.Boolean;
-
-                if (type == typeof(char))
-                    return 4;   // TypeCode.Char;
-
-                if (type == typeof(sbyte))
-                    return 5;   // TypeCode.SByte;
-
-                if (type == typeof(byte))
-                    return 6;   // TypeCode.Byte;
-
-                if (type == typeof(short))
-                    return 7;   // TypeCode.Int16;
-
-                if (type == typeof(ushort))
-                    return 8;   // TypeCode.UInt16;
-
-                if (type == typeof(int))
-                    return 9;   // TypeCode.Int32;
-
-                if (type == typeof(uint))
-                    return 10;  // TypeCode.UInt32;
-
-                if (type == typeof(long))
-                    return 11;  // TypeCode.Int64;
-
-                if (type == typeof(ulong))
-                    return 12;  // TypeCode.UInt64;
-
-                if (type == typeof(float))
-                    return 13;  // TypeCode.Single;
-
-                if (type == typeof(double))
-                    return 14;  // TypeCode.Double;
-
-                if (type == typeof(decimal))
-                    return 15;  // TypeCode.Decimal;
-
-                if (type == typeof(DateTime))
-                    return 16;  // TypeCode.DateTime;
-
-                if (type == typeof(string))
-                    return 18;  // TypeCode.String;
-
-                if (type.IsEnum)
-                    return GetTypeCode(Enum.GetUnderlyingType(type));
-
-                return 1;   // TypeCode.Object;
-            }
+            private static int GetTypeCode(Type type) => (int)Type.GetTypeCode(type);
 
             private static readonly OpCode[] s_convOpCodes = new OpCode[] {
                 OpCodes.Nop, //Empty = 0,
@@ -812,82 +766,6 @@ namespace System.Reflection
                     InterfaceAddMethod = interfaceAddMethod;
                     InterfaceRemoveMethod = interfaceRemoveMethod;
                     InterfaceRaiseMethod = interfaceRaiseMethod;
-                }
-            }
-
-            private sealed class MethodInfoEqualityComparer : EqualityComparer<MethodInfo>
-            {
-                public static readonly MethodInfoEqualityComparer Instance = new MethodInfoEqualityComparer();
-
-                private MethodInfoEqualityComparer() { }
-
-                public sealed override bool Equals(MethodInfo? left, MethodInfo? right)
-                {
-                    if (ReferenceEquals(left, right))
-                        return true;
-
-                    if (left == null)
-                        return right == null;
-                    else if (right == null)
-                        return false;
-
-                    // This assembly should work in netstandard1.3,
-                    // so we cannot use MemberInfo.MetadataToken here.
-                    // Therefore, it compares honestly referring ECMA-335 I.8.6.1.6 Signature Matching.
-                    if (!Equals(left.DeclaringType, right.DeclaringType))
-                        return false;
-
-                    if (!Equals(left.ReturnType, right.ReturnType))
-                        return false;
-
-                    if (left.CallingConvention != right.CallingConvention)
-                        return false;
-
-                    if (left.IsStatic != right.IsStatic)
-                        return false;
-
-                    if (left.Name != right.Name)
-                        return false;
-
-                    Type[] leftGenericParameters = left.GetGenericArguments();
-                    Type[] rightGenericParameters = right.GetGenericArguments();
-                    if (leftGenericParameters.Length != rightGenericParameters.Length)
-                        return false;
-
-                    for (int i = 0; i < leftGenericParameters.Length; i++)
-                    {
-                        if (!Equals(leftGenericParameters[i], rightGenericParameters[i]))
-                            return false;
-                    }
-
-                    ParameterInfo[] leftParameters = left.GetParameters();
-                    ParameterInfo[] rightParameters = right.GetParameters();
-                    if (leftParameters.Length != rightParameters.Length)
-                        return false;
-
-                    for (int i = 0; i < leftParameters.Length; i++)
-                    {
-                        if (!Equals(leftParameters[i].ParameterType, rightParameters[i].ParameterType))
-                            return false;
-                    }
-
-                    return true;
-                }
-
-                public sealed override int GetHashCode(MethodInfo obj)
-                {
-                    if (obj == null)
-                        return 0;
-
-                    Debug.Assert(obj.DeclaringType != null);
-                    int hashCode = obj.DeclaringType!.GetHashCode();
-                    hashCode ^= obj.Name.GetHashCode();
-                    foreach (ParameterInfo parameter in obj.GetParameters())
-                    {
-                        hashCode ^= parameter.ParameterType.GetHashCode();
-                    }
-
-                    return hashCode;
                 }
             }
         }

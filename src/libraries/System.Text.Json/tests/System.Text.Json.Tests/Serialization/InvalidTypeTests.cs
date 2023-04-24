@@ -9,34 +9,39 @@ namespace System.Text.Json.Serialization.Tests
 {
     public class InvalidTypeTests_Span : InvalidTypeTests
     {
-        public InvalidTypeTests_Span() : base(SerializationWrapper.SpanSerializer) { }
+        public InvalidTypeTests_Span() : base(JsonSerializerWrapper.SpanSerializer) { }
     }
 
     public class InvalidTypeTests_String : InvalidTypeTests
     {
-        public InvalidTypeTests_String() : base(SerializationWrapper.StringSerializer) { }
+        public InvalidTypeTests_String() : base(JsonSerializerWrapper.StringSerializer) { }
     }
 
-    public class InvalidTypeTests_Stream : InvalidTypeTests
+    public class InvalidTypeTests_AsyncStream : InvalidTypeTests
     {
-        public InvalidTypeTests_Stream() : base(SerializationWrapper.StreamSerializer) { }
+        public InvalidTypeTests_AsyncStream() : base(JsonSerializerWrapper.AsyncStreamSerializer) { }
     }
 
-    public class InvalidTypeTests_StreamWithSmallBuffer : InvalidTypeTests
+    public class InvalidTypeTests_AsyncStreamWithSmallBuffer : InvalidTypeTests
     {
-        public InvalidTypeTests_StreamWithSmallBuffer() : base(SerializationWrapper.StreamSerializerWithSmallBuffer) { }
+        public InvalidTypeTests_AsyncStreamWithSmallBuffer() : base(JsonSerializerWrapper.AsyncStreamSerializerWithSmallBuffer) { }
+    }
+
+    public class InvalidTypeTests_SyncStream : InvalidTypeTests
+    {
+        public InvalidTypeTests_SyncStream() : base(JsonSerializerWrapper.SyncStreamSerializer) { }
     }
 
     public class InvalidTypeTests_Writer : InvalidTypeTests
     {
-        public InvalidTypeTests_Writer() : base(SerializationWrapper.WriterSerializer) { }
+        public InvalidTypeTests_Writer() : base(JsonSerializerWrapper.ReaderWriterSerializer) { }
     }
 
     public abstract class InvalidTypeTests
     {
-        private SerializationWrapper Serializer { get; }
+        private JsonSerializerWrapper Serializer { get; }
 
-        public InvalidTypeTests(SerializationWrapper serializer)
+        public InvalidTypeTests(JsonSerializerWrapper serializer)
         {
             Serializer = serializer;
         }

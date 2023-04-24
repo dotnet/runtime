@@ -489,7 +489,7 @@ namespace ILCompiler.PEWriter
                 DosHeaderSize +
                 PESignatureSize +
                 sizeof(short) +     // Machine
-                sizeof(short);      //NumberOfSections
+                sizeof(short);      // NumberOfSections
 
             outputStream.Seek(seekSize, SeekOrigin.Begin);
             outputStream.Write(patchedTimestamp, 0, patchedTimestamp.Length);
@@ -599,12 +599,19 @@ namespace ILCompiler.PEWriter
 
             if (!_target.IsWindows)
             {
+                const int RVAAlign = 1 << RVABitsToMatchFilePos;
                 if (outputSectionIndex > 0)
                 {
                     sectionStartRva = Math.Max(sectionStartRva, _sectionRVAs[outputSectionIndex - 1] + _sectionRawSizes[outputSectionIndex - 1]);
+
+                    // when assembly is stored in a singlefile bundle, an additional skew is introduced
+                    // as the streams inside the bundle are not necessarily page aligned as we do not 
+                    // know the actual page size on the target system. 
+                    // We may need one page gap of unused VA space before the next section starts.
+                    // We will assume the page size is <= RVAAlign
+                    sectionStartRva += RVAAlign;
                 }
 
-                const int RVAAlign = 1 << RVABitsToMatchFilePos;
                 sectionStartRva = AlignmentHelper.AlignUp(sectionStartRva, RVAAlign);
 
                 int rvaAdjust = (location.PointerToRawData - sectionStartRva) & (RVAAlign - 1);
@@ -664,70 +671,54 @@ namespace ILCompiler.PEWriter
     }
     
     /// <summary>
-    /// Simple helper for filling in PE header information by either copying over
-    /// data from a pre-existing input PE header (used for single-assembly R2R files)
-    /// or by explicitly specifying the image characteristics (for composite R2R).
+    /// Simple helper for filling in PE header information.
     /// </summary>
     static class PEHeaderProvider
     {
         /// <summary>
-        /// Copy PE headers into a PEHeaderBuilder used by PEBuilder.
-        /// </summary>
-        /// <param name="peHeaders">Headers to copy</param>
-        /// <param name="target">Target architecture to set in the header</param>
-        public static PEHeaderBuilder Copy(PEHeaders peHeaders, TargetDetails target)
-        {
-            return Create(
-                peHeaders.CoffHeader.Characteristics,
-                peHeaders.PEHeader.DllCharacteristics,
-                peHeaders.PEHeader.Subsystem,
-                target);
-        }
-
-        /// <summary>
         /// Fill in PE header information into a PEHeaderBuilder used by PEBuilder.
         /// </summary>
-        /// <param name="relocsStripped">Relocs are not present in the PE executable</param>
-        /// <param name="dllCharacteristics">Extra DLL characteristics to apply</param>
         /// <param name="subsystem">Targeting subsystem</param>
         /// <param name="target">Target architecture to set in the header</param>
-        public static PEHeaderBuilder Create(Characteristics imageCharacteristics, DllCharacteristics dllCharacteristics, Subsystem subsystem, TargetDetails target)
+        public static PEHeaderBuilder Create(Subsystem subsystem, TargetDetails target, ulong imageBase)
         {
             bool is64BitTarget = target.PointerSize == sizeof(long);
 
-            imageCharacteristics &= ~(Characteristics.Bit32Machine | Characteristics.LargeAddressAware);
-            imageCharacteristics |= (is64BitTarget ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine);
-
-            ulong imageBase = PE32HeaderConstants.ImageBase;
-            if (target.IsWindows && is64BitTarget && (imageBase <= uint.MaxValue))
-            {
-                // Base addresses below 4 GiB are reserved for WoW on x64 and disallowed on ARM64.
-                // If the input assembly was compiled for anycpu, its base address is 32-bit and we need to fix it.
-                imageBase = (imageCharacteristics & Characteristics.Dll) != 0 ? PE64HeaderConstants.DllImageBase : PE64HeaderConstants.ExeImageBase;
-            }
+            Characteristics imageCharacteristics = Characteristics.ExecutableImage | Characteristics.Dll;
+            imageCharacteristics |= is64BitTarget ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine;
 
             int fileAlignment = 0x200;
-            if (!target.IsWindows && !is64BitTarget)
+            bool isWindowsOr32bit = target.IsWindows || !is64BitTarget;
+            if (isWindowsOr32bit)
             {
-                // To minimize wasted VA space on 32 bit systems align file to page bounaries (presumed to be 4K).
+                // To minimize wasted VA space on 32-bit systems (regardless of OS),
+                // align file to page boundaries (presumed to be 4K)
+                //
+                // On Windows we use 4K file alignment (regardless of ptr size),
+                // per requirements of memory mapping API (MapViewOfFile3, et al).
+                // The alternative could be using the same approach as on Unix, but that would result in PEs
+                // incompatible with OS loader. While that is not a problem on Unix, we do not want that on Windows.
                 fileAlignment = 0x1000;
             }
 
             int sectionAlignment = 0x1000;
-            if (!target.IsWindows && is64BitTarget)
+            if (!isWindowsOr32bit)
             {
-                // On Linux, we must match the bottom 12 bits of section RVA's to their file offsets. For this reason
+                // On 64bit Linux, we must match the bottom 12 bits of section RVA's to their file offsets. For this reason
                 // we need the same alignment for both.
+                //
+                // In addition to that we specify section RVAs to be at least 64K apart, which is > page on most systems.
+                // It ensures that the sections will not overlap when mapped from a singlefile bundle, which introduces a sub-page skew.
+                //
+                // Such format would not be accepted by OS loader on Windows, but it is not a problem on Unix.
                 sectionAlignment = fileAlignment;
             }
 
-            dllCharacteristics &= DllCharacteristics.AppContainer;
-
-            // In Crossgen1, this is under a debug-specific condition 'if (0 == CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NoASLRForNgen))'
-            dllCharacteristics |= DllCharacteristics.DynamicBase;
-
             // Without NxCompatible the PE executable cannot execute on Windows ARM64
-            dllCharacteristics |= DllCharacteristics.NxCompatible | DllCharacteristics.TerminalServerAware;
+            DllCharacteristics dllCharacteristics =
+                DllCharacteristics.DynamicBase |
+                DllCharacteristics.NxCompatible |
+                DllCharacteristics.TerminalServerAware;
 
             if (is64BitTarget)
             {

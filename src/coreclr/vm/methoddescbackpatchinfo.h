@@ -6,7 +6,6 @@
 #include "debugmacrosext.h"
 #include "crossloaderallocatorhash.h"
 
-#ifndef CROSSGEN_COMPILE
 
 #define DISABLE_COPY(T) \
     T(const T &) = delete; \
@@ -96,19 +95,23 @@ public:
     static bool IsLockOwnedByCurrentThread();
 #endif
 
-public:
-    // To be used when the thread will remain in preemptive GC mode while holding the lock
-    class ConditionalLockHolderForGCPreemp : private CrstHolderWithState
-    {
-    public:
-        ConditionalLockHolderForGCPreemp(bool acquireLock = true)
-            : CrstHolderWithState(
 #ifndef DACCESS_COMPILE
-                acquireLock ? &s_lock : nullptr
-#else
-                nullptr
-#endif
-                )
+public:
+    class ConditionalLockHolder : private CrstHolderWithState
+    {
+    #ifdef ENABLE_CONTRACTS_IMPL
+    private:
+        GCNoTrigger m_gcNoTriggerHolder;
+    #endif
+
+    public:
+        // Acquire the lock and put the thread in a GC_NOTRIGGER scope to ensure that this lock cannot be held while the thread
+        // suspends for the debugger, otherwise FuncEvals that run may deadlock on acquiring this lock
+        ConditionalLockHolder(bool acquireLock = true)
+            : CrstHolderWithState(acquireLock ? &s_lock : nullptr)
+        #ifdef ENABLE_CONTRACTS_IMPL
+            , m_gcNoTriggerHolder(acquireLock, __FUNCTION__, __FILE__, __LINE__)
+        #endif
         {
             CONTRACTL
             {
@@ -119,30 +122,7 @@ public:
             CONTRACTL_END;
         }
 
-        DISABLE_COPY(ConditionalLockHolderForGCPreemp);
-    };
-
-#ifndef DACCESS_COMPILE
-public:
-    // To be used when the thread may enter cooperative GC mode while holding the lock. The thread enters a
-    // forbid-suspend-for-debugger region along with acquiring the lock, such that it would not suspend for the debugger while
-    // holding the lock, as that may otherwise cause a FuncEval to deadlock when trying to acquire the lock.
-    class ConditionalLockHolderForGCCoop : private CrstAndForbidSuspendForDebuggerHolder
-    {
-    public:
-        ConditionalLockHolderForGCCoop(bool acquireLock = true)
-            : CrstAndForbidSuspendForDebuggerHolder(acquireLock ? &s_lock : nullptr)
-        {
-            CONTRACTL
-            {
-                NOTHROW;
-                GC_NOTRIGGER;
-                MODE_PREEMPTIVE;
-            }
-            CONTRACTL_END;
-        }
-
-        DISABLE_COPY(ConditionalLockHolderForGCCoop);
+        DISABLE_COPY(ConditionalLockHolder);
     };
 #endif
 
@@ -163,4 +143,3 @@ public:
 
 #undef DISABLE_COPY
 
-#endif // !CROSSGEN_COMPILE

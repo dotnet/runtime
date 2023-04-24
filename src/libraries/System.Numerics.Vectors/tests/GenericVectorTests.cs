@@ -5,7 +5,9 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Xunit;
 using Xunit.Sdk;
 
@@ -14,13 +16,22 @@ namespace System.Numerics.Tests
     /// <summary>
     ///  Vector{T} tests that use random number generation and a unified generic test structure
     /// </summary>
-    public class GenericVectorTests
+    [RequiresPreviewFeatures]
+    public unsafe class GenericVectorTests
     {
         // Static constructor in top-level class\
         static System.Numerics.Vector<float> dummy;
         static GenericVectorTests()
         {
             dummy = System.Numerics.Vector<float>.One;
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/81785", TestPlatforms.Browser)]
+        public unsafe void IsHardwareAcceleratedTest()
+        {
+            MethodInfo methodInfo = typeof(Vector).GetMethod("get_IsHardwareAccelerated");
+            Assert.Equal(Vector.IsHardwareAccelerated, methodInfo.Invoke(null, null));
         }
 
         #region Constructor Tests
@@ -178,7 +189,7 @@ namespace System.Numerics.Tests
         private void TestConstructorArrayTooSmallException<T>() where T : struct
         {
             T[] values = GenerateRandomValuesForVector<T>().Skip(1).ToArray();
-            Assert.Throws<IndexOutOfRangeException>(() =>
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 var vector = new Vector<T>(values);
             });
@@ -237,25 +248,25 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Byte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<byte>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Byte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<byte>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_SByte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<sbyte>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_SByte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<sbyte>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_UInt16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ushort>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_UInt16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ushort>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Int16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<short>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Int16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<short>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_UInt32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<uint>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_UInt32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<uint>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Int32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<int>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Int32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<int>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_UInt64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ulong>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_UInt64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ulong>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Int64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<long>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Int64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<long>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Single() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<float>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Single() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<float>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Double() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<double>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Double() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<double>());
 
         private void TestReadOnlySpanBasedConstructorWithLessElements<T>() where T : struct
         {
@@ -264,25 +275,25 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Byte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<byte>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Byte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<byte>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_SByte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<sbyte>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_SByte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<sbyte>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ushort>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ushort>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<short>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<short>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<uint>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<uint>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<int>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<int>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ulong>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ulong>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<long>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<long>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Single() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<float>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Single() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<float>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Double() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<double>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Double() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<double>());
 
         private void TestReadOnlySpanByteBasedConstructorWithLessElements<T>() where T : struct
         {
@@ -291,25 +302,25 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Byte() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<byte>());
+        public void SpanBasedConstructorWithLessElements_Byte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<byte>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_SByte() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<sbyte>());
+        public void SpanBasedConstructorWithLessElements_SByte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<sbyte>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_UInt16() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<ushort>());
+        public void SpanBasedConstructorWithLessElements_UInt16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<ushort>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Int16() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<short>());
+        public void SpanBasedConstructorWithLessElements_Int16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<short>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_UInt32() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<uint>());
+        public void SpanBasedConstructorWithLessElements_UInt32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<uint>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Int32() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<int>());
+        public void SpanBasedConstructorWithLessElements_Int32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<int>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_UInt64() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<ulong>());
+        public void SpanBasedConstructorWithLessElements_UInt64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<ulong>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Int64() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<long>());
+        public void SpanBasedConstructorWithLessElements_Int64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<long>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Single() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<float>());
+        public void SpanBasedConstructorWithLessElements_Single() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<float>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Double() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<double>());
+        public void SpanBasedConstructorWithLessElements_Double() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<double>());
 
         private void TestSpanBasedConstructorWithLessElements<T>() where T : struct
         {
@@ -410,7 +421,7 @@ namespace System.Numerics.Tests
         private void TestArrayBasedConstructorWithLessElements<T>() where T : struct
         {
             T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count - 1).ToArray();
-            Assert.Throws<IndexOutOfRangeException>(() => new Vector<T>(values));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Vector<T>(values));
         }
 
         [Fact]
@@ -437,7 +448,7 @@ namespace System.Numerics.Tests
         private void TestArrayIndexBasedConstructorLessElements<T>() where T : struct
         {
             T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count * 2).ToArray();
-            Assert.Throws<IndexOutOfRangeException>(() => new Vector<T>(values, Vector<T>.Count + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Vector<T>(values, Vector<T>.Count + 1));
         }
 
         #endregion Tests for Array based constructor
@@ -463,7 +474,6 @@ namespace System.Numerics.Tests
         #endregion Constructor Tests
 
         #region Indexer Tests
-
         [Fact]
         public void IndexerOutOfRangeByte() { TestIndexerOutOfRange<byte>(); }
         [Fact]
@@ -487,9 +497,48 @@ namespace System.Numerics.Tests
         private void TestIndexerOutOfRange<T>() where T : struct
         {
             Vector<T> vector = Vector<T>.One;
-            Assert.Throws<IndexOutOfRangeException>(() =>
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 T value = vector[Vector<T>.Count];
+            });
+        }
+
+        [Fact]
+        public void GetElementOutOfRangeByte() { TestGetElementOutOfRange<byte>(); }
+
+        [Fact]
+        public void GetElementOutOfRangeSByte() { TestGetElementOutOfRange<sbyte>(); }
+
+        [Fact]
+        public void GetElementOutOfRangeUInt16() { TestGetElementOutOfRange<ushort>(); }
+
+        [Fact]
+        public void GetElementOutOfRangeInt16() { TestGetElementOutOfRange<short>(); }
+
+        [Fact]
+        public void GetElementOutOfRangeUInt32() { TestGetElementOutOfRange<uint>(); }
+
+        [Fact]
+        public void GetElementOutOfRangeInt32() { TestGetElementOutOfRange<int>(); }
+
+        [Fact]
+        public void GetElementOutOfRangeUInt64() { TestGetElementOutOfRange<ulong>(); }
+
+        [Fact]
+        public void GetElementOutOfRangeInt64() { TestGetElementOutOfRange<long>(); }
+
+        [Fact]
+        public void GetElementOutOfRangeSingle() { TestGetElementOutOfRange<float>(); }
+
+        [Fact]
+        public void GetElementOutOfRangeDouble() { TestGetElementOutOfRange<double>(); }
+
+        private void TestGetElementOutOfRange<T>() where T : struct
+        {
+            Vector<T> vector = Vector<T>.One;
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => {
+                T value = vector.GetElement(Vector<T>.Count);
             });
         }
         #endregion
@@ -515,7 +564,7 @@ namespace System.Numerics.Tests
         public void StaticOneVectorSingle() { TestStaticOneVector<float>(); }
         [Fact]
         public void StaticOneVectorDouble() { TestStaticOneVector<double>(); }
-        private void TestStaticOneVector<T>() where T : struct
+        private void TestStaticOneVector<T>() where T : struct, INumber<T>
         {
             Vector<T> vector = Vector<T>.One;
             T oneValue = Util.One<T>();
@@ -546,7 +595,7 @@ namespace System.Numerics.Tests
         public void StaticZeroVectorSingle() { TestStaticZeroVector<float>(); }
         [Fact]
         public void StaticZeroVectorDouble() { TestStaticZeroVector<double>(); }
-        private void TestStaticZeroVector<T>() where T : struct
+        private void TestStaticZeroVector<T>() where T : struct, INumber<T>
         {
             Vector<T> vector = Vector<T>.Zero;
             T zeroValue = Util.Zero<T>();
@@ -588,7 +637,7 @@ namespace System.Numerics.Tests
             Assert.Throws<NullReferenceException>(() => vector.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => vector.CopyTo(array, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => vector.CopyTo(array, array.Length));
-            AssertExtensions.Throws<ArgumentException>(null, () => vector.CopyTo(array, array.Length - 1));
+            Assert.Throws<ArgumentException>(() => vector.CopyTo(array, array.Length - 1));
 
             vector.CopyTo(array);
             for (int g = 0; g < array.Length; g++)
@@ -812,7 +861,7 @@ namespace System.Numerics.Tests
         public void EqualsVectorSingle() { TestEqualsVector<float>(); }
         [Fact]
         public void EqualsVectorDouble() { TestEqualsVector<double>(); }
-        private void TestEqualsVector<T>() where T : struct
+        private void TestEqualsVector<T>() where T : struct, INumber<T>
         {
             T[] values = GenerateRandomValuesForVector<T>();
             Vector<T> vector1 = new Vector<T>(values);
@@ -829,6 +878,68 @@ namespace System.Numerics.Tests
 
             Assert.False(Vector<T>.Zero.Equals(Vector<T>.One));
             Assert.False(Vector<T>.Zero.Equals(new Vector<T>(Util.One<T>())));
+        }
+
+        [Fact]
+        public void VectorDoubleEqualsNaNTest()
+        {
+            var nan = new Vector<double>(double.NaN);
+            Assert.True(nan.Equals(nan));
+        }
+
+        [Fact]
+        public void VectorSingleEqualsNaNTest()
+        {
+            var nan = new Vector<float>(float.NaN);
+            Assert.True(nan.Equals(nan));
+        }
+
+        [Fact]
+        public void VectorDoubleEqualsNonCanonicalNaNTest()
+        {
+            // max 8 bit exponent, just under half max mantissa
+            var snan = BitConverter.UInt64BitsToDouble(0x7FF7_FFFF_FFFF_FFFF);
+            var nans = new double[]
+            {
+                double.CopySign(double.NaN, -0.0), // -qnan same as double.NaN
+                double.CopySign(double.NaN, +0.0), // +qnan
+                double.CopySign(snan, -0.0),       // -snan
+                double.CopySign(snan, +0.0),       // +snan
+            };
+
+            // all Vector<double> NaNs .Equals compare the same, but == compare as different
+            foreach(var i in nans)
+            {
+                foreach(var j in nans)
+                {
+                    Assert.True(new Vector<double>(i).Equals(new Vector<double>(j)));
+                    Assert.False(new Vector<double>(i) == new Vector<double>(j));
+                }
+            }
+        }
+
+        [Fact]
+        public void VectorSingleEqualsNonCanonicalNaNTest()
+        {
+            // max 11 bit exponent, just under half max mantissa
+            var snan = BitConverter.UInt32BitsToSingle(0x7FBF_FFFF);
+            var nans = new float[]
+            {
+                float.CopySign(float.NaN, -0.0f), // -qnan same as float.NaN
+                float.CopySign(float.NaN, +0.0f), // +qnan
+                float.CopySign(snan, -0.0f),      // -snan
+                float.CopySign(snan, +0.0f),      // +snan
+            };
+
+            // all Vector<float> NaNs .Equals compare the same, but == compare as different
+            foreach(var i in nans)
+            {
+                foreach(var j in nans)
+                {
+                    Assert.True(new Vector<float>(i).Equals(new Vector<float>(j)));
+                    Assert.False(new Vector<float>(i) == new Vector<float>(j));
+                }
+            }
         }
         #endregion
 
@@ -958,10 +1069,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void AdditionInt64() { TestAddition<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionSingle() { TestAddition<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionDouble() { TestAddition<double>(); }
-        private void TestAddition<T>() where T : struct
+        private void TestAddition<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -991,7 +1104,7 @@ namespace System.Numerics.Tests
         public void AdditionOverflowUInt64() { TestAdditionOverflow<ulong>(); }
         [Fact]
         public void AdditionOverflowInt64() { TestAdditionOverflow<long>(); }
-        private void TestAdditionOverflow<T>() where T : struct
+        private void TestAdditionOverflow<T>() where T : struct, INumber<T>
         {
             T maxValue = GetMaxValueExact<T>();
             Vector<T> maxValueVector = new Vector<T>(maxValue);
@@ -1023,10 +1136,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void SubtractionInt64() { TestSubtraction<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SubtractionSingle() { TestSubtraction<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SubtractionDouble() { TestSubtraction<double>(); }
-        private void TestSubtraction<T>() where T : struct
+        private void TestSubtraction<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1056,7 +1171,7 @@ namespace System.Numerics.Tests
         public void SubtractionOverflowUInt64() { TestSubtractionOverflow<ulong>(); }
         [Fact]
         public void SubtractionOverflowInt64() { TestSubtractionOverflow<long>(); }
-        private void TestSubtractionOverflow<T>() where T : struct
+        private void TestSubtractionOverflow<T>() where T : struct, INumber<T>
         {
             T minValue = GetMinValueExact<T>();
             Vector<T> minValueVector = new Vector<T>(minValue);
@@ -1088,10 +1203,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void MultiplicationInt64() { TestMultiplication<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationSingle() { TestMultiplication<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationDouble() { TestMultiplication<double>(); }
-        private void TestMultiplication<T>() where T : struct
+        private void TestMultiplication<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1106,26 +1223,38 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarByte() { TestMultiplicationWithScalar<byte>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarSByte() { TestMultiplicationWithScalar<sbyte>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarUInt16() { TestMultiplicationWithScalar<ushort>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarInt16() { TestMultiplicationWithScalar<short>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarUInt32() { TestMultiplicationWithScalar<uint>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarInt32() { TestMultiplicationWithScalar<int>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarUInt64() { TestMultiplicationWithScalar<ulong>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarInt64() { TestMultiplicationWithScalar<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarSingle() { TestMultiplicationWithScalar<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarDouble() { TestMultiplicationWithScalar<double>(); }
-        private void TestMultiplicationWithScalar<T>() where T : struct
+        private void TestMultiplicationWithScalar<T>() where T : struct, INumber<T>
         {
             T[] values = GenerateRandomValuesForVector<T>();
             T factor = Util.GenerateSingleValue<T>(GetMinValue<T>(), GetMaxValue<T>());
@@ -1164,10 +1293,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void DivisionInt64() { TestDivision<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionSingle() { TestDivision<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionDouble() { TestDivision<double>(); }
-        private void TestDivision<T>() where T : struct
+        private void TestDivision<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             values1 = values1.Select(val => val.Equals(Util.Zero<T>()) ? Util.One<T>() : val).ToArray(); // Avoid divide-by-zero
@@ -1208,6 +1339,86 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public void DivisionWithScalarByte() { TestDivisionWithScalar<byte>(); }
+
+        [Fact]
+        public void DivisionWithScalarSByte() { TestDivisionWithScalar<sbyte>(); }
+
+        [Fact]
+        public void DivisionWithScalarUInt16() { TestDivisionWithScalar<ushort>(); }
+
+        [Fact]
+        public void DivisionWithScalarInt16() { TestDivisionWithScalar<short>(); }
+
+        [Fact]
+        public void DivisionWithScalarUInt32() { TestDivisionWithScalar<uint>(); }
+
+        [Fact]
+        public void DivisionWithScalarInt32() { TestDivisionWithScalar<int>(); }
+
+        [Fact]
+        public void DivisionWithScalarUInt64() { TestDivisionWithScalar<ulong>(); }
+
+        [Fact]
+        public void DivisionWithScalarInt64() { TestDivisionWithScalar<long>(); }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
+        public void DivisionWithScalarSingle() { TestDivisionWithScalar<float>(); }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
+        public void DivisionWithScalarDouble() { TestDivisionWithScalar<double>(); }
+
+        private void TestDivisionWithScalar<T>() where T : struct, INumber<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            values = values.Select(val => val.Equals(Util.Zero<T>()) ? Util.One<T>() : val).ToArray(); // Avoid divide-by-zero
+
+            T scalar = Util.GenerateSingleValue<T>(GetMinValue<T>(), GetMaxValue<T>());
+
+            while (scalar.Equals(Util.Zero<T>()))
+            {
+                scalar = Util.GenerateSingleValue<T>(GetMinValue<T>(), GetMaxValue<T>());
+            }
+
+            var v1 = new Vector<T>(values);
+            var sum = v1 / scalar;
+
+            ValidateVector(sum, (index, val) => {
+                Assert.Equal(Util.Divide(values[index], scalar), val);
+            });
+        }
+
+        [Fact]
+        public void DivisionWithScalarByZeroExceptionByte() { TestDivisionWithScalarByZeroException<byte>(); }
+
+        [Fact]
+        public void DivisionWithScalarByZeroExceptionSByte() { TestDivisionWithScalarByZeroException<sbyte>(); }
+
+        [Fact]
+        public void DivisionWithScalarByZeroExceptionUInt16() { TestDivisionWithScalarByZeroException<ushort>(); }
+
+        [Fact]
+        public void DivisionWithScalarByZeroExceptionInt16() { TestDivisionWithScalarByZeroException<short>(); }
+
+        [Fact]
+        public void DivisionWithScalarByZeroExceptionInt32() { TestDivisionWithScalarByZeroException<int>(); }
+
+        [Fact]
+        public void DivisionWithScalarByZeroExceptionInt64() { TestDivisionWithScalarByZeroException<long>(); }
+
+        private void TestDivisionWithScalarByZeroException<T>() where T : struct, INumber<T>
+        {
+            T[] values1 = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new Vector<T>(values1);
+
+            Assert.Throws<DivideByZeroException>(() => {
+                var result = vector / Util.Zero<T>();
+            });
+        }
+
+        [Fact]
         public void UnaryMinusByte() { TestUnaryMinus<byte>(); }
         [Fact]
         public void UnaryMinusSByte() { TestUnaryMinus<sbyte>(); }
@@ -1224,10 +1435,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void UnaryMinusInt64() { TestUnaryMinus<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void UnaryMinusSingle() { TestUnaryMinus<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void UnaryMinusDouble() { TestUnaryMinus<double>(); }
-        private void TestUnaryMinus<T>() where T : struct
+        private void TestUnaryMinus<T>() where T : struct, INumber<T>
         {
             T[] values = GenerateRandomValuesForVector<T>();
             Vector<T> vector = new Vector<T>(values);
@@ -1324,7 +1537,7 @@ namespace System.Numerics.Tests
         public void BitwiseXorOperatorUInt64() { TestBitwiseXorOperator<ulong>(); }
         [Fact]
         public void BitwiseXorOperatorInt64() { TestBitwiseXorOperator<long>(); }
-        private void TestBitwiseXorOperator<T>() where T : struct
+        private void TestBitwiseXorOperator<T>() where T : struct, IBitwiseOperators<T,T,T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1356,7 +1569,7 @@ namespace System.Numerics.Tests
         public void BitwiseOnesComplementOperatorUInt64() { TestBitwiseOnesComplementOperator<ulong>(); }
         [Fact]
         public void BitwiseOnesComplementOperatorInt64() { TestBitwiseOnesComplementOperator<long>(); }
-        private void TestBitwiseOnesComplementOperator<T>() where T : struct
+        private void TestBitwiseOnesComplementOperator<T>() where T : struct, IBitwiseOperators<T,T,T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             Vector<T> randomVector1 = new Vector<T>(values1);
@@ -1386,7 +1599,7 @@ namespace System.Numerics.Tests
         public void BitwiseAndNotUInt64() { TestBitwiseAndNot<ulong>(); }
         [Fact]
         public void BitwiseAndNotInt64() { TestBitwiseAndNot<long>(); }
-        private void TestBitwiseAndNot<T>() where T : struct
+        private void TestBitwiseAndNot<T>() where T : struct, IBitwiseOperators<T,T,T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1403,6 +1616,194 @@ namespace System.Numerics.Tests
                     Assert.Equal(expected, result2[index]);
                     Assert.Equal(result2[index], val);
                 });
+        }
+        #endregion
+
+        #region Shift Operator Tests
+        [Fact]
+        public void ShiftLeftByte() { TestShiftLeft<byte>(); }
+
+        [Fact]
+        public void ShiftLeftSByte() { TestShiftLeft<sbyte>(); }
+
+        [Fact]
+        public void ShiftLeftUInt16() { TestShiftLeft<ushort>(); }
+
+        [Fact]
+        public void ShiftLeftInt16() { TestShiftLeft<short>(); }
+
+        [Fact]
+        public void ShiftLeftUInt32() { TestShiftLeft<uint>(); }
+
+        [Fact]
+        public void ShiftLeftInt32() { TestShiftLeft<int>(); }
+
+        [Fact]
+        public void ShiftLeftUInt64() { TestShiftLeft<ulong>(); }
+
+        [Fact]
+        public void ShiftLeftInt64() { TestShiftLeft<long>(); }
+
+        [Fact]
+        public void ShiftLeftSingle()
+        {
+            float[] values = GenerateRandomValuesForVector<float>();
+            Vector<float> vector = new Vector<float>(values);
+
+            vector <<= 1;
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(Util.ShiftLeft(values[index], 1), val);
+            });
+        }
+
+        [Fact]
+        public void ShiftLeftDouble()
+        {
+            double[] values = GenerateRandomValuesForVector<double>();
+            Vector<double> vector = new Vector<double>(values);
+
+            vector <<= 1;
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(Util.ShiftLeft(values[index], 1), val);
+            });
+        }
+
+        private void TestShiftLeft<T>() where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new Vector<T>(values);
+
+            vector <<= 1;
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(Util.ShiftLeft(values[index], 1), val);
+            });
+        }
+
+        [Fact]
+        public void ShiftRightArithmeticByte() { TestShiftRightArithmetic<byte>(); }
+
+        [Fact]
+        public void ShiftRightArithmeticSByte() { TestShiftRightArithmetic<sbyte>(); }
+
+        [Fact]
+        public void ShiftRightArithmeticUInt16() { TestShiftRightArithmetic<ushort>(); }
+
+        [Fact]
+        public void ShiftRightArithmeticInt16() { TestShiftRightArithmetic<short>(); }
+
+        [Fact]
+        public void ShiftRightArithmeticUInt32() { TestShiftRightArithmetic<uint>(); }
+
+        [Fact]
+        public void ShiftRightArithmeticInt32() { TestShiftRightArithmetic<int>(); }
+
+        [Fact]
+        public void ShiftRightArithmeticUInt64() { TestShiftRightArithmetic<ulong>(); }
+
+        [Fact]
+        public void ShiftRightArithmeticInt64() { TestShiftRightArithmetic<long>(); }
+
+        [Fact]
+        public void ShiftRightArithmeticSingle()
+        {
+            float[] values = GenerateRandomValuesForVector<float>();
+            Vector<float> vector = new Vector<float>(values);
+
+            vector >>= 1;
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(Util.ShiftRightArithmetic(values[index], 1), val);
+            });
+        }
+
+        [Fact]
+        public void ShiftRightArithmeticDouble()
+        {
+            double[] values = GenerateRandomValuesForVector<double>();
+            Vector<double> vector = new Vector<double>(values);
+
+            vector >>= 1;
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(Util.ShiftRightArithmetic(values[index], 1), val);
+            });
+        }
+
+        private void TestShiftRightArithmetic<T>() where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new Vector<T>(values);
+
+            vector >>= 1;
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(Util.ShiftRightArithmetic(values[index], 1), val);
+            });
+        }
+
+        [Fact]
+        public void ShiftRightLogicalByte() { TestShiftRightLogical<byte>(); }
+
+        [Fact]
+        public void ShiftRightLogicalSByte() { TestShiftRightLogical<sbyte>(); }
+
+        [Fact]
+        public void ShiftRightLogicalUInt16() { TestShiftRightLogical<ushort>(); }
+
+        [Fact]
+        public void ShiftRightLogicalInt16() { TestShiftRightLogical<short>(); }
+
+        [Fact]
+        public void ShiftRightLogicalUInt32() { TestShiftRightLogical<uint>(); }
+
+        [Fact]
+        public void ShiftRightLogicalInt32() { TestShiftRightLogical<int>(); }
+
+        [Fact]
+        public void ShiftRightLogicalUInt64() { TestShiftRightLogical<ulong>(); }
+
+        [Fact]
+        public void ShiftRightLogicalInt64() { TestShiftRightLogical<long>(); }
+
+        [Fact]
+        public void ShiftRightLogicalSingle()
+        {
+            float[] values = GenerateRandomValuesForVector<float>();
+            Vector<float> vector = new Vector<float>(values);
+
+            vector >>>= 1;
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(Util.ShiftRightLogical(values[index], 1), val);
+            });
+        }
+
+        [Fact]
+        public void ShiftRightLogicalDouble()
+        {
+            double[] values = GenerateRandomValuesForVector<double>();
+            Vector<double> vector = new Vector<double>(values);
+
+            vector >>>= 1;
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(Util.ShiftRightLogical(values[index], 1), val);
+            });
+        }
+
+        private void TestShiftRightLogical<T>() where T : unmanaged, IBinaryInteger<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new Vector<T>(values);
+
+            vector >>>= 1;
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(Util.ShiftRightLogical(values[index], 1), val);
+            });
         }
         #endregion
 
@@ -1424,10 +1825,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void VectorGreaterThanInt64() { TestVectorGreaterThan<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void VectorGreaterThanSingle() { TestVectorGreaterThan<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void VectorGreaterThanDouble() { TestVectorGreaterThan<double>(); }
-        private void TestVectorGreaterThan<T>() where T : struct
+        private void TestVectorGreaterThan<T>() where T : struct, INumber<T>
         {
             var values1 = GenerateRandomValuesForVector<T>();
             var values2 = GenerateRandomValuesForVector<T>();
@@ -1461,10 +1864,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void GreaterThanOrEqualInt64() { TestVectorGreaterThanOrEqual<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void GreaterThanOrEqualSingle() { TestVectorGreaterThanOrEqual<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void GreaterThanOrEqualDouble() { TestVectorGreaterThanOrEqual<double>(); }
-        private void TestVectorGreaterThanOrEqual<T>() where T : struct
+        private void TestVectorGreaterThanOrEqual<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1714,10 +2119,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void LessThanInt64() { TestVectorLessThan<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanSingle() { TestVectorLessThan<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanDouble() { TestVectorLessThan<double>(); }
-        private void TestVectorLessThan<T>() where T : struct
+        private void TestVectorLessThan<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1751,10 +2158,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void LessThanOrEqualInt64() { TestVectorLessThanOrEqual<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanOrEqualSingle() { TestVectorLessThanOrEqual<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanOrEqualDouble() { TestVectorLessThanOrEqual<double>(); }
-        private void TestVectorLessThanOrEqual<T>() where T : struct
+        private void TestVectorLessThanOrEqual<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1788,10 +2197,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void LessThanAnyInt64() { TestVectorLessThanAny<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanAnySingle() { TestVectorLessThanAny<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanAnyDouble() { TestVectorLessThanAny<double>(); }
-        private void TestVectorLessThanAny<T>() where T : struct
+        private void TestVectorLessThanAny<T>() where T : struct, INumber<T>
         {
             T[] values1 = new T[Vector<T>.Count];
             for (int g = 0; g < Vector<T>.Count; g++)
@@ -1826,7 +2237,7 @@ namespace System.Numerics.Tests
         public void LessThanAllSingle() { TestVectorLessThanAll<float>(); }
         [Fact]
         public void LessThanAllDouble() { TestVectorLessThanAll<double>(); }
-        private void TestVectorLessThanAll<T>() where T : struct
+        private void TestVectorLessThanAll<T>() where T : struct, INumber<T>
         {
             T[] values1 = new T[Vector<T>.Count];
             for (int g = 0; g < Vector<T>.Count; g++)
@@ -1981,7 +2392,7 @@ namespace System.Numerics.Tests
         public void VectorEqualsSingle() { TestVectorEquals<float>(); }
         [Fact]
         public void VectorEqualsDouble() { TestVectorEquals<double>(); }
-        private void TestVectorEquals<T>() where T : struct
+        private void TestVectorEquals<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2;
@@ -2026,7 +2437,7 @@ namespace System.Numerics.Tests
         public void VectorEqualsAnySingle() { TestVectorEqualsAny<float>(); }
         [Fact]
         public void VectorEqualsAnyDouble() { TestVectorEqualsAny<double>(); }
-        private void TestVectorEqualsAny<T>() where T : struct
+        private void TestVectorEqualsAny<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2;
@@ -2074,7 +2485,7 @@ namespace System.Numerics.Tests
         public void VectorEqualsAllSingle() { TestVectorEqualsAll<float>(); }
         [Fact]
         public void VectorEqualsAllDouble() { TestVectorEqualsAll<double>(); }
-        private void TestVectorEqualsAll<T>() where T : struct
+        private void TestVectorEqualsAll<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2;
@@ -2114,10 +2525,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void ConditionalSelectInt64() { TestConditionalSelect<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void ConditionalSelectSingle() { TestConditionalSelect<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void ConditionalSelectDouble() { TestConditionalSelect<double>(); }
-        private void TestConditionalSelect<T>() where T : struct
+        private void TestConditionalSelect<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -2166,10 +2579,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void DotProductInt64() { TestDotProduct<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DotProductSingle() { TestDotProduct<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DotProductDouble() { TestDotProduct<double>(); }
-        private void TestDotProduct<T>() where T : struct
+        private void TestDotProduct<T>() where T : struct, INumber<T>
         {
             T[] values1 = Util.GenerateRandomValues<T>(Vector<T>.Count);
             T[] values2 = Util.GenerateRandomValues<T>(Vector<T>.Count);
@@ -2202,10 +2617,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void MaxInt64() { TestMax<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MaxSingle() { TestMax<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MaxDouble() { TestMax<double>(); }
-        private void TestMax<T>() where T : struct
+        private void TestMax<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -2238,10 +2655,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void MinInt64() { TestMin<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MinSingle() { TestMin<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MinDouble() { TestMin<double>(); }
-        private void TestMin<T>() where T : struct
+        private void TestMin<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -2274,10 +2693,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void SquareRootInt64() { TestSquareRoot<long>(-1); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SquareRootSingle() { TestSquareRoot<float>(6); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SquareRootDouble() { TestSquareRoot<double>(15); }
-        private void TestSquareRoot<T>(int precision = -1) where T : struct, IEquatable<T>
+        private void TestSquareRoot<T>(int precision = -1) where T : struct, INumber<T>, IEquatable<T>
         {
             T[] values = GenerateRandomValuesForVector<T>();
             Vector<T> vector = new Vector<T>(values);
@@ -2368,10 +2789,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void AbsInt64() { TestAbs<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AbsSingle() { TestAbs<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AbsDouble() { TestAbs<double>(); }
-        private void TestAbs<T>() where T : struct
+        private void TestAbs<T>() where T : struct, INumber<T>
         {
             T[] values = Util.GenerateRandomValues<T>(Vector<T>.Count, GetMinValue<T>() + 1, GetMaxValue<T>());
             Vector<T> vector = new Vector<T>(values);
@@ -2406,10 +2829,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void MultiplicationReflectionInt64() { TestMultiplicationReflection<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationReflectionSingle() { TestMultiplicationReflection<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationReflectionDouble() { TestMultiplicationReflection<double>(); }
-        private void TestMultiplicationReflection<T>() where T : struct
+        private void TestMultiplicationReflection<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -2443,10 +2868,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void AdditionReflectionInt64() { TestAdditionReflection<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionReflectionSingle() { TestAdditionReflection<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionReflectionDouble() { TestAdditionReflection<double>(); }
-        private void TestAdditionReflection<T>() where T : struct
+        private void TestAdditionReflection<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -2480,10 +2907,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void DivisionReflectionInt64() { TestDivisionReflection<long>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionReflectionSingle() { TestDivisionReflection<float>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionReflectionDouble() { TestDivisionReflection<double>(); }
-        private void TestDivisionReflection<T>() where T : struct
+        private void TestDivisionReflection<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             values1 = values1.Select(val => val.Equals(Util.Zero<T>()) ? Util.One<T>() : val).ToArray(); // Avoid divide-by-zero
@@ -3134,6 +3563,544 @@ namespace System.Numerics.Tests
             vector2.CopyTo(vector2Bytes);
 
             Assert.Equal(vector1Bytes, vector2Bytes);
+        }
+        #endregion
+
+        #region Sum
+        [Fact]
+        public void SumInt32() => TestSum<int>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumInt64() => TestSum<long>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumSingle() => TestSum<float>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumDouble() => TestSum<double>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumUInt32() => TestSum<uint>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumUInt64() => TestSum<ulong>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumByte() => TestSum<byte>(x => x.Aggregate((a, b) => (byte)(a + b)));
+
+        [Fact]
+        public void SumSByte() => TestSum<sbyte>(x => x.Aggregate((a, b) => (sbyte)(a + b)));
+
+        [Fact]
+        public void SumInt16() => TestSum<short>(x => x.Aggregate((a, b) => (short)(a + b)));
+
+        [Fact]
+        public void SumUInt16() => TestSum<ushort>(x => x.Aggregate((a, b) => (ushort)(a + b)));
+
+        private static void TestSum<T>(Func<T[], T> expected) where T : struct, IEquatable<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new(values);
+            T sum = Vector.Sum(vector);
+
+            AssertEqual(expected(values), sum, "Sum");
+        }
+        #endregion
+
+        #region IsSupported Tests
+        [Fact]
+        public void IsSupportedByte() => TestIsSupported<byte>();
+
+        [Fact]
+        public void IsSupportedDouble() => TestIsSupported<double>();
+
+        [Fact]
+        public void IsSupportedInt16() => TestIsSupported<short>();
+
+        [Fact]
+        public void IsSupportedInt32() => TestIsSupported<int>();
+
+        [Fact]
+        public void IsSupportedInt64() => TestIsSupported<long>();
+
+        [Fact]
+        public void IsSupportedIntPtr() => TestIsSupported<nint>();
+
+        [Fact]
+        public void IsSupportedSByte() => TestIsSupported<sbyte>();
+
+        [Fact]
+        public void IsSupportedSingle() => TestIsSupported<float>();
+
+        [Fact]
+        public void IsSupportedUInt16() => TestIsSupported<ushort>();
+
+        [Fact]
+        public void IsSupportedUInt32() => TestIsSupported<uint>();
+
+        [Fact]
+        public void IsSupportedUInt64() => TestIsSupported<ulong>();
+
+        [Fact]
+        public void IsSupportedUIntPtr() => TestIsSupported<nuint>();
+
+        private static void TestIsSupported<T>()
+            where T : struct
+        {
+            Assert.True(Vector<T>.IsSupported);
+
+            MethodInfo methodInfo = typeof(Vector<T>).GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static).GetMethod;
+            Assert.True((bool)methodInfo.Invoke(null, null));
+        }
+        #endregion
+
+        #region Load
+        [Fact]
+        public void LoadByte() { TestLoad<byte>(); }
+
+        [Fact]
+        public void LoadSByte() { TestLoad<sbyte>(); }
+
+        [Fact]
+        public void LoadUInt16() { TestLoad<ushort>(); }
+
+        [Fact]
+        public void LoadInt16() { TestLoad<short>(); }
+
+        [Fact]
+        public void LoadUInt32() { TestLoad<uint>(); }
+
+        [Fact]
+        public void LoadInt32() { TestLoad<int>(); }
+
+        [Fact]
+        public void LoadUInt64() { TestLoad<ulong>(); }
+
+        [Fact]
+        public void LoadInt64() { TestLoad<long>(); }
+
+        [Fact]
+        public void LoadSingle() { TestLoad<float>(); }
+
+        [Fact]
+        public void LoadDouble() { TestLoad<double>(); }
+
+        private void TestLoad<T>() where T : unmanaged, INumber<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Unsafe.SkipInit(out Vector<T> vector);
+
+            fixed (T* pValues = values)
+            {
+                vector = Vector.Load<T>(pValues);
+            }
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(values[index], val);
+            });
+        }
+
+        [Fact]
+        public void LoadAlignedByte() { TestLoadAligned<byte>(); }
+
+        [Fact]
+        public void LoadAlignedSByte() { TestLoadAligned<sbyte>(); }
+
+        [Fact]
+        public void LoadAlignedUInt16() { TestLoadAligned<ushort>(); }
+
+        [Fact]
+        public void LoadAlignedInt16() { TestLoadAligned<short>(); }
+
+        [Fact]
+        public void LoadAlignedUInt32() { TestLoadAligned<uint>(); }
+
+        [Fact]
+        public void LoadAlignedInt32() { TestLoadAligned<int>(); }
+
+        [Fact]
+        public void LoadAlignedUInt64() { TestLoadAligned<ulong>(); }
+
+        [Fact]
+        public void LoadAlignedInt64() { TestLoadAligned<long>(); }
+
+        [Fact]
+        public void LoadAlignedSingle() { TestLoadAligned<float>(); }
+
+        [Fact]
+        public void LoadAlignedDouble() { TestLoadAligned<double>(); }
+
+        private void TestLoadAligned<T>() where T : unmanaged, INumber<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Unsafe.SkipInit(out Vector<T> vector);
+
+            T* pValues = (T*)NativeMemory.AlignedAlloc((uint)Vector<byte>.Count, (uint)Vector<byte>.Count);
+            values.CopyTo(new Span<T>(pValues, Vector<T>.Count));
+
+            vector = Vector.LoadAligned<T>(pValues);
+            NativeMemory.AlignedFree(pValues);
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(values[index], val);
+            });
+        }
+
+        [Fact]
+        public void LoadAlignedNonTemporalByte() { TestLoadAlignedNonTemporal<byte>(); }
+
+        [Fact]
+        public void LoadAlignedNonTemporalSByte() { TestLoadAlignedNonTemporal<sbyte>(); }
+
+        [Fact]
+        public void LoadAlignedNonTemporalUInt16() { TestLoadAlignedNonTemporal<ushort>(); }
+
+        [Fact]
+        public void LoadAlignedNonTemporalInt16() { TestLoadAlignedNonTemporal<short>(); }
+
+        [Fact]
+        public void LoadAlignedNonTemporalUInt32() { TestLoadAlignedNonTemporal<uint>(); }
+
+        [Fact]
+        public void LoadAlignedNonTemporalInt32() { TestLoadAlignedNonTemporal<int>(); }
+
+        [Fact]
+        public void LoadAlignedNonTemporalUInt64() { TestLoadAlignedNonTemporal<ulong>(); }
+
+        [Fact]
+        public void LoadAlignedNonTemporalInt64() { TestLoadAlignedNonTemporal<long>(); }
+
+        [Fact]
+        public void LoadAlignedNonTemporalSingle() { TestLoadAlignedNonTemporal<float>(); }
+
+        [Fact]
+        public void LoadAlignedNonTemporalDouble() { TestLoadAlignedNonTemporal<double>(); }
+
+        private void TestLoadAlignedNonTemporal<T>() where T : unmanaged, INumber<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Unsafe.SkipInit(out Vector<T> vector);
+
+            T* pValues = (T*)NativeMemory.AlignedAlloc((uint)Vector<byte>.Count, (uint)Vector<byte>.Count);
+            values.CopyTo(new Span<T>(pValues, Vector<T>.Count));
+
+            vector = Vector.LoadAlignedNonTemporal<T>(pValues);
+            NativeMemory.AlignedFree(pValues);
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(values[index], val);
+            });
+        }
+
+        [Fact]
+        public void LoadUnsafeByte() { TestLoadUnsafe<byte>(); }
+
+        [Fact]
+        public void LoadUnsafeSByte() { TestLoadUnsafe<sbyte>(); }
+
+        [Fact]
+        public void LoadUnsafeUInt16() { TestLoadUnsafe<ushort>(); }
+
+        [Fact]
+        public void LoadUnsafeInt16() { TestLoadUnsafe<short>(); }
+
+        [Fact]
+        public void LoadUnsafeUInt32() { TestLoadUnsafe<uint>(); }
+
+        [Fact]
+        public void LoadUnsafeInt32() { TestLoadUnsafe<int>(); }
+
+        [Fact]
+        public void LoadUnsafeUInt64() { TestLoadUnsafe<ulong>(); }
+
+        [Fact]
+        public void LoadUnsafeInt64() { TestLoadUnsafe<long>(); }
+
+        [Fact]
+        public void LoadUnsafeSingle() { TestLoadUnsafe<float>(); }
+
+        [Fact]
+        public void LoadUnsafeDouble() { TestLoadUnsafe<double>(); }
+
+        private void TestLoadUnsafe<T>() where T : unmanaged, INumber<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = Vector.LoadUnsafe<T>(ref values[0]);
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(values[index], val);
+            });
+        }
+
+        [Fact]
+        public void LoadUnsafeWithIndexByte() { TestLoadUnsafeWithIndex<byte>(); }
+
+        [Fact]
+        public void LoadUnsafeWithIndexSByte() { TestLoadUnsafeWithIndex<sbyte>(); }
+
+        [Fact]
+        public void LoadUnsafeWithIndexUInt16() { TestLoadUnsafeWithIndex<ushort>(); }
+
+        [Fact]
+        public void LoadUnsafeWithIndexInt16() { TestLoadUnsafeWithIndex<short>(); }
+
+        [Fact]
+        public void LoadUnsafeWithIndexUInt32() { TestLoadUnsafeWithIndex<uint>(); }
+
+        [Fact]
+        public void LoadUnsafeWithIndexInt32() { TestLoadUnsafeWithIndex<int>(); }
+
+        [Fact]
+        public void LoadUnsafeWithIndexUInt64() { TestLoadUnsafeWithIndex<ulong>(); }
+
+        [Fact]
+        public void LoadUnsafeWithIndexInt64() { TestLoadUnsafeWithIndex<long>(); }
+
+        [Fact]
+        public void LoadUnsafeWithIndexSingle() { TestLoadUnsafeWithIndex<float>(); }
+
+        [Fact]
+        public void LoadUnsafeWithIndexDouble() { TestLoadUnsafeWithIndex<double>(); }
+
+        private void TestLoadUnsafeWithIndex<T>() where T : unmanaged, INumber<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count + 1);
+            Vector<T> vector = Vector.LoadUnsafe<T>(ref values[0], 1);
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(values[index + 1], val);
+            });
+        }
+        #endregion
+
+        #region Store
+        [Fact]
+        public void StoreByte() { TestStore<byte>(); }
+
+        [Fact]
+        public void StoreSByte() { TestStore<sbyte>(); }
+
+        [Fact]
+        public void StoreUInt16() { TestStore<ushort>(); }
+
+        [Fact]
+        public void StoreInt16() { TestStore<short>(); }
+
+        [Fact]
+        public void StoreUInt32() { TestStore<uint>(); }
+
+        [Fact]
+        public void StoreInt32() { TestStore<int>(); }
+
+        [Fact]
+        public void StoreUInt64() { TestStore<ulong>(); }
+
+        [Fact]
+        public void StoreInt64() { TestStore<long>(); }
+
+        [Fact]
+        public void StoreSingle() { TestStore<float>(); }
+
+        [Fact]
+        public void StoreDouble() { TestStore<double>(); }
+
+        private void TestStore<T>() where T : unmanaged, INumber<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new Vector<T>(values);
+
+            T[] destination = new T[Vector<T>.Count];
+
+            fixed (T* pDestination = destination)
+            {
+                vector.Store<T>(pDestination);
+            }
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(destination[index], val);
+            });
+        }
+
+        [Fact]
+        public void StoreAlignedByte() { TestStoreAligned<byte>(); }
+
+        [Fact]
+        public void StoreAlignedSByte() { TestStoreAligned<sbyte>(); }
+
+        [Fact]
+        public void StoreAlignedUInt16() { TestStoreAligned<ushort>(); }
+
+        [Fact]
+        public void StoreAlignedInt16() { TestStoreAligned<short>(); }
+
+        [Fact]
+        public void StoreAlignedUInt32() { TestStoreAligned<uint>(); }
+
+        [Fact]
+        public void StoreAlignedInt32() { TestStoreAligned<int>(); }
+
+        [Fact]
+        public void StoreAlignedUInt64() { TestStoreAligned<ulong>(); }
+
+        [Fact]
+        public void StoreAlignedInt64() { TestStoreAligned<long>(); }
+
+        [Fact]
+        public void StoreAlignedSingle() { TestStoreAligned<float>(); }
+
+        [Fact]
+        public void StoreAlignedDouble() { TestStoreAligned<double>(); }
+
+        private void TestStoreAligned<T>() where T : unmanaged, INumber<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new Vector<T>(values);
+
+            T* pDestination = (T*)NativeMemory.AlignedAlloc((uint)Vector<byte>.Count, (uint)Vector<byte>.Count);
+            vector.StoreAligned<T>(pDestination);
+
+            T[] destination = new T[Vector<T>.Count];
+            new Span<T>(pDestination, Vector<T>.Count).CopyTo(destination);
+
+            NativeMemory.AlignedFree(pDestination);
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(destination[index], val);
+            });
+        }
+
+        [Fact]
+        public void StoreAlignedNonTemporalByte() { TestStoreAlignedNonTemporal<byte>(); }
+
+        [Fact]
+        public void StoreAlignedNonTemporalSByte() { TestStoreAlignedNonTemporal<sbyte>(); }
+
+        [Fact]
+        public void StoreAlignedNonTemporalUInt16() { TestStoreAlignedNonTemporal<ushort>(); }
+
+        [Fact]
+        public void StoreAlignedNonTemporalInt16() { TestStoreAlignedNonTemporal<short>(); }
+
+        [Fact]
+        public void StoreAlignedNonTemporalUInt32() { TestStoreAlignedNonTemporal<uint>(); }
+
+        [Fact]
+        public void StoreAlignedNonTemporalInt32() { TestStoreAlignedNonTemporal<int>(); }
+
+        [Fact]
+        public void StoreAlignedNonTemporalUInt64() { TestStoreAlignedNonTemporal<ulong>(); }
+
+        [Fact]
+        public void StoreAlignedNonTemporalInt64() { TestStoreAlignedNonTemporal<long>(); }
+
+        [Fact]
+        public void StoreAlignedNonTemporalSingle() { TestStoreAlignedNonTemporal<float>(); }
+
+        [Fact]
+        public void StoreAlignedNonTemporalDouble() { TestStoreAlignedNonTemporal<double>(); }
+
+        private void TestStoreAlignedNonTemporal<T>() where T : unmanaged, INumber<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new Vector<T>(values);
+
+            T* pDestination = (T*)NativeMemory.AlignedAlloc((uint)Vector<byte>.Count, (uint)Vector<byte>.Count);
+            vector.StoreAlignedNonTemporal<T>(pDestination);
+
+            T[] destination = new T[Vector<T>.Count];
+            new Span<T>(pDestination, Vector<T>.Count).CopyTo(destination);
+
+            NativeMemory.AlignedFree(pDestination);
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(destination[index], val);
+            });
+        }
+
+        [Fact]
+        public void StoreUnsafeByte() { TestStoreUnsafe<byte>(); }
+
+        [Fact]
+        public void StoreUnsafeSByte() { TestStoreUnsafe<sbyte>(); }
+
+        [Fact]
+        public void StoreUnsafeUInt16() { TestStoreUnsafe<ushort>(); }
+
+        [Fact]
+        public void StoreUnsafeInt16() { TestStoreUnsafe<short>(); }
+
+        [Fact]
+        public void StoreUnsafeUInt32() { TestStoreUnsafe<uint>(); }
+
+        [Fact]
+        public void StoreUnsafeInt32() { TestStoreUnsafe<int>(); }
+
+        [Fact]
+        public void StoreUnsafeUInt64() { TestStoreUnsafe<ulong>(); }
+
+        [Fact]
+        public void StoreUnsafeInt64() { TestStoreUnsafe<long>(); }
+
+        [Fact]
+        public void StoreUnsafeSingle() { TestStoreUnsafe<float>(); }
+
+        [Fact]
+        public void StoreUnsafeDouble() { TestStoreUnsafe<double>(); }
+
+        private void TestStoreUnsafe<T>() where T : unmanaged, INumber<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new Vector<T>(values);
+
+            T[] destination = new T[Vector<T>.Count];
+            vector.StoreUnsafe<T>(ref destination[0]);
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(destination[index], val);
+            });
+        }
+
+        [Fact]
+        public void StoreUnsafeWithIndexByte() { TestStoreUnsafeWithIndex<byte>(); }
+
+        [Fact]
+        public void StoreUnsafeWithIndexSByte() { TestStoreUnsafeWithIndex<sbyte>(); }
+
+        [Fact]
+        public void StoreUnsafeWithIndexUInt16() { TestStoreUnsafeWithIndex<ushort>(); }
+
+        [Fact]
+        public void StoreUnsafeWithIndexInt16() { TestStoreUnsafeWithIndex<short>(); }
+
+        [Fact]
+        public void StoreUnsafeWithIndexUInt32() { TestStoreUnsafeWithIndex<uint>(); }
+
+        [Fact]
+        public void StoreUnsafeWithIndexInt32() { TestStoreUnsafeWithIndex<int>(); }
+
+        [Fact]
+        public void StoreUnsafeWithIndexUInt64() { TestStoreUnsafeWithIndex<ulong>(); }
+
+        [Fact]
+        public void StoreUnsafeWithIndexInt64() { TestStoreUnsafeWithIndex<long>(); }
+
+        [Fact]
+        public void StoreUnsafeWithIndexSingle() { TestStoreUnsafeWithIndex<float>(); }
+
+        [Fact]
+        public void StoreUnsafeWithIndexDouble() { TestStoreUnsafeWithIndex<double>(); }
+
+        private void TestStoreUnsafeWithIndex<T>() where T : unmanaged, INumber<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count + 1);
+            Vector<T> vector = new Vector<T>(values);
+
+            T[] destination = new T[Vector<T>.Count + 1];
+            vector.StoreUnsafe<T>(ref destination[0], 1);
+
+            ValidateVector(vector, (index, val) => {
+                Assert.Equal(destination[index + 1], val);
+            });
         }
         #endregion
 

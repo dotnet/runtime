@@ -10,8 +10,8 @@ namespace System.Net.Http.Headers
     {
         public double? Quality
         {
-            get { return HeaderUtilities.GetQuality((ObjectCollection<NameValueHeaderValue>)Parameters); }
-            set { HeaderUtilities.SetQuality((ObjectCollection<NameValueHeaderValue>)Parameters, value); }
+            get => HeaderUtilities.GetQuality((UnvalidatedObjectCollection<NameValueHeaderValue>)Parameters);
+            set => HeaderUtilities.SetQuality((UnvalidatedObjectCollection<NameValueHeaderValue>)Parameters, value);
         }
 
         internal MediaTypeWithQualityHeaderValue()
@@ -42,7 +42,7 @@ namespace System.Net.Http.Headers
             return new MediaTypeWithQualityHeaderValue(this);
         }
 
-        public static new MediaTypeWithQualityHeaderValue Parse(string? input)
+        public static new MediaTypeWithQualityHeaderValue Parse(string input)
         {
             int index = 0;
             return (MediaTypeWithQualityHeaderValue)MediaTypeHeaderParser.SingleValueWithQualityParser.ParseValue(

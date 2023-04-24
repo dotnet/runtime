@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// FEATURE_COMPILE is not directly required,
-// but this functionality relies on private reflection and that would not work with AOT
-#if FEATURE_INTERPRET && FEATURE_COMPILE
-
 using System.Linq.Expressions.Interpreter;
 using System.Reflection;
 using Xunit;
@@ -15,7 +11,9 @@ namespace System.Linq.Expressions.Tests
     {
         private static readonly PropertyInfo s_debugView = typeof(LightLambda).GetPropertyAssert("DebugView");
 
-        [Fact]
+        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
+        // but this functionality relies on private reflection and that would not work with AOT
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void VerifyInstructions_Simple()
         {
             // Using an unchecked multiplication to ensure that a mul instruction is emitted (and not mul.ovf)
@@ -46,7 +44,9 @@ namespace System.Linq.Expressions.Tests
                   }");
         }
 
-        [Fact]
+        // IsNotLinqExpressionsBuiltWithIsInterpretingOnly is not directly required,
+        // but this functionality relies on private reflection and that would not work with AOT
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void VerifyInstructions_Exceptions()
         {
             ParameterExpression x = Expression.Parameter(typeof(int), "x");
@@ -102,6 +102,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        [ActiveIssue ("https://github.com/dotnet/runtime/issues/53599", platforms: TestPlatforms.MacCatalyst, runtimes: TestRuntimes.Mono)]
         public static void ConstructorThrows_StackTrace()
         {
             Expression<Func<Thrower>> e = () => new Thrower(true);
@@ -231,5 +232,3 @@ namespace System.Linq.Expressions.Tests
         }
     }
 }
-
-#endif

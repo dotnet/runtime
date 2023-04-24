@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 #include "dllexport.h"
-#include "jitinterface.h"
+#include "jitinterface_generated.h"
 
 static void NotImplemented()
 {
@@ -19,12 +19,20 @@ int JitInterfaceWrapper::FilterException(struct _EXCEPTION_POINTERS* pExceptionP
     return 1; // EXCEPTION_EXECUTE_HANDLER
 }
 
-void JitInterfaceWrapper::HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers)
+bool JitInterfaceWrapper::runWithErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter)
 {
-    NotImplemented();
+    try
+    {
+        (*function)(parameter);
+    }
+    catch (CorInfoExceptionClass *)
+    {
+        return false;
+    }
+    return true;
 }
 
-bool JitInterfaceWrapper::runWithErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter)
+bool JitInterfaceWrapper::runWithSPMIErrorTrap(ICorJitInfo::errorTrapFunction function, void* parameter)
 {
     try
     {

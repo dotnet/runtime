@@ -1,20 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppToolCurrent)</TargetFrameworks>
+    <TargetFramework>$(TargetFrameworkForNETCoreTasks)</TargetFramework>
     <OutputType>Library</OutputType>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn),CA1050</NoWarn>
+    <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Templates\*.*" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
-    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
-    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AppleAppBuilder.cs" />
@@ -23,6 +20,11 @@
     <Compile Include="Xcode.cs" />
   </ItemGroup>
 
-  <Target Name="GetFilesToPackage" />
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*"
+                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+    </ItemGroup>
+  </Target>
 
 </Project>

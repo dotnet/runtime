@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="jaggedarr.cs" />
+  </ItemGroup>
+</Project>

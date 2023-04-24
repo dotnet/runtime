@@ -2,14 +2,14 @@
   <PropertyGroup>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <OutputType>exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestPriority>0</CLRTestPriority>
     <Optimize>true</Optimize>
+    <!-- This test is not compatible with JIT stress -->
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <!-- This test provides no interesting scenarios for GCStress -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- The test launches a secondary process and process launch creates
-    an infinite event loop in the SocketAsyncEngine on Linux. Since 
+    an infinite event loop in the SocketAsyncEngine on Linux. Since
     runincontext loads even framework assemblies into the unloadable
     context, locals in this loop prevent unloading -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
@@ -18,6 +18,7 @@
     <Compile Include="$(MSBuildProjectName).cs" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="../common/profiler_common.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
+    <CMakeProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
+    <ProjectReference Include="$(TestSourceDir)tracing/eventpipe/common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
   </ItemGroup>
 </Project>

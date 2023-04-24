@@ -6,7 +6,6 @@ Param(
     [string][Alias('c')]$configuration = "Release", # Build configuration for libraries and stress suite
     [switch][Alias('w')]$useWindowsContainers, # Use windows containers, if available
     [switch][Alias('b')]$buildCurrentLibraries, # Drives the stress test using libraries built from current source
-    [switch][Alias('pa')]$privateAspNetCore, # Drive the stress test using a private Asp.Net Core package, requires -b to be set
     [switch][Alias('o')]$buildOnly, # Build, but do not run the stress app
     [string][Alias('t')]$sdkImageName, # Name of the sdk image name, if built from source.
     [string]$clientStressArgs = "",
@@ -15,6 +14,13 @@ Param(
 
 $REPO_ROOT_DIR = $(git -C "$PSScriptRoot" rev-parse --show-toplevel)
 $COMPOSE_FILE = "$PSScriptRoot/docker-compose.yml"
+
+# This is a workaround for an issue with 1es-windows-2022-open, which should be eventually removed.
+# See comments in <repo>/eng/pipelines/libraries/stress/ssl.yml for more info.
+$dockerComposeCmd = $env:DOCKER_COMPOSE_CMD
+if (!(Test-Path $dockerComposeCmd)) {
+    $dockerComposeCmd = "docker-compose"
+}
 
 # Build runtime libraries and place in a docker image
 
@@ -30,19 +36,10 @@ if ($buildCurrentLibraries)
     {
         $LIBRARIES_BUILD_ARGS += " -w"
     }
-    if($privateAspNetCore)
-    {
-        $LIBRARIES_BUILD_ARGS += " -p"
-    }
 
     Invoke-Expression "& $REPO_ROOT_DIR/eng/docker/build-docker-sdk.ps1 $LIBRARIES_BUILD_ARGS"
 
     if (!$?) { exit 1 }
-}
-elseif ($privateAspNetCore) {
-    write-output "Using a private Asp.Net Core package (-pa) requires using privately built libraries. Please, enable it with -b switch."
-    write-output "USAGE: . $($MyInvocation.InvocationName) -b -pa <args>"
-    exit 1
 }
 
 # Dockerize the stress app using docker-compose
@@ -60,7 +57,7 @@ if ($useWindowsContainers)
 $originalErrorPreference = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 try {
-	docker-compose --log-level DEBUG --file "$COMPOSE_FILE" build $BUILD_ARGS.Split() 2>&1 | ForEach-Object { "$_" }
+	& $dockerComposeCmd --log-level DEBUG --file "$COMPOSE_FILE" build $BUILD_ARGS.Split() 2>&1 | ForEach-Object { "$_" }
 	if ($LASTEXITCODE -ne 0) {
 		throw "docker-compose exited with error code $LASTEXITCODE"
 	}
@@ -75,5 +72,5 @@ if (!$buildOnly)
 {
     $env:SSLSTRESS_CLIENT_ARGS = $clientStressArgs
     $env:SSLSTRESS_SERVER_ARGS = $serverStressArgs
-    docker-compose --file "$COMPOSE_FILE" up --abort-on-container-exit
+    & $dockerComposeCmd --file "$COMPOSE_FILE" up --abort-on-container-exit
 }

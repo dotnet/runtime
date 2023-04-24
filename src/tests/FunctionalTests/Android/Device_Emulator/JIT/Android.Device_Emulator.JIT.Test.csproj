@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <RunAOTCompilation>false</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <MainLibraryFileName>Android.Device_Emulator.JIT.Test.dll</MainLibraryFileName>
     <ExpectedExitCode>42</ExpectedExitCode>
   </PropertyGroup>

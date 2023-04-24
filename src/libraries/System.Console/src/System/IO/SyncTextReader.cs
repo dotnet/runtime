@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.IO
@@ -95,17 +96,31 @@ namespace System.IO
             return Task.FromResult(ReadLine());
         }
 
+        public override ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
+        {
+            return cancellationToken.IsCancellationRequested ?
+                ValueTask.FromCanceled<string?>(cancellationToken) :
+                new ValueTask<string?>(ReadLine());
+        }
+
         public override Task<string> ReadToEndAsync()
         {
             return Task.FromResult(ReadToEnd());
         }
 
+        public override Task<string> ReadToEndAsync(CancellationToken cancellationToken)
+        {
+            return cancellationToken.IsCancellationRequested ?
+                Task.FromCanceled<string>(cancellationToken) :
+                Task.FromResult(ReadToEnd());
+        }
+
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -114,10 +129,10 @@ namespace System.IO
 
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 

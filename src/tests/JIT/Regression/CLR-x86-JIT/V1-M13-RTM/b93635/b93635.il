@@ -8,7 +8,8 @@
 }
 .assembly extern mscorlib {}
 .assembly extern System {}
-.assembly EHTest {}
+.assembly 'b93635' {}
+.assembly extern xunit.core {}
 .class public EHTest
 {
 .method public static void f2() cil managed
@@ -68,6 +69,9 @@
 
 .method public static int32 Main() cil managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.try
 	{

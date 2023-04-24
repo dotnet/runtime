@@ -63,35 +63,29 @@ namespace System.ServiceModel.Syndication
 
         public void Add(string outerName, string outerNamespace, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
-            if (dataContractExtension == null)
+            if (dataContractExtension is null)
             {
                 throw new ArgumentNullException(nameof(dataContractExtension));
             }
 
-            if (dataContractSerializer == null)
-            {
-                dataContractSerializer = new DataContractSerializer(dataContractExtension.GetType());
-            }
+            dataContractSerializer ??= new DataContractSerializer(dataContractExtension.GetType());
             base.Add(new SyndicationElementExtension(outerName, outerNamespace, dataContractExtension, dataContractSerializer));
         }
 
         public void Add(object xmlSerializerExtension, XmlSerializer serializer)
         {
-            if (xmlSerializerExtension == null)
+            if (xmlSerializerExtension is null)
             {
                 throw new ArgumentNullException(nameof(xmlSerializerExtension));
             }
 
-            if (serializer == null)
-            {
-                serializer = new XmlSerializer(xmlSerializerExtension.GetType());
-            }
+            serializer ??= new XmlSerializer(xmlSerializerExtension.GetType());
             base.Add(new SyndicationElementExtension(xmlSerializerExtension, serializer));
         }
 
         public void Add(XmlReader xmlReader)
         {
-            if (xmlReader == null)
+            if (xmlReader is null)
             {
                 throw new ArgumentNullException(nameof(xmlReader));
             }
@@ -102,7 +96,7 @@ namespace System.ServiceModel.Syndication
         public XmlReader GetReaderAtElementExtensions()
         {
             XmlBuffer extensionsBuffer = GetOrCreateBufferOverExtensions();
-            XmlReader reader = extensionsBuffer.GetReader(0);
+            XmlDictionaryReader reader = extensionsBuffer.GetReader(0);
             reader.ReadStartElement();
             return reader;
         }
@@ -114,7 +108,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer serializer)
         {
-            if (serializer == null)
+            if (serializer is null)
             {
                 throw new ArgumentNullException(nameof(serializer));
             }
@@ -124,7 +118,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlSerializer serializer)
         {
-            if (serializer == null)
+            if (serializer is null)
             {
                 throw new ArgumentNullException(nameof(serializer));
             }
@@ -170,7 +164,7 @@ namespace System.ServiceModel.Syndication
 
         protected override void InsertItem(int index, SyndicationElementExtension item)
         {
-            if (item == null)
+            if (item is null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
@@ -193,7 +187,7 @@ namespace System.ServiceModel.Syndication
 
         protected override void SetItem(int index, SyndicationElementExtension item)
         {
-            if (item == null)
+            if (item is null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
@@ -211,7 +205,7 @@ namespace System.ServiceModel.Syndication
             }
 
             XmlBuffer newBuffer = new XmlBuffer(int.MaxValue);
-            using (XmlWriter writer = newBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
+            using (XmlDictionaryWriter writer = newBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
             {
                 writer.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
                 for (int i = 0; i < Count; ++i)
@@ -250,10 +244,7 @@ namespace System.ServiceModel.Syndication
 
             Debug.Assert((dcSerializer == null) != (xmlSerializer == null), "exactly one serializer should be supplied");
             // normalize the null and empty namespace
-            if (extensionNamespace == null)
-            {
-                extensionNamespace = string.Empty;
-            }
+            extensionNamespace ??= string.Empty;
             Collection<TExtension> results = new Collection<TExtension>();
             for (int i = 0; i < Count; ++i)
             {

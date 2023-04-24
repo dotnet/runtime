@@ -31,6 +31,7 @@ namespace System.ServiceProcess.Tests
 
         public string ServiceCommandLine { get; set; }
 
+        // Install and start the test service, after starting any prerequisite services it depends on
         public unsafe void Install()
         {
             string username = Username;
@@ -53,6 +54,7 @@ namespace System.ServiceProcess.Tests
             }
 
             // Build servicesDependedOn string
+            // These are prerequisite services that must be started before this service
             string servicesDependedOn = null;
             if (ServicesDependedOn.Length > 0)
             {
@@ -75,14 +77,20 @@ namespace System.ServiceProcess.Tests
                 if (serviceManagerHandle.IsInvalid)
                     throw new InvalidOperationException("Cannot open Service Control Manager");
 
+                TestService.DebugTrace($"TestServiceInstaller: creating service '{ServiceName}' with prerequisite services {servicesDependedOn}");
+
                 // Install the service
                 using (var serviceHandle = new SafeServiceHandle(Interop.Advapi32.CreateService(serviceManagerHandle, ServiceName,
-                    DisplayName, Interop.Advapi32.ServiceAccessOptions.ACCESS_TYPE_ALL, Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_WIN32_OWN_PROCESS,
+                    DisplayName, Interop.Advapi32.ServiceAccessOptions.ACCESS_TYPE_ALL, Interop.Advapi32.ServiceTypeOptions.SERVICE_WIN32_OWN_PROCESS,
                     (int)StartType, Interop.Advapi32.ServiceStartErrorModes.ERROR_CONTROL_NORMAL,
                     ServiceCommandLine, null, IntPtr.Zero, servicesDependedOn, username, password)))
                 {
                     if (serviceHandle.IsInvalid)
-                        throw new Win32Exception("Cannot create service");
+                    {
+                        int errorCode = Marshal.GetLastWin32Error();
+                        string errorMessage = new Win32Exception(errorCode).Message;
+                        throw new Win32Exception(errorCode, $"Cannot create service '{ServiceName}' with display name '{DisplayName}'. {errorMessage}");
+                    }
 
                     // A local variable in an unsafe method is already fixed -- so we don't need a "fixed { }" blocks to protect
                     // across the p/invoke calls below.
@@ -94,7 +102,11 @@ namespace System.ServiceProcess.Tests
                         bool success = Interop.Advapi32.ChangeServiceConfig2(serviceHandle, Interop.Advapi32.ServiceConfigOptions.SERVICE_CONFIG_DESCRIPTION, ref serviceDesc);
                         Marshal.FreeHGlobal(serviceDesc.description);
                         if (!success)
-                            throw new Win32Exception("Cannot set description");
+                        {
+                            int errorCode = Marshal.GetLastWin32Error();
+                            string errorMessage = new Win32Exception(errorCode).Message;
+                            throw new Win32Exception(errorCode, $"Cannot set description on '{ServiceName}' with display name '{DisplayName}'. {errorMessage}");
+                        }
                     }
 
                     // Start the service after creating it
@@ -102,10 +114,14 @@ namespace System.ServiceProcess.Tests
                     {
                         if (svc.Status != ServiceControllerStatus.Running)
                         {
-                            TestService.DebugTrace("TestServiceInstaller: instructing ServiceController to Start service " + ServiceName);
+                            TestService.DebugTrace($"TestServiceInstaller: instructing ServiceController to start service '{ServiceName}'");
                             svc.Start();
                             if (!ServiceName.StartsWith("PropagateExceptionFromOnStart"))
-                                svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(120));
+                                svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(240));
+                        }
+                        else
+                        {
+                            TestService.DebugTrace($"TestServiceInstaller: service '{ServiceName}' already running");
                         }
                     }
                 }
@@ -151,7 +167,7 @@ namespace System.ServiceProcess.Tests
                     }
 
                     // var sw = Stopwatch.StartNew();
-                    svc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(120));
+                    svc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(240));
                     // sw.Stop();
                     // if (sw.Elapsed > TimeSpan.FromSeconds(30))
                     // {
@@ -166,17 +182,27 @@ namespace System.ServiceProcess.Tests
             using (var serviceManagerHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL)))
             {
                 if (serviceManagerHandle.IsInvalid)
-                    throw new Win32Exception("Could not open SCM");
+                {
+                    int errorCode = Marshal.GetLastWin32Error();
+                    string errorMessage = new Win32Exception(errorCode).Message;
+                    throw new Win32Exception(errorCode, $"Could not open SCM. {errorMessage}");
+                }
 
                 using (var serviceHandle = new SafeServiceHandle(Interop.Advapi32.OpenService(serviceManagerHandle, ServiceName, Interop.Advapi32.ServiceOptions.STANDARD_RIGHTS_DELETE)))
                 {
                     if (serviceHandle.IsInvalid)
-                        throw new Win32Exception($"Could not find service '{ServiceName}'");
+                    {
+                        int errorCode = Marshal.GetLastWin32Error();
+                        string errorMessage = new Win32Exception(errorCode).Message;
+                        throw new Win32Exception(errorCode, $"Could not find service '{ServiceName}'. {errorMessage}");
+                    }
 
                     TestService.DebugTrace("TestServiceInstaller: instructing ServiceController to Delete service " + ServiceName);
                     if (!Interop.Advapi32.DeleteService(serviceHandle))
                     {
-                        throw new Win32Exception($"Could not delete service '{ServiceName}'");
+                        int errorCode = Marshal.GetLastWin32Error();
+                        string errorMessage = new Win32Exception(errorCode).Message;
+                        throw new Win32Exception(errorCode, $"Could not delete service '{ServiceName}'. {errorMessage}");
                     }
                 }
             }

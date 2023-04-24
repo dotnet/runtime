@@ -18,14 +18,14 @@ namespace System.Net.Http
             public override int Read(Span<byte> buffer)
             {
                 HttpConnection? connection = _connection;
-                if (connection == null || buffer.Length == 0)
+                if (connection == null)
                 {
-                    // Response body fully consumed or the caller didn't ask for any data
+                    // Response body fully consumed
                     return 0;
                 }
 
                 int bytesRead = connection.Read(buffer);
-                if (bytesRead == 0)
+                if (bytesRead == 0 && buffer.Length != 0)
                 {
                     // We cannot reuse this connection, so close it.
                     _connection = null;
@@ -40,9 +40,9 @@ namespace System.Net.Http
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                 HttpConnection? connection = _connection;
-                if (connection == null || buffer.Length == 0)
+                if (connection == null)
                 {
-                    // Response body fully consumed or the caller didn't ask for any data
+                    // Response body fully consumed
                     return 0;
                 }
 
@@ -69,7 +69,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (bytesRead == 0)
+                if (bytesRead == 0 && buffer.Length != 0)
                 {
                     // If cancellation is requested and tears down the connection, it could cause the read
                     // to return 0, which would otherwise signal the end of the data, but that would lead

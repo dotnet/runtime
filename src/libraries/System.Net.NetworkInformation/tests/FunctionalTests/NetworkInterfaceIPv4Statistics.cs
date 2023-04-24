@@ -44,8 +44,9 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/dotnet/runtime/issues/20029 and https://github.com/Microsoft/WSL/issues/3561
+        [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]  // Some APIs are not supported on Windows and OSX
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no normal /proc")]
         public void BasicTest_GetIPv4InterfaceStatistics_Success_Linux()
         {
             // This API is not actually IPv4 specific.
@@ -66,6 +67,17 @@ namespace System.Net.NetworkInformation.Tests
                 _log.WriteLine("OutputQueueLength: " + stats.OutputQueueLength);
                 _log.WriteLine("UnicastPacketsReceived: " + stats.UnicastPacketsReceived);
                 _log.WriteLine("UnicastPacketsSent: " + stats.UnicastPacketsSent);
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Android)]  // This API is not supported on Android
+        public void BasicTest_GetIPv4InterfaceStatistics_NotSupported_Android()
+        {
+            // This API is not actually IPv4 specific.
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => nic.GetIPv4Statistics());
             }
         }
 

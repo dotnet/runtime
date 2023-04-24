@@ -2,8 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 using Xunit;
 
 namespace System
@@ -41,6 +45,36 @@ namespace System
             using StreamReader reader = new StreamReader(inputStream);
             result = reader.ReadLine();
             Assert.Equal(expectedLine, result);
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ReadFromOpenStandardInput()
+        {
+            // The implementation in StdInReader uses a StringBuilder for caching. We want this builder to use
+            // multiple chunks. So the expectedLine is longer than 16 characters (StringBuilder.DefaultCapacity).
+            string expectedLine = $"This is a test for ReadFromOpenStandardInput.";
+            Assert.True(expectedLine.Length > new StringBuilder().Capacity);
+            Console.WriteLine($"Please type the sentence (without the quotes): \"{expectedLine}\"");
+            using Stream inputStream = Console.OpenStandardInput();
+            for (int i = 0; i < expectedLine.Length; i++)
+            {
+                Assert.Equal((byte)expectedLine[i], inputStream.ReadByte());
+            }
+            Assert.Equal((byte)'\n', inputStream.ReadByte());
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ConsoleReadSupportsBackspace()
+        {
+            const string expectedLine = "aab\r";
+
+            Console.WriteLine($"Please type 'a' 3 times, press 'Backspace' to erase 1, then type a single 'b' and press 'Enter'.");
+            foreach (char c in expectedLine)
+            {
+                Assert.Equal((int)c, Console.Read());
+            }
             AssertUserExpectedResults("the characters you typed properly echoed as you typed");
         }
 
@@ -90,6 +124,17 @@ namespace System
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ReadKeyNoIntercept()
+        {
+            Console.WriteLine("Please type \"console\" (without the quotes). You should see it as you type:");
+            foreach (ConsoleKey k in new[] { ConsoleKey.C, ConsoleKey.O, ConsoleKey.N, ConsoleKey.S, ConsoleKey.O, ConsoleKey.L, ConsoleKey.E })
+            {
+                Assert.Equal(k, Console.ReadKey(intercept: false).Key);
+            }
+            AssertUserExpectedResults("\"console\" correctly echoed as you typed it");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
         public static void EnterKeyIsEnterAfterKeyAvailableCheck()
         {
             Console.WriteLine("Please hold down the 'Enter' key for some time. You shouldn't see new lines appear:");
@@ -127,7 +172,7 @@ namespace System
         public static IEnumerable<object[]> GetKeyChords()
         {
             yield return MkConsoleKeyInfo("Ctrl+B", '\x02', ConsoleKey.B, ConsoleModifiers.Control);
-            yield return MkConsoleKeyInfo("Ctrl+Alt+B", OperatingSystem.IsWindows() ? '\x00' : '\x02', ConsoleKey.B, ConsoleModifiers.Control | ConsoleModifiers.Alt);
+            yield return MkConsoleKeyInfo("Ctrl+Alt+B", '\x00', ConsoleKey.B, ConsoleModifiers.Control | ConsoleModifiers.Alt);
             yield return MkConsoleKeyInfo("Enter", '\r', ConsoleKey.Enter, default);
 
             if (OperatingSystem.IsWindows())
@@ -136,8 +181,8 @@ namespace System
             }
             else
             {
-                // Validate current Unix console behaviour: '\n' is reported as '\r'
-                yield return MkConsoleKeyInfo("Ctrl+J", '\r', ConsoleKey.Enter, default);
+                // Ctrl+J is mapped by every Unix Terminal as Ctrl+Enter with new line character
+                yield return MkConsoleKeyInfo("Ctrl+J", '\n', ConsoleKey.Enter, ConsoleModifiers.Control);
             }
 
             static object[] MkConsoleKeyInfo (string requestedKeyChord, char keyChar, ConsoleKey consoleKey, ConsoleModifiers modifiers)
@@ -244,11 +289,80 @@ namespace System
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // .NET echo handling is Unix specific.
+        public static void EchoWorksDuringAndAfterProcessThatUsesTerminal()
+        {
+            Console.WriteLine($"Please type \"test\" without the quotes and press Enter.");
+            string line = Console.ReadLine();
+            Assert.Equal("test", line);
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+
+            Console.WriteLine($"Now type \"test\" without the quotes and press Ctrl+D twice.");
+            using Process p = Process.Start(new ProcessStartInfo
+            {
+                FileName = "cat",
+                RedirectStandardOutput = true,
+            });
+            string stdout = p.StandardOutput.ReadToEnd();
+            p.WaitForExit();
+            Assert.Equal("test", stdout);
+            Console.WriteLine();
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+
+            Console.WriteLine($"Please type \"test\" without the quotes and press Enter.");
+            line = Console.ReadLine();
+            Assert.Equal("test", line);
+            AssertUserExpectedResults("the characters you typed properly echoed as you typed");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
         public static void EncodingTest()
         {
             Console.WriteLine(Console.OutputEncoding);
             Console.WriteLine("'\u03A0\u03A3'.");
-            AssertUserExpectedResults("Pi and Segma or question marks");
+            AssertUserExpectedResults("Pi and Sigma or question marks");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void CursorLeftFromLastColumn()
+        {
+            Console.CursorLeft = Console.BufferWidth - 1;
+            Console.Write("2");
+            Console.CursorLeft = 0;
+            Console.Write("1");
+            Console.WriteLine();
+            AssertUserExpectedResults("single line with '1' at the start and '2' at the end.");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
+        public static void ResizeTest()
+        {
+            bool wasResized = false;
+
+            using (ManualResetEvent manualResetEvent = new(false))
+            using (PosixSignalRegistration.Create(PosixSignal.SIGWINCH,
+                       ctx =>
+                       {
+                           wasResized = true;
+                           Assert.Equal(PosixSignal.SIGWINCH, ctx.Signal);
+                           manualResetEvent.Set();
+                       }))
+            {
+                int widthBefore = Console.WindowWidth;
+                int heightBefore = Console.WindowHeight;
+
+                Assert.False(wasResized);
+
+                Console.SetWindowSize(widthBefore / 2, heightBefore / 2);
+
+                Assert.True(manualResetEvent.WaitOne(TimeSpan.FromMilliseconds(50)));
+                Assert.True(wasResized);
+                Assert.Equal(widthBefore / 2, Console.WindowWidth );
+                Assert.Equal(heightBefore / 2, Console.WindowHeight );
+
+                Console.SetWindowSize(widthBefore, heightBefore);
+            }
         }
 
         private static void AssertUserExpectedResults(string expected)

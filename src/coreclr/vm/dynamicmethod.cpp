@@ -20,7 +20,7 @@
 #ifndef DACCESS_COMPILE
 
 // get the method table for dynamic methods
-DynamicMethodTable* DomainFile::GetDynamicMethodTable()
+DynamicMethodTable* DomainAssembly::GetDynamicMethodTable()
 {
     CONTRACT (DynamicMethodTable*)
     {
@@ -88,7 +88,7 @@ void DynamicMethodTable::CreateDynamicMethodTable(DynamicMethodTable **ppLocatio
 
     if (*ppLocation) RETURN;
 
-    if (FastInterlockCompareExchangePointer(ppLocation, pDynMT, NULL) != NULL)
+    if (InterlockedCompareExchangeT(ppLocation, pDynMT, NULL) != NULL)
     {
         LOG((LF_BCL, LL_INFO100, "Level2 - Another thread got here first - deleting DynamicMethodTable {0x%p}...\n", pDynMT));
         RETURN;
@@ -162,7 +162,7 @@ void DynamicMethodTable::AddMethodsToList()
     // allocate as many chunks as needed to hold the methods
     //
     MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(pHeap, 0 /* one chunk of maximum size */,
-        mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, FALSE /* fComPlusCallInfo */, m_pMethodTable, &amt);
+        mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, m_pMethodTable, &amt);
     if (m_DynamicMethodList) RETURN;
 
     int methodCount = pChunk->GetCount();
@@ -180,8 +180,9 @@ void DynamicMethodTable::AddMethodsToList()
         pNewMD->SetMemberDef(0);
         pNewMD->SetSlot(MethodTable::NO_SLOT);       // we can't ever use the slot for dynamic methods
         pNewMD->SetStatic();
-
-        pNewMD->m_dwExtendedFlags = mdPublic | mdStatic | DynamicMethodDesc::nomdLCGMethod;
+        pNewMD->InitializeFlags(DynamicMethodDesc::FlagPublic
+                        | DynamicMethodDesc::FlagStatic
+                        | DynamicMethodDesc::FlagIsLCGMethod);
 
         LCGMethodResolver* pResolver = new (pResolvers) LCGMethodResolver();
         pResolver->m_pDynamicMethod = pNewMD;
@@ -191,7 +192,7 @@ void DynamicMethodTable::AddMethodsToList()
         pNewMD->SetTemporaryEntryPoint(m_pDomain->GetLoaderAllocator(), &amt);
 
 #ifdef _DEBUG
-        pNewMD->m_pDebugMethodTable.SetValue(m_pMethodTable);
+        pNewMD->m_pDebugMethodTable = m_pMethodTable;
 #endif
 
         if (pPrevMD)
@@ -271,9 +272,10 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     // the store sig part of the method desc
     pNewMD->SetStoredMethodSig((PCCOR_SIGNATURE)psig, sigSize);
     // the dynamic part of the method desc
-    pNewMD->m_pszMethodName.SetValueMaybeNull(name);
-
-    pNewMD->m_dwExtendedFlags = mdPublic | mdStatic | DynamicMethodDesc::nomdLCGMethod;
+    pNewMD->m_pszMethodName = name;
+    pNewMD->InitializeFlags(DynamicMethodDesc::FlagPublic
+                    | DynamicMethodDesc::FlagStatic
+                    | DynamicMethodDesc::FlagIsLCGMethod);
 
 #ifdef _DEBUG
     pNewMD->m_pszDebugMethodName = name;
@@ -380,7 +382,7 @@ HostCodeHeap::~HostCodeHeap()
         delete[] m_pHeapList->pHdrMap;
 
     if (m_pBaseAddr)
-        ClrVirtualFree(m_pBaseAddr, 0, MEM_RELEASE);
+        ExecutableAllocator::Instance()->Release(m_pBaseAddr);
     LOG((LF_BCL, LL_INFO10, "Level1 - CodeHeap destroyed {0x%p}\n", this));
 }
 
@@ -397,15 +399,18 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     size_t ReserveBlockSize = pInfo->getRequestSize();
 
     // Add TrackAllocation, HeapList and very conservative padding to make sure we have enough for the allocation
-    ReserveBlockSize += sizeof(TrackAllocation) + sizeof(HeapList) + HOST_CODEHEAP_SIZE_ALIGN + 0x100;
+    ReserveBlockSize += sizeof(TrackAllocation) + HOST_CODEHEAP_SIZE_ALIGN + 0x100;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    ReserveBlockSize += JUMP_ALLOCATE_SIZE;
+#endif
 
     // reserve ReserveBlockSize rounded-up to VIRTUAL_ALLOC_RESERVE_GRANULARITY of memory
     ReserveBlockSize = ALIGN_UP(ReserveBlockSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
     if (pInfo->m_loAddr != NULL || pInfo->m_hiAddr != NULL)
     {
-        m_pBaseAddr = ClrVirtualAllocWithinRange(pInfo->m_loAddr, pInfo->m_hiAddr,
-            ReserveBlockSize, MEM_RESERVE, PAGE_NOACCESS);
+        m_pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->ReserveWithinRange(ReserveBlockSize, pInfo->m_loAddr, pInfo->m_hiAddr);
         if (!m_pBaseAddr)
         {
             if (pInfo->getThrowOnOutOfMemoryWithinRange())
@@ -418,7 +423,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
         // top up the ReserveBlockSize to suggested minimum
         ReserveBlockSize = max(ReserveBlockSize, pInfo->getReserveSize());
 
-        m_pBaseAddr = ClrVirtualAllocExecutable(ReserveBlockSize, MEM_RESERVE, PAGE_NOACCESS);
+        m_pBaseAddr = (BYTE*)ExecutableAllocator::Instance()->Reserve(ReserveBlockSize);
         if (!m_pBaseAddr)
             ThrowOutOfMemory();
     }
@@ -428,15 +433,23 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     m_ApproximateLargestBlock = ReserveBlockSize;
     m_pAllocator = pInfo->m_pAllocator;
 
-    TrackAllocation *pTracker = AllocMemory_NoThrow(0, sizeof(HeapList), sizeof(void*), 0);
+    HeapList* pHp = new HeapList;
+
+    TrackAllocation *pTracker = NULL;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+
+    pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
     if (pTracker == NULL)
     {
         // This should only ever happen with fault injection
         _ASSERTE(g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP));
+        delete pHp;
         ThrowOutOfMemory();
     }
 
-    HeapList* pHp = (HeapList *)(pTracker + 1);
+    pHp->CLRPersonalityRoutine = (BYTE *)(pTracker + 1);
+#endif
 
     pHp->hpNext = NULL;
     pHp->pHeap = (PTR_CodeHeap)this;
@@ -444,19 +457,20 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     m_pHeapList = (PTR_HeapList)pHp;
 
     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - size available 0x%p, private data ptr [0x%p, 0x%p]\n",
-        (HostCodeHeap*)this, m_TotalBytesAvailable, pTracker, pTracker->size));
+        (HostCodeHeap*)this, m_TotalBytesAvailable, pTracker, (pTracker ? pTracker->size : 0)));
 
-    // It is imporant to exclude the CLRPersonalityRoutine from the tracked range
-    pHp->startAddress = dac_cast<TADDR>(m_pBaseAddr) + pTracker->size;
+    // It is important to exclude the CLRPersonalityRoutine from the tracked range
+    pHp->startAddress = dac_cast<TADDR>(m_pBaseAddr) + (pTracker ? pTracker->size : 0);
     pHp->mapBase = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
     pHp->pHdrMap = NULL;
     pHp->endAddress = pHp->startAddress;
 
-    pHp->maxCodeHeapSize = m_TotalBytesAvailable - pTracker->size;
+    pHp->maxCodeHeapSize = m_TotalBytesAvailable - (pTracker ? pTracker->size : 0);
     pHp->reserveForJumpStubs = 0;
 
 #ifdef HOST_64BIT
-    emitJump((LPBYTE)pHp->CLRPersonalityRoutine, (void *)ProcessCLRException);
+    ExecutableWriterHolder<BYTE> personalityRoutineWriterHolder(pHp->CLRPersonalityRoutine, 12);
+    emitJump(pHp->CLRPersonalityRoutine, personalityRoutineWriterHolder.GetRW(), (void *)ProcessCLRException);
 #endif
 
     size_t nibbleMapSize = HEAP2MAPSIZE(ROUND_UP_TO_PAGE(pHp->maxCodeHeapSize));
@@ -491,6 +505,14 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
                 // found a block
                 LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Block found, size 0x%X\n", this, pCurrent->size));
 
+                ExecutableWriterHolderNoLog<TrackAllocation> previousWriterHolder;
+                if (pPrevious)
+                {
+                    previousWriterHolder.AssignExecutableWriterHolder(pPrevious, sizeof(TrackAllocation));
+                }
+
+                ExecutableWriterHolder<TrackAllocation> currentWriterHolder(pCurrent, sizeof(TrackAllocation));
+
                 // The space left is not big enough for a new block, let's just
                 // update the TrackAllocation record for the current block
                 if (pCurrent->size - realSize < max(HOST_CODEHEAP_SIZE_ALIGN, sizeof(TrackAllocation)))
@@ -499,7 +521,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
                     // remove current
                     if (pPrevious)
                     {
-                        pPrevious->pNext = pCurrent->pNext;
+                        previousWriterHolder.GetRW()->pNext = pCurrent->pNext;
                     }
                     else
                     {
@@ -510,12 +532,15 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
                 {
                     // create a new TrackAllocation after the memory we just allocated and insert it into the free list
                     TrackAllocation *pNewCurrent = (TrackAllocation*)((BYTE*)pCurrent + realSize);
-                    pNewCurrent->pNext = pCurrent->pNext;
-                    pNewCurrent->size = pCurrent->size - realSize;
+
+                    ExecutableWriterHolder<TrackAllocation> newCurrentWriterHolder(pNewCurrent, sizeof(TrackAllocation));
+                    newCurrentWriterHolder.GetRW()->pNext = pCurrent->pNext;
+                    newCurrentWriterHolder.GetRW()->size = pCurrent->size - realSize;
+
                     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Item changed %p, new size 0x%X\n", this, pNewCurrent, pNewCurrent->size));
                     if (pPrevious)
                     {
-                        pPrevious->pNext = pNewCurrent;
+                        previousWriterHolder.GetRW()->pNext = pNewCurrent;
                     }
                     else
                     {
@@ -523,10 +548,10 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
                     }
 
                     // We only need to update the size of the current block if we are creating a new block
-                    pCurrent->size = realSize;
+                    currentWriterHolder.GetRW()->size = realSize;
                 }
 
-                pCurrent->pHeap = this;
+                currentWriterHolder.GetRW()->pHeap = this;
 
                 LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Allocation returned %p, size 0x%X - data -> %p\n", this, pCurrent, pCurrent->size, pPointer));
                 return pCurrent;
@@ -539,7 +564,7 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocFromFreeList(size_t header, si
     return NULL;
 }
 
-void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert)
+void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocation *pBlockToInsertRW)
 {
     CONTRACTL
     {
@@ -551,10 +576,6 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert)
 
     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Add to FreeList [%p, 0x%X]\n", this, pBlockToInsert, pBlockToInsert->size));
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
     // append to the list in the proper position and coalesce if needed
     if (m_pFreeList)
     {
@@ -565,10 +586,13 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert)
             if (pCurrent > pBlockToInsert)
             {
                 // found the point of insertion
-                pBlockToInsert->pNext = pCurrent;
+                pBlockToInsertRW->pNext = pCurrent;
+                ExecutableWriterHolderNoLog<TrackAllocation> previousWriterHolder;
+
                 if (pPrevious)
                 {
-                    pPrevious->pNext = pBlockToInsert;
+                    previousWriterHolder.AssignExecutableWriterHolder(pPrevious, sizeof(TrackAllocation));
+                    previousWriterHolder.GetRW()->pNext = pBlockToInsert;
                     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%X] -> [%p, 0x%X] -> [%p, 0x%X]\n", this,
                                                                         pPrevious, pPrevious->size,
                                                                         pBlockToInsert, pBlockToInsert->size,
@@ -588,8 +612,8 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert)
                                                                         pBlockToInsert, pBlockToInsert->size,
                                                                         pCurrent, pCurrent->size,
                                                                         pCurrent->size + pBlockToInsert->size));
-                    pBlockToInsert->pNext = pCurrent->pNext;
-                    pBlockToInsert->size += pCurrent->size;
+                    pBlockToInsertRW->pNext = pCurrent->pNext;
+                    pBlockToInsertRW->size += pCurrent->size;
                 }
 
                 if (pPrevious && (BYTE*)pPrevious + pPrevious->size == (BYTE*)pBlockToInsert)
@@ -599,8 +623,8 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert)
                                                                         pPrevious, pPrevious->size,
                                                                         pBlockToInsert, pBlockToInsert->size,
                                                                         pPrevious->size + pBlockToInsert->size));
-                    pPrevious->pNext = pBlockToInsert->pNext;
-                    pPrevious->size += pBlockToInsert->size;
+                    previousWriterHolder.GetRW()->pNext = pBlockToInsert->pNext;
+                    previousWriterHolder.GetRW()->size += pBlockToInsert->size;
                 }
 
                 return;
@@ -609,8 +633,10 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert)
             pCurrent = pCurrent->pNext;
         }
         _ASSERTE(pPrevious && pCurrent == NULL);
-        pBlockToInsert->pNext = NULL;
+        pBlockToInsertRW->pNext = NULL;
         // last in the list
+        ExecutableWriterHolder<TrackAllocation> previousWriterHolder2(pPrevious, sizeof(TrackAllocation));
+
         if ((BYTE*)pPrevious + pPrevious->size == (BYTE*)pBlockToInsert)
         {
             // coalesce with previous
@@ -618,11 +644,11 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert)
                                                                 pPrevious, pPrevious->size,
                                                                 pBlockToInsert, pBlockToInsert->size,
                                                                 pPrevious->size + pBlockToInsert->size));
-            pPrevious->size += pBlockToInsert->size;
+            previousWriterHolder2.GetRW()->size += pBlockToInsert->size;
         }
         else
         {
-            pPrevious->pNext = pBlockToInsert;
+            previousWriterHolder2.GetRW()->pNext = pBlockToInsert;
             LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%X] to end after [%p, 0x%X]\n", this,
                                                                 pBlockToInsert, pBlockToInsert->size,
                                                                 pPrevious, pPrevious->size));
@@ -632,7 +658,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert)
 
     }
     // first in the list
-    pBlockToInsert->pNext = m_pFreeList;
+    pBlockToInsertRW->pNext = m_pFreeList;
     m_pFreeList = pBlockToInsert;
     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap [0x%p] - Insert block [%p, 0x%X] to head\n", this,
                                                         m_pFreeList, m_pFreeList->size));
@@ -667,7 +693,8 @@ void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD al
 
     // Pointer to the TrackAllocation record is stored just before the code header
     CodeHeader * pHdr = (CodeHeader *)pCode - 1;
-    *((TrackAllocation **)(pHdr) - 1) = pTracker;
+    ExecutableWriterHolder<TrackAllocation *> trackerWriterHolder((TrackAllocation **)(pHdr) - 1, sizeof(TrackAllocation *));
+    *trackerWriterHolder.GetRW() = pTracker;
 
     _ASSERTE(pCode + size <= (BYTE*)pTracker + pTracker->size);
 
@@ -728,17 +755,19 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
 
         if (m_pLastAvailableCommittedAddr + sizeToCommit <= m_pBaseAddr + m_TotalBytesAvailable)
         {
-            if (NULL == ClrVirtualAlloc(m_pLastAvailableCommittedAddr, sizeToCommit, MEM_COMMIT, PAGE_EXECUTE_READWRITE))
+            if (NULL == ExecutableAllocator::Instance()->Commit(m_pLastAvailableCommittedAddr, sizeToCommit, true /* isExecutable */))
             {
                 LOG((LF_BCL, LL_ERROR, "CodeHeap [0x%p] - VirtualAlloc failed\n", this));
                 return NULL;
             }
 
             TrackAllocation *pBlockToInsert = (TrackAllocation*)(void*)m_pLastAvailableCommittedAddr;
-            pBlockToInsert->pNext = NULL;
-            pBlockToInsert->size = sizeToCommit;
+            ExecutableWriterHolder<TrackAllocation> blockToInsertWriterHolder(pBlockToInsert, sizeof(TrackAllocation));
+
+            blockToInsertWriterHolder.GetRW()->pNext = NULL;
+            blockToInsertWriterHolder.GetRW()->size = sizeToCommit;
             m_pLastAvailableCommittedAddr += sizeToCommit;
-            AddToFreeList(pBlockToInsert);
+            AddToFreeList(pBlockToInsert, blockToInsertWriterHolder.GetRW());
             pTracker = AllocFromFreeList(header, size, alignment, reserveForJumpStubs);
             _ASSERTE(pTracker != NULL);
         }
@@ -824,7 +853,8 @@ void HostCodeHeap::FreeMemForCode(void * codeStart)
     LIMITED_METHOD_CONTRACT;
 
     TrackAllocation *pTracker = HostCodeHeap::GetTrackAllocation((TADDR)codeStart);
-    AddToFreeList(pTracker);
+    ExecutableWriterHolder<TrackAllocation> trackerWriterHolder(pTracker, sizeof(TrackAllocation));
+    AddToFreeList(pTracker, trackerWriterHolder.GetRW());
 
     m_ApproximateLargestBlock += pTracker->size;
 
@@ -857,8 +887,8 @@ void DynamicMethodDesc::Destroy()
     // The m_pSig and m_pszMethodName need to be destroyed after the GetLCGMethodResolver()->Destroy() call
     // otherwise the EEJitManager::CodeHeapIterator could return DynamicMethodDesc with these members NULLed, but
     // the nibble map for the corresponding code memory indicating that this DynamicMethodDesc is still alive.
-    PCODE pSig = m_pSig.GetValue();
-    PTR_CUTF8 pszMethodName = m_pszMethodName.GetValue();
+    PCODE pSig = m_pSig;
+    PTR_CUTF8 pszMethodName = m_pszMethodName;
 
     GetLCGMethodResolver()->Destroy();
     // The current DynamicMethodDesc storage is destroyed at this point
@@ -971,7 +1001,7 @@ void LCGMethodResolver::Destroy()
         // we cannot use GetGlobalStringLiteralMap() here because it might throw
         CrstHolder gch(pStringLiteralMap->GetHashTableCrstGlobal());
 
-        // Access to m_DynamicStringLiterals doesn't need to be syncrhonized because
+        // Access to m_DynamicStringLiterals doesn't need to be synchronized because
         // this can be run in only one thread: the finalizer thread.
         while (m_DynamicStringLiterals != NULL)
         {
@@ -979,13 +1009,6 @@ void LCGMethodResolver::Destroy()
             m_DynamicStringLiterals = m_DynamicStringLiterals->m_pNext;
         }
     }
-
-    // Note that we need to do this before m_jitTempData is deleted
-    RecycleIndCells();
-
-    m_jitMetaHeap.Delete();
-    m_jitTempData.Delete();
-
 
     if (m_recordCodePointer)
     {
@@ -1019,6 +1042,12 @@ void LCGMethodResolver::Destroy()
         delete m_pJumpStubCache;
         m_pJumpStubCache = NULL;
     }
+
+    // Note that we need to do this before m_jitTempData is deleted
+    RecycleIndCells();
+
+    m_jitMetaHeap.Delete();
+    m_jitTempData.Delete();
 
     if (m_managedResolver)
     {
@@ -1200,26 +1229,11 @@ LCGMethodResolver::IsValidStringRef(mdToken metaTok)
     return GetStringLiteral(metaTok) != NULL;
 }
 
-int
-LCGMethodResolver::GetStringLiteralLength(mdToken metaTok)
-{
-    STANDARD_VM_CONTRACT;
-
-    GCX_COOP();
-
-    STRINGREF str = GetStringLiteral(metaTok);
-    if (str != NULL)
-    {
-        return str->GetStringLength();
-    }
-    return -1;
-}
-
 //---------------------------------------------------------------------------------------
 //
 STRINGREF
 LCGMethodResolver::GetStringLiteral(
-    mdToken token)
+    mdToken metaTok)
 {
     CONTRACTL {
         THROWS;
@@ -1234,7 +1248,7 @@ LCGMethodResolver::GetStringLiteral(
 
     ARG_SLOT args[] = {
         ObjToArgSlot(resolver),
-        token,
+        metaTok,
     };
     return getStringLiteral.Call_RetSTRINGREF(args);
 }

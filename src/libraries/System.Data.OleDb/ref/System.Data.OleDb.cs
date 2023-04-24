@@ -32,6 +32,7 @@ namespace System.Data.OleDb
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DefaultValueAttribute(true)]
         [System.ComponentModel.DesignOnlyAttribute(true)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override bool DesignTimeVisible { get { throw null; } set { } }
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public new System.Data.OleDb.OleDbParameterCollection Parameters { get { throw null; } }
@@ -120,6 +121,7 @@ namespace System.Data.OleDb
         public override System.Data.DataTable GetSchema(string collectionName, string?[]? restrictionValues) { throw null; }
         public override void Open() { }
         public static void ReleaseObjectPool() { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public void ResetState() { }
         object System.ICloneable.Clone() { throw null; }
     }
@@ -179,7 +181,7 @@ namespace System.Data.OleDb
         public int Fill(System.Data.DataTable dataTable, object ADODBRecordSet) { throw null; }
         protected override void OnRowUpdated(System.Data.Common.RowUpdatedEventArgs value) { }
         protected override void OnRowUpdating(System.Data.Common.RowUpdatingEventArgs value) { }
-        object? System.ICloneable.Clone() { throw null; }
+        object System.ICloneable.Clone() { throw null; }
     }
     public sealed partial class OleDbDataReader : System.Data.Common.DbDataReader
     {
@@ -196,8 +198,10 @@ namespace System.Data.OleDb
         public override bool GetBoolean(int ordinal) { throw null; }
         public override byte GetByte(int ordinal) { throw null; }
         public override long GetBytes(int ordinal, long dataIndex, byte[]? buffer, int bufferIndex, int length) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override char GetChar(int ordinal) { throw null; }
         public override long GetChars(int ordinal, long dataIndex, char[]? buffer, int bufferIndex, int length) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public new System.Data.OleDb.OleDbDataReader GetData(int ordinal) { throw null; }
         public override string GetDataTypeName(int index) { throw null; }
         public override System.DateTime GetDateTime(int ordinal) { throw null; }
@@ -255,6 +259,10 @@ namespace System.Data.OleDb
         internal OleDbException() { }
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public System.Data.OleDb.OleDbErrorCollection Errors { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
     }
     public sealed partial class OleDbFactory : System.Data.Common.DbProviderFactory
@@ -336,7 +344,9 @@ namespace System.Data.OleDb
         public OleDbParameter() { }
         public OleDbParameter(string? name, System.Data.OleDb.OleDbType dataType) { }
         public OleDbParameter(string? name, System.Data.OleDb.OleDbType dataType, int size) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public OleDbParameter(string? parameterName, System.Data.OleDb.OleDbType dbType, int size, System.Data.ParameterDirection direction, bool isNullable, byte precision, byte scale, string? srcColumn, System.Data.DataRowVersion srcVersion, object? value) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public OleDbParameter(string? parameterName, System.Data.OleDb.OleDbType dbType, int size, System.Data.ParameterDirection direction, byte precision, byte scale, string? sourceColumn, System.Data.DataRowVersion sourceVersion, bool sourceColumnNullMapping, object? value) { }
         public OleDbParameter(string? name, System.Data.OleDb.OleDbType dataType, int size, string? srcColumn) { }
         public OleDbParameter(string? name, object? value) { }
@@ -363,7 +373,7 @@ namespace System.Data.OleDb
         public override object? Value { get { throw null; } set { } }
         public override void ResetDbType() { }
         public void ResetOleDbType() { }
-        object? System.ICloneable.Clone() { throw null; }
+        object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
     }
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBParametersEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -386,6 +396,8 @@ namespace System.Data.OleDb
         public System.Data.OleDb.OleDbParameter Add(string? parameterName, System.Data.OleDb.OleDbType oleDbType) { throw null; }
         public System.Data.OleDb.OleDbParameter Add(string? parameterName, System.Data.OleDb.OleDbType oleDbType, int size) { throw null; }
         public System.Data.OleDb.OleDbParameter Add(string? parameterName, System.Data.OleDb.OleDbType oleDbType, int size, string? sourceColumn) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("Add(String parameterName, Object value) has been deprecated. Use AddWithValue(String parameterName, Object value) instead.")]
         public System.Data.OleDb.OleDbParameter Add(string? parameterName, object? value) { throw null; }
         public override void AddRange(System.Array values) { }
         public void AddRange(System.Data.OleDb.OleDbParameter[] values) { }

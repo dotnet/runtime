@@ -14,22 +14,30 @@ namespace System.IO.Tests
         public static void NullArgs_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamReader((string)null));
-            AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamReader((string)null, null));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamReader((string)null, (FileStreamOptions)null));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamReader((string)null, (Encoding)null));
             AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamReader((string)null, null, true));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamReader((string)null, null, true, null));
             AssertExtensions.Throws<ArgumentNullException>("path", () => new StreamReader((string)null, null, true, -1));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("", null));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("", null, true));
-            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("", null, true, -1));
+            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("path", (Encoding)null));
+            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("path", null, true));
+            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("path", null, true, null));
+            AssertExtensions.Throws<ArgumentNullException>("encoding", () => new StreamReader("path", null, true, -1));
+            AssertExtensions.Throws<ArgumentNullException>("options", () => new StreamReader("path", (FileStreamOptions)null));
+            AssertExtensions.Throws<ArgumentNullException>("options", () => new StreamReader("path", Encoding.UTF8, true, null));
+
         }
 
         [Fact]
         public static void EmptyPath_ThrowsArgumentException()
         {
             // No argument name for the empty path exception
-            AssertExtensions.Throws<ArgumentException>(null, () => new StreamReader(""));
-            AssertExtensions.Throws<ArgumentException>(null, () => new StreamReader("", Encoding.UTF8));
-            AssertExtensions.Throws<ArgumentException>(null, () => new StreamReader("", Encoding.UTF8, true));
-            AssertExtensions.Throws<ArgumentException>(null, () => new StreamReader("", Encoding.UTF8, true, -1));
+            AssertExtensions.Throws<ArgumentException>("path", () => new StreamReader(""));
+            AssertExtensions.Throws<ArgumentException>("path", () => new StreamReader("", new FileStreamOptions()));
+            AssertExtensions.Throws<ArgumentException>("path", () => new StreamReader("", Encoding.UTF8));
+            AssertExtensions.Throws<ArgumentException>("path", () => new StreamReader("", Encoding.UTF8, true));
+            AssertExtensions.Throws<ArgumentException>("path", () => new StreamReader("", Encoding.UTF8, true, new FileStreamOptions()));
+            AssertExtensions.Throws<ArgumentException>("path", () => new StreamReader("", Encoding.UTF8, true, -1));
         }
 
         [Fact]
@@ -37,6 +45,16 @@ namespace System.IO.Tests
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamReader("path", Encoding.UTF8, true, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("bufferSize", () => new StreamReader("path", Encoding.UTF8, true, 0));
+        }
+
+        [Fact]
+        public static void LackOfReadAccess_ThrowsArgumentException()
+        {
+            var noReadAccess = new FileStreamOptions { Access = FileAccess.Write };
+
+            AssertExtensions.Throws<ArgumentException>("options", () => new StreamReader("path", noReadAccess));
+            AssertExtensions.Throws<ArgumentException>("options", () => new StreamReader("path", Encoding.UTF8, false, noReadAccess));
+            AssertExtensions.Throws<ArgumentException>("options", () => new StreamReader("path", Encoding.UTF8, true, noReadAccess));
         }
 
         [Theory]

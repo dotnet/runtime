@@ -49,7 +49,7 @@ Combine: MonoDefaults, GENERATE_GET_CLASS_WITH_CACHE, TYPED_HANDLE_DECL and frie
 
 /*
  * NOTE: Async suspend
- * 
+ *
  * If we are running with cooperative GC, all the handle stack
  * manipulation will complete before a GC thread scans the handle
  * stack. If we are using async suspend, however, a thread may be
@@ -149,7 +149,7 @@ mono_handle_chunk_leak_check (HandleStack *handles) {
 
 // There are deliberately locals and a constant NULL global with this same name.
 #ifdef __cplusplus
-extern MonoThreadInfo * const mono_thread_info_current_var = NULL;
+MonoThreadInfo * const mono_thread_info_current_var = NULL;
 #else
 MonoThreadInfo * const mono_thread_info_current_var = NULL;
 #endif
@@ -246,36 +246,6 @@ mono_handle_stack_free (HandleStack *stack)
 	free_handle_stack (stack);
 }
 
-void
-mono_handle_stack_free_domain (HandleStack *stack, MonoDomain *domain)
-{
-	/* Called by the GC while clearing out objects of the given domain from the heap. */
-	/* If there are no handles-related bugs, there is nothing to do: if a
-	 * thread accessed objects from the domain it was aborted, so any
-	 * threads left alive cannot have any handles that point into the
-	 * unloading domain.  However if there is a handle leak, the handle stack is not */
-	if (!stack)
-		return;
-	/* Root domain only unloaded when mono is shutting down, don't need to check anything */
-	if (domain == mono_get_root_domain () || mono_runtime_is_shutting_down ())
-		return;
-	HandleChunk *cur = stack->bottom;
-	HandleChunk *last = stack->top;
-	if (!cur)
-		return;
-	while (cur) {
-		for (int idx = 0; idx < cur->size; ++idx) {
-			HandleChunkElem *elem = &cur->elems[idx];
-			if (!elem->o)
-				continue;
-			g_assert (mono_object_domain (elem->o) != domain);
-		}
-		if (cur == last)
-			break;
-		cur = cur->next;
-	}
-}
-
 static void
 check_handle_stack_monotonic (HandleStack *stack)
 {
@@ -362,7 +332,7 @@ mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, c
 /*
  * Pop the stack until @stackmark and make @value the top value.
  *
- * @return the new handle for what @value points to 
+ * @return the new handle for what @value points to
  */
 MonoRawHandle
 mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, MonoRawHandle value)
@@ -452,7 +422,7 @@ mono_object_handle_pin_unbox (MonoObjectHandle obj, MonoGCHandle *gchandle)
 void
 mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArrayHandle src, uintptr_t src_idx, uintptr_t len)
 {
-	mono_array_memcpy_refs_internal (MONO_HANDLE_RAW (dest), dest_idx, MONO_HANDLE_RAW (src), src_idx, len);
+	mono_array_memcpy_refs_internal (MONO_HANDLE_RAW (dest), dest_idx, MONO_HANDLE_RAW (src), src_idx, GUINTPTR_TO_INT (len));
 }
 
 gboolean

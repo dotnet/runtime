@@ -117,8 +117,11 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+  <data name="ArgumentOutOfRange_IndexMustBeLess" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexMustBeLessOrEqual" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than or equal to the size of the collection.</value>
   </data>
   <data name="Arg_EmptyOrNullString" xml:space="preserve">
     <value>String cannot be empty or null.</value>
@@ -133,7 +136,7 @@
     <value>A Cipher Data element should have either a CipherValue or a CipherReference element.</value>
   </data>
   <data name="Cryptography_Xml_CreateHashAlgorithmFailed" xml:space="preserve">
-    <value>Could not create hash algorithm object.</value>
+    <value>Could not create hash algorithm object. If the application has been trimmed, ensure the required algorithm implementations are preserved.</value>
   </data>
   <data name="Cryptography_Xml_CreateTransformFailed" xml:space="preserve">
     <value>Could not create the XML transformation identified by the URI {0}.</value>
@@ -181,7 +184,7 @@
     <value>Signing key is not loaded.</value>
   </data>
   <data name="Cryptography_Xml_MissingAlgorithm" xml:space="preserve">
-    <value>Symmetric algorithm is not specified.</value>
+    <value>Symmetric algorithm is not specified. If the application has been trimmed, ensure the required algorithm implementations are preserved.</value>
   </data>
   <data name="Cryptography_Xml_MissingCipherData" xml:space="preserve">
     <value>Cipher data is not specified.</value>
@@ -389,5 +392,11 @@
   </data>
   <data name="WrongRootElement" xml:space="preserve">
     <value>Root element must be {0} element in namespace {1}</value>
+  </data>
+  <data name="Cryptography_Xml_EntityResolutionNotSupported" xml:space="preserve">
+    <value>External entity resolution is not supported.</value>
+  </data>
+  <data name="Cryptography_Xml_XsltRequiresDynamicCode" xml:space="preserve">
+    <value>Xslts are only supported when dynamic code is supported.</value>
   </data>
 </root>

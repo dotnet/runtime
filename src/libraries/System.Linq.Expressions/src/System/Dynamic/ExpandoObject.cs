@@ -300,7 +300,7 @@ namespace System.Dynamic
         #region Helper methods
         private void TryAddMember(string key, object? value)
         {
-            ContractUtils.RequiresNotNull(key, nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
             // Pass null to the class, which forces lookup.
             TrySetValue(null, -1, value, key, ignoreCase: false, add: true);
         }
@@ -328,7 +328,7 @@ namespace System.Dynamic
 
             public KeyCollectionDebugView(ICollection<string> collection)
             {
-                ContractUtils.RequiresNotNull(collection, nameof(collection));
+                ArgumentNullException.ThrowIfNull(collection);
                 _collection = collection;
             }
 
@@ -396,7 +396,7 @@ namespace System.Dynamic
 
             public void CopyTo(string[] array, int arrayIndex)
             {
-                ContractUtils.RequiresNotNull(array, nameof(array));
+                ArgumentNullException.ThrowIfNull(array);
                 ContractUtils.RequiresArrayRange(array, arrayIndex, _expandoCount, nameof(arrayIndex), nameof(Count));
                 lock (_expando.LockObject)
                 {
@@ -467,7 +467,7 @@ namespace System.Dynamic
 
             public ValueCollectionDebugView(ICollection<object> collection)
             {
-                ContractUtils.RequiresNotNull(collection, nameof(collection));
+                ArgumentNullException.ThrowIfNull(collection);
                 _collection = collection;
             }
 
@@ -546,7 +546,7 @@ namespace System.Dynamic
 
             public void CopyTo(object?[] array, int arrayIndex)
             {
-                ContractUtils.RequiresNotNull(array, nameof(array));
+                ArgumentNullException.ThrowIfNull(array);
                 ContractUtils.RequiresArrayRange(array, arrayIndex, _expandoCount, nameof(arrayIndex), nameof(Count));
                 lock (_expando.LockObject)
                 {
@@ -630,7 +630,7 @@ namespace System.Dynamic
             }
             set
             {
-                ContractUtils.RequiresNotNull(key, nameof(key));
+                ArgumentNullException.ThrowIfNull(key);
                 // Pass null to the class, which forces lookup.
                 TrySetValue(null, -1, value, key, ignoreCase: false, add: false);
             }
@@ -643,7 +643,7 @@ namespace System.Dynamic
 
         bool IDictionary<string, object?>.ContainsKey(string key)
         {
-            ContractUtils.RequiresNotNull(key, nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             ExpandoData data = _data;
             int index = data.Class.GetValueIndexCaseSensitive(key);
@@ -652,7 +652,7 @@ namespace System.Dynamic
 
         bool IDictionary<string, object?>.Remove(string key)
         {
-            ContractUtils.RequiresNotNull(key, nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
             // Pass null to the class, which forces lookup.
             return TryDeleteValue(null, -1, key, ignoreCase: false, deleteValue: Uninitialized);
         }
@@ -712,7 +712,7 @@ namespace System.Dynamic
 
         void ICollection<KeyValuePair<string, object?>>.CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
         {
-            ContractUtils.RequiresNotNull(array, nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
 
             // We want this to be atomic and not throw, though we must do the range checks inside this lock.
             lock (LockObject)
@@ -825,7 +825,7 @@ namespace System.Dynamic
 
             public override DynamicMetaObject BindGetMember(GetMemberBinder binder)
             {
-                ContractUtils.RequiresNotNull(binder, nameof(binder));
+                ArgumentNullException.ThrowIfNull(binder);
                 return BindGetOrInvokeMember(
                     binder,
                     binder.Name,
@@ -837,7 +837,7 @@ namespace System.Dynamic
 
             public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
             {
-                ContractUtils.RequiresNotNull(binder, nameof(binder));
+                ArgumentNullException.ThrowIfNull(binder);
                 return BindGetOrInvokeMember(
                     binder,
                     binder.Name,
@@ -849,8 +849,8 @@ namespace System.Dynamic
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
             {
-                ContractUtils.RequiresNotNull(binder, nameof(binder));
-                ContractUtils.RequiresNotNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(binder);
+                ArgumentNullException.ThrowIfNull(value);
 
                 ExpandoClass klass;
                 int index;
@@ -878,7 +878,7 @@ namespace System.Dynamic
 
             public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder binder)
             {
-                ContractUtils.RequiresNotNull(binder, nameof(binder));
+                ArgumentNullException.ThrowIfNull(binder);
 
                 int index = Value.Class.GetValueIndex(binder.Name, binder.IgnoreCase, Value);
 
@@ -1152,7 +1152,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="ignoreCase">true if the name should be matched ignoring case; false otherwise.</param>
         /// <param name="value">The out parameter containing the value of the member.</param>
         /// <returns>True if the member exists in the expando object, otherwise false.</returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("RuntimeOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool ExpandoTryGetValue(ExpandoObject expando, object? indexClass, int index, string name, bool ignoreCase, out object? value)
         {
             return expando.TryGetValue(indexClass, index, name, ignoreCase, out value);
@@ -1170,7 +1170,7 @@ namespace System.Runtime.CompilerServices
         /// <returns>
         /// Returns the index for the set member.
         /// </returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("RuntimeOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static object? ExpandoTrySetValue(ExpandoObject expando, object? indexClass, int index, object? value, string name, bool ignoreCase)
         {
             expando.TrySetValue(indexClass, index, value, name, ignoreCase, false);
@@ -1186,7 +1186,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="name">The name of the member.</param>
         /// <param name="ignoreCase">true if the name should be matched ignoring case; false otherwise.</param>
         /// <returns>true if the item was successfully removed; otherwise, false.</returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("RuntimeOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool ExpandoTryDeleteValue(ExpandoObject expando, object? indexClass, int index, string name, bool ignoreCase)
         {
             return expando.TryDeleteValue(indexClass, index, name, ignoreCase, ExpandoObject.Uninitialized);
@@ -1198,7 +1198,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="expando">The expando object.</param>
         /// <param name="version">The version to check.</param>
         /// <returns>true if the version is equal; otherwise, false.</returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("RuntimeOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool ExpandoCheckVersion(ExpandoObject expando, object? version)
         {
             return expando.Class == version;
@@ -1210,7 +1210,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="expando">The expando object.</param>
         /// <param name="oldClass">The old class of the expando object.</param>
         /// <param name="newClass">The new class of the expando object.</param>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("RuntimeOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void ExpandoPromoteClass(ExpandoObject expando, object oldClass, object newClass)
         {
             expando.PromoteClass(oldClass, newClass);

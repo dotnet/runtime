@@ -10,6 +10,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -163,20 +164,18 @@ namespace System.Threading.Tasks.Dataflow.Internal
             {
                 // Create a new consumption task and try to set it as current as long as there's still no other task
                 var newConsumer = new Task(
-                    state => ((SpscTargetCore<TInput>)state!).ProcessMessagesLoopCore(),
+                    static state => ((SpscTargetCore<TInput>)state!).ProcessMessagesLoopCore(),
                     this, CancellationToken.None, Common.GetCreationOptionsForTask(isReplica));
                 if (Interlocked.CompareExchange(ref _activeConsumer, newConsumer, null) == null)
                 {
                     // We won the race.  This task is now the consumer.
 
-#if FEATURE_TRACING
                     DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                     if (etwLog.IsEnabled())
                     {
                         etwLog.TaskLaunchedForMessageHandling(
                             _owningTarget, newConsumer, DataflowEtwProvider.TaskLaunchedReason.ProcessingInputMessages, _messages.Count);
                     }
-#endif
 
                     // Start the task.  In the erroneous case where the scheduler throws an exception,
                     // just allow it to propagate. Our other option would be to fault the block with
@@ -310,7 +309,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // by the producer and consumer, a producer calling Fault and the
             // processing task processing the user delegate which might throw.
 #pragma warning disable 0420
-            lock (LazyInitializer.EnsureInitialized(ref _exceptions, () => new List<Exception>()))
+            lock (LazyInitializer.EnsureInitialized(ref _exceptions, static () => new List<Exception>()))
 #pragma warning restore 0420
             {
                 _exceptions.Add(exception);
@@ -325,8 +324,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Debug.Assert(_completionReserved, "Should only invoke once completion has been reserved.");
 
             // Dump any messages that might remain in the queue, which could happen if we completed due to exceptions.
-            TInput? dumpedMessage;
-            while (_messages.TryDequeue(out dumpedMessage)) ;
+            while (_messages.TryDequeue(out _)) ;
 
             // Complete the completion task
             bool result;
@@ -346,13 +344,11 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // seeing _activeTask as null and queueing a new consumer task even
             // though the block has completed.
 
-#if FEATURE_TRACING
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCompleted(_owningTarget);
             }
-#endif
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Completion"]/*' />
@@ -361,7 +357,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Gets the lazily-initialized completion source.</summary>
         private TaskCompletionSource<VoidResult> CompletionSource
         {
-            get { return LazyInitializer.EnsureInitialized(ref _completionTask, () => new TaskCompletionSource<VoidResult>()); }
+            get { return LazyInitializer.EnsureInitialized(ref _completionTask, static () => new TaskCompletionSource<VoidResult>()); }
         }
 
         /// <summary>Gets the DataflowBlockOptions used to configure this block.</summary>

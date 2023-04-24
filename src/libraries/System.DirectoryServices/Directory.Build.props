@@ -1,22 +1,7 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <!-- this assembly is inbox in desktop, do not version it unless you
-         plan on shipping a new desktop version out of band. Instead add API
-         to a different assembly. -->
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
-    <PackageDescription>Provides easy access to Active Directory Domain Services.
-
-Commonly Used Types:
-System.DirectoryServices.DirectoryEntry
-System.DirectoryServices.DirectorySearcher
-System.DirectoryServices.ActiveDirectory.ActiveDirectorySite
-System.DirectoryServices.ActiveDirectory.ApplicationPartition
-System.DirectoryServices.ActiveDirectory.DirectoryContext
-System.DirectoryServices.ActiveDirectory.DirectoryServer
-System.DirectoryServices.ActiveDirectory.Domain
-System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
   </PropertyGroup>
 </Project>

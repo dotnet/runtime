@@ -1,8 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Dynamic;
+using System.Globalization;
+using System.Tests;
 using System.Text.Json.Serialization.Samples;
 using Xunit;
 using static System.Text.Json.Serialization.Samples.JsonSerializerExtensions;
@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Tests
             Hello = 77
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void VerifyPrimitives()
         {
             var options = new JsonSerializerOptions();
@@ -59,15 +59,15 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonDynamicNumber>(obj);
 
             double dbl = (double)obj;
-#if !BUILDING_INBOX_LIBRARY
-            string temp = dbl.ToString();
+#if !NETCOREAPP
+            string temp = dbl.ToString(System.Globalization.CultureInfo.InvariantCulture);
             // The reader uses "G17" format which causes temp to be 4.2000000000000002 in this case.
             dbl = double.Parse(temp, System.Globalization.CultureInfo.InvariantCulture);
 #endif
             Assert.Equal(4.2, dbl);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void VerifyArray()
         {
             var options = new JsonSerializerOptions();
@@ -97,14 +97,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(10, (int)obj.MyArray[0]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void JsonDynamicTypes_Serialize()
         {
             var options = new JsonSerializerOptions();
             options.EnableDynamicTypes();
 
             // Guid (string)
-            string GuidJson = $"{DynamicTests.MyGuid.ToString("D")}";
+            string GuidJson = $"{DynamicTests.MyGuid:D}";
             string GuidJsonWithQuotes = $"\"{GuidJson}\"";
 
             dynamic dynamicString = new JsonDynamicString(GuidJson, options);
@@ -149,7 +149,7 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual("{\"One\":1,\"Two\":2}", json);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void JsonDynamicTypes_Deserialize()
         {
             var options = new JsonSerializerOptions();
@@ -164,7 +164,7 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializer.Deserialize<JsonDynamicString>("\"str\"", options);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void JsonDynamicTypes_Deserialize_AsObject()
         {
             var options = new JsonSerializerOptions();
@@ -181,7 +181,7 @@ namespace System.Text.Json.Serialization.Tests
         /// <summary>
         /// Use a mutable DOM with the 'dynamic' keyword.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void VerifyMutableDom_UsingDynamicKeyword()
         {
             var options = new JsonSerializerOptions();
@@ -221,7 +221,7 @@ namespace System.Text.Json.Serialization.Tests
         /// <summary>
         /// Use a mutable DOM without the 'dynamic' keyword.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void VerifyMutableDom_WithoutUsingDynamicKeyword()
         {
             var options = new JsonSerializerOptions();
@@ -263,7 +263,7 @@ namespace System.Text.Json.Serialization.Tests
         /// Use a mutable DOM without the 'dynamic' keyword and use round-trippable values
         /// meaning the 'JsonDynamicType' values are used instead of raw primitives.
         /// </summary>
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void VerifyMutableDom_WithoutUsingDynamicKeyword_JsonDynamicType()
         {
             var options = new JsonSerializerOptions();
@@ -306,7 +306,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void DynamicObject_MissingProperty()
         {
             var options = new JsonSerializerOptions();
@@ -317,7 +317,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(null, obj.NonExistingProperty);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void DynamicObject_CaseSensitivity()
         {
             var options = new JsonSerializerOptions();
@@ -338,7 +338,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(42, (int)obj.MYPROPERTY);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void NamingPoliciesAreNotUsed()
         {
             const string Json = "{\"myProperty\":42}";
@@ -353,7 +353,7 @@ namespace System.Text.Json.Serialization.Tests
             JsonTestHelper.AssertJsonEqual(Json, json);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void NullHandling()
         {
             var options = new JsonSerializerOptions();
@@ -363,7 +363,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(obj);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void QuotedNumbers_Deserialize()
         {
             var options = new JsonSerializerOptions();
@@ -377,11 +377,14 @@ namespace System.Text.Json.Serialization.Tests
 
             obj = JsonSerializer.Deserialize<dynamic>("\"NaN\"", options);
             Assert.IsType<JsonDynamicString>(obj);
-            Assert.Equal(double.NaN, (double)obj);
-            Assert.Equal(float.NaN, (float)obj);
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            {
+                Assert.Equal(double.NaN, (double)obj);
+                Assert.Equal(float.NaN, (float)obj);
+            }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public static void QuotedNumbers_Serialize()
         {
             var options = new JsonSerializerOptions();

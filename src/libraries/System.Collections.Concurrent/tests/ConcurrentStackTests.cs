@@ -63,6 +63,37 @@ namespace System.Collections.Concurrent.Tests
             Assert.True(s.IsEmpty);
         }
 
+        [Fact]
+        public void PushRange_NoItems_NothingAdded_EmptyArrayWithRangeSpecified()
+        {
+            var s = new ConcurrentStack<int>();
+            Assert.True(s.IsEmpty);
+
+            s.PushRange(new int[0], 0, 0);
+            Assert.True(s.IsEmpty);
+        }
+
+        [Fact]
+        public void PushRange_NoItems_NothingAdded_NonEmptyArrayWithZeroCountSpecified()
+        {
+            var s = new ConcurrentStack<int>();
+            Assert.True(s.IsEmpty);
+
+            int[] arr = new int[2];
+            s.PushRange(arr, arr.Length, 0);
+            Assert.True(s.IsEmpty);
+        }
+
+        [Fact]
+        public void PushRange_NoItems_NothingAdded_EmptyArrayNoRangeSpecified()
+        {
+            var s = new ConcurrentStack<int>();
+            Assert.True(s.IsEmpty);
+
+            s.PushRange(new int[0]);
+            Assert.True(s.IsEmpty);
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(8, 10)]
         [InlineData(16, 100)]
@@ -134,6 +165,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.PushRange(new int[1], 0, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.PushRange(new int[1], -1, 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.PushRange(new int[1], 2, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => stack.PushRange(new int[0], 0, 1));
             AssertExtensions.Throws<ArgumentException>(null, () => stack.PushRange(new int[1], 0, 10));
         }
 
@@ -147,6 +179,34 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.TryPopRange(new int[1], -1, 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.TryPopRange(new int[1], 2, 1));
             AssertExtensions.Throws<ArgumentException>(null, () => stack.TryPopRange(new int[1], 0, 10));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void Concurrent_Push_TryPop_WithSuspensions()
+        {
+            int items = 10;
+            var q = new ConcurrentStack<int>();
+
+            // Consumer dequeues items until it sees last pushed item regardless of order
+            Task consumer = Task.Run(() =>
+            {
+                while (!q.TryPop(out var item) || item != items) ;
+            });
+
+            // Producer queues the expected number of items
+            Task producer = Task.Run(() =>
+            {
+                for (int i = 1; i <= items; i++)
+                {
+                    q.Push(i);
+
+                    // Triggers EE suspensions. We should still make quick progress.
+                    // See https://github.com/dotnet/runtime/issues/67559 for kinds of issues we look for.
+                    GC.GetTotalAllocatedBytes(precise: true);
+                }
+            });
+
+            Task.WaitAll(producer, consumer);
         }
 
         protected sealed class StackOracle : IProducerConsumerCollection<int>

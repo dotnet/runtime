@@ -6,13 +6,15 @@ using System.Threading;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 /// <summary>
 /// Verifies passing an invalid handle (not overlapped) to BindHandle works as expected
 /// </summary>
-class BindHandleInvalid3
+public class BindHandleInvalid3
 {
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         return (new BindHandleInvalid3().RunTest());
     }
@@ -35,14 +37,14 @@ class BindHandleInvalid3
             }
             catch (Exception ex)
             {
-                if (ex.ToString().IndexOf("0x80070057") != -1) // E_INVALIDARG, the handle isn't overlapped
+                if ((uint)ex.HResult == (uint)0x80070057) // E_INVALIDARG, the handle isn't overlapped
                 {
                     Console.WriteLine("Test passed");
                     return (100);
                 }
                 else
                 {
-                    Console.WriteLine("Got wrong error: {0}", ex);
+                    Console.WriteLine($"Got wrong error - HResult: 0x{ex.HResult:x}, Exception: {ex}");
                 }
             }
         }

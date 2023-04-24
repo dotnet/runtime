@@ -16,16 +16,10 @@
     <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
   </PropertyGroup>
 
-  <!-- Set up the default output and intermediate paths -->
+  <!-- Construct the path to the sign project, so that signing can be called during prepare-artifacts -->
   <PropertyGroup>
-    <OSPlatformConfig>$(OutputRid).$(Configuration)</OSPlatformConfig>
-    <BaseOutputRootPath>$(ArtifactsBinDir)$(OSPlatformConfig)\</BaseOutputRootPath>
-    <IntermediateOutputRootPath>$(ArtifactsObjDir)$(OSPlatformConfig)\</IntermediateOutputRootPath>
-
-    <!-- Produce assets into the specified blob feed. -->
-    <AssetOutputPath Condition="'$(DotNetOutputBlobFeedDir)' != ''">$(DotNetOutputBlobFeedDir)assets/</AssetOutputPath>
-    <AssetOutputPath Condition="'$(AssetOutputPath)'==''">$(ArtifactsShippingPackagesDir)</AssetOutputPath>
-
-    <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(ArtifactsShippingPackagesDir)</SymbolPackageOutputPath>
+    <ArcadeSdkMSBuildProjectDir>$([System.IO.Path]::GetDirectoryName('$(ArcadeSdkBuildTasksAssembly)'))\..\</ArcadeSdkMSBuildProjectDir>
+    <ArcadeSdkSignProject>$(ArcadeSdkMSBuildProjectDir)Sign.proj</ArcadeSdkSignProject>
   </PropertyGroup>
+
 </Project>

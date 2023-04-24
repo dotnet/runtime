@@ -1,8 +1,15 @@
 cmake_minimum_required(VERSION 3.6.2)
 
-cmake_policy(SET CMP0042 NEW)
+cmake_policy(SET CMP0042 NEW) # MACOSX_RPATH is enabled by default.
+
+if (CMAKE_VERSION VERSION_GREATER 3.7 OR CMAKE_VERSION VERSION_EQUAL 3.7)
+  cmake_policy(SET CMP0066 NEW) # Honor per-config flags in try_compile() source-file signature.
+endif()
+if (CMAKE_VERSION VERSION_GREATER 3.8 OR CMAKE_VERSION VERSION_EQUAL 3.8)
+  cmake_policy(SET CMP0067 NEW) # Honor language standard in try_compile() source-file signature
+endif()
 if (CMAKE_VERSION VERSION_GREATER 3.15 OR CMAKE_VERSION VERSION_EQUAL 3.15)
-  cmake_policy(SET CMP0091 NEW)
+  cmake_policy(SET CMP0091 NEW) # MSVC runtime library flags are selected by an abstraction.
 endif()
 
 # Set the project name
@@ -10,6 +17,8 @@ project(CoreCLR)
 
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
+
+include_directories("${CLR_SRC_NATIVE_DIR}")
 
 if(MSVC)
   set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.
@@ -20,7 +29,6 @@ set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(VM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vm)
 set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/inc)
 set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
-set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 set(PAL_REDEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/dlls/mscordac/palredefines.S)
 
 # Avoid logging when skipping up-to-date copies
@@ -31,6 +39,10 @@ if(CORECLR_SET_RPATH)
     # Enable @rpath support for shared libraries.
     set(MACOSX_RPATH ON)
 endif(CORECLR_SET_RPATH)
+
+if(CLR_CMAKE_HOST_MACCATALYST OR CLR_CMAKE_HOST_IOS OR CLR_CMAKE_HOST_TVOS)
+  set(FEATURE_EVENT_TRACE 0)
+endif()
 
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 
@@ -76,12 +88,7 @@ endif()
 #-------------------------------
 if(NOT CLR_CROSS_COMPONENTS_BUILD)
     set(STATIC_LIBS_ONLY 1)
-
-    if(CLR_CMAKE_TARGET_WIN32)
-        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Windows Native.Windows)
-    else()
-        add_subdirectory(${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix Native.Unix)
-    endif()
+    add_subdirectory(${CLR_SRC_NATIVE_DIR}/libs libs-native)
 endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 #-----------------------------------------
@@ -102,18 +109,37 @@ if(CLR_CMAKE_HOST_UNIX)
         endif()
     endif()
 
-    add_subdirectory(pal)
-    add_subdirectory(hosts)
-else(CLR_CMAKE_HOST_UNIX)
+    if(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_TARGET_ARCH_I386)
+      add_linker_flag(-Wl,-z,notext)
+    endif()
+
+    if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+      add_subdirectory(pal)
+      add_subdirectory(hosts)
+    endif()
+else()
     if(CLR_CMAKE_TARGET_UNIX)
-        add_subdirectory(pal/src/libunwind)
-    endif(CLR_CMAKE_TARGET_UNIX)
-endif(CLR_CMAKE_HOST_UNIX)
+        add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
+    endif()
+endif()
+
+#----------------------------------------------------
+# Build the test watchdog alongside the CLR
+#----------------------------------------------------
+add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
 
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(pal/prebuilt/inc)
 
-add_subdirectory(debug/debug-pal)
+# These need to happen before the VM and debug-pal includes.
+set(EP_GENERATED_HEADER_PATH "${GENERATED_INCLUDE_DIR}")
+include (${CLR_SRC_NATIVE_DIR}/eventpipe/configure.cmake)
+
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+  add_subdirectory(debug/debug-pal)
+endif()
+
+add_subdirectory(minipal)
 
 if(CLR_CMAKE_TARGET_WIN32)
   add_subdirectory(gc/sample)
@@ -124,10 +150,17 @@ endif()
 #-------------------------------------
 # Include the basic prebuilt headers - required for getting fileversion resource details.
 include_directories("pal/prebuilt/inc")
-include_directories("../../artifacts/obj/coreclr")
+include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
 add_subdirectory(tools/aot/jitinterface)
 
+
+if(NOT CLR_CROSS_COMPONENTS_BUILD)
+  # NativeAOT only buildable for a subset of CoreCLR-supported configurations
+  if(CLR_CMAKE_HOST_ARCH_ARM64 OR CLR_CMAKE_HOST_ARCH_AMD64)
+    add_subdirectory(nativeaot)
+  endif()
+endif(NOT CLR_CROSS_COMPONENTS_BUILD)
 
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake
@@ -167,6 +200,7 @@ include_directories("classlibnative/cryptography")
 include_directories("classlibnative/inc")
 include_directories("${GENERATED_INCLUDE_DIR}")
 include_directories("hosts/inc")
+include_directories("minipal")
 
 if(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
     include_directories("${GENERATED_INCLUDE_DIR}/etw")
@@ -217,35 +251,32 @@ if(CLR_CMAKE_HOST_UNIX)
   add_subdirectory(nativeresources)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if ((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 10.0))
-    add_compile_options(-Wno-error=stringop-overflow=)
-endif()
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+  add_subdirectory(utilcode)
+  add_subdirectory(inc)
 
-add_subdirectory(utilcode)
-add_subdirectory(inc)
+  if(CLR_CMAKE_HOST_UNIX)
+      add_subdirectory(palrt)
+  endif(CLR_CMAKE_HOST_UNIX)
 
-if(CLR_CMAKE_HOST_UNIX)
-    add_subdirectory(palrt)
-endif(CLR_CMAKE_HOST_UNIX)
+  add_subdirectory(ilasm)
+  add_subdirectory(ildasm)
+  add_subdirectory(gcinfo)
+  add_subdirectory(jit)
+  add_subdirectory(vm)
+  add_subdirectory(md)
+  add_subdirectory(debug)
+  add_subdirectory(binder)
+  add_subdirectory(classlibnative)
+  add_subdirectory(dlls)
+  add_subdirectory(tools)
+  add_subdirectory(unwinder)
+  add_subdirectory(interop)
 
-add_subdirectory(ilasm)
-add_subdirectory(ildasm)
-add_subdirectory(gcinfo)
-add_subdirectory(jit)
-add_subdirectory(vm)
-add_subdirectory(md)
-add_subdirectory(debug)
-add_subdirectory(binder)
-add_subdirectory(classlibnative)
-add_subdirectory(dlls)
-add_subdirectory(ToolBox)
-add_subdirectory(tools)
-add_subdirectory(unwinder)
-add_subdirectory(interop)
-
-if(CLR_CMAKE_HOST_WIN32)
-  add_subdirectory(hosts)
-endif(CLR_CMAKE_HOST_WIN32)
+  if(CLR_CMAKE_HOST_WIN32)
+    add_subdirectory(hosts)
+  endif(CLR_CMAKE_HOST_WIN32)
+endif(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
 
 #----------------------------------------------------
 # Cross target Component install configuration
@@ -253,3 +284,4 @@ endif(CLR_CMAKE_HOST_WIN32)
 if(CLR_CROSS_COMPONENTS_BUILD)
   include(crosscomponents.cmake)
 endif(CLR_CROSS_COMPONENTS_BUILD)
+

@@ -27,7 +27,6 @@
 #define g_byte_array_set_size monoeg_g_byte_array_set_size
 #define g_calloc monoeg_g_calloc
 #define g_clear_error monoeg_g_clear_error
-#define g_convert monoeg_g_convert
 #define g_convert_error_quark monoeg_g_convert_error_quark
 #define g_fixed_buffer_custom_allocator monoeg_g_fixed_buffer_custom_allocator
 #define g_dir_close monoeg_g_dir_close
@@ -47,19 +46,12 @@
 #define g_file_set_contents monoeg_g_file_set_contents
 #define g_file_open_tmp monoeg_g_file_open_tmp
 #define g_file_test monoeg_g_file_test
-#define g_filename_from_uri monoeg_g_filename_from_uri
-#define g_filename_from_utf8 monoeg_g_filename_from_utf8
-#define g_filename_to_uri monoeg_g_filename_to_uri
 #define g_find_program_in_path monoeg_g_find_program_in_path
 #define g_fprintf monoeg_g_fprintf
 #define g_free monoeg_g_free
-#define g_get_charset monoeg_g_get_charset
 #define g_get_current_dir monoeg_g_get_current_dir
 #define g_get_current_time monoeg_g_get_current_time
-#define g_get_home_dir monoeg_g_get_home_dir
-#define g_get_prgname monoeg_g_get_prgname
 #define g_get_tmp_dir monoeg_g_get_tmp_dir
-#define g_get_user_name monoeg_g_get_user_name
 #define g_getenv monoeg_g_getenv
 #define g_hasenv monoeg_g_hasenv
 #define g_hash_table_destroy monoeg_g_hash_table_destroy
@@ -82,9 +74,6 @@
 #define g_hash_table_remove_all monoeg_g_hash_table_remove_all
 #define g_hash_table_iter_init monoeg_g_hash_table_iter_init
 #define g_hash_table_iter_next monoeg_g_hash_table_iter_next
-#define g_iconv monoeg_g_iconv
-#define g_iconv_close monoeg_g_iconv_close
-#define g_iconv_open monoeg_g_iconv_open
 #define g_int_equal monoeg_g_int_equal
 #define g_int_hash monoeg_g_int_hash
 #define g_list_alloc monoeg_g_list_alloc
@@ -111,16 +100,10 @@
 #define g_list_remove_link monoeg_g_list_remove_link
 #define g_list_reverse monoeg_g_list_reverse
 #define g_list_sort monoeg_g_list_sort
-#define g_locale_from_utf8 monoeg_g_locale_from_utf8
-#define g_locale_to_utf8 monoeg_g_locale_to_utf8
 #define g_log monoeg_g_log
 #define g_log_set_always_fatal monoeg_g_log_set_always_fatal
 #define g_log_set_fatal_mask monoeg_g_log_set_fatal_mask
 #define g_logv monoeg_g_logv
-#define g_markup_parse_context_end_parse monoeg_g_markup_parse_context_end_parse
-#define g_markup_parse_context_free monoeg_g_markup_parse_context_free
-#define g_markup_parse_context_new monoeg_g_markup_parse_context_new
-#define g_markup_parse_context_parse monoeg_g_markup_parse_context_parse
 #define g_memdup monoeg_g_memdup
 #define g_mem_set_vtable monoeg_g_mem_set_vtable
 #define g_mem_get_vtable monoeg_g_mem_get_vtable
@@ -134,9 +117,6 @@
 #define g_path_get_basename monoeg_g_path_get_basename
 #define g_path_get_dirname monoeg_g_path_get_dirname
 #define g_path_is_absolute monoeg_g_path_is_absolute
-#define g_pattern_match_string monoeg_g_pattern_match_string
-#define g_pattern_spec_free monoeg_g_pattern_spec_free
-#define g_pattern_spec_new monoeg_g_pattern_spec_new
 #define g_async_safe_fgets monoeg_g_async_safe_fgets
 #define g_async_safe_fprintf monoeg_g_async_safe_fprintf
 #define g_async_safe_vfprintf monoeg_g_async_safe_vfprintf
@@ -159,9 +139,7 @@
 #define g_ptr_array_set_size monoeg_g_ptr_array_set_size
 #define g_ptr_array_sized_new monoeg_g_ptr_array_sized_new
 #define g_ptr_array_sort monoeg_g_ptr_array_sort
-#define g_ptr_array_sort_with_data monoeg_g_ptr_array_sort_with_data
 #define g_ptr_array_find monoeg_g_ptr_array_find
-#define g_qsort_with_data monoeg_g_qsort_with_data
 #define g_queue_free monoeg_g_queue_free
 #define g_queue_is_empty monoeg_g_queue_is_empty
 #define g_queue_foreach monoeg_g_queue_foreach
@@ -170,11 +148,7 @@
 #define g_queue_push_head monoeg_g_queue_push_head
 #define g_queue_push_tail monoeg_g_queue_push_tail
 #define g_set_error monoeg_g_set_error
-#define g_set_prgname monoeg_g_set_prgname
 #define g_setenv monoeg_g_setenv
-#define g_shell_parse_argv monoeg_g_shell_parse_argv
-#define g_shell_quote monoeg_g_shell_quote
-#define g_shell_unquote monoeg_g_shell_unquote
 #define g_slist_alloc monoeg_g_slist_alloc
 #define g_slist_append monoeg_g_slist_append
 #define g_slist_concat monoeg_g_slist_concat
@@ -201,7 +175,6 @@
 #define g_snprintf monoeg_g_snprintf
 #define g_spaced_primes_closest monoeg_g_spaced_primes_closest
 #define g_spawn_async_with_pipes monoeg_g_spawn_async_with_pipes
-#define g_spawn_command_line_sync monoeg_g_spawn_command_line_sync
 #define g_sprintf monoeg_g_sprintf
 #define g_stpcpy monoeg_g_stpcpy
 #define g_str_equal monoeg_g_str_equal
@@ -212,11 +185,9 @@
 #define g_strchug monoeg_g_strchug
 #define g_strconcat monoeg_g_strconcat
 #define g_strdelimit monoeg_g_strdelimit
-#define g_strdown monoeg_g_strdown
 #define g_strdup_printf monoeg_g_strdup_printf
 #define g_strdup_vprintf monoeg_g_strdup_vprintf
 #define g_strerror monoeg_g_strerror
-#define g_strescape monoeg_g_strescape
 #define g_strfreev monoeg_g_strfreev
 #define g_strdupv monoeg_g_strdupv
 #define g_string_append monoeg_g_string_append
@@ -251,14 +222,6 @@
 #define g_trailingBytesForUTF8 monoeg_g_trailingBytesForUTF8
 #define g_ucs4_to_utf8 monoeg_g_ucs4_to_utf8
 #define g_ucs4_to_utf16 monoeg_g_ucs4_to_utf16
-#define g_unichar_case monoeg_g_unichar_case
-#define g_unichar_isxdigit monoeg_g_unichar_isxdigit
-#define g_unichar_tolower monoeg_g_unichar_tolower
-#define g_unichar_totitle monoeg_g_unichar_totitle
-#define g_unichar_toupper monoeg_g_unichar_toupper
-#define g_unichar_type monoeg_g_unichar_type
-#define g_unichar_xdigit_value monoeg_g_unichar_xdigit_value
-#define g_unsetenv monoeg_g_unsetenv
 #define g_usleep monoeg_g_usleep
 #define g_utf16_to_ucs4 monoeg_g_utf16_to_ucs4
 #define g_utf16_to_utf8 monoeg_g_utf16_to_utf8
@@ -267,23 +230,15 @@
 #define g_utf16_asciiz_equal monoeg_g_utf16_asciiz_equal
 #define g_utf8_jump_table monoeg_g_utf8_jump_table
 #define g_utf8_get_char monoeg_g_utf8_get_char
-#define g_utf8_offset_to_pointer monoeg_g_utf8_offset_to_pointer
-#define g_utf8_pointer_to_offset monoeg_g_utf8_pointer_to_offset
-#define g_utf8_strdown monoeg_g_utf8_strdown
 #define g_utf8_strlen monoeg_g_utf8_strlen
-#define g_utf8_strup monoeg_g_utf8_strup
-#define g_utf8_to_ucs4_fast monoeg_g_utf8_to_ucs4_fast
 #define g_utf8_to_utf16 monoeg_g_utf8_to_utf16
 #define g_utf8_to_utf16_custom_alloc monoeg_g_utf8_to_utf16_custom_alloc
 #define g_utf8_validate monoeg_g_utf8_validate
 #define g_unichar_to_utf8 monoeg_g_unichar_to_utf8
-#define g_unichar_is_space monoeg_g_unichar_is_space
-#define g_unicode_break_type monoeg_g_unicode_break_type
 #define g_utf8_offset_to_pointer monoeg_g_utf8_offset_to_pointer
 #define g_utf8_pointer_to_offset monoeg_g_utf8_pointer_to_offset
 #define g_utf8_to_ucs4_fast monoeg_g_utf8_to_ucs4_fast
 #define g_vasprintf monoeg_g_vasprintf
-#define g_win32_getlocale monoeg_g_win32_getlocale
 #define g_assertion_disable_global monoeg_assertion_disable_global
 #define g_assert_abort monoeg_assert_abort
 #define g_assertion_message monoeg_assertion_message
@@ -302,8 +257,6 @@
 #define g_ascii_strcasecmp monoeg_ascii_strcasecmp
 #define g_ascii_strup monoeg_ascii_strup
 #define g_ascii_toupper monoeg_ascii_toupper
-#define g_unichar_break_type monoeg_unichar_break_type
-#define g_unichar_isspace monoeg_unichar_isspace
 #define g_unichar_to_utf16 monoeg_unichar_to_utf16
 #define g_utf8_get_char_validated monoeg_utf8_get_char_validated
 #define g_utf8_to_ucs4 monoeg_utf8_to_ucs4
@@ -318,3 +271,7 @@
 #define g_ascii_charcmp monoeg_ascii_charcmp
 #define g_ascii_charcasecmp monoeg_ascii_charcasecmp
 #define g_warning_d monoeg_warning_d
+
+#ifdef HAVE_CLOCK_NANOSLEEP
+#define g_clock_nanosleep monoeg_clock_nanosleep
+#endif

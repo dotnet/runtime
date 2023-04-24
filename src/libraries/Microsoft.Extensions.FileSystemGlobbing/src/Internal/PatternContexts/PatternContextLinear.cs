@@ -12,6 +12,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     {
         public PatternContextLinear(ILinearPattern pattern)
         {
+            ThrowHelper.ThrowIfNull(pattern);
+
             Pattern = pattern;
         }
 
@@ -56,7 +58,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
                 }
 
                 // directory matches segment, advance position in pattern
-                frame.SegmentIndex = frame.SegmentIndex + 1;
+                frame.SegmentIndex++;
             }
 
             PushDataFrame(frame);
@@ -67,17 +69,11 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
             public bool IsNotApplicable;
             public int SegmentIndex;
             public bool InStem;
-            private IList<string> _stemItems;
+            private IList<string>? _stemItems;
 
-            public IList<string> StemItems
-            {
-                get { return _stemItems ?? (_stemItems = new List<string>()); }
-            }
+            public IList<string> StemItems => _stemItems ??= new List<string>();
 
-            public string Stem
-            {
-                get { return _stemItems == null ? null : string.Join("/", _stemItems); }
-            }
+            public string? Stem => _stemItems == null ? null : string.Join("/", _stemItems);
         }
 
         protected ILinearPattern Pattern { get; }

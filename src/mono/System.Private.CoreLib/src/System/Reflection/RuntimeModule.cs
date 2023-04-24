@@ -56,6 +56,7 @@ namespace System.Reflection
             get { return assembly; }
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public
         override
         // Note: we do not ask for PathDiscovery because no path is returned here.
@@ -94,6 +95,7 @@ namespace System.Reflection
             }
         }
 
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         public override
         string FullyQualifiedName
         {
@@ -137,8 +139,7 @@ namespace System.Reflection
         public override
         FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (IsResource())
                 return null;
@@ -205,10 +206,7 @@ namespace System.Reflection
         public override
         Type GetType(string className, bool throwOnError, bool ignoreCase)
         {
-            if (className == null)
-                throw new ArgumentNullException(nameof(className));
-            if (className.Length == 0)
-                throw new ArgumentException("Type name can't be empty");
+            ArgumentException.ThrowIfNullOrEmpty(className);
             return assembly.InternalGetType(this, className, throwOnError, ignoreCase);
         }
 
@@ -232,7 +230,7 @@ namespace System.Reflection
 
             IntPtr handle = ResolveFieldToken(monoModule, metadataToken, ptrs_from_types(genericTypeArguments), ptrs_from_types(genericMethodArguments), out error);
             if (handle == IntPtr.Zero)
-                throw resolve_token_exception(module.Name, metadataToken, error, "Field");
+                throw resolve_token_exception(module, metadataToken, error, "Field");
             else
                 return FieldInfo.GetFieldFromHandle(new RuntimeFieldHandle(handle));
         }
@@ -251,7 +249,7 @@ namespace System.Reflection
 
             MemberInfo m = ResolveMemberToken(monoModule, metadataToken, ptrs_from_types(genericTypeArguments), ptrs_from_types(genericMethodArguments), out error);
             if (m == null)
-                throw resolve_token_exception(module.Name, metadataToken, error, "MemberInfo");
+                throw resolve_token_exception(module, metadataToken, error, "MemberInfo");
             else
                 return m;
         }
@@ -270,7 +268,7 @@ namespace System.Reflection
 
             IntPtr handle = ResolveMethodToken(monoModule, metadataToken, ptrs_from_types(genericTypeArguments), ptrs_from_types(genericMethodArguments), out error);
             if (handle == IntPtr.Zero)
-                throw resolve_token_exception(module.Name, metadataToken, error, "MethodBase");
+                throw resolve_token_exception(module, metadataToken, error, "MethodBase");
             else
                 return RuntimeMethodInfo.GetMethodFromHandleNoGenericCheck(new RuntimeMethodHandle(handle));
         }
@@ -289,7 +287,7 @@ namespace System.Reflection
 
             string s = ResolveStringToken(monoModule, metadataToken, out error);
             if (s == null)
-                throw resolve_token_exception(module.Name, metadataToken, error, "string");
+                throw resolve_token_exception(module, metadataToken, error, "string");
             else
                 return s;
         }
@@ -308,9 +306,9 @@ namespace System.Reflection
 
             IntPtr handle = ResolveTypeToken(monoModule, metadataToken, ptrs_from_types(genericTypeArguments), ptrs_from_types(genericMethodArguments), out error);
             if (handle == IntPtr.Zero)
-                throw resolve_token_exception(module.Name, metadataToken, error, "Type");
+                throw resolve_token_exception(module, metadataToken, error, "Type");
             else
-                return Type.GetTypeFromHandle(new RuntimeTypeHandle(handle));
+                return Type.GetTypeFromHandle(new RuntimeTypeHandle(handle))!;
         }
 
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
@@ -327,7 +325,7 @@ namespace System.Reflection
 
             byte[] res = ResolveSignature(monoModule, metadataToken, out error);
             if (res == null)
-                throw resolve_token_exception(module.Name, metadataToken, error, "signature");
+                throw resolve_token_exception(module, metadataToken, error, "signature");
             else
                 return res;
         }
@@ -341,7 +339,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributes(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         internal RuntimeAssembly GetRuntimeAssembly()
@@ -364,12 +362,17 @@ namespace System.Reflection
             return new Guid(guid);
         }
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3002:RequiresAssemblyFiles",
+            Justification = "Module Name is used only for diagnostic reporting message")]
+        internal static Exception resolve_token_exception(Module module, int metadataToken, ResolveTokenError error, string tokenType)
+            => resolve_token_exception(module.Name, metadataToken, error, tokenType);
+
         internal static Exception resolve_token_exception(string name, int metadataToken, ResolveTokenError error, string tokenType)
         {
             if (error == ResolveTokenError.OutOfRange)
-                return new ArgumentOutOfRangeException(nameof(metadataToken), string.Format("Token 0x{0:x} is not valid in the scope of module {1}", metadataToken, name));
+                return new ArgumentOutOfRangeException(nameof(metadataToken), SR.Format(SR.Argument_InvalidToken, metadataToken, name));
             else
-                return new ArgumentException(string.Format("Token 0x{0:x} is not a valid {1} token in the scope of module {2}", metadataToken, tokenType, name), nameof(metadataToken));
+                return new ArgumentException(SR.Format(SR.Argument_ResolveType, metadataToken, tokenType, name), nameof(metadataToken));
         }
 
         internal static IntPtr[]? ptrs_from_types(Type[]? types)
@@ -390,6 +393,8 @@ namespace System.Reflection
         }
 
         internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
+
+        private protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(_impl);
 
         // This calls ves_icall_reflection_get_token, so needs a Module argument
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

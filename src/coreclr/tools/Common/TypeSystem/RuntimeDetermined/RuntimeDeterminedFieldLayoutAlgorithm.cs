@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
     /// <summary>
     /// RuntimeDeterminedFieldLayoutAlgorithm algorithm which can be used to compute field layout
     /// for any RuntimeDeterminedType
-    /// Only useable for accessing the instance field size
+    /// Only usable for accessing the instance field size
     /// </summary>
     public class RuntimeDeterminedFieldLayoutAlgorithm : FieldLayoutAlgorithm
     {
@@ -37,7 +34,7 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        public unsafe override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
+        public override unsafe ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
         {
             // Static field layout for a RuntimeDeterminedType is not a supported operation
             throw new NotSupportedException();
@@ -57,6 +54,14 @@ namespace Internal.TypeSystem
             DefType canonicalType = runtimeDeterminedType.CanonicalType;
 
             return canonicalType.ValueTypeShapeCharacteristics;
+        }
+
+        public override bool ComputeIsUnsafeValueType(DefType type)
+        {
+            RuntimeDeterminedType runtimeDeterminedType = (RuntimeDeterminedType)type;
+            DefType canonicalType = runtimeDeterminedType.CanonicalType;
+
+            return canonicalType.IsUnsafeValueType;
         }
     }
 }

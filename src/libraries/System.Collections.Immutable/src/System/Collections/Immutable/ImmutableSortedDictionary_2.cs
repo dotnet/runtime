@@ -206,7 +206,6 @@ namespace System.Collections.Immutable
             }
         }
 
-#if !NETSTANDARD1_0
         /// <summary>
         /// Returns a read-only reference to the value associated with the provided key.
         /// </summary>
@@ -217,7 +216,6 @@ namespace System.Collections.Immutable
 
             return ref _root.ValueRef(key, _keyComparer);
         }
-#endif
 
         #endregion
 
@@ -255,8 +253,7 @@ namespace System.Collections.Immutable
         public ImmutableSortedDictionary<TKey, TValue> Add(TKey key, TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
-            bool mutated;
-            var result = _root.Add(key, value, _keyComparer, _valueComparer, out mutated);
+            ImmutableSortedDictionary<TKey, TValue>.Node result = _root.Add(key, value, _keyComparer, _valueComparer, out _);
             return this.Wrap(result, _count + 1);
         }
 
@@ -266,8 +263,8 @@ namespace System.Collections.Immutable
         public ImmutableSortedDictionary<TKey, TValue> SetItem(TKey key, TValue value)
         {
             Requires.NotNullAllowStructs(key, nameof(key));
-            bool replacedExistingValue, mutated;
-            var result = _root.SetItem(key, value, _keyComparer, _valueComparer, out replacedExistingValue, out mutated);
+            bool replacedExistingValue;
+            ImmutableSortedDictionary<TKey, TValue>.Node result = _root.SetItem(key, value, _keyComparer, _valueComparer, out replacedExistingValue, out _);
             return this.Wrap(result, replacedExistingValue ? _count : _count + 1);
         }
 
@@ -299,8 +296,7 @@ namespace System.Collections.Immutable
         public ImmutableSortedDictionary<TKey, TValue> Remove(TKey value)
         {
             Requires.NotNullAllowStructs(value, nameof(value));
-            bool mutated;
-            var result = _root.Remove(value, _keyComparer, out mutated);
+            ImmutableSortedDictionary<TKey, TValue>.Node result = _root.Remove(value, _keyComparer, out _);
             return this.Wrap(result, _count - 1);
         }
 
@@ -311,12 +307,12 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(keys, nameof(keys));
 
-            var result = _root;
+            ImmutableSortedDictionary<TKey, TValue>.Node result = _root;
             int count = _count;
             foreach (TKey key in keys)
             {
                 bool mutated;
-                var newResult = result.Remove(key, _keyComparer, out mutated);
+                ImmutableSortedDictionary<TKey, TValue>.Node newResult = result.Remove(key, _keyComparer, out mutated);
                 if (mutated)
                 {
                     result = newResult;
@@ -332,15 +328,8 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableSortedDictionary<TKey, TValue> WithComparers(IComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer)
         {
-            if (keyComparer == null)
-            {
-                keyComparer = Comparer<TKey>.Default;
-            }
-
-            if (valueComparer == null)
-            {
-                valueComparer = EqualityComparer<TValue>.Default;
-            }
+            keyComparer ??= Comparer<TKey>.Default;
+            valueComparer ??= EqualityComparer<TValue>.Default;
 
             if (keyComparer == _keyComparer)
             {
@@ -543,7 +532,7 @@ namespace System.Collections.Immutable
             Requires.Range(arrayIndex >= 0, nameof(arrayIndex));
             Requires.Range(array.Length >= arrayIndex + this.Count, nameof(arrayIndex));
 
-            foreach (var item in this)
+            foreach (KeyValuePair<TKey, TValue> item in this)
             {
                 array[arrayIndex++] = item;
             }
@@ -804,13 +793,13 @@ namespace System.Collections.Immutable
 
             // Let's not implement in terms of ImmutableSortedMap.Add so that we're
             // not unnecessarily generating a new wrapping map object for each item.
-            var result = _root;
-            var count = _count;
-            foreach (var item in items)
+            ImmutableSortedDictionary<TKey, TValue>.Node result = _root;
+            int count = _count;
+            foreach (KeyValuePair<TKey, TValue> item in items)
             {
                 bool mutated;
                 bool replacedExistingValue = false;
-                var newResult = overwriteOnCollision
+                ImmutableSortedDictionary<TKey, TValue>.Node newResult = overwriteOnCollision
                     ? result.SetItem(item.Key, item.Value, _keyComparer, _valueComparer, out replacedExistingValue, out mutated)
                     : result.Add(item.Key, item.Value, _keyComparer, _valueComparer, out mutated);
                 if (mutated)
@@ -868,7 +857,7 @@ namespace System.Collections.Immutable
             else
             {
                 dictionary = new SortedDictionary<TKey, TValue>(this.KeyComparer);
-                foreach (var item in items)
+                foreach (KeyValuePair<TKey, TValue> item in items)
                 {
                     if (overwriteOnCollision)
                     {

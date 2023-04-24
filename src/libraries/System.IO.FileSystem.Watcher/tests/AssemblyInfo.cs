@@ -4,4 +4,4 @@
 using System;
 using Xunit;
 
-[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.IO.FileSystem.Watcher is not supported on Browser")]
+[assembly: SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]

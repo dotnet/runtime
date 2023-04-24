@@ -37,10 +37,7 @@ namespace System.IO
 
         public StringWriter(StringBuilder sb, IFormatProvider? formatProvider) : base(formatProvider)
         {
-            if (sb == null)
-            {
-                throw new ArgumentNullException(nameof(sb), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(sb);
 
             _sb = sb;
             _isOpen = true;
@@ -60,17 +57,7 @@ namespace System.IO
         }
 
 
-        public override Encoding Encoding
-        {
-            get
-            {
-                if (s_encoding == null)
-                {
-                    s_encoding = new UnicodeEncoding(false, false);
-                }
-                return s_encoding;
-            }
-        }
+        public override Encoding Encoding => s_encoding ??= new UnicodeEncoding(false, false);
 
         // Returns the underlying StringBuilder. This is either the StringBuilder
         // that was passed to the constructor, or the StringBuilder that was
@@ -100,18 +87,10 @@ namespace System.IO
         //
         public override void Write(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);

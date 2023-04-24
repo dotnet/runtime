@@ -21,11 +21,12 @@ namespace ILCompiler.DependencyAnalysis.X86
             switch (os)
             {
                 case TargetOS.Windows:
+                case TargetOS.Linux:
                     Arg0 = Register.ECX;
                     Arg1 = Register.EDX;
                     Result = Register.EAX;
                     break;
-                    
+
                 default:
                     throw new NotImplementedException();
             }

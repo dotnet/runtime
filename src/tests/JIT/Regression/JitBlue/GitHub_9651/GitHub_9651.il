@@ -2,17 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib {}
-.assembly a {}
-.module a.exe
+.assembly 'GitHub_9651' {}
+.assembly extern xunit.core {}
 
 // Test case triggers reimportation of a leave,
 // leading to an unreachable callfinally pair.
 
-.class FinallyReimp
+.class public FinallyReimp
 {
-.method static int32 Main(class [mscorlib]System.String[]) cil managed
+.method public static int32 Main() cil managed
 {
+   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+       01 00 00 00
+   )
    .entrypoint
+
+   ldc.i4.0
+   newarr [mscorlib]System.String
+   call int32 FinallyReimp::MainX(string[])
+   ret
+}
+
+.method public static int32 MainX(class [mscorlib]System.String[]) cil managed noinlining
+{
    .locals init (int32 V0, native int V1)
    .try 
    {

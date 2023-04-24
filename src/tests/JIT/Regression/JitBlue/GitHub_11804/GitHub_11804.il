@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-.assembly extern System.Runtime { auto }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Numerics.Vectors { auto }
 .assembly extern System.Runtime.CompilerServices.Unsafe { auto }
 .assembly extern mscorlib { auto }
@@ -16,7 +16,7 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module GitHub_11804.exe
+.assembly extern xunit.core {}
 // MVID: {9CC2AC15-DDA3-4ADF-9566-89AB25A8CF63}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -26,7 +26,7 @@
 // Image base: 0x01590000
 
 
-.class private abstract auto ansi sealed beforefieldinit C
+.class public abstract auto ansi sealed beforefieldinit C
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static int32
@@ -59,9 +59,12 @@
     IL_0011:  ret
   } // end of method C::IndexerGrab
 
-  .method private hidebysig static int32
+  .method public hidebysig static int32
           Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       20 (0x14)
     .maxstack  8

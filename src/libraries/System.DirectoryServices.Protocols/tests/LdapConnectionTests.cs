@@ -112,6 +112,22 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Equal(AuthType.Basic, connection.AuthType);
         }
 
+        public static IEnumerable<object[]> AuthType_Anonymous_DoesNotThrowNull_TestData()
+        {
+            yield return new object[] { new LdapDirectoryIdentifier("server"), null };
+            yield return new object[] { new LdapDirectoryIdentifier("server"), new NetworkCredential() };
+        }
+
+        [Theory]
+        [MemberData(nameof(AuthType_Anonymous_DoesNotThrowNull_TestData))]
+        public void AuthType_Anonymous_DoesNotThrowNull(LdapDirectoryIdentifier identifier, NetworkCredential credential)
+        {
+            var connection = new LdapConnection(identifier, credential, AuthType.Anonymous);
+            // When calling Bind we make sure that the exception thrown is not that there was a NullReferenceException
+            // trying to retrieve a null password's length, but instead an LdapException given the server cannot be reached.
+            Assert.Throws<LdapException>(() => connection.Bind());
+        }
+
         [Theory]
         [InlineData(AuthType.Anonymous - 1)]
         [InlineData(AuthType.Kerberos + 1)]

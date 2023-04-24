@@ -84,7 +84,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             {
                 return;
             }
-            ErrorMessageSet_ReturnsOverridenValue(InvalidValues().First());
+            ErrorMessageSet_ReturnsOverriddenValue(InvalidValues().First());
             ErrorMessageNotSet_ReturnsDefaultValue(InvalidValues().First());
             ErrorMessageSetFromResource_ReturnsExpectedValue(InvalidValues().First());
         }
@@ -144,7 +144,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Throws(InvalidErrorMessage_Type, () => test.Attribute.Validate(test.Value, test.ValidationContext));
         }
 
-        private void ErrorMessageSet_ReturnsOverridenValue(TestCase test)
+        private void ErrorMessageSet_ReturnsOverriddenValue(TestCase test)
         {
             test.Attribute.ErrorMessage = "SomeErrorMessage";
 

@@ -7,14 +7,13 @@ parameters:
   container: ''
   testGroup: ''
   crossBuild: false
-  crossrootfsDir: ''
   timeoutInMinutes: ''
   signBinaries: false
-  stagedBuild: false
   variables: {}
   pool: ''
   platform: ''
   testBuildPlatforms: []
+  disableComponentGovernance: false
 
 jobs:
 - template: /eng/pipelines/coreclr/templates/build-job.yml
@@ -27,12 +26,11 @@ jobs:
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
     signBinaries: ${{ parameters.signBinaries }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
+    disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
 
 - template: /eng/pipelines/libraries/build-job.yml
   parameters:
@@ -46,10 +44,10 @@ jobs:
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
     timeoutInminutes: ${{ parameters.timeoutInMinutes }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
     liveRuntimeBuildConfig: ${{ parameters.buildConfig }}
     platform: ${{ parameters.platform }}
     testBuildPlatforms: ${{ parameters.testBuildPlatforms }}
+    disableComponentGovernance: ${{ parameters.disableComponentGovernance }}

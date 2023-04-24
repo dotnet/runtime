@@ -3,4 +3,4 @@
 
 using Xunit;
 
-[assembly: SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/12927", RuntimeConfiguration.Checked)]
+[assembly: SkipOnCoreClr("Long running tests: https://github.com/dotnet/runtime/issues/12927", ~RuntimeConfiguration.Release)]

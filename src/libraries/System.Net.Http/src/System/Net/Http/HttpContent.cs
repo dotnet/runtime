@@ -80,50 +80,36 @@ namespace System.Net.Http
             Debug.Assert(preamble != null);
 
             Debug.Assert(codePage == encoding.CodePage,
-                "Encoding code page mismatch for encoding: " + encoding.EncodingName,
-                "Expected (constant): {0}, Actual (Encoding.CodePage): {1}", codePage, encoding.CodePage);
+                $"Encoding code page mismatch for encoding: {encoding.EncodingName}",
+                $"Expected (constant): {codePage}, Actual (Encoding.CodePage): {encoding.CodePage}");
 
             byte[] actualPreamble = encoding.GetPreamble();
 
             Debug.Assert(preambleLength == actualPreamble.Length,
-                "Encoding preamble length mismatch for encoding: " + encoding.EncodingName,
-                "Expected (constant): {0}, Actual (Encoding.GetPreamble().Length): {1}", preambleLength, actualPreamble.Length);
+                $"Encoding preamble length mismatch for encoding: {encoding.EncodingName}",
+                $"Expected (constant): {preambleLength}, Actual (Encoding.GetPreamble().Length): {actualPreamble.Length}");
 
             Debug.Assert(actualPreamble.Length >= 2);
             int actualFirst2Bytes = actualPreamble[0] << 8 | actualPreamble[1];
 
             Debug.Assert(first2Bytes == actualFirst2Bytes,
-                "Encoding preamble first 2 bytes mismatch for encoding: " + encoding.EncodingName,
-                "Expected (constant): {0}, Actual: {1}", first2Bytes, actualFirst2Bytes);
+                $"Encoding preamble first 2 bytes mismatch for encoding: {encoding.EncodingName}",
+                $"Expected (constant): {first2Bytes}, Actual: {actualFirst2Bytes}");
 
             Debug.Assert(preamble.Length == actualPreamble.Length,
-                "Encoding preamble mismatch for encoding: " + encoding.EncodingName,
-                "Expected (constant): {0}, Actual (Encoding.GetPreamble()): {1}",
-                BitConverter.ToString(preamble),
-                BitConverter.ToString(actualPreamble));
+                $"Encoding preamble mismatch for encoding: {encoding.EncodingName}",
+                $"Expected (constant): {BitConverter.ToString(preamble)}, Actual (Encoding.GetPreamble()): {BitConverter.ToString(actualPreamble)}");
 
             for (int i = 0; i < preamble.Length; i++)
             {
                 Debug.Assert(preamble[i] == actualPreamble[i],
-                    "Encoding preamble mismatch for encoding: " + encoding.EncodingName,
-                    "Expected (constant): {0}, Actual (Encoding.GetPreamble()): {1}",
-                    BitConverter.ToString(preamble),
-                    BitConverter.ToString(actualPreamble));
+                    $"Encoding preamble mismatch for encoding: {encoding.EncodingName}",
+                    $"Expected (constant): {BitConverter.ToString(preamble)}, Actual (Encoding.GetPreamble()): {BitConverter.ToString(actualPreamble)}");
             }
         }
 #endif
 
-        public HttpContentHeaders Headers
-        {
-            get
-            {
-                if (_headers == null)
-                {
-                    _headers = new HttpContentHeaders(this);
-                }
-                return _headers;
-            }
-        }
+        public HttpContentHeaders Headers => _headers ??= new HttpContentHeaders(this);
 
         private bool IsBuffered
         {
@@ -196,8 +182,8 @@ namespace System.Net.Http
                 {
                     // Remove at most a single set of quotes.
                     if (charset.Length > 2 &&
-                        charset[0] == '\"' &&
-                        charset[charset.Length - 1] == '\"')
+                        charset.StartsWith('\"') &&
+                        charset.EndsWith('\"'))
                     {
                         encoding = Encoding.GetEncoding(charset.Substring(1, charset.Length - 2));
                     }
@@ -365,11 +351,7 @@ namespace System.Net.Http
         public void CopyTo(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             CheckDisposed();
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
+            ArgumentNullException.ThrowIfNull(stream);
             try
             {
                 if (TryGetBuffer(out ArraySegment<byte> buffer))
@@ -399,11 +381,7 @@ namespace System.Net.Http
         public Task CopyToAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             CheckDisposed();
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
+            ArgumentNullException.ThrowIfNull(stream);
             try
             {
                 return WaitAsync(InternalCopyToAsync(stream, context, cancellationToken));
@@ -555,6 +533,17 @@ namespace System.Net.Http
             }
         }
 
+        /// <summary>
+        /// Serializes the HTTP content to a memory stream.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+        /// <returns>The output memory stream which contains the serialized HTTP content.</returns>
+        /// <remarks>
+        /// Once the operation completes, the returned memory stream represents the HTTP content. The returned stream can then be used to read the content using various stream APIs.
+        /// The <see cref="CreateContentReadStream(CancellationToken)"/> method buffers the content to a memory stream.
+        /// Derived classes can override this behavior if there is a better way to retrieve the content as stream.
+        /// For example, a byte array or a string could use a more efficient method way such as wrapping a read-only MemoryStream around the bytes or string.
+        /// </remarks>
         protected virtual Stream CreateContentReadStream(CancellationToken cancellationToken)
         {
             LoadIntoBuffer(MaxBufferSize, cancellationToken);
@@ -599,7 +588,7 @@ namespace System.Net.Http
             // again; just return null.
             if (_canCalculateLength)
             {
-                long length = 0;
+                long length;
                 if (TryComputeLength(out length))
                 {
                     return length;
@@ -635,7 +624,7 @@ namespace System.Net.Http
             return true;
         }
 
-        private MemoryStream? CreateMemoryStream(long maxBufferSize, out Exception? error)
+        private LimitMemoryStream? CreateMemoryStream(long maxBufferSize, out Exception? error)
         {
             error = null;
 
@@ -696,10 +685,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(this.GetType().ToString());
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         private void CheckTaskNotNull(Task task)
@@ -846,7 +832,7 @@ namespace System.Net.Http
             return returnFunc(state);
         }
 
-        private static Exception CreateOverCapacityException(int maxBufferSize)
+        private static HttpRequestException CreateOverCapacityException(int maxBufferSize)
         {
             return new HttpRequestException(SR.Format(SR.net_http_content_buffersize_exceeded, maxBufferSize));
         }
@@ -934,7 +920,6 @@ namespace System.Net.Http
 
         internal sealed class LimitArrayPoolWriteStream : Stream
         {
-            private const int MaxByteArrayLength = 0x7FFFFFC7;
             private const int InitialLength = 256;
 
             private readonly int _maxBufferSize;
@@ -1003,8 +988,8 @@ namespace System.Net.Http
                 // allowed byte array, than shrink to that (and if the required length is actually
                 // longer than that, we'll let the runtime throw).
                 uint twiceLength = 2 * (uint)currentBuffer.Length;
-                int newCapacity = twiceLength > MaxByteArrayLength ?
-                    (value > MaxByteArrayLength ? value : MaxByteArrayLength) :
+                int newCapacity = twiceLength > Array.MaxLength ?
+                    Math.Max(value, Array.MaxLength) :
                     Math.Max(value, (int)twiceLength);
 
                 // Get a new buffer, copy the current one to it, return the current one, and
@@ -1046,10 +1031,10 @@ namespace System.Net.Http
             }
 
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-                TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+                TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
             public override void EndWrite(IAsyncResult asyncResult) =>
-                TaskToApm.End(asyncResult);
+                TaskToAsyncResult.End(asyncResult);
 
             public override void WriteByte(byte value)
             {

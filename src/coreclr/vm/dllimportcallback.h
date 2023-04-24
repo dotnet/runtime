@@ -16,6 +16,12 @@
 #include "class.h"
 #include "dllimport.h"
 
+class UMThunkMarshInfo;
+typedef DPTR(class UMThunkMarshInfo) PTR_UMThunkMarshInfo;
+
+class UMEntryThunk;
+typedef DPTR(class UMEntryThunk) PTR_UMEntryThunk;
+
 //----------------------------------------------------------------------
 // This structure collects all information needed to marshal an
 // unmanaged->managed thunk. The only information missing is the
@@ -137,7 +143,8 @@ public:
     static VOID FreeUMEntryThunk(UMEntryThunk* p);
 
 #ifndef DACCESS_COMPILE
-    VOID LoadTimeInit(PCODE                   pManagedTarget,
+    VOID LoadTimeInit(UMEntryThunk           *pUMEntryThunkRX,
+                      PCODE                   pManagedTarget,
                       OBJECTHANDLE            pObjectHandle,
                       UMThunkMarshInfo       *pUMThunkMarshInfo,
                       MethodDesc             *pMD)
@@ -152,17 +159,13 @@ public:
         }
         CONTRACTL_END;
 
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         m_pManagedTarget = pManagedTarget;
         m_pObjectHandle     = pObjectHandle;
         m_pUMThunkMarshInfo = pUMThunkMarshInfo;
 
         m_pMD = pMD;    // For debugging and profiling, so they can identify the target
 
-        m_code.Encode((BYTE*)TheUMThunkPreStub(), this);
+        m_code.Encode(&pUMEntryThunkRX->m_code, (BYTE*)TheUMThunkPreStub(), pUMEntryThunkRX);
 
 #ifdef _DEBUG
         m_state = kLoadTimeInited;
@@ -171,32 +174,26 @@ public:
 
     void Terminate();
 
-    VOID RunTimeInit()
+    VOID RunTimeInit(UMEntryThunk *pUMEntryThunkRX)
     {
         STANDARD_VM_CONTRACT;
 
         // Ensure method's module is activate in app domain
         m_pMD->EnsureActive();
 
-        m_pUMThunkMarshInfo->RunTimeInit();
+        ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(m_pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
+        uMThunkMarshInfoWriterHolder.GetRW()->RunTimeInit();
 
         // Ensure that we have either the managed target or the delegate.
         if (m_pObjectHandle == NULL && m_pManagedTarget == NULL)
             m_pManagedTarget = m_pMD->GetMultiCallableAddrOfCode();
 
-        m_code.Encode((BYTE*)m_pUMThunkMarshInfo->GetExecStubEntryPoint(), this);
+        m_code.Encode(&pUMEntryThunkRX->m_code, (BYTE*)m_pUMThunkMarshInfo->GetExecStubEntryPoint(), pUMEntryThunkRX);
 
 #ifdef _DEBUG
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         m_state = kRunTimeInited;
 #endif // _DEBUG
     }
-
-    // asm entrypoint
-    static VOID STDCALL DoRunTimeInit(UMEntryThunk* pThis);
 
     PCODE GetManagedTarget() const
     {
@@ -402,17 +399,8 @@ private:
 };
 
 #if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
-//-------------------------------------------------------------------------
-// One-time creation of special prestub to initialize UMEntryThunks.
-//-------------------------------------------------------------------------
-Stub *GenerateUMThunkPrestub();
-
 EXCEPTION_HANDLER_DECL(FastNExportExceptHandler);
-EXCEPTION_HANDLER_DECL(UMThunkPrestubHandler);
-
 #endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
-
-bool TryGetCallingConventionFromUnmanagedCallersOnly(MethodDesc* pMD, CorInfoCallConvExtension* pCallConv);
 
 extern "C" void TheUMEntryPrestub(void);
 extern "C" PCODE TheUMEntryPrestubWorker(UMEntryThunk * pUMEntryThunk);

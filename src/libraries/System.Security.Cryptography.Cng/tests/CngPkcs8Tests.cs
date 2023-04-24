@@ -40,12 +40,12 @@ namespace System.Security.Cryptography.Cng.Tests
                 SetExportPolicy(cngKey, CngExportPolicies.AllowExport);
 
                 byte[] data = key.ExportEncryptedPkcs8PrivateKey(
-                    nameof(NoPlaintextExportAllowsEncryptedPkcs8),
+                    (ReadOnlySpan<char>)nameof(NoPlaintextExportAllowsEncryptedPkcs8),
                     pbeParameters);
 
                 Assert.False(
                     key.TryExportEncryptedPkcs8PrivateKey(
-                        nameof(NoPlaintextExportAllowsEncryptedPkcs8),
+                        (ReadOnlySpan<char>)nameof(NoPlaintextExportAllowsEncryptedPkcs8),
                         pbeParameters,
                         data.AsSpan(0, data.Length - 1),
                         out int bytesWritten));
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography.Cng.Tests
 
                 Assert.True(
                     key.TryExportEncryptedPkcs8PrivateKey(
-                        nameof(NoPlaintextExportAllowsEncryptedPkcs8),
+                        (ReadOnlySpan<char>)nameof(NoPlaintextExportAllowsEncryptedPkcs8),
                         pbeParameters,
                         data.AsSpan(),
                         out bytesWritten));
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Cng.Tests
                 using (T key2 = CreateKey(out _))
                 {
                     key2.ImportEncryptedPkcs8PrivateKey(
-                        nameof(NoPlaintextExportAllowsEncryptedPkcs8),
+                        (ReadOnlySpan<char>)nameof(NoPlaintextExportAllowsEncryptedPkcs8),
                         data,
                         out int bytesRead);
 

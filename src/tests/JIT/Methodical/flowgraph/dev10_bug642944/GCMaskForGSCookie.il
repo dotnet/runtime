@@ -12,16 +12,16 @@
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
 }
-.assembly repro
+.assembly 'GCMaskForGSCookie'
 {
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module repro.exe
+.assembly extern xunit.core {}
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit JumpBug
+.class public auto ansi beforefieldinit JumpBug
        extends [mscorlib]System.Object
 {
   .method private hidebysig instance string 
@@ -45,8 +45,11 @@
     IL_0000:  jmp       instance string JumpBug::JumpCallTarget()
   } // end of method JumpBug::BugRepro
 
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       20 (0x14)
     .maxstack  1

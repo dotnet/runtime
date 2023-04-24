@@ -89,6 +89,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Theory]
         [InlineData("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample1.xml")]
         [InlineData("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample3.xml")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RsaDecryption(string resourceName)
         {
             XmlDocument doc = new XmlDocument();
@@ -245,6 +246,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Encrypt_X509()
         {
             XmlDocument doc = new XmlDocument();
@@ -269,6 +271,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Encrypt_X509_XmlNull()
         {
             using (X509Certificate2 certificate = TestHelpers.GetSampleX509Certificate())
@@ -608,7 +611,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void EncryptKey_RSA_UseOAEP()
         {
-            byte[] data = Encoding.ASCII.GetBytes("12345678");
+            byte[] data = "12345678"u8.ToArray();
             using (RSA rsa = RSA.Create())
             {
                 byte[] encryptedData = EncryptedXml.EncryptKey(data, rsa, true);
@@ -849,7 +852,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             using (TripleDES tripleDES = TripleDES.Create())
             {
-                byte[] key = Encoding.ASCII.GetBytes("123456781234567812345678");
+                byte[] key = "123456781234567812345678"u8.ToArray();
 
                 byte[] encryptedKey = EncryptedXml.EncryptKey(key, tripleDES);
 
@@ -863,7 +866,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             using (Aes aes = Aes.Create())
             {
-                byte[] key = Encoding.ASCII.GetBytes("123456781234567812345678");
+                byte[] key = "123456781234567812345678"u8.ToArray();
 
                 byte[] encryptedKey = EncryptedXml.EncryptKey(key, aes);
 
@@ -877,7 +880,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             using (Aes aes = Aes.Create())
             {
-                byte[] key = Encoding.ASCII.GetBytes("12345678");
+                byte[] key = "12345678"u8.ToArray();
 
                 byte[] encryptedKey = EncryptedXml.EncryptKey(key, aes);
 
@@ -891,7 +894,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             using (Aes aes = Aes.Create())
             {
-                byte[] key = Encoding.ASCII.GetBytes("1234567");
+                byte[] key = "1234567"u8.ToArray();
 
                 Assert.Throws<CryptographicException>(() => EncryptedXml.EncryptKey(key, aes));
             }
@@ -902,7 +905,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             using (TripleDES tripleDES = TripleDES.Create())
             {
-                byte[] key = Encoding.ASCII.GetBytes("123");
+                byte[] key = "123"u8.ToArray();
 
                 Assert.Throws<CryptographicException>(() => EncryptedXml.DecryptKey(key, tripleDES));
             }
@@ -913,7 +916,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             using (TripleDES tripleDES = TripleDES.Create())
             {
-                byte[] key = Encoding.ASCII.GetBytes("123456781234567812345678");
+                byte[] key = "123456781234567812345678"u8.ToArray();
 
                 byte[] encryptedKey = EncryptedXml.EncryptKey(key, tripleDES);
                 encryptedKey[0] ^= 0xFF;
@@ -927,7 +930,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             using (Aes aes = Aes.Create())
             {
-                byte[] key = Encoding.ASCII.GetBytes("123");
+                byte[] key = "123"u8.ToArray();
 
                 Assert.Throws<CryptographicException>(() => EncryptedXml.DecryptKey(key, aes));
             }
@@ -938,7 +941,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             using (Aes aes = Aes.Create())
             {
-                byte[] key = Encoding.ASCII.GetBytes("123456781234567812345678");
+                byte[] key = "123456781234567812345678"u8.ToArray();
 
                 byte[] encryptedKey = EncryptedXml.EncryptKey(key, aes);
                 encryptedKey[0] ^= 0xFF;
@@ -952,7 +955,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             using (Aes aes = Aes.Create())
             {
-                byte[] key = Encoding.ASCII.GetBytes("12345678");
+                byte[] key = "12345678"u8.ToArray();
 
                 byte[] encryptedKey = EncryptedXml.EncryptKey(key, aes);
                 encryptedKey[0] ^= 0xFF;

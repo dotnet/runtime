@@ -8,24 +8,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Principal
 {
-    [Flags]
-    internal enum PolicyRights
-    {
-        POLICY_VIEW_LOCAL_INFORMATION = 0x00000001,
-        POLICY_VIEW_AUDIT_INFORMATION = 0x00000002,
-        POLICY_GET_PRIVATE_INFORMATION = 0x00000004,
-        POLICY_TRUST_ADMIN = 0x00000008,
-        POLICY_CREATE_ACCOUNT = 0x00000010,
-        POLICY_CREATE_SECRET = 0x00000020,
-        POLICY_CREATE_PRIVILEGE = 0x00000040,
-        POLICY_SET_DEFAULT_QUOTA_LIMITS = 0x00000080,
-        POLICY_SET_AUDIT_REQUIREMENTS = 0x00000100,
-        POLICY_AUDIT_LOG_ADMIN = 0x00000200,
-        POLICY_SERVER_ADMIN = 0x00000400,
-        POLICY_LOOKUP_NAMES = 0x00000800,
-        POLICY_NOTIFICATION = 0x00001000,
-    }
-
     internal static class Win32
     {
         internal const int FALSE = 0;
@@ -37,7 +19,7 @@ namespace System.Security.Principal
 
         internal static SafeLsaPolicyHandle LsaOpenPolicy(
             string? systemName,
-            PolicyRights rights)
+            Interop.Advapi32.PolicyRights rights)
         {
 
             Interop.OBJECT_ATTRIBUTES attributes = default;
@@ -46,7 +28,10 @@ namespace System.Security.Principal
             {
                 return policyHandle;
             }
-            else if (error == Interop.StatusOptions.STATUS_ACCESS_DENIED)
+
+            policyHandle.Dispose();
+
+            if (error == Interop.StatusOptions.STATUS_ACCESS_DENIED)
             {
                 throw new UnauthorizedAccessException();
             }
@@ -112,23 +97,23 @@ namespace System.Security.Principal
         //
 
 
-        internal static int CreateSidFromString(
+        internal static unsafe int CreateSidFromString(
             string stringSid,
             out byte[]? resultSid
             )
         {
             int ErrorCode;
-            IntPtr ByteArray = IntPtr.Zero;
+            void* pSid = null;
 
             try
             {
-                if (FALSE == Interop.Advapi32.ConvertStringSidToSid(stringSid, out ByteArray))
+                if (Interop.BOOL.FALSE == Interop.Advapi32.ConvertStringSidToSid(stringSid, out pSid))
                 {
-                    ErrorCode = Marshal.GetLastWin32Error();
+                    ErrorCode = Marshal.GetLastPInvokeError();
                     goto Error;
                 }
 
-                resultSid = ConvertIntPtrSidToByteArraySid(ByteArray);
+                resultSid = ConvertIntPtrSidToByteArraySid((IntPtr)pSid);
             }
             finally
             {
@@ -136,7 +121,7 @@ namespace System.Security.Principal
                 // Now is a good time to get rid of the returned pointer
                 //
 
-                Marshal.FreeHGlobal(ByteArray);
+                Marshal.FreeHGlobal((IntPtr)pSid);
             }
 
             //
@@ -178,7 +163,7 @@ namespace System.Security.Principal
             {
                 resultSid = null;
 
-                return Marshal.GetLastWin32Error();
+                return Marshal.GetLastPInvokeError();
             }
         }
 
@@ -202,48 +187,6 @@ namespace System.Security.Principal
                 sid2.GetBinaryForm(BinaryForm2, 0);
 
                 return (Interop.Advapi32.IsEqualDomainSid(BinaryForm1, BinaryForm2, out bool result) == FALSE ? false : result);
-            }
-        }
-
-        /// <summary>
-        ///     Setup the size of the buffer Windows provides for an LSA_REFERENCED_DOMAIN_LIST
-        /// </summary>
-
-        internal static void InitializeReferencedDomainsPointer(SafeLsaMemoryHandle referencedDomains)
-        {
-            Debug.Assert(referencedDomains != null, "referencedDomains != null");
-
-            // We don't know the real size of the referenced domains yet, so we need to set an initial
-            // size based on the LSA_REFERENCED_DOMAIN_LIST structure, then resize it to include all of
-            // the domains.
-            referencedDomains!.Initialize((uint)Marshal.SizeOf<Interop.LSA_REFERENCED_DOMAIN_LIST>());
-            Interop.LSA_REFERENCED_DOMAIN_LIST domainList = referencedDomains.Read<Interop.LSA_REFERENCED_DOMAIN_LIST>(0);
-
-            unsafe
-            {
-                byte* pRdl = null;
-                try
-                {
-                    referencedDomains.AcquirePointer(ref pRdl);
-
-                    // If there is a trust information list, then the buffer size is the end of that list minus
-                    // the beginning of the domain list. Otherwise, then the buffer is just the size of the
-                    // referenced domain list structure, which is what we defaulted to.
-                    if (domainList.Domains != IntPtr.Zero)
-                    {
-                        Interop.LSA_TRUST_INFORMATION* pTrustInformation = (Interop.LSA_TRUST_INFORMATION*)domainList.Domains;
-                        pTrustInformation = pTrustInformation + domainList.Entries;
-
-                        long bufferSize = (byte*)pTrustInformation - pRdl;
-                        Debug.Assert(bufferSize > 0, "bufferSize > 0");
-                        referencedDomains.Initialize((ulong)bufferSize);
-                    }
-                }
-                finally
-                {
-                    if (pRdl != null)
-                        referencedDomains.ReleasePointer();
-                }
             }
         }
 
@@ -275,7 +218,7 @@ namespace System.Security.Principal
             {
                 resultSid = null;
 
-                return Marshal.GetLastWin32Error();
+                return Marshal.GetLastPInvokeError();
             }
         }
 

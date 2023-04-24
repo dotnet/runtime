@@ -45,27 +45,27 @@ function print_usage {
     echo '  --test-env                       : Script to set environment variables for tests'
     echo '  --copyNativeTestBin              : Explicitly copy native test components into the test dir'
     echo '  --crossgen                       : Precompiles the framework managed assemblies'
-    echo '  --runcrossgentests               : Runs the ready to run tests' 
-    echo '  --jitstress=<n>                  : Runs the tests with COMPlus_JitStress=n'
-    echo '  --jitstressregs=<n>              : Runs the tests with COMPlus_JitStressRegs=n'
-    echo '  --jitminopts                     : Runs the tests with COMPlus_JITMinOpts=1'
-    echo '  --jitforcerelocs                 : Runs the tests with COMPlus_ForceRelocs=1'
+    echo '  --runcrossgentests               : Runs the ready to run tests'
+    echo '  --jitstress=<n>                  : Runs the tests with DOTNET_JitStress=n'
+    echo '  --jitstressregs=<n>              : Runs the tests with DOTNET_JitStressRegs=n'
+    echo '  --jitminopts                     : Runs the tests with DOTNET_JITMinOpts=1'
+    echo '  --jitforcerelocs                 : Runs the tests with DOTNET_ForceRelocs=1'
     echo '  --jitdisasm                      : Runs jit-dasm on the tests'
-    echo '  --gcstresslevel=<n>              : Runs the tests with COMPlus_GCStress=n'
-    echo '  --gcname=<n>                     : Runs the tests with COMPlus_GCName=n'
+    echo '  --gcstresslevel=<n>              : Runs the tests with DOTNET_GCStress=n'
+    echo '  --gcname=<n>                     : Runs the tests with DOTNET_GCName=n'
     echo '  --ilasmroundtrip                 : Runs ilasm round trip on the tests'
     echo '    0: None                                1: GC on all allocs and '"'easy'"' places'
     echo '    2: GC on transitions to preemptive GC  4: GC on every allowable JITed instr'
     echo '    8: GC on every allowable NGEN instr   16: GC only on a unique stack trace'
     echo '  --long-gc                        : Runs the long GC tests'
     echo '  --gcsimulator                    : Runs the GCSimulator tests'
-    echo '  --tieredcompilation              : Runs the tests with COMPlus_TieredCompilation=1'
+    echo '  --tieredcompilation              : Runs the tests with DOTNET_TieredCompilation=1'
     echo '  --link <ILlink>                  : Runs the tests after linking via ILlink'
     echo '  --show-time                      : Print execution sequence and running time for each test'
     echo '  --no-lf-conversion               : Do not execute LF conversion before running test script'
     echo '  --limitedDumpGeneration          : Enables the generation of a limited number of core dumps if test(s) crash, even if ulimit'
     echo '                                     is zero when launching this script. This option is intended for use in CI.'
-    echo '  --xunitOutputPath=<path>         : Create xUnit XML report at the specifed path (default: <test root>/coreclrtests.xml)'
+    echo '  --xunitOutputPath=<path>         : Create xUnit XML report at the specified path (default: <test root>/coreclrtests.xml)'
     echo ''
     echo 'Runtime Code Coverage options:'
     echo '  --coreclr-coverage               : Optional argument to get coreclr code coverage reports'
@@ -173,11 +173,11 @@ function xunit_output_add_test {
     line="${line} type=\"${testDir}\""
     line="${line} method=\"${testName}\""
     line="${line} result=\"${testResult}\""
-    if [ -n "$testRunningTime" ] && [ "$testResult" != "Skip" ]; then
+    if [[ -n "$testRunningTime" && "$testResult" != "Skip" ]]; then
         line="${line} time=\"${testRunningTime}\""
     fi
 
-    if [ "$testResult" == "Pass" ]; then
+    if [[ "$testResult" == "Pass" ]]; then
         line="${line}/>"
         echo "$line" >>"$xunitTestOutputPath"
         return
@@ -187,7 +187,7 @@ function xunit_output_add_test {
     echo "$line" >>"$xunitTestOutputPath"
 
     line="        "
-    if [ "$testResult" == "Skip" ]; then
+    if [[ "$testResult" == "Skip" ]]; then
         line="${line}<reason><![CDATA[$(cat "$outputFilePath")]]></reason>"
         echo "$line" >>"$xunitTestOutputPath"
     else
@@ -341,9 +341,9 @@ function text_file_output_add_test {
     local scriptFilePath=$1
     local testResult=$2 # Pass, Fail, or Skip
 
-    if [ "$testResult" == "Pass" ]; then
+    if [[ "$testResult" == "Pass" ]]; then
         echo "$scriptFilePath" >>"$testsPassOutputPath"
-    elif [ "$testResult" == "Skip" ]; then
+    elif [[ "$testResult" == "Skip" ]]; then
         echo "$scriptFilePath" >>"$testsSkipOutputPath"
     else
         echo "$scriptFilePath" >>"$testsFailOutputPath"
@@ -438,7 +438,7 @@ declare -a skipCrossGenFiles
 
 function is_skip_crossgen_test {
     for skip in "${skipCrossGenFiles[@]}"; do
-        if [ "$1" == "$skip" ]; then
+        if [[ "$1" == "$skip" ]]; then
             return 0
         fi
     done
@@ -448,17 +448,17 @@ function is_skip_crossgen_test {
 function precompile_overlay_assemblies {
     skipCrossGenFiles=($(read_array "$(dirname "$0")/skipCrossGenFiles.$ARCH.txt"))
 
-    if [ $doCrossgen == 1 ]; then
+    if [[ "$doCrossgen" == 1 ]]; then
         local overlayDir=$CORE_ROOT
 
         filesToPrecompile=$(find -L $overlayDir -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -type f )
         for fileToPrecompile in ${filesToPrecompile}
         do
             local filename=${fileToPrecompile}
-            if [ $jitdisasm == 1 ]; then
+            if [[ "$jitdisasm" == 1 ]]; then
                 $overlayDir/corerun $overlayDir/jit-dasm.dll --crossgen $overlayDir/crossgen --platform $overlayDir --output $testRootDir/dasm $filename
                 local exitCode=$?
-                if [ $exitCode != 0 ]; then
+                if [[ "$exitCode" != 0 ]]; then
                     echo Unable to generate dasm for $filename
                 fi
             else
@@ -551,7 +551,7 @@ function load_playlist_tests {
 
 function is_unsupported_test {
     for unsupportedTest in "${unsupportedTests[@]}"; do
-        if [ "$1" == "$unsupportedTest" ]; then
+        if [[ "$1" == "$unsupportedTest" ]]; then
             return 0
         fi
     done
@@ -560,7 +560,7 @@ function is_unsupported_test {
 
 function is_failing_test {
     for failingTest in "${failingTests[@]}"; do
-        if [ "$1" == "$failingTest" ]; then
+        if [[ "$1" == "$failingTest" ]]; then
             return 0
         fi
     done
@@ -569,7 +569,7 @@ function is_failing_test {
 
 function is_playlist_test {
     for playlistTest in "${playlistTests[@]}"; do
-        if [ "$1" == "$playlistTest" ]; then
+        if [[ "$1" == "$playlistTest" ]]; then
             return 0
         fi
     done
@@ -625,7 +625,7 @@ function set_up_core_dump_generation {
     # Allow dump generation
     ulimit -c unlimited
 
-    if [ "$(uname -s)" == "Linux" ]; then
+    if [[ "$(uname -s)" == "Linux" ]]; then
         if [ -e /proc/self/coredump_filter ]; then
             # Include memory in private and shared file-backed mappings in the dump.
             # This ensures that we can see disassembly from our shared libraries when
@@ -638,7 +638,7 @@ function set_up_core_dump_generation {
 function print_info_from_core_file {
 
     #### temporary
-    if [ "$ARCH" == "arm64" ]; then
+    if [[ "$ARCH" == "arm64" ]]; then
         echo "Not inspecting core dumps on arm64 at the moment."
         return
     fi
@@ -675,19 +675,19 @@ function print_info_from_core_file {
 function inspect_and_delete_core_files {
     # This function prints some basic information from core files in the current
     # directory and deletes them immediately.
-    
+
     # Depending on distro/configuration, the core files may either be named "core"
-    # or "core.<PID>" by default. We will read /proc/sys/kernel/core_uses_pid to 
+    # or "core.<PID>" by default. We will read /proc/sys/kernel/core_uses_pid to
     # determine which one it is.
     # On OS X/macOS, we checked the kern.corefile value before enabling core dump
     # generation, so we know it always includes the PID.
     local core_name_uses_pid=0
-    if [[ (( -e /proc/sys/kernel/core_uses_pid ) && ( "1" == $(cat /proc/sys/kernel/core_uses_pid) )) 
+    if [[ (( -e /proc/sys/kernel/core_uses_pid ) && ( "1" == $(cat /proc/sys/kernel/core_uses_pid) ))
           || ( "$(uname -s)" == "Darwin" ) ]]; then
         core_name_uses_pid=1
     fi
 
-    if [ $core_name_uses_pid == "1" ]; then
+    if [[ "$core_name_uses_pid" == "1" ]]; then
         # We don't know what the PID of the process was, so let's look at all core
         # files whose name matches core.NUMBER
         for f in core.*; do
@@ -711,7 +711,7 @@ function run_test {
     local scriptFileName=$(basename "$scriptFilePath")
     local outputFileName=$(basename "$outputFilePath")
 
-    if [ "$limitedCoreDumps" == "ON" ]; then
+    if [[ "$limitedCoreDumps" == "ON" ]]; then
         set_up_core_dump_generation
     fi
 
@@ -720,27 +720,29 @@ function run_test {
 
     # We will try to print some information from generated core dumps if a debugger
     # is available, and possibly store a dump in a non-transient location.
-    if [ "$limitedCoreDumps" == "ON" ]; then
+    if [[ "$limitedCoreDumps" == "ON" ]]; then
         inspect_and_delete_core_files
     fi
 
     return $testScriptExitCode
 }
 
-# Variables for running tests in the background
-if [ `uname` = "NetBSD" ]; then
-    NumProc=$(getconf NPROCESSORS_ONLN)
-elif [ `uname` = "Darwin" ]; then
-    NumProc=$(getconf _NPROCESSORS_ONLN)
+# Get the number of processors available to the scheduler
+platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
+if [[ "$platform" == "freebsd" ]]; then
+  NumProc="$(($(sysctl -n hw.ncpu)+1))"
+elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
+  NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
+elif [[ "$platform" == "darwin" ]]; then
+  NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
+elif command -v nproc > /dev/null 2>&1; then
+  NumProc="$(nproc)"
+elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+  NumProc="$(getconf _NPROCESSORS_ONLN)"
 else
-    if [ -x "$(command -v nproc)" ]; then
-        NumProc=$(nproc --all)
-    elif [ -x "$(command -v getconf)" ]; then
-        NumProc=$(getconf _NPROCESSORS_ONLN)
-    else
-        NumProc=1
-    fi
+  NumProc=1
 fi
+
 ((maxProcesses = $NumProc * 3 / 2)) # long tests delay process creation, use a few more processors
 
 ((processCount = 0))
@@ -757,7 +759,7 @@ function waitany {
     while true; do
         for (( i=0; i<$maxProcesses; i++ )); do
             pid=${processIds[$i]}
-            if [ -z "$pid" ] || [ "$pid" == "$pidNone" ]; then
+            if [[ -z "$pid" || "$pid" == "$pidNone" ]]; then
                 continue
             fi
             if ! kill -0 $pid 2>/dev/null; then
@@ -777,7 +779,7 @@ function get_available_process_index {
     local i=0
     for (( i=0; i<$maxProcesses; i++ )); do
         pid=${processIds[$i]}
-        if [ -z "$pid" ] || [ "$pid" == "$pidNone" ]; then
+        if [[ -z "$pid" || "$pid" == "$pidNone" ]]; then
             break
         fi
     done
@@ -802,7 +804,7 @@ function finish_test {
         header=$(printf "[%4d]" $countTotalTests)
     fi
 
-    if [ "$showTime" == "ON" ]; then
+    if [[ "$showTime" == "ON" ]]; then
         testEndTime=$(date +%s)
         testRunningTime=$(( $testEndTime - ${testStartTimes[$finishedProcessIndex]} ))
         header=$header$(printf "[%4ds]" $testRunningTime)
@@ -853,13 +855,13 @@ function prep_test {
     local scriptFilePath=$1
     local scriptFileDir=$(dirname "$scriptFilePath")
 
-    test "$verbose" == 1 && echo "Preparing $scriptFilePath"
+    test "$verbose" = 1 && echo "Preparing $scriptFilePath"
 
-    if [ ! "$noLFConversion" == "ON" ]; then
+    if [[ "$noLFConversion" != "ON" ]]; then
         # Convert DOS line endings to Unix if needed
         perl -pi -e 's/\r\n|\n|\r/\n/g' "$scriptFilePath"
     fi
-        
+
     # Add executable file mode bit if needed
     chmod +x "$scriptFilePath"
 
@@ -891,11 +893,11 @@ function start_test {
     local outputFilePath=$(dirname "$scriptFilePath")/${scriptFileName}.out
     outputFilePaths[$nextProcessIndex]=$outputFilePath
 
-    if [ "$showTime" == "ON" ]; then
+    if [[ "$showTime" == "ON" ]]; then
         testStartTimes[$nextProcessIndex]=$(date +%s)
     fi
 
-    test "$verbose" == 1 && echo "Starting $scriptFilePath"
+    test "$verbose" = 1 && echo "Starting $scriptFilePath"
     if is_unsupported_test "$scriptFilePath"; then
         skip_unsupported_test "$scriptFilePath" "$outputFilePath" &
     elif ((runFailingTestsOnly == 0)) && is_failing_test "$scriptFilePath"; then
@@ -985,8 +987,14 @@ function check_cpu_architecture {
         armv7l)
             __arch=arm
             ;;
-        aarch64)
+        aarch64|arm64)
             __arch=arm64
+            ;;
+        loongarch64)
+            __arch=loongarch64
+            ;;
+        riscv64)
+            __arch=riscv64
             ;;
         *)
             echo "Unknown CPU $CPUName detected, configuring as if for x64"
@@ -1047,26 +1055,26 @@ do
             doCrossgen=1
             ;;
         --jitstress=*)
-            export COMPlus_JitStress=${i#*=}
+            export DOTNET_JitStress=${i#*=}
             ;;
         --jitstressregs=*)
-            export COMPlus_JitStressRegs=${i#*=}
+            export DOTNET_JitStressRegs=${i#*=}
             ;;
         --jitminopts)
-            export COMPlus_JITMinOpts=1
+            export DOTNET_JITMinOpts=1
             ;;
         --copyNativeTestBin)
             export copyNativeTestBin=1
             ;;
         --jitforcerelocs)
-            export COMPlus_ForceRelocs=1
+            export DOTNET_ForceRelocs=1
             ;;
         --link=*)
             export ILLINK=${i#*=}
             export DoLink=true
             ;;
         --tieredcompilation)
-            export COMPlus_TieredCompilation=1
+            export DOTNET_TieredCompilation=1
             ;;
         --jitdisasm)
             jitdisasm=1
@@ -1105,7 +1113,7 @@ do
             ((disableEventLogging = 1))
             ;;
         --runcrossgentests)
-            export RunCrossGen=1
+            export RunCrossGen2=1
             ;;
         --sequential)
             ((maxProcesses = 1))
@@ -1136,12 +1144,12 @@ do
             ;;
         --test-env=*)
             testEnv=${i#*=}
-            ;;            
+            ;;
         --gcstresslevel=*)
-            export COMPlus_GCStress=${i#*=}
-            ;;            
+            export DOTNET_GCStress=${i#*=}
+            ;;
         --gcname=*)
-            export COMPlus_GCName=${i#*=}
+            export DOTNET_GCName=${i#*=}
             ;;
         --show-time)
             showTime=ON
@@ -1166,16 +1174,16 @@ do
     esac
 done
 
-if [ -n "$coreOverlayDir" ] && [ "$buildOverlayOnly" == "ON" ]; then
+if [[ -n "$coreOverlayDir" && "$buildOverlayOnly" == "ON" ]]; then
     echo "Can not use \'--coreOverlayDir=<path>\' and \'--build-overlay-only\' at the same time."
     exit $EXIT_CODE_EXCEPTION
 fi
 
 if ((disableEventLogging == 0)); then
-    export COMPlus_EnableEventLog=1
+    export DOTNET_EnableEventLog=1
 fi
 
-export COMPlus_gcServer="$serverGC"
+export DOTNET_gcServer="$serverGC"
 
 if [ -z "$testRootDir" ]; then
     echo "--testRootDir is required."
@@ -1189,36 +1197,36 @@ fi
 
 # Copy native interop test libraries over to the mscorlib path in
 # order for interop tests to run on linux.
-if [ -z "$mscorlibDir" ]; then
+if [[ -z "$mscorlibDir" ]]; then
     mscorlibDir=$coreClrBinDir
 fi
 
-if [ ! -z "$longgc" ]; then
+if [[ -n "$longgc" ]]; then
     echo "Running Long GC tests"
     export RunningLongGCTests=1
 fi
 
-if [ ! -z "$gcsimulator" ]; then
+if [[ -n "$gcsimulator" ]]; then
     echo "Running GC simulator tests"
     export RunningGCSimulatorTests=1
 fi
 
-if [[ ! "$jitdisasm" -eq 0 ]]; then
+if [[ "$jitdisasm" -ne 0 ]]; then
     echo "Running jit disasm"
     export RunningJitDisasm=1
 fi
 
-if [ ! -z "$ilasmroundtrip" ]; then
+if [[ -n "$ilasmroundtrip" ]]; then
     echo "Running Ilasm round trip"
     export RunningIlasmRoundTrip=1
 fi
 
 # If this is a coverage run, make sure the appropriate args have been passed
-if [ "$CoreClrCoverage" == "ON" ]
+if [[ "$CoreClrCoverage" == "ON" ]]
 then
     echo "Code coverage is enabled for this run"
     echo ""
-    if [ ! "$OSName" == "Darwin" ] && [ ! "$OSName" == "Linux" ]
+    if [[ "$OSName" != "Darwin" && "$OSName" != "Linux" ]]
     then
         echo "Code Coverage not supported on $OS"
         exit 1
@@ -1251,7 +1259,7 @@ text_file_output_begin
 create_core_overlay
 precompile_overlay_assemblies
 
-if [ "$buildOverlayOnly" == "ON" ];
+if [[ "$buildOverlayOnly" == "ON" ]];
 then
     echo "Build overlay directory '$coreOverlayDir' complete."
     exit 0
@@ -1302,7 +1310,7 @@ echo "$(($time_diff / 60)) minutes and $(($time_diff % 60)) seconds taken to run
 
 xunit_output_end
 
-if [ "$CoreClrCoverage" == "ON" ]
+if [[ "$CoreClrCoverage" == "ON" ]]
 then
     coreclr_code_coverage
 fi

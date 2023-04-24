@@ -32,7 +32,6 @@ namespace System.Runtime.CompilerServices
         /// <param name="sequencePoint">Debug information corresponding to the sequence point.</param>
         public abstract void MarkSequencePoint(LambdaExpression method, int ilOffset, DebugInfoExpression sequencePoint);
 
-#if FEATURE_COMPILE
         internal virtual void MarkSequencePoint(LambdaExpression method, MethodBase methodBase, ILGenerator ilg, DebugInfoExpression sequencePoint)
         {
             MarkSequencePoint(method, ilg.ILOffset, sequencePoint);
@@ -42,6 +41,5 @@ namespace System.Runtime.CompilerServices
         {
             // nop
         }
-#endif
     }
 }

@@ -65,6 +65,7 @@ namespace System.Data.Common
             return _schemaInfo[i].typeName;
         }
 
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public override Type GetFieldType(int i)
         {
             return _schemaInfo[i].type;
@@ -103,7 +104,7 @@ namespace System.Data.Common
 
         public override long GetBytes(int i, long dataIndex, byte[]? buffer, int bufferIndex, int length)
         {
-            int cbytes = 0;
+            int cbytes;
             int ndataIndex;
 
             byte[] data = (byte[])_values[i];
@@ -130,7 +131,7 @@ namespace System.Data.Common
                 {
                     // help the user out in the case where there's less data than requested
                     if ((ndataIndex + length) > cbytes)
-                        cbytes = cbytes - ndataIndex;
+                        cbytes -= ndataIndex;
                     else
                         cbytes = length;
                 }
@@ -204,7 +205,7 @@ namespace System.Data.Common
                     // help the user out in the case where there's less data than requested
                     if ((ndataIndex + length) > cchars)
                     {
-                        cchars = cchars - ndataIndex;
+                        cchars -= ndataIndex;
                     }
                     else
                     {
@@ -306,42 +307,39 @@ namespace System.Data.Common
             return new AttributeCollection(null);
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
-        string ICustomTypeDescriptor.GetClassName()
+        string? ICustomTypeDescriptor.GetClassName()
         {
             return null;
         }
 
-        string ICustomTypeDescriptor.GetComponentName()
+        string? ICustomTypeDescriptor.GetComponentName()
         {
             return null;
         }
 
         [RequiresUnreferencedCode("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
-        TypeConverter ICustomTypeDescriptor.GetConverter()
+        TypeConverter? ICustomTypeDescriptor.GetConverter()
         {
             return null;
         }
 
         [RequiresUnreferencedCode("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
-        EventDescriptor ICustomTypeDescriptor.GetDefaultEvent()
+        EventDescriptor? ICustomTypeDescriptor.GetDefaultEvent()
         {
             return null;
         }
 
         [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered.")]
-        PropertyDescriptor ICustomTypeDescriptor.GetDefaultProperty()
+        PropertyDescriptor? ICustomTypeDescriptor.GetDefaultProperty()
         {
             return null;
         }
 
         [RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
-        object ICustomTypeDescriptor.GetEditor(Type editorBaseType)
+        object? ICustomTypeDescriptor.GetEditor(Type editorBaseType)
         {
             return null;
         }
-#nullable enable
 
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents()
         {
@@ -349,7 +347,7 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes)
+        EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[]? attributes)
         {
             return new EventDescriptorCollection(null);
         }
@@ -361,16 +359,10 @@ namespace System.Data.Common
         }
 
         [RequiresUnreferencedCode("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
-        {
-            if (_propertyDescriptors == null)
-            {
-                _propertyDescriptors = new PropertyDescriptorCollection(null);
-            }
-            return _propertyDescriptors;
-        }
+        PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[]? attributes) =>
+            _propertyDescriptors ??= new PropertyDescriptorCollection(null);
 
-        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd)
+        object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor? pd)
         {
             return this;
         }
@@ -381,6 +373,7 @@ namespace System.Data.Common
     {
         public string name;
         public string typeName;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)]
         public Type type;
     }
 }

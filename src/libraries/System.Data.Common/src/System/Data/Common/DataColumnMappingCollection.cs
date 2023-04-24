@@ -81,7 +81,7 @@ namespace System.Data.Common
             }
         }
 
-        private Type ItemType
+        private static Type ItemType
         {
             get { return typeof(DataColumnMapping); }
         }
@@ -151,7 +151,7 @@ namespace System.Data.Common
             AddEnumerableRange(values, true);
         }*/
 
-        private void AddEnumerableRange(IEnumerable values, bool doClone)
+        private void AddEnumerableRange(Array values, bool doClone)
         {
             if (null == values)
             {
@@ -385,7 +385,7 @@ namespace System.Data.Common
             _items[index] = newValue;
         }
 
-        private void ValidateType([NotNull] object? value)
+        private static void ValidateType([NotNull] object? value)
         {
             if (null == value)
             {
@@ -442,7 +442,7 @@ namespace System.Data.Common
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public static DataColumn? GetDataColumn(DataColumnMappingCollection? columnMappings, string sourceColumn, Type? dataType, DataTable dataTable, MissingMappingAction mappingAction, MissingSchemaAction schemaAction)
+        public static DataColumn? GetDataColumn(DataColumnMappingCollection? columnMappings, string sourceColumn, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type? dataType, DataTable dataTable, MissingMappingAction mappingAction, MissingSchemaAction schemaAction)
         {
             if (null != columnMappings)
             {

@@ -56,9 +56,6 @@ public:
         ULONG cbData,
         LPCVOID pbData);
 
-    __checkReturn
-    HRESULT InitHotPools(DataBuffer hotMetaData);
-
     void Uninit();
 
 protected:
@@ -89,7 +86,6 @@ void CLiteWeightStgdb<MiniMd>::Uninit()
 
 class CLiteWeightStgdbRW : public CLiteWeightStgdb<CMiniMdRW>
 {
-    friend class CImportTlb;
     friend class RegMeta;
     friend class VerifyLayoutsMD;
     friend HRESULT TranslateSigHelper(
@@ -132,14 +128,12 @@ public:
     HRESULT GetSaveSize(
         CorSaveSize               fSize,
         UINT32                   *pcbSaveSize,
-        MetaDataReorderingOptions reorderingOptions = NoReordering,
-        CorProfileData           *pProfileData = NULL); // optional IBC profile data for working set optimization
+        MetaDataReorderingOptions reorderingOptions = NoReordering);
 
     __checkReturn
     HRESULT SaveToStream(
         IStream                  *pIStream,                 // Stream to which to write
-        MetaDataReorderingOptions reorderingOptions = NoReordering,
-        CorProfileData           *pProfileData = NULL);     // optional IBC profile data for working set optimization
+        MetaDataReorderingOptions reorderingOptions = NoReordering);
 
     __checkReturn
     HRESULT Save(
@@ -167,13 +161,6 @@ public:
         PVOID pImage,                       // Pointer to head of a file
         DWORD dwFileLength,                 // length of a flat file
         BOOL  bMappedImage,                 // Is the file mapped
-        PVOID *ppMetaData,                  // [out] pointer to the metadata
-        ULONG *pcbMetaData);                // [out] size of the metadata
-
-    __checkReturn
-    HRESULT FindObjMetaData(
-        PVOID pImage,                       // Pointer to an OBJ file
-        DWORD dwFileLength,                 // Length of the file
         PVOID *ppMetaData,                  // [out] pointer to the metadata
         ULONG *pcbMetaData);                // [out] size of the metadata
 
@@ -216,8 +203,7 @@ protected:
     HRESULT GetTablesSaveSize(
         CorSaveSize               fSave,
         UINT32                   *pcbSaveSize,
-        MetaDataReorderingOptions reorderingOptions,
-        CorProfileData           *pProfileData = NULL); // Add pool data to this value.
+        MetaDataReorderingOptions reorderingOptions);
 
     __checkReturn
     HRESULT AddStreamToList(
@@ -227,8 +213,7 @@ protected:
     __checkReturn
     HRESULT SaveToStorage(
         TiggerStorage            *pStorage,
-        MetaDataReorderingOptions reorderingOptions = NoReordering,
-        CorProfileData            *pProfileData = NULL);
+        MetaDataReorderingOptions reorderingOptions = NoReordering);
 
     __checkReturn
     HRESULT SavePool(LPCWSTR szName, TiggerStorage *pStorage, int iPool);

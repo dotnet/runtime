@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Reflection\DispatchProxy.cs" />
@@ -12,15 +11,12 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Linq" />
-    <Reference Include="System.Reflection" />
     <Reference Include="System.Reflection.Emit" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />
-    <Reference Include="System.Reflection.Extensions" />
     <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

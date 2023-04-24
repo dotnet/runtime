@@ -375,7 +375,7 @@ Namespace Microsoft.VisualBasic.FileIO
         Public Function PeekChars(ByVal numberOfChars As Integer) As String
 
             If numberOfChars <= 0 Then
-                Throw GetArgumentExceptionWithArgName("numberOfChars", SR.TextFieldParser_NumberOfCharsMustBePositive, "numberOfChars")
+                Throw GetArgumentExceptionWithArgName("numberOfChars", SR.TextFieldParser_NumberOfCharsMustBePositive)
             End If
 
             If m_Reader Is Nothing Or m_Buffer Is Nothing Then
@@ -454,6 +454,7 @@ Namespace Microsoft.VisualBasic.FileIO
         '''  Closes the StreamReader
         ''' </summary>
         ''' <remarks></remarks>
+        <EditorBrowsable(EditorBrowsableState.Advanced)>
         Public Sub Close()
             CloseReader()
         End Sub
@@ -690,16 +691,14 @@ Namespace Microsoft.VisualBasic.FileIO
 
             ' No need to slide if we're already at the beginning
             If m_Position > 0 Then
-                Dim BufferLength As Integer = m_Buffer.Length
-                Dim TempArray(BufferLength - 1) As Char
-                Array.Copy(m_Buffer, m_Position, TempArray, 0, BufferLength - m_Position)
+                Dim ContentLength As Integer = m_CharsRead - m_Position
 
-                ' Fill the rest of the buffer
-                Dim CharsRead As Integer = m_Reader.Read(TempArray, BufferLength - m_Position, m_Position)
-                m_CharsRead = m_CharsRead - m_Position + CharsRead
+                Array.Copy(m_Buffer, m_Position, m_Buffer, 0, ContentLength)
 
+                ' Try to fill the rest of the buffer
+                Dim CharsRead As Integer = m_Reader.Read(m_Buffer, ContentLength, m_Buffer.Length - ContentLength)
+                m_CharsRead = ContentLength + CharsRead
                 m_Position = 0
-                m_Buffer = TempArray
 
                 Return CharsRead
             End If
@@ -717,26 +716,29 @@ Namespace Microsoft.VisualBasic.FileIO
 
             Debug.Assert(m_Buffer IsNot Nothing, "There's no buffer")
             Debug.Assert(m_Reader IsNot Nothing, "There's no StreamReader")
+            Debug.Assert(m_Position = 0, "Non-zero position")
 
             ' Set cursor
             m_PeekPosition = m_CharsRead
 
-            ' Create a larger buffer and copy our data into it
-            Dim BufferSize As Integer = m_Buffer.Length + DEFAULT_BUFFER_LENGTH
+            If m_CharsRead = m_Buffer.Length Then
+                ' Create a larger buffer and copy our data into it
+                Dim BufferSize As Integer = m_Buffer.Length + DEFAULT_BUFFER_LENGTH
 
-            ' Make sure the buffer hasn't grown too large
-            If BufferSize > m_MaxBufferSize Then
-                Throw GetInvalidOperationException(SR.TextFieldParser_BufferExceededMaxSize)
+                ' Make sure the buffer hasn't grown too large
+                If BufferSize > m_MaxBufferSize Then
+                    Throw GetInvalidOperationException(SR.TextFieldParser_BufferExceededMaxSize)
+                End If
+
+                Dim TempArray(BufferSize - 1) As Char
+                Array.Copy(m_Buffer, TempArray, m_Buffer.Length)
+                m_Buffer = TempArray
             End If
 
-            Dim TempArray(BufferSize - 1) As Char
+            Dim CharsRead As Integer = m_Reader.Read(m_Buffer, m_CharsRead, m_Buffer.Length - m_CharsRead)
+            Debug.Assert(CharsRead <= m_Buffer.Length - m_CharsRead, "We've read more chars than we have space for")
 
-            Array.Copy(m_Buffer, TempArray, m_Buffer.Length)
-            Dim CharsRead As Integer = m_Reader.Read(TempArray, m_Buffer.Length, DEFAULT_BUFFER_LENGTH)
-            m_Buffer = TempArray
             m_CharsRead += CharsRead
-
-            Debug.Assert(m_CharsRead <= BufferSize, "We've read more chars than we have space for")
 
             Return CharsRead
         End Function
@@ -1150,7 +1152,7 @@ Namespace Microsoft.VisualBasic.FileIO
             Dim Bound As Integer = Widths.Length - 1
             For i As Integer = 0 To Bound - 1
                 If Widths(i) < 1 Then
-                    Throw GetArgumentExceptionWithArgName("FieldWidths", SR.TextFieldParser_FieldWidthsMustPositive, "FieldWidths")
+                    Throw GetArgumentExceptionWithArgName("FieldWidths", SR.TextFieldParser_FieldWidthsMustPositive)
                 End If
             Next
         End Sub
@@ -1162,11 +1164,11 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <remarks></remarks>
         Private Sub ValidateAndEscapeDelimiters()
             If m_Delimiters Is Nothing Then
-                Throw GetArgumentExceptionWithArgName("Delimiters", SR.TextFieldParser_DelimitersNothing, "Delimiters")
+                Throw GetArgumentExceptionWithArgName("Delimiters", SR.TextFieldParser_DelimitersNothing)
             End If
 
             If m_Delimiters.Length = 0 Then
-                Throw GetArgumentExceptionWithArgName("Delimiters", SR.TextFieldParser_DelimitersNothing, "Delimiters")
+                Throw GetArgumentExceptionWithArgName("Delimiters", SR.TextFieldParser_DelimitersNothing)
             End If
 
             Dim Length As Integer = m_Delimiters.Length
@@ -1199,9 +1201,9 @@ Namespace Microsoft.VisualBasic.FileIO
             m_SpaceChars = WhitespaceCharacters
 
             ' Get rid of trailing | and set regex
-            m_DelimiterRegex = New Regex(Builder.ToString(0, Builder.Length - 1), REGEX_OPTIONS)
+            m_DelimiterRegex = New Regex(Builder.ToString(0, Builder.Length - 1))
             Builder.Append(vbCr & "|" & vbLf)
-            m_DelimiterWithEndCharsRegex = New Regex(Builder.ToString(), REGEX_OPTIONS)
+            m_DelimiterWithEndCharsRegex = New Regex(Builder.ToString())
 
             ' Add end of line (either Cr, Ln, or nothing) and set regex
             QuoteBuilder.Append(vbCr & "|" & vbLf & ")|""$")
@@ -1233,7 +1235,7 @@ Namespace Microsoft.VisualBasic.FileIO
                         If Token <> "" Then
                             If m_HasFieldsEnclosedInQuotes And m_TextFieldType = FieldType.Delimited Then
 
-                                If String.Compare(Token.Trim(), """", StringComparison.Ordinal) = 0 Then
+                                If String.Equals(Token.Trim(), """", StringComparison.Ordinal) Then
                                     Throw GetInvalidOperationException(SR.TextFieldParser_InvalidComment)
                                 End If
                             End If
@@ -1343,7 +1345,7 @@ Namespace Microsoft.VisualBasic.FileIO
                 If m_BeginQuotesRegex Is Nothing Then
                     ' Get the pattern
                     Dim pattern As String = String.Format(CultureInfo.InvariantCulture, BEGINS_WITH_QUOTE, WhitespacePattern)
-                    m_BeginQuotesRegex = New Regex(pattern, REGEX_OPTIONS)
+                    m_BeginQuotesRegex = New Regex(pattern)
                 End If
 
                 Return m_BeginQuotesRegex
@@ -1461,9 +1463,6 @@ Namespace Microsoft.VisualBasic.FileIO
         ' Regex used with BuildField
         Private m_DelimiterWithEndCharsRegex As Regex
 
-        ' Options used for regular expressions
-        Private Const REGEX_OPTIONS As RegexOptions = RegexOptions.CultureInvariant
-
         ' Codes for whitespace as used by String.Trim excluding line end chars as those are handled separately
         Private m_WhitespaceCodes() As Integer = {&H9, &HB, &HC, &H20, &H85, &HA0, &H1680, &H2000, &H2001, &H2002, &H2003, &H2004, &H2005, &H2006, &H2007, &H2008, &H2009, &H200A, &H200B, &H2028, &H2029, &H3000, &HFEFF}
 
@@ -1471,7 +1470,7 @@ Namespace Microsoft.VisualBasic.FileIO
         Private m_BeginQuotesRegex As Regex
 
         ' Regular expression for whitespace
-        Private m_WhiteSpaceRegEx As Regex = New Regex("\s", REGEX_OPTIONS)
+        Private m_WhiteSpaceRegEx As Regex = New Regex("\s")
 
         ' Indicates whether or not white space should be removed from a returned field
         Private m_TrimWhiteSpace As Boolean = True
@@ -1539,7 +1538,7 @@ Namespace Microsoft.VisualBasic.FileIO
     '''  will build the field and handle escaped quotes
     ''' </summary>
     ''' <remarks></remarks>
-    Friend Class QuoteDelimitedFieldBuilder
+    Friend NotInheritable Class QuoteDelimitedFieldBuilder
         ''' <summary>
         '''  Creates an instance of the class and sets some properties
         ''' </summary>

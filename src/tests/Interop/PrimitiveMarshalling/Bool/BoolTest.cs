@@ -16,7 +16,7 @@ class Test
         throw new Exception(" === Fail: " + describe + "\n\tExpected:" + expect + "\n\tActual:" + actual);        
     }
     
-    public static int Main(string[] args)
+    public static int Main()
     {
         //Test Method1
         bool boolValue1 = boolManaged;
@@ -118,7 +118,7 @@ class Test
             ReportFailure("Method Marshal_As_Out[Managed Side],The parameter value is changed", boolManaged, boolValue9);
         }
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             TestVariantBool();
         }

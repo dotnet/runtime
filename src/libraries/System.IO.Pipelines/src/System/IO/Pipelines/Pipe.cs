@@ -71,6 +71,7 @@ namespace System.IO.Pipelines
         // The extent of the bytes available to the PipeReader to consume
         private BufferSegment? _readTail;
         private int _readTailIndex;
+        private int _minimumReadBytes;
 
         // The write head which is the extent of the PipeWriter's written bytes
         private BufferSegment? _writingHead;
@@ -196,10 +197,21 @@ namespace System.IO.Pipelines
                             _writingHeadBytesBuffered = 0;
                         }
 
-                        BufferSegment newSegment = AllocateSegment(sizeHint);
+                        if (_writingHead.Length == 0)
+                        {
+                            // If we got here that means Advance was called with 0 bytes or GetMemory was called again without any writes occurring
+                            // And, the newly requested memory size is greater than our unused segments internal memory buffer
+                            // So we should reuse the BufferSegment and replace the memory it's holding, this way ReadAsync will not receive a buffer with one segment being empty
+                            _writingHead.ResetMemory();
+                            RentMemory(_writingHead, sizeHint);
+                        }
+                        else
+                        {
+                            BufferSegment newSegment = AllocateSegment(sizeHint);
 
-                        _writingHead.SetNext(newSegment);
-                        _writingHead = newSegment;
+                            _writingHead.SetNext(newSegment);
+                            _writingHead = newSegment;
+                        }
                     }
                 }
             }
@@ -207,8 +219,18 @@ namespace System.IO.Pipelines
 
         private BufferSegment AllocateSegment(int sizeHint)
         {
-            Debug.Assert(sizeHint >= 0);
             BufferSegment newSegment = CreateSegmentUnsynchronized();
+
+            RentMemory(newSegment, sizeHint);
+
+            return newSegment;
+        }
+
+        private void RentMemory(BufferSegment segment, int sizeHint)
+        {
+            // Segment should be new or reset, otherwise a memory leak could occur
+            Debug.Assert(segment.MemoryOwner is null);
+            Debug.Assert(sizeHint >= 0);
 
             MemoryPool<byte>? pool = null;
             int maxSize = -1;
@@ -222,18 +244,16 @@ namespace System.IO.Pipelines
             if (sizeHint <= maxSize)
             {
                 // Use the specified pool as it fits. Specified pool is not null as maxSize == -1 if _pool is null.
-                newSegment.SetOwnedMemory(pool!.Rent(GetSegmentSize(sizeHint, maxSize)));
+                segment.SetOwnedMemory(pool!.Rent(GetSegmentSize(sizeHint, maxSize)));
             }
             else
             {
                 // Use the array pool
                 int sizeToRequest = GetSegmentSize(sizeHint);
-                newSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(sizeToRequest));
+                segment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(sizeToRequest));
             }
 
-            _writingHeadMemory = newSegment.AvailableMemory;
-
-            return newSegment;
+            _writingHeadMemory = segment.AvailableMemory;
         }
 
         private int GetSegmentSize(int sizeHint, int maxBufferSize = int.MaxValue)
@@ -274,7 +294,7 @@ namespace System.IO.Pipelines
             if (_unflushedBytes == 0)
             {
                 // Nothing written to commit
-                return true;
+                return false;
             }
 
             // Update the writing head
@@ -288,8 +308,18 @@ namespace System.IO.Pipelines
             long oldLength = _unconsumedBytes;
             _unconsumedBytes += _unflushedBytes;
 
-            // Do not reset if reader is complete
-            if (PauseWriterThreshold > 0 &&
+            bool resumeReader = true;
+
+            if (_unconsumedBytes < _minimumReadBytes)
+            {
+                // Don't yield the reader if we haven't written enough
+                resumeReader = false;
+            }
+            // We only apply back pressure if the reader isn't paused. This is important
+            // because if it is blocked then this could cause a deadlock (if resumeReader is false).
+            // If we are resuming the reader, then we can look at the pause threshold to know
+            // if we should pause the writer.
+            else if (PauseWriterThreshold > 0 &&
                 oldLength < PauseWriterThreshold &&
                 _unconsumedBytes >= PauseWriterThreshold &&
                 !_readerCompletion.IsCompleted)
@@ -300,7 +330,7 @@ namespace System.IO.Pipelines
             _unflushedBytes = 0;
             _writingHeadBytesBuffered = 0;
 
-            return false;
+            return resumeReader;
         }
 
         internal void Advance(int bytes)
@@ -332,11 +362,16 @@ namespace System.IO.Pipelines
 
         internal ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<FlushResult>(Task.FromCanceled<FlushResult>(cancellationToken));
+            }
+
             CompletionData completionData;
             ValueTask<FlushResult> result;
             lock (SyncObj)
             {
-                PrepareFlush(out completionData, out result, cancellationToken);
+                PrepareFlushUnsynchronized(out completionData, out result, cancellationToken);
             }
 
             TrySchedule(ReaderScheduler, completionData);
@@ -344,9 +379,9 @@ namespace System.IO.Pipelines
             return result;
         }
 
-        private void PrepareFlush(out CompletionData completionData, out ValueTask<FlushResult> result, CancellationToken cancellationToken)
+        private void PrepareFlushUnsynchronized(out CompletionData completionData, out ValueTask<FlushResult> result, CancellationToken cancellationToken)
         {
-            var wasEmpty = CommitUnsynchronized();
+            var completeReader = CommitUnsynchronized();
 
             // AttachToken before completing reader awaiter in case cancellationToken is already completed
             _writerAwaitable.BeginOperation(cancellationToken, s_signalWriterAwaitable, this);
@@ -367,7 +402,7 @@ namespace System.IO.Pipelines
             // Complete reader only if new data was pushed into the pipe
             // Avoid throwing in between completing the reader and scheduling the callback
             // if the intent is to allow pipe to continue reading the data
-            if (!wasEmpty)
+            if (completeReader)
             {
                 _readerAwaitable.Complete(out completionData);
             }
@@ -542,7 +577,7 @@ namespace System.IO.Pipelines
                 while (returnStart != null && returnStart != returnEnd)
                 {
                     BufferSegment? next = returnStart.NextSegment;
-                    returnStart.ResetMemory();
+                    returnStart.Reset();
                     ReturnSegmentUnsynchronized(returnStart);
                     returnStart = next;
                 }
@@ -646,11 +681,75 @@ namespace System.IO.Pipelines
             }
         }
 
+        internal ValueTask<ReadResult> ReadAtLeastAsync(int minimumBytes, CancellationToken token)
+        {
+            if (_readerCompletion.IsCompleted)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoReadingAllowed();
+            }
+
+            if (token.IsCancellationRequested)
+            {
+                return new ValueTask<ReadResult>(Task.FromCanceled<ReadResult>(token));
+            }
+
+            CompletionData completionData = default;
+            ValueTask<ReadResult> result;
+            lock (SyncObj)
+            {
+                _readerAwaitable.BeginOperation(token, s_signalReaderAwaitable, this);
+
+                // If the awaitable is already complete then return the value result directly
+                if (_readerAwaitable.IsCompleted)
+                {
+                    GetReadResult(out ReadResult readResult);
+
+                    // Short circuit if we have the data or if we enter another terminal state
+                    if (_unconsumedBytes >= minimumBytes || readResult.IsCanceled || readResult.IsCompleted)
+                    {
+                        return new ValueTask<ReadResult>(readResult);
+                    }
+
+                    // We don't have enough data so we need to reset the reader awaitable
+                    _readerAwaitable.SetUncompleted();
+
+                    // We also need to flip the reading state off
+                    _operationState.EndRead();
+
+                    // Begin read again to wire up cancellation token
+                    _readerAwaitable.BeginOperation(token, s_signalReaderAwaitable, this);
+                }
+
+                // If the writer is currently paused and we are about the wait for more data then this would deadlock.
+                // The writer is paused at the pause threshold but the reader needs a minimum amount in order to make progress.
+                // We resume the writer so that we can unblock this read.
+                if (!_writerAwaitable.IsCompleted)
+                {
+                    _writerAwaitable.Complete(out completionData);
+                }
+
+                // Set the minimum read bytes if we need to wait
+                _minimumReadBytes = minimumBytes;
+
+                // Otherwise it's async
+                result = new ValueTask<ReadResult>(_reader, token: 0);
+            }
+
+            TrySchedule(WriterScheduler, in completionData);
+
+            return result;
+        }
+
         internal ValueTask<ReadResult> ReadAsync(CancellationToken token)
         {
             if (_readerCompletion.IsCompleted)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoReadingAllowed();
+            }
+
+            if (token.IsCancellationRequested)
+            {
+                return new ValueTask<ReadResult>(Task.FromCanceled<ReadResult>(token));
             }
 
             ValueTask<ReadResult> result;
@@ -791,7 +890,7 @@ namespace System.IO.Pipelines
                     BufferSegment returnSegment = segment;
                     segment = segment.NextSegment;
 
-                    returnSegment.ResetMemory();
+                    returnSegment.Reset();
                 }
 
                 _writingHead = null;
@@ -889,6 +988,9 @@ namespace System.IO.Pipelines
             {
                 _operationState.BeginRead();
             }
+
+            // Reset the minimum read bytes when read yields
+            _minimumReadBytes = 0;
         }
 
         internal ValueTaskSourceStatus GetFlushAsyncStatus()
@@ -934,6 +1036,8 @@ namespace System.IO.Pipelines
             return result;
         }
 
+        internal long GetUnflushedBytes() => _unflushedBytes;
+
         private void GetFlushResult(ref FlushResult result)
         {
             // Change the state from to be canceled -> observed
@@ -959,6 +1063,11 @@ namespace System.IO.Pipelines
                 return new ValueTask<FlushResult>(new FlushResult(isCanceled: false, isCompleted: true));
             }
 
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<FlushResult>(Task.FromCanceled<FlushResult>(cancellationToken));
+            }
+
             CompletionData completionData;
             ValueTask<FlushResult> result;
 
@@ -980,7 +1089,7 @@ namespace System.IO.Pipelines
                     WriteMultiSegment(source.Span);
                 }
 
-                PrepareFlush(out completionData, out result, cancellationToken);
+                PrepareFlushUnsynchronized(out completionData, out result, cancellationToken);
             }
 
             TrySchedule(ReaderScheduler, completionData);
@@ -1005,7 +1114,7 @@ namespace System.IO.Pipelines
                 }
 
                 // We filled the segment
-                _writingHead.End += writable;
+                _writingHead.End += _writingHeadBytesBuffered;
                 _writingHeadBytesBuffered = 0;
 
                 // This is optimized to use pooled memory. That's why we pass 0 instead of

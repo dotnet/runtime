@@ -224,7 +224,7 @@ namespace
         rev.push_back(STR{ "" });
         rev.push_back(STR{ "a" });
         rev.push_back(STR{ "abc" });
-        rev.push_back(STR{ "reversable string" });
+        rev.push_back(STR{ "reversible string" });
 
         // Long string optimization validation
         rev.push_back(STR{ "123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901" });
@@ -256,8 +256,8 @@ namespace
             THROW_FAIL_IF_FALSE(expected.EqualTo(actual));
         }
 
-        auto reversable = GetReversableStrings<NStr>();
-        for (const auto &r : reversable)
+        auto reversible = GetReversableStrings<NStr>();
+        for (const auto &r : reversible)
         {
             if (!r.AllAscii())
             {
@@ -316,8 +316,8 @@ namespace
             THROW_FAIL_IF_FALSE(expected.EqualTo(actual));
         }
 
-        auto reversable = GetReversableStrings<WStr>();
-        for (const auto &r : reversable)
+        auto reversible = GetReversableStrings<WStr>();
+        for (const auto &r : reversible)
         {
             LPWSTR tmp;
             WStr local{ r };
@@ -370,8 +370,8 @@ namespace
             THROW_FAIL_IF_FALSE(expected.EqualTo(actual));
         }
 
-        auto reversable = GetReversableStrings<BStr>();
-        for (const auto &r : reversable)
+        auto reversible = GetReversableStrings<BStr>();
+        for (const auto &r : reversible)
         {
             BSTR tmp;
             BStr local{ r };

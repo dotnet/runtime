@@ -6,16 +6,16 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using TestLibrary;
+using Xunit;
 
 public class RunInALC
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {
-            Assert.AreEqual(123, new CustomMarshalers.CustomMarshalerTest().ParseInt("123"));
-            Assert.AreEqual(123, new CustomMarshalers2.CustomMarshalerTest().ParseInt("123"));
+            Assert.Equal(123, new CustomMarshalers.CustomMarshalerTest().ParseInt("123"));
+            Assert.Equal(123, new CustomMarshalers2.CustomMarshalerTest().ParseInt("123"));
             return 100;
         }
         catch (Exception e)

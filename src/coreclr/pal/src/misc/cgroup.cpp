@@ -37,8 +37,11 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #define PROC_STATM_FILENAME "/proc/self/statm"
 #define CGROUP1_MEMORY_LIMIT_FILENAME "/memory.limit_in_bytes"
 #define CGROUP2_MEMORY_LIMIT_FILENAME "/memory.max"
+#define CGROUP_MEMORY_STAT_FILENAME "/memory.stat"
 #define CGROUP1_MEMORY_USAGE_FILENAME "/memory.usage_in_bytes"
 #define CGROUP2_MEMORY_USAGE_FILENAME "/memory.current"
+#define CGROUP1_MEMORY_STAT_INACTIVE_FIELD "total_inactive_file "
+#define CGROUP2_MEMORY_STAT_INACTIVE_FIELD "inactive_file "
 #define CGROUP1_CFS_QUOTA_FILENAME "/cpu.cfs_quota_us"
 #define CGROUP1_CFS_PERIOD_FILENAME "/cpu.cfs_period_us"
 #define CGROUP2_CPU_MAX_FILENAME "/cpu.max"
@@ -84,9 +87,9 @@ public:
         if (s_cgroup_version == 0)
             return false;
         else if (s_cgroup_version == 1)
-            return GetCGroupMemoryUsage(val, CGROUP1_MEMORY_USAGE_FILENAME);
+            return GetCGroupMemoryUsage(val, CGROUP1_MEMORY_USAGE_FILENAME, CGROUP1_MEMORY_STAT_INACTIVE_FIELD);
         else if (s_cgroup_version == 2)
-            return GetCGroupMemoryUsage(val, CGROUP2_MEMORY_USAGE_FILENAME);
+            return GetCGroupMemoryUsage(val, CGROUP2_MEMORY_USAGE_FILENAME, CGROUP2_MEMORY_STAT_INACTIVE_FIELD);
         else
         {
             _ASSERTE(!"Unknown cgroup version.");
@@ -135,7 +138,6 @@ private:
             case TMPFS_MAGIC: return 1;
             case CGROUP2_SUPER_MAGIC: return 2;
             default:
-                _ASSERTE(!"Unexpected file system type for /sys/fs/cgroup");
                 return 0;
         }
 #endif
@@ -392,36 +394,83 @@ private:
         return result;
     }
 
-    static bool GetCGroupMemoryUsage(size_t *val, const char *filename)
+    static bool GetCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFileFieldName)
     {
-        if (s_memory_cgroup_path == nullptr)
-            return false;
+        // Use the same way to calculate memory load as popular container tools (Docker, Kubernetes, Containerd etc.)
+        // For cgroup v1: value of 'memory.usage_in_bytes' minus 'total_inactive_file' value of 'memory.stat'
+        // For cgroup v2: value of 'memory.current' minus 'inactive_file' value of 'memory.stat'
 
         char* mem_usage_filename = nullptr;
         if (asprintf(&mem_usage_filename, "%s%s", s_memory_cgroup_path, filename) < 0)
             return false;
 
         uint64_t temp = 0;
+
+        size_t usage = 0;
+
         bool result = ReadMemoryValueFromFile(mem_usage_filename, &temp);
         if (result)
         {
             if (temp > std::numeric_limits<size_t>::max())
             {
-                *val = std::numeric_limits<size_t>::max();
+                usage = std::numeric_limits<size_t>::max();
             }
             else
             {
-                *val = (size_t)temp;
+                usage = (size_t)temp;
             }
         }
 
         free(mem_usage_filename);
-        return result;
+
+        if (!result)
+            return result;
+
+        if (s_memory_cgroup_path == nullptr)
+            return false;
+
+        char* stat_filename = nullptr;
+        if (asprintf(&stat_filename, "%s%s", s_memory_cgroup_path, CGROUP_MEMORY_STAT_FILENAME) < 0)
+            return false;
+
+        FILE *stat_file = fopen(stat_filename, "r");
+        free(stat_filename);
+        if (stat_file == nullptr)
+            return false;
+
+        char *line = nullptr;
+        size_t lineLen = 0;
+        bool foundInactiveFileValue = false;
+        char* endptr;
+
+        size_t inactiveFileFieldNameLength = strlen(inactiveFileFieldName);
+
+        while (getline(&line, &lineLen, stat_file) != -1)
+        {
+            if (strncmp(line, inactiveFileFieldName, inactiveFileFieldNameLength) == 0)
+            {
+                errno = 0;
+                const char* startptr = line + inactiveFileFieldNameLength;
+                size_t inactiveFileValue = strtoll(startptr, &endptr, 10);
+                if (endptr != startptr && errno == 0)
+                {
+                    foundInactiveFileValue = true;
+                    *val = usage - inactiveFileValue;
+                }
+
+                break;
+            }
+        }
+
+        fclose(stat_file);
+        free(line);
+
+        return foundInactiveFileValue;
     }
 
     static bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
     {
-        return ::ReadMemoryValueFromFile(filename, val);
+        return ::PAL_ReadMemoryValueFromFile(filename, val);
     }
 
     static bool GetCGroup1CpuLimit(UINT *val)

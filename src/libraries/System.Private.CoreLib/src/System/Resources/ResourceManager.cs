@@ -98,12 +98,11 @@ namespace System.Resources
             public ResourceSet? lastResourceSet;
         }
 
-        protected string BaseNameField;
+        protected string BaseNameField; // The field is protected for .NET Framework compatibility
         protected Assembly? MainAssembly;    // Need the assembly manifest sometimes.
 
         private Dictionary<string, ResourceSet>? _resourceSets;
         private readonly string? _moduleDir;          // For assembly-ignorant directory location
-        private readonly Type? _locationInfo;         // For Assembly or type-based directory layout
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         private readonly Type? _userResourceSet;      // Which ResourceSet instance to create
@@ -172,10 +171,8 @@ namespace System.Resources
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type? userResourceSet)
         {
-            if (null == baseName)
-                throw new ArgumentNullException(nameof(baseName));
-            if (null == resourceDir)
-                throw new ArgumentNullException(nameof(resourceDir));
+            ArgumentNullException.ThrowIfNull(baseName);
+            ArgumentNullException.ThrowIfNull(resourceDir);
 
             BaseNameField = baseName;
 
@@ -190,11 +187,10 @@ namespace System.Resources
 
         public ResourceManager(string baseName, Assembly assembly)
         {
-            if (null == baseName)
-                throw new ArgumentNullException(nameof(baseName));
-            if (null == assembly)
-                throw new ArgumentNullException(nameof(assembly));
-            if (!assembly.IsRuntimeImplemented())
+            ArgumentNullException.ThrowIfNull(baseName);
+            ArgumentNullException.ThrowIfNull(assembly);
+
+            if (assembly is not RuntimeAssembly)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             MainAssembly = assembly;
@@ -207,11 +203,10 @@ namespace System.Resources
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         Type? usingResourceSet)
         {
-            if (null == baseName)
-                throw new ArgumentNullException(nameof(baseName));
-            if (null == assembly)
-                throw new ArgumentNullException(nameof(assembly));
-            if (!assembly.IsRuntimeImplemented())
+            ArgumentNullException.ThrowIfNull(baseName);
+            ArgumentNullException.ThrowIfNull(assembly);
+
+            if (assembly is not RuntimeAssembly)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             MainAssembly = assembly;
@@ -226,14 +221,18 @@ namespace System.Resources
 
         public ResourceManager(Type resourceSource)
         {
-            if (null == resourceSource)
-                throw new ArgumentNullException(nameof(resourceSource));
-            if (!resourceSource.IsRuntimeImplemented())
+            ArgumentNullException.ThrowIfNull(resourceSource);
+
+            if (resourceSource is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
-            _locationInfo = resourceSource;
-            MainAssembly = _locationInfo.Assembly;
-            BaseNameField = resourceSource.Name;
+            MainAssembly = resourceSource.Assembly;
+
+            string? nameSpace = resourceSource.Namespace;
+            char c = Type.Delimiter;
+            BaseNameField = nameSpace is null
+                ? resourceSource.Name
+                : string.Concat(nameSpace, new ReadOnlySpan<char>(in c), resourceSource.Name);
 
             CommonAssemblyInit();
         }
@@ -321,7 +320,7 @@ namespace System.Resources
         // passing to the ResourceReader constructor) or a manifest resource file
         // name should look like.
         //
-        // This method can be overriden to look for a different extension,
+        // This method can be overridden to look for a different extension,
         // such as ".ResX", or a completely different format for naming files.
         protected virtual string GetResourceFileName(CultureInfo culture)
         {
@@ -394,8 +393,7 @@ namespace System.Resources
         //
         public virtual ResourceSet? GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
-            if (null == culture)
-                throw new ArgumentNullException(nameof(culture));
+            ArgumentNullException.ThrowIfNull(culture);
 
             Dictionary<string, ResourceSet>? localResourceSets = _resourceSets;
             ResourceSet? rs;
@@ -412,7 +410,7 @@ namespace System.Resources
             {
                 string fileName = GetResourceFileName(culture);
                 Debug.Assert(MainAssembly != null);
-                Stream? stream = MainAssembly.GetManifestResourceStream(_locationInfo!, fileName);
+                Stream? stream = MainAssembly.GetManifestResourceStream(fileName);
                 if (createIfNotExists && stream != null)
                 {
                     rs = ((ManifestBasedResourceGroveler)_resourceGroveler).CreateResourceSet(stream, MainAssembly);
@@ -529,11 +527,7 @@ namespace System.Resources
 
         protected static Version? GetSatelliteContractVersion(Assembly a)
         {
-            // Ensure that the assembly reference is not null
-            if (a == null)
-            {
-                throw new ArgumentNullException(nameof(a), SR.ArgumentNull_Assembly);
-            }
+            ArgumentNullException.ThrowIfNull(a);
 
             string? v = a.GetCustomAttribute<SatelliteContractVersionAttribute>()?.Version;
             if (v == null)
@@ -558,32 +552,33 @@ namespace System.Resources
             return ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(a, out _);
         }
 
-        // IGNORES VERSION
         internal static bool IsDefaultType(string asmTypeName,
-                                           string typeName)
+                                           string defaultTypeName)
         {
             Debug.Assert(asmTypeName != null, "asmTypeName was unexpectedly null");
 
             // First, compare type names
-            int comma = asmTypeName.IndexOf(',');
-            if (((comma == -1) ? asmTypeName.Length : comma) != typeName.Length)
+            int firstComma = asmTypeName.IndexOf(',');
+            int typeNameLength = (firstComma != -1) ? firstComma : asmTypeName.Length;
+
+            // Type names are case sensitive
+            if (!asmTypeName.AsSpan(0, typeNameLength).Equals(defaultTypeName, StringComparison.Ordinal))
                 return false;
 
-            // case sensitive
-            if (string.Compare(asmTypeName, 0, typeName, 0, typeName.Length, StringComparison.Ordinal) != 0)
-                return false;
-            if (comma == -1)
+            // No assembly name specified means system assembly.
+            if (firstComma == -1)
                 return true;
 
-            // Now, compare assembly display names (IGNORES VERSION AND PROCESSORARCHITECTURE)
-            // also, for  mscorlib ignores everything, since that's what the binder is going to do
-            while (char.IsWhiteSpace(asmTypeName[++comma])) ;
+            // Now, compare assembly simple names, ignore the rest (version, public key token, etc.)
+            int secondComma = asmTypeName.IndexOf(',', firstComma + 1);
+            int simpleAsmNameLength = ((secondComma != -1) ? secondComma : asmTypeName.Length) - (firstComma + 1);
 
-            // case insensitive
-            AssemblyName an = new AssemblyName(asmTypeName.Substring(comma));
+            // We have kept mscorlib as the simple assembly name for the default resource format. The type name of the default resource
+            // format is de-facto a magic string that we check for and it is not actually used to load any types. There has not been
+            // a good reason to change the magic string to have the current assembly name.
 
-            // to match IsMscorlib() in VM
-            return string.Equals(an.Name, "mscorlib", StringComparison.OrdinalIgnoreCase);
+            // Assembly names are case insensitive
+            return asmTypeName.AsSpan(firstComma + 1, simpleAsmNameLength).Trim().Equals("mscorlib", StringComparison.OrdinalIgnoreCase);
         }
 
         // Looks up a resource value for a particular name.  Looks in the
@@ -601,8 +596,7 @@ namespace System.Resources
         //
         public virtual string? GetString(string name, CultureInfo? culture)
         {
-            if (null == name)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             culture ??= CultureInfo.CurrentUICulture;
 
@@ -668,8 +662,7 @@ namespace System.Resources
 
         private object? GetObject(string name, CultureInfo? culture, bool wrapUnmanagedMemStream)
         {
-            if (null == name)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (null == culture)
             {
@@ -749,18 +742,13 @@ namespace System.Resources
 
             internal ResourceManagerMediator(ResourceManager rm)
             {
-                if (rm == null)
-                {
-                    throw new ArgumentNullException(nameof(rm));
-                }
+                ArgumentNullException.ThrowIfNull(rm);
+
                 _rm = rm;
             }
 
             // NEEDED ONLY BY FILE-BASED
             internal string? ModuleDir => _rm._moduleDir;
-
-            // NEEDED BOTH BY FILE-BASED  AND ASSEMBLY-BASED
-            internal Type? LocationInfo => _rm._locationInfo;
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             internal Type? UserResourceSet => _rm._userResourceSet;

@@ -6,11 +6,12 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
-.assembly ILGEN_0xc60e022c {}
+.assembly 'implicitConv' {}
 .assembly extern mscorlib{auto}
 
-.class ILGEN_0xc60e022c {
+.class public ILGEN_0xc60e022c {
 
 .method static int16  Method_0xf7bb2d95() {
 .zeroinit 
@@ -21,7 +22,10 @@
     conv.i4
     ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	15
 

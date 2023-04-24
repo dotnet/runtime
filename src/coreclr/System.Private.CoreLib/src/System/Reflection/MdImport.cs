@@ -168,7 +168,7 @@ namespace System.Reflection
         public bool IsAssembly => TokenType == MetadataTokenType.Assembly;
         public bool IsGenericPar => TokenType == MetadataTokenType.GenericPar;
 
-        public override string ToString() => string.Format(CultureInfo.InvariantCulture, "0x{0:x8}", Value);
+        public override string ToString() => string.Create(CultureInfo.InvariantCulture, stackalloc char[64], $"0x{Value:x8}");
     }
 
     internal unsafe struct MetadataEnumResult
@@ -194,7 +194,9 @@ namespace System.Reflection
         }
     }
 
+#pragma warning disable CA1066 // IEquatable<MetadataImport> interface implementation isn't used
     internal readonly struct MetadataImport
+#pragma warning restore CA1067
     {
         private readonly IntPtr m_metadataImport2;
         private readonly object? m_keepalive;
@@ -204,7 +206,7 @@ namespace System.Reflection
 
         public override int GetHashCode()
         {
-            return ValueType.GetHashCodeOfPtr(m_metadataImport2);
+            return HashCode.Combine(m_metadataImport2);
         }
 
         public override bool Equals(object? obj)
@@ -554,9 +556,9 @@ namespace System.Reflection
 
     internal sealed class MetadataException : Exception
     {
-        private int m_hr;
+        private readonly int m_hr;
         internal MetadataException(int hr) { m_hr = hr; }
 
-        public override string ToString() => $"MetadataException HResult = {m_hr:x}.";
+        public override string ToString() => $"{nameof(MetadataException)} HResult = {m_hr:x}.";
     }
 }

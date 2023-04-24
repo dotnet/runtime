@@ -22,7 +22,7 @@ namespace System.Net.NetworkInformation
         ///       Creates a new instance of the <see cref='System.Net.NetworkInformation.NetworkInformationException'/> class with the default error code.
         ///    </para>
         /// </devdoc>
-        public NetworkInformationException() : base(Marshal.GetLastWin32Error())
+        public NetworkInformationException() : base(Marshal.GetLastPInvokeError())
         {
         }
 
@@ -35,6 +35,10 @@ namespace System.Net.NetworkInformation
         {
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected NetworkInformationException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
         }

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Pclmulqdq_r</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -8,18 +8,7 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CarrylessMultiply.Int64.0.cs" />
-    <Compile Include="CarrylessMultiply.Int64.1.cs" />
-    <Compile Include="CarrylessMultiply.Int64.16.cs" />
-    <Compile Include="CarrylessMultiply.Int64.17.cs" />
-    <Compile Include="CarrylessMultiply.Int64.129.cs" />
-    <Compile Include="CarrylessMultiply.UInt64.0.cs" />
-    <Compile Include="CarrylessMultiply.UInt64.1.cs" />
-    <Compile Include="CarrylessMultiply.UInt64.16.cs" />
-    <Compile Include="CarrylessMultiply.UInt64.17.cs" />
-    <Compile Include="CarrylessMultiply.UInt64.129.cs" />
     <Compile Include="Program.Pclmulqdq.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
   </ItemGroup>
 </Project>

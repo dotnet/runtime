@@ -1,12 +1,58 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <NoWarn>$(NoWarn);CA1850</NoWarn> <!-- CA1850 suppressed due to multitargeting -->
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides classes to support the creation and validation of XML digital signatures. The classes in this namespace implement the World Wide Web Consortium Recommendation, "XML-Signature Syntax and Processing", described at http://www.w3.org/TR/xmldsig-core/.
+
+Commonly Used Types:
+System.Security.Cryptography.Xml.CipherData
+System.Security.Cryptography.Xml.CipherReference
+System.Security.Cryptography.Xml.DataObject
+System.Security.Cryptography.Xml.DataReference
+System.Security.Cryptography.Xml.DSAKeyValue
+System.Security.Cryptography.Xml.EncryptedData
+System.Security.Cryptography.Xml.EncryptedKey
+System.Security.Cryptography.Xml.EncryptedReference
+System.Security.Cryptography.Xml.EncryptedType
+System.Security.Cryptography.Xml.EncryptedXml
+System.Security.Cryptography.Xml.EncryptionMethod
+System.Security.Cryptography.Xml.EncryptionProperty
+System.Security.Cryptography.Xml.EncryptionPropertyCollection
+System.Security.Cryptography.Xml.KeyInfo
+System.Security.Cryptography.Xml.KeyInfoClause
+System.Security.Cryptography.Xml.KeyInfoEncryptedKey
+System.Security.Cryptography.Xml.KeyInfoName
+System.Security.Cryptography.Xml.KeyInfoNode
+System.Security.Cryptography.Xml.KeyInfoRetrievalMethod
+System.Security.Cryptography.Xml.KeyInfoX509Data
+System.Security.Cryptography.Xml.KeyReference
+System.Security.Cryptography.Xml.Reference
+System.Security.Cryptography.Xml.ReferenceList
+System.Security.Cryptography.Xml.RSAKeyValue
+System.Security.Cryptography.Xml.Signature
+System.Security.Cryptography.Xml.SignedInfo
+System.Security.Cryptography.Xml.SignedXml
+System.Security.Cryptography.Xml.Transform
+System.Security.Cryptography.Xml.TransformChain
+System.Security.Cryptography.Xml.XmlDecryptionTransform
+System.Security.Cryptography.Xml.XmlDsigBase64Transform
+System.Security.Cryptography.Xml.XmlDsigC14NTransform
+System.Security.Cryptography.Xml.XmlDsigC14NWithCommentsTransform
+System.Security.Cryptography.Xml.XmlDsigEnvelopedSignatureTransform
+System.Security.Cryptography.Xml.XmlDsigExcC14NTransform
+System.Security.Cryptography.Xml.XmlDsigExcC14NWithCommentsTransform
+System.Security.Cryptography.Xml.XmlDsigXPathTransform
+System.Security.Cryptography.Xml.XmlDsigXsltTransform
+System.Security.Cryptography.Xml.XmlLicenseTransform</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Security\Cryptography\Xml\AncestralNamespaceContextManager.cs" />
     <Compile Include="System\Security\Cryptography\Xml\AttributeSortOrder.cs" />
@@ -78,6 +124,7 @@
     <Compile Include="System\Security\Cryptography\Xml\XmlDsigXPathTransform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlDsigXsltTransform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlLicenseTransform.cs" />
+    <Compile Include="System\Security\Cryptography\Xml\XmlResolverHelper.cs" />
     <Compile Include="System\Security\Cryptography\Xml\CryptoHelpers.cs" />
     <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SignatureDescription.cs" />
     <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA1SignatureDescription.cs" />
@@ -86,13 +133,28 @@
     <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA384SignatureDescription.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="$(SystemSecurityCryptographyPkcsVersion)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\src\System.Security.AccessControl.csproj" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="System.Security" />
   </ItemGroup>

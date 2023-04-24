@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Collections\CaseInsensitiveComparer.cs" />
@@ -19,7 +18,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

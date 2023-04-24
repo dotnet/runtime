@@ -19,32 +19,22 @@ namespace System.Runtime.Serialization
 
         internal void Add(string id, object? obj)
         {
-            if (_objectDictionary == null)
-                _objectDictionary = new Dictionary<string, object?>();
+            _objectDictionary ??= new Dictionary<string, object?>();
 
-            object? existingObject;
-            if (_objectDictionary.TryGetValue(id, out existingObject))
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.MultipleIdDefinition, id)));
+            if (_objectDictionary.ContainsKey(id))
+                throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.MultipleIdDefinition, id));
             _objectDictionary.Add(id, obj);
         }
 
         internal void Remove(string id)
         {
-            if (_objectDictionary != null)
-                _objectDictionary.Remove(id);
+            _objectDictionary?.Remove(id);
         }
 
         internal object? GetObject(string id)
         {
-            if (_referencedObjectDictionary == null)
-            {
-                _referencedObjectDictionary = new Dictionary<string, object?>();
-                _referencedObjectDictionary.Add(id, null);
-            }
-            else
-            {
-                _referencedObjectDictionary.TryAdd(id, null);
-            }
+            _referencedObjectDictionary ??= new Dictionary<string, object?>();
+            _referencedObjectDictionary.TryAdd(id, null);
 
             if (_objectDictionary != null)
             {

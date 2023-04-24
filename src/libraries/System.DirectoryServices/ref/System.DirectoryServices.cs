@@ -255,60 +255,20 @@ namespace System.DirectoryServices
     public partial class DirectoryServicesCOMException : System.Runtime.InteropServices.COMException, System.Runtime.Serialization.ISerializable
     {
         public DirectoryServicesCOMException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected DirectoryServicesCOMException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public DirectoryServicesCOMException(string? message) { }
         public DirectoryServicesCOMException(string? message, System.Exception? inner) { }
         public int ExtendedError { get { throw null; } }
         public string? ExtendedErrorMessage { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
-    }
-    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-    public sealed partial class DirectoryServicesPermission : System.Security.Permissions.ResourcePermissionBase
-    {
-        public DirectoryServicesPermission() { }
-        public DirectoryServicesPermission(System.DirectoryServices.DirectoryServicesPermissionAccess permissionAccess, string? path) { }
-        public DirectoryServicesPermission(System.DirectoryServices.DirectoryServicesPermissionEntry[]? permissionAccessEntries) { }
-        public DirectoryServicesPermission(System.Security.Permissions.PermissionState state) { }
-        public System.DirectoryServices.DirectoryServicesPermissionEntryCollection? PermissionEntries { get { throw null; } }
-    }
-    [System.FlagsAttribute]
-    public enum DirectoryServicesPermissionAccess
-    {
-        None = 0,
-        Browse = 2,
-        Write = 6,
-    }
-    [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
-    public partial class DirectoryServicesPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
-    {
-        public DirectoryServicesPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
-        public string? Path { get { throw null; } set { } }
-        public System.DirectoryServices.DirectoryServicesPermissionAccess PermissionAccess { get { throw null; } set { } }
-        public override System.Security.IPermission? CreatePermission() { throw null; }
-    }
-    public partial class DirectoryServicesPermissionEntry
-    {
-        public DirectoryServicesPermissionEntry(System.DirectoryServices.DirectoryServicesPermissionAccess permissionAccess, string? path) { }
-        public string? Path { get { throw null; } }
-        public System.DirectoryServices.DirectoryServicesPermissionAccess PermissionAccess { get { throw null; } }
-    }
-    public partial class DirectoryServicesPermissionEntryCollection : System.Collections.CollectionBase
-    {
-        internal DirectoryServicesPermissionEntryCollection() { }
-        public System.DirectoryServices.DirectoryServicesPermissionEntry? this[int index] { get { throw null; } set { } }
-        public int Add(System.DirectoryServices.DirectoryServicesPermissionEntry value) { throw null; }
-        public void AddRange(System.DirectoryServices.DirectoryServicesPermissionEntryCollection value) { }
-        public void AddRange(System.DirectoryServices.DirectoryServicesPermissionEntry[] value) { }
-        public bool Contains(System.DirectoryServices.DirectoryServicesPermissionEntry value) { throw null; }
-        public void CopyTo(System.DirectoryServices.DirectoryServicesPermissionEntry[] array, int index) { }
-        public int IndexOf(System.DirectoryServices.DirectoryServicesPermissionEntry value) { throw null; }
-        public void Insert(int index, System.DirectoryServices.DirectoryServicesPermissionEntry value) { }
-        protected override void OnClear() { }
-        protected override void OnInsert(int index, object? value) { }
-        protected override void OnRemove(int index, object? value) { }
-        protected override void OnSet(int index, object? oldValue, object? newValue) { }
-        public void Remove(System.DirectoryServices.DirectoryServicesPermissionEntry? value) { }
     }
     public partial class DirectorySynchronization
     {
@@ -419,7 +379,7 @@ namespace System.DirectoryServices
         public void CopyTo(System.DirectoryServices.PropertyValueCollection[] array, int index) { }
         public System.Collections.IDictionaryEnumerator GetEnumerator() { throw null; }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
+        void System.Collections.IDictionary.Add(object key, object? value) { }
         void System.Collections.IDictionary.Clear() { }
         bool System.Collections.IDictionary.Contains(object value) { throw null; }
         void System.Collections.IDictionary.Remove(object key) { }
@@ -579,6 +539,10 @@ namespace System.DirectoryServices.ActiveDirectory
     public partial class ActiveDirectoryObjectExistsException : System.Exception
     {
         public ActiveDirectoryObjectExistsException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected ActiveDirectoryObjectExistsException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ActiveDirectoryObjectExistsException(string? message) { }
         public ActiveDirectoryObjectExistsException(string? message, System.Exception? inner) { }
@@ -586,23 +550,39 @@ namespace System.DirectoryServices.ActiveDirectory
     public partial class ActiveDirectoryObjectNotFoundException : System.Exception, System.Runtime.Serialization.ISerializable
     {
         public ActiveDirectoryObjectNotFoundException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected ActiveDirectoryObjectNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ActiveDirectoryObjectNotFoundException(string? message) { }
         public ActiveDirectoryObjectNotFoundException(string? message, System.Exception? inner) { }
         public ActiveDirectoryObjectNotFoundException(string? message, System.Type? type, string? name) { }
         public string? Name { get { throw null; } }
         public System.Type? Type { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial class ActiveDirectoryOperationException : System.Exception, System.Runtime.Serialization.ISerializable
     {
         public ActiveDirectoryOperationException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected ActiveDirectoryOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ActiveDirectoryOperationException(string? message) { }
         public ActiveDirectoryOperationException(string? message, System.Exception? inner) { }
         public ActiveDirectoryOperationException(string? message, System.Exception? inner, int errorCode) { }
         public ActiveDirectoryOperationException(string? message, int errorCode) { }
         public int ErrorCode { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public abstract partial class ActiveDirectoryPartition : System.IDisposable
@@ -707,9 +687,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaClass schemaClass) { throw null; }
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaClass schemaClass) { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaClass schemaClass) { }
     }
@@ -754,15 +734,19 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaProperty schemaProperty) { throw null; }
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaProperty schemaProperty) { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySchemaProperty schemaProperty) { }
     }
     public partial class ActiveDirectoryServerDownException : System.Exception, System.Runtime.Serialization.ISerializable
     {
         public ActiveDirectoryServerDownException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected ActiveDirectoryServerDownException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ActiveDirectoryServerDownException(string? message) { }
         public ActiveDirectoryServerDownException(string? message, System.Exception? inner) { }
@@ -771,6 +755,10 @@ namespace System.DirectoryServices.ActiveDirectory
         public int ErrorCode { get { throw null; } }
         public override string Message { get { throw null; } }
         public string? Name { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public partial class ActiveDirectorySite : System.IDisposable
@@ -811,9 +799,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(System.DirectoryServices.ActiveDirectory.ActiveDirectorySite site) { throw null; }
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySite site) { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySite site) { }
     }
@@ -868,9 +856,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public int IndexOf(System.DirectoryServices.ActiveDirectory.ActiveDirectorySiteLink link) { throw null; }
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySiteLink link) { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySiteLink link) { }
     }
@@ -918,9 +906,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.ActiveDirectorySubnet subnet) { }
         protected override void OnClear() { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.ActiveDirectorySubnet subnet) { }
     }
@@ -1138,9 +1126,9 @@ namespace System.DirectoryServices.ActiveDirectory
         public void Insert(int index, System.DirectoryServices.ActiveDirectory.DirectoryServer server) { }
         protected override void OnClear() { }
         protected override void OnClearComplete() { }
-        protected override void OnInsertComplete(int index, object value) { }
-        protected override void OnRemoveComplete(int index, object value) { }
-        protected override void OnSetComplete(int index, object oldValue, object newValue) { }
+        protected override void OnInsertComplete(int index, object? value) { }
+        protected override void OnRemoveComplete(int index, object? value) { }
+        protected override void OnSetComplete(int index, object? oldValue, object? newValue) { }
         protected override void OnValidate(object value) { }
         public void Remove(System.DirectoryServices.ActiveDirectory.DirectoryServer server) { }
     }
@@ -1323,11 +1311,19 @@ namespace System.DirectoryServices.ActiveDirectory
     public partial class ForestTrustCollisionException : System.DirectoryServices.ActiveDirectory.ActiveDirectoryOperationException, System.Runtime.Serialization.ISerializable
     {
         public ForestTrustCollisionException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected ForestTrustCollisionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ForestTrustCollisionException(string? message) { }
         public ForestTrustCollisionException(string? message, System.Exception? inner) { }
         public ForestTrustCollisionException(string? message, System.Exception? inner, System.DirectoryServices.ActiveDirectory.ForestTrustRelationshipCollisionCollection? collisions) { }
         public System.DirectoryServices.ActiveDirectory.ForestTrustRelationshipCollisionCollection? Collisions { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public enum ForestTrustCollisionType
@@ -1707,11 +1703,19 @@ namespace System.DirectoryServices.ActiveDirectory
     public partial class SyncFromAllServersOperationException : System.DirectoryServices.ActiveDirectory.ActiveDirectoryOperationException, System.Runtime.Serialization.ISerializable
     {
         public SyncFromAllServersOperationException() { }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         protected SyncFromAllServersOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SyncFromAllServersOperationException(string? message) { }
         public SyncFromAllServersOperationException(string? message, System.Exception? inner) { }
         public SyncFromAllServersOperationException(string? message, System.Exception? inner, System.DirectoryServices.ActiveDirectory.SyncFromAllServersErrorInformation[]? errors) { }
         public System.DirectoryServices.ActiveDirectory.SyncFromAllServersErrorInformation[] ErrorInformation { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     [System.FlagsAttribute]

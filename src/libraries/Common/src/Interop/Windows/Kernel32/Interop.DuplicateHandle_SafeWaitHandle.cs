@@ -9,14 +9,15 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool DuplicateHandle(
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool DuplicateHandle(
             IntPtr hSourceProcessHandle,
             SafeHandle hSourceHandle,
             IntPtr hTargetProcess,
             out SafeWaitHandle targetHandle,
             int dwDesiredAccess,
-            bool bInheritHandle,
+            [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle,
             int dwOptions
         );
     }

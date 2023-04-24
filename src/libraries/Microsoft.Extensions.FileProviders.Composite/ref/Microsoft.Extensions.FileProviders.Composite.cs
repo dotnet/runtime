@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.FileProviders
 {
     public partial class CompositeFileProvider : Microsoft.Extensions.FileProviders.IFileProvider
     {
-        public CompositeFileProvider(params Microsoft.Extensions.FileProviders.IFileProvider[] fileProviders) { }
+        public CompositeFileProvider(params Microsoft.Extensions.FileProviders.IFileProvider[]? fileProviders) { }
         public CompositeFileProvider(System.Collections.Generic.IEnumerable<Microsoft.Extensions.FileProviders.IFileProvider> fileProviders) { }
         public System.Collections.Generic.IEnumerable<Microsoft.Extensions.FileProviders.IFileProvider> FileProviders { get { throw null; } }
         public Microsoft.Extensions.FileProviders.IDirectoryContents GetDirectoryContents(string subpath) { throw null; }

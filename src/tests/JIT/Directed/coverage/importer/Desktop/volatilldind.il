@@ -1,4 +1,5 @@
 .assembly extern mscorlib {}
+.assembly extern xunit.core {}
 .assembly volatilldind { }
 .method public static void f()
 {
@@ -8,8 +9,12 @@ volatile. ldind.i4
 pop
 ret
 }
+.class public auto ansi volatilldind {
 .method public static int32 Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .try
 {
@@ -26,4 +31,5 @@ ret
 PASS:
 ldc.i4 100
 ret
+}
 }

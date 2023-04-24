@@ -19,25 +19,24 @@
 class MarshalNative
 {
 public:
-    static VOID QCALLTYPE Prelink(MethodDesc * pMD);
 
     //====================================================================
     // These methods convert between an HR and and a managed exception.
     //====================================================================
     static FCDECL2(Object *, GetExceptionForHR, INT32 errorCode, LPVOID errorInfo);
+#ifdef FEATURE_COMINTEROP
     static FCDECL1(int, GetHRForException, Object* eUNSAFE);
+#endif // FEATURE_COMINTEROP
 
     static FCDECL2(UINT32, SizeOfClass, ReflectClassBaseObject* refClass, CLR_BOOL throwIfNotMarshalable);
 
     static FCDECL1(UINT32, OffsetOfHelper, ReflectFieldObject* pFieldUNSAFE);
-    static FCDECL0(int, GetLastWin32Error);
-    static FCDECL1(void, SetLastWin32Error, int error);
+    static FCDECL0(int, GetLastPInvokeError);
+    static FCDECL1(void, SetLastPInvokeError, int error);
 
     static FCDECL3(VOID, StructureToPtr, Object* pObjUNSAFE, LPVOID ptr, CLR_BOOL fDeleteOld);
     static FCDECL3(VOID, PtrToStructureHelper, LPVOID ptr, Object* pObjIn, CLR_BOOL allowValueClasses);
     static FCDECL2(VOID, DestroyStructure, LPVOID ptr, ReflectClassBaseObject* refClassUNSAFE);
-
-    static FCDECL1(FC_BOOL_RET, IsPinnable, Object* obj);
 
     static FCDECL2(LPVOID, GCHandleInternalAlloc, Object *obj, int type);
     static FCDECL1(VOID, GCHandleInternalFree, OBJECTHANDLE handle);
@@ -95,12 +94,7 @@ public:
     //====================================================================
     // Create an object and aggregate it, then return the inner unknown.
     //====================================================================
-    static FCDECL2(IUnknown*, CreateAggregatedObject, IUnknown* pOuter, Object* refObjUNSAFE);
-
-    //====================================================================
-    // check if the object is classic COM component
-    //====================================================================
-    static FCDECL1(FC_BOOL_RET, IsComObject, Object* objUNSAFE);
+    static FCDECL2(IUnknown*, CreateAggregatedObjectNative, IUnknown* pOuter, Object* refObjUNSAFE);
 
     //====================================================================
     // free the COM component and zombie this object
@@ -123,9 +117,9 @@ public:
     //====================================================================
     // These methods convert OLE variants to and from objects.
     //====================================================================
-    static FCDECL2(void, GetNativeVariantForObject, Object* ObjUNSAFE, LPVOID pDestNativeVariant);
-    static FCDECL1(Object*, GetObjectForNativeVariant, LPVOID pSrcNativeVariant);
-    static FCDECL2(Object*, GetObjectsForNativeVariants, VARIANT* aSrcNativeVariant, int cVars);
+    static FCDECL2(void, GetNativeVariantForObjectNative, Object* ObjUNSAFE, LPVOID pDestNativeVariant);
+    static FCDECL1(Object*, GetObjectForNativeVariantNative, LPVOID pSrcNativeVariant);
+    static FCDECL2(Object*, GetObjectsForNativeVariantsNative, VARIANT* aSrcNativeVariant, int cVars);
 
     //====================================================================
     // These methods are used to map COM slots to method info's.
@@ -135,18 +129,24 @@ public:
 
     static FCDECL2(void, ChangeWrapperHandleStrength, Object* orefUNSAFE, CLR_BOOL fIsWeak);
 
-    //====================================================================
-    // Create type for given CLSID.
-    //====================================================================
-    static void QCALLTYPE GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
-
 private:
     static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT);
 #endif // FEATURE_COMINTEROP
 };
 
-// Check that the supplied object is valid to put in a pinned handle,
-// throwing an exception if not.
-void ValidatePinnedObject(OBJECTREF obj);
+extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD);
+extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported();
+
+#ifdef _DEBUG
+using IsInCooperativeGCMode_fn = BOOL(STDMETHODCALLTYPE*)(void);
+extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGCModeFunctionPointer();
+#endif
+
+#ifdef FEATURE_COMINTEROP
+//====================================================================
+// Create type for given CLSID.
+//====================================================================
+extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType);
+#endif
 
 #endif

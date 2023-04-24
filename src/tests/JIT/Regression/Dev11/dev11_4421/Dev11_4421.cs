@@ -2,16 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-internal static class Module
+public static class Module
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int Var1, Temp;
         try
         {
-            for (Temp = int.MaxValue - 3; Temp <= int.MaxValue - 1; Temp++)
-                Var1 = (int)(2 + Temp);
+            checked
+            {
+                for (Temp = int.MaxValue - 3; Temp <= int.MaxValue - 1; Temp++)
+                    Var1 = (int)(2 + Temp);
+            }
         }
         catch (Exception ex)
         {

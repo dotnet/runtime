@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -15,9 +16,6 @@ namespace System
         public override Assembly Assembly => RuntimeTypeHandle.GetAssembly(this);
         public override Type? BaseType => GetBaseType();
         public override bool IsByRefLike => RuntimeTypeHandle.IsByRefLike(this);
-        public override bool IsConstructedGenericType => IsGenericType && !IsGenericTypeDefinition;
-        public override bool IsGenericType => RuntimeTypeHandle.HasInstantiation(this);
-        public override bool IsGenericTypeDefinition => RuntimeTypeHandle.IsGenericTypeDefinition(this);
         public override bool IsGenericParameter => RuntimeTypeHandle.IsGenericVariable(this);
         public override bool IsTypeDefinition => RuntimeTypeHandle.IsTypeDefinition(this);
         public override bool IsSecurityCritical => true;
@@ -55,12 +53,9 @@ namespace System
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType is null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
@@ -68,7 +63,7 @@ namespace System
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributesInternal(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         // GetDefaultMembers
@@ -98,64 +93,80 @@ namespace System
 
         public override string? GetEnumName(object value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            Type valueType = value.GetType();
+            RuntimeType valueType = (RuntimeType)value.GetType();
 
-            if (!(valueType.IsEnum || IsIntegerType(valueType)))
+            if (!(valueType.IsActualEnum || IsIntegerType(valueType)))
                 throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
 
-            ulong ulValue = Enum.ToUInt64(value);
-
-            return Enum.GetEnumName(this, ulValue);
+            // Map the value to a ulong and then look up that value in the enum.
+            // This supports numerical values of different types than the enum
+            // or its underlying type.
+            return Enum.GetName(this, Enum.ToUInt64(value));
         }
+
+        private static void ThrowMustBeEnum() =>
+            throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
         public override string[] GetEnumNames()
         {
-            if (!IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+            if (!IsActualEnum)
+                ThrowMustBeEnum();
 
-            string[] ret = Enum.InternalGetNames(this);
+            string[] ret = Enum.GetNamesNoCopy(this);
 
             // Make a copy since we can't hand out the same array since users can modify them
             return new ReadOnlySpan<string>(ret).ToArray();
         }
 
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetEnumValues<TEnum> overload or the GetEnumValuesAsUnderlyingType method instead.")]
         public override Array GetEnumValues()
         {
-            if (!IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+            if (!IsActualEnum)
+                ThrowMustBeEnum();
 
-            // Get all of the values
-            ulong[] values = Enum.InternalGetValues(this);
-
-            // Create a generic Array
+            // Get all of the values as the underlying type and copy them to a new array of the enum type.
+            Array values = Enum.GetValuesAsUnderlyingTypeNoCopy(this);
             Array ret = Array.CreateInstance(this, values.Length);
-
+#if MONO
+            // TODO https://github.com/dotnet/runtime/issues/79224:
+            // Array.Copy can be used instead when bool[] is no longer supported, or if mono's Array.Copy is updated to support copying a bool[] to an EnumBackedByBool[].
             for (int i = 0; i < values.Length; i++)
             {
-                object val = Enum.ToObject(this, values[i]);
-                ret.SetValue(val, i);
+                ret.SetValue(Enum.ToObject(this, values.GetValue(i)!), i);
             }
-
+#else
+            Array.Copy(values, ret, values.Length);
+#endif
             return ret;
+        }
+
+        /// <summary>
+        /// Retrieves an array of the values of the underlying type constants in a specified enumeration type.
+        /// </summary>
+        /// <remarks>
+        /// This method can be used to get enumeration values when creating an array of the enumeration type is challenging.
+        /// For example, <see cref="T:System.Reflection.MetadataLoadContext" /> or on a platform where runtime codegen is not available.
+        /// </remarks>
+        /// <returns>An array that contains the values of the underlying type constants in enumType.</returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the type is not Enum
+        /// </exception>
+        public override Array GetEnumValuesAsUnderlyingType()
+        {
+            if (!IsActualEnum)
+                ThrowMustBeEnum();
+
+            return Enum.GetValuesAsUnderlyingType(this);
         }
 
         public override Type GetEnumUnderlyingType()
         {
-            if (!IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+            if (!IsActualEnum)
+                ThrowMustBeEnum();
 
             return Enum.InternalGetUnderlyingType(this);
-        }
-
-        public override Type GetGenericTypeDefinition()
-        {
-            if (!IsGenericType)
-                throw new InvalidOperationException(SR.InvalidOperation_NotGenericType);
-
-            return RuntimeTypeHandle.GetGenericTypeDefinition(this);
         }
 
         public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
@@ -169,66 +180,7 @@ namespace System
             if (typeCode != TypeCode.Empty)
                 return typeCode;
 
-            CorElementType corElementType = RuntimeTypeHandle.GetCorElementType(this);
-            switch (corElementType)
-            {
-                case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    typeCode = TypeCode.Boolean; break;
-                case CorElementType.ELEMENT_TYPE_CHAR:
-                    typeCode = TypeCode.Char; break;
-                case CorElementType.ELEMENT_TYPE_I1:
-                    typeCode = TypeCode.SByte; break;
-                case CorElementType.ELEMENT_TYPE_U1:
-                    typeCode = TypeCode.Byte; break;
-                case CorElementType.ELEMENT_TYPE_I2:
-                    typeCode = TypeCode.Int16; break;
-                case CorElementType.ELEMENT_TYPE_U2:
-                    typeCode = TypeCode.UInt16; break;
-                case CorElementType.ELEMENT_TYPE_I4:
-                    typeCode = TypeCode.Int32; break;
-                case CorElementType.ELEMENT_TYPE_U4:
-                    typeCode = TypeCode.UInt32; break;
-                case CorElementType.ELEMENT_TYPE_I8:
-                    typeCode = TypeCode.Int64; break;
-                case CorElementType.ELEMENT_TYPE_U8:
-                    typeCode = TypeCode.UInt64; break;
-                case CorElementType.ELEMENT_TYPE_R4:
-                    typeCode = TypeCode.Single; break;
-                case CorElementType.ELEMENT_TYPE_R8:
-                    typeCode = TypeCode.Double; break;
-#if !CORECLR
-                case CorElementType.ELEMENT_TYPE_STRING:
-                    typeCode = TypeCode.String; break;
-#endif
-                case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                    if (ReferenceEquals(this, typeof(decimal)))
-                        typeCode = TypeCode.Decimal;
-                    else if (ReferenceEquals(this, typeof(DateTime)))
-                        typeCode = TypeCode.DateTime;
-                    else if (IsEnum)
-                        typeCode = GetTypeCode(Enum.InternalGetUnderlyingType(this));
-                    else
-                        typeCode = TypeCode.Object;
-                    break;
-                default:
-#if CORECLR
-                    // GetSignatureCorElementType returns E_T_CLASS for E_T_STRING
-                    if (ReferenceEquals(this, typeof(string)))
-                    {
-                        typeCode = TypeCode.String;
-                        break;
-                    }
-#endif
-                    if (ReferenceEquals(this, typeof(DBNull)))
-                    {
-                        typeCode = TypeCode.DBNull;
-                        break;
-                    }
-
-                    typeCode = TypeCode.Object;
-                    break;
-            }
-
+            typeCode = Type.GetRuntimeTypeCode(this);
             Cache.TypeCode = typeCode;
 
             return typeCode;
@@ -242,12 +194,9 @@ namespace System
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType is null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
@@ -255,59 +204,52 @@ namespace System
 
         public override bool IsEnumDefined(object value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
-            if (!IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
-
-            // Check if both of them are of the same type
-            RuntimeType valueType = (RuntimeType)value.GetType();
+            if (!IsActualEnum)
+                ThrowMustBeEnum();
 
             // If the value is an Enum then we need to extract the underlying value from it
-            if (valueType.IsEnum)
+            RuntimeType valueType = (RuntimeType)value.GetType();
+            if (valueType.IsActualEnum)
             {
+                // The enum type must match this type.
                 if (!valueType.IsEquivalentTo(this))
                     throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, valueType, this));
 
                 valueType = (RuntimeType)valueType.GetEnumUnderlyingType();
             }
 
-            // If a string is passed in
+            // If a string is passed in, search the enum names with it.
             if (valueType == StringType)
-            {
-                // Get all of the Fields, calling GetHashEntry directly to avoid copying
-                string[] names = Enum.InternalGetNames(this);
-                return Array.IndexOf(names, value) >= 0;
-            }
+                return Array.IndexOf(Enum.GetNamesNoCopy(this), (string)value) >= 0;
 
             // If an enum or integer value is passed in
-            if (IsIntegerType(valueType))
-            {
-                RuntimeType underlyingType = Enum.InternalGetUnderlyingType(this);
-                if (underlyingType != valueType)
-                    throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, valueType, underlyingType));
-
-                ulong[] ulValues = Enum.InternalGetValues(this);
-                ulong ulValue = Enum.ToUInt64(value);
-
-                return Array.BinarySearch(ulValues, ulValue) >= 0;
-            }
-            else
-            {
+            if (!IsIntegerType(valueType))
                 throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
-            }
-        }
 
-        protected override bool IsValueTypeImpl()
-        {
-            // We need to return true for generic parameters with the ValueType constraint.
-            // So we cannot use the faster RuntimeTypeHandle.IsValueType because it returns
-            // false for all generic parameters.
-            if (this == typeof(ValueType) || this == typeof(Enum))
-                return false;
+            RuntimeType underlyingType = Enum.InternalGetUnderlyingType(this);
+            if (underlyingType != valueType)
+                throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, valueType, underlyingType));
 
-            return IsSubclassOf(typeof(ValueType));
+            return GetTypeCode(underlyingType) switch
+            {
+                TypeCode.SByte => Enum.IsDefinedPrimitive(this, (byte)(sbyte)value),
+                TypeCode.Byte => Enum.IsDefinedPrimitive(this, (byte)value),
+                TypeCode.Int16 => Enum.IsDefinedPrimitive(this, (ushort)(short)value),
+                TypeCode.UInt16 => Enum.IsDefinedPrimitive(this, (ushort)value),
+                TypeCode.Int32 => Enum.IsDefinedPrimitive(this, (uint)(int)value),
+                TypeCode.UInt32 => Enum.IsDefinedPrimitive(this, (uint)value),
+                TypeCode.Int64 => Enum.IsDefinedPrimitive(this, (ulong)(long)value),
+                TypeCode.UInt64 => Enum.IsDefinedPrimitive(this, (ulong)value),
+                TypeCode.Single => Enum.IsDefinedPrimitive(this, (float)value),
+                TypeCode.Double => Enum.IsDefinedPrimitive(this, (double)value),
+                TypeCode.Char => Enum.IsDefinedPrimitive(this, (char)value),
+                _ =>
+                    underlyingType == typeof(nint) ? Enum.IsDefinedPrimitive(this, (nuint)(nint)value) :
+                    underlyingType == typeof(nuint) ? Enum.IsDefinedPrimitive(this, (nuint)value) :
+                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType),
+            };
         }
 
         protected override bool IsByRefImpl() => RuntimeTypeHandle.IsByRef(this);
@@ -439,8 +381,7 @@ namespace System
                 if ((bindingFlags & BindingFlags.PutRefDispProperty) != 0 && (bindingFlags & ClassicBindingMask & ~BindingFlags.PutRefDispProperty) != 0)
                     throw new ArgumentException(SR.Arg_COMPropSetPut, nameof(bindingFlags));
 
-                if (name == null)
-                    throw new ArgumentNullException(nameof(name));
+                ArgumentNullException.ThrowIfNull(name);
 
                 bool[]? isByRef = modifiers?[0].IsByRefArray;
 
@@ -463,7 +404,7 @@ namespace System
             }
 #endif // FEATURE_COMINTEROP
 
-            if (namedParams != null && Array.IndexOf(namedParams, null!) != -1)
+            if (namedParams != null && Array.IndexOf(namedParams, null!) >= 0)
                 throw new ArgumentException(SR.Arg_NamedParamNull, nameof(namedParams));
 
             int argCnt = (providedArgs != null) ? providedArgs.Length : 0;
@@ -484,13 +425,11 @@ namespace System
             if ((bindingFlags & (BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty)) != 0)
                 bindingFlags |= BindingFlags.SetProperty;
 
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
+            ArgumentNullException.ThrowIfNull(name);
             if (name.Length == 0 || name.Equals("[DISPID=0]"))
             {
                 // in InvokeMember we always pretend there is a default member if none is provided and we make it ToString
-                name = GetDefaultMemberName()! ?? "ToString";
+                name = GetDefaultMemberName() ?? "ToString";
             }
 
             // GetField or SetField
@@ -511,8 +450,7 @@ namespace System
                 {
                     Debug.Assert(IsSetField);
 
-                    if (providedArgs == null)
-                        throw new ArgumentNullException(nameof(providedArgs));
+                    ArgumentNullException.ThrowIfNull(providedArgs);
 
                     if ((bindingFlags & BindingFlags.GetProperty) != 0)
                         throw new ArgumentException(SR.Arg_FldSetPropGet, nameof(bindingFlags));
@@ -795,20 +733,237 @@ namespace System
 
         internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments, RuntimeType[] genericParameters)
         {
-            if (genericArguments == null)
-                throw new ArgumentNullException();
+            ArgumentNullException.ThrowIfNull(genericArguments);
 
             for (int i = 0; i < genericArguments.Length; i++)
             {
-                if (genericArguments[i] == null)
-                    throw new ArgumentNullException();
-
+                ArgumentNullException.ThrowIfNull(genericArguments[i], null);
                 ThrowIfTypeNeverValidGenericArgument(genericArguments[i]);
             }
 
             if (genericArguments.Length != genericParameters.Length)
                 throw new ArgumentException(
                     SR.Format(SR.Argument_NotEnoughGenArguments, genericArguments.Length, genericParameters.Length));
+        }
+
+        internal static CorElementType GetUnderlyingType(RuntimeType type)
+        {
+            if (type.IsActualEnum)
+            {
+                type = (RuntimeType)Enum.GetUnderlyingType(type);
+            }
+
+            return RuntimeTypeHandle.GetCorElementType(type);
+        }
+
+        internal static bool TryGetByRefElementType(RuntimeType type, [NotNullWhen(true)] out RuntimeType? elementType)
+        {
+            CorElementType corElemType = RuntimeTypeHandle.GetCorElementType(type);
+            if (corElemType == CorElementType.ELEMENT_TYPE_BYREF)
+            {
+                elementType = RuntimeTypeHandle.GetElementType(type);
+                return true;
+            }
+
+            elementType = null;
+            return false;
+        }
+
+        private enum CheckValueStatus
+        {
+            Success = 0,
+            ArgumentException,
+            NotSupported_ByRefLike
+        }
+
+        /// <summary>
+        /// Verify <paramref name="value"/> and optionally convert the value for special cases.
+        /// </summary>
+        /// <returns>True if <paramref name="value"/> is a value type, False otherwise</returns>
+        internal bool CheckValue(
+            ref object? value,
+            ref ParameterCopyBackAction copyBack,
+            Binder? binder,
+            CultureInfo? culture,
+            BindingFlags invokeAttr)
+        {
+            // Already fast-pathed by the caller.
+            Debug.Assert(!ReferenceEquals(value?.GetType(), this));
+
+            // Since this cannot be a generic parameter, we use RuntimeTypeHandle.IsValueType here
+            // because it is faster than IsValueType
+            Debug.Assert(!IsGenericParameter);
+
+            // Fast path to whether a value can be assigned without conversion.
+            if (IsInstanceOfType(value))
+            {
+                if (IsNullableOfT)
+                {
+                    // Pass as a true boxed Nullable<T>, not as a T or null.
+                    value = RuntimeMethodHandle.ReboxToNullable(value, this);
+                    return true;
+                }
+
+                // Other value types won't get here since Type equality was previous checked.
+                Debug.Assert(!RuntimeTypeHandle.IsValueType(this));
+
+                return false;
+            }
+
+            bool isValueType;
+            CheckValueStatus result = TryChangeType(ref value, ref copyBack, out isValueType);
+            if (result == CheckValueStatus.Success)
+            {
+                return isValueType;
+            }
+
+            if (result == CheckValueStatus.ArgumentException && (invokeAttr & BindingFlags.ExactBinding) == 0)
+            {
+                Debug.Assert(value != null);
+
+                // Use the binder
+                if (binder != null && binder != DefaultBinder)
+                {
+                    value = binder.ChangeType(value, this, culture);
+                    if (IsInstanceOfType(value))
+                    {
+                        if (IsNullableOfT)
+                        {
+                            // Pass as a true boxed Nullable<T>, not as a T or null.
+                            value = RuntimeMethodHandle.ReboxToNullable(value, this);
+                            copyBack = ParameterCopyBackAction.CopyNullable;
+                        }
+                        else
+                        {
+                            copyBack = ParameterCopyBackAction.Copy;
+                        }
+
+                        return IsValueType; // Note the call to IsValueType, not the variable.
+                    }
+
+                    result = TryChangeType(ref value, ref copyBack, out isValueType);
+                    if (result == CheckValueStatus.Success)
+                    {
+                        return isValueType;
+                    }
+                }
+            }
+
+            switch (result)
+            {
+                case CheckValueStatus.ArgumentException:
+                    throw new ArgumentException(SR.Format(SR.Arg_ObjObjEx, value?.GetType(), this));
+                case CheckValueStatus.NotSupported_ByRefLike:
+                    throw new NotSupportedException(SR.NotSupported_ByRefLike);
+            }
+
+            Debug.Fail("Error result not expected");
+            return false;
+        }
+
+        private CheckValueStatus TryChangeType(
+            ref object? value,
+            ref ParameterCopyBackAction copyBack,
+            out bool isValueType)
+        {
+            RuntimeType? sigElementType;
+            if (TryGetByRefElementType(this, out sigElementType))
+            {
+                copyBack = ParameterCopyBackAction.Copy;
+                Debug.Assert(!sigElementType.IsGenericParameter);
+
+                if (sigElementType.IsInstanceOfType(value))
+                {
+                    isValueType = RuntimeTypeHandle.IsValueType(sigElementType);
+                    if (isValueType)
+                    {
+                        if (sigElementType.IsNullableOfT)
+                        {
+                            // Pass as a true boxed Nullable<T>, not as a T or null.
+                            value = RuntimeMethodHandle.ReboxToNullable(value, sigElementType);
+                            copyBack = ParameterCopyBackAction.CopyNullable;
+                        }
+                        else
+                        {
+                            // Make a copy to prevent the boxed instance from being directly modified by the method.
+                            value = AllocateValueType(sigElementType, value);
+                        }
+                    }
+
+                    return CheckValueStatus.Success;
+                }
+
+                if (value == null)
+                {
+                    isValueType = RuntimeTypeHandle.IsValueType(sigElementType);
+                    if (!isValueType)
+                    {
+                        // Normally we don't get here since 'null' was previosuly checked, but due to binders we can.
+                        return CheckValueStatus.Success;
+                    }
+
+                    if (sigElementType.IsByRefLike)
+                    {
+                        return CheckValueStatus.NotSupported_ByRefLike;
+                    }
+
+                    // Allocate default<T>.
+                    value = AllocateValueType(sigElementType, value: null);
+                    copyBack = sigElementType.IsNullableOfT ? ParameterCopyBackAction.CopyNullable : ParameterCopyBackAction.Copy;
+                    return CheckValueStatus.Success;
+                }
+
+                isValueType = false;
+                return CheckValueStatus.ArgumentException;
+            }
+
+            if (value == null)
+            {
+                isValueType = RuntimeTypeHandle.IsValueType(this);
+                if (!isValueType)
+                {
+                    // Normally we don't get here since 'null' was previosuly checked, but due to binders we can.
+                    return CheckValueStatus.Success;
+                }
+
+                if (IsByRefLike)
+                {
+                    return CheckValueStatus.NotSupported_ByRefLike;
+                }
+
+                // Allocate default<T>.
+                value = AllocateValueType(this, value: null);
+                return CheckValueStatus.Success;
+            }
+
+            // Check the strange ones courtesy of reflection:
+            // - Implicit cast between primitives
+            // - Enum treated as underlying type
+            // - Pointer (*) types to IntPtr (if dest is IntPtr)
+            // - System.Reflection.Pointer to appropriate pointer (*) type (if dest is pointer type)
+            if (IsPointer || IsEnum || IsPrimitive)
+                return TryChangeTypeSpecial(ref value, out isValueType);
+
+            isValueType = false;
+            return CheckValueStatus.ArgumentException;
+        }
+
+        internal bool TryByRefFastPath(ref object arg, ref bool isValueType)
+        {
+            if (TryGetByRefElementType(this, out RuntimeType? sigElementType) &&
+                ReferenceEquals(sigElementType, arg.GetType()))
+            {
+                isValueType = sigElementType.IsValueType;
+                if (isValueType)
+                {
+                    // Make a copy to prevent the boxed instance from being directly modified by the method.
+                    arg = AllocateValueType(sigElementType, arg);
+                }
+
+                return true;
+            }
+
+            return false;
         }
     }
 }

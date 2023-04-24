@@ -7,7 +7,7 @@
 #include "common.h"
 #include "castcache.h"
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 BASEARRAYREF* CastCache::s_pTableRef = NULL;
 OBJECTHANDLE CastCache::s_sentinelTable = NULL;
@@ -124,7 +124,7 @@ void CastCache::Initialize()
     }
     CONTRACTL_END;
 
-    FieldDesc* pTableField = CoreLibBinder::GetField(FIELD__CASTHELPERS__TABLE);
+    FieldDesc* pTableField = CoreLibBinder::GetField(FIELD__CASTCACHE__TABLE);
 
     GCX_COOP();
     s_pTableRef = (BASEARRAYREF*)pTableField->GetCurrentStaticAddress();
@@ -337,4 +337,4 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
     }
 }
 
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE

@@ -12,17 +12,17 @@ namespace System.Drawing
 {
     public class SizeFConverter : TypeConverter
     {
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string strValue)
             {
@@ -33,10 +33,7 @@ namespace System.Drawing
                 }
 
                 // Parse 2 integer values.
-                if (culture == null)
-                {
-                    culture = CultureInfo.CurrentCulture;
-                }
+                culture ??= CultureInfo.CurrentCulture;
 
                 char sep = culture.TextInfo.ListSeparator[0];
                 string[] tokens = text.Split(sep);
@@ -44,7 +41,7 @@ namespace System.Drawing
                 TypeConverter floatConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(float));
                 for (int i = 0; i < values.Length; i++)
                 {
-                    values[i] = (float)floatConverter.ConvertFromString(context, culture, tokens[i]);
+                    values[i] = (float)floatConverter.ConvertFromString(context, culture, tokens[i])!;
                 }
 
                 if (values.Length != 2)
@@ -58,25 +55,19 @@ namespace System.Drawing
             return base.ConvertFrom(context, culture, value);
         }
 
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
+            ArgumentNullException.ThrowIfNull(destinationType);
 
             if (value is SizeF size)
             {
                 if (destinationType == typeof(string))
                 {
-                    if (culture == null)
-                    {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    culture ??= CultureInfo.CurrentCulture;
 
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter floatConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(float));
-                    var args = new string[]
+                    var args = new string?[]
                     {
                         floatConverter.ConvertToString(context, culture, size.Width),
                         floatConverter.ConvertToString(context, culture, size.Height)
@@ -85,7 +76,7 @@ namespace System.Drawing
                 }
                 else if (destinationType == typeof(InstanceDescriptor))
                 {
-                    ConstructorInfo ctor = typeof(SizeF).GetConstructor(new Type[] { typeof(float), typeof(float) });
+                    ConstructorInfo? ctor = typeof(SizeF).GetConstructor(new Type[] { typeof(float), typeof(float) });
                     if (ctor != null)
                     {
                         return new InstanceDescriptor(ctor, new object[] { size.Width, size.Height });
@@ -96,15 +87,12 @@ namespace System.Drawing
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
+        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
-            if (propertyValues == null)
-            {
-                throw new ArgumentNullException(nameof(propertyValues));
-            }
+            ArgumentNullException.ThrowIfNull(propertyValues);
 
-            object width = propertyValues["Width"];
-            object height = propertyValues["Height"];
+            object? width = propertyValues["Width"];
+            object? height = propertyValues["Height"];
 
             if (width == null || height == null || !(width is float) || !(height is float))
             {
@@ -114,17 +102,17 @@ namespace System.Drawing
             return new SizeF((float)width, (float)height);
         }
 
-        public override bool GetCreateInstanceSupported(ITypeDescriptorContext context) => true;
+        public override bool GetCreateInstanceSupported(ITypeDescriptorContext? context) => true;
 
         private static readonly string[] s_propertySort = { "Width", "Height" };
 
         [RequiresUnreferencedCode("The Type of value cannot be statically discovered. " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
-        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
+        public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext? context, object value, Attribute[]? attributes)
         {
             PropertyDescriptorCollection props = TypeDescriptor.GetProperties(typeof(SizeF), attributes);
             return props.Sort(s_propertySort);
         }
 
-        public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;
+        public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
     }
 }

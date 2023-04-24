@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="System.Linq.Expressions">
+    <type fullname="System.Linq.Expressions.LambdaExpression">
+      <method signature="System.Boolean get_CanCompileToIL()" body="stub" value="false" />
+    </type>
+  </assembly>
+</linker>

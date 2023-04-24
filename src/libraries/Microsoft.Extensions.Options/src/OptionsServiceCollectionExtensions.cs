@@ -21,10 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
         public static IServiceCollection AddOptions(this IServiceCollection services)
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
+            ThrowHelper.ThrowIfNull(services);
 
             services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptions<>), typeof(UnnamedOptionsManager<>)));
             services.TryAdd(ServiceDescriptor.Scoped(typeof(IOptionsSnapshot<>), typeof(OptionsManager<>)));
@@ -54,18 +51,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="name">The name of the options instance.</param>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
-        public static IServiceCollection Configure<TOptions>(this IServiceCollection services, string name, Action<TOptions> configureOptions)
+        public static IServiceCollection Configure<TOptions>(this IServiceCollection services, string? name, Action<TOptions> configureOptions)
             where TOptions : class
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(configureOptions);
 
             services.AddOptions();
             services.AddSingleton<IConfigureOptions<TOptions>>(new ConfigureNamedOptions<TOptions>(name, configureOptions));
@@ -102,18 +92,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="name">The name of the options instance.</param>
         /// <param name="configureOptions">The action used to configure the options.</param>
         /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
-        public static IServiceCollection PostConfigure<TOptions>(this IServiceCollection services, string name, Action<TOptions> configureOptions)
+        public static IServiceCollection PostConfigure<TOptions>(this IServiceCollection services, string? name, Action<TOptions> configureOptions)
             where TOptions : class
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
-
-            if (configureOptions == null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
-            }
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(configureOptions);
 
             services.AddOptions();
             services.AddSingleton<IPostConfigureOptions<TOptions>>(new PostConfigureOptions<TOptions>(name, configureOptions));
@@ -146,7 +129,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static IEnumerable<Type> FindConfigurationServices(Type type)
         {
-            foreach (Type t in type.GetInterfaces())
+            foreach (Type t in GetInterfacesOnType(type))
             {
                 if (t.IsGenericType)
                 {
@@ -159,6 +142,16 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                 }
             }
+
+            // Extracted the suppression to a local function as trimmer currently doesn't handle suppressions
+            // on iterator methods correctly.
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+                Justification="This method only looks for interfaces referenced in its code. " +
+                    "The trimmer will keep the interface and thus all of its implementations in that case. " +
+                    "The call to GetInterfaces may return less results in trimmed apps, but it will " +
+                    "include the interfaces this method looks for if they should be there.")]
+            static Type[] GetInterfacesOnType(Type t)
+                => t.GetInterfaces();
         }
 
         private static void ThrowNoConfigServices(Type type) =>
@@ -240,13 +233,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
         /// <param name="name">The name of the options instance.</param>
         /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that configure calls can be chained in it.</returns>
-        public static OptionsBuilder<TOptions> AddOptions<TOptions>(this IServiceCollection services, string name)
+        public static OptionsBuilder<TOptions> AddOptions<TOptions>(this IServiceCollection services, string? name)
             where TOptions : class
         {
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
+            ThrowHelper.ThrowIfNull(services);
 
             services.AddOptions();
             return new OptionsBuilder<TOptions>(services, name);

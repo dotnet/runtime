@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml.Resolvers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Xunit;
 using System.Threading.Tasks;
+using System.Xml.Resolvers;
+using Xunit;
 
-namespace System.Xml.XmlResolver.Tests
+namespace System.Xml.XmlResolverTests
 {
     public class XmlPreloadedResolverGetEntity
     {
@@ -108,7 +108,7 @@ namespace System.Xml.XmlResolver.Tests
         [Fact]
         public void XmlResolverGetEntityAsyncWithValidUserSuppliedData()
         {
-            byte[] inpData = Encoding.ASCII.GetBytes("hello world");
+            byte[] inpData = "hello world"u8.ToArray();
             var xmlResolver = new XmlPreloadedResolver(XmlKnownDtds.Xhtml10);
             xmlResolver.Add(new Uri("-//W3C//DTD FAKE 1.0 Not Real//EN", UriKind.RelativeOrAbsolute), inpData);
             Task<object> output = xmlResolver.GetEntityAsync(new Uri("-//W3C//DTD FAKE 1.0 Not Real//EN",

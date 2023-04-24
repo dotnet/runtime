@@ -6,19 +6,20 @@ using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    internal sealed class EccSecurityTransforms : IDisposable
+    internal sealed partial class EccSecurityTransforms : IDisposable
     {
         private SecKeyPair? _keys;
         private bool _disposed;
-        private readonly string _disposedName;
+        private readonly Type _disposedType;
 
-        internal EccSecurityTransforms(string disposedTypeName)
+        internal EccSecurityTransforms(Type disposedType)
         {
-            Debug.Assert(disposedTypeName != null);
-            _disposedName = disposedTypeName;
+            Debug.Assert(disposedType != null);
+            _disposedType = disposedType;
         }
 
         internal void DisposeKey()
@@ -79,10 +80,7 @@ namespace System.Security.Cryptography
 
         internal void ThrowIfDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(_disposedName);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, _disposedType);
         }
 
         internal SecKeyPair GetOrGenerateKeys(int keySizeInBits)
@@ -115,53 +113,67 @@ namespace System.Security.Cryptography
             current?.Dispose();
         }
 
-        internal static ECParameters ExportPublicParametersFromPrivateKey(SafeSecKeyRefHandle handle)
+        internal ECParameters ExportParameters(bool includePrivateParameters, int keySizeInBits)
         {
-            const string ExportPassword = "DotnetExportPassphrase";
-            byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(handle, exportPrivate: true, password: ExportPassword);
-            EccKeyFormatHelper.ReadEncryptedPkcs8(keyBlob, ExportPassword, out _, out ECParameters key);
-            CryptographicOperations.ZeroMemory(key.D);
-            CryptographicOperations.ZeroMemory(keyBlob);
-            key.D = null;
+            SecKeyPair keys = GetOrGenerateKeys(keySizeInBits);
+            ECParameters key = default;
+
+            if (!TryExportDataKeyParameters(keys, includePrivateParameters, ref key))
+            {
+                return ExportParametersFromLegacyKey(keys, includePrivateParameters);
+            }
+
             return key;
         }
 
-        internal ECParameters ExportParameters(bool includePrivateParameters, int keySizeInBits)
+        internal bool TryExportDataKeyParameters(
+            bool includePrivateParameters,
+            int keySizeInBits,
+            ref ECParameters ecParameters)
         {
-            // Apple requires all private keys to be exported encrypted, but since we're trying to export
-            // as parsed structures we will need to decrypt it for the user.
-            const string ExportPassword = "DotnetExportPassphrase";
-            SecKeyPair keys = GetOrGenerateKeys(keySizeInBits);
+            return TryExportDataKeyParameters(
+                GetOrGenerateKeys(keySizeInBits),
+                includePrivateParameters,
+                ref ecParameters);
+        }
 
+        private static bool TryExportDataKeyParameters(
+            SecKeyPair keys,
+            bool includePrivateParameters,
+            ref ECParameters ecParameters)
+        {
             if (includePrivateParameters && keys.PrivateKey == null)
             {
                 throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
             }
 
-            byte[] keyBlob = Interop.AppleCrypto.SecKeyExport(
-                includePrivateParameters ? keys.PrivateKey : keys.PublicKey,
-                exportPrivate: includePrivateParameters,
-                password: ExportPassword);
+            bool gotKeyBlob = Interop.AppleCrypto.TrySecKeyCopyExternalRepresentation(
+                includePrivateParameters ? keys.PrivateKey! : keys.PublicKey,
+                out byte[] keyBlob);
+
+            if (!gotKeyBlob)
+            {
+                return false;
+            }
 
             try
             {
-                if (!includePrivateParameters)
+                AsymmetricAlgorithmHelpers.DecodeFromUncompressedAnsiX963Key(
+                    keyBlob,
+                    includePrivateParameters,
+                    out ecParameters);
+
+                switch (GetKeySize(keys))
                 {
-                    EccKeyFormatHelper.ReadSubjectPublicKeyInfo(
-                        keyBlob,
-                        out int localRead,
-                        out ECParameters key);
-                    return key;
+                    case 256: ecParameters.Curve = ECCurve.NamedCurves.nistP256; break;
+                    case 384: ecParameters.Curve = ECCurve.NamedCurves.nistP384; break;
+                    case 521: ecParameters.Curve = ECCurve.NamedCurves.nistP521; break;
+                    default:
+                        Debug.Fail("Unsupported curve");
+                        throw new CryptographicException();
                 }
-                else
-                {
-                    EccKeyFormatHelper.ReadEncryptedPkcs8(
-                        keyBlob,
-                        ExportPassword,
-                        out int localRead,
-                        out ECParameters key);
-                    return key;
-                }
+
+                return true;
             }
             finally
             {
@@ -174,8 +186,28 @@ namespace System.Security.Cryptography
             parameters.Validate();
             ThrowIfDisposed();
 
+            if (!parameters.Curve.IsNamed)
+            {
+                throw new PlatformNotSupportedException(SR.Cryptography_ECC_NamedCurvesOnly);
+            }
+
+            switch (parameters.Curve.Oid.Value)
+            {
+                case Oids.secp256r1:
+                case Oids.secp384r1:
+                case Oids.secp521r1:
+                    break;
+                default:
+                    throw new PlatformNotSupportedException(
+                        SR.Format(SR.Cryptography_CurveNotSupported, parameters.Curve.Oid.Value ?? parameters.Curve.Oid.FriendlyName));
+            }
+
+            if (parameters.Q.X == null || parameters.Q.Y == null)
+            {
+                ExtractPublicKeyFromPrivateKey(ref parameters);
+            }
+
             bool isPrivateKey = parameters.D != null;
-            bool hasPublicParameters = parameters.Q.X != null && parameters.Q.Y != null;
             SecKeyPair newKeys;
 
             if (isPrivateKey)
@@ -185,30 +217,7 @@ namespace System.Security.Cryptography
                 //
                 // Public import should go off without a hitch.
                 SafeSecKeyRefHandle privateKey = ImportKey(parameters);
-
-                ECParameters publicOnly;
-
-                if (hasPublicParameters)
-                {
-                    publicOnly = parameters;
-                    publicOnly.D = null;
-                }
-                else
-                {
-                    publicOnly = ExportPublicParametersFromPrivateKey(privateKey);
-                }
-
-                SafeSecKeyRefHandle publicKey;
-                try
-                {
-                    publicKey = ImportKey(publicOnly);
-                }
-                catch
-                {
-                    privateKey.Dispose();
-                    throw;
-                }
-
+                SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.CopyPublicKey(privateKey);
                 newKeys = SecKeyPair.PublicPrivatePair(publicKey, privateKey);
             }
             else
@@ -225,71 +234,38 @@ namespace System.Security.Cryptography
 
         private static int GetKeySize(SecKeyPair newKeys)
         {
-            long size = Interop.AppleCrypto.EccGetKeySizeInBits(newKeys.PublicKey);
+            int size = Interop.AppleCrypto.EccGetKeySizeInBits(newKeys.PublicKey);
             Debug.Assert(size == 256 || size == 384 || size == 521, $"Unknown keysize ({size})");
-            return (int)size;
+            return size;
         }
 
         private static SafeSecKeyRefHandle ImportKey(ECParameters parameters)
         {
-            AsnWriter keyWriter;
-            bool hasPrivateKey;
+            int fieldSize = parameters.Q!.X!.Length;
 
-            if (parameters.D != null)
-            {
-                keyWriter = EccKeyFormatHelper.WriteECPrivateKey(parameters);
-                hasPrivateKey = true;
-            }
-            else
-            {
-                keyWriter = EccKeyFormatHelper.WriteSubjectPublicKeyInfo(parameters);
-                hasPrivateKey = false;
-            }
+            Debug.Assert(parameters.Q.Y != null && parameters.Q.Y.Length == fieldSize);
+            Debug.Assert(parameters.Q.X != null && parameters.Q.X.Length == fieldSize);
 
-            byte[] rented = CryptoPool.Rent(keyWriter.GetEncodedLength());
-
-            if (!keyWriter.TryEncode(rented, out int written))
-            {
-                Debug.Fail("TryEncode failed with a pre-allocated buffer");
-                throw new InvalidOperationException();
-            }
-
-            // Explicitly clear the inner buffer
-            keyWriter.Reset();
+            int keySize = 1 + fieldSize * (parameters.D != null ? 3 : 2);
+            byte[] dataKeyPool = CryptoPool.Rent(keySize);
+            Span<byte> dataKey = dataKeyPool.AsSpan(0, keySize);
 
             try
             {
-                return Interop.AppleCrypto.ImportEphemeralKey(rented.AsSpan(0, written), hasPrivateKey);
+                AsymmetricAlgorithmHelpers.EncodeToUncompressedAnsiX963Key(
+                    parameters.Q.X,
+                    parameters.Q.Y,
+                    parameters.D,
+                    dataKey);
+
+                return Interop.AppleCrypto.CreateDataKey(
+                    dataKey,
+                    Interop.AppleCrypto.PAL_KeyAlgorithm.EC,
+                    isPublic: parameters.D == null);
             }
             finally
             {
-                CryptoPool.Return(rented, written);
-            }
-        }
-
-        internal unsafe int ImportSubjectPublicKeyInfo(
-            ReadOnlySpan<byte> source,
-            out int bytesRead)
-        {
-            ThrowIfDisposed();
-
-            fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-            {
-                using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                {
-                    // Validate the DER value and get the number of bytes.
-                    EccKeyFormatHelper.ReadSubjectPublicKeyInfo(
-                        manager.Memory,
-                        out int localRead);
-
-                    SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.ImportEphemeralKey(source.Slice(0, localRead), false);
-                    SecKeyPair newKeys = SecKeyPair.PublicOnly(publicKey);
-                    int size = GetKeySize(newKeys);
-                    SetKey(newKeys);
-
-                    bytesRead = localRead;
-                    return size;
-                }
+                CryptoPool.Return(dataKeyPool, keySize);
             }
         }
     }

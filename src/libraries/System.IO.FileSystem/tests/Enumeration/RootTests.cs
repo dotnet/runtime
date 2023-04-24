@@ -31,6 +31,7 @@ namespace System.IO.Tests.Enumeration
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Android, "Test could not work on android since accessing '/' isn't allowed.")]
         public void CanRecurseFromRoot()
         {
             string root = Path.GetPathRoot(Path.GetTempPath());

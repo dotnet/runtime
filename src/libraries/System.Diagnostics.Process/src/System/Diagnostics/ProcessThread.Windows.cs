@@ -119,22 +119,24 @@ namespace System.Diagnostics
         /// Returns the amount of time the thread has spent running code inside the operating
         /// system core.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
             get { return GetThreadTimes().PrivilegedProcessorTime; }
         }
 
-        /// <summary>Returns the time the associated thread was started.</summary>
-        public DateTime StartTime
-        {
-            get { return GetThreadTimes().StartTime; }
-        }
+        private DateTime GetStartTime() => GetThreadTimes().StartTime;
 
         /// <summary>
         /// Returns the amount of time the associated thread has spent utilizing the CPU.
         /// It is the sum of the System.Diagnostics.ProcessThread.UserProcessorTime and
         /// System.Diagnostics.ProcessThread.PrivilegedProcessorTime.
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime
         {
             get { return GetThreadTimes().TotalProcessorTime; }
@@ -144,6 +146,9 @@ namespace System.Diagnostics
         /// Returns the amount of time the associated thread has spent running code
         /// inside the application (not the operating system core).
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get { return GetThreadTimes().UserProcessorTime; }

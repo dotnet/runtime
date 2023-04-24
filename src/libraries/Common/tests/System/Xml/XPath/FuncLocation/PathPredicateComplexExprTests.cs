@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using System;
 using System.Xml;
 using System.Xml.XPath;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.FunctionalTests.Location.Paths.Predicates
 {
@@ -17,8 +16,11 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         /// <summary>
         /// child::*[last() or following::* | count(preceding::*)> string-length(name())]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest51()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest51(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -209,33 +211,36 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "\n\t\tWhere in the world is Trenton?\n\t"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant::*[position()&lt;last() and count(*[following::* > 3]) and local-name!="title"]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest52()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest52(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
             var testExpression =
                 @"descendant::*[position()<last() and count(*[following::* > 3]) and local-name!=""title""] ";
             var expected = new XPathResult(0);
-            ;
-
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant::*[position()&lt;last() and count(following::*)> 3 and local-name()!="title"]
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         [OuterLoop]
-        public static void ComplexExpressionsTest53()
+        public static void ComplexExpressionsTest53(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -1491,34 +1496,37 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                 new XPathResultToken { NodeType = XPathNodeType.Text, HasNameTable = true, Value = "Robert Bob" },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Should not select anything, since there is no child element called last-name
         /// descendant::*[position()&lt;last() and count(following::*)> 3 and local-name!="title"]
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         [OuterLoop]
-        public static void ComplexExpressionsTest54()
+        public static void ComplexExpressionsTest54(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
             var testExpression =
                 @"descendant::node()[position()<last() and count(following::*) > 3 and local-name!=""title""] ";
             var expected = new XPathResult(0);
-            ;
-
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant::*/parent::*[name(parent::* )!="bookstore" and name()!="title"]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest55()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest55(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -1706,17 +1714,19 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "\n\t\t\t\tTrenton\n\t\t\t\tmisery\n\t\t\t"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// position on node set
         /// (//node()/ancestor::node())[position()<2]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest56()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest56(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -1729,17 +1739,19 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Value =
                         "\n\t\n\t\tSeven Years in Trenton\n\t\t\n\t\t\tJoe\n\t\t\tBob\n\t\t\tTrenton Literary Review Honorable Mention\n\t\t\tUSA\n\t\t\n\t\t12\n\t\n\t\n\t\tHistory of Trenton\n\t\t\n\t\t\tMary\n\t\t\tBob\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tJoeBob\n\t\t\t\tLoser\n\t\t\t\tUS\n\t\t\t\n\t\t\n\t\t55\n\t\n\t\n\t\tXQL The Golden Years\n\t\t\n\t\t\tMike\n\t\t\tHyman\n\t\t\t\n\t\t\t\tXQL For Dummies\n\t\t\t\tJonathan\n\t\t\t\tMarsh\n\t\t\t\n\t\t\n\t\t55.95\n\t\n\t\n\t\tRoad and Track\n\t\t3.50\n\t\t\n\t\tYes\n\t\n\t\n\t\tPC Week\n\t\tfree\n\t\tZiff Davis\n\t\n\t\n\t\tPC Magazine\n\t\t3.95\n\t\tZiff Davis\n\t\t\n\t\t\tCreate a dream PC\n\t\t\t\tCreate a list of needed hardware\n\t\t\t\n\t\t\tThe future of the web\n\t\t\t\tCan Netscape stay alive with Microsoft eating up its browser share?\n\t\t\t\tMSFT 99.30\n\t\t\t\t1998-06-23\n\t\t\t\n\t\t\tVisual Basic 5.0 - Will it stand the test of time?\n\t\t\t\n\t\t\n\t\n\t\n\t\t\n\t\t\tSport Cars - Can you really dream?\n\t\t\t\n\t\t\n\t\n\t\n\t\tPC Magazine Best Product of 1997\n\t\n\t\n\t\tHistory of Trenton 2\n\t\t\n\t\t\tMary F\n\t\t\tRobinson\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tMary F\n\t\t\t\tRobinson\n\t\t\t\n\t\t\n\t\t55\n\t\n\t\n\t\tHistory of Trenton Vol 3\n\t\t\n\t\t\tMary F\n\t\t\tRobinson\n\t\t\tFrank\n\t\t\tAnderson\n\t\t\tPulizer\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tMary F\n\t\t\t\tRobinson\n\t\t\t\n\t\t\n\t\t10\n\t\n\t\n\t\tHow To Fix Computers\n\t\t\n\t\t\tHack\n\t\t\ter\n\t\t\tPh.D.\n\t\t\n\t\t08\n\t\n\t\n\t\tTracking Trenton\n\t\t2.50\n\t\t\n\t\n\t\n\t\tTracking Trenton Stocks\n\t\t0.98\n\t\t\n\t\n\t\n\t\tTrenton Today, Trenton Tomorrow\n\t\t\n\t\t\tToni\n\t\t\tBob\n\t\t\tB.A.\n\t\t\tPh.D.\n\t\t\tPulizer\n\t\t\tStill in Trenton\n\t\t\tTrenton Forever\n\t\t\n\t\t6.50\n\t\t\n\t\t\tIt was a dark and stormy night.\n\t\t\tBut then all nights in Trenton seem dark and\n\t\t\tstormy to someone who has gone through what\n\t\t\tI have.\n\t\t\t\n\t\t\t\n\t\t\t\tTrenton\n\t\t\t\tmisery\n\t\t\t\n\t\t\n\t\n\t\n\t\tWho's Who in Trenton\n\t\tRobert Bob\n\t\n\t\n\t\tWhere is Trenton?\n\t\n\t\n\t\tWhere in the world is Trenton?\n\t\n"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Define a range for the position
         /// //node()[position()>2 and position()<7]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest57()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest57(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -2306,17 +2318,19 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true },
                 new XPathResultToken { NodeType = XPathNodeType.Whitespace, HasNameTable = true });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Define a range for the position
         /// /descendant::text()[contains(string(),"Trenton")]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest58()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest58(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -2383,17 +2397,19 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "Where in the world is Trenton?"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Cascaded predicates
         /// descendant::*[count(child::*[count(child::text())>0])>0]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest59()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest59(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -2755,17 +2771,19 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "\n\t\tWhere in the world is Trenton?\n\t"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Cascaded predicates
         /// book/child::*[child::*[following::magazine[@frequency]]]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest510()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest510(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -2829,17 +2847,19 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "\n\t\t\tHack\n\t\t\ter\n\t\t\tPh.D.\n\t\t"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Cascaded predicates
         /// descendant::*[contains(translate(string(),"bB","aA"),"Aoa")]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest511()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest511(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -2975,17 +2995,19 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "Robert Bob"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Uses number
         /// descendant::node()[number(.)>12]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest512()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest512(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -3022,17 +3044,19 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Value = "55"
                 },
                 new XPathResultToken { NodeType = XPathNodeType.Text, HasNameTable = true, Value = "55" });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// predicate on node set. Only one node should be selected
         /// (child::*/child::*)[last()]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest513()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest513(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -3049,17 +3073,19 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "Where in the world is Trenton?"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// predicate on location path. More than one node should be selected
         /// child::*/child::*[last()]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest514()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest514(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -3228,17 +3254,19 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "Where in the world is Trenton?"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Complex expression
         /// child::*[descendant::*[contains(string(),"MSFT")]]/child::price
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest515()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest515(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -3254,16 +3282,18 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "3.95"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// node()/following-sibling::*[preceding-sibling::*[local-name()='magazine']]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest516()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest516(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -3411,16 +3441,18 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "\n\t\tWhere in the world is Trenton?\n\t"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// node()[local-name()='magazine']
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest517()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest517(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -3499,16 +3531,18 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "\n\t\tTracking Trenton Stocks\n\t\t0.98\n\t\t\n\t"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// node()/preceding-sibling::*[following-sibling::*[local-name()='magazine']]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest518()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest518(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -3640,16 +3674,18 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "\n\t\tTracking Trenton\n\t\t2.50\n\t\t\n\t"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant-or-self::*[child::*[local-name()='magazine']]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest519()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest519(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -3666,33 +3702,36 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Value =
                         "\n\t\n\t\tSeven Years in Trenton\n\t\t\n\t\t\tJoe\n\t\t\tBob\n\t\t\tTrenton Literary Review Honorable Mention\n\t\t\tUSA\n\t\t\n\t\t12\n\t\n\t\n\t\tHistory of Trenton\n\t\t\n\t\t\tMary\n\t\t\tBob\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tJoeBob\n\t\t\t\tLoser\n\t\t\t\tUS\n\t\t\t\n\t\t\n\t\t55\n\t\n\t\n\t\tXQL The Golden Years\n\t\t\n\t\t\tMike\n\t\t\tHyman\n\t\t\t\n\t\t\t\tXQL For Dummies\n\t\t\t\tJonathan\n\t\t\t\tMarsh\n\t\t\t\n\t\t\n\t\t55.95\n\t\n\t\n\t\tRoad and Track\n\t\t3.50\n\t\t\n\t\tYes\n\t\n\t\n\t\tPC Week\n\t\tfree\n\t\tZiff Davis\n\t\n\t\n\t\tPC Magazine\n\t\t3.95\n\t\tZiff Davis\n\t\t\n\t\t\tCreate a dream PC\n\t\t\t\tCreate a list of needed hardware\n\t\t\t\n\t\t\tThe future of the web\n\t\t\t\tCan Netscape stay alive with Microsoft eating up its browser share?\n\t\t\t\tMSFT 99.30\n\t\t\t\t1998-06-23\n\t\t\t\n\t\t\tVisual Basic 5.0 - Will it stand the test of time?\n\t\t\t\n\t\t\n\t\n\t\n\t\t\n\t\t\tSport Cars - Can you really dream?\n\t\t\t\n\t\t\n\t\n\t\n\t\tPC Magazine Best Product of 1997\n\t\n\t\n\t\tHistory of Trenton 2\n\t\t\n\t\t\tMary F\n\t\t\tRobinson\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tMary F\n\t\t\t\tRobinson\n\t\t\t\n\t\t\n\t\t55\n\t\n\t\n\t\tHistory of Trenton Vol 3\n\t\t\n\t\t\tMary F\n\t\t\tRobinson\n\t\t\tFrank\n\t\t\tAnderson\n\t\t\tPulizer\n\t\t\t\n\t\t\t\tSelected Short Stories of\n\t\t\t\tMary F\n\t\t\t\tRobinson\n\t\t\t\n\t\t\n\t\t10\n\t\n\t\n\t\tHow To Fix Computers\n\t\t\n\t\t\tHack\n\t\t\ter\n\t\t\tPh.D.\n\t\t\n\t\t08\n\t\n\t\n\t\tTracking Trenton\n\t\t2.50\n\t\t\n\t\n\t\n\t\tTracking Trenton Stocks\n\t\t0.98\n\t\t\n\t\n\t\n\t\tTrenton Today, Trenton Tomorrow\n\t\t\n\t\t\tToni\n\t\t\tBob\n\t\t\tB.A.\n\t\t\tPh.D.\n\t\t\tPulizer\n\t\t\tStill in Trenton\n\t\t\tTrenton Forever\n\t\t\n\t\t6.50\n\t\t\n\t\t\tIt was a dark and stormy night.\n\t\t\tBut then all nights in Trenton seem dark and\n\t\t\tstormy to someone who has gone through what\n\t\t\tI have.\n\t\t\t\n\t\t\t\n\t\t\t\tTrenton\n\t\t\t\tmisery\n\t\t\t\n\t\t\n\t\n\t\n\t\tWho's Who in Trenton\n\t\tRobert Bob\n\t\n\t\n\t\tWhere is Trenton?\n\t\n\t\n\t\tWhere in the world is Trenton?\n\t\n"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Predicate expression for namespace axis
         /// store/namespace::*/following::*[string-length(string())>count(child::*)][count(namespace::*)>2][not(@*[local-name()="inventory"][.="m112"])]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest520()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest520(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var testExpression =
                 @"store/namespace::*/following::*[string-length(string())>count(child::*)][count(namespace::*)>2][not(@*[local-name()=""inventory""][.=""m112""])]";
             var expected = new XPathResult(0);
-            ;
-
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Predicate expression for namespace axis
         /// store/p1:booksection/p2:book[namespace::NSbook[following::p5:*]]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest521()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest521(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var testExpression = @"store/p1:booksection/p2:book[namespace::NSbook[following::p5:*]]";
@@ -3704,17 +3743,18 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
             namespaceManager.AddNamespace("p4", "http://movie.htm");
             namespaceManager.AddNamespace("p5", "http://documentry.htm");
             var expected = new XPathResult(0);
-            ;
-
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// predicate on location path. More than one node should be selected
         /// (//last-name)[. != 'Bob'][position() &lt; last()]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest522()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest522(Utils.NavigatorKind kind)
         {
             var xml = "data4.xml";
             var testExpression = @"(//last-name)[. != 'Bob'][position() < last()]";
@@ -3779,17 +3819,19 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Value = "Robinson",
                     XmlLang = "en-usabcd"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// /descendant-or-self::* [position()>=1]/ancestor-or-self::*[position() <=5]/descendant::* [position()=1 or position()=2 or position()>3]/ancestor::*
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         [OuterLoop]
-        public static void ComplexExpressionsTest523()
+        public static void ComplexExpressionsTest523(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -4162,17 +4204,19 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     Prefix = "my",
                     Value = "\n\t\tWhere in the world is Trenton?\n\t"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// predicate on location path. More than one node should be selected
         /// root/foo/bar[preceding::foo/bar[2]]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest524()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest524(Utils.NavigatorKind kind)
         {
             var xml = "test66246.xml";
             var testExpression = @"root/foo/bar[preceding::foo/bar[2]]";
@@ -4231,17 +4275,19 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "9"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 73549
         /// descendant::*[child::*[.="Joe"][following-sibling::*[.="USA"]]]
         /// </summary>
-        [Fact]
-        public static void ComplexExpressionsTest525()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void ComplexExpressionsTest525(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -4256,9 +4302,8 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
                     HasNameTable = true,
                     Value = "\n\t\t\tJoe\n\t\t\tBob\n\t\t\tTrenton Literary Review Honorable Mention\n\t\t\tUSA\n\t\t"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
     }
 }

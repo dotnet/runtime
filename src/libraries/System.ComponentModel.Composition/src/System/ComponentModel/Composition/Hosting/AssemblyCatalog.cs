@@ -514,10 +514,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     if (disposing)
                     {
-                        if (_innerCatalog != null)
-                        {
-                            _innerCatalog.Dispose();
-                        }
+                        _innerCatalog?.Dispose();
                     }
                 }
             }
@@ -543,6 +540,8 @@ namespace System.ComponentModel.Composition.Hosting
         private string GetDisplayName() =>
             $"{GetType().Name} (Assembly=\"{Assembly.FullName}\")";   // NOLOC
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Setting a CodeBase is single file compatible")]
         private static Assembly LoadAssembly(string codeBase)
         {
             Requires.NotNullOrEmpty(codeBase, nameof(codeBase));
@@ -556,7 +555,9 @@ namespace System.ComponentModel.Composition.Hosting
             catch (ArgumentException)
             {
                 assemblyName = new AssemblyName();
+#pragma warning disable SYSLIB0044 // AssemblyName.CodeBase and AssemblyName.EscapedCodeBase are obsolete. Using them for loading an assembly is not supported.
                 assemblyName.CodeBase = codeBase;
+#pragma warning restore SYSLIB0044
             }
 
             try

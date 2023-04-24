@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -34,7 +35,7 @@ namespace System.ComponentModel.Design
         /// Initializes a new instance of the <see cref='System.ComponentModel.Design.CheckoutException'/>
         /// class with the specified message.
         /// </summary>
-        public CheckoutException(string message) : base(message)
+        public CheckoutException(string? message) : base(message)
         {
         }
 
@@ -42,7 +43,7 @@ namespace System.ComponentModel.Design
         /// Initializes a new instance of the <see cref='System.ComponentModel.Design.CheckoutException'/>
         /// class with the specified message and error code.
         /// </summary>
-        public CheckoutException(string message, int errorCode) : base(message, errorCode)
+        public CheckoutException(string? message, int errorCode) : base(message, errorCode)
         {
         }
 
@@ -50,6 +51,8 @@ namespace System.ComponentModel.Design
         /// Need this constructor since Exception implements ISerializable. We don't have any fields,
         /// so just forward this to base.
         /// </summary>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected CheckoutException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -59,7 +62,7 @@ namespace System.ComponentModel.Design
         /// reference to the inner exception that is the cause of this exception.
         /// FxCop CA1032: Multiple constructors are required to correctly implement a custom exception.
         /// </summary>
-        public CheckoutException(string message, Exception innerException) : base(message, innerException)
+        public CheckoutException(string? message, Exception? innerException) : base(message, innerException)
         {
         }
     }

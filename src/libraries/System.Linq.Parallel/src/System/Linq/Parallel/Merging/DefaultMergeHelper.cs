@@ -64,6 +64,7 @@ namespace System.Linq.Parallel
                 {
                     if (partitions.PartitionCount > 1)
                     {
+                        Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
                         _asyncChannels =
                             MergeExecutor<TInputOutput>.MakeAsynchronousChannels(partitions.PartitionCount, options, consumerEvent, cancellationState.MergedCancellationToken);
                         _channelEnumerator = new AsynchronousChannelMergeEnumerator<TInputOutput>(_taskGroupState, _asyncChannels, consumerEvent);
@@ -99,6 +100,7 @@ namespace System.Linq.Parallel
         {
             if (_asyncChannels != null)
             {
+                Debug.Assert(!ParallelEnumerable.SinglePartitionMode);
                 SpoolingTask.SpoolPipeline<TInputOutput, TIgnoreKey>(_taskGroupState, _partitions, _asyncChannels, _taskScheduler);
             }
             else if (_syncChannels != null)

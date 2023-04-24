@@ -5,9 +5,7 @@
 //
 
 
-#ifndef CROSSGEN_COMPILE
 #define STRESS_HEAP
-#endif
 
 
 #define VERIFY_HEAP
@@ -21,15 +19,17 @@
 #define STRESS_LOG
 #endif
 
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
 #define USE_CHECKED_OBJECTREFS
 #endif
 
+#ifndef TARGET_64BIT
 #define FAT_DISPATCH_TOKENS
+#endif
 
 #define FEATURE_SHARE_GENERIC_CODE
 
-#if defined(_DEBUG) && !defined(DACCESS_COMPILE)
+#if defined(_DEBUG)
     #define LOGGING
 #endif
 
@@ -51,19 +51,19 @@
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
-    #define USE_UPPER_ADDRESS       0
+    #define USE_LAZY_PREFERRED_RANGE       0
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
-    #define UPPER_ADDRESS_MAPPING_FACTOR 2
-    #define CLR_UPPER_ADDRESS_MIN   0x64400000000
-    #define CODEHEAP_START_ADDRESS  0x64480000000
-    #define CLR_UPPER_ADDRESS_MAX   0x644FC000000
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64) || defined(TARGET_RISCV64)
 
-#if !defined(HOST_UNIX)
-    #define USE_UPPER_ADDRESS       1
+#if defined(HOST_UNIX)
+    // In PAL we have a smechanism that reserves memory on start up that is
+    // close to libcoreclr and intercepts calls to VirtualAlloc to serve back
+    // from this area.
+    #define USE_LAZY_PREFERRED_RANGE       0
 #else
-    #define USE_UPPER_ADDRESS       0
-#endif // !HOST_UNIX
+    // On Windows we lazily try to reserve memory close to coreclr.dll.
+    #define USE_LAZY_PREFERRED_RANGE       1
+#endif
 
 #else
     #error Please add a new #elif clause and define all portability macros for the new platform
@@ -73,8 +73,8 @@
 #define JIT_IS_ALIGNED
 #endif
 
-// ALLOW_SXS_JIT enables AltJit support for JIT-ing, via COMPlus_AltJit / COMPlus_AltJitName.
-// ALLOW_SXS_JIT_NGEN enables AltJit support for NGEN, via COMPlus_AltJitNgen / COMPlus_AltJitName.
+// ALLOW_SXS_JIT enables AltJit support for JIT-ing, via DOTNET_AltJit / DOTNET_AltJitName.
+// ALLOW_SXS_JIT_NGEN enables AltJit support for NGEN, via DOTNET_AltJitNgen / DOTNET_AltJitName.
 // Note that if ALLOW_SXS_JIT_NGEN is defined, then ALLOW_SXS_JIT must be defined.
 #define ALLOW_SXS_JIT
 #define ALLOW_SXS_JIT_NGEN
@@ -133,7 +133,7 @@
 #define FEATURE_JIT_TIMER
 
 // This feature in RyuJIT supersedes the FEATURE_JIT_TIMER. In addition to supporting the time log file, this
-// feature also supports using COMPlus_JitTimeLogCsv=a.csv, which will dump method-level and phase-level timing
+// feature also supports using DOTNET_JitTimeLogCsv=a.csv, which will dump method-level and phase-level timing
 // statistics. Also see comments on FEATURE_JIT_TIMER.
 #define FEATURE_JIT_METHOD_PERF
 
@@ -145,7 +145,7 @@
 #endif
 
 // Enables a mode in which GC is completely conservative in stacks and registers: all stack slots and registers
-// are treated as potential pinned interior pointers. When enabled, the runtime flag COMPLUS_GCCONSERVATIVE
+// are treated as potential pinned interior pointers. When enabled, the runtime flag DOTNET_GCCONSERVATIVE
 // determines dynamically whether GC is conservative. Note that appdomain unload, LCG and unloadable assemblies
 // do not work reliably with conservative GC.
 #define FEATURE_CONSERVATIVE_GC 1
@@ -167,19 +167,10 @@
 #define FEATURE_DOUBLE_ALIGNMENT_HINT
 #endif
 
-#if defined(FEATURE_CORESYSTEM)
 #define FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
-#endif // defined(FEATURE_CORESYSTEM)
 
 // If defined, support interpretation.
-#if !defined(CROSSGEN_COMPILE)
 
 #if !defined(TARGET_UNIX)
 #define FEATURE_STACK_SAMPLING
 #endif // defined (ALLOW_SXS_JIT)
-
-#endif // !defined(CROSSGEN_COMPILE)
-
-#if defined(FEATURE_INTERPRETER) && defined(CROSSGEN_COMPILE)
-#undef FEATURE_INTERPRETER
-#endif

@@ -44,9 +44,11 @@ namespace System.Globalization.Tests
             string charName = data[1];
             string charCategoryString = data[2];
             string numericValueString = data[8];
+            StrongBidiCategory bidiCategory = data[4] == "L" ? StrongBidiCategory.StrongLeftToRight :
+                                              data[4] == "R" || data[4] == "AL" ? StrongBidiCategory.StrongRightToLeft : StrongBidiCategory.Other;
 
             int codePoint = int.Parse(charValueString, NumberStyles.HexNumber);
-            Parse(testCases, codePoint, charCategoryString, numericValueString);
+            Parse(testCases, codePoint, charCategoryString, numericValueString, bidiCategory);
 
             if (charName.EndsWith("First>"))
             {
@@ -59,7 +61,7 @@ namespace System.Globalization.Tests
                 {
                     // Assumes that all code points in the range have the same numeric value
                     // and general category
-                    Parse(testCases, rangeCodePoint, charCategoryString, numericValueString);
+                    Parse(testCases, rangeCodePoint, charCategoryString, numericValueString, bidiCategory);
                 }
             }
         }
@@ -99,7 +101,7 @@ namespace System.Globalization.Tests
             ["Lu"] = UnicodeCategory.UppercaseLetter
         };
 
-        private static void Parse(List<CharUnicodeInfoTestCase> testCases, int codePoint, string charCategoryString, string numericValueString)
+        private static void Parse(List<CharUnicodeInfoTestCase> testCases, int codePoint, string charCategoryString, string numericValueString, StrongBidiCategory bidiCategory)
         {
             string codeValueRepresentation = codePoint > char.MaxValue ? char.ConvertFromUtf32(codePoint) : ((char)codePoint).ToString();
             double numericValue = ParseNumericValueString(numericValueString);
@@ -110,7 +112,8 @@ namespace System.Globalization.Tests
                 Utf32CodeValue = codeValueRepresentation,
                 GeneralCategory = generalCategory,
                 NumericValue = numericValue,
-                CodePoint = codePoint
+                CodePoint = codePoint,
+                BidiCategory = bidiCategory
             });
         }
 
@@ -122,8 +125,8 @@ namespace System.Globalization.Tests
                 return -1;
             }
 
-            int fractionDelimeterIndex = numericValueString.IndexOf("/");
-            if (fractionDelimeterIndex == -1)
+            int fractionDelimiterIndex = numericValueString.IndexOf("/");
+            if (fractionDelimiterIndex == -1)
             {
                 // Parsing basic number
                 return double.Parse(numericValueString);
@@ -131,14 +134,21 @@ namespace System.Globalization.Tests
 
             // Unicode datasets display fractions not decimals (e.g. 1/4 instead of 0.25),
             // so we should parse them as such
-            string numeratorString = numericValueString.Substring(0, fractionDelimeterIndex);
+            string numeratorString = numericValueString.Substring(0, fractionDelimiterIndex);
             double numerator = double.Parse(numeratorString);
 
-            string denominatorString = numericValueString.Substring(fractionDelimeterIndex + 1);
+            string denominatorString = numericValueString.Substring(fractionDelimiterIndex + 1);
             double denominator = double.Parse(denominatorString);
 
             return numerator / denominator;
         }
+    }
+
+    public enum StrongBidiCategory
+    {
+        Other = 0x00,
+        StrongLeftToRight = 0x20,
+        StrongRightToLeft = 0x40,
     }
 
     public class CharUnicodeInfoTestCase
@@ -147,5 +157,6 @@ namespace System.Globalization.Tests
         public int CodePoint { get; set; }
         public UnicodeCategory GeneralCategory { get; set; }
         public double NumericValue { get; set; }
+        public StrongBidiCategory BidiCategory { get; set; }
     }
 }

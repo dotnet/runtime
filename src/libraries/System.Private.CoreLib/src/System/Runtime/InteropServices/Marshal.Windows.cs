@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices
             int nb;
 
             uint flags = bestFit ? 0 : Interop.Kernel32.WC_NO_BEST_FIT_CHARS;
-            uint defaultCharUsed = 0;
+            Interop.BOOL defaultCharUsed = Interop.BOOL.FALSE;
 
             fixed (char* pwzChar = s)
             {
@@ -67,11 +67,11 @@ namespace System.Runtime.InteropServices
                     s.Length,
                     buffer,
                     bufferLength,
-                    IntPtr.Zero,
-                    throwOnUnmappableChar ? new IntPtr(&defaultCharUsed) : IntPtr.Zero);
+                    null,
+                    throwOnUnmappableChar ? &defaultCharUsed : null);
             }
 
-            if (defaultCharUsed != 0)
+            if (defaultCharUsed != Interop.BOOL.FALSE)
             {
                 throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
             }
@@ -94,7 +94,7 @@ namespace System.Runtime.InteropServices
                 fixed (char* pChars = chars)
                 {
                     byteLength = Interop.Kernel32.WideCharToMultiByte(
-                        Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, pChars, chars.Length, null, 0, IntPtr.Zero, IntPtr.Zero);
+                        Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, pChars, chars.Length, null, 0, null, null);
                     if (byteLength <= 0)
                         throw new ArgumentException();
                 }
@@ -118,7 +118,7 @@ namespace System.Runtime.InteropServices
                 fixed (byte* pBytes = bytes)
                 {
                     byteLength = Interop.Kernel32.WideCharToMultiByte(
-                       Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, pChars, chars.Length, pBytes, bytes.Length, IntPtr.Zero, IntPtr.Zero);
+                       Interop.Kernel32.CP_ACP, Interop.Kernel32.WC_NO_BEST_FIT_CHARS, pChars, chars.Length, pBytes, bytes.Length, null, null);
                     if (byteLength <= 0)
                         throw new ArgumentException();
                 }
@@ -126,26 +126,25 @@ namespace System.Runtime.InteropServices
 
             bytes[byteLength] = 0;
         }
-
-        public static IntPtr AllocHGlobal(IntPtr cb)
+        public static unsafe IntPtr AllocHGlobal(nint cb)
         {
-            IntPtr pNewMem = Interop.Kernel32.LocalAlloc(Interop.Kernel32.LMEM_FIXED, (nuint)(nint)cb);
-            if (pNewMem == IntPtr.Zero)
+            void* pNewMem = Interop.Kernel32.LocalAlloc((nuint)cb);
+            if (pNewMem is null)
             {
                 throw new OutOfMemoryException();
             }
-            return pNewMem;
+            return (nint)pNewMem;
         }
 
-        public static void FreeHGlobal(IntPtr hglobal)
+        public static unsafe void FreeHGlobal(IntPtr hglobal)
         {
             if (!IsNullOrWin32Atom(hglobal))
             {
-                Interop.Kernel32.LocalFree(hglobal);
+                Interop.Kernel32.LocalFree((void*)hglobal);
             }
         }
 
-        public static IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
+        public static unsafe IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
         {
             if (pv == IntPtr.Zero)
             {
@@ -154,12 +153,12 @@ namespace System.Runtime.InteropServices
                 return AllocHGlobal(cb);
             }
 
-            IntPtr pNewMem = Interop.Kernel32.LocalReAlloc(pv, (nuint)(nint)cb, Interop.Kernel32.LMEM_MOVEABLE);
-            if (pNewMem == IntPtr.Zero)
+            void* pNewMem = Interop.Kernel32.LocalReAlloc((void*)pv, (nuint)cb);
+            if (pNewMem is null)
             {
                 throw new OutOfMemoryException();
             }
-            return pNewMem;
+            return (nint)pNewMem;
         }
 
         public static IntPtr AllocCoTaskMem(int cb)
@@ -220,8 +219,7 @@ namespace System.Runtime.InteropServices
 
         internal static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
         {
-            if (progID == null)
-                throw new ArgumentNullException(nameof(progID));
+            ArgumentNullException.ThrowIfNull(progID);
 
             int hr = Interop.Ole32.CLSIDFromProgID(progID, out Guid clsid);
             if (hr < 0)
@@ -232,6 +230,40 @@ namespace System.Runtime.InteropServices
             }
 
             return GetTypeFromCLSID(clsid, server, throwOnError);
+        }
+
+        /// <summary>
+        /// Gets the last system error on the current thread.
+        /// </summary>
+        /// <returns>The last system error.</returns>
+        /// <remarks>
+        /// The error is that for the current operating system (for example, errno on Unix, GetLastError on Windows).
+        /// </remarks>
+        public static int GetLastSystemError()
+        {
+            return Interop.Kernel32.GetLastError();
+        }
+
+        /// <summary>
+        /// Sets the last system error on the current thread.
+        /// </summary>
+        /// <param name="error">The error to set.</param>
+        /// <remarks>
+        /// The error is that for the current operating system (for example, errno on Unix, SetLastError on Windows).
+        /// </remarks>
+        public static void SetLastSystemError(int error)
+        {
+            Interop.Kernel32.SetLastError(error);
+        }
+
+        /// <summary>
+        /// Gets the system error message for the supplied error code.
+        /// </summary>
+        /// <param name="error">The error code.</param>
+        /// <returns>The error message associated with <paramref name="error"/>.</returns>
+        public static string GetPInvokeErrorMessage(int error)
+        {
+            return Interop.Kernel32.GetMessage(error);
         }
     }
 }

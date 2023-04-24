@@ -189,18 +189,15 @@ namespace System.Xml
                             break;
 
                         case XmlEventType.XmlDecl1:
-                            if (rawWriter != null)
-                                rawWriter.WriteXmlDeclaration((XmlStandalone)page[idxEvent].Object!);
+                            rawWriter?.WriteXmlDeclaration((XmlStandalone)page[idxEvent].Object!);
                             break;
 
                         case XmlEventType.XmlDecl2:
-                            if (rawWriter != null)
-                                rawWriter.WriteXmlDeclaration(page[idxEvent].String1!);
+                            rawWriter?.WriteXmlDeclaration(page[idxEvent].String1!);
                             break;
 
                         case XmlEventType.StartContent:
-                            if (rawWriter != null)
-                                rawWriter.StartElementContent();
+                            rawWriter?.StartElementContent();
                             break;
 
                         case XmlEventType.EndElem:
@@ -225,8 +222,7 @@ namespace System.Xml
                             break;
 
                         case XmlEventType.EndBase64:
-                            if (rawWriter != null)
-                                rawWriter.WriteEndBase64();
+                            rawWriter?.WriteEndBase64();
                             break;
 
                         case XmlEventType.Close:
@@ -242,7 +238,7 @@ namespace System.Xml
                             break;
 
                         default:
-                            Debug.Fail("Unknown event: " + page[idxEvent].EventType);
+                            Debug.Fail($"Unknown event: {page[idxEvent].EventType}");
                             break;
                     }
                 }

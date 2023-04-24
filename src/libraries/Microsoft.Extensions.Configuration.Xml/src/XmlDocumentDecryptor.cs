@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.Xml;
 using System.Xml;
 
@@ -13,20 +15,23 @@ namespace Microsoft.Extensions.Configuration.Xml
     /// </summary>
     public class XmlDocumentDecryptor
     {
+        internal const string RequiresDynamicCodeMessage = "Microsoft.Extensions.Configuration.Xml can use EncryptedXml which may contain XSLTs in the xml. XSLTs require dynamic code.";
+        internal const string RequiresUnreferencedCodeMessage = "Microsoft.Extensions.Configuration.Xml can use EncryptedXml. If you use encrypted XML files, your application might not have the algorithm implementations it needs. To avoid this problem, one option you can use is a DynamicDependency attribute to keep the algorithm implementations in your application.";
+
         /// <summary>
         /// Accesses the singleton decryptor instance.
         /// </summary>
         public static readonly XmlDocumentDecryptor Instance = new XmlDocumentDecryptor();
 
-        private readonly Func<XmlDocument, EncryptedXml> _encryptedXmlFactory;
+        private readonly Func<XmlDocument, EncryptedXml>? _encryptedXmlFactory;
 
         /// <summary>
         /// Initializes a XmlDocumentDecryptor.
         /// </summary>
         // don't create an instance of this directly
         protected XmlDocumentDecryptor()
-            : this(DefaultEncryptedXmlFactory)
         {
+            // _encryptedXmlFactory stays null by default
         }
 
         // for testing only
@@ -47,9 +52,14 @@ namespace Microsoft.Extensions.Configuration.Xml
         }
 
         /// <summary>
-        /// Returns an XmlReader that decrypts data transparently.
+        /// Creates an <see cref="XmlReader"/> that decrypts data transparently.
         /// </summary>
-        public XmlReader CreateDecryptingXmlReader(Stream input, XmlReaderSettings settings)
+        /// <param name="input">The input <see cref="Stream"/> to read the XML configuration data from.</param>
+        /// <param name="settings">The settings for the new <see cref="XmlReader"/> instance.</param>
+        /// <returns>An <see cref="XmlReader"/> that decrypts data transparently.</returns>
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
+        public XmlReader CreateDecryptingXmlReader(Stream input, XmlReaderSettings? settings)
         {
             // XML-based configurations aren't really all that big, so we can buffer
             // the whole thing in memory while we determine decryption operations.
@@ -67,7 +77,12 @@ namespace Microsoft.Extensions.Configuration.Xml
 
             if (ContainsEncryptedData(document))
             {
+                // DecryptDocumentAndCreateXmlReader is not supported on 'browser',
+                // but we only call it depending on the input XML document. If the document
+                // is encrypted and this is running on 'browser', just let the PNSE throw.
+#pragma warning disable CA1416
                 return DecryptDocumentAndCreateXmlReader(document);
+#pragma warning restore CA1416
             }
             else
             {
@@ -82,19 +97,19 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// </summary>
         /// <param name="document">The document.</param>
         /// <returns>An XmlReader which can read the document.</returns>
+        [UnsupportedOSPlatform("browser")]
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         protected virtual XmlReader DecryptDocumentAndCreateXmlReader(XmlDocument document)
         {
             // Perform the actual decryption step, updating the XmlDocument in-place.
-            EncryptedXml encryptedXml = _encryptedXmlFactory(document);
+            EncryptedXml encryptedXml = _encryptedXmlFactory?.Invoke(document) ?? new EncryptedXml(document);
             encryptedXml.DecryptDocument();
 
             // Finally, return the new XmlReader from the updated XmlDocument.
             // Error messages based on this XmlReader won't show line numbers,
             // but that's fine since we transformed the document anyway.
-            return document.CreateNavigator().ReadSubtree();
+            return document.CreateNavigator()!.ReadSubtree();
         }
-
-        private static EncryptedXml DefaultEncryptedXmlFactory(XmlDocument document)
-            => new EncryptedXml(document);
     }
 }

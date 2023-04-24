@@ -26,7 +26,7 @@ namespace System.Reflection.TypeLoading
             {
                 for (int i = 0; i < numCoreTypes; i++)
                 {
-                    ((CoreType)i).GetFullName(out byte[] ns, out byte[] name);
+                    ((CoreType)i).GetFullName(out ReadOnlySpan<byte> ns, out ReadOnlySpan<byte> name);
                     RoType? type = coreAssembly.GetTypeCore(ns, name, ignoreCase: false, out e);
                     coreTypes[i] = type;
                     if (type == null)

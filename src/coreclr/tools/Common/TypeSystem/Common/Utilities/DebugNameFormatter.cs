@@ -4,8 +4,6 @@
 using System;
 using System.Text;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem
 {
     public partial class DebugNameFormatter : TypeNameFormatter<DebugNameFormatter.Void, DebugNameFormatter.FormatOptions>
@@ -182,8 +180,11 @@ namespace Internal.TypeSystem
             return Void.Value;
         }
 
-        private void AssemblyQualify(StringBuilder sb, DefType type, FormatOptions options)
+        private static void AssemblyQualify(StringBuilder sb, DefType type, FormatOptions options)
         {
+            // TODO: We should introduce a DiagnosticModuleName to use here instead. The type
+            // loader already has that.
+#if !TYPE_LOADER_IMPLEMENTATION
             if (((options & FormatOptions.AssemblyQualify) != 0)
                 && type is MetadataType mdType
                 && mdType.Module is IAssemblyDesc)
@@ -202,14 +203,21 @@ namespace Internal.TypeSystem
                 }
 
                 if (assemblyName.StartsWith("System.Private", StringComparison.Ordinal))
-                    assemblyName = "S.P" + assemblyName.Substring(14);
+                {
+                    sb.Append("S.P");
+                    sb.Append(assemblyName, 14, assemblyName.Length - 14);
+                }
+                else
+                {
+                    sb.Append(assemblyName);
+                }
 
-                sb.Append(assemblyName);
                 sb.Append(']');
             }
+#endif
         }
 
-        private void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
+        private static void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
         {
             if ((options & FormatOptions.NamespaceQualify) != 0)
             {

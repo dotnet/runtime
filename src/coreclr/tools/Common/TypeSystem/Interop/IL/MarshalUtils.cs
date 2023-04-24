@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace Internal.TypeSystem.Interop
 {
     public static class MarshalUtils
@@ -23,8 +21,8 @@ namespace Internal.TypeSystem.Interop
                 && !baseType.IsWellKnownType(WellKnownType.Object)
                 && !baseType.IsWellKnownType(WellKnownType.ValueType);
 
-            // Type is blittable only if parent is also blittable and is not empty.
-            if (hasNonTrivialParent && (!IsBlittableType(baseType) || baseType.IsZeroSizedReferenceType))
+            // Type is blittable only if parent is also blittable.
+            if (hasNonTrivialParent && !IsBlittableType(baseType))
             {
                 return false;
             }

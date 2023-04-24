@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -17,6 +18,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void Ctor_Default()
         {
             var stackFrame = new StackFrame();
@@ -24,6 +26,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(true)]
         [InlineData(false)]
         public void Ctor_FNeedFileInfo(bool fNeedFileInfo)
@@ -58,6 +61,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void SkipFrames_CallMethod_ReturnsExpected()
         {
             StackFrame stackFrame = CallMethod(1);
@@ -78,6 +82,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(null, StackFrame.OFFSET_UNKNOWN)]
         [InlineData("", 0)]
         [InlineData("FileName", 1)]
@@ -181,7 +186,8 @@ namespace System.Diagnostics.Tests
             }
 
             // GetNativeOffset returns StackFrame.OFFSET_UNKNOWN for unknown frames.
-            // GetNativeOffset returns 0 for known frames with a positive skipFrames.
+            // For a positive skipFrame, the GetNativeOffset return value is dependent upon the implementation of reflection
+            // Invoke() which can be native (where the value would be zero) or managed (where the value is likely non-zero).
             if (skipFrames == int.MaxValue || skipFrames == int.MinValue)
             {
                 Assert.Equal(StackFrame.OFFSET_UNKNOWN, stackFrame.GetNativeOffset());
@@ -193,7 +199,7 @@ namespace System.Diagnostics.Tests
             }
             else
             {
-                Assert.Equal(0, stackFrame.GetNativeOffset());
+                Assert.True(stackFrame.GetNativeOffset() >= 0);
             }
         }
     }

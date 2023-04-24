@@ -83,7 +83,9 @@ namespace System.Runtime.Loader.Tests
             return null;
         }
 
-        [Fact]
+        // Does not apply to Mono AOT scenarios as it is expected the name of the .aotdata file matches
+        // the true name of the assembly and not the physical file name.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
         public void LoadInDefaultContext()
         {
             // This will attempt to load an assembly, by path, in the Default Load context via the Resolving event
@@ -151,7 +153,7 @@ namespace System.Runtime.Loader.Tests
             Assert.Equal(assemblyExpected, assemblyExpectedFromLoad);
 
             // And make sure the simple name matches
-            Assert.Equal(assemblyExpected.GetName().Name, TestAssemblyName);
+            Assert.Equal(TestAssemblyName, assemblyExpected.GetName().Name);
 
             // Unwire the Resolving event.
             AssemblyLoadContext.Default.Resolving -= ResolveAssemblyAgain;

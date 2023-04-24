@@ -37,7 +37,7 @@ namespace System.Configuration
             Host = new InternalConfigHost();
         }
 
-        internal ClientConfigPaths ConfigPaths => _configPaths ?? (_configPaths = ClientConfigPaths.GetPaths(_exePath, _initComplete));
+        internal ClientConfigPaths ConfigPaths => _configPaths ??= ClientConfigPaths.GetPaths(_exePath, _initComplete);
 
         internal static string MachineConfigFilePath
         {
@@ -122,7 +122,7 @@ namespace System.Configuration
         }
 
         // Return true if the config path is for a user.config file, false otherwise.
-        private bool IsUserConfig(string configPath)
+        private static bool IsUserConfig(string configPath)
         {
             return StringUtil.EqualsIgnoreCase(configPath, RoamingUserConfigPath) ||
                 StringUtil.EqualsIgnoreCase(configPath, LocalUserConfigPath);
@@ -282,6 +282,7 @@ namespace System.Configuration
 
             if (streamName == null) return null;
 
+#pragma warning disable SYSLIB0014 // WebClient is obsolete.
             // scheme is http
             WebClient client = new WebClient();
 
@@ -298,6 +299,7 @@ namespace System.Configuration
                 fileData = client.DownloadData(streamName);
             }
             catch { }
+#pragma warning restore SYSLIB0014
 
             if (fileData == null) return null;
 
@@ -394,7 +396,7 @@ namespace System.Configuration
             return new ExeContext(GetUserLevel(configPath), ConfigPaths.ApplicationUri);
         }
 
-        private ConfigurationUserLevel GetUserLevel(string configPath)
+        private static ConfigurationUserLevel GetUserLevel(string configPath)
         {
             ConfigurationUserLevel level;
 

@@ -85,7 +85,6 @@ public class WellKnownSidTypeTests
         }
     }
 
-#if NETCOREAPP
     [ConditionalTheory(nameof(AccountIsDomainJoined))]
     [InlineData(WellKnownSidType.WinBuiltinDCOMUsersSid)]
     [InlineData(WellKnownSidType.WinBuiltinIUsersSid)]
@@ -141,10 +140,10 @@ public class WellKnownSidTypeTests
     [InlineData((WellKnownSidType)((int)WellKnownSidType.WinCapabilityRemovableStorageSid + 1))]
     public void CreatingSecurityIdentifierOutsideWellKnownSidTypeDefinedRangeThrowsException(WellKnownSidType sidType)
     {
-        var currentDomainSid = WindowsIdentity.GetCurrent().Owner.AccountDomainSid;
+        using WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent();
+        var currentDomainSid = currentIdentity.Owner.AccountDomainSid;
         AssertExtensions.Throws<ArgumentException>("sidType", () => new SecurityIdentifier(sidType, currentDomainSid));
     }
-    #endif
 
     [Fact]
     public void MaxDefinedHasLegacyValue()

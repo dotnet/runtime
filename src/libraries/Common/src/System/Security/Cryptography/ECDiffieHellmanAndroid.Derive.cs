@@ -23,10 +23,8 @@ namespace System.Security.Cryptography
                 byte[]? secretPrepend,
                 byte[]? secretAppend)
             {
-                if (otherPartyPublicKey == null)
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                    throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+                ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
                 ThrowIfDisposed();
 
@@ -35,7 +33,7 @@ namespace System.Security.Cryptography
                     hashAlgorithm,
                     secretPrepend,
                     secretAppend,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                    DeriveSecretAgreement);
             }
 
             public override byte[] DeriveKeyFromHmac(
@@ -45,10 +43,8 @@ namespace System.Security.Cryptography
                 byte[]? secretPrepend,
                 byte[]? secretAppend)
             {
-                if (otherPartyPublicKey == null)
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                    throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+                ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
                 ThrowIfDisposed();
 
@@ -58,17 +54,14 @@ namespace System.Security.Cryptography
                     hmacKey,
                     secretPrepend,
                     secretAppend,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                    DeriveSecretAgreement);
             }
 
             public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed)
             {
-                if (otherPartyPublicKey == null)
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (prfLabel == null)
-                    throw new ArgumentNullException(nameof(prfLabel));
-                if (prfSeed == null)
-                    throw new ArgumentNullException(nameof(prfSeed));
+                ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+                ArgumentNullException.ThrowIfNull(prfLabel);
+                ArgumentNullException.ThrowIfNull(prfSeed);
 
                 ThrowIfDisposed();
 
@@ -76,7 +69,17 @@ namespace System.Security.Cryptography
                     otherPartyPublicKey,
                     prfLabel,
                     prfSeed,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                    DeriveSecretAgreement);
+            }
+
+            public override byte[] DeriveRawSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey)
+            {
+                ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+                ThrowIfDisposed();
+
+                byte[]? secretAgreement = DeriveSecretAgreement(otherPartyPublicKey, hasher: null);
+                Debug.Assert(secretAgreement is not null);
+                return secretAgreement;
             }
 
             /// <summary>
@@ -85,6 +88,7 @@ namespace System.Security.Cryptography
             private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
             {
                 Debug.Assert(otherPartyPublicKey != null);
+                Debug.Assert(_key is not null); // Callers should have checked for null
 
                 // Ensure that this ECDH object contains a private key by attempting a parameter export
                 // which will throw an OpenSslCryptoException if no private key is available
@@ -145,7 +149,7 @@ namespace System.Security.Cryptography
                     }
 
                     // Indicate that secret can hold stackallocs from nested scopes
-                    Span<byte> secret = stackalloc byte[0];
+                    scoped Span<byte> secret;
 
                     // Arbitrary limit. But it covers secp521r1, which is the biggest common case.
                     const int StackAllocMax = 66;

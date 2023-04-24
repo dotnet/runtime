@@ -8,8 +8,9 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-namespace BigFrames
+namespace BigFrames_skippage4
 {
 
     [StructLayout(LayoutKind.Explicit)]
@@ -42,7 +43,8 @@ namespace BigFrames
             TestWrite(s);
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Test1();
 

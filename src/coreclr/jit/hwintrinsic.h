@@ -113,53 +113,83 @@ enum HWIntrinsicFlag : unsigned int
     // but may be table-driven in the back-end
     HW_Flag_SpecialImport = 0x100,
 
+    // The intrinsic returns result in multiple registers.
+    HW_Flag_MultiReg = 0x200,
+
 // The below is for defining platform-specific flags
 #if defined(TARGET_XARCH)
     // Full range IMM intrinsic
     // - the immediate value is valid on the full range of imm8 (0-255)
-    HW_Flag_FullRangeIMM = 0x200,
+    HW_Flag_FullRangeIMM = 0x400,
 
     // Maybe IMM
     // the intrinsic has either imm or Vector overloads
-    HW_Flag_MaybeIMM = 0x400,
+    HW_Flag_MaybeIMM = 0x800,
 
     // Copy Upper bits
     // some SIMD scalar intrinsics need the semantics of copying upper bits from the source operand
-    HW_Flag_CopyUpperBits = 0x800,
+    HW_Flag_CopyUpperBits = 0x1000,
 
     // Maybe Memory Load/Store
     // - some intrinsics may have pointer overloads but without HW_Category_MemoryLoad/HW_Category_MemoryStore
-    HW_Flag_MaybeMemoryLoad  = 0x1000,
-    HW_Flag_MaybeMemoryStore = 0x2000,
+    HW_Flag_MaybeMemoryLoad  = 0x2000,
+    HW_Flag_MaybeMemoryStore = 0x4000,
 
     // No Read/Modify/Write Semantics
     // the intrinsic doesn't have read/modify/write semantics in two/three-operand form.
-    HW_Flag_NoRMWSemantics = 0x4000,
+    HW_Flag_NoRMWSemantics = 0x8000,
 
     // NoContainment
     // the intrinsic cannot be handled by containment,
     // all the intrinsic that have explicit memory load/store semantics should have this flag
-    HW_Flag_NoContainment = 0x8000,
+    HW_Flag_NoContainment = 0x10000,
+
+    // Returns Per-Element Mask
+    // the intrinsic returns a vector containing elements that are either "all bits set" or "all bits clear"
+    // this output can be used as a per-element mask
+    HW_Flag_ReturnsPerElementMask = 0x20000,
+
+    // AvxOnlyCompatible
+    // the intrinsic can be used on hardware with AVX but not AVX2 support
+    HW_Flag_AvxOnlyCompatible = 0x40000,
+
+    // MaybeCommutative
+    // - if a binary-op intrinsic is maybe commutative (e.g., Max or Min for float/double), its op1 can possibly be
+    // contained
+    HW_Flag_MaybeCommutative = 0x80000,
+
+    // The intrinsic has no EVEX compatible form
+    HW_Flag_NoEvexSemantics = 0x100000,
 
 #elif defined(TARGET_ARM64)
     // The intrinsic has an immediate operand
     // - the value can be (and should be) encoded in a corresponding instruction when the operand value is constant
-    HW_Flag_HasImmediateOperand = 0x200,
+    HW_Flag_HasImmediateOperand = 0x400,
 
     // The intrinsic has read/modify/write semantics in multiple-operands form.
-    HW_Flag_HasRMWSemantics = 0x400,
+    HW_Flag_HasRMWSemantics = 0x800,
 
     // The intrinsic operates on the lower part of a SIMD register
     // - the upper part of the source registers are ignored
     // - the upper part of the destination register is zeroed
-    HW_Flag_SIMDScalar = 0x800,
+    HW_Flag_SIMDScalar = 0x1000,
 
     // The intrinsic supports some sort of containment analysis
-    HW_Flag_SupportsContainment = 0x1000
+    HW_Flag_SupportsContainment = 0x2000,
 
+    // The intrinsic needs consecutive registers
+    HW_Flag_NeedsConsecutiveRegisters = 0x4000,
 #else
 #error Unsupported platform
 #endif
+
+    // The intrinsic has some barrier special side effect that should be tracked
+    HW_Flag_SpecialSideEffect_Barrier = 0x200000,
+
+    // The intrinsic has some other special side effect that should be tracked
+    HW_Flag_SpecialSideEffect_Other = 0x400000,
+
+    HW_Flag_SpecialSideEffectMask = (HW_Flag_SpecialSideEffect_Barrier | HW_Flag_SpecialSideEffect_Other),
 };
 
 #if defined(TARGET_XARCH)
@@ -309,8 +339,6 @@ struct HWIntrinsicInfo
     static CORINFO_InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);
-    static int lookupNumArgs(const GenTreeHWIntrinsic* node);
-    static GenTree* lookupLastOp(const GenTreeHWIntrinsic* node);
 
 #if defined(TARGET_XARCH)
     static int lookupImmUpperBound(NamedIntrinsic intrinsic);
@@ -579,6 +607,25 @@ struct HWIntrinsicInfo
         return lookup(id).ins[type - TYP_BYTE];
     }
 
+    static instruction lookupIns(GenTreeHWIntrinsic* intrinsicNode)
+    {
+        assert(intrinsicNode != nullptr);
+
+        NamedIntrinsic intrinsic = intrinsicNode->GetHWIntrinsicId();
+        var_types      type      = TYP_UNKNOWN;
+
+        if (lookupCategory(intrinsic) == HW_Category_Scalar)
+        {
+            type = intrinsicNode->TypeGet();
+        }
+        else
+        {
+            type = intrinsicNode->GetSimdBaseType();
+        }
+
+        return lookupIns(intrinsic, type);
+    }
+
     static HWIntrinsicCategory lookupCategory(NamedIntrinsic id)
     {
         return lookup(id).category;
@@ -595,6 +642,18 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_Commutative) != 0;
+    }
+
+    static bool IsMaybeCommutative(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+#if defined(TARGET_XARCH)
+        return (flags & HW_Flag_MaybeCommutative) != 0;
+#elif defined(TARGET_ARM64)
+        return false;
+#else
+#error Unsupported platform
+#endif
     }
 
     static bool RequiresCodegen(NamedIntrinsic id)
@@ -620,6 +679,26 @@ struct HWIntrinsicInfo
 #error Unsupported platform
 #endif
     }
+
+    static bool ReturnsPerElementMask(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+#if defined(TARGET_XARCH)
+        return (flags & HW_Flag_ReturnsPerElementMask) != 0;
+#elif defined(TARGET_ARM64)
+        unreached();
+#else
+#error Unsupported platform
+#endif
+    }
+
+#if defined(TARGET_XARCH)
+    static bool AvxOnlyCompatible(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_AvxOnlyCompatible) != 0;
+    }
+#endif
 
     static bool BaseTypeFromFirstArg(NamedIntrinsic id)
     {
@@ -683,6 +762,14 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_SpecialCodeGen) != 0;
     }
 
+#ifdef TARGET_ARM64
+    static bool NeedsConsecutiveRegisters(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_NeedsConsecutiveRegisters) != 0;
+    }
+#endif
+
     static bool HasRMWSemantics(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -694,11 +781,61 @@ struct HWIntrinsicInfo
 #error Unsupported platform
 #endif
     }
+    //------------------------------------------------------------------------
+    // HasEvexSemantics: Checks if the NamedIntrinsic has a lowering to
+    // to an instruction with an EVEX form.
+    //
+    // Return Value:
+    // true if the NamedIntrinsic lowering has an EVEX form.
+    //
+    static bool HasEvexSemantics(NamedIntrinsic id)
+    {
+#if defined(TARGET_XARCH)
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_NoEvexSemantics) == 0;
+#else
+        return false;
+#endif
+    }
 
     static bool HasSpecialImport(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_SpecialImport) != 0;
+    }
+
+    static bool IsMultiReg(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_MultiReg) != 0;
+    }
+
+    static int GetMultiRegCount(NamedIntrinsic id)
+    {
+        assert(IsMultiReg(id));
+
+        switch (id)
+        {
+#ifdef TARGET_ARM64
+            // TODO-ARM64-NYI: Support hardware intrinsics operating on multiple contiguous registers.
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64:
+            case NI_AdvSimd_Arm64_LoadPairScalarVector64NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector64:
+            case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
+            case NI_AdvSimd_Arm64_LoadPairVector128:
+            case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
+                return 2;
+#endif
+
+#ifdef TARGET_XARCH
+            case NI_X86Base_DivRem:
+            case NI_X86Base_X64_DivRem:
+                return 2;
+#endif // TARGET_XARCH
+
+            default:
+                unreached();
+        }
     }
 
 #ifdef TARGET_ARM64
@@ -714,6 +851,18 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_HasImmediateOperand) != 0;
     }
 #endif // TARGET_ARM64
+
+    static bool HasSpecialSideEffect(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_SpecialSideEffectMask) != 0;
+    }
+
+    static bool HasSpecialSideEffect_Barrier(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_SpecialSideEffect_Barrier) != 0;
+    }
 };
 
 #ifdef TARGET_ARM64
@@ -725,7 +874,7 @@ struct HWIntrinsic final
     {
         assert(node != nullptr);
 
-        id       = node->gtHWIntrinsicId;
+        id       = node->GetHWIntrinsicId();
         category = HWIntrinsicInfo::lookupCategory(id);
 
         assert(HWIntrinsicInfo::RequiresCodegen(id));
@@ -749,62 +898,43 @@ struct HWIntrinsic final
     GenTree*            op2;
     GenTree*            op3;
     GenTree*            op4;
-    int                 numOperands;
+    size_t              numOperands;
     var_types           baseType;
 
 private:
     void InitializeOperands(const GenTreeHWIntrinsic* node)
     {
-        op1 = node->gtGetOp1();
-        op2 = node->gtGetOp2();
+        numOperands = node->GetOperandCount();
 
-        if (op1 == nullptr)
+        switch (numOperands)
         {
-            numOperands = 0;
-        }
-        else if (op1->OperIsList())
-        {
-            assert(op2 == nullptr);
+            case 4:
+                op4 = node->Op(4);
+                FALLTHROUGH;
+            case 3:
+                op3 = node->Op(3);
+                FALLTHROUGH;
+            case 2:
+                op2 = node->Op(2);
+                FALLTHROUGH;
+            case 1:
+                op1 = node->Op(1);
+                FALLTHROUGH;
+            case 0:
+                break;
 
-            GenTreeArgList* list = op1->AsArgList();
-            op1                  = list->Current();
-            list                 = list->Rest();
-            op2                  = list->Current();
-            list                 = list->Rest();
-            op3                  = list->Current();
-            list                 = list->Rest();
-
-            if (list != nullptr)
-            {
-                op4 = list->Current();
-                assert(list->Rest() == nullptr);
-
-                numOperands = 4;
-            }
-            else
-            {
-                numOperands = 3;
-            }
+            default:
+                unreached();
         }
-        else if (op2 != nullptr)
-        {
-            numOperands = 2;
-        }
-        else
-        {
-            numOperands = 1;
-        }
-
-        assert(HWIntrinsicInfo::lookupNumArgs(id) == numOperands);
     }
 
     void InitializeBaseType(const GenTreeHWIntrinsic* node)
     {
-        baseType = node->gtSIMDBaseType;
+        baseType = node->GetSimdBaseType();
 
         if (baseType == TYP_UNKNOWN)
         {
-            assert(category == HW_Category_Scalar);
+            assert((category == HW_Category_Scalar) || (category == HW_Category_Special));
 
             if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
             {
@@ -819,6 +949,11 @@ private:
             else
             {
                 baseType = node->TypeGet();
+            }
+
+            if (category == HW_Category_Scalar)
+            {
+                baseType = genActualType(baseType);
             }
         }
     }

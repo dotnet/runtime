@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly ILGEN_MODULE{}
-.class ILGEN_CLASS
+.assembly 'DevDiv_462274'{}
+.assembly extern xunit.core {}
+.class public ILGEN_CLASS
 {
     .method static int64 ILGEN_METHOD(unsigned int32, float32, unsigned int8, char, int64, float64)
     {
@@ -48,8 +49,11 @@ skip:
         ret
     }
 
-    .method static int32 Main()
+    .method public static int32 Main()
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
 
         .try

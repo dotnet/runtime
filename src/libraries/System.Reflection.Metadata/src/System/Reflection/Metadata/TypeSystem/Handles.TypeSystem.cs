@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.Metadata
 {
@@ -70,7 +71,7 @@ namespace System.Reflection.Metadata
 
         public override bool Equals(object? obj)
         {
-            return obj is ModuleDefinitionHandle && ((ModuleDefinitionHandle)obj)._rowId == _rowId;
+            return obj is ModuleDefinitionHandle moduleDefinition && moduleDefinition._rowId == _rowId;
         }
 
         public bool Equals(ModuleDefinitionHandle other)
@@ -2518,9 +2519,9 @@ namespace System.Reflection.Metadata
             return StringHandle.FromOffset(GetHeapOffset());
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is NamespaceDefinitionHandle && Equals((NamespaceDefinitionHandle)obj);
+            return obj is NamespaceDefinitionHandle ndh && Equals(ndh);
         }
 
         public bool Equals(NamespaceDefinitionHandle other)
@@ -2649,9 +2650,9 @@ namespace System.Reflection.Metadata
             get { return unchecked((ushort)(_value >> 8)); }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is BlobHandle && Equals((BlobHandle)obj);
+            return obj is BlobHandle bh && Equals(bh);
         }
 
         public bool Equals(BlobHandle other)
@@ -2717,9 +2718,9 @@ namespace System.Reflection.Metadata
             get { return _index; }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is GuidHandle && Equals((GuidHandle)obj);
+            return obj is GuidHandle gh && Equals(gh);
         }
 
         public bool Equals(GuidHandle other)

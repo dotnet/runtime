@@ -35,11 +35,11 @@ if (CLR_CMAKE_TARGET_WIN32)
 
     # Specify non-default Windows libs to be used for Arm/Arm64 builds
     if (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
-        list(APPEND WINLIBS Advapi32.lib Ole32.lib OleAut32.lib)
+        list(APPEND WINLIBS Ole32.lib OleAut32.lib)
     endif()
 
-    target_link_libraries(comhost ${WINLIBS})
+    target_link_libraries(comhost PRIVATE ${WINLIBS})
 endif()
 
 install_with_stripped_symbols(comhost TARGETS corehost)
-target_link_libraries(comhost libhostcommon)
+target_link_libraries(comhost PRIVATE libhostcommon)

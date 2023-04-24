@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>System</RootNamespace>
     <AssemblyName>System.Diagnostics.Tools.Tests</AssemblyName>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>

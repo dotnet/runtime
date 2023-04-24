@@ -69,7 +69,22 @@ gboolean
 mono_is_sre_method_on_tb_inst (MonoClass *klass);
 
 gboolean
+mono_is_sre_method_builder (MonoClass *klass);
+
+gboolean
 mono_is_sre_ctor_builder (MonoClass *klass);
+
+gboolean
+mono_is_sre_field_builder (MonoClass *klass);
+
+gboolean
+mono_is_sre_property_builder (MonoClass *klass);
+
+gboolean
+mono_is_sre_assembly_builder (MonoClass *klass);
+
+gboolean
+mono_is_sre_module_builder (MonoClass *klass);
 
 gboolean
 mono_is_sre_ctor_on_tb_inst (MonoClass *klass);
@@ -100,7 +115,7 @@ mono_reflection_methodbuilder_from_method_builder (ReflectionMethodBuilder *rmb,
 gboolean
 mono_reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, MonoReflectionCtorBuilder *mb,
 						 MonoError *error);
-							    
+
 guint32
 mono_reflection_resolution_scope_from_image (MonoDynamicImage *assembly, MonoImage *image);
 

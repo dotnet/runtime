@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -357,6 +358,30 @@ namespace System.Numerics.Tests
         {
             Vector<int> vector = default;
             Assert.Throws<NotSupportedException>(() => vector.As<int, bool>());
+        }
+
+        [Fact]
+        public void IsNotSupportedBoolean() => TestIsNotSupported<bool>();
+
+        [Fact]
+        public void IsNotSupportedChar() => TestIsNotSupported<char>();
+
+        [Fact]
+        public void IsNotSupportedHalf() => TestIsNotSupported<Half>();
+
+        [Fact]
+        public void IsNotSupportedInt128() => TestIsNotSupported<Int128>();
+
+        [Fact]
+        public void IsNotSupportedUInt128() => TestIsNotSupported<UInt128>();
+
+        private static void TestIsNotSupported<T>()
+            where T : struct
+        {
+            Assert.False(Vector<T>.IsSupported);
+
+            MethodInfo methodInfo = typeof(Vector<T>).GetProperty("IsSupported", BindingFlags.Public | BindingFlags.Static).GetMethod;
+            Assert.False((bool)methodInfo.Invoke(null, null));
         }
     }
 }

@@ -48,19 +48,7 @@ namespace System.IO
         }
 
         public virtual IFormatProvider FormatProvider
-        {
-            get
-            {
-                if (_internalFormatProvider == null)
-                {
-                    return CultureInfo.CurrentCulture;
-                }
-                else
-                {
-                    return _internalFormatProvider;
-                }
-            }
-        }
+            => _internalFormatProvider ?? CultureInfo.CurrentCulture;
 
         public virtual void Close()
         {
@@ -122,10 +110,7 @@ namespace System.IO
             get => CoreNewLineStr;
             set
             {
-                if (value == null)
-                {
-                    value = Environment.NewLineConst;
-                }
+                value ??= Environment.NewLineConst;
 
                 CoreNewLineStr = value;
                 CoreNewLine = value.ToCharArray();
@@ -158,18 +143,10 @@ namespace System.IO
         //
         public virtual void Write(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -311,7 +288,7 @@ namespace System.IO
         // Writes out a formatted string.  Uses the same semantics as
         // string.Format.
         //
-        public virtual void Write(string format, object? arg0)
+        public virtual void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             Write(string.Format(FormatProvider, format, arg0));
         }
@@ -319,7 +296,7 @@ namespace System.IO
         // Writes out a formatted string.  Uses the same semantics as
         // string.Format.
         //
-        public virtual void Write(string format, object? arg0, object? arg1)
+        public virtual void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             Write(string.Format(FormatProvider, format, arg0, arg1));
         }
@@ -327,7 +304,7 @@ namespace System.IO
         // Writes out a formatted string.  Uses the same semantics as
         // string.Format.
         //
-        public virtual void Write(string format, object? arg0, object? arg1, object? arg2)
+        public virtual void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             Write(string.Format(FormatProvider, format, arg0, arg1, arg2));
         }
@@ -335,7 +312,7 @@ namespace System.IO
         // Writes out a formatted string.  Uses the same semantics as
         // string.Format.
         //
-        public virtual void Write(string format, params object?[] arg)
+        public virtual void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
         {
             Write(string.Format(FormatProvider, format, arg));
         }
@@ -508,7 +485,7 @@ namespace System.IO
         // Writes out a formatted string and a new line.  Uses the same
         // semantics as string.Format.
         //
-        public virtual void WriteLine(string format, object? arg0)
+        public virtual void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             WriteLine(string.Format(FormatProvider, format, arg0));
         }
@@ -516,7 +493,7 @@ namespace System.IO
         // Writes out a formatted string and a new line.  Uses the same
         // semantics as string.Format.
         //
-        public virtual void WriteLine(string format, object? arg0, object? arg1)
+        public virtual void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             WriteLine(string.Format(FormatProvider, format, arg0, arg1));
         }
@@ -524,7 +501,7 @@ namespace System.IO
         // Writes out a formatted string and a new line.  Uses the same
         // semantics as string.Format.
         //
-        public virtual void WriteLine(string format, object? arg0, object? arg1, object? arg2)
+        public virtual void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             WriteLine(string.Format(FormatProvider, format, arg0, arg1, arg2));
         }
@@ -532,7 +509,7 @@ namespace System.IO
         // Writes out a formatted string and a new line.  Uses the same
         // semantics as string.Format.
         //
-        public virtual void WriteLine(string format, params object?[] arg)
+        public virtual void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
         {
             WriteLine(string.Format(FormatProvider, format, arg));
         }
@@ -679,45 +656,71 @@ namespace System.IO
 
         private sealed class NullTextWriter : TextWriter
         {
-            internal NullTextWriter()
-            {
-            }
+            internal NullTextWriter() { }
 
             public override IFormatProvider FormatProvider => CultureInfo.InvariantCulture;
-
             public override Encoding Encoding => Encoding.Unicode;
 
-            public override void Write(char[] buffer, int index, int count)
-            {
-            }
+            // To avoid all unnecessary overhead in the base, override all Flush/Write methods as pure nops.
 
-            public override void Write(string? value)
-            {
-            }
+            public override void Flush() { }
+            public override Task FlushAsync() => Task.CompletedTask;
 
-            // Not strictly necessary, but for perf reasons
-            public override void WriteLine()
-            {
-            }
-
-            // Not strictly necessary, but for perf reasons
-            public override void WriteLine(string? value)
-            {
-            }
-
-            public override void WriteLine(object? value)
-            {
-            }
-
-            public override void Write(char value)
-            {
-            }
+            public override void Write(char value) { }
+            public override void Write(char[]? buffer) { }
+            public override void Write(char[] buffer, int index, int count) { }
+            public override void Write(ReadOnlySpan<char> buffer) { }
+            public override void Write(bool value) { }
+            public override void Write(int value) { }
+            public override void Write(uint value) { }
+            public override void Write(long value) { }
+            public override void Write(ulong value) { }
+            public override void Write(float value) { }
+            public override void Write(double value) { }
+            public override void Write(decimal value) { }
+            public override void Write(string? value) { }
+            public override void Write(object? value) { }
+            public override void Write(StringBuilder? value) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) { }
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
+            public override Task WriteAsync(char value) => Task.CompletedTask;
+            public override Task WriteAsync(string? value) => Task.CompletedTask;
+            public override Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public override Task WriteAsync(char[] buffer, int index, int count) => Task.CompletedTask;
+            public override Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public override void WriteLine() { }
+            public override void WriteLine(char value) { }
+            public override void WriteLine(char[]? buffer) { }
+            public override void WriteLine(char[] buffer, int index, int count) { }
+            public override void WriteLine(ReadOnlySpan<char> buffer) { }
+            public override void WriteLine(bool value) { }
+            public override void WriteLine(int value) { }
+            public override void WriteLine(uint value) { }
+            public override void WriteLine(long value) { }
+            public override void WriteLine(ulong value) { }
+            public override void WriteLine(float value) { }
+            public override void WriteLine(double value) { }
+            public override void WriteLine(decimal value) { }
+            public override void WriteLine(string? value) { }
+            public override void WriteLine(StringBuilder? value) { }
+            public override void WriteLine(object? value) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) { }
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg) { }
+            public override Task WriteLineAsync(char value) => Task.CompletedTask;
+            public override Task WriteLineAsync(string? value) => Task.CompletedTask;
+            public override Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public override Task WriteLineAsync(char[] buffer, int index, int count) => Task.CompletedTask;
+            public override Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public override Task WriteLineAsync() => Task.CompletedTask;
         }
 
         public static TextWriter Synchronized(TextWriter writer)
         {
-            if (writer == null)
-                throw new ArgumentNullException(nameof(writer));
+            ArgumentNullException.ThrowIfNull(writer);
 
             return writer is SyncTextWriter ? writer : new SyncTextWriter(writer);
         }
@@ -804,16 +807,16 @@ namespace System.IO
             public override void Write(object? value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(string format, object? arg0) => _out.Write(format, arg0);
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0) => _out.Write(format, arg0);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(string format, object? arg0, object? arg1) => _out.Write(format, arg0, arg1);
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) => _out.Write(format, arg0, arg1);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(string format, object? arg0, object? arg1, object? arg2) => _out.Write(format, arg0, arg1, arg2);
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) => _out.Write(format, arg0, arg1, arg2);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(string format, object?[] arg) => _out.Write(format, arg);
+            public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object?[] arg) => _out.Write(format, arg);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void WriteLine() => _out.WriteLine();
@@ -864,16 +867,16 @@ namespace System.IO
             public override void WriteLine(object? value) => _out.WriteLine(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine(string format, object? arg0) => _out.WriteLine(format, arg0);
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0) => _out.WriteLine(format, arg0);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine(string format, object? arg0, object? arg1) => _out.WriteLine(format, arg0, arg1);
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1) => _out.WriteLine(format, arg0, arg1);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine(string format, object? arg0, object? arg1, object? arg2) => _out.WriteLine(format, arg0, arg1, arg2);
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2) => _out.WriteLine(format, arg0, arg1, arg2);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine(string format, object?[] arg) => _out.WriteLine(format, arg);
+            public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object?[] arg) => _out.WriteLine(format, arg);
 
             //
             // On SyncTextWriter all APIs should run synchronously, even the async ones.

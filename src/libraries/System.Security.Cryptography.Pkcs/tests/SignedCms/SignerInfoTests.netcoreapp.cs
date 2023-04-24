@@ -246,7 +246,13 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 cms.ComputeSignature(signer);
             }
 
-            using (X509Certificate2 counterSigner1cert = Certificates.Dsa1024.TryGetCertificateWithPrivateKey())
+            // DSA is not supported on mobile Apple platforms, so use ECDsa key instead
+            X509Certificate2 counterSigner1cert =
+                PlatformDetection.UsesMobileAppleCrypto ?
+                Certificates.ECDsaP521Win.TryGetCertificateWithPrivateKey() :
+                Certificates.Dsa1024.TryGetCertificateWithPrivateKey();
+
+            using (counterSigner1cert)
             {
                 CmsSigner counterSigner = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, counterSigner1cert);
                 counterSigner.IncludeOption = X509IncludeOption.EndCertOnly;
@@ -424,7 +430,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignedCms cms = new SignedCms();
             cms.Decode(SignedDocuments.OneRsaSignerTwoRsaCounterSigners);
 
-            // Detatch one counter signer
+            // Detach one counter signer
             SignerInfo counterSigner = cms.SignerInfos[0].CounterSignerInfos[0];
             cms.SignerInfos[0].RemoveCounterSignature(0);
 
@@ -442,7 +448,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             SignedCms cms = new SignedCms();
             cms.Decode(SignedDocuments.OneRsaSignerTwoRsaCounterSigners);
 
-            // Detatch signer (and its counter signers)
+            // Detach signer (and its counter signers)
             SignerInfo counterSigner = cms.SignerInfos[0].CounterSignerInfos[0];
             cms.RemoveSignature(0);
 
@@ -541,7 +547,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             Assert.Equal(expectedToken.GetSerialNumber().ByteArrayToHex(), actualToken.GetSerialNumber().ByteArrayToHex());
             Assert.Equal(expectedToken.Timestamp, actualToken.Timestamp);
-            Assert.Equal(expectedToken.HashAlgorithmId.Value, Oids.Sha256);
+            Assert.Equal(Oids.Sha256, expectedToken.HashAlgorithmId.Value);
             Assert.Equal(expectedToken.HashAlgorithmId.Value, actualToken.HashAlgorithmId.Value);
         }
 

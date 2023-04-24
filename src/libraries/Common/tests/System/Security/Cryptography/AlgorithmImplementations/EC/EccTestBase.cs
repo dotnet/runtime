@@ -204,7 +204,7 @@ namespace System.Security.Cryptography.Tests
             {
                 Assert.True(c2.IsNamed);
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+                if (OperatingSystem.IsWindows() ||
                     string.IsNullOrEmpty(c1.Oid.Value))
                 {
                     Assert.Equal(c1.Oid.FriendlyName, c2.Oid.FriendlyName);
@@ -248,6 +248,18 @@ namespace System.Security.Cryptography.Tests
                     Assert.Equal(c1.Polynomial, c2.Polynomial);
                 }
             }
+        }
+
+        internal static string InvertStringCase(string str)
+        {
+            return string.Create(str.Length, str, static (destination, str) =>
+            {
+                for (int i = 0; i < str.Length; i++)
+                {
+                    char c = str[i];
+                    destination[i] = char.IsAsciiLetter(c) ? (char)(c ^ 0b0100000) : c;
+                }
+            });
         }
 #endif
     }

@@ -183,32 +183,8 @@ HRESULT TypeNameBuilder::OpenGenericArgument()
 
 HRESULT TypeNameBuilder::AddName(LPCWSTR szName)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!szName)
-        return Fail();
-
-    if (!CheckParseState(ParseStateSTART | ParseStateNAME))
-        return Fail();
-
-    HRESULT hr = S_OK;
-
-    m_parseState = ParseStateNAME;
-
-    if (m_bNestedName)
-        Append(W('+'));
-
-    m_bNestedName = TRUE;
-
-    EscapeName(szName);
-
-    return hr;
+    WRAPPER_NO_CONTRACT;
+    return AddName(szName, NULL);
 }
 
 HRESULT TypeNameBuilder::AddName(LPCWSTR szName, LPCWSTR szNamespace)
@@ -243,6 +219,36 @@ HRESULT TypeNameBuilder::AddName(LPCWSTR szName, LPCWSTR szNamespace)
     }
 
     EscapeName(szName);
+
+    return hr;
+}
+
+HRESULT TypeNameBuilder::AddNameNoEscaping(LPCWSTR szName)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (!szName)
+        return Fail();
+
+    if (!CheckParseState(ParseStateSTART | ParseStateNAME))
+        return Fail();
+
+    HRESULT hr = S_OK;
+
+    m_parseState = ParseStateNAME;
+
+    if (m_bNestedName)
+        Append(W('+'));
+
+    m_bNestedName = TRUE;
+
+    Append(szName);
 
     return hr;
 }
@@ -365,35 +371,28 @@ HRESULT TypeNameBuilder::AddArray(DWORD rank)
         return E_INVALIDARG;
 
     if (rank == 1)
+    {
         Append(W("[*]"));
+    }
     else if (rank > 64)
     {
         // Only taken in an error path, runtime will not load arrays of more than 32 dimensions
-        WCHAR wzDim[128];
-        _snwprintf_s(wzDim, 128, _TRUNCATE, W("[%d]"), rank);
-        Append(wzDim);
+        const UTF8 fmt[] = "[%d]";
+        UTF8 strTmp[ARRAY_SIZE(fmt) + MaxUnsigned32BitDecString];
+        _snprintf_s(strTmp, ARRAY_SIZE(strTmp), _TRUNCATE, fmt, rank);
+        Append(strTmp);
     }
     else
     {
-        WCHAR* wzDim = new (nothrow) WCHAR[rank+3];
+        WCHAR* wzDim = (WCHAR*)_alloca(sizeof(WCHAR) * (rank+3));
 
-        if(wzDim == NULL) // allocation failed, do it the long way (each Append -> memory realloc)
-        {
-            Append(W('['));
-            for(COUNT_T i = 1; i < rank; i ++)
-                Append(W(','));
-            Append(W(']'));
-        }
-        else             // allocation OK, do it the fast way
-        {
-            WCHAR* pwz = wzDim+1;
-            *wzDim = '[';
-            for(COUNT_T i = 1; i < rank; i++, pwz++) *pwz=',';
-            *pwz = ']';
-            *(++pwz) = 0;
-            Append(wzDim);
-            delete [] wzDim;
-        }
+        WCHAR* pwz = wzDim+1;
+        *wzDim = W('[');
+        for(COUNT_T i = 1; i < rank; i++, pwz++)
+            *pwz=',';
+        *pwz = W(']');
+        *(++pwz) = W('\0');
+        Append(wzDim);
     }
 
     return S_OK;
@@ -465,21 +464,6 @@ HRESULT TypeNameBuilder::AddAssemblySpec(LPCWSTR szAssemblySpec)
     }
 
     return hr;
-}
-
-HRESULT TypeNameBuilder::ToString(BSTR* pszStringRepresentation)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (!CheckParseState(ParseStateNAME | ParseStateGENARGS | ParseStatePTRARR | ParseStateBYREF | ParseStateASSEMSPEC))
-        return Fail();
-
-    if (m_instNesting)
-        return Fail();
-
-    *pszStringRepresentation = SysAllocString(m_pStr->GetUnicode());
-
-    return S_OK;
 }
 
 HRESULT TypeNameBuilder::Clear()
@@ -746,12 +730,6 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
         tnb.AddName(W("(null)"));
     }
     else
-    // It's not restored yet!
-    if (ty.IsEncodedFixup())
-    {
-        tnb.AddName(W("(fixup)"));
-    }
-    else
 
     // It's an array, with format
     //   element_ty[] (1-d, SZARRAY)
@@ -812,8 +790,48 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
     // ...or function pointer
     else if (ty.IsFnPtrType())
     {
-        // Don't attempt to format this currently, it may trigger GC due to fixups.
-        tnb.AddName(W("(fnptr)"));
+        // Currently function pointers return NULL for FullName and AssemblyQualifiedName and "" for Name.
+        // We need a grammar update in order to support parsing.
+        // See https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names
+        if (format & FormatNamespace)
+        {
+            FnPtrTypeDesc* fnPtr = ty.AsFnPtrType();
+            TypeHandle *retAndArgTypes = fnPtr->GetRetAndArgTypesPointer();
+
+            StackSString ss;
+            AppendType(ss, retAndArgTypes[0], format);
+
+            SString ssOpening(SString::Literal, "(");
+            ss += ssOpening;
+        
+            SString ssComma(SString::Literal, ", ");
+            DWORD cArgs = fnPtr->GetNumArgs();
+            for (DWORD i = 1; i <= cArgs; i++)
+            {
+                if (i != 1)
+                    ss += ssComma;
+
+                AppendType(ss, retAndArgTypes[i], format);
+            }
+
+            if ((fnPtr->GetCallConv() & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_VARARG)
+            {
+                if (cArgs)
+                    ss += ssComma;
+
+                SString ssEllipsis(SString::Literal, "...");
+                ss += ssEllipsis;
+            }        
+
+            SString ssClosing(SString::Literal, ")");
+            ss += ssClosing;
+            
+            tnb.AddNameNoEscaping(ss);
+        }
+        else
+        {        
+            tnb.AddNameNoEscaping(W(""));            
+        }
     }
 
     // ...otherwise it's just a plain type def or an instantiated type
@@ -831,9 +849,10 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
 #ifdef _DEBUG
             if (format & FormatDebug)
             {
-                WCHAR wzAddress[128];
-                _snwprintf_s(wzAddress, 128, _TRUNCATE, W("(%p)"), (VOID *)dac_cast<TADDR>(ty.AsPtr()));
-                tnb.AddName(wzAddress);
+                UTF8 buffer[128];
+                _snprintf_s(buffer, ARRAY_SIZE(buffer), _TRUNCATE, "(%p)", (VOID *)dac_cast<TADDR>(ty.AsPtr()));
+                MAKE_WIDEPTR_FROMUTF8(pointerName, buffer);
+                tnb.AddName(pointerName);
             }
 #endif
             AppendNestedTypeDef(tnb, pImport, td, format);
@@ -879,7 +898,6 @@ void TypeString::AppendMethod(SString& s, MethodDesc *pMD, Instantiation typeIns
         GC_TRIGGERS;
         THROWS;
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pMD->IsRestored_NoLogging());
         PRECONDITION(s.Check());
     }
     CONTRACTL_END
@@ -896,7 +914,6 @@ void TypeString::AppendMethodInternal(SString& s, MethodDesc *pMD, const DWORD f
         SUPPORTS_DAC;
         THROWS;
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pMD->IsRestored_NoLogging());
         PRECONDITION(s.Check());
     }
     CONTRACTL_END
@@ -913,7 +930,6 @@ void TypeString::AppendMethodImpl(SString& ss, MethodDesc *pMD, Instantiation ty
         SUPPORTS_DAC;
         THROWS;
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pMD->IsRestored_NoLogging());
         PRECONDITION(ss.Check());
     }
     CONTRACTL_END
@@ -1025,7 +1041,6 @@ void TypeString::AppendMethodDebug(SString& ss, MethodDesc *pMD)
         GC_TRIGGERS;
         NOTHROW;
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pMD->IsRestored_NoLogging());
         PRECONDITION(ss.Check());
     }
     CONTRACTL_END

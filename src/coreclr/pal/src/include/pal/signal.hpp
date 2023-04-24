@@ -64,7 +64,7 @@ extern "C" int SignalHandlerWorkerReturnOffset12;
 Function :
     signal_handler_worker
 
-    Handles signal on the original stack where the signal occured.
+    Handles signal on the original stack where the signal occurred.
     Invoked via setcontext.
 
 Parameters :

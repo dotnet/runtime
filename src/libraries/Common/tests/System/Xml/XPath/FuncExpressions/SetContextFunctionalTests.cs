@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using System;
 using System.Xml;
 using System.Xml.XPath;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.FunctionalTests.Expressions
 {
@@ -18,8 +17,11 @@ namespace XPathTests.FunctionalTests.Expressions
         /// Select node with qname
         /// //NSbook:book
         /// </summary>
-        [Fact]
-        public static void SetContextFunctionalTestsTest431()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void SetContextFunctionalTestsTest431(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//NSbook:book[1]";
@@ -39,17 +41,19 @@ namespace XPathTests.FunctionalTests.Expressions
                     Prefix = "NSbook",
                     Value = "\n\t\t\tA Brief History Of Time\n\t\t"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// Prefix is not defined, should throw an error
         /// //NSbook:book
         /// </summary>
-        [Fact]
-        public static void SetContextFunctionalTestsTest432()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void SetContextFunctionalTestsTest432(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//NSbook:book[1]";
@@ -69,17 +73,19 @@ namespace XPathTests.FunctionalTests.Expressions
                     Prefix = "NSbook",
                     Value = "\n\t\t\tA Brief History Of Time\n\t\t"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// use of multiple namespaces
         /// /doc/prefix1:elem/prefix2:elem
         /// </summary>
-        [Fact]
-        public static void SetContextFunctionalTestsTest433()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void SetContextFunctionalTestsTest433(Utils.NavigatorKind kind)
         {
             var xml = "name4.xml";
             var testExpression = @"/doc/prefix1:elem/prefix2:elem";
@@ -98,17 +104,19 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Prefix = "prefix2"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// Prefix points to a namespace that is not defined in the document, should return empty nodeset.
         /// //NSbook:book
         /// </summary>
-        [Fact]
-        public static void SetContextFunctionalTestsTest434()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void SetContextFunctionalTestsTest434(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//NSbook:book[1]";
@@ -116,17 +124,18 @@ namespace XPathTests.FunctionalTests.Expressions
 
             namespaceManager.AddNamespace("NSbook", "http://notbook.htm");
             var expected = new XPathResult(0);
-            ;
-
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// The document's default namespace is defined with a prefix in the XmlNamespaceManager, XPath should find the nodes with the default namespace in the document.
         /// //foo:book[1]
         /// </summary>
-        [Fact]
-        public static void SetContextFunctionalTestsTest435()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void SetContextFunctionalTestsTest435(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var testExpression = @"//foo:book[1]";
@@ -145,9 +154,8 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Value = "\n\t\t\tNewton's Time Machine\n\t\t"
                 });
-            ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
     }
 }

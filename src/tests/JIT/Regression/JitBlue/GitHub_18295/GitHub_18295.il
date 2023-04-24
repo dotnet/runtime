@@ -3,7 +3,8 @@
 
 .assembly extern mscorlib { auto }
 .assembly extern System.Console {auto}
-.assembly UnusedValueBug { }
+.assembly 'GitHub_18295' { }
+.assembly extern xunit.core {}
 
 // This bug was found on desktop CLR using ILGEN.
 // The expression ending in the 'mul' below is all dead, but not all the dead code
@@ -11,7 +12,7 @@
 // and it is marked as an 'UnusedValue', but the BuildSimple method wasn't creating a def
 // for an unused value. This led to an assert in the code generator.
 // 
-.class private auto ansi beforefieldinit GitHub_18295
+.class public auto ansi beforefieldinit GitHub_18295
        extends [mscorlib]System.Object
 {
     .method private hidebysig static int32 Test(int64 l, int32 i) cil managed
@@ -34,8 +35,11 @@
         ret
     }
 
-    .method private hidebysig static int32 Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
+        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+            01 00 00 00
+        )
         .entrypoint
       .vtentry 11 : 1
       // Code size       131 (0x83)

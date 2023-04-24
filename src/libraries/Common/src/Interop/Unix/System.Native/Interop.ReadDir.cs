@@ -53,17 +53,17 @@ internal static partial class Interop
             }
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_OpenDir", SetLastError = true)]
-        internal static extern IntPtr OpenDir(string path);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_OpenDir", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        internal static partial IntPtr OpenDir(string path);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetReadDirRBufferSize", SetLastError = false)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetReadDirRBufferSize", SetLastError = false)]
         [SuppressGCTransition]
-        internal static extern int GetReadDirRBufferSize();
+        internal static partial int GetReadDirRBufferSize();
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDirR", SetLastError = false)]
-        internal static extern unsafe int ReadDirR(IntPtr dir, byte* buffer, int bufferSize, out DirectoryEntry outputEntry);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadDirR")]
+        internal static unsafe partial int ReadDirR(IntPtr dir, byte* buffer, int bufferSize, DirectoryEntry* outputEntry);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseDir", SetLastError = true)]
-        internal static extern int CloseDir(IntPtr dir);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_CloseDir", SetLastError = true)]
+        internal static partial int CloseDir(IntPtr dir);
     }
 }

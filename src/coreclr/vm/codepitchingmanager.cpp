@@ -78,7 +78,7 @@ static void CreateRWLock(SimpleRWLock** lock)
         void *pLockSpace = SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(SimpleRWLock)));
         SimpleRWLock *pLock = new (pLockSpace) SimpleRWLock(COOPERATIVE_OR_PREEMPTIVE, LOCK_TYPE_DEFAULT);
 
-        if (FastInterlockCompareExchangePointer(lock, pLock, NULL) != NULL)
+        if (InterlockedCompareExchangeT(lock, pLock, NULL) != NULL)
             SystemDomain::GetGlobalLoaderAllocator()->GetLowFrequencyHeap()->BackoutMem(pLockSpace, sizeof(SimpleRWLock));
     }
 }
@@ -206,10 +206,6 @@ static void LookupOrCreateInPitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode)
     if (pMD == nullptr || !pMD->IsPitchable())
         return;
 
-    PCODE prCode = pMD->GetPreImplementedCode();
-    if (prCode)
-        return;
-
     if (!pMD->HasPrecode())
         return;
 
@@ -236,9 +232,8 @@ static void LookupOrCreateInPitchingCandidate(MethodDesc* pMD, ULONG sizeOfCode)
             SString className, methodName, methodSig;
             pMD->GetMethodInfo(className, methodName, methodSig);
 
-            StackScratchBuffer scratch;
-            const char* szClassName = className.GetUTF8(scratch);
-            const char* szMethodSig = methodSig.GetUTF8(scratch);
+            const char* szClassName = className.GetUTF8();
+            const char* szMethodSig = methodSig.GetUTF8();
 
             printf("Candidate %lu %s :: %s %s\n",
                    sizeOfCode, szClassName, pMD->GetName(), szMethodSig);
@@ -259,11 +254,6 @@ EXTERN_C void DeleteFromPitchingCandidate(MethodDesc* pMD)
 
     if (pMD != nullptr && pMD->IsPitchable())
     {
-        PCODE pCode = pMD->GetPreImplementedCode();
-
-        if (pCode)
-           return;
-
         _ASSERTE(s_pPitchingCandidateMethodsLock != nullptr && s_pPitchingCandidateMethods != nullptr);
         _ASSERTE(s_pPitchingCandidateSizes != nullptr);
 
@@ -350,8 +340,6 @@ void MethodDesc::PitchNativeCode()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    g_IBCLogger.LogMethodDescAccess(this);
-
     if (!IsPitchable())
         return;
 
@@ -394,8 +382,7 @@ void MethodDesc::PitchNativeCode()
 
     if (HasNativeCodeSlot())
     {
-        RelativePointer<TADDR> *pRelPtr = (RelativePointer<TADDR> *)GetAddrOfNativeCodeSlot();
-        pRelPtr->SetValueMaybeNull(NULL);
+        *GetAddrOfNativeCodeSlot() = NULL;
     }
     else
     {
@@ -430,9 +417,8 @@ void MethodDesc::PitchNativeCode()
         SString className, methodName, methodSig;
         GetMethodInfo(className, methodName, methodSig);
 
-        StackScratchBuffer scratch;
-        const char* szClassName = className.GetUTF8(scratch);
-        const char* szMethodSig = methodSig.GetUTF8(scratch);
+        const char* szClassName = className.GetUTF8();
+        const char* szMethodSig = methodSig.GetUTF8();
 
         printf("Pitched %lu %lu %s :: %s %s\n",
                s_PitchedMethodCounter, pitchedBytes, szClassName, GetName(), szMethodSig);

@@ -7,8 +7,10 @@ namespace System.IO.Tests
 {
     public class FileStream_Seek : FileSystemTest
     {
-        [Fact]
-        public void SeekAppendModifyThrows()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10)]
+        public void SeekAppendModifyThrows(int bufferSize)
         {
             string fileName = GetTestFilePath();
             using (FileStream fs = new FileStream(fileName, FileMode.Create))
@@ -16,7 +18,7 @@ namespace System.IO.Tests
                 fs.Write(TestBuffer, 0, TestBuffer.Length);
             }
 
-            using (FileStream fs = new FileStream(fileName, FileMode.Append))
+            using (FileStream fs = new FileStream(fileName, FileMode.Append, FileAccess.Write, FileShare.Read, bufferSize))
             {
                 long length = fs.Length;
                 Assert.Throws<IOException>(() => fs.Seek(length - 1, SeekOrigin.Begin));
@@ -32,6 +34,12 @@ namespace System.IO.Tests
                 Assert.Equal(length, fs.Position);
                 Assert.Throws<IOException>(() => fs.Seek(-length, SeekOrigin.End));
                 Assert.Equal(length, fs.Position);
+
+                Assert.Throws<IOException>(() => fs.Position = length - 1);
+                Assert.Equal(length, fs.Position);
+
+                fs.Write(TestBuffer);
+                Assert.Equal(length, fs.Seek(length, SeekOrigin.Begin));
             }
         }
     }

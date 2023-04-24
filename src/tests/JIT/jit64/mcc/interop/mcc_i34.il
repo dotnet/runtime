@@ -3,15 +3,15 @@
 
 
 .assembly extern System.Runtime.Extensions { auto }
+.assembly extern xunit.core {}
 .assembly extern mscorlib { auto }
 
-.assembly MCCTest {}
-.module mcc_i34.exe
+.assembly 'mcc_i34' {}
 
 
 .namespace MCCTest
 {
-  .class MyClass
+  .class public MyClass
   {
     .method assembly static pinvokeimpl("native_i3s" as "#1" stdcall)
         valuetype MCCTest.VType3 Sum(unsigned int64, valuetype MCCTest.VType3, float64,	valuetype MCCTest.VType3, float32, valuetype MCCTest.VType3,
@@ -20,8 +20,11 @@
                                     float64, valuetype MCCTest.VType3, float32, valuetype MCCTest.VType3, int16, valuetype MCCTest.VType3) cil managed preservesig {
     }
 
-    .method private static int32 Main(string[] args)
+    .method public static int32 Main()
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  64
       .locals init	(

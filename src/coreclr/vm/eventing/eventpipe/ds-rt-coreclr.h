@@ -1,13 +1,18 @@
-// Implementation of ds-rt.h targeting Mono runtime.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+// Implementation of ds-rt.h targeting CoreCLR runtime.
 #ifndef __DIAGNOSTICS_RT_MONO_H__
 #define __DIAGNOSTICS_RT_MONO_H__
 
-#include "ds-rt-config.h"
+#include <eventpipe/ds-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
-#include "ds-profiler-protocol.h"
-#include "ds-dump-protocol.h"
+#include <clrconfignocache.h>
+#include <eventpipe/ds-process-protocol.h>
+#include <eventpipe/ds-profiler-protocol.h>
+#include <eventpipe/ds-dump-protocol.h>
 
 #undef DS_LOG_ALWAYS_0
 #define DS_LOG_ALWAYS_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n")
@@ -59,22 +64,6 @@
 
 #undef DS_EXIT_BLOCKING_PAL_SECTION
 #define DS_EXIT_BLOCKING_PAL_SECTION
-
-#undef DS_RT_DEFINE_ARRAY
-#define DS_RT_DEFINE_ARRAY(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DEFINE_ARRAY_PREFIX(ds, array_name, array_type, iterator_type, item_type)
-
-#undef DS_RT_DEFINE_LOCAL_ARRAY
-#define DS_RT_DEFINE_LOCAL_ARRAY(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DEFINE_LOCAL_ARRAY_PREFIX(ds, array_name, array_type, iterator_type, item_type)
-
-#undef DS_RT_DEFINE_ARRAY_ITERATOR
-#define DS_RT_DEFINE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DEFINE_ARRAY_ITERATOR_PREFIX(ds, array_name, array_type, iterator_type, item_type)
-
-#undef DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR
-#define DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR(array_name, array_type, iterator_type, item_type) \
-	EP_RT_DEFINE_ARRAY_REVERSE_ITERATOR_PREFIX(ds, array_name, array_type, iterator_type, item_type)
 
 /*
 * AutoTrace.
@@ -187,27 +176,29 @@ ds_rt_config_value_get_default_port_suspend (void)
 
 static
 ds_ipc_result_t
-ds_rt_generate_core_dump (DiagnosticsGenerateCoreDumpCommandPayload *payload)
+ds_rt_generate_core_dump (
+	DiagnosticsDumpCommandId commandId,
+	DiagnosticsGenerateCoreDumpCommandPayload *payload,
+	ep_char8_t *errorMessageBuffer,
+	int32_t cbErrorMessageBuffer)
 {
 	STATIC_CONTRACT_NOTHROW;
 
 	ds_ipc_result_t result = DS_IPC_E_FAIL;
 	EX_TRY
 	{
-#ifdef HOST_WIN32
-		if (GenerateCrashDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
-			static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
-			(ds_generate_core_dump_command_payload_get_diagnostics (payload) != 0) ? true : false))
-			result = DS_IPC_S_OK;
-#else
-		MAKE_UTF8PTR_FROMWIDE_NOTHROW (dump_name, reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)));
-		if (dump_name != nullptr) {
-			if (PAL_GenerateCoreDump (dump_name,
-				static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
-				(ds_generate_core_dump_command_payload_get_diagnostics (payload) != 0) ? true : false))
-				result = DS_IPC_S_OK;
+		uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
+		if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP)
+		{
+			// For the old commmand, this payload field is a bool of whether to enable logging
+			flags = flags != 0 ? GenerateDumpFlagsLoggingEnabled : 0;
 		}
-#endif
+		LPCWSTR dumpName = reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload));
+		int32_t dumpType = static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload));
+		if (GenerateDump(dumpName, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer))
+		{
+			result = DS_IPC_S_OK;
+		}
 	}
 	EX_CATCH {}
 	EX_END_CATCH(SwallowAllExceptions);
@@ -238,41 +229,13 @@ ds_rt_transport_get_default_name (
 }
 
 /*
- * DiagnosticsIpcPollHandle.
- */
-
-DS_RT_DEFINE_ARRAY (ipc_poll_handle_array, ds_rt_ipc_poll_handle_array_t, ds_rt_ipc_poll_handle_array_iterator_t, DiagnosticsIpcPollHandle)
-DS_RT_DEFINE_LOCAL_ARRAY (ipc_poll_handle_array, ds_rt_ipc_poll_handle_array_t, ds_rt_ipc_poll_handle_array_iterator_t, DiagnosticsIpcPollHandle)
-DS_RT_DEFINE_ARRAY_ITERATOR (ipc_poll_handle_array, ds_rt_ipc_poll_handle_array_t, ds_rt_ipc_poll_handle_array_iterator_t, DiagnosticsIpcPollHandle)
-
-#undef DS_RT_DECLARE_LOCAL_IPC_POLL_HANDLE_ARRAY
-#define DS_RT_DECLARE_LOCAL_IPC_POLL_HANDLE_ARRAY(var_name) \
-	EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, ds_rt_ipc_poll_handle_array_t)
-
-/*
- * DiagnosticsPort.
- */
-
-DS_RT_DEFINE_ARRAY (port_array, ds_rt_port_array_t, ds_rt_port_array_iterator_t, DiagnosticsPort *)
-DS_RT_DEFINE_ARRAY_ITERATOR (port_array, ds_rt_port_array_t, ds_rt_port_array_iterator_t, DiagnosticsPort *)
-
-DS_RT_DEFINE_ARRAY (port_config_array, ds_rt_port_config_array_t, ds_rt_port_config_array_iterator_t, ep_char8_t *)
-DS_RT_DEFINE_LOCAL_ARRAY (port_config_array, ds_rt_port_config_array_t, ds_rt_port_config_array_iterator_t, ep_char8_t *)
-DS_RT_DEFINE_ARRAY_ITERATOR (port_config_array, ds_rt_port_config_array_t, ds_rt_port_config_array_iterator_t, ep_char8_t *)
-DS_RT_DEFINE_ARRAY_REVERSE_ITERATOR (port_config_array, ds_rt_port_config_array_t, ds_rt_port_config_array_reverse_iterator_t, ep_char8_t *)
-
-#undef DS_RT_DECLARE_LOCAL_PORT_CONFIG_ARRAY
-#define DS_RT_DECLARE_LOCAL_PORT_CONFIG_ARRAY(var_name) \
-	EP_RT_DECLARE_LOCAL_ARRAY_VARIABLE(var_name, ds_rt_port_config_array_t)
-
-/*
 * DiagnosticsProfiler.
 */
-
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
+#ifdef PROFILING_SUPPORTED
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
 
+#ifdef FEATURE_PROFAPI_ATTACH_DETACH
 static
 uint32_t
 ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
@@ -285,7 +248,7 @@ ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
 	// Certain actions are only allowable during attach, and this flag is how we track it.
 	ClrFlsSetThreadType (ThreadType_ProfAPI_Attach);
 
-	HRESULT hr;
+	HRESULT hr = S_OK;
 	EX_TRY {
 		hr = ProfilingAPIUtility::LoadProfilerForAttach (reinterpret_cast<const CLSID *>(ds_attach_profiler_command_payload_get_profiler_guid_cref (payload)),
 			reinterpret_cast<LPCWSTR>(ds_attach_profiler_command_payload_get_profiler_path (payload)),
@@ -302,6 +265,33 @@ ds_rt_profiler_attach (DiagnosticsAttachProfilerCommandPayload *payload)
 }
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
 
+static
+uint32_t
+ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
+{
+	STATIC_CONTRACT_NOTHROW;
+
+	HRESULT hr = S_OK;
+	EX_TRY {
+		StoredProfilerNode *profilerData = new StoredProfilerNode();
+		profilerData->guid = *(reinterpret_cast<const CLSID *>(ds_startup_profiler_command_payload_get_profiler_guid_cref (payload)));
+		profilerData->path.Set(reinterpret_cast<LPCWSTR>(ds_startup_profiler_command_payload_get_profiler_path (payload)));
+
+		g_profControlBlock.storedProfilers.InsertHead(profilerData);
+	}
+	EX_CATCH_HRESULT (hr);
+
+	return hr;
+}
+#endif // PROFILING_SUPPORTED
+
+static
+uint32_t
+ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
+{
+	return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
+}
+
 /*
 * DiagnosticServer.
 */
@@ -312,13 +302,19 @@ ds_rt_server_log_pause_message (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	CLRConfigStringHolder ports(CLRConfig::GetConfigValue (CLRConfig::EXTERNAL_DOTNET_DiagnosticPorts));
-	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend ();
+	const char diagPortsName[] = "DOTNET_DiagnosticPorts";
+	CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
+	LPCSTR ports = nullptr;
+	if (diagPorts.IsSet())
+	{
+		ports = diagPorts.AsString();
+	}
 
-	DWORD dotnetDiagnosticPortSuspend = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DOTNET_DefaultDiagnosticPortSuspend);
-	wprintf(W("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n"));
-	wprintf(W("DOTNET_DiagnosticPorts=\"%s\"\n"), ports == nullptr ? W("") : ports.GetValue());
-	wprintf(W("DOTNET_DefaultDiagnosticPortSuspend=%d\n"), port_suspended);
+	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend();
+
+	printf("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n");
+	printf("%s=\"%s\"\n", diagPortsName, ports == nullptr ? "" : ports);
+	printf("DOTNET_DefaultDiagnosticPortSuspend=%u\n", port_suspended);
 	fflush(stdout);
 }
 

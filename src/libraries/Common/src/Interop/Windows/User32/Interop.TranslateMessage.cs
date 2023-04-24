@@ -8,7 +8,8 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [DllImport(Libraries.User32, ExactSpelling = true)]
-        public static extern bool TranslateMessage([In, Out] ref MSG msg);
+        [LibraryImport(Libraries.User32)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static partial bool TranslateMessage(ref MSG msg);
     }
 }

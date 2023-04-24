@@ -1,8 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Globalization.UseNls" Value="true" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\GetStringComparerTests.cs"
              Link="GetStringComparerTests.cs" />

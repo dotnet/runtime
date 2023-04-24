@@ -11,12 +11,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Test
 {
-    static class App
+    public static class App
     {
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             new DerivedClass<int>(7);
             return 100;
@@ -31,7 +33,15 @@ namespace Test
 
     public class DerivedClass<T> : BaseClass
     {
-        private static readonly Random Generator = new Random();
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
+        private static readonly Random Generator = new Random(Seed);
         private static string GetString() { return "Text"; }
         public int Field1 = ((Generator.Next(5, 8) == 10) ? 10 : 20);
         public string Field2 = (GetString() ?? "NeededToFallBack");

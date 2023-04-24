@@ -182,7 +182,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
 
 
 //==========================================================================
-// Helpful macros to declare exception handlers, their implementaiton,
+// Helpful macros to declare exception handlers, their implementation,
 // and to call them.
 //==========================================================================
 
@@ -240,21 +240,30 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
 
 #endif // !defined(FEATURE_EH_FUNCLETS)
 
-LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo);
+enum VEH_ACTION
+{
+    VEH_NO_ACTION = -3,
+    VEH_EXECUTE_HANDLE_MANAGED_EXCEPTION = -2,
+    VEH_CONTINUE_EXECUTION = EXCEPTION_CONTINUE_EXECUTION,
+    VEH_CONTINUE_SEARCH = EXCEPTION_CONTINUE_SEARCH,
+    VEH_EXECUTE_HANDLER = EXCEPTION_EXECUTE_HANDLER
+};
+
+VEH_ACTION CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo);
 
 // Actual UEF worker prototype for use by GCUnhandledExceptionFilter.
 extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExceptionInfo);
 
 VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow = FALSE);
 
-#if defined(DACCESS_COMPILE) || defined(CROSSGEN_COMPILE)
+#if defined(DACCESS_COMPILE)
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE
-#else // DACCESS_COMPILE || CROSSGEN_COMPILE
+#else // DACCESS_COMPILE
 
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException);
@@ -311,7 +320,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         MAKE_CURRENT_THREAD_AVAILABLE();                                                    \
         Exception* __pUnCException  = NULL;                                                 \
         Frame*     __pUnCEntryFrame = CURRENT_THREAD->GetFrame();                           \
-        bool       __fExceptionCatched = false;                                             \
+        bool       __fExceptionCaught = false;                                             \
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
             SCAN_EHMARKER_TRY();                                                            \
@@ -327,7 +336,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     {                                                                                       \
         Exception* __pUnCException  = NULL;                                                 \
         Frame*     __pUnCEntryFrame = (pHelperFrame);                                       \
-        bool       __fExceptionCatched = false;                                             \
+        bool       __fExceptionCaught = false;                                             \
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
             SCAN_EHMARKER_TRY();                                                            \
@@ -343,11 +352,11 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             CONSISTENCY_CHECK(NULL != __pException);                                        \
             __pUnCException = __pException;                                                 \
             UnwindAndContinueRethrowHelperInsideCatch(__pUnCEntryFrame, __pUnCException);   \
-            __fExceptionCatched = true;                                                     \
+            __fExceptionCaught = true;                                                     \
             SCAN_EHMARKER_END_CATCH();                                                      \
         }                                                                                   \
         PAL_CPP_ENDTRY                                                                      \
-        if (__fExceptionCatched)                                                            \
+        if (__fExceptionCaught)                                                            \
         {                                                                                   \
             SCAN_EHMARKER_CATCH();                                                          \
             UnwindAndContinueRethrowHelperAfterCatch(__pUnCEntryFrame, __pUnCException);    \
@@ -357,7 +366,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER                                               \
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_NO_PROBE;
 
-#endif // DACCESS_COMPILE || CROSSGEN_COMPILE
+#endif // DACCESS_COMPILE
 
 
 #define ENCLOSE_IN_EXCEPTION_HANDLER( func ) \
@@ -459,12 +468,6 @@ ThrowStackOverflow      COMPlusThrowSO defers to this
 
 void COMPlusCooperativeTransitionHandler(Frame* pFrame);
 
-#ifdef CROSSGEN_COMPILE
-
-#define COOPERATIVE_TRANSITION_BEGIN()
-#define COOPERATIVE_TRANSITION_END()
-
-#else // CROSSGEN_COMPILE
 
 #define COOPERATIVE_TRANSITION_BEGIN()              \
   {                                                 \
@@ -479,7 +482,6 @@ void COMPlusCooperativeTransitionHandler(Frame* pFrame);
     END_GCX_ASSERT_PREEMP;                          \
   }
 
-#endif // CROSSGEN_COMPILE
 
 extern LONG UserBreakpointFilter(EXCEPTION_POINTERS *ep);
 extern LONG DefaultCatchFilter(EXCEPTION_POINTERS *ep, LPVOID pv);
@@ -509,21 +511,25 @@ LPCWSTR GetPathForErrorMessagesT(T *pImgObj)
     }
 }
 
-VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(__in_z const char *cond));
+VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const char *cond));
 
 template <typename T>
 NOINLINE
-VOID ThrowBadFormatWorkerT(UINT resID, T * pImgObj DEBUGARG(__in_z const char *cond))
+VOID ThrowBadFormatWorkerT(UINT resID, T * pImgObj DEBUGARG(_In_z_ const char *cond))
 {
+#ifdef DACCESS_COMPILE
+    ThrowBadFormatWorker(resID, nullptr DEBUGARG(cond));
+#else
     LPCWSTR tmpStr = GetPathForErrorMessagesT(pImgObj);
     ThrowBadFormatWorker(resID, tmpStr DEBUGARG(cond));
+#endif
 }
 
 
 // Worker macro for throwing BadImageFormat exceptions.
 //
 //     resID:     resource ID in mscorrc.rc. Message may not have substitutions. resID is permitted (but not encouraged) to be 0.
-//     imgObj:    one of Module* or PEFile* or PEImage* (must support GetPathForErrorMessages method.)
+//     imgObj:    one of Module* or PEAssembly* or PEImage* (must support GetPathForErrorMessages method.)
 //
 #define IfFailThrowBF(hresult, resID, imgObj)   \
     do                                          \

@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -1252,7 +1253,10 @@ END:
 }
 
 //---- MAIN -----------------
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 //====== begin testing ======
@@ -1571,5 +1575,5 @@ END:
 //---- EOF ------------------
 }
 
-.assembly ldc_add_ovf_u2.exe{}
+.assembly ldc_add_ovf_u2{}
 

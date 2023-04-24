@@ -4,11 +4,13 @@
 // Method:  Simulate a bouncing ball based on the laws of physics.
 
 using System;
+using Xunit;
 
-class BouncingBall
+public class BouncingBall
 {
 
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         double coef;
         double height;
@@ -17,16 +19,8 @@ class BouncingBall
         string output;
         bool FirstTime;
 
-        if (args.Length >= 2)
-        {
-            coef = Convert.ToDouble(args[0]);
-            height = Convert.ToDouble(args[1]);
-        }
-        else
-        {
-            coef = 0.8;
-            height = 80.0;
-        }
+        coef = 0.8;
+        height = 80.0;
 
         Console.WriteLine("Coeficient of Restitution: {0}", coef);
         Console.WriteLine("Balls starting height    : {0} m", height);

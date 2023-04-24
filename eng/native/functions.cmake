@@ -4,8 +4,73 @@ function(clr_unknown_arch)
     elseif(CLR_CROSS_COMPONENTS_BUILD)
         message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     else()
-        message(FATAL_ERROR "Only AMD64, ARM64 and ARM are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "'${CMAKE_SYSTEM_PROCESSOR}' is an unsupported architecture.")
     endif()
+endfunction()
+
+# C to MASM include file translator
+# This is replacement for the deprecated h2inc tool that used to be part of VS.
+function(h2inc filename output)
+    file(STRINGS ${filename} lines)
+    get_filename_component(path "${filename}" DIRECTORY)
+    file(RELATIVE_PATH relative_filename "${CLR_REPO_ROOT_DIR}" "${filename}")
+
+    file(WRITE "${output}" "// File start: ${relative_filename}\n")
+
+    # Use of NEWLINE_CONSUME is needed for lines with trailing backslash
+    file(STRINGS ${filename} contents NEWLINE_CONSUME)
+    string(REGEX REPLACE "\\\\\n" "\\\\\\\\ \n" contents "${contents}")
+    string(REGEX REPLACE "\n" ";" lines "${contents}")
+
+    foreach(line IN LISTS lines)
+        string(REGEX REPLACE "\\\\\\\\ " "\\\\" line "${line}")
+
+        if(line MATCHES "^ *# pragma")
+            # Ignore pragmas
+            continue()
+        endif()
+
+        if(line MATCHES "^ *# *include *\"(.*)\"")
+            # Expand includes.
+            h2inc("${path}/${CMAKE_MATCH_1}" "${output}")
+            continue()
+        endif()
+
+        if(line MATCHES "^ *#define +([0-9A-Za-z_()]+) *(.*)")
+            # Augment #defines with their MASM equivalent
+            set(name "${CMAKE_MATCH_1}")
+            set(value "${CMAKE_MATCH_2}")
+
+            # Note that we do not handle multiline constants
+
+            # Strip comments from value
+            string(REGEX REPLACE "//.*" "" value "${value}")
+            string(REGEX REPLACE "/\\*.*\\*/" "" value "${value}")
+
+            # Strip whitespaces from value
+            string(REPLACE " +$" "" value "${value}")
+
+            # ignore #defines with arguments
+            if(NOT "${name}" MATCHES "\\(")
+                set(HEX_NUMBER_PATTERN "0x([0-9A-Fa-f]+)")
+                set(DECIMAL_NUMBER_PATTERN "(-?[0-9]+)")
+
+                if("${value}" MATCHES "${HEX_NUMBER_PATTERN}")
+                    string(REGEX REPLACE "${HEX_NUMBER_PATTERN}" "0\\1h" value "${value}")    # Convert hex constants
+                    file(APPEND "${output}" "${name} EQU ${value}\n")
+                elseif("${value}" MATCHES "${DECIMAL_NUMBER_PATTERN}" AND (NOT "${value}" MATCHES "[G-Zg-z]+" OR "${value}" MATCHES "\\("))
+                    string(REGEX REPLACE "${DECIMAL_NUMBER_PATTERN}" "\\1t" value "${value}") # Convert dec constants
+                    file(APPEND "${output}" "${name} EQU ${value}\n")
+                else()
+                    file(APPEND "${output}" "${name} TEXTEQU <${value}>\n")
+                endif()
+            endif()
+        endif()
+
+        file(APPEND "${output}" "${line}\n")
+    endforeach()
+
+    file(APPEND "${output}" "// File end: ${relative_filename}\n")
 endfunction()
 
 # Build a list of compiler definitions by putting -D in front of each define.
@@ -75,9 +140,22 @@ function(get_include_directories_asm IncludeDirectories)
     set(${IncludeDirectories} ${INC_DIRECTORIES} PARENT_SCOPE)
 endfunction(get_include_directories_asm)
 
+# Adds prefix to paths list
+function(addprefix var prefix list)
+  set(f)
+  foreach(i ${list})
+    set(f ${f} ${prefix}/${i})
+  endforeach()
+  set(${var} ${f} PARENT_SCOPE)
+endfunction()
+
 # Finds and returns unwind libs
 function(find_unwind_libs UnwindLibs)
     if(CLR_CMAKE_HOST_ARCH_ARM)
+      find_library(UNWIND_ARCH NAMES unwind-arm)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_ARMV6)
       find_library(UNWIND_ARCH NAMES unwind-arm)
     endif()
 
@@ -85,8 +163,24 @@ function(find_unwind_libs UnwindLibs)
       find_library(UNWIND_ARCH NAMES unwind-aarch64)
     endif()
 
+    if(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
+      find_library(UNWIND_ARCH NAMES unwind-loongarch64)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_RISCV64)
+      find_library(UNWIND_ARCH NAMES unwind-riscv64)
+    endif()
+
     if(CLR_CMAKE_HOST_ARCH_AMD64)
       find_library(UNWIND_ARCH NAMES unwind-x86_64)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_S390X)
+      find_library(UNWIND_ARCH NAMES unwind-s390x)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_POWERPC64)
+      find_library(UNWIND_ARCH NAMES unwind-ppc64le)
     endif()
 
     if(NOT UNWIND_ARCH STREQUAL UNWIND_ARCH-NOTFOUND)
@@ -114,7 +208,8 @@ endfunction(find_unwind_libs)
 function(convert_to_absolute_path RetSources)
     set(Sources ${ARGN})
     foreach(Source IN LISTS Sources)
-        list(APPEND AbsolutePathSources ${CMAKE_CURRENT_SOURCE_DIR}/${Source})
+      get_filename_component(AbsolutePathSource ${Source} ABSOLUTE BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+      list(APPEND AbsolutePathSources ${AbsolutePathSource})
     endforeach()
     set(${RetSources} ${AbsolutePathSources} PARENT_SCOPE)
 endfunction(convert_to_absolute_path)
@@ -157,7 +252,7 @@ function(preprocess_files PreprocessedFilesList)
 endfunction()
 
 function(set_exports_linker_option exports_filename)
-    if(LD_GNU OR LD_SOLARIS)
+    if(LD_GNU OR LD_SOLARIS OR LD_LLVM)
         # Add linker exports file option
         if(LD_SOLARIS)
             set(EXPORTS_LINKER_OPTION -Wl,-M,${exports_filename} PARENT_SCOPE)
@@ -232,7 +327,7 @@ function(generate_exports_file)
   list(GET INPUT_LIST -1 outputFilename)
   list(REMOVE_AT INPUT_LIST -1)
 
-  if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+  if(CLR_CMAKE_TARGET_APPLE)
     set(SCRIPT_NAME generateexportedsymbols.sh)
   else()
     set(SCRIPT_NAME generateversionscript.sh)
@@ -271,18 +366,18 @@ endfunction()
 
 function (get_symbol_file_name targetName outputSymbolFilename)
   if (CLR_CMAKE_HOST_UNIX)
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_APPLE)
       set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
     else ()
       set(strip_destination_file $<TARGET_FILE:${targetName}>.dbg)
     endif ()
 
     set(${outputSymbolFilename} ${strip_destination_file} PARENT_SCOPE)
-  else(CLR_CMAKE_HOST_UNIX)
+  elseif(CLR_CMAKE_HOST_WIN32)
     # We can't use the $<TARGET_PDB_FILE> generator expression here since
     # the generator expression isn't supported on resource DLLs.
     set(${outputSymbolFilename} $<TARGET_FILE_DIR:${targetName}>/$<TARGET_FILE_PREFIX:${targetName}>$<TARGET_FILE_BASE_NAME:${targetName}>.pdb PARENT_SCOPE)
-  endif(CLR_CMAKE_HOST_UNIX)
+  endif()
 endfunction()
 
 function(strip_symbols targetName outputFilename)
@@ -291,7 +386,7 @@ function(strip_symbols targetName outputFilename)
   if (CLR_CMAKE_HOST_UNIX)
     set(strip_source_file $<TARGET_FILE:${targetName}>)
 
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_APPLE)
 
       # Ensure that dsymutil and strip are present
       find_program(DSYMUTIL dsymutil)
@@ -304,55 +399,75 @@ function(strip_symbols targetName outputFilename)
         message(FATAL_ERROR "strip not found")
       endif()
 
-      string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
-      if (LOWERCASE_CMAKE_BUILD_TYPE STREQUAL release)
-        set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file} && codesign -f -s - ${strip_source_file})
-      else ()
-        set(strip_command)
+      set(strip_command ${STRIP} -no_code_signature_warning -S ${strip_source_file})
+
+      if (CLR_CMAKE_TARGET_OSX)
+        # codesign release build
+        string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
+        if (LOWERCASE_CMAKE_BUILD_TYPE STREQUAL release)
+          set(strip_command ${strip_command} && codesign -f -s - ${strip_source_file})
+        endif ()
+      endif ()
+
+      execute_process(
+        COMMAND ${DSYMUTIL} --help
+        OUTPUT_VARIABLE DSYMUTIL_HELP_OUTPUT
+      )
+
+      set(DSYMUTIL_OPTS "--flat")
+      if ("${DSYMUTIL_HELP_OUTPUT}" MATCHES "--minimize")
+        list(APPEND DSYMUTIL_OPTS "--minimize")
       endif ()
 
       add_custom_command(
         TARGET ${targetName}
         POST_BUILD
         VERBATIM
-        COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
+        COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
+        COMMAND ${DSYMUTIL} ${DSYMUTIL_OPTS} ${strip_source_file}
         COMMAND ${strip_command}
-        COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
-    else (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    else (CLR_CMAKE_TARGET_APPLE)
 
       add_custom_command(
         TARGET ${targetName}
         POST_BUILD
         VERBATIM
+        COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-        COMMAND ${CMAKE_OBJCOPY} --strip-unneeded ${strip_source_file}
+        COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
-        COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
-    endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    endif (CLR_CMAKE_TARGET_APPLE)
   endif(CLR_CMAKE_HOST_UNIX)
 endfunction()
 
 function(install_with_stripped_symbols targetName kind destination)
+    get_property(target_is_framework TARGET ${targetName} PROPERTY "FRAMEWORK")
     if(NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
       strip_symbols(${targetName} symbol_file)
-      install_symbol_file(${symbol_file} ${destination} ${ARGN})
+      if (NOT "${symbol_file}" STREQUAL "" AND NOT target_is_framework)
+        install_symbol_file(${symbol_file} ${destination} ${ARGN})
+      endif()
     endif()
 
-    if ((CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) AND ("${kind}" STREQUAL "TARGETS"))
-      # We want to avoid the kind=TARGET install behaviors which corrupt code signatures on osx-arm64
-      set(kind PROGRAMS)
-    endif()
-
-    if ("${kind}" STREQUAL "TARGETS")
-      set(install_source ${targetName})
-    elseif("${kind}" STREQUAL "PROGRAMS")
-      set(install_source $<TARGET_FILE:${targetName}>)
+    if (target_is_framework)
+      install(TARGETS ${targetName} FRAMEWORK DESTINATION ${destination} ${ARGN})
     else()
-      message(FATAL_ERROR "The `kind` argument has to be either TARGETS or PROGRAMS, ${kind} was provided instead")
+      if (CLR_CMAKE_TARGET_APPLE AND ("${kind}" STREQUAL "TARGETS"))
+        # We want to avoid the kind=TARGET install behaviors which corrupt code signatures on osx-arm64
+        set(kind PROGRAMS)
+      endif()
+
+      if ("${kind}" STREQUAL "TARGETS")
+        set(install_source ${targetName})
+      elseif("${kind}" STREQUAL "PROGRAMS")
+        set(install_source $<TARGET_FILE:${targetName}>)
+      else()
+        message(FATAL_ERROR "The `kind` argument has to be either TARGETS or PROGRAMS, ${kind} was provided instead")
+      endif()
+      install(${kind} ${install_source} DESTINATION ${destination} ${ARGN})
     endif()
-    install(${kind} ${install_source} DESTINATION ${destination} ${ARGN})
 endfunction()
 
 function(install_symbol_file symbol_file destination_path)
@@ -360,6 +475,25 @@ function(install_symbol_file symbol_file destination_path)
       install(FILES ${symbol_file} DESTINATION ${destination_path}/PDB ${ARGN})
   else()
       install(FILES ${symbol_file} DESTINATION ${destination_path} ${ARGN})
+  endif()
+endfunction()
+
+function(install_static_library targetName destination component)
+  if (NOT "${component}" STREQUAL "${targetName}")
+    get_property(definedComponents GLOBAL PROPERTY CLR_CMAKE_COMPONENTS)
+    list(FIND definedComponents "${component}" componentIdx)
+    if (${componentIdx} EQUAL -1)
+      message(FATAL_ERROR "The ${component} component is not defined. Add a call to `add_component(${component})` to define the component in the build.")
+    endif()
+    add_dependencies(${component} ${targetName})
+  endif()
+  install (TARGETS ${targetName} DESTINATION ${destination} COMPONENT ${component})
+  if (WIN32)
+    set_target_properties(${targetName} PROPERTIES
+        COMPILE_PDB_NAME "${targetName}"
+        COMPILE_PDB_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+    )
+    install (FILES "$<TARGET_FILE_DIR:${targetName}>/${targetName}.pdb" DESTINATION ${destination} COMPONENT ${component})
   endif()
 endfunction()
 
@@ -467,29 +601,6 @@ if (CMAKE_VERSION VERSION_LESS "3.16")
   endfunction()
 endif()
 
-function(add_executable_clr)
-    if(NOT WIN32)
-      add_executable(${ARGV} ${VERSION_FILE_PATH})
-      disable_pax_mprotect(${ARGV})
-    else()
-      add_executable(${ARGV})
-    endif(NOT WIN32)
-    if(NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
-      strip_symbols(${ARGV0} symbolFile)
-    endif()
-endfunction()
-
-function(add_library_clr)
-    if(NOT WIN32 AND "${ARGV1}" STREQUAL "SHARED")
-      add_library(${ARGV} ${VERSION_FILE_PATH})
-    else()
-      add_library(${ARGV})
-    endif(NOT WIN32 AND "${ARGV1}" STREQUAL "SHARED")
-    if("${ARGV1}" STREQUAL "SHARED" AND NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
-      strip_symbols(${ARGV0} symbolFile)
-    endif()
-endfunction()
-
 # add_linker_flag(Flag [Config1 Config2 ...])
 function(add_linker_flag Flag)
   if (ARGN STREQUAL "")
@@ -501,4 +612,44 @@ function(add_linker_flag Flag)
       set("CMAKE_SHARED_LINKER_FLAGS_${Config}" "${CMAKE_SHARED_LINKER_FLAGS_${Config}} ${Flag}" PARENT_SCOPE)
     endforeach()
   endif()
+endfunction()
+
+function(link_natvis_sources_for_target targetName linkKind)
+    if (NOT CLR_CMAKE_HOST_WIN32)
+        return()
+    endif()
+    foreach(source ${ARGN})
+        if (NOT IS_ABSOLUTE "${source}")
+            convert_to_absolute_path(source ${source})
+        endif()
+        get_filename_component(extension "${source}" EXT)
+        if ("${extension}" STREQUAL ".natvis")
+            # Since natvis embedding is only supported on Windows
+            # we can use target_link_options since our minimum version is high enough
+            target_link_options(${targetName} "${linkKind}" "-NATVIS:${source}")
+        endif()
+    endforeach()
+endfunction()
+
+function(add_executable_clr targetName)
+    if(NOT WIN32)
+      add_executable(${ARGV} ${VERSION_FILE_PATH})
+      disable_pax_mprotect(${ARGV})
+    else()
+      add_executable(${ARGV})
+    endif(NOT WIN32)
+    if(NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
+      strip_symbols(${ARGV0} symbolFile)
+    endif()
+endfunction()
+
+function(add_library_clr targetName kind)
+    if(NOT WIN32 AND "${kind}" STREQUAL "SHARED")
+      add_library(${ARGV} ${VERSION_FILE_PATH})
+    else()
+      add_library(${ARGV})
+    endif()
+    if("${kind}" STREQUAL "SHARED" AND NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
+      strip_symbols(${ARGV0} symbolFile)
+    endif()
 endfunction()

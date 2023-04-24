@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 
@@ -27,15 +28,17 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             // has run.
         }
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "The code has a fallback to use AppDomain.CurrentDomain.BaseDirectory so it will work correctly in single-file")]
         private static Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
         {
             // apply any existing policy
             AssemblyName referenceName = new AssemblyName(AppDomain.CurrentDomain.ApplyPolicy(args.Name));
 
             string fileName = referenceName.Name + ".dll";
-            string assemblyPath = null;
-            string probingPath = null;
-            Assembly assm = null;
+            string assemblyPath;
+            string probingPath;
+            Assembly assm;
 
             // look next to requesting assembly
             assemblyPath = args.RequestingAssembly?.Location;

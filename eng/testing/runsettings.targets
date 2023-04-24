@@ -7,6 +7,7 @@
     <CreateIntermediateRunSettingsFile Condition="'$(CreateIntermediateRunSettingsFile)' == ''">false</CreateIntermediateRunSettingsFile>
     <RunSettingsOutputFilePath Condition="'$(CreateIntermediateRunSettingsFile)' == 'true'">$(RunSettingsIntermediateOutputFilePath)</RunSettingsOutputFilePath>
     <RunSettingsOutputFilePath Condition="'$(CreateIntermediateRunSettingsFile)' != 'true'">$(RunSettingsAppOutputFilePath)</RunSettingsOutputFilePath>
+    <VsCodeRunSettingsOutputFilePath>$(ArtifactsObjDir)vscode/.runsettings</VsCodeRunSettingsOutputFilePath>
 
     <!-- Set RunSettingsFilePath property which is read by VSTest. -->
     <RunSettingsFilePath Condition="Exists('$(RunSettingsAppOutputFilePath)')">$(RunSettingsAppOutputFilePath)</RunSettingsFilePath>
@@ -38,13 +39,19 @@
                                                       .Replace('$$DISABLEPARALLELIZATION$$', '$([MSBuild]::ValueOrDefault('$(TestDisableParallelization)', 'false'))')
                                                       .Replace('$$DISABLEAPPDOMAIN$$', '$([MSBuild]::ValueOrDefault('$(TestDisableAppDomain)', 'false'))')
                                                       .Replace('$$TESTCASEFILTER$$', '$(_testFilter)')
-                                                      .Replace('$$DOTNETHOSTPATH$$', '$(TestHostRootPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))'))</RunSettingsFileContent>
+                                                      .Replace('$$DOTNETHOSTPATH$$', '$(NetCoreAppCurrentTestHostPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))'))</RunSettingsFileContent>
     </PropertyGroup>
 
     <WriteLinesToFile File="$(RunSettingsOutputFilePath)"
                       Lines="$(RunSettingsFileContent)"
                       WriteOnlyWhenDifferent="true"
                       Overwrite="true" />
+    
+    <WriteLinesToFile File="$(VsCodeRunSettingsOutputFilePath)"
+                      Lines="$(RunSettingsFileContent)"
+                      WriteOnlyWhenDifferent="true"
+                      Overwrite="true"
+                      Condition="'$(CreateVsCodeRunSettingsFile)' == 'true'" />
     
     <!-- Set RunSettingsFilePath property which is read by VSTest. -->
     <PropertyGroup>

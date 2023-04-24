@@ -171,7 +171,7 @@ namespace System.Security.Cryptography.Dsa.Tests
                 "41e2345f1f56df2458f426d155b4ba2db6dcd8c8"
                 ).HexToByteArray();
 
-            data = Encoding.ASCII.GetBytes("abc");
+            data = "abc"u8.ToArray();
         }
     }
 }

@@ -131,6 +131,7 @@ double win_Double =34.04;
 ULONG win_ULong = 34;
 BOOL win_Boolean = FALSE;
 unsigned __int64 win_UInt64 = 114;
+__int64 win_Int64 = 114;
 unsigned int win_UInt32 = 4;
 unsigned short win_UInt16 = 12;
 unsigned char win_UInt8 = 9;
@@ -161,7 +162,7 @@ int __cdecl main(int argc, char **argv)
             Fail("One or more eventing Apis failed\\n ");
             return FAIL;
         }
-        Trace("\\n All eventing APIs were fired succesfully \\n");
+        Trace("\\n All eventing APIs were fired successfully \\n");
 #endif //defined(FEATURE_EVENT_TRACE)
 #if defined(TARGET_UNIX)
 
@@ -187,7 +188,7 @@ def main(argv):
 
     required = parser.add_argument_group('required arguments')
     required.add_argument('--man',  type=str, required=True,
-                                    help='full path to manifest containig the description of events')
+                                    help='full path to manifest containing the description of events')
     required.add_argument('--testdir', type=str, required=True,
                                     help='full path to directory where the test assets will be deployed' )
     args, unknown = parser.parse_known_args(argv)

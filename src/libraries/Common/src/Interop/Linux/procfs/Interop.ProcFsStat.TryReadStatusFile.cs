@@ -12,7 +12,7 @@ using System.Text;
 
 internal static partial class Interop
 {
-    internal static partial class procfs
+    internal static partial class @procfs
     {
         internal const string RootPath = "/proc/";
         private const string StatusFileName = "/status";
@@ -30,10 +30,7 @@ internal static partial class Interop
             internal ulong VmPeak;
         }
 
-        internal static string GetStatusFilePathForProcess(int pid)
-        {
-            return RootPath + pid.ToString(CultureInfo.InvariantCulture) + StatusFileName;
-        }
+        internal static string GetStatusFilePathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{StatusFileName}");
 
         internal static bool TryReadStatusFile(int pid, out ParsedStatus result)
         {
@@ -55,88 +52,56 @@ internal static partial class Interop
             }
 
             ParsedStatus results = default(ParsedStatus);
-            ReadOnlySpan<char> statusFileContents = fileContents.AsSpan();
-            int unitSliceLength = -1;
-#if DEBUG
-            int nonUnitSliceLength = -1;
-#endif
-            while (!statusFileContents.IsEmpty)
+            foreach (ReadOnlySpan<char> line in fileContents.AsSpan().EnumerateLines())
             {
-                int startIndex = statusFileContents.IndexOf(':');
+                int startIndex = line.IndexOf(':');
                 if (startIndex == -1)
                 {
-                    // Reached end of file
                     break;
                 }
 
-                ReadOnlySpan<char> title = statusFileContents.Slice(0, startIndex);
-                statusFileContents = statusFileContents.Slice(startIndex + 1);
-                int endIndex = statusFileContents.IndexOf('\n');
-                if (endIndex == -1)
-                {
-                    endIndex = statusFileContents.Length - 1;
-                    unitSliceLength = statusFileContents.Length - 3;
-#if DEBUG
-                    nonUnitSliceLength = statusFileContents.Length;
-#endif
-                }
-                else
-                {
-                    unitSliceLength = endIndex - 3;
-#if DEBUG
-                    nonUnitSliceLength = endIndex;
-#endif
-                }
-
-                ReadOnlySpan<char> value = default;
+                ReadOnlySpan<char> value = line.Slice(startIndex + 1);
                 bool valueParsed = true;
+
+                switch (line.Slice(0, startIndex)) // name
+                {
 #if DEBUG
-                if (title.SequenceEqual("Pid".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, nonUnitSliceLength);
-                    valueParsed = int.TryParse(value, out results.Pid);
-                }
+                    case "Pid":
+                        valueParsed = int.TryParse(value, out results.Pid);
+                        break;
 #endif
-                if (title.SequenceEqual("VmHWM".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out results.VmHWM);
-                }
-                else if (title.SequenceEqual("VmRSS".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out results.VmRSS);
-                }
-                else if (title.SequenceEqual("VmData".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out ulong vmData);
-                    results.VmData += vmData;
-                }
-                else if (title.SequenceEqual("VmSwap".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out results.VmSwap);
-                }
-                else if (title.SequenceEqual("VmSize".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out results.VmSize);
-                }
-                else if (title.SequenceEqual("VmPeak".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out results.VmPeak);
-                }
-                else if (title.SequenceEqual("VmStk".AsSpan()))
-                {
-                    value = statusFileContents.Slice(0, unitSliceLength);
-                    valueParsed = ulong.TryParse(value, out ulong vmStack);
-                    results.VmData += vmStack;
+                    case "VmHWM":
+                        valueParsed = ulong.TryParse(value[..^3], out results.VmHWM);
+                        break;
+
+                    case "VmRSS":
+                        valueParsed = ulong.TryParse(value[..^3], out results.VmRSS);
+                        break;
+
+                    case "VmData":
+                        valueParsed = ulong.TryParse(value[..^3], out ulong vmData);
+                        results.VmData += vmData;
+                        break;
+
+                    case "VmSwap":
+                        valueParsed = ulong.TryParse(value[..^3], out results.VmSwap);
+                        break;
+
+                    case "VmSize":
+                        valueParsed = ulong.TryParse(value[..^3], out results.VmSize);
+                        break;
+
+                    case "VmPeak":
+                        valueParsed = ulong.TryParse(value[..^3], out results.VmPeak);
+                        break;
+
+                    case "VmStk":
+                        valueParsed = ulong.TryParse(value[..^3], out ulong vmStack);
+                        results.VmData += vmStack;
+                        break;
                 }
 
                 Debug.Assert(valueParsed);
-                statusFileContents = statusFileContents.Slice(endIndex + 1);
             }
 
             results.VmData *= 1024;

@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_binop_misc_cs
 {
-    internal class Test
+    public class Test
     {
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             long L1, L2;
             ulong U1, U2;

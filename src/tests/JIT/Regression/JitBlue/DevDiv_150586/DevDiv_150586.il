@@ -6,11 +6,7 @@
 
 .assembly extern mscorlib { }
 
-.assembly extern System.Runtime
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
-  .ver 4:1:0:0
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -19,9 +15,10 @@
 .assembly DevDiv_150586
 {
 }
+.assembly extern xunit.core {}
 
 
-.class private auto ansi beforefieldinit Bug.Program
+.class public auto ansi beforefieldinit Bug.Program
        extends [System.Runtime]System.Object
 {
   .method private hidebysig static string 
@@ -63,9 +60,12 @@
     IL_0025:  ret
   } // end of method Program::RString
 
-  .method private hidebysig static int32 
-          Main(string[] args) cil managed
+  .method public hidebysig static int32 
+          Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       39 (0x27)
     .maxstack  1

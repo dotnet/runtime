@@ -13,7 +13,7 @@ namespace System.Net.NameResolution.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [Collection("NoParallelTests")]
+    [Collection(nameof(DisableParallelization))]
     public class LoggingTest
     {
         [Fact]
@@ -98,10 +98,9 @@ namespace System.Net.NameResolution.Tests
 
             static async Task WaitForErrorEventAsync(ConcurrentQueue<EventWrittenEventArgs> events)
             {
-                const int ErrorEventId = 5;
                 DateTime startTime = DateTime.UtcNow;
 
-                while (!events.Any(e => e.EventId == ErrorEventId))
+                while (!events.Any(e => e.EventName == "ErrorMessage"))
                 {
                     if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
                         throw new TimeoutException("Timeout waiting for error event");

@@ -21,7 +21,7 @@
 
 public:
 
-bool isJitIntrinsic(
+bool isIntrinsic(
           CORINFO_METHOD_HANDLE ftn) override;
 
 uint32_t getMethodAttribs(
@@ -42,8 +42,11 @@ bool getMethodInfo(
 
 CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
-          CORINFO_METHOD_HANDLE calleeHnd,
-          uint32_t* pRestrictions) override;
+          CORINFO_METHOD_HANDLE calleeHnd) override;
+
+void beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd) override;
 
 void reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
@@ -97,10 +100,6 @@ CORINFO_CLASS_HANDLE getDefaultEqualityComparerClass(
 void expandRawHandleIntrinsic(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_GENERICHANDLE_RESULT* pResult) override;
-
-CorInfoIntrinsics getIntrinsicID(
-          CORINFO_METHOD_HANDLE method,
-          bool* pMustExpand) override;
 
 bool isIntrinsicType(
           CORINFO_CLASS_HANDLE classHnd) override;
@@ -170,15 +169,20 @@ bool isValidStringRef(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK) override;
 
-const char16_t* getStringLiteral(
+int getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
-          int* length) override;
+          char16_t* buffer,
+          int bufferSize,
+          int startIndex) override;
+
+size_t printObjectDescription(
+          CORINFO_OBJECT_HANDLE handle,
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize) override;
 
 CorInfoType asCorInfoType(
-          CORINFO_CLASS_HANDLE cls) override;
-
-const char* getClassName(
           CORINFO_CLASS_HANDLE cls) override;
 
 const char* getClassNameFromMetadata(
@@ -189,13 +193,11 @@ CORINFO_CLASS_HANDLE getTypeInstantiationArgument(
           CORINFO_CLASS_HANDLE cls,
           unsigned index) override;
 
-int appendClassName(
-          char16_t** ppBuf,
-          int* pnBufLen,
+size_t printClassName(
           CORINFO_CLASS_HANDLE cls,
-          bool fNamespace,
-          bool fFullInst,
-          bool fAssembly) override;
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize) override;
 
 bool isValueClass(
           CORINFO_CLASS_HANDLE cls) override;
@@ -205,9 +207,6 @@ CorInfoInlineTypeCheck canInlineTypeCheck(
           CorInfoInlineTypeCheckSource source) override;
 
 uint32_t getClassAttribs(
-          CORINFO_CLASS_HANDLE cls) override;
-
-bool isStructRequiringStackAllocRetBuf(
           CORINFO_CLASS_HANDLE cls) override;
 
 CORINFO_MODULE_HANDLE getClassModule(
@@ -229,6 +228,16 @@ size_t getClassModuleIdForStatics(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_MODULE_HANDLE* pModule,
           void** ppIndirection) override;
+
+bool getIsClassInitedFlagAddress(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CONST_LOOKUP* addr,
+          int* offset) override;
+
+bool getStaticBaseAddress(
+          CORINFO_CLASS_HANDLE cls,
+          bool isGc,
+          CORINFO_CONST_LOOKUP* addr) override;
 
 unsigned getClassSize(
           CORINFO_CLASS_HANDLE cls) override;
@@ -283,6 +292,20 @@ CorInfoHelpFunc getBoxHelper(
 CorInfoHelpFunc getUnBoxHelper(
           CORINFO_CLASS_HANDLE cls) override;
 
+CORINFO_OBJECT_HANDLE getRuntimeTypePointer(
+          CORINFO_CLASS_HANDLE cls) override;
+
+bool isObjectImmutable(
+          CORINFO_OBJECT_HANDLE objPtr) override;
+
+bool getStringChar(
+          CORINFO_OBJECT_HANDLE strObj,
+          int index,
+          uint16_t* value) override;
+
+CORINFO_CLASS_HANDLE getObjectType(
+          CORINFO_OBJECT_HANDLE objPtr) override;
+
 bool getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
@@ -291,11 +314,9 @@ bool getReadyToRunHelper(
 
 void getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
+          mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
           CORINFO_LOOKUP* pLookup) override;
-
-const char* getHelperName(
-          CorInfoHelpFunc helpFunc) override;
 
 CorInfoInitClassResult initClass(
           CORINFO_FIELD_HANDLE field,
@@ -338,6 +359,10 @@ bool isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls1,
           CORINFO_CLASS_HANDLE cls2) override;
 
+TypeCompareState isEnum(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CLASS_HANDLE* underlyingType) override;
+
 CORINFO_CLASS_HANDLE getParentType(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -354,6 +379,9 @@ bool isSDArray(
 unsigned getArrayRank(
           CORINFO_CLASS_HANDLE cls) override;
 
+CorInfoArrayIntrinsic getArrayIntrinsicID(
+          CORINFO_METHOD_HANDLE ftn) override;
+
 void* getArrayInitializationData(
           CORINFO_FIELD_HANDLE field,
           uint32_t size) override;
@@ -363,9 +391,11 @@ CorInfoIsAccessAllowedResult canAccessClass(
           CORINFO_METHOD_HANDLE callerHandle,
           CORINFO_HELPER_DESC* pAccessHelper) override;
 
-const char* getFieldName(
-          CORINFO_FIELD_HANDLE ftn,
-          const char** moduleName) override;
+size_t printFieldName(
+          CORINFO_FIELD_HANDLE field,
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize) override;
 
 CORINFO_CLASS_HANDLE getFieldClass(
           CORINFO_FIELD_HANDLE field) override;
@@ -384,14 +414,23 @@ void getFieldInfo(
           CORINFO_ACCESS_FLAGS flags,
           CORINFO_FIELD_INFO* pResult) override;
 
+uint32_t getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field) override;
+
+void getThreadLocalStaticBlocksInfo(
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) override;
+
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
+
+int getArrayOrStringLength(
+          CORINFO_OBJECT_HANDLE objHnd) override;
 
 void getBoundaries(
           CORINFO_METHOD_HANDLE ftn,
           unsigned int* cILOffsets,
           uint32_t** pILOffsets,
-          ICorDebugInfo::BoundaryTypes* implictBoundaries) override;
+          ICorDebugInfo::BoundaryTypes* implicitBoundaries) override;
 
 void setBoundaries(
           CORINFO_METHOD_HANDLE ftn,
@@ -409,6 +448,12 @@ void setVars(
           uint32_t cVars,
           ICorDebugInfo::NativeVarInfo* vars) override;
 
+void reportRichMappings(
+          ICorDebugInfo::InlineTreeNode* inlineTreeNodes,
+          uint32_t numInlineTreeNodes,
+          ICorDebugInfo::RichOffsetMapping* mappings,
+          uint32_t numMappings) override;
+
 void* allocateArray(
           size_t cBytes) override;
 
@@ -422,6 +467,11 @@ CorInfoTypeWithMod getArgType(
           CORINFO_SIG_INFO* sig,
           CORINFO_ARG_LIST_HANDLE args,
           CORINFO_CLASS_HANDLE* vcTypeRet) override;
+
+int getExactClasses(
+          CORINFO_CLASS_HANDLE baseType,
+          int maxExactClasses,
+          CORINFO_CLASS_HANDLE* exactClsRet) override;
 
 CORINFO_CLASS_HANDLE getArgClass(
           CORINFO_SIG_INFO* sig,
@@ -440,9 +490,6 @@ uint32_t GetErrorMessage(
 int FilterException(
           struct _EXCEPTION_POINTERS* pExceptionPointers) override;
 
-void HandleException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers) override;
-
 void ThrowExceptionForJitResult(
           JITINTERFACE_HRESULT result) override;
 
@@ -450,6 +497,10 @@ void ThrowExceptionForHelper(
           const CORINFO_HELPER_DESC* throwHelper) override;
 
 bool runWithErrorTrap(
+          ICorJitInfo::errorTrapFunction function,
+          void* parameter) override;
+
+bool runWithSPMIErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter) override;
 
@@ -461,9 +512,11 @@ const char16_t* getJitTimeLogFilename() override;
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
 
-const char* getMethodName(
+size_t printMethodName(
           CORINFO_METHOD_HANDLE ftn,
-          const char** moduleName) override;
+          char* buffer,
+          size_t bufferSize,
+          size_t* pRequiredBufferSize) override;
 
 const char* getMethodNameFromMetadata(
           CORINFO_METHOD_HANDLE ftn,
@@ -483,6 +536,12 @@ size_t findNameOfToken(
 bool getSystemVAmd64PassStructInRegisterDescriptor(
           CORINFO_CLASS_HANDLE structHnd,
           SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr) override;
+
+uint32_t getLoongArch64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd) override;
+
+uint32_t getRISCV64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd) override;
 
 uint32_t getThreadTLSIndex(
           void** ppIndirection) override;
@@ -504,6 +563,7 @@ void getFunctionEntryPoint(
 
 void getFunctionFixedEntryPoint(
           CORINFO_METHOD_HANDLE ftn,
+          bool isUnsafeFunctionPointer,
           CORINFO_CONST_LOOKUP* pResult) override;
 
 void* getMethodSync(
@@ -576,9 +636,12 @@ unsigned getClassDomainID(
           CORINFO_CLASS_HANDLE cls,
           void** ppIndirection) override;
 
-void* getFieldAddress(
+bool getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
-          void** ppIndirection) override;
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset,
+          bool ignoreMovableObjects) override;
 
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
@@ -603,14 +666,6 @@ uint32_t getFieldThreadLocalStoreID(
           CORINFO_FIELD_HANDLE field,
           void** ppIndirection) override;
 
-void setOverride(
-          ICorDynamicInfo* pOverride,
-          CORINFO_METHOD_HANDLE currentMethod) override;
-
-void addActiveDependency(
-          CORINFO_MODULE_HANDLE moduleFrom,
-          CORINFO_MODULE_HANDLE moduleTo) override;
-
 CORINFO_METHOD_HANDLE GetDelegateCtor(
           CORINFO_METHOD_HANDLE methHnd,
           CORINFO_CLASS_HANDLE clsHnd,
@@ -634,15 +689,11 @@ bool notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
           bool supportEnabled) override;
 
+void updateEntryPointForTailCall(
+          CORINFO_CONST_LOOKUP* entryPoint) override;
+
 void allocMem(
-          uint32_t hotCodeSize,
-          uint32_t coldCodeSize,
-          uint32_t roDataSize,
-          uint32_t xcptnsCount,
-          CorJitAllocMemFlag flag,
-          void** hotCodeBlock,
-          void** coldCodeBlock,
-          void** roDataBlock) override;
+          AllocMemArgs* pArgs) override;
 
 void reserveUnwindInfo(
           bool isFunclet,
@@ -685,7 +736,8 @@ JITINTERFACE_HRESULT getPgoInstrumentationResults(
           CORINFO_METHOD_HANDLE ftnHnd,
           ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
-          uint8_t** pInstrumentationData) override;
+          uint8_t** pInstrumentationData,
+          ICorJitInfo::PgoSource* pgoSource) override;
 
 JITINTERFACE_HRESULT allocPgoInstrumentationBySchema(
           CORINFO_METHOD_HANDLE ftnHnd,
@@ -700,6 +752,7 @@ void recordCallSite(
 
 void recordRelocation(
           void* location,
+          void* locationRW,
           void* target,
           uint16_t fRelocType,
           uint16_t slotNum,

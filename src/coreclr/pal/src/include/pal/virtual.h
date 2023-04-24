@@ -34,13 +34,6 @@ typedef struct _CMI {
 
     DWORD  accessProtection;    /* Initial allocation access protection. */
     DWORD  allocationType;      /* Initial allocation type. */
-
-    BYTE * pAllocState;         /* Individual allocation type tracking for each */
-                                /* page in the region. */
-
-    BYTE * pProtectionState;    /* Individual allocation type tracking for each */
-                                /* page in the region. */
-
 } CMI, * PCMI;
 
 enum VIRTUAL_CONSTANTS
@@ -145,6 +138,21 @@ public:
     --*/
     void *AllocateMemoryWithinRange(const void *beginAddress, const void *endAddress, SIZE_T allocationSize);
 
+    /*++
+    Function:
+        GetPreferredRange
+
+        Gets the preferred range, which is the range that the allocator will try to put code into.
+        When this range is close to libcoreclr, it will additionally include libcoreclr's memory
+        range, the purpose being that this can be used to check if we expect code to be close enough
+        to libcoreclr to use IP-relative addressing.
+    --*/
+    void GetPreferredRange(void **start, void **end)
+    {
+        *start = m_preferredRangeStart;
+        *end = m_preferredRangeEnd;
+    }
+
 private:
     /*++
     Function:
@@ -165,31 +173,42 @@ private:
     int32_t GenerateRandomStartOffset();
 
 private:
+
     // There does not seem to be an easy way find the size of a library on Unix.
-    // So this constant represents an approximation of the libcoreclr size (on debug build)
+    // So this constant represents an approximation of the libcoreclr size
     // that can be used to calculate an approximate location of the memory that
     // is in 2GB range from the coreclr library. In addition, having precise size of libcoreclr
     // is not necessary for the calculations.
-    static const int32_t CoreClrLibrarySize = 100 * 1024 * 1024;
+    static const int32_t CoreClrLibrarySize = 16 * 1024 * 1024;
 
     // This constant represent the max size of the virtual memory that this allocator
     // will try to reserve during initialization. We want all JIT-ed code and the
-    // entire libcoreclr to be located in a 2GB range.
+    // entire libcoreclr to be located in a 2GB range on x86
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // It seems to be more difficult to reserve a 2Gb chunk on arm so we'll try smaller one
+    static const int32_t MaxExecutableMemorySize = 1024 * 1024 * 1024;
+#else
     static const int32_t MaxExecutableMemorySize = 0x7FFF0000;
+#endif
+
     static const int32_t MaxExecutableMemorySizeNearCoreClr = MaxExecutableMemorySize - CoreClrLibrarySize;
 
     // Start address of the reserved virtual address space
-    void* m_startAddress;
+    void* m_startAddress = NULL;
 
     // Next available address in the reserved address space
-    void* m_nextFreeAddress;
+    void* m_nextFreeAddress = NULL;
 
     // Total size of the virtual memory that the allocator has been able to
     // reserve during its initialization.
-    int32_t m_totalSizeOfReservedMemory;
+    int32_t m_totalSizeOfReservedMemory = 0;
 
     // Remaining size of the reserved virtual memory that can be used to satisfy allocation requests.
-    int32_t m_remainingReservedMemory;
+    int32_t m_remainingReservedMemory = 0;
+
+    // Preferred range to report back to EE for where the allocator will put code.
+    void* m_preferredRangeStart = NULL;
+    void* m_preferredRangeEnd = NULL;
 };
 
 #endif // __cplusplus
@@ -198,7 +217,7 @@ private:
 Function :
     ReserveMemoryFromExecutableAllocator
 
-    This function is used to reserve a region of virual memory (not commited)
+    This function is used to reserve a region of virual memory (not committed)
     that is located close to the coreclr library. The memory comes from the virtual
     address range that is managed by ExecutableMemoryAllocator.
 --*/

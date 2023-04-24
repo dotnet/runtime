@@ -8,25 +8,22 @@
 #endif
 
 #include "allocacheck.h" // for alloca
+#include "jitstd/algorithm.h"
 
 // Flowgraph Check and Dump Support
 
 #ifdef DEBUG
 void Compiler::fgPrintEdgeWeights()
 {
-    BasicBlock* bSrc;
-    BasicBlock* bDst;
-    flowList*   edge;
-
     // Print out all of the edge weights
-    for (bDst = fgFirstBB; bDst != nullptr; bDst = bDst->bbNext)
+    for (BasicBlock* const bDst : Blocks())
     {
         if (bDst->bbPreds != nullptr)
         {
             printf("    Edge weights into " FMT_BB " :", bDst->bbNum);
-            for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
+            for (FlowEdge* const edge : bDst->PredEdges())
             {
-                bSrc = edge->getBlock();
+                BasicBlock* bSrc = edge->getSourceBlock();
                 // This is the control flow edge (bSrc -> bDst)
 
                 printf(FMT_BB " ", bSrc->bbNum);
@@ -51,7 +48,7 @@ void Compiler::fgPrintEdgeWeights()
                     }
                 }
                 printf(")");
-                if (edge->flNext != nullptr)
+                if (edge->getNextPredEdge() != nullptr)
                 {
                     printf(", ");
                 }
@@ -108,6 +105,7 @@ void Compiler::fgDebugCheckUpdate()
             {
                 case BBJ_CALLFINALLY:
                 case BBJ_EHFINALLYRET:
+                case BBJ_EHFAULTRET:
                 case BBJ_EHFILTERRET:
                 case BBJ_RETURN:
                 /* for BBJ_ALWAYS is probably just a GOTO, but will have to be treated */
@@ -221,9 +219,11 @@ struct escapeMapping_t
 // clang-format off
 static escapeMapping_t s_EscapeFileMapping[] =
 {
-    {':', "="},
-    {'<', "["},
-    {'>', "]"},
+    {' ', "_"},
+    {':', "_"},
+    {',', "_"},
+    {'<', "~lt~"},
+    {'>', "~gt~"},
     {';', "~semi~"},
     {'|', "~bar~"},
     {'&', "~amp~"},
@@ -248,12 +248,12 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
     unsigned    lengthOut;
     unsigned    index;
     bool        match;
-    bool        subsitutionRequired;
+    bool        substitutionRequired;
     const char* pChar;
 
-    lengthOut           = 1;
-    subsitutionRequired = false;
-    pChar               = nameIn;
+    lengthOut            = 1;
+    substitutionRequired = false;
+    pChar                = nameIn;
     while (*pChar != '\0')
     {
         match = false;
@@ -269,7 +269,7 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
         }
         if (match)
         {
-            subsitutionRequired = true;
+            substitutionRequired = true;
             lengthOut += (unsigned)strlen(map[index].sub);
         }
         else
@@ -279,7 +279,7 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
         pChar++;
     }
 
-    if (subsitutionRequired)
+    if (substitutionRequired)
     {
         char* newName = getAllocator(CMK_DebugOnly).allocate<char>(lengthOut);
         char* pDest;
@@ -335,15 +335,125 @@ static void fprintfDouble(FILE* fgxFile, double value)
 }
 
 //------------------------------------------------------------------------
+// fgDumpTree: Dump a tree into the DOT file. Used to provide a very short, one-line,
+// visualization of a BBJ_COND block.
+//
+// Arguments:
+//    fgxFile - The file we are writing to.
+//    tree    - The operand to dump.
+//
+// static
+void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
+{
+    if (tree->OperIsCompare())
+    {
+        // Want to generate something like:
+        //   V01 <= 7
+        //   V01 > V02
+
+        const char* opName = GenTree::OpName(tree->OperGet());
+        // Make it look nicer if we can
+        switch (tree->OperGet())
+        {
+            case GT_EQ:
+                opName = "==";
+                break;
+            case GT_NE:
+                opName = "!=";
+                break;
+            case GT_LT:
+                opName = "<";
+                break;
+            case GT_LE:
+                opName = "<=";
+                break;
+            case GT_GE:
+                opName = ">=";
+                break;
+            case GT_GT:
+                opName = ">";
+                break;
+            default:
+                break;
+        }
+
+        GenTree* const lhs = tree->AsOp()->gtOp1;
+        GenTree* const rhs = tree->AsOp()->gtOp2;
+
+        fgDumpTree(fgxFile, lhs);
+        fprintf(fgxFile, " %s ", opName);
+        fgDumpTree(fgxFile, rhs);
+    }
+    else if (tree->IsCnsIntOrI())
+    {
+        fprintf(fgxFile, "%d", tree->AsIntCon()->gtIconVal);
+    }
+    else if (tree->IsCnsFltOrDbl())
+    {
+        fprintf(fgxFile, "%g", tree->AsDblCon()->DconValue());
+    }
+    else if (tree->IsLocal())
+    {
+        fprintf(fgxFile, "V%02u", tree->AsLclVarCommon()->GetLclNum());
+    }
+    else if (tree->OperIs(GT_ARR_LENGTH))
+    {
+        GenTreeArrLen* arrLen = tree->AsArrLen();
+        GenTree*       arr    = arrLen->ArrRef();
+        fgDumpTree(fgxFile, arr);
+        fprintf(fgxFile, ".Length");
+    }
+    else if (tree->OperIs(GT_MDARR_LENGTH))
+    {
+        GenTreeMDArr* arrOp = tree->AsMDArr();
+        GenTree*      arr   = arrOp->ArrRef();
+        unsigned      dim   = arrOp->Dim();
+        fgDumpTree(fgxFile, arr);
+        fprintf(fgxFile, ".GetLength(%u)", dim);
+    }
+    else if (tree->OperIs(GT_MDARR_LOWER_BOUND))
+    {
+        GenTreeMDArr* arrOp = tree->AsMDArr();
+        GenTree*      arr   = arrOp->ArrRef();
+        unsigned      dim   = arrOp->Dim();
+        fgDumpTree(fgxFile, arr);
+        fprintf(fgxFile, ".GetLowerBound(%u)", dim);
+    }
+    else
+    {
+        fprintf(fgxFile, "[%s]", GenTree::OpName(tree->OperGet()));
+    }
+}
+
+#ifdef DEBUG
+namespace
+{
+const char* ConvertToUtf8(LPCWSTR wideString, CompAllocator& allocator)
+{
+    int utf8Len = WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, nullptr, 0, nullptr, nullptr);
+    if (utf8Len == 0)
+        return nullptr;
+
+    char* alloc = (char*)allocator.allocate<char>(utf8Len);
+    if (0 == WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, alloc, utf8Len, nullptr, nullptr))
+        return nullptr;
+
+    return alloc;
+}
+}
+#endif
+
+//------------------------------------------------------------------------
 // fgOpenFlowGraphFile: Open a file to dump either the xml or dot format flow graph
 //
 // Arguments:
 //    wbDontClose - A boolean out argument that indicates whether the caller should close the file
 //    phase       - A phase identifier to indicate which phase is associated with the dump
+//    pos         - Are we being called to dump the flow graph pre-phase or post-phase?
 //    type        - A (wide) string indicating the type of dump, "dot" or "xml"
 //
 // Notes:
-// The filename to use to write the data comes from the COMPlus_JitDumpFgFile or COMPlus_NgenDumpFgFile
+// The filename to use to write the data comes from the DOTNET_JitDumpFgFile or DOTNET_NgenDumpFgFile
 // configuration. If unset, use "default". The "type" argument is used as a filename extension,
 // e.g., "default.dot".
 //
@@ -359,16 +469,16 @@ static void fprintfDouble(FILE* fgxFile, double value)
 // Return Value:
 //    Opens a file to which a flowgraph can be dumped, whose name is based on the current
 //    config vales.
-
-FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR type)
+//
+FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePosition pos, const char* type)
 {
     FILE*       fgxFile;
-    LPCWSTR     phasePattern = W("*"); // default (used in Release) is dump all phases
-    bool        dumpFunction = true;   // default (used in Release) is always dump
-    LPCWSTR     filename     = nullptr;
-    LPCWSTR     pathname     = nullptr;
+    const char* prePhasePattern  = nullptr; // pre-phase:  default (used in Release) is no pre-phase dump
+    const char* postPhasePattern = "*";     // post-phase: default (used in Release) is dump all phases
+    bool        dumpFunction     = true;    // default (used in Release) is always dump
+    const char* filename         = nullptr;
+    const char* pathname         = nullptr;
     const char* escapedString;
-    bool        createDuplicateFgxFiles = true;
 
     if (fgBBcount <= 1)
     {
@@ -376,22 +486,13 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
     }
 
 #ifdef DEBUG
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
-    {
-        dumpFunction =
-            JitConfig.NgenDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
-        filename = JitConfig.NgenDumpFgFile();
-        pathname = JitConfig.NgenDumpFgDir();
-    }
-    else
-    {
-        dumpFunction =
-            JitConfig.JitDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
-        filename = JitConfig.JitDumpFgFile();
-        pathname = JitConfig.JitDumpFgDir();
-    }
+    dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
 
-    phasePattern = JitConfig.JitDumpFgPhase();
+    CompAllocator allocator = getAllocatorDebugOnly();
+    filename                = ConvertToUtf8(JitConfig.JitDumpFgFile(), allocator);
+    pathname                = ConvertToUtf8(JitConfig.JitDumpFgDir(), allocator);
+    prePhasePattern         = ConvertToUtf8(JitConfig.JitDumpFgPrePhase(), allocator);
+    postPhasePattern        = ConvertToUtf8(JitConfig.JitDumpFgPhase(), allocator);
 #endif // DEBUG
 
     if (!dumpFunction)
@@ -399,32 +500,58 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
         return nullptr;
     }
 
-    LPCWSTR phaseName = PhaseShortNames[phase];
-    if (phasePattern == nullptr)
+    const char* phaseName = PhaseEnums[phase] + strlen("PHASE_");
+
+    if (pos == PhasePosition::PrePhase)
     {
-        if (phase != PHASE_DETERMINE_FIRST_COLD_BLOCK)
+        if (prePhasePattern == nullptr)
         {
+            // If pre-phase pattern is not specified, then don't dump for any pre-phase.
             return nullptr;
         }
-    }
-    else if (*phasePattern != W('*'))
-    {
-        if (wcsstr(phasePattern, phaseName) == nullptr)
+        else if (*prePhasePattern != '*')
         {
-            return nullptr;
+            if (strstr(prePhasePattern, phaseName) == nullptr)
+            {
+                return nullptr;
+            }
+        }
+    }
+    else
+    {
+        assert(pos == PhasePosition::PostPhase);
+        if (postPhasePattern == nullptr)
+        {
+            // There's no post-phase pattern specified. If there is a pre-phase pattern specified, then that will
+            // be the only set of phases dumped. If neither are specified, then post-phase dump after
+            // PHASE_DETERMINE_FIRST_COLD_BLOCK.
+            if (prePhasePattern != nullptr)
+            {
+                return nullptr;
+            }
+            if (phase != PHASE_DETERMINE_FIRST_COLD_BLOCK)
+            {
+                return nullptr;
+            }
+        }
+        else if (*postPhasePattern != '*')
+        {
+            if (strstr(postPhasePattern, phaseName) == nullptr)
+            {
+                return nullptr;
+            }
         }
     }
 
     if (filename == nullptr)
     {
-        filename = W("default");
+        filename = "default";
     }
 
-    if (wcscmp(filename, W("profiled")) == 0)
+    if (strcmp(filename, "profiled") == 0)
     {
         if (fgFirstBB->hasProfileWeight())
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -432,12 +559,10 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
             return nullptr;
         }
     }
-    if (wcscmp(filename, W("hot")) == 0)
+    if (strcmp(filename, "hot") == 0)
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_HOT)
-
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -445,11 +570,10 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
             return nullptr;
         }
     }
-    else if (wcscmp(filename, W("cold")) == 0)
+    else if (strcmp(filename, "cold") == 0)
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_COLD)
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -457,11 +581,10 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
             return nullptr;
         }
     }
-    else if (wcscmp(filename, W("jit")) == 0)
+    else if (strcmp(filename, "jit") == 0)
     {
         if (info.compMethodInfo->regionKind == CORINFO_REGION_JIT)
         {
-            createDuplicateFgxFiles = true;
             goto ONE_FILE_PER_METHOD;
         }
         else
@@ -469,97 +592,114 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
             return nullptr;
         }
     }
-    else if (wcscmp(filename, W("all")) == 0)
+    else if (strcmp(filename, "all") == 0)
     {
-        createDuplicateFgxFiles = true;
 
     ONE_FILE_PER_METHOD:;
 
-        escapedString = fgProcessEscapes(info.compFullName, s_EscapeFileMapping);
+#define FILENAME_PATTERN "%s-%s-%s-%s.%s"
+#define FILENAME_PATTERN_WITH_NUMBER "%s-%s-%s-%s~%d.%s"
 
-        const char* tierName = compGetTieringName(true);
-        size_t      wCharCount =
-            strlen(escapedString) + wcslen(phaseName) + 1 + strlen("~999") + wcslen(type) + strlen(tierName) + 1;
-        if (pathname != nullptr)
+        const size_t MaxFileNameLength = MAX_PATH_FNAME - 20 /* give us some extra buffer */;
+
+        escapedString           = fgProcessEscapes(info.compFullName, s_EscapeFileMapping);
+        size_t escapedStringLen = strlen(escapedString);
+
+        static const char* phasePositionStrings[] = {"pre", "post"};
+        assert((unsigned)pos < ArrLen(phasePositionStrings));
+        const char*  phasePositionString    = phasePositionStrings[(unsigned)pos];
+        const size_t phasePositionStringLen = strlen(phasePositionString);
+        const char*  tierName               = compGetTieringName(true);
+        size_t       charCount = escapedStringLen + 1 + strlen(phasePositionString) + 1 + strlen(phaseName) + 1 +
+                           strlen(tierName) + strlen("~999") + 1 + strlen(type) + 1;
+
+        if (charCount > MaxFileNameLength)
         {
-            wCharCount += wcslen(pathname) + 1;
+            // Crop the escapedString.
+            charCount -= escapedStringLen;
+            size_t newEscapedStringLen = MaxFileNameLength - charCount;
+            char*  newEscapedString    = getAllocator(CMK_DebugOnly).allocate<char>(newEscapedStringLen + 1);
+            strncpy_s(newEscapedString, newEscapedStringLen + 1, escapedString, newEscapedStringLen);
+            newEscapedString[newEscapedStringLen] = '\0';
+            escapedString                         = newEscapedString;
+            escapedStringLen                      = newEscapedStringLen;
+            charCount += escapedStringLen;
         }
-        filename = (LPCWSTR)alloca(wCharCount * sizeof(WCHAR));
 
         if (pathname != nullptr)
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%S-%s-%S.%s"), pathname, escapedString, phaseName, tierName,
-                       type);
+            charCount += strlen(pathname) + 1;
+        }
+        filename = (const char*)_alloca(charCount * sizeof(char));
+
+        if (pathname != nullptr)
+        {
+            sprintf_s((char*)filename, charCount, "%s\\" FILENAME_PATTERN, pathname, escapedString, phasePositionString,
+                      phaseName, tierName, type);
         }
         else
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%S.%s"), escapedString, type);
+            sprintf_s((char*)filename, charCount, FILENAME_PATTERN, escapedString, phasePositionString, phaseName,
+                      tierName, type);
         }
-        fgxFile = _wfopen(filename, W("r")); // Check if this file already exists
-        if (fgxFile != nullptr)
+        fgxFile = fopen(filename, "wx"); // Open the file for writing only only if it doesn't already exist
+        if (fgxFile == nullptr)
         {
-            // For Generic methods we will have both hot and cold versions
-            if (createDuplicateFgxFiles == false)
-            {
-                fclose(fgxFile);
-                return nullptr;
-            }
-            // Yes, this filename already exists, so create a different one by appending ~2, ~3, etc...
+            // This filename already exists, so create a different one by appending ~2, ~3, etc...
             for (int i = 2; i < 1000; i++)
             {
-                fclose(fgxFile);
                 if (pathname != nullptr)
                 {
-                    swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%S~%d.%s"), pathname, escapedString, i, type);
+                    sprintf_s((char*)filename, charCount, "%s\\" FILENAME_PATTERN_WITH_NUMBER, pathname, escapedString,
+                              phasePositionString, phaseName, tierName, i, type);
                 }
                 else
                 {
-                    swprintf_s((LPWSTR)filename, wCharCount, W("%S~%d.%s"), escapedString, i, type);
+                    sprintf_s((char*)filename, charCount, FILENAME_PATTERN_WITH_NUMBER, escapedString,
+                              phasePositionString, phaseName, tierName, i, type);
                 }
-                fgxFile = _wfopen(filename, W("r")); // Check if this file exists
-                if (fgxFile == nullptr)
+                fgxFile = fopen(filename, "wx"); // Open the file for writing only only if it doesn't already exist
+                if (fgxFile != nullptr)
                 {
                     break;
                 }
             }
             // If we have already created 1000 files with this name then just fail
-            if (fgxFile != nullptr)
+            if (fgxFile == nullptr)
             {
-                fclose(fgxFile);
                 return nullptr;
             }
         }
-        fgxFile      = _wfopen(filename, W("a+"));
         *wbDontClose = false;
     }
-    else if (wcscmp(filename, W("stdout")) == 0)
+    else if (strcmp(filename, "stdout") == 0)
     {
         fgxFile      = jitstdout;
         *wbDontClose = true;
     }
-    else if (wcscmp(filename, W("stderr")) == 0)
+    else if (strcmp(filename, "stderr") == 0)
     {
         fgxFile      = stderr;
         *wbDontClose = true;
     }
     else
     {
-        LPCWSTR origFilename = filename;
-        size_t  wCharCount   = wcslen(origFilename) + wcslen(type) + 2;
+        const char* origFilename = filename;
+        size_t      charCount    = strlen(origFilename) + strlen(type) + 2;
         if (pathname != nullptr)
         {
-            wCharCount += wcslen(pathname) + 1;
+            charCount += strlen(pathname) + 1;
         }
-        filename = (LPCWSTR)alloca(wCharCount * sizeof(WCHAR));
+        filename = (char*)_alloca(charCount * sizeof(char));
         if (pathname != nullptr)
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%s\\%s.%s"), pathname, origFilename, type);
+            sprintf_s((char*)filename, charCount, "%s\\%s.%s", pathname, origFilename, type);
         }
         else
         {
-            swprintf_s((LPWSTR)filename, wCharCount, W("%s.%s"), origFilename, type);
+            sprintf_s((char*)filename, charCount, "%s.%s", origFilename, type);
         }
-        fgxFile      = _wfopen(filename, W("a+"));
+        fgxFile      = fopen(filename, "a+");
         *wbDontClose = false;
     }
 
@@ -572,6 +712,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 // Arguments:
 //    phase       - A phase identifier to indicate which phase is associated with the dump,
 //                  i.e. which phase has just completed.
+//    pos         - Are we being called to dump the flow graph pre-phase or post-phase?
 //
 // Return Value:
 //    True iff a flowgraph has been dumped.
@@ -591,47 +732,62 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, LPCWSTR typ
 //    MSAGL has also been open-sourced to https://github.com/Microsoft/automatic-graph-layout.
 //
 //    Here are the config values that control it:
-//      COMPlus_JitDumpFg              A string (ala the COMPlus_JitDump string) indicating what methods to dump
+//      DOTNET_JitDumpFg              A string (ala the DOTNET_JitDump string) indicating what methods to dump
 //                                     flowgraphs for.
-//      COMPlus_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
-//      COMPlus_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
+//      DOTNET_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
+//      DOTNET_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
 //                                     Note that the new graphs will be appended to this file if it already exists.
-//      COMPlus_NgenDumpFg             Same as COMPlus_JitDumpFg, but for ngen compiles.
-//      COMPlus_NgenDumpFgDir          Same as COMPlus_JitDumpFgDir, but for ngen compiles.
-//      COMPlus_NgenDumpFgFile         Same as COMPlus_JitDumpFgFile, but for ngen compiles.
-//      COMPlus_JitDumpFgPhase         Phase(s) after which to dump the flowgraph.
+//      DOTNET_JitDumpFgPhase         Phase(s) after which to dump the flowgraph.
 //                                     Set to the short name of a phase to see the flowgraph after that phase.
 //                                     Leave unset to dump after COLD-BLK (determine first cold block) or set to *
 //                                     for all phases.
-//      COMPlus_JitDumpFgDot           0 for xml format, non-zero for dot format. (Default is dot format.)
-//      COMPlus_JitDumpFgEH            (dot only) 0 for no exception-handling information; non-zero to include
+//      DOTNET_JitDumpFgPrePhase      Phase(s) before which to dump the flowgraph.
+//      DOTNET_JitDumpFgDot           0 for xml format, non-zero for dot format. (Default is dot format.)
+//      DOTNET_JitDumpFgEH            (dot only) 0 for no exception-handling information; non-zero to include
 //                                     exception-handling regions.
-//      COMPlus_JitDumpFgLoops         (dot only) 0 for no loop information; non-zero to include loop regions.
-//      COMPlus_JitDumpFgConstrained   (dot only) 0 == don't constrain to mostly linear layout; non-zero == force
+//      DOTNET_JitDumpFgLoops         (dot only) 0 for no loop information; non-zero to include loop regions.
+//      DOTNET_JitDumpFgConstrained   (dot only) 0 == don't constrain to mostly linear layout; non-zero == force
 //                                     mostly lexical block linear layout.
+//      DOTNET_JitDumpFgBlockId       Display blocks with block ID, not just bbNum.
 //
-bool Compiler::fgDumpFlowGraph(Phases phase)
+// Example:
+//
+// If you want to dump just before and after a single phase, say loop cloning, use:
+//      set DOTNET_JitDumpFgPhase=LP-CLONE
+//      set DOTNET_JitDumpFgPrePhase=LP-CLONE
+//
+bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
 {
     bool result    = false;
     bool dontClose = false;
 
 #ifdef DEBUG
     const bool createDotFile = JitConfig.JitDumpFgDot() != 0;
-    const bool includeEH     = JitConfig.JitDumpFgEH() != 0;
-    const bool includeLoops  = JitConfig.JitDumpFgLoops() != 0;
-    const bool constrained   = JitConfig.JitDumpFgConstrained() != 0;
+    const bool includeEH     = (JitConfig.JitDumpFgEH() != 0) && !compIsForInlining();
+    // The loop table is not well maintained after the optimization phases, but there is no single point at which
+    // it is declared invalid. For now, refuse to add loop information starting at the rationalize phase, to
+    // avoid asserts.
+    const bool includeLoops = (JitConfig.JitDumpFgLoops() != 0) && !compIsForInlining() && (phase < PHASE_RATIONALIZE);
+    const bool constrained  = JitConfig.JitDumpFgConstrained() != 0;
+    const bool useBlockId   = JitConfig.JitDumpFgBlockID() != 0;
+    const bool displayBlockFlags = JitConfig.JitDumpFgBlockFlags() != 0;
 #else  // !DEBUG
-    const bool createDotFile = true;
-    const bool includeEH     = false;
-    const bool includeLoops  = false;
-    const bool constrained   = true;
+    const bool             createDotFile     = true;
+    const bool             includeEH         = false;
+    const bool             includeLoops      = false;
+    const bool             constrained       = true;
+    const bool             useBlockId        = false;
+    const bool             displayBlockFlags = false;
 #endif // !DEBUG
 
-    FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, createDotFile ? W("dot") : W("fgx"));
+    FILE* fgxFile = fgOpenFlowGraphFile(&dontClose, phase, pos, createDotFile ? "dot" : "fgx");
     if (fgxFile == nullptr)
     {
         return false;
     }
+
+    JITDUMP("Writing out flow graph %s phase %s\n", (pos == PhasePosition::PrePhase) ? "before" : "after",
+            PhaseNames[phase]);
 
     bool        validWeights  = fgHaveValidEdgeWeights;
     double      weightDivisor = (double)BasicBlock::getCalledCount(this);
@@ -654,7 +810,9 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     if (createDotFile)
     {
         fprintf(fgxFile, "digraph FlowGraph {\n");
-        fprintf(fgxFile, "    graph [label = \"%s\\nafter\\n%s\"];\n", info.compMethodName, PhaseNames[phase]);
+        fprintf(fgxFile, "    graph [label = \"%s%s\\n%s\\n%s\"];\n", info.compMethodName,
+                compIsForInlining() ? "\\n(inlinee)" : "", (pos == PhasePosition::PrePhase) ? "before" : "after",
+                PhaseNames[phase]);
         fprintf(fgxFile, "    node [shape = \"Box\"];\n");
     }
     else
@@ -674,7 +832,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
         fprintf(fgxFile, "\n    bytesOfIL=\"%d\"", info.compILCodeSize);
         fprintf(fgxFile, "\n    localVarCount=\"%d\"", lvaCount);
 
-        if (fgHaveProfileData())
+        if (fgHaveProfileWeights())
         {
             fprintf(fgxFile, "\n    calledCount=\"%f\"", fgCalledCount);
             fprintf(fgxFile, "\n    profileData=\"true\"");
@@ -707,19 +865,100 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
         fprintf(fgxFile, ">");
     }
 
+    // In some cases, we want to change the display based on whether an edge is lexically backwards, forwards,
+    // or lexical successor. Also, for the region tree, using the lexical order is useful for determining where
+    // to insert in the tree, to determine nesting. We'd like to use the bbNum to do this. However, we don't
+    // want to renumber the blocks. So, create a mapping of bbNum to ordinal, and compare block order by
+    // comparing the mapped ordinals instead.
+    //
+    // For inlinees, the max block number of the inliner is used, so we need to allocate the block map based on
+    // that size, even though it means allocating a block map possibly much bigger than what's required for just
+    // the inlinee blocks.
+
+    unsigned  blkMapSize   = 1 + fgBBNumMax;
+    unsigned  blockOrdinal = 1;
+    unsigned* blkMap       = new (this, CMK_DebugOnly) unsigned[blkMapSize];
+    memset(blkMap, 0, sizeof(unsigned) * blkMapSize);
+    for (BasicBlock* const block : Blocks())
+    {
+        assert(block->bbNum < blkMapSize);
+        blkMap[block->bbNum] = blockOrdinal++;
+    }
+
     static const char* kindImage[] = {"EHFINALLYRET", "EHFILTERRET", "EHCATCHRET",  "THROW", "RETURN", "NONE",
                                       "ALWAYS",       "LEAVE",       "CALLFINALLY", "COND",  "SWITCH"};
 
     BasicBlock* block;
-    unsigned    blockOrdinal;
     for (block = fgFirstBB, blockOrdinal = 1; block != nullptr; block = block->bbNext, blockOrdinal++)
     {
         if (createDotFile)
         {
-            fprintf(fgxFile, "    " FMT_BB " [label = \"" FMT_BB, block->bbNum, block->bbNum);
+            fprintf(fgxFile, "    " FMT_BB " [label = \"", block->bbNum);
+
+            if (useBlockId)
+            {
+                fprintf(fgxFile, "%s", block->dspToString());
+            }
+            else
+            {
+                fprintf(fgxFile, FMT_BB, block->bbNum);
+            }
+
+            if (displayBlockFlags)
+            {
+                // Don't display the `[` `]` unless we're going to display something.
+                const BasicBlockFlags allDisplayedBlockFlags = BBF_TRY_BEG | BBF_FUNCLET_BEG | BBF_RUN_RARELY |
+                                                               BBF_LOOP_HEAD | BBF_LOOP_PREHEADER | BBF_LOOP_ALIGN;
+                if (block->bbFlags & allDisplayedBlockFlags)
+                {
+                    // Display a very few, useful, block flags
+                    fprintf(fgxFile, " [");
+                    if (block->bbFlags & BBF_TRY_BEG)
+                    {
+                        fprintf(fgxFile, "T");
+                    }
+                    if (block->bbFlags & BBF_FUNCLET_BEG)
+                    {
+                        fprintf(fgxFile, "F");
+                    }
+                    if (block->bbFlags & BBF_RUN_RARELY)
+                    {
+                        fprintf(fgxFile, "R");
+                    }
+                    if (block->bbFlags & BBF_LOOP_HEAD)
+                    {
+                        fprintf(fgxFile, "L");
+                    }
+                    if (block->bbFlags & BBF_LOOP_PREHEADER)
+                    {
+                        fprintf(fgxFile, "P");
+                    }
+                    if (block->bbFlags & BBF_LOOP_ALIGN)
+                    {
+                        fprintf(fgxFile, "A");
+                    }
+                    fprintf(fgxFile, "]");
+                }
+            }
+
+            if (block->bbJumpKind == BBJ_COND)
+            {
+                fprintf(fgxFile, "\\n");
+
+                // Include a line with the basics of the branch condition, if possible.
+                // Find the loop termination test at the bottom of the loop.
+                Statement* condStmt = block->lastStmt();
+                if (condStmt != nullptr)
+                {
+                    GenTree* const condTree = condStmt->GetRootNode();
+                    noway_assert(condTree->gtOper == GT_JTRUE);
+                    GenTree* const compareTree = condTree->AsOp()->gtOp1;
+                    fgDumpTree(fgxFile, compareTree);
+                }
+            }
 
             // "Raw" Profile weight
-            if (block->hasProfileWeight())
+            if (block->hasProfileWeight() || (JitConfig.JitSynthesizeCounts() > 0))
             {
                 fprintf(fgxFile, "\\n\\n%7.2f", ((double)block->getBBWeight(this)) / BB_UNITY_WEIGHT);
             }
@@ -766,7 +1005,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
             {
                 fprintf(fgxFile, "\n            hot=\"true\"");
             }
-            if (block->bbFlags & (BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY))
+            if (block->bbFlags & BBF_HAS_NEWOBJ)
             {
                 fprintf(fgxFile, "\n            callsNew=\"true\"");
             }
@@ -805,7 +1044,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
         fprintf(fgxFile, ">");
     }
 
-    if (fgComputePredsDone)
+    if (fgPredsComputed)
     {
         unsigned    edgeNum = 1;
         BasicBlock* bTarget;
@@ -821,10 +1060,9 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 targetWeightDivisor = (double)bTarget->bbWeight;
             }
 
-            flowList* edge;
-            for (edge = bTarget->bbPreds; edge != nullptr; edge = edge->flNext, edgeNum++)
+            for (FlowEdge* const edge : bTarget->PredEdges())
             {
-                BasicBlock* bSource = edge->getBlock();
+                BasicBlock* bSource = edge->getSourceBlock();
                 double      sourceWeightDivisor;
                 if (bSource->bbWeight == BB_ZERO_WEIGHT)
                 {
@@ -840,13 +1078,13 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
                     const char* sep = "";
 
-                    if (bSource->bbNum > bTarget->bbNum)
+                    if (blkMap[bSource->bbNum] > blkMap[bTarget->bbNum])
                     {
                         // Lexical backedge
                         fprintf(fgxFile, " [color=green");
                         sep = ", ";
                     }
-                    else if ((bSource->bbNum + 1) == bTarget->bbNum)
+                    else if ((blkMap[bSource->bbNum] + 1) == blkMap[bTarget->bbNum])
                     {
                         // Lexical successor
                         fprintf(fgxFile, " [color=blue, weight=20");
@@ -859,7 +1097,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
                     if (validWeights)
                     {
-                        BasicBlock::weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
                         fprintf(fgxFile, "%slabel=\"%7.2f\"", sep, (double)edgeWeight / weightDivisor);
                     }
 
@@ -873,9 +1111,9 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                     fprintf(fgxFile, "\n            target=\"%d\"", bTarget->bbNum);
                     if (bSource->bbJumpKind == BBJ_SWITCH)
                     {
-                        if (edge->flDupCount >= 2)
+                        if (edge->getDupCount() >= 2)
                         {
-                            fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->flDupCount);
+                            fprintf(fgxFile, "\n            switchCases=\"%d\"", edge->getDupCount());
                         }
                         if (bSource->bbJumpSwt->getDefault() == bTarget)
                         {
@@ -884,7 +1122,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                     }
                     if (validWeights)
                     {
-                        BasicBlock::weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
+                        weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
                         fprintf(fgxFile, "\n            weight=");
                         fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
 
@@ -916,6 +1154,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                     fprintf(fgxFile, ">");
                     fprintf(fgxFile, "\n        </edge>");
                 }
+
+                ++edgeNum;
             }
         }
     }
@@ -925,7 +1165,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
     //
     if (createDotFile)
     {
-        for (BasicBlock* bSource = fgFirstBB; bSource != nullptr; bSource = bSource->bbNext)
+        for (BasicBlock* const bSource : Blocks())
         {
             if (constrained)
             {
@@ -938,7 +1178,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 }
             }
 
-            if (fgComputePredsDone)
+            if (fgPredsComputed)
             {
                 // Already emitted pred edges above.
                 //
@@ -947,18 +1187,15 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
 
             // Emit successor edges
             //
-            const unsigned numSuccs = bSource->NumSucc();
-
-            for (unsigned i = 0; i < numSuccs; i++)
+            for (BasicBlock* const bTarget : bSource->Succs())
             {
-                BasicBlock* const bTarget = bSource->GetSucc(i);
                 fprintf(fgxFile, "    " FMT_BB " -> " FMT_BB, bSource->bbNum, bTarget->bbNum);
-                if (bSource->bbNum > bTarget->bbNum)
+                if (blkMap[bSource->bbNum] > blkMap[bTarget->bbNum])
                 {
                     // Lexical backedge
                     fprintf(fgxFile, " [color=green]\n");
                 }
-                else if ((bSource->bbNum + 1) == bTarget->bbNum)
+                else if ((blkMap[bSource->bbNum] + 1) == blkMap[bTarget->bbNum])
                 {
                     // Lexical successor
                     fprintf(fgxFile, " [color=blue]\n");
@@ -1027,24 +1264,12 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 };
 
             public:
-                RegionGraph(Compiler* comp) : m_comp(comp), m_rgnRoot(nullptr)
+                RegionGraph(Compiler* comp, unsigned* blkMap, unsigned blkMapSize)
+                    : m_comp(comp), m_rgnRoot(nullptr), m_blkMap(blkMap), m_blkMapSize(blkMapSize)
                 {
                     // Create a root region that encompasses the whole function.
-                    // We don't want to renumber the blocks, but it's useful to have a sequential number
-                    // representing the lexical block order so we know where to insert a block range
-                    // in the region tree. To do this, create a mapping of bbNum to ordinal, and compare
-                    // block order by comparing the mapped ordinals.
-
                     m_rgnRoot =
                         new (m_comp, CMK_DebugOnly) Region(RegionType::Root, "Root", comp->fgFirstBB, comp->fgLastBB);
-
-                    unsigned bbOrdinal = 0;
-                    m_blkMap           = new (m_comp, CMK_DebugOnly) unsigned[comp->fgBBNumMax + 1];
-                    memset(m_blkMap, 0, sizeof(unsigned) * (comp->fgBBNumMax + 1));
-                    for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
-                    {
-                        m_blkMap[block->bbNum] = bbOrdinal++;
-                    }
                 }
 
                 //------------------------------------------------------------------------
@@ -1087,6 +1312,24 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                         unsigned childStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
                         unsigned childEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
 
+                        // Consider the following cases, where each "x" is a block in the range:
+                        //    xxxxxxx      // current 'child' range; we're comparing against this
+                        //    xxxxxxx      // (1) same range; could be considered child or parent
+                        //  xxxxxxxxx      // (2) parent range, shares last block
+                        //    xxxxxxxxx    // (3) parent range, shares first block
+                        //  xxxxxxxxxxx    // (4) fully overlapping parent range
+                        // xx              // (5) non-overlapping preceding sibling range
+                        //            xx   // (6) non-overlapping following sibling range
+                        //      xxx        // (7) child range
+                        //    xxx          // (8) child range, shares same start block
+                        //    x            // (9) single-block child range, shares same start block
+                        //        xxx      // (10) child range, shares same end block
+                        //          x      // (11) single-block child range, shares same end block
+                        //  xxxxxxx        // illegal: overlapping ranges
+                        //  xxx            // illegal: overlapping ranges (shared child start block and new end block)
+                        //      xxxxxxx    // illegal: overlapping ranges
+                        //          xxx    // illegal: overlapping ranges (shared child end block and new start block)
+
                         // Assert the child is properly nested within the parent.
                         // Note that if regions have the same start and end, you can't tell which is nested within the
                         // other, though it shouldn't matter.
@@ -1095,6 +1338,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                         assert(childEndOrdinal <= curEndOrdinal);
 
                         // Should the new region be before this child?
+                        // Case (5).
                         if (newEndOrdinal < childStartOrdinal)
                         {
                             // Insert before this child.
@@ -1102,14 +1346,11 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                             *lastChildPtr     = newRgn;
                             break;
                         }
-                        else if (newEndOrdinal <= childEndOrdinal)
+                        else if ((newStartOrdinal >= childStartOrdinal) && (newEndOrdinal <= childEndOrdinal))
                         {
                             // Insert as a child of this child.
-                            // Need to recurse to walk the child's children list to see where
-                            // it belongs.
-
-                            // It better be properly nested.
-                            assert(newStartOrdinal >= childStartOrdinal);
+                            // Need to recurse to walk the child's children list to see where it belongs.
+                            // Case (1), (7), (8), (9), (10), (11).
 
                             curStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
                             curEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
@@ -1122,6 +1363,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                         else if (newStartOrdinal <= childStartOrdinal)
                         {
                             // The new region is a parent of one or more of the existing children.
+                            // Case (2), (3), (4).
+
                             // Find all the children it encompasses.
                             Region** lastEndChildPtr = &child->m_rgnNext;
                             Region*  endChild        = child->m_rgnNext;
@@ -1154,6 +1397,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                         }
 
                         // Else, look for next child.
+                        // Case (6).
 
                         lastChildPtr = &child->m_rgnNext;
                         child        = child->m_rgnNext;
@@ -1216,15 +1460,80 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 //------------------------------------------------------------------------
                 // Dump: dump the entire region graph
                 //
-                // Arguments:
-                //    stmt  - the statement to dump;
-                //    bbNum - the basic block number to dump.
-                //
                 void Dump()
                 {
                     printf("Region graph:\n");
                     DumpRegionNode(m_rgnRoot, 0);
                     printf("\n");
+                }
+
+                //------------------------------------------------------------------------
+                // VerifyNode: verify the region graph rooted at `rgn`.
+                //
+                // Arguments:
+                //    rgn  - the node (and its children) to check.
+                //
+                void Verify(Region* rgn)
+                {
+                    // The region needs to be a non-overlapping parent to all its children.
+                    // The children need to be non-overlapping, and in increasing order.
+
+                    unsigned rgnStartOrdinal = m_blkMap[rgn->m_bbStart->bbNum];
+                    unsigned rgnEndOrdinal   = m_blkMap[rgn->m_bbEnd->bbNum];
+                    assert(rgnStartOrdinal <= rgnEndOrdinal);
+
+                    Region* child     = rgn->m_rgnChild;
+                    Region* lastChild = nullptr;
+                    if (child != nullptr)
+                    {
+                        unsigned childStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
+                        unsigned childEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
+                        assert(childStartOrdinal <= childEndOrdinal);
+                        assert(rgnStartOrdinal <= childStartOrdinal);
+
+                        while (true)
+                        {
+                            Verify(child);
+
+                            lastChild                      = child;
+                            unsigned lastChildStartOrdinal = childStartOrdinal;
+                            unsigned lastChildEndOrdinal   = childEndOrdinal;
+
+                            child = child->m_rgnNext;
+                            if (child == nullptr)
+                            {
+                                break;
+                            }
+
+                            childStartOrdinal = m_blkMap[child->m_bbStart->bbNum];
+                            childEndOrdinal   = m_blkMap[child->m_bbEnd->bbNum];
+                            assert(childStartOrdinal <= childEndOrdinal);
+
+                            // The children can't overlap; they can't share any blocks.
+                            assert(lastChildEndOrdinal < childStartOrdinal);
+                        }
+
+                        // The parent region must fully include the last child.
+                        assert(childEndOrdinal <= rgnEndOrdinal);
+                    }
+                }
+
+                //------------------------------------------------------------------------
+                // Verify: verify the region graph satisfies proper nesting, and other legality rules.
+                //
+                void Verify()
+                {
+                    assert(m_comp != nullptr);
+                    assert(m_blkMap != nullptr);
+                    for (unsigned i = 0; i < m_blkMapSize; i++)
+                    {
+                        assert(m_blkMap[i] < m_blkMapSize);
+                    }
+
+                    // The root region has no siblings.
+                    assert(m_rgnRoot != nullptr);
+                    assert(m_rgnRoot->m_rgnNext == nullptr);
+                    Verify(m_rgnRoot);
                 }
 
 #endif // DEBUG
@@ -1349,11 +1658,12 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 Compiler* m_comp;
                 Region*   m_rgnRoot;
                 unsigned* m_blkMap;
+                unsigned  m_blkMapSize;
             };
 
             // Define the region graph object. We'll add regions to this, then output the graph.
 
-            RegionGraph rgnGraph(this);
+            RegionGraph rgnGraph(this, blkMap, blkMapSize);
 
             // Add the EH regions to the region graph. An EH region consists of a region for the
             // `try`, a region for the handler, and, for filter/filter-handlers, a region for the
@@ -1397,21 +1707,49 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
                 }
             }
 
-            // Add regions for the loops. Note that loops are assumed to be contiguous from `lpFirst` to `lpBottom`.
+            // Add regions for the loops. Note that loops are assumed to be contiguous from `lpTop` to `lpBottom`.
 
             if (includeLoops)
             {
+#ifdef DEBUG
+                const bool displayLoopFlags = JitConfig.JitDumpFgLoopFlags() != 0;
+#else  // !DEBUG
+                const bool displayLoopFlags  = false;
+#endif // !DEBUG
+
                 char name[30];
                 for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
                 {
                     const LoopDsc& loop = optLoopTable[loopNum];
+                    if (loop.lpIsRemoved())
+                    {
+                        continue;
+                    }
+
                     sprintf_s(name, sizeof(name), FMT_LP, loopNum);
-                    rgnGraph.Insert(name, RegionGraph::RegionType::Loop, loop.lpFirst, loop.lpBottom);
+
+                    if (displayLoopFlags)
+                    {
+                        // Display a very few, useful, loop flags
+                        strcat_s(name, sizeof(name), " [");
+                        if (loop.lpFlags & LoopFlags::LPFLG_ITER)
+                        {
+                            strcat_s(name, sizeof(name), "I");
+                        }
+                        if (loop.lpFlags & LoopFlags::LPFLG_HAS_PREHEAD)
+                        {
+                            strcat_s(name, sizeof(name), "P");
+                        }
+                        strcat_s(name, sizeof(name), "]");
+                    }
+
+                    rgnGraph.Insert(name, RegionGraph::RegionType::Loop, loop.lpTop, loop.lpBottom);
                 }
             }
 
             // All the regions have been added. Now, output them.
             DBEXEC(verbose, rgnGraph.Dump());
+            INDEBUG(rgnGraph.Verify());
             rgnGraph.Output(fgxFile);
         }
     }
@@ -1450,7 +1788,7 @@ void Compiler::fgDispReach()
     printf("BBnum  Reachable by \n");
     printf("------------------------------------------------\n");
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         printf(FMT_BB " : ", block->bbNum);
         BlockSetOps::Iter iter(this, block->bbReach);
@@ -1477,7 +1815,7 @@ void Compiler::fgDispDoms()
 
     for (unsigned i = 1; i <= fgBBNumMax; ++i)
     {
-        BasicBlock* current = fgBBInvPostOrder[i];
+        BasicBlock* current = fgBBReversePostorder[i];
         printf(FMT_BB ":  ", current->bbNum);
         while (current != current->bbIDom)
         {
@@ -1492,8 +1830,8 @@ void Compiler::fgDispDoms()
 
 void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 */)
 {
-    const unsigned __int64 flags    = block->bbFlags;
-    unsigned               bbNumMax = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
+    const unsigned __int64 flags            = block->bbFlags;
+    unsigned               bbNumMax         = fgBBNumMax;
     int                    maxBlockNumWidth = CountDigits(bbNumMax);
     maxBlockNumWidth                        = max(maxBlockNumWidth, 2);
     int blockNumWidth                       = CountDigits(block->bbNum);
@@ -1534,15 +1872,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     // Display block predecessor list
     //
 
-    unsigned charCnt;
-    if (fgCheapPredsValid)
-    {
-        charCnt = block->dspCheapPreds();
-    }
-    else
-    {
-        charCnt = block->dspPreds();
-    }
+    unsigned charCnt = block->dspPreds();
 
     if (charCnt < 19)
     {
@@ -1561,7 +1891,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     }
     else
     {
-        BasicBlock::weight_t weight = block->getBBWeight(this);
+        weight_t weight = block->getBBWeight(this);
 
         if (weight > 99999) // Is it going to be more than 6 characters?
         {
@@ -1573,13 +1903,13 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
             else // print weight in terms of k (i.e. 156k )
             {
                 // print weight in this format dddddk
-                BasicBlock::weight_t weightK = weight / 1000;
+                weight_t weightK = weight / 1000;
                 printf("%5uk", (unsigned)FloatingPointUtils::round(weightK / BB_UNITY_WEIGHT));
             }
         }
         else // print weight in this format ddd.dd
         {
-            printf("%6s", refCntWtd2str(weight));
+            printf("%6s", refCntWtd2str(weight, /* padForDecimalPlaces */ true));
         }
     }
 
@@ -1665,6 +1995,10 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 printf("%*s        (finret)", maxBlockNumWidth - 2, "");
                 break;
 
+            case BBJ_EHFAULTRET:
+                printf("%*s        (falret)", maxBlockNumWidth - 2, "");
+                break;
+
             case BBJ_EHFILTERRET:
                 printf("%*s        (fltret)", maxBlockNumWidth - 2, "");
                 break;
@@ -1687,19 +2021,33 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 break;
 
             case BBJ_SWITCH:
+            {
                 printf("->");
 
-                unsigned jumpCnt;
-                jumpCnt = block->bbJumpSwt->bbsCount;
-                BasicBlock** jumpTab;
-                jumpTab = block->bbJumpSwt->bbsDstTab;
-                int switchWidth;
-                switchWidth = 0;
-                do
+                const BBswtDesc* const bbJumpSwt   = block->bbJumpSwt;
+                const unsigned         jumpCnt     = bbJumpSwt->bbsCount;
+                BasicBlock** const     jumpTab     = bbJumpSwt->bbsDstTab;
+                int                    switchWidth = 0;
+
+                for (unsigned i = 0; i < jumpCnt; i++)
                 {
-                    printf("%c" FMT_BB, (jumpTab == block->bbJumpSwt->bbsDstTab) ? ' ' : ',', (*jumpTab)->bbNum);
-                    switchWidth += 1 /* space/comma */ + 2 /* BB */ + max(CountDigits((*jumpTab)->bbNum), 2);
-                } while (++jumpTab, --jumpCnt);
+                    printf("%c" FMT_BB, (i == 0) ? ' ' : ',', jumpTab[i]->bbNum);
+                    switchWidth += 1 /* space/comma */ + 2 /* BB */ + max(CountDigits(jumpTab[i]->bbNum), 2);
+
+                    const bool isDefault = bbJumpSwt->bbsHasDefault && (i == jumpCnt - 1);
+                    if (isDefault)
+                    {
+                        printf("[def]");
+                        switchWidth += 5;
+                    }
+
+                    const bool isDominant = bbJumpSwt->bbsHasDominantCase && (i == bbJumpSwt->bbsDominantCase);
+                    if (isDominant)
+                    {
+                        printf("[dom(" FMT_WT ")]", bbJumpSwt->bbsDominantFraction);
+                        switchWidth += 10;
+                    }
+                }
 
                 if (switchWidth < 7)
                 {
@@ -1707,7 +2055,8 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 }
 
                 printf(" (switch)");
-                break;
+            }
+            break;
         }
     }
 
@@ -1783,10 +2132,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     {
         // Output a brace for every try region that this block opens
 
-        EHblkDsc* HBtab;
-        EHblkDsc* HBtabEnd;
-
-        for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+        for (EHblkDsc* const HBtab : EHClauses(this))
         {
             if (HBtab->ebdTryBeg == block)
             {
@@ -1797,10 +2143,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
         }
     }
 
-    EHblkDsc* HBtab;
-    EHblkDsc* HBtabEnd;
-
-    for (HBtab = compHndBBtab, HBtabEnd = compHndBBtab + compHndBBtabCount; HBtab < HBtabEnd; HBtab++)
+    for (EHblkDsc* const HBtab : EHClauses(this))
     {
         if (HBtab->ebdTryLast == block)
         {
@@ -1834,6 +2177,20 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
 
     block->dspFlags();
 
+    // Display OSR info
+    //
+    if (opts.IsOSR())
+    {
+        if (block == fgEntryBB)
+        {
+            printf(" original-entry");
+        }
+        if (block == fgOSREntryBB)
+        {
+            printf(" osr-entry");
+        }
+    }
+
     printf("\n");
 }
 
@@ -1843,13 +2200,20 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
 
 void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, bool dumpTrees)
 {
-    BasicBlock* block;
+    // Build vector of blocks in order.
+    //
+    if (fgBBOrder == nullptr)
+    {
+        CompAllocator allocator = getAllocator(CMK_DebugOnly);
+        fgBBOrder               = new (allocator) jitstd::vector<BasicBlock*>(allocator);
+    }
 
-    // If any block has IBC data, we add an "IBC weight" column just before the 'IL range' column. This column is as
-    // wide as necessary to accommodate all the various IBC weights. It's at least 4 characters wide, to accommodate
-    // the "IBC" title and leading space.
+    fgBBOrder->reserve(fgBBcount);
+    fgBBOrder->clear();
+
     int ibcColWidth = 0;
-    for (block = firstBlock; block != nullptr; block = block->bbNext)
+
+    for (BasicBlock* block = firstBlock; block != nullptr; block = block->bbNext)
     {
         if (block->hasProfileWeight())
         {
@@ -1857,17 +2221,52 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
             ibcColWidth      = max(ibcColWidth, thisIbcWidth);
         }
 
+        fgBBOrder->push_back(block);
+
         if (block == lastBlock)
         {
             break;
         }
     }
+
+    bool inDefaultOrder = true;
+
+    struct fgBBNumCmp
+    {
+        bool operator()(const BasicBlock* bb1, const BasicBlock* bb2)
+        {
+            return bb1->bbNum < bb2->bbNum;
+        }
+    };
+
+    struct fgBBIDCmp
+    {
+        bool operator()(const BasicBlock* bb1, const BasicBlock* bb2)
+        {
+            return bb1->bbID < bb2->bbID;
+        }
+    };
+
+    // Optionally sort
+    //
+    if (JitConfig.JitDumpFgBlockOrder() == 1)
+    {
+        jitstd::sort(fgBBOrder->begin(), fgBBOrder->end(), fgBBNumCmp());
+        inDefaultOrder = false;
+    }
+    else if (JitConfig.JitDumpFgBlockOrder() == 2)
+    {
+
+        jitstd::sort(fgBBOrder->begin(), fgBBOrder->end(), fgBBIDCmp());
+        inDefaultOrder = false;
+    }
+
     if (ibcColWidth > 0)
     {
         ibcColWidth = max(ibcColWidth, 3) + 1; // + 1 for the leading space
     }
 
-    unsigned bbNumMax         = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
+    unsigned bbNumMax         = fgBBNumMax;
     int      maxBlockNumWidth = CountDigits(bbNumMax);
     maxBlockNumWidth          = max(maxBlockNumWidth, 2);
     int padWidth              = maxBlockNumWidth - 2; // Account for functions with a large number of blocks.
@@ -1881,8 +2280,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         maxBlockNumWidth, "----");
     printf("BBnum %*sBBid ref try hnd %s     weight  %*s%s  lp [IL range]     [jump]%*s    [EH region]         [flags]\n",
         padWidth, "",
-        fgCheapPredsValid       ? "cheap preds" :
-        (fgComputePredsDone     ? "preds      "
+        (fgPredsComputed    ? "preds      "
                                 : "           "),
         ((ibcColWidth > 0) ? ibcColWidth - 3 : 0), "",  // Subtract 3 for the width of "IBC", printed next.
         ((ibcColWidth > 0)      ? "IBC"
@@ -1896,7 +2294,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
 
     // clang-format on
 
-    for (block = firstBlock; block; block = block->bbNext)
+    for (BasicBlock* block : *fgBBOrder)
     {
         // First, do some checking on the bbPrev links
         if (block->bbPrev)
@@ -1911,7 +2309,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
             printf("bad prev link!\n");
         }
 
-        if (block == fgFirstColdBlock)
+        if (inDefaultOrder && (block == fgFirstColdBlock))
         {
             printf(
                 "~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~"
@@ -1920,7 +2318,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         }
 
 #if defined(FEATURE_EH_FUNCLETS)
-        if (block == fgFirstFuncletBB)
+        if (inDefaultOrder && (block == fgFirstFuncletBB))
         {
             printf(
                 "++++++%*s+++++++++++++++++++++++++++++++++++++%*s++++++++++++++++++++++++++%*s++++++++++++++++++++++++"
@@ -1944,7 +2342,13 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
 
     if (dumpTrees)
     {
-        fgDumpTrees(firstBlock, lastBlock);
+        for (BasicBlock* block : *fgBBOrder)
+        {
+            fgDumpBlock(block);
+        }
+        printf("\n-----------------------------------------------------------------------------------------------------"
+               "----"
+               "----------\n");
     }
 }
 
@@ -1981,7 +2385,7 @@ void Compiler::fgDumpBlock(BasicBlock* block)
 
     if (!block->IsLIR())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             fgDumpStmtTree(stmt, block->bbNum);
         }
@@ -1992,16 +2396,18 @@ void Compiler::fgDumpBlock(BasicBlock* block)
     }
 }
 
-/*****************************************************************************/
-//  Walk the BasicBlock list calling fgDumpTree once per Stmt
+//------------------------------------------------------------------------
+// fgDumpTrees: dumps the trees for every block in a range of blocks.
+//
+// Arguments:
+//    firstBlock - The first block to dump.
+//    lastBlock  - The last block to dump.
 //
 void Compiler::fgDumpTrees(BasicBlock* firstBlock, BasicBlock* lastBlock)
 {
-    // Walk the basic blocks.
-
     // Note that typically we have already called fgDispBasicBlocks()
     // so we don't need to print the preds and succs again here.
-    for (BasicBlock* block = firstBlock; block; block = block->bbNext)
+    for (BasicBlock* block = firstBlock; block != nullptr; block = block->bbNext)
     {
         fgDumpBlock(block);
 
@@ -2071,7 +2477,7 @@ private:
     bool CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHblkDsc* ehTryDsc);
     bool CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHblkDsc* ehHndlDsc);
     bool CheckJump(BasicBlock* blockPred, BasicBlock* block);
-    bool CheckEHFinalyRet(BasicBlock* blockPred, BasicBlock* block);
+    bool CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block);
 
 private:
     Compiler* comp;
@@ -2094,23 +2500,18 @@ private:
 //   the number of incoming edges for the block.
 unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalStamp)
 {
-    if (comp->fgCheapPredsValid)
-    {
-        return 0;
-    }
-
-    if (!comp->fgComputePredsDone)
+    if (!comp->fgPredsComputed)
     {
         assert(block->bbPreds == nullptr);
         return 0;
     }
 
     unsigned blockRefs = 0;
-    for (flowList* pred = block->bbPreds; pred != nullptr; pred = pred->flNext)
+    for (FlowEdge* const pred : block->PredEdges())
     {
-        blockRefs += pred->flDupCount;
+        blockRefs += pred->getDupCount();
 
-        BasicBlock* blockPred = pred->getBlock();
+        BasicBlock* blockPred = pred->getSourceBlock();
 
         // Make sure this pred is part of the BB list.
         assert(blockPred->bbTraversalStamp == curTraversalStamp);
@@ -2130,7 +2531,7 @@ unsigned BBPredsChecker::CheckBBPreds(BasicBlock* block, unsigned curTraversalSt
         assert(CheckJump(blockPred, block));
     }
 
-    // Make sure preds are in increasting BBnum order
+    // Make sure preds are in increasing BBnum order
     //
     assert(block->checkPredListOrder());
 
@@ -2168,8 +2569,10 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    // For OSR, we allow the firstBB to branch to the middle of a try.
-    if (comp->opts.IsOSR() && (blockPred == comp->fgFirstBB))
+    // If this is an OSR method and we haven't run post-importation cleanup, we may see a branch
+    // from fgFirstBB to the middle of a try. Those get fixed during cleanup. Tolerate.
+    //
+    if (comp->opts.IsOSR() && !comp->compPostImportationCleanupDone && (blockPred == comp->fgFirstBB))
     {
         return true;
     }
@@ -2182,7 +2585,7 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
 bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHblkDsc* ehHndlDsc)
 {
     // You can do a BBJ_EHFINALLYRET or BBJ_EHFILTERRET into a handler region
-    if ((blockPred->bbJumpKind == BBJ_EHFINALLYRET) || (blockPred->bbJumpKind == BBJ_EHFILTERRET))
+    if (blockPred->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET))
     {
         return true;
     }
@@ -2232,31 +2635,34 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             return true;
 
         case BBJ_EHFINALLYRET:
-            assert(CheckEHFinalyRet(blockPred, block));
+            assert(CheckEHFinallyRet(blockPred, block));
             return true;
 
+        case BBJ_EHFAULTRET:
         case BBJ_THROW:
         case BBJ_RETURN:
-            assert(!"THROW and RETURN block cannot be in the predecessor list!");
+            assert(!"EHFAULTRET, THROW, and RETURN block cannot be in the predecessor list!");
             break;
 
         case BBJ_SWITCH:
-        {
-            unsigned jumpCnt = blockPred->bbJumpSwt->bbsCount;
-
-            for (unsigned i = 0; i < jumpCnt; ++i)
+            for (BasicBlock* const bTarget : blockPred->SwitchTargets())
             {
-                BasicBlock* jumpTab = blockPred->bbJumpSwt->bbsDstTab[i];
-                assert(jumpTab != nullptr);
-                if (block == jumpTab)
+                if (block == bTarget)
                 {
                     return true;
                 }
             }
-
             assert(!"SWITCH in the predecessor list with no jump label to BLOCK!");
-        }
-        break;
+            break;
+
+        case BBJ_LEAVE:
+            // We may see BBJ_LEAVE preds if we haven't done cleanup yet.
+            if (!comp->compPostImportationCleanupDone)
+            {
+                return true;
+            }
+            assert(!"Unexpected BBJ_LEAVE predecessor");
+            break;
 
         default:
             assert(!"Unexpected bbJumpKind");
@@ -2265,9 +2671,8 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
     return false;
 }
 
-bool BBPredsChecker::CheckEHFinalyRet(BasicBlock* blockPred, BasicBlock* block)
+bool BBPredsChecker::CheckEHFinallyRet(BasicBlock* blockPred, BasicBlock* block)
 {
-
     // If the current block is a successor to a BBJ_EHFINALLYRET (return from finally),
     // then the lexically previous block should be a call to the same finally.
     // Verify all of that.
@@ -2306,7 +2711,7 @@ bool BBPredsChecker::CheckEHFinalyRet(BasicBlock* blockPred, BasicBlock* block)
         // we find a potential 'hit' we check if the funclet we're looking at is
         // from the correct try region.
 
-        for (BasicBlock* bcall = comp->fgFirstFuncletBB; bcall != nullptr; bcall = bcall->bbNext)
+        for (BasicBlock* const bcall : comp->Blocks(comp->fgFirstFuncletBB))
         {
             if (bcall->bbJumpKind != BBJ_CALLFINALLY || bcall->bbJumpDest != finBeg)
             {
@@ -2331,6 +2736,21 @@ bool BBPredsChecker::CheckEHFinalyRet(BasicBlock* blockPred, BasicBlock* block)
     return false;
 }
 
+//------------------------------------------------------------------------------
+// fgDebugCheckBBNumIncreasing: Check that the block list bbNum are in increasing order in the bbNext
+// traversal. Given a block B1 and its bbNext successor B2, this means `B1->bbNum < B2->bbNum`, but not
+// that `B1->bbNum + 1 == B2->bbNum` (which is true after renumbering). This can be used as a precondition
+// to a phase that expects this ordering to compare block numbers (say, to look for backwards branches)
+// and doesn't want to call fgRenumberBlocks(), to avoid that potential expense.
+//
+void Compiler::fgDebugCheckBBNumIncreasing()
+{
+    for (BasicBlock* const block : Blocks())
+    {
+        assert(block->bbNext == nullptr || (block->bbNum < block->bbNext->bbNum));
+    }
+}
+
 // This variable is used to generate "traversal labels": one-time constants with which
 // we label basic blocks that are members of the basic block list, in order to have a
 // fast, high-probability test for membership in that list.  Type is "volatile" because
@@ -2348,12 +2768,19 @@ static volatile int bbTraverseLabel = 1;
 
 void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRefs /* = true  */)
 {
-#ifdef DEBUG
     if (verbose)
     {
-        printf("*************** In fgDebugCheckBBlist\n");
+        JITDUMP("*************** In fgDebugCheckBBlist\n");
     }
-#endif // DEBUG
+
+    // Don't bother checking a failed inlinee; we may have bailed
+    // out in the middle of importation.
+    //
+    if (compIsForInlining() && compInlineResult->IsFailure())
+    {
+        JITDUMP("... failed inline attempt, no checking needed\n");
+        return;
+    }
 
     fgDebugCheckBlockLinks();
     fgFirstBBisScratch();
@@ -2384,12 +2811,14 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     /* Check bbNum, bbRefs and bbPreds */
     // First, pick a traversal stamp, and label all the blocks with it.
     unsigned curTraversalStamp = unsigned(InterlockedIncrement((LONG*)&bbTraverseLabel));
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         block->bbTraversalStamp = curTraversalStamp;
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    bool allNodesLinked = (fgNodeThreading == NodeThreading::AllTrees) || (fgNodeThreading == NodeThreading::LIR);
+
+    for (BasicBlock* const block : Blocks())
     {
         if (checkBBNum)
         {
@@ -2400,24 +2829,28 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // If the block is a BBJ_COND, a BBJ_SWITCH or a
         // lowered GT_SWITCH_TABLE node then make sure it
         // ends with a conditional jump or a GT_SWITCH
-
-        if (block->bbJumpKind == BBJ_COND)
+        //
+        // This may not be true for unimported blocks, if
+        // we haven't run post-importation cleanup yet.
+        //
+        if (compPostImportationCleanupDone || ((block->bbFlags & BBF_IMPORTED) != 0))
         {
-            assert(block->lastNode()->gtNext == nullptr && block->lastNode()->OperIsConditionalJump());
-        }
-        else if (block->bbJumpKind == BBJ_SWITCH)
-        {
-            assert(block->lastNode()->gtNext == nullptr &&
-                   (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
+            if (block->bbJumpKind == BBJ_COND)
+            {
+                assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
+                       block->lastNode()->OperIsConditionalJump());
+            }
+            else if (block->bbJumpKind == BBJ_SWITCH)
+            {
+                assert((!allNodesLinked || (block->lastNode()->gtNext == nullptr)) &&
+                       (block->lastNode()->gtOper == GT_SWITCH || block->lastNode()->gtOper == GT_SWITCH_TABLE));
+            }
         }
 
         if (block->bbCatchTyp == BBCT_FILTER)
         {
-            if (!fgCheapPredsValid) // Don't check cheap preds
-            {
-                // A filter has no predecessors
-                assert(block->bbPreds == nullptr);
-            }
+            // A filter has no predecessors
+            assert(block->bbPreds == nullptr);
         }
 
 #if defined(FEATURE_EH_FUNCLETS)
@@ -2449,7 +2882,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
         if (checkBBRefs)
         {
-            assert(fgComputePredsDone);
+            assert(fgPredsComputed);
         }
 
         BBPredsChecker checker(this);
@@ -2461,11 +2894,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             blockRefs += 1;
         }
 
-        // Under OSR, if we also are keeping the original method entry around,
-        // mark that as implicitly referenced as well.
+        // Under OSR, if we also are keeping the original method entry around
+        // via artifical ref counts, account for those.
+        //
         if (opts.IsOSR() && (block == fgEntryBB))
         {
-            blockRefs += 1;
+            blockRefs += fgEntryBBExtraRefs;
         }
 
         /* Check the bbRefs */
@@ -2475,8 +2909,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             {
                 // Check to see if this block is the beginning of a filter or a handler and adjust the ref count
                 // appropriately.
-                for (EHblkDsc *HBtab = compHndBBtab, *HBtabEnd = &compHndBBtab[compHndBBtabCount]; HBtab != HBtabEnd;
-                     HBtab++)
+                for (EHblkDsc* const HBtab : EHClauses(this))
                 {
                     if (HBtab->ebdHndBeg == block)
                     {
@@ -2498,6 +2931,52 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             assert(block->getTryIndex() < compHndBBtabCount);
         }
 
+        // A branch or fall-through to a BBJ_CALLFINALLY block must come from the `try` region associated
+        // with the finally block the BBJ_CALLFINALLY is targeting. There is one special case: if the
+        // BBJ_CALLFINALLY is the first block of a `try`, then its predecessor can be outside the `try`:
+        // either a branch or fall-through to the first block.
+        //
+        // Note that this IR condition is a choice. It naturally occurs when importing EH constructs.
+        // This condition prevents flow optimizations from skipping blocks in a `try` and branching
+        // directly to the BBJ_CALLFINALLY. Relaxing this constraint would require careful thinking about
+        // the implications, such as data flow optimizations.
+        //
+        // Don't depend on predecessors list for the check.
+        for (BasicBlock* const succBlock : block->Succs())
+        {
+            if (succBlock->bbJumpKind == BBJ_CALLFINALLY)
+            {
+                BasicBlock* finallyBlock = succBlock->bbJumpDest;
+                assert(finallyBlock->hasHndIndex());
+                unsigned finallyIndex = finallyBlock->getHndIndex();
+
+                // Now make sure the block branching to the BBJ_CALLFINALLY is in the correct region. The branch
+                // to the BBJ_CALLFINALLY can come from the try region of the finally block, or from a more nested
+                // try region, e.g.:
+                //    try {
+                //        try {
+                //            LEAVE L_OUTER; // this becomes a branch to a BBJ_CALLFINALLY in an outer try region
+                //                           // (in the FEATURE_EH_CALLFINALLY_THUNKS case)
+                //        } catch {
+                //        }
+                //    } finally {
+                //    }
+                //    L_OUTER:
+                //
+                EHblkDsc* ehDsc = ehGetDsc(finallyIndex);
+                if (ehDsc->ebdTryBeg == succBlock)
+                {
+                    // The BBJ_CALLFINALLY is the first block of it's `try` region. Don't check the predecessor.
+                    // Note that this case won't occur in the FEATURE_EH_CALLFINALLY_THUNKS case, since the
+                    // BBJ_CALLFINALLY in that case won't exist in the `try` region of the `finallyIndex`.
+                }
+                else
+                {
+                    assert(bbInTryRegions(finallyIndex, block));
+                }
+            }
+        }
+
         /* Check if BBF_RUN_RARELY is set that we have bbWeight of zero */
         if (block->isRunRarely())
         {
@@ -2515,6 +2994,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         assert(genReturnBB->GetFirstLIRNode() != nullptr || genReturnBB->bbStmtList != nullptr);
     }
 
+    // If this is an inlinee, we're done checking.
+    if (compIsForInlining())
+    {
+        return;
+    }
+
     // The general encoder/decoder (currently) only reports "this" as a generics context as a stack location,
     // so we mark info.compThisArg as lvAddrTaken to ensure that it is not enregistered. Otherwise, it should
     // not be address-taken.  This variable determines if the address-taken-ness of "thisArg" is "OK".
@@ -2522,7 +3007,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 #ifndef JIT32_GCENCODER
     copiedForGenericsCtxt = ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0);
 #else  // JIT32_GCENCODER
-    copiedForGenericsCtxt    = FALSE;
+    copiedForGenericsCtxt                    = false;
 #endif // JIT32_GCENCODER
 
     // This if only in support of the noway_asserts it contains.
@@ -2535,7 +3020,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     {
         // For instance method:
         assert(info.compThisArg != BAD_VAR_NUM);
-        bool compThisArgAddrExposedOK = !lvaTable[info.compThisArg].lvAddrExposed;
+        bool compThisArgAddrExposedOK = !lvaTable[info.compThisArg].IsAddressExposed();
 
 #ifndef JIT32_GCENCODER
         compThisArgAddrExposedOK = compThisArgAddrExposedOK || copiedForGenericsCtxt;
@@ -2546,476 +3031,233 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // written to or address-exposed.
         assert(compThisArgAddrExposedOK && !lvaTable[info.compThisArg].lvHasILStoreOp &&
                (lvaArg0Var == info.compThisArg ||
-                (lvaArg0Var != info.compThisArg && (lvaTable[lvaArg0Var].lvAddrExposed ||
+                (lvaArg0Var != info.compThisArg && (lvaTable[lvaArg0Var].IsAddressExposed() ||
                                                     lvaTable[lvaArg0Var].lvHasILStoreOp || copiedForGenericsCtxt))));
     }
 }
 
-/*****************************************************************************
- *
- * A DEBUG routine to check the that the exception flags are correctly set.
- *
- ****************************************************************************/
-
+//------------------------------------------------------------------------
+// fgDebugCheckFlags: Validate various invariants related to the propagation
+//                    and setting of tree flags ("gtFlags").
+//
+// Arguments:
+//    tree - the tree to (recursively) check the flags for
+//
 void Compiler::fgDebugCheckFlags(GenTree* tree)
 {
-    const genTreeOps oper      = tree->OperGet();
-    const unsigned   kind      = tree->OperKind();
-    unsigned         treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
-    unsigned         chkFlags  = 0;
+    GenTreeFlags actualFlags   = tree->gtFlags & GTF_ALL_EFFECT;
+    GenTreeFlags expectedFlags = GTF_EMPTY;
 
     if (tree->OperMayThrow(this))
     {
-        chkFlags |= GTF_EXCEPT;
+        expectedFlags |= GTF_EXCEPT;
+    }
+
+    if (tree->OperRequiresAsgFlag())
+    {
+        expectedFlags |= GTF_ASG;
     }
 
     if (tree->OperRequiresCallFlag(this))
     {
-        chkFlags |= GTF_CALL;
+        expectedFlags |= GTF_CALL;
     }
 
-    /* Is this a leaf node? */
-
-    if (kind & GTK_LEAF)
+    if ((tree->gtFlags & GTF_REVERSE_OPS) != 0)
     {
-        switch (oper)
-        {
-            case GT_CLS_VAR:
-                chkFlags |= GTF_GLOB_REF;
-                break;
-
-            case GT_CATCH_ARG:
-                chkFlags |= GTF_ORDER_SIDEEFF;
-                break;
-
-            case GT_MEMORYBARRIER:
-                chkFlags |= GTF_GLOB_REF | GTF_ASG;
-                break;
-
-            case GT_LCL_VAR:
-                assert((tree->gtFlags & GTF_VAR_FOLDED_IND) == 0);
-                break;
-
-            default:
-                break;
-        }
+        assert(tree->OperSupportsReverseOpEvalOrder(this));
     }
 
-    /* Is it a 'simple' unary/binary operator? */
+    GenTree* op1 = tree->OperIsSimple() ? tree->gtGetOp1() : nullptr;
 
-    else if (kind & GTK_SMPOP)
+    switch (tree->OperGet())
     {
-        GenTree* op1 = tree->AsOp()->gtOp1;
-        GenTree* op2 = tree->gtGetOp2IfPresent();
+        case GT_CATCH_ARG:
+            expectedFlags |= GTF_ORDER_SIDEEFF;
+            break;
 
-        // During GS work, we make shadow copies for params.
-        // In gsParamsToShadows(), we create a shadow var of TYP_INT for every small type param.
-        // Then in gsReplaceShadowParams(), we change the gtLclNum to the shadow var.
-        // We also change the types of the local var tree and the assignment tree to TYP_INT if necessary.
-        // However, since we don't morph the tree at this late stage. Manually propagating
-        // TYP_INT up to the GT_ASG tree is only correct if we don't need to propagate the TYP_INT back up.
-        // The following checks will ensure this.
+        case GT_MEMORYBARRIER:
+            expectedFlags |= (GTF_GLOB_REF | GTF_ASG);
+            break;
 
-        // Is the left child of "tree" a GT_ASG?
-        //
-        // If parent is a TYP_VOID, we don't no need to propagate TYP_INT up. We are fine.
-        // (or) If GT_ASG is the left child of a GT_COMMA, the type of the GT_COMMA node will
-        // be determined by its right child. So we don't need to propagate TYP_INT up either. We are fine.
-        if (op1 && op1->gtOper == GT_ASG)
-        {
-            assert(tree->gtType == TYP_VOID || tree->gtOper == GT_COMMA);
-        }
+        case GT_QMARK:
+            assert(!op1->CanCSE());
+            assert(op1->OperIsCompare() || op1->IsIntegralConst(0) || op1->IsIntegralConst(1));
+            break;
 
-        // Is the right child of "tree" a GT_ASG?
-        //
-        // If parent is a TYP_VOID, we don't no need to propagate TYP_INT up. We are fine.
-        if (op2 && op2->gtOper == GT_ASG)
-        {
-            // We can have ASGs on the RHS of COMMAs in setup arguments to a call.
-            assert(tree->gtType == TYP_VOID || tree->gtOper == GT_COMMA);
-        }
+        case GT_ASG:
+            // Note that this is a weak check - the "op1" location node can be a COMMA.
+            assert(!op1->CanCSE());
+            break;
 
-        switch (oper)
-        {
-            case GT_QMARK:
-                if (op1->OperIsCompare())
-                {
-                    noway_assert(op1->gtFlags & GTF_DONT_CSE);
-                }
-                else
-                {
-                    noway_assert((op1->gtOper == GT_CNS_INT) &&
-                                 ((op1->AsIntCon()->gtIconVal == 0) || (op1->AsIntCon()->gtIconVal == 1)));
-                }
-                break;
-
-            case GT_LIST:
-                if ((op2 != nullptr) && op2->OperIsAnyList())
-                {
-                    ArrayStack<GenTree*> stack(getAllocator(CMK_DebugOnly));
-                    while ((tree->gtGetOp2() != nullptr) && tree->gtGetOp2()->OperIsAnyList())
-                    {
-                        stack.Push(tree);
-                        tree = tree->gtGetOp2();
-                    }
-
-                    fgDebugCheckFlags(tree);
-
-                    while (!stack.Empty())
-                    {
-                        tree = stack.Pop();
-                        assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
-                        fgDebugCheckFlags(tree->AsOp()->gtOp1);
-                        chkFlags |= (tree->AsOp()->gtOp1->gtFlags & GTF_ALL_EFFECT);
-                        chkFlags |= (tree->gtGetOp2()->gtFlags & GTF_ALL_EFFECT);
-                        fgDebugCheckFlagsHelper(tree, (tree->gtFlags & GTF_ALL_EFFECT), chkFlags);
-                    }
-
-                    return;
-                }
-                break;
-            case GT_ADDR:
-                assert(!op1->CanCSE());
-                break;
-
-            case GT_IND:
-                // Do we have a constant integer address as op1?
-                //
-                if (op1->OperGet() == GT_CNS_INT)
-                {
-                    // Is this constant a handle of some kind?
-                    //
-                    unsigned handleKind = (op1->gtFlags & GTF_ICON_HDL_MASK);
-                    if (handleKind != 0)
-                    {
-                        // Is the GTF_IND_INVARIANT flag set or unset?
-                        //
-                        bool invariantFlag = (tree->gtFlags & GTF_IND_INVARIANT) != 0;
-                        if (invariantFlag)
-                        {
-                            // Record the state of the GTF_IND_INVARIANT flags into 'chkFlags'
-                            chkFlags |= GTF_IND_INVARIANT;
-                        }
-
-                        // Is the GTF_IND_NONFAULTING flag set or unset?
-                        //
-                        bool nonFaultingFlag = (tree->gtFlags & GTF_IND_NONFAULTING) != 0;
-                        if (nonFaultingFlag)
-                        {
-                            // Record the state of the GTF_IND_NONFAULTING flags into 'chkFlags'
-                            chkFlags |= GTF_IND_NONFAULTING;
-                        }
-                        assert(nonFaultingFlag); // Currently this should always be set for all handle kinds
-
-                        // Some of these aren't handles to invariant data...
-                        //
-                        if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
-                            (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
-                            (handleKind == GTF_ICON_GLOBAL_PTR))   // Pointer to mutable data from the VM state
-
-                        {
-                            // We expect the Invariant flag to be unset for this handleKind
-                            // If it is set then we will assert with "unexpected GTF_IND_INVARIANT flag set ...
-                            //
-                            if (handleKind == GTF_ICON_STATIC_HDL)
-                            {
-                                // We expect the GTF_GLOB_REF flag to be set for this handleKind
-                                // If it is not set then we will assert with "Missing flags on tree"
-                                //
-                                treeFlags |= GTF_GLOB_REF;
-                            }
-                        }
-                        else // All the other handle indirections are considered invariant
-                        {
-                            // We expect the Invariant flag to be set for this handleKind
-                            // If it is not set then we will assert with "Missing flags on tree"
-                            //
-                            treeFlags |= GTF_IND_INVARIANT;
-                        }
-
-                        // We currently expect all handle kinds to be nonFaulting
-                        //
-                        treeFlags |= GTF_IND_NONFAULTING;
-
-                        // Matrix for GTF_IND_INVARIANT (treeFlags and chkFlags)
-                        //
-                        //                    chkFlags INVARIANT value
-                        //                       0                 1
-                        //                 +--------------+----------------+
-                        //  treeFlags   0  |    OK        |  Missing Flag  |
-                        //  INVARIANT      +--------------+----------------+
-                        //  value:      1  |  Extra Flag  |       OK       |
-                        //                 +--------------+----------------+
-                    }
-                }
-                break;
-
-            default:
-                break;
-        }
-
-        /* Recursively check the subtrees */
-
-        if (op1)
-        {
-            fgDebugCheckFlags(op1);
-        }
-        if (op2)
-        {
-            fgDebugCheckFlags(op2);
-        }
-
-        if (op1)
-        {
-            chkFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
-        }
-        if (op2)
-        {
-            chkFlags |= (op2->gtFlags & GTF_ALL_EFFECT);
-        }
-
-        // We reuse the value of GTF_REVERSE_OPS for a GT_IND-specific flag,
-        // so exempt that (unary) operator.
-        if (tree->OperGet() != GT_IND && tree->gtFlags & GTF_REVERSE_OPS)
-        {
-            /* Must have two operands if GTF_REVERSE is set */
-            noway_assert(op1 && op2);
-
-            /* Make sure that the order of side effects has not been swapped. */
-
-            /* However CSE may introduce an assignment after the reverse flag
-               was set and thus GTF_ASG cannot be considered here. */
-
-            /* For a GT_ASG(GT_IND(x), y) we are interested in the side effects of x */
-            GenTree* op1p;
-            if ((oper == GT_ASG) && (op1->gtOper == GT_IND))
+        case GT_IND:
+            // Do we have a constant integer address as op1 that is also a handle?
+            if (op1->IsIconHandle())
             {
-                op1p = op1->AsOp()->gtOp1;
-            }
-            else
-            {
-                op1p = op1;
+                if ((tree->gtFlags & GTF_IND_INVARIANT) != 0)
+                {
+                    actualFlags |= GTF_IND_INVARIANT;
+                }
+                if ((tree->gtFlags & GTF_IND_NONFAULTING) != 0)
+                {
+                    actualFlags |= GTF_IND_NONFAULTING;
+                }
+
+                GenTreeFlags handleKind = op1->GetIconHandleFlag();
+
+                // Some of these aren't handles to invariant data...
+                if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
+                    (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
+                    (handleKind == GTF_ICON_GLOBAL_PTR))   // Pointer to mutable data from the VM state
+                {
+                    // For statics, we expect the GTF_GLOB_REF to be set. However, we currently
+                    // fail to set it in a number of situations, and so this check is disabled.
+                    // TODO: enable checking of GTF_GLOB_REF.
+                    // expectedFlags |= GTF_GLOB_REF;
+                }
+                else // All the other handle indirections are considered invariant
+                {
+                    expectedFlags |= GTF_IND_INVARIANT;
+                }
+
+                // Currently we expect all indirections with constant addresses to be nonfaulting.
+                expectedFlags |= GTF_IND_NONFAULTING;
             }
 
-            /* This isn't true any more with the sticky GTF_REVERSE */
-            /*
-            // if op1p has side effects, then op2 cannot have side effects
-            if (op1p->gtFlags & (GTF_SIDE_EFFECT & ~GTF_ASG))
+            assert(((tree->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0) || ((tree->gtFlags & GTF_IND_TGT_HEAP) == 0));
+            break;
+
+        case GT_CALL:
+
+            GenTreeCall* call;
+
+            call = tree->AsCall();
+
+            for (CallArg& arg : call->gtArgs.Args())
             {
-                if (op2->gtFlags & (GTF_SIDE_EFFECT & ~GTF_ASG))
-                    gtDispTree(tree);
-                noway_assert(!(op2->gtFlags & (GTF_SIDE_EFFECT & ~GTF_ASG)));
+                // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation.
+                // see https://github.com/dotnet/runtime/issues/13758
+                if (arg.GetEarlyNode() != nullptr)
+                {
+                    actualFlags |= arg.GetEarlyNode()->gtFlags & GTF_ASG;
+                }
+
+                if (arg.GetLateNode() != nullptr)
+                {
+                    actualFlags |= arg.GetLateNode()->gtFlags & GTF_ASG;
+                }
             }
-            */
-        }
 
-        if (tree->OperRequiresAsgFlag())
+            break;
+
+        case GT_CMPXCHG:
+            expectedFlags |= (GTF_GLOB_REF | GTF_ASG);
+            break;
+
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
         {
-            chkFlags |= GTF_ASG;
+            GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+            if (hwintrinsic->OperIsMemoryLoad())
+            {
+                assert(tree->OperMayThrow(this));
+                expectedFlags |= GTF_GLOB_REF;
+            }
+            else if (hwintrinsic->OperIsMemoryStore())
+            {
+                assert(tree->OperRequiresAsgFlag());
+                assert(tree->OperMayThrow(this));
+                expectedFlags |= GTF_GLOB_REF;
+            }
+            else if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
+            {
+                switch (intrinsicId)
+                {
+#if defined(TARGET_XARCH)
+                    case NI_SSE_StoreFence:
+                    case NI_SSE2_LoadFence:
+                    case NI_SSE2_MemoryFence:
+                    case NI_X86Serialize_Serialize:
+                    {
+                        assert(tree->OperRequiresAsgFlag());
+                        expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+
+                    case NI_X86Base_Pause:
+                    case NI_SSE_Prefetch0:
+                    case NI_SSE_Prefetch1:
+                    case NI_SSE_Prefetch2:
+                    case NI_SSE_PrefetchNonTemporal:
+                    {
+                        assert(tree->OperRequiresCallFlag(this));
+                        expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+                    case NI_ArmBase_Yield:
+                    {
+                        assert(tree->OperRequiresCallFlag(this));
+                        expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+#endif // TARGET_ARM64
+
+                    default:
+                    {
+                        assert(!"Unhandled HWIntrinsic with special side effect");
+                        break;
+                    }
+                }
+            }
+
+            break;
         }
-
-        if (oper == GT_ADDR && (op1->OperIsLocal() || op1->gtOper == GT_CLS_VAR ||
-                                (op1->gtOper == GT_IND && op1->AsOp()->gtOp1->gtOper == GT_CLS_VAR_ADDR)))
-        {
-            /* &aliasedVar doesn't need GTF_GLOB_REF, though alisasedVar does.
-               Similarly for clsVar */
-            treeFlags |= GTF_GLOB_REF;
-        }
-    }
-
-    /* See what kind of a special operator we have here */
-
-    else
-    {
-        switch (tree->OperGet())
-        {
-            case GT_CALL:
-
-                GenTreeCall* call;
-
-                call = tree->AsCall();
-
-                if (call->gtCallThisArg != nullptr)
-                {
-                    fgDebugCheckFlags(call->gtCallThisArg->GetNode());
-                    chkFlags |= (call->gtCallThisArg->GetNode()->gtFlags & GTF_SIDE_EFFECT);
-
-                    if ((call->gtCallThisArg->GetNode()->gtFlags & GTF_ASG) != 0)
-                    {
-                        treeFlags |= GTF_ASG;
-                    }
-                }
-
-                for (GenTreeCall::Use& use : call->Args())
-                {
-                    fgDebugCheckFlags(use.GetNode());
-
-                    chkFlags |= (use.GetNode()->gtFlags & GTF_SIDE_EFFECT);
-
-                    if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
-                    {
-                        treeFlags |= GTF_ASG;
-                    }
-                }
-
-                for (GenTreeCall::Use& use : call->LateArgs())
-                {
-                    fgDebugCheckFlags(use.GetNode());
-
-                    chkFlags |= (use.GetNode()->gtFlags & GTF_SIDE_EFFECT);
-
-                    if ((use.GetNode()->gtFlags & GTF_ASG) != 0)
-                    {
-                        treeFlags |= GTF_ASG;
-                    }
-                }
-
-                if ((call->gtCallType == CT_INDIRECT) && (call->gtCallCookie != nullptr))
-                {
-                    fgDebugCheckFlags(call->gtCallCookie);
-                    chkFlags |= (call->gtCallCookie->gtFlags & GTF_SIDE_EFFECT);
-                }
-
-                if (call->gtCallType == CT_INDIRECT)
-                {
-                    fgDebugCheckFlags(call->gtCallAddr);
-                    chkFlags |= (call->gtCallAddr->gtFlags & GTF_SIDE_EFFECT);
-                }
-
-                if ((call->gtControlExpr != nullptr) && call->IsExpandedEarly() && call->IsVirtualVtable())
-                {
-                    fgDebugCheckFlags(call->gtControlExpr);
-                    chkFlags |= (call->gtControlExpr->gtFlags & GTF_SIDE_EFFECT);
-                }
-
-                if (call->IsUnmanaged() && (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL))
-                {
-                    if (call->gtCallArgs->GetNode()->OperGet() == GT_NOP)
-                    {
-                        noway_assert(call->gtCallLateArgs->GetNode()->TypeGet() == TYP_I_IMPL ||
-                                     call->gtCallLateArgs->GetNode()->TypeGet() == TYP_BYREF);
-                    }
-                    else
-                    {
-                        noway_assert(call->gtCallArgs->GetNode()->TypeGet() == TYP_I_IMPL ||
-                                     call->gtCallArgs->GetNode()->TypeGet() == TYP_BYREF);
-                    }
-                }
-                break;
-
-            case GT_ARR_ELEM:
-
-                GenTree* arrObj;
-                unsigned dim;
-
-                arrObj = tree->AsArrElem()->gtArrObj;
-                fgDebugCheckFlags(arrObj);
-                chkFlags |= (arrObj->gtFlags & GTF_ALL_EFFECT);
-
-                for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)
-                {
-                    fgDebugCheckFlags(tree->AsArrElem()->gtArrInds[dim]);
-                    chkFlags |= tree->AsArrElem()->gtArrInds[dim]->gtFlags & GTF_ALL_EFFECT;
-                }
-                break;
-
-            case GT_ARR_OFFSET:
-
-                fgDebugCheckFlags(tree->AsArrOffs()->gtOffset);
-                chkFlags |= (tree->AsArrOffs()->gtOffset->gtFlags & GTF_ALL_EFFECT);
-                fgDebugCheckFlags(tree->AsArrOffs()->gtIndex);
-                chkFlags |= (tree->AsArrOffs()->gtIndex->gtFlags & GTF_ALL_EFFECT);
-                fgDebugCheckFlags(tree->AsArrOffs()->gtArrObj);
-                chkFlags |= (tree->AsArrOffs()->gtArrObj->gtFlags & GTF_ALL_EFFECT);
-                break;
-
-            case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-            case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
 #endif // FEATURE_HW_INTRINSICS
 
-                GenTreeBoundsChk* bndsChk;
-                bndsChk = tree->AsBoundsChk();
-                fgDebugCheckFlags(bndsChk->gtIndex);
-                chkFlags |= (bndsChk->gtIndex->gtFlags & GTF_ALL_EFFECT);
-                fgDebugCheckFlags(bndsChk->gtArrLen);
-                chkFlags |= (bndsChk->gtArrLen->gtFlags & GTF_ALL_EFFECT);
-                break;
-
-            case GT_PHI:
-                for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
-                {
-                    fgDebugCheckFlags(use.GetNode());
-                    chkFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
-                }
-                break;
-
-            case GT_FIELD_LIST:
-                for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
-                {
-                    fgDebugCheckFlags(use.GetNode());
-                    chkFlags |= (use.GetNode()->gtFlags & GTF_ALL_EFFECT);
-                }
-                break;
-
-            case GT_CMPXCHG:
-
-                chkFlags |= (GTF_GLOB_REF | GTF_ASG);
-                GenTreeCmpXchg* cmpXchg;
-                cmpXchg = tree->AsCmpXchg();
-                fgDebugCheckFlags(cmpXchg->gtOpLocation);
-                chkFlags |= (cmpXchg->gtOpLocation->gtFlags & GTF_ALL_EFFECT);
-                fgDebugCheckFlags(cmpXchg->gtOpValue);
-                chkFlags |= (cmpXchg->gtOpValue->gtFlags & GTF_ALL_EFFECT);
-                fgDebugCheckFlags(cmpXchg->gtOpComparand);
-                chkFlags |= (cmpXchg->gtOpComparand->gtFlags & GTF_ALL_EFFECT);
-                break;
-
-            case GT_STORE_DYN_BLK:
-            case GT_DYN_BLK:
-
-                GenTreeDynBlk* dynBlk;
-                dynBlk = tree->AsDynBlk();
-                fgDebugCheckFlags(dynBlk->gtDynamicSize);
-                chkFlags |= (dynBlk->gtDynamicSize->gtFlags & GTF_ALL_EFFECT);
-                fgDebugCheckFlags(dynBlk->Addr());
-                chkFlags |= (dynBlk->Addr()->gtFlags & GTF_ALL_EFFECT);
-                if (tree->OperGet() == GT_STORE_DYN_BLK)
-                {
-                    fgDebugCheckFlags(dynBlk->Data());
-                    chkFlags |= (dynBlk->Data()->gtFlags & GTF_ALL_EFFECT);
-                }
-                break;
-
-            default:
-
-#ifdef DEBUG
-                gtDispTree(tree);
-#endif
-
-                assert(!"Unknown operator for fgDebugCheckFlags");
-                break;
-        }
+        default:
+            break;
     }
 
-    fgDebugCheckFlagsHelper(tree, treeFlags, chkFlags);
+    tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
+
+        // ASGs are nodes that produce no value, but have a type (essentially, the type of the location).
+        // Validate that nodes that parent ASGs do not consume values. This check also ensures that code
+        // which updates location types ("gsParamsToShadows" replaces small LCL_VARs with TYP_INT ones)
+        // does not have to worry about propagating the new type "up the tree".
+        //
+        // Uncoditionally allowing COMMA here weakens the assert, but is necessary because the compiler
+        // ("gtExtractSideEffList") can create "typed" "comma lists" with ASGs as second operands.
+        //
+        if (operand->OperIs(GT_ASG))
+        {
+            assert(tree->IsCall() || tree->OperIs(GT_COMMA));
+        }
+
+        fgDebugCheckFlags(operand);
+        expectedFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
+
+        return GenTree::VisitResult::Continue;
+    });
+
+    fgDebugCheckFlagsHelper(tree, actualFlags, expectedFlags);
 }
 
 //------------------------------------------------------------------------------
-// fgDebugCheckDispFlags:
-//    Wrapper function that displays two GTF_IND_ flags
-//      and then calls ftDispFlags to display the rest.
+// fgDebugCheckDispFlags: Wrapper function that displays GTF_IND_ flags
+// and then calls gtDispFlags to display the rest.
 //
 // Arguments:
 //    tree       - Tree whose flags are being checked
-//    dispFlags  - the first argument for gtDispFlags
-//                 ands hold GTF_IND_INVARIANT and GTF_IND_NONFLUALTING
+//    dispFlags  - the first argument for gtDispFlags (flags to display),
+//                 including GTF_IND_INVARIANT, GTF_IND_NONFAULTING, GTF_IND_NONNULL
 //    debugFlags - the second argument to gtDispFlags
 //
-void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned debugFlags)
+void Compiler::fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags)
 {
     if (tree->OperGet() == GT_IND)
     {
@@ -3029,22 +3271,18 @@ void Compiler::fgDebugCheckDispFlags(GenTree* tree, unsigned dispFlags, unsigned
 //------------------------------------------------------------------------------
 // fgDebugCheckFlagsHelper : Check if all bits that are set in chkFlags are also set in treeFlags.
 //
-//
 // Arguments:
-//    tree  - Tree whose flags are being checked
-//    treeFlags - Actual flags on the tree
-//    chkFlags - Expected flags
+//    tree          - Tree whose flags are being checked
+//    actualFlags   - Actual flags on the tree
+//    expectedFlags - Expected flags
 //
-// Note:
-//    Checking that all bits that are set in treeFlags are also set in chkFlags is currently disabled.
-
-void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsigned chkFlags)
+void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags)
 {
-    if (chkFlags & ~treeFlags)
+    if (expectedFlags & ~actualFlags)
     {
         // Print the tree so we can see it in the log.
         printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
-        Compiler::fgDebugCheckDispFlags(tree, chkFlags & ~treeFlags, GTF_DEBUG_NONE);
+        Compiler::fgDebugCheckDispFlags(tree, expectedFlags & ~actualFlags, GTF_DEBUG_NONE);
         printf("\n");
         gtDispTree(tree);
 
@@ -3052,21 +3290,21 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsign
 
         // Print the tree again so we can see it right after we hook up the debugger.
         printf("Missing flags on tree [%06d]: ", dspTreeID(tree));
-        Compiler::fgDebugCheckDispFlags(tree, chkFlags & ~treeFlags, GTF_DEBUG_NONE);
+        Compiler::fgDebugCheckDispFlags(tree, expectedFlags & ~actualFlags, GTF_DEBUG_NONE);
         printf("\n");
         gtDispTree(tree);
     }
-    else if (treeFlags & ~chkFlags)
+    else if (actualFlags & ~expectedFlags)
     {
         // We can't/don't consider these flags (GTF_GLOB_REF or GTF_ORDER_SIDEEFF) as being "extra" flags
         //
-        unsigned flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
+        GenTreeFlags flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
 
-        if ((treeFlags & ~chkFlags & flagsToCheck) != 0)
+        if ((actualFlags & ~expectedFlags & flagsToCheck) != 0)
         {
             // Print the tree so we can see it in the log.
             printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-            Compiler::fgDebugCheckDispFlags(tree, treeFlags & ~chkFlags, GTF_DEBUG_NONE);
+            Compiler::fgDebugCheckDispFlags(tree, actualFlags & ~expectedFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
 
@@ -3074,7 +3312,7 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, unsigned treeFlags, unsign
 
             // Print the tree again so we can see it right after we hook up the debugger.
             printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-            Compiler::fgDebugCheckDispFlags(tree, treeFlags & ~chkFlags, GTF_DEBUG_NONE);
+            Compiler::fgDebugCheckDispFlags(tree, actualFlags & ~expectedFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
         }
@@ -3093,7 +3331,7 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
         // TODO: return?
     }
 
-    assert(fgStmtListThreaded);
+    assert(fgNodeThreading != NodeThreading::None);
 
     noway_assert(stmt->GetTreeList());
 
@@ -3182,6 +3420,146 @@ void Compiler::fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt)
     }
 }
 
+//------------------------------------------------------------------------------
+// fgDebugCheckLinkedLocals: Check the linked list of locals.
+//
+void Compiler::fgDebugCheckLinkedLocals()
+{
+    if (fgNodeThreading != NodeThreading::AllLocals)
+    {
+        return;
+    }
+
+    class DebugLocalSequencer : public GenTreeVisitor<DebugLocalSequencer>
+    {
+        ArrayStack<GenTree*> m_locals;
+
+        bool ShouldLink(GenTree* node)
+        {
+            return node->OperIsLocal() || node->OperIs(GT_LCL_ADDR);
+        }
+
+    public:
+        enum
+        {
+            DoPostOrder       = true,
+            UseExecutionOrder = true,
+        };
+
+        DebugLocalSequencer(Compiler* comp) : GenTreeVisitor(comp), m_locals(comp->getAllocator(CMK_DebugOnly))
+        {
+        }
+
+        void Sequence(Statement* stmt)
+        {
+            m_locals.Reset();
+            WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
+        ArrayStack<GenTree*>* GetSequence()
+        {
+            return &m_locals;
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+            if (ShouldLink(node))
+            {
+                if ((user != nullptr) && user->OperIs(GT_ASG) && (node == user->gtGetOp1()))
+                {
+                }
+                else if ((user != nullptr) && user->IsCall() &&
+                         (node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())))
+                {
+                }
+                else
+                {
+                    m_locals.Push(node);
+                }
+            }
+
+            if (node->OperIs(GT_ASG) && ShouldLink(node->gtGetOp1()))
+            {
+                m_locals.Push(node->gtGetOp1());
+            }
+
+            if (node->IsCall())
+            {
+                GenTree* defined = m_compiler->gtCallGetDefinedRetBufLclAddr(node->AsCall());
+                if (defined != nullptr)
+                {
+                    assert(ShouldLink(defined));
+                    m_locals.Push(defined);
+                }
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    DebugLocalSequencer seq(this);
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->Statements())
+        {
+            GenTree* first = stmt->GetTreeList();
+            CheckDoublyLinkedList<GenTree, &GenTree::gtPrev, &GenTree::gtNext>(first);
+
+            seq.Sequence(stmt);
+
+            ArrayStack<GenTree*>* expected = seq.GetSequence();
+
+            bool success = true;
+
+            if (expected->Height() > 0)
+            {
+                success &= (stmt->GetTreeList() == expected->Bottom(0)) && (stmt->GetTreeListEnd() == expected->Top(0));
+            }
+            else
+            {
+                success &= (stmt->GetTreeList() == nullptr) && (stmt->GetTreeListEnd() == nullptr);
+            }
+
+            int nodeIndex = 0;
+            for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
+            {
+                success &= cur->OperIsLocal() || cur->OperIs(GT_LCL_ADDR);
+                success &= (nodeIndex < expected->Height()) && (cur == expected->Bottom(nodeIndex));
+                nodeIndex++;
+            }
+
+            success &= nodeIndex == expected->Height();
+
+            if (!success && verbose)
+            {
+                printf("Locals are improperly linked in the following statement:\n");
+                DISPSTMT(stmt);
+
+                printf("\nExpected:\n");
+                const char* pref = "  ";
+                for (int i = 0; i < expected->Height(); i++)
+                {
+                    printf("%s[%06u]", pref, dspTreeID(expected->Bottom(i)));
+                    pref = " -> ";
+                }
+
+                printf("\n\nActual:\n");
+                pref = "  ";
+                for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
+                {
+                    printf("%s[%06u]", pref, dspTreeID(cur));
+                    pref = " -> ";
+                }
+
+                printf("\n");
+            }
+
+            assert(success && "Locals are improperly linked!");
+        }
+    }
+}
+
 /*****************************************************************************
  *
  * A DEBUG routine to check the correctness of the links between statements
@@ -3204,7 +3582,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
     fgDebugCheckBlockLinks();
 
     // For each block check the links between the trees.
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->IsLIR())
         {
@@ -3217,6 +3595,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
     }
 
     fgDebugCheckNodesUniqueness();
+    fgDebugCheckSsa();
 }
 
 //------------------------------------------------------------------------------
@@ -3234,7 +3613,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
 
 void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
 {
-    for (Statement* stmt : block->Statements())
+    for (Statement* const stmt : block->Statements())
     {
         // Verify that bbStmtList is threaded correctly.
         // Note that for the statements list, the GetPrevStmt() list is circular.
@@ -3286,7 +3665,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         }
 
         // For each statement check that the nodes are threaded correctly - m_treeList.
-        if (fgStmtListThreaded)
+        if (fgNodeThreading != NodeThreading::None)
         {
             fgDebugCheckNodeLinks(block, stmt);
         }
@@ -3298,7 +3677,7 @@ void Compiler::fgDebugCheckBlockLinks()
 {
     assert(fgFirstBB->bbPrev == nullptr);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->bbNext)
         {
@@ -3330,11 +3709,9 @@ void Compiler::fgDebugCheckBlockLinks()
                 // about the BlockSet epoch.
                 BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
                 BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
-                BasicBlock** jumpTable = block->bbJumpSwt->bbsDstTab;
-                unsigned     jumpCount = block->bbJumpSwt->bbsCount;
-                for (unsigned i = 0; i < jumpCount; i++)
+                for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
-                    BitVecOps::AddElemD(&bitVecTraits, succBlocks, jumpTable[i]->bbNum);
+                    BitVecOps::AddElemD(&bitVecTraits, succBlocks, bTarget->bbNum);
                 }
                 // Now we should have a set of unique successors that matches what's in the switchMap.
                 // First, check the number of entries, then make sure all the blocks in uniqueSuccSet
@@ -3350,7 +3727,7 @@ void Compiler::fgDebugCheckBlockLinks()
     }
 }
 
-// UniquenessCheckWalker keeps data that is neccesary to check
+// UniquenessCheckWalker keeps data that is necessary to check
 // that each tree has it is own unique id and they do not repeat.
 class UniquenessCheckWalker
 {
@@ -3413,7 +3790,7 @@ void Compiler::fgDebugCheckNodesUniqueness()
 {
     UniquenessCheckWalker walker(this);
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
         if (block->IsLIR())
         {
@@ -3424,7 +3801,7 @@ void Compiler::fgDebugCheckNodesUniqueness()
         }
         else
         {
-            for (Statement* stmt : block->Statements())
+            for (Statement* const stmt : block->Statements())
             {
                 GenTree* root = stmt->GetRootNode();
                 fgWalkTreePre(&root, UniquenessCheckWalker::MarkTreeId, &walker);
@@ -3434,20 +3811,956 @@ void Compiler::fgDebugCheckNodesUniqueness()
 }
 
 //------------------------------------------------------------------------------
+// SsaCheckVisitor: build and maintain state about SSA uses in the IR
+//
+// Expects to be invoked on each root expression in each basic block that
+// SSA renames (note SSA will not rename defs and uses in unreachable blocks)
+// and all blocks created after SSA was built (identified by bbID).
+//
+// Maintains a hash table keyed by (lclNum, ssaNum) that tracks information
+// about that SSA lifetime. This information is updated by each SSA use and
+// def seen in the trees via ProcessUses and ProcessDefs.
+//
+// We can spot certain errors during collection, if local occurrences either
+// unexpectedy lack or have SSA numbers.
+//
+// Once collection is done, DoChecks() verifies that the collected information
+// is soundly approximated by the data stored in the LclSsaVarDsc entries.
+//
+// In particular the properties claimed for an SSA lifetime via its
+// LclSsaVarDsc must be accurate or an over-estimate. We tolerate over-estimates
+// as there is no good mechanism in the jit for keeping track when bits of IR
+// are deleted, so over time the number and kind of uses indicated in the
+// LclSsaVarDsc may show more uses and more different kinds of uses then actually
+// remain in the IR.
+//
+// One important caveat is that for promoted locals there may be implicit uses
+// (via the parent var) that do not get numbered by SSA. Neither the LclSsaVarDsc
+// nor the IR will track these implicit uses. So the checking done below will
+// only catch anomalies in the defs or in the explicit uses.
+//
+class SsaCheckVisitor : public GenTreeVisitor<SsaCheckVisitor>
+{
+private:
+    // Hash key for tracking per-SSA lifetime info
+    //
+    struct SsaKey
+    {
+    private:
+        unsigned m_lclNum;
+        unsigned m_ssaNum;
+
+    public:
+        SsaKey() : m_lclNum(BAD_VAR_NUM), m_ssaNum(SsaConfig::RESERVED_SSA_NUM)
+        {
+        }
+
+        SsaKey(unsigned lclNum, unsigned ssaNum) : m_lclNum(lclNum), m_ssaNum(ssaNum)
+        {
+        }
+
+        static bool Equals(const SsaKey& x, const SsaKey& y)
+        {
+            return (x.m_lclNum == y.m_lclNum) && (x.m_ssaNum == y.m_ssaNum);
+        }
+
+        static unsigned GetHashCode(const SsaKey& x)
+        {
+            return (x.m_lclNum << 16) ^ x.m_ssaNum;
+        }
+
+        unsigned GetLclNum() const
+        {
+            return m_lclNum;
+        }
+        unsigned GetSsaNum() const
+        {
+            return m_ssaNum;
+        }
+    };
+
+    // Per-SSA lifetime info
+    //
+    struct SsaInfo
+    {
+    private:
+        BasicBlock* m_defBlock;
+        BasicBlock* m_useBlock;
+        unsigned    m_useCount;
+        bool        m_hasPhiUse;
+        bool        m_hasGlobalUse;
+        bool        m_hasMultipleDef;
+
+    public:
+        SsaInfo()
+            : m_defBlock(nullptr)
+            , m_useBlock(nullptr)
+            , m_useCount(0)
+            , m_hasPhiUse(false)
+            , m_hasGlobalUse(false)
+            , m_hasMultipleDef(false)
+        {
+        }
+
+        void AddUse(BasicBlock* block, const SsaKey& key)
+        {
+            // We may see uses before defs. If so, record the first use block we see.
+            // And if we see multiple uses before/without seeing a def, use that to decide
+            // if the uses are global.
+            //
+            if (m_defBlock == nullptr)
+            {
+                if (m_useBlock == nullptr)
+                {
+                    // Use before we've seen a def
+                    //
+                    m_useBlock = block;
+                }
+                else if (m_useBlock != block)
+                {
+                    // Another use, before def, see if global
+                    //
+                    m_hasGlobalUse = true;
+                }
+            }
+            else if (m_defBlock != block)
+            {
+                m_hasGlobalUse = true;
+            }
+
+            m_useCount++;
+        }
+
+        void AddPhiUse(BasicBlock* block, const SsaKey& key)
+        {
+            m_hasPhiUse = true;
+            AddUse(block, key);
+        }
+
+        void AddDef(BasicBlock* block, const SsaKey& key)
+        {
+            if (m_defBlock == nullptr)
+            {
+                // If we already saw a use, it might have been a global use.
+                //
+                if ((m_useBlock != nullptr) && (m_useBlock != block))
+                {
+                    m_hasGlobalUse = true;
+                }
+
+                m_defBlock = block;
+            }
+            else
+            {
+                m_hasMultipleDef = true;
+            }
+        }
+
+        BasicBlock* GetDefBlock() const
+        {
+            return m_defBlock;
+        }
+
+        unsigned GetNumUses() const
+        {
+            // The ssa table use count saturates at USHRT_MAX.
+            //
+            if (m_useCount > USHRT_MAX)
+            {
+                return USHRT_MAX;
+            }
+            return m_useCount;
+        }
+
+        bool HasPhiUse() const
+        {
+            return m_hasPhiUse;
+        }
+
+        bool HasGlobalUse() const
+        {
+            return m_hasGlobalUse;
+        }
+
+        bool HasMultipleDef() const
+        {
+            return m_hasMultipleDef;
+        }
+    };
+
+    typedef JitHashTable<SsaKey, SsaKey, SsaInfo*> SsaInfoMap;
+
+    Compiler* const m_compiler;
+    BasicBlock*     m_block;
+    SsaInfoMap      m_infoMap;
+    bool            m_hasErrors;
+
+public:
+    enum
+    {
+        DoPreOrder = true
+    };
+
+    SsaCheckVisitor(Compiler* compiler)
+        : GenTreeVisitor<SsaCheckVisitor>(compiler)
+        , m_compiler(compiler)
+        , m_block(nullptr)
+        , m_infoMap(compiler->getAllocator(CMK_DebugOnly))
+        , m_hasErrors(false)
+    {
+    }
+
+    void ProcessDef(GenTree* tree, unsigned lclNum, unsigned ssaNum)
+    {
+        // If the var is not in ssa, the local should not have an ssa num.
+        //
+        if (!m_compiler->lvaInSsa(lclNum))
+        {
+            if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+            {
+                SetHasErrors();
+                JITDUMP("[error] Unexpected SSA number on def [%06u] (V%02u)\n", m_compiler->dspTreeID(tree), lclNum);
+            }
+            return;
+        }
+
+        // All defs of ssa vars should have valid ssa nums.
+        //
+        if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
+        {
+            SetHasErrors();
+            JITDUMP("[error] Missing SSA number on def [%06u] (V%02u)\n", m_compiler->dspTreeID(tree), lclNum);
+            return;
+        }
+
+        SsaKey   key(lclNum, ssaNum);
+        SsaInfo* ssaInfo = nullptr;
+        if (!m_infoMap.Lookup(key, &ssaInfo))
+        {
+            ssaInfo = new (m_compiler->getAllocator(CMK_DebugOnly)) SsaInfo;
+            m_infoMap.Set(key, ssaInfo);
+        }
+
+        ssaInfo->AddDef(m_block, key);
+    }
+
+    void ProcessDefs(GenTree* tree)
+    {
+        GenTreeLclVarCommon* lclNode;
+        bool                 isFullDef    = false;
+        ssize_t              offset       = 0;
+        unsigned             storeSize    = 0;
+        bool                 definesLocal = tree->DefinesLocal(m_compiler, &lclNode, &isFullDef, &offset, &storeSize);
+
+        if (!definesLocal)
+        {
+            return;
+        }
+
+        const bool       isUse  = (lclNode->gtFlags & GTF_VAR_USEASG) != 0;
+        unsigned const   lclNum = lclNode->GetLclNum();
+        LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+
+        assert(!(isFullDef && isUse));
+
+        if (lclNode->HasCompositeSsaName())
+        {
+            for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+            {
+                unsigned const   fieldLclNum = varDsc->lvFieldLclStart + index;
+                LclVarDsc* const fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
+                unsigned const   fieldSsaNum = lclNode->GetSsaNum(m_compiler, index);
+
+                ssize_t  fieldStoreOffset;
+                unsigned fieldStoreSize;
+                if (m_compiler->gtStoreDefinesField(fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
+                {
+                    ProcessDef(lclNode, fieldLclNum, fieldSsaNum);
+
+                    if (!ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc), fieldStoreOffset, fieldStoreSize))
+                    {
+                        assert(isUse);
+                        unsigned const fieldUseSsaNum = fieldVarDsc->GetPerSsaData(fieldSsaNum)->GetUseDefSsaNum();
+                        ProcessUse(lclNode, fieldLclNum, fieldUseSsaNum);
+                    }
+                }
+            }
+        }
+        else
+        {
+            unsigned const ssaNum = lclNode->GetSsaNum();
+            ProcessDef(lclNode, lclNum, ssaNum);
+
+            if (isUse)
+            {
+                unsigned useSsaNum = SsaConfig::RESERVED_SSA_NUM;
+                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+                {
+                    useSsaNum = varDsc->GetPerSsaData(ssaNum)->GetUseDefSsaNum();
+                }
+                ProcessUse(lclNode, lclNum, useSsaNum);
+            }
+        }
+    }
+
+    void ProcessUse(GenTreeLclVarCommon* tree, unsigned lclNum, unsigned ssaNum)
+    {
+        // If the var is not in ssa, the tree should not have an ssa num.
+        //
+        if (!m_compiler->lvaInSsa(lclNum))
+        {
+            if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+            {
+                SetHasErrors();
+                JITDUMP("[error] Unexpected SSA number on [%06u] (V%02u)\n", m_compiler->dspTreeID(tree), lclNum);
+            }
+            return;
+        }
+
+        // All uses of ssa vars should have valid ssa nums, unless there are no defs.
+        //
+        if (ssaNum == SsaConfig::RESERVED_SSA_NUM)
+        {
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+
+            if (varDsc->lvPerSsaData.GetCount() > 0)
+            {
+                SetHasErrors();
+                JITDUMP("[error] Missing SSA number on use [%06u] (V%02u)\n", m_compiler->dspTreeID(tree), lclNum);
+            }
+            return;
+        }
+
+        SsaKey   key(lclNum, ssaNum);
+        SsaInfo* ssaInfo = nullptr;
+
+        if (!m_infoMap.Lookup(key, &ssaInfo))
+        {
+            ssaInfo = new (m_compiler->getAllocator(CMK_DebugOnly)) SsaInfo;
+            m_infoMap.Set(key, ssaInfo);
+        }
+
+        if (tree->OperIs(GT_PHI_ARG))
+        {
+            ssaInfo->AddPhiUse(m_block, key);
+        }
+        else
+        {
+            ssaInfo->AddUse(m_block, key);
+        }
+    }
+
+    void ProcessUses(GenTreeLclVarCommon* tree)
+    {
+        unsigned const lclNum = tree->GetLclNum();
+        unsigned const ssaNum = tree->GetSsaNum();
+
+        // We currently should not see composite SSA numbers for uses.
+        //
+        if (tree->HasCompositeSsaName())
+        {
+            SetHasErrors();
+            JITDUMP("[error] Composite SSA number on use [%06u] (V%02u)\n", m_compiler->dspTreeID(tree), lclNum);
+            return;
+        }
+
+        ProcessUse(tree, lclNum, ssaNum);
+    }
+
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* const tree = *use;
+
+        if (tree->OperIsSsaDef())
+        {
+            ProcessDefs(tree);
+        }
+        else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_PHI_ARG) && ((tree->gtFlags & GTF_VAR_DEF) == 0))
+        {
+            ProcessUses(tree->AsLclVarCommon());
+        }
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+
+    void SetHasErrors()
+    {
+        if (!m_hasErrors)
+        {
+            JITDUMP("fgDebugCheckSsa: errors found\n");
+            m_hasErrors = true;
+        }
+    }
+
+    bool HasErrors() const
+    {
+        return m_hasErrors;
+    }
+
+    void SetBlock(BasicBlock* block)
+    {
+        m_block = block;
+    }
+
+    void DoChecks()
+    {
+        for (unsigned lclNum = 0; lclNum < m_compiler->lvaCount; lclNum++)
+        {
+            // Check each local in SSA
+            //
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+
+            if (!varDsc->lvInSsa)
+            {
+                continue;
+            }
+
+            // Check each SSA lifetime of that local
+            //
+            const SsaDefArray<LclSsaVarDsc>& ssaDefs = varDsc->lvPerSsaData;
+
+            for (unsigned i = 0; i < ssaDefs.GetCount(); i++)
+            {
+                LclSsaVarDsc* const ssaVarDsc = ssaDefs.GetSsaDefByIndex(i);
+                const unsigned      ssaNum    = ssaDefs.GetSsaNum(ssaVarDsc);
+
+                // Find the SSA info we gathered for this lifetime via the IR walk
+                //
+                SsaKey   key(lclNum, ssaNum);
+                SsaInfo* ssaInfo = nullptr;
+
+                if (!m_infoMap.Lookup(key, &ssaInfo))
+                {
+                    // IR has no information about this lifetime.
+                    // Possibly there are no more references.
+                    //
+                    continue;
+                }
+
+                // Now cross-check the gathered ssaInfo vs the LclSsaVarDsc.
+                // LclSsaVarDsc should have the correct def block
+                //
+                BasicBlock* const ssaInfoDefBlock   = ssaInfo->GetDefBlock();
+                BasicBlock* const ssaVarDscDefBlock = ssaVarDsc->GetBlock();
+
+                if (ssaInfoDefBlock != ssaVarDscDefBlock)
+                {
+                    // We are inconsistent in tracking where the initial values of params
+                    // and uninit locals come from. Tolerate.
+                    //
+                    const bool initialValOfParamOrLocal =
+                        (lclNum < m_compiler->lvaCount) && (ssaNum == SsaConfig::FIRST_SSA_NUM);
+                    const bool noDefBlockOrFirstBB =
+                        (ssaInfoDefBlock == nullptr) && (ssaVarDscDefBlock == m_compiler->fgFirstBB);
+                    if (!(initialValOfParamOrLocal && noDefBlockOrFirstBB))
+                    {
+                        JITDUMP("[error] Wrong def block for V%02u.%u : IR " FMT_BB " SSA " FMT_BB "\n", lclNum, ssaNum,
+                                ssaInfoDefBlock == nullptr ? 0 : ssaInfoDefBlock->bbNum,
+                                ssaVarDscDefBlock == nullptr ? 0 : ssaVarDscDefBlock->bbNum);
+
+                        SetHasErrors();
+                    }
+                }
+
+                unsigned const ssaInfoUses   = ssaInfo->GetNumUses();
+                unsigned const ssaVarDscUses = ssaVarDsc->GetNumUses();
+
+                // LclSsaVarDsc use count must be accurate or an over-estimate
+                //
+                if (ssaInfoUses > ssaVarDscUses)
+                {
+                    // If this assert fires, it's possible some optimization did not call optRecordSsaUse.
+                    //
+                    JITDUMP("[error] NumUses underestimated for V%02u.%u: IR %u SSA %u\n", lclNum, ssaNum, ssaInfoUses,
+                            ssaVarDscUses);
+                    SetHasErrors();
+                }
+                else if (ssaInfoUses < ssaVarDscUses)
+                {
+                    JITDUMP("[info] NumUses overestimated for V%02u.%u: IR %u SSA %u\n", lclNum, ssaNum, ssaInfoUses,
+                            ssaVarDscUses);
+                }
+
+                // LclSsaVarDsc HasPhiUse use must be accurate or an over-estimate
+                //
+                if (ssaInfo->HasPhiUse() && !ssaVarDsc->HasPhiUse())
+                {
+                    JITDUMP("[error] HasPhiUse underestimated for V%02u.%u\n", lclNum, ssaNum);
+                    SetHasErrors();
+                }
+                else if (!ssaInfo->HasPhiUse() && ssaVarDsc->HasPhiUse())
+                {
+                    JITDUMP("[info] HasPhiUse overestimated for V%02u.%u\n", lclNum, ssaNum);
+                }
+
+                // LclSsaVarDsc HasGlobalUse use must be accurate or an over-estimate
+                //
+                if (ssaInfo->HasGlobalUse() && !ssaVarDsc->HasGlobalUse())
+                {
+                    JITDUMP("[error] HasGlobalUse underestimated for V%02u.%u\n", lclNum, ssaNum);
+                    SetHasErrors();
+                }
+                else if (!ssaInfo->HasGlobalUse() && ssaVarDsc->HasGlobalUse())
+                {
+                    JITDUMP("[info] HasGlobalUse overestimated for V%02u.%u\n", lclNum, ssaNum);
+                }
+
+                // There should be at most one def.
+                //
+                if (ssaInfo->HasMultipleDef())
+                {
+                    JITDUMP("[error] HasMultipleDef for V%02u.%u\n", lclNum, ssaNum);
+                    SetHasErrors();
+                }
+            }
+        }
+    }
+};
+
+//------------------------------------------------------------------------------
+// fgDebugCheckSsa: Check that certain SSA invariants hold.
+//
+// Currently verifies:
+// * There is at most one SSA def for a given SSA num, and it is in the expected block.
+// * Operands that should have SSA numbers have them
+// * Operands that should not have SSA numbers do not have them
+// * GetNumUses is accurate or an over-estimate
+// * HasGlobalUse is properly set or an over-estimate
+// * HasPhiUse is properly set or an over-estimate
+//
+// Todo:
+// * Try and sanity check PHIs
+// * Verify VNs on uses match the VN on the def
+//
+void Compiler::fgDebugCheckSsa()
+{
+    if (!fgSsaChecksEnabled)
+    {
+        return;
+    }
+
+    assert(fgSsaPassesCompleted > 0);
+    assert(fgDomsComputed);
+
+    // This class visits the flow graph the same way the SSA builder does.
+    // In particular it may skip over blocks that SSA did not rename.
+    //
+    class SsaCheckDomTreeVisitor : public DomTreeVisitor<SsaCheckDomTreeVisitor>
+    {
+        SsaCheckVisitor& m_checkVisitor;
+
+    public:
+        SsaCheckDomTreeVisitor(Compiler* compiler, SsaCheckVisitor& checkVisitor)
+            : DomTreeVisitor(compiler, compiler->fgSsaDomTree), m_checkVisitor(checkVisitor)
+        {
+        }
+
+        void PreOrderVisit(BasicBlock* block)
+        {
+            m_checkVisitor.SetBlock(block);
+
+            for (Statement* const stmt : block->Statements())
+            {
+                m_checkVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            }
+        }
+    };
+
+    // Visit the blocks that SSA initially renamed
+    //
+    SsaCheckVisitor        scv(this);
+    SsaCheckDomTreeVisitor visitor(this, scv);
+    visitor.WalkTree();
+
+    // Also visit any blocks added after SSA was built
+    //
+    for (BasicBlock* const block : Blocks())
+    {
+        if (block->bbNum > fgDomBBcount)
+        {
+            visitor.PreOrderVisit(block);
+        }
+    }
+
+    // Cross-check the information gathered from IR against the info
+    // in the LclSsaVarDscs.
+    //
+    scv.DoChecks();
+
+    if (scv.HasErrors())
+    {
+        assert(!"SSA check failures");
+    }
+    else
+    {
+        JITDUMP("SSA checks completed successfully\n");
+    }
+}
+
+//------------------------------------------------------------------------------
 // fgDebugCheckLoopTable: checks that the loop table is valid.
 //    - If the method has natural loops, the loop table is not null
+//    - Loop `top` must come before `bottom`.
+//    - Loop `entry` must be between `top` and `bottom`.
+//    - Children loops of a loop are disjoint.
 //    - All basic blocks with loop numbers set have a corresponding loop in the table
 //    - All basic blocks without a loop number are not in a loop
 //    - All parents of the loop with the block contain that block
+//    - If optLoopsRequirePreHeaders is true, the loop has a pre-header
+//    - If the loop has a pre-header, it is valid
+//    - The loop flags are valid
+//    - no loop shares `top` with any of its children
+//    - no loop shares `bottom` with the header of any of its siblings
+//    - no top-entry loop has a predecessor that comes from outside the loop other than from lpHead
 //
 void Compiler::fgDebugCheckLoopTable()
 {
+#ifdef DEBUG
+    if (!optLoopTableValid)
+    {
+        JITDUMP("*************** In fgDebugCheckLoopTable: loop table not valid\n");
+        return;
+    }
+    JITDUMP("*************** In fgDebugCheckLoopTable\n");
+#endif // DEBUG
+
     if (optLoopCount > 0)
     {
         assert(optLoopTable != nullptr);
     }
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    // Build a mapping from existing block list number (bbNum) to the block number it would be after the
+    // blocks are renumbered. This allows making asserts about the relative ordering of blocks using block number
+    // without actually renumbering the blocks, which would affect non-DEBUG code paths. Note that there may be
+    // `blockNumMap[bbNum] == 0` if the `bbNum` block was deleted and blocks haven't been renumbered since
+    // the deletion.
+
+    unsigned bbNumMax = fgBBNumMax;
+
+    // blockNumMap[old block number] => new block number
+    size_t    blockNumBytes = (bbNumMax + 1) * sizeof(unsigned);
+    unsigned* blockNumMap   = (unsigned*)_alloca(blockNumBytes);
+    memset(blockNumMap, 0, blockNumBytes);
+
+    unsigned newBBnum = 1;
+    for (BasicBlock* const block : Blocks())
+    {
+        if ((block->bbFlags & BBF_REMOVED) == 0)
+        {
+            assert(1 <= block->bbNum && block->bbNum <= bbNumMax);
+            assert(blockNumMap[block->bbNum] == 0); // If this fails, we have two blocks with the same block number.
+            blockNumMap[block->bbNum] = newBBnum++;
+        }
+    }
+
+    struct MappedChecks
+    {
+        static bool lpWellFormed(const unsigned* blockNumMap, const LoopDsc* loop)
+        {
+            return (blockNumMap[loop->lpTop->bbNum] <= blockNumMap[loop->lpEntry->bbNum]) &&
+                   (blockNumMap[loop->lpEntry->bbNum] <= blockNumMap[loop->lpBottom->bbNum]) &&
+                   ((blockNumMap[loop->lpHead->bbNum] < blockNumMap[loop->lpTop->bbNum]) ||
+                    (blockNumMap[loop->lpHead->bbNum] > blockNumMap[loop->lpBottom->bbNum]));
+        }
+
+        static bool lpContains(const unsigned* blockNumMap, const LoopDsc* loop, const BasicBlock* blk)
+        {
+            return (blockNumMap[loop->lpTop->bbNum] <= blockNumMap[blk->bbNum]) &&
+                   (blockNumMap[blk->bbNum] <= blockNumMap[loop->lpBottom->bbNum]);
+        }
+        static bool lpContains(const unsigned*   blockNumMap,
+                               const LoopDsc*    loop,
+                               const BasicBlock* top,
+                               const BasicBlock* bottom)
+        {
+            return (blockNumMap[loop->lpTop->bbNum] <= blockNumMap[top->bbNum]) &&
+                   (blockNumMap[bottom->bbNum] < blockNumMap[loop->lpBottom->bbNum]);
+        }
+        static bool lpContains(const unsigned* blockNumMap, const LoopDsc* loop, const LoopDsc& lp2)
+        {
+            return lpContains(blockNumMap, loop, lp2.lpTop, lp2.lpBottom);
+        }
+
+        static bool lpContainedBy(const unsigned*   blockNumMap,
+                                  const LoopDsc*    loop,
+                                  const BasicBlock* top,
+                                  const BasicBlock* bottom)
+        {
+            return (blockNumMap[top->bbNum] <= blockNumMap[loop->lpTop->bbNum]) &&
+                   (blockNumMap[loop->lpBottom->bbNum] < blockNumMap[bottom->bbNum]);
+        }
+        static bool lpContainedBy(const unsigned* blockNumMap, const LoopDsc* loop, const LoopDsc& lp2)
+        {
+            return lpContainedBy(blockNumMap, loop, lp2.lpTop, lp2.lpBottom);
+        }
+
+        static bool lpDisjoint(const unsigned*   blockNumMap,
+                               const LoopDsc*    loop,
+                               const BasicBlock* top,
+                               const BasicBlock* bottom)
+        {
+            return (blockNumMap[bottom->bbNum] < blockNumMap[loop->lpTop->bbNum]) ||
+                   (blockNumMap[loop->lpBottom->bbNum] < blockNumMap[top->bbNum]);
+        }
+        static bool lpDisjoint(const unsigned* blockNumMap, const LoopDsc* loop, const LoopDsc& lp2)
+        {
+            return lpDisjoint(blockNumMap, loop, lp2.lpTop, lp2.lpBottom);
+        }
+
+        // Like Disjoint, but also checks lpHead
+        //
+        static bool lpFullyDisjoint(const unsigned* blockNumMap, const LoopDsc* loop, const LoopDsc& lp2)
+        {
+            return lpDisjoint(blockNumMap, loop, lp2.lpTop, lp2.lpBottom) &&
+                   !lpContains(blockNumMap, loop, lp2.lpHead) && !lpContains(blockNumMap, &lp2, loop->lpHead);
+        }
+
+        // If a top-entry loop, lpHead must be only non-loop pred of lpTop
+        static bool lpHasWellFormedBackedges(const unsigned* blockNumMap, const LoopDsc* loop)
+        {
+            if (loop->lpTop != loop->lpEntry)
+            {
+                // not top-entry, assume ok for now
+                return true;
+            }
+
+            bool foundHead = false;
+            for (BasicBlock* const pred : loop->lpTop->PredBlocks())
+            {
+                if (pred == loop->lpHead)
+                {
+                    foundHead = true;
+                    continue;
+                }
+
+                if (!lpContains(blockNumMap, loop, pred))
+                {
+                    return false;
+                }
+            }
+
+            return foundHead;
+        }
+    };
+
+    // Check the loop table itself.
+
+    int preHeaderCount = 0;
+
+    for (unsigned i = 0; i < optLoopCount; i++)
+    {
+        const LoopDsc& loop = optLoopTable[i];
+
+        // Ignore removed loops
+        if (loop.lpIsRemoved())
+        {
+            continue;
+        }
+
+        assert(loop.lpHead != nullptr);
+        assert(loop.lpTop != nullptr);
+        assert(loop.lpEntry != nullptr);
+        assert(loop.lpBottom != nullptr);
+
+        assert(MappedChecks::lpWellFormed(blockNumMap, &loop));
+        assert(MappedChecks::lpHasWellFormedBackedges(blockNumMap, &loop));
+
+        if (loop.lpExitCnt == 1)
+        {
+            assert(loop.lpExit != nullptr);
+            assert(MappedChecks::lpContains(blockNumMap, &loop, loop.lpExit));
+        }
+        else
+        {
+            assert(loop.lpExit == nullptr);
+        }
+
+        if (loop.lpParent == BasicBlock::NOT_IN_LOOP)
+        {
+            // This is a top-level loop.
+
+            // Verify all top-level loops are fully disjoint. We don't have a list of just these (such as a
+            // top-level pseudo-loop entry with a list of all top-level lists), so we have to iterate
+            // over the entire loop table.
+            for (unsigned j = 0; j < optLoopCount; j++)
+            {
+                if (i == j)
+                {
+                    // Don't compare against ourselves.
+                    continue;
+                }
+                const LoopDsc& otherLoop = optLoopTable[j];
+                if (otherLoop.lpIsRemoved())
+                {
+                    continue;
+                }
+                if (otherLoop.lpParent != BasicBlock::NOT_IN_LOOP)
+                {
+                    // Only consider top-level loops
+                    continue;
+                }
+                assert(MappedChecks::lpFullyDisjoint(blockNumMap, &loop, otherLoop));
+            }
+        }
+        else
+        {
+            // This is not a top-level loop
+
+            assert(loop.lpParent != BasicBlock::NOT_IN_LOOP);
+            assert(loop.lpParent < optLoopCount);
+            assert(loop.lpParent < i); // outer loops come before inner loops in the table
+
+            const LoopDsc& parentLoop = optLoopTable[loop.lpParent];
+            assert(!parentLoop.lpIsRemoved()); // don't allow removed parent loop?
+
+            // Either there is no sibling or it should not be marked REMOVED.
+            assert((loop.lpSibling == BasicBlock::NOT_IN_LOOP) || !optLoopTable[loop.lpSibling].lpIsRemoved());
+
+            // Either there is no child or it should not be marked REMOVED.
+            assert((loop.lpChild == BasicBlock::NOT_IN_LOOP) || !optLoopTable[loop.lpChild].lpIsRemoved());
+
+            assert(MappedChecks::lpContainedBy(blockNumMap, &loop, optLoopTable[loop.lpParent]));
+        }
+
+        if (loop.lpChild != BasicBlock::NOT_IN_LOOP)
+        {
+            // Verify all child loops are contained in the parent loop.
+            for (unsigned child = loop.lpChild;    //
+                 child != BasicBlock::NOT_IN_LOOP; //
+                 child = optLoopTable[child].lpSibling)
+            {
+                assert(child < optLoopCount);
+                assert(i < child); // outer loops come before inner loops in the table
+                const LoopDsc& childLoop = optLoopTable[child];
+                assert(!childLoop.lpIsRemoved());
+                assert(MappedChecks::lpContains(blockNumMap, &loop, childLoop));
+                assert(childLoop.lpParent == i);
+            }
+
+            // Verify all child loops are fully disjoint.
+            for (unsigned child = loop.lpChild;    //
+                 child != BasicBlock::NOT_IN_LOOP; //
+                 child = optLoopTable[child].lpSibling)
+            {
+                const LoopDsc& childLoop = optLoopTable[child];
+                assert(!childLoop.lpIsRemoved());
+                for (unsigned child2 = optLoopTable[child].lpSibling; //
+                     child2 != BasicBlock::NOT_IN_LOOP;               //
+                     child2 = optLoopTable[child2].lpSibling)
+                {
+                    const LoopDsc& child2Loop = optLoopTable[child2];
+                    assert(!child2Loop.lpIsRemoved());
+                    assert(MappedChecks::lpFullyDisjoint(blockNumMap, &childLoop, child2Loop));
+                }
+            }
+
+            // Verify no child shares lpTop with its parent.
+            for (unsigned child = loop.lpChild;    //
+                 child != BasicBlock::NOT_IN_LOOP; //
+                 child = optLoopTable[child].lpSibling)
+            {
+                const LoopDsc& childLoop = optLoopTable[child];
+                assert(!childLoop.lpIsRemoved());
+                assert(loop.lpTop != childLoop.lpTop);
+            }
+        }
+
+        if (optLoopsRequirePreHeaders)
+        {
+            assert((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0);
+        }
+
+        // If the loop has a pre-header, ensure the pre-header form is correct.
+        if ((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0)
+        {
+            ++preHeaderCount;
+
+            BasicBlock* h = loop.lpHead;
+            assert(h->bbFlags & BBF_LOOP_PREHEADER);
+
+            // The pre-header can only be BBJ_ALWAYS or BBJ_NONE and must enter the loop.
+            BasicBlock* e = loop.lpEntry;
+            if (h->bbJumpKind == BBJ_ALWAYS)
+            {
+                assert(h->bbJumpDest == e);
+            }
+            else
+            {
+                assert(h->bbJumpKind == BBJ_NONE);
+                assert(h->bbNext == e);
+                assert(loop.lpTop == e);
+                assert(loop.lpIsTopEntry());
+            }
+
+            // The entry block has a single non-loop predecessor, and it is the pre-header.
+            for (BasicBlock* const predBlock : e->PredBlocks())
+            {
+                if (predBlock != h)
+                {
+                    assert(MappedChecks::lpContains(blockNumMap, &loop, predBlock));
+                }
+            }
+
+            loop.lpValidatePreHeader();
+        }
+
+        // Check the flags.
+        // Note that the various limit flags are only used when LPFLG_ITER is set, but they are set first,
+        // separately, and only if everything works out is LPFLG_ITER set. If LPFLG_ITER is NOT set, the
+        // individual flags are not un-set (arguably, they should be).
+
+        // Only one of the `limit` flags can be set. (Note that LPFLG_SIMD_LIMIT is a "sub-flag" that can be
+        // set when LPFLG_CONST_LIMIT is set.)
+        assert(genCountBits((unsigned)(loop.lpFlags & (LPFLG_VAR_LIMIT | LPFLG_CONST_LIMIT | LPFLG_ARRLEN_LIMIT))) <=
+               1);
+
+        // LPFLG_SIMD_LIMIT can only be set if LPFLG_CONST_LIMIT is set.
+        if (loop.lpFlags & LPFLG_SIMD_LIMIT)
+        {
+            assert(loop.lpFlags & LPFLG_CONST_LIMIT);
+        }
+
+        if (loop.lpFlags & LPFLG_CONST_INIT)
+        {
+            assert(loop.lpInitBlock != nullptr);
+        }
+
+        if (loop.lpFlags & LPFLG_ITER)
+        {
+            loop.VERIFY_lpIterTree();
+            loop.VERIFY_lpTestTree();
+        }
+
+        // If we have dominators, we check more things:
+        // 1. The pre-header dominates the entry (if pre-headers are required).
+        // 2. The entry dominates the exit.
+        // 3. The IDom tree from the exit reaches the entry.
+        if (fgDomsComputed)
+        {
+            if (optLoopsRequirePreHeaders)
+            {
+                assert(fgDominate(loop.lpHead, loop.lpEntry));
+            }
+
+            if (loop.lpExitCnt == 1)
+            {
+                assert(loop.lpExit != nullptr);
+                assert(fgDominate(loop.lpEntry, loop.lpExit));
+
+                BasicBlock* cur = loop.lpExit;
+                while ((cur != nullptr) && (cur != loop.lpEntry))
+                {
+                    assert(fgDominate(cur, loop.lpExit));
+                    cur = cur->bbIDom;
+                }
+                assert(cur == loop.lpEntry); // We must be able to reach the entry from the exit via the IDom tree.
+            }
+        }
+    }
+
+    // Check basic blocks for loop annotations.
+
+    for (BasicBlock* const block : Blocks())
     {
         if (optLoopCount == 0)
         {
@@ -3461,12 +4774,12 @@ void Compiler::fgDebugCheckLoopTable()
         for (int i = optLoopCount - 1; i >= 0; i--)
         {
             // Ignore removed loops
-            if (optLoopTable[i].lpFlags & LPFLG_REMOVED)
+            if (optLoopTable[i].lpIsRemoved())
             {
                 continue;
             }
             // Does this loop contain our block?
-            if (optLoopTable[i].lpContains(block))
+            if (MappedChecks::lpContains(blockNumMap, &optLoopTable[i], block))
             {
                 loopNum = i;
                 break;
@@ -3478,6 +4791,11 @@ void Compiler::fgDebugCheckLoopTable()
         {
             // ...it must be the one pointed to by bbNatLoopNum.
             assert(block->bbNatLoopNum == loopNum);
+
+            // TODO: We might want the following assert, but there are cases where we don't move all
+            //       return blocks out of the loop.
+            // Return blocks are not allowed inside a loop; they should have been moved elsewhere.
+            // assert(block->bbJumpKind != BBJ_RETURN);
         }
         else
         {
@@ -3488,11 +4806,21 @@ void Compiler::fgDebugCheckLoopTable()
         // All loops that contain the innermost loop with this block must also contain this block.
         while (loopNum != BasicBlock::NOT_IN_LOOP)
         {
-            assert(optLoopTable[loopNum].lpContains(block));
-
+            assert(MappedChecks::lpContains(blockNumMap, &optLoopTable[loopNum], block));
             loopNum = optLoopTable[loopNum].lpParent;
         }
+
+        if (block->bbFlags & BBF_LOOP_PREHEADER)
+        {
+            // Note that the bbNatLoopNum will not point to the loop where this is a pre-header, since bbNatLoopNum
+            // is only set on the blocks from `top` to `bottom`, and `head` is outside that.
+            --preHeaderCount;
+        }
     }
+
+    // Verify that the number of loops marked as having pre-headers is the same as the number of blocks
+    // with the pre-header flag set.
+    assert(preHeaderCount == 0);
 }
 
 /*****************************************************************************/

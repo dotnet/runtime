@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-.module extern kernel32.dll
 .assembly extern System.Console { auto }
+.assembly extern xunit.core {}
 .assembly extern System.Threading.Thread { auto }
 .assembly extern mscorlib { auto }
 
@@ -24,7 +24,7 @@
 
 
 
-.class private auto ansi beforefieldinit Repro
+.class public auto ansi beforefieldinit Repro
        extends [mscorlib]System.Object
 {
   .field private static class [mscorlib]System.Threading.EventWaitHandle e1
@@ -164,9 +164,11 @@
     IL_0045:  ret
   }
 
-  .method private hidebysig static int32
-          Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  3
     .locals init (class [System.Threading.Thread]System.Threading.Thread V_0,

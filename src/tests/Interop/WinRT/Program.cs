@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.WindowsRuntime;
-using TestLibrary;
+using Xunit;
 
 namespace WinRT
 {
@@ -16,7 +16,7 @@ namespace WinRT
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool ObjectIsI(object o) => o is I;
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             try
             {

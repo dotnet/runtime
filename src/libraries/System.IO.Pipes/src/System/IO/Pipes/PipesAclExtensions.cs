@@ -19,10 +19,7 @@ namespace System.IO.Pipes
 
         public static void SetAccessControl(this PipeStream stream, PipeSecurity pipeSecurity)
         {
-            if (pipeSecurity == null)
-            {
-                throw new ArgumentNullException(nameof(pipeSecurity));
-            }
+            ArgumentNullException.ThrowIfNull(pipeSecurity);
 
             // Checks that State != WaitingToConnect and State != Closed
             var handle = stream.SafePipeHandle;
@@ -33,7 +30,7 @@ namespace System.IO.Pipes
                 throw new IOException(SR.IO_IO_PipeBroken);
             }
 
-            // PipeState must be either Disconected or Connected
+            // PipeState must be either Disconnected or Connected
             pipeSecurity.Persist(handle);
         }
     }

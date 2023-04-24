@@ -16,11 +16,11 @@ internal static partial class Interop
             PRIO_USER       = 2,
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPriority", SetLastError = true)]
-        private static extern int GetPriority(PriorityWhich which, int who);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPriority", SetLastError = true)]
+        private static partial int GetPriority(PriorityWhich which, int who);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetPriority", SetLastError = true)]
-        internal static extern int SetPriority(PriorityWhich which, int who, int nice);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetPriority", SetLastError = true)]
+        internal static partial int SetPriority(PriorityWhich which, int who, int nice);
 
         /// <summary>
         /// Wrapper around getpriority since getpriority can return from -20 to 20; therefore,
@@ -32,7 +32,7 @@ internal static partial class Interop
         internal static int GetPriority(PriorityWhich which, int who, out int priority)
         {
             priority = GetPriority(which, who);
-            return Marshal.GetLastWin32Error();
+            return Marshal.GetLastPInvokeError();
         }
 
         internal static System.Diagnostics.ThreadPriorityLevel GetThreadPriorityFromNiceValue(int nice)

@@ -26,7 +26,530 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 
 //------------------------------------------------------------------------
-// BuildNode: Build the RefPositions for for a node
+// getNextConsecutiveRefPosition: Get the next subsequent RefPosition.
+//
+// Arguments:
+//    refPosition   - The RefPosition for which we need to find the next RefPosition.
+//
+// Return Value:
+//    The next RefPosition or nullptr if there is not one.
+//
+RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
+{
+    assert(compiler->info.compNeedsConsecutiveRegisters);
+    RefPosition* nextRefPosition;
+    assert(refPosition->needsConsecutive);
+    nextConsecutiveRefPositionMap->Lookup(refPosition, &nextRefPosition);
+    assert((nextRefPosition == nullptr) || nextRefPosition->needsConsecutive);
+    return nextRefPosition;
+}
+
+//------------------------------------------------------------------------
+// assignConsecutiveRegisters: For subsequent RefPositions, set the register
+//   requirement to be the consecutive register(s) of the register that is assigned to
+//   the firstRefPosition.
+//   If one of the subsequent RefPosition is RefTypeUpperVectorRestore, sets the
+//   registerAssignment to not include any of the consecutive registers that are being
+//   assigned to the RefTypeUse RefPositions.
+//
+// Arguments:
+//    firstRefPosition  - First RefPosition of the series of consecutive registers.
+//    firstRegAssigned  - Register assigned to the first RefPosition.
+//
+//  Note:
+//      This method will set the registerAssignment of subsequent RefPositions with consecutive registers.
+//      Some of the registers could be busy, and they will be spilled. We would end up with busy registers if
+//      we did not find free consecutive registers.
+//
+void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned)
+{
+    assert(compiler->info.compNeedsConsecutiveRegisters);
+    assert(firstRefPosition->assignedReg() == firstRegAssigned);
+    assert(firstRefPosition->isFirstRefPositionOfConsecutiveRegisters());
+    assert(emitter::isVectorRegister(firstRegAssigned));
+
+    RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
+    regNumber    regToAssign            = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
+
+    // First RefPosition should always start with RefTypeUse
+    assert(firstRefPosition->refType != RefTypeUpperVectorRestore);
+
+    INDEBUG(int refPosCount = 1);
+    regMaskTP busyConsecutiveRegMask = (((1ULL << firstRefPosition->regCount) - 1) << firstRegAssigned);
+
+    while (consecutiveRefPosition != nullptr)
+    {
+        assert(consecutiveRefPosition->regCount == 0);
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        if (consecutiveRefPosition->refType == RefTypeUpperVectorRestore)
+        {
+            Interval* srcInterval = consecutiveRefPosition->getInterval();
+            assert(srcInterval->isUpperVector);
+            assert(srcInterval->relatedInterval != nullptr);
+            if (srcInterval->relatedInterval->isPartiallySpilled)
+            {
+                // Make sure that restore doesn't get one of the registers that are part of series we are trying to set
+                // currently.
+                // TODO-CQ: We could technically assign RefTypeUpperVectorRestore and its RefTypeUse same register, but
+                // during register selection, it might get tricky to know which of the busy registers are assigned to
+                // RefTypeUpperVectorRestore positions of corresponding variables for which (another criteria)
+                // we are trying to find consecutive registers.
+
+                consecutiveRefPosition->registerAssignment &= ~busyConsecutiveRegMask;
+            }
+            consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+        }
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        INDEBUG(refPosCount++);
+        assert(consecutiveRefPosition->refType == RefTypeUse);
+        consecutiveRefPosition->registerAssignment = genRegMask(regToAssign);
+        consecutiveRefPosition                     = getNextConsecutiveRefPosition(consecutiveRefPosition);
+        regToAssign                                = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+    }
+
+    assert(refPosCount == firstRefPosition->regCount);
+}
+
+//------------------------------------------------------------------------
+// canAssignNextConsecutiveRegisters: Starting with `firstRegAssigned`, check if next
+//   consecutive registers are free or are already assigned to the subsequent RefPositions.
+//
+// Arguments:
+//    firstRefPosition  - First RefPosition of the series of consecutive registers.
+//    firstRegAssigned  - Register assigned to the first RefPosition.
+//
+//  Returns:
+//      True if all the consecutive registers starting from `firstRegAssigned` are assignable.
+//      Even if one of them is busy, returns false.
+//
+bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned)
+{
+    int          registersCount  = firstRefPosition->regCount;
+    RefPosition* nextRefPosition = firstRefPosition;
+    regNumber    regToAssign     = firstRegAssigned;
+    assert(compiler->info.compNeedsConsecutiveRegisters);
+    assert(registersCount > 1);
+    assert(emitter::isVectorRegister(firstRegAssigned));
+
+    int i = 1;
+    do
+    {
+        nextRefPosition = getNextConsecutiveRefPosition(nextRefPosition);
+        regToAssign     = regToAssign == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(regToAssign);
+        if (!isFree(getRegisterRecord(regToAssign)))
+        {
+            if (nextRefPosition->refType == RefTypeUpperVectorRestore)
+            {
+                nextRefPosition = getNextConsecutiveRefPosition(nextRefPosition);
+            }
+
+            // If regToAssign is not free, check if it is already assigned to the interval corresponding
+            // to the subsequent nextRefPosition. If yes, it would just use regToAssign for that nextRefPosition.
+            if ((nextRefPosition->getInterval() != nullptr) &&
+                (nextRefPosition->getInterval()->assignedReg != nullptr) &&
+                ((nextRefPosition->getInterval()->assignedReg->regNum == regToAssign)))
+            {
+                continue;
+            }
+
+            return false;
+        }
+    } while (++i != registersCount);
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// filterConsecutiveCandidates: Given `candidates`, check if `registersNeeded` consecutive
+//   registers are available in it, and if yes, returns first bit set of every possible series.
+//
+// Arguments:
+//    candidates                - Set of available candidates.
+//    registersNeeded           - Number of consecutive registers needed.
+//    allConsecutiveCandidates  - Mask returned containing all bits set for possible consecutive register candidates.
+//
+//  Returns:
+//      From `candidates`, the mask of series of consecutive registers of `registersNeeded` size with just the first-bit
+//      set.
+//
+regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
+                                                  unsigned int registersNeeded,
+                                                  regMaskTP*   allConsecutiveCandidates)
+{
+    if (BitOperations::PopCount(candidates) < registersNeeded)
+    {
+        // There is no way the register demanded can be satisfied for this RefPosition
+        // based on the candidates from which it can allocate a register.
+        return RBM_NONE;
+    }
+
+    regMaskTP currAvailableRegs = candidates;
+    regMaskTP overallResult     = RBM_NONE;
+    regMaskTP consecutiveResult = RBM_NONE;
+
+// At this point, for 'n' registers requirement, if Rm, Rm+1, Rm+2, ..., Rm+k-1 are
+// available, create the mask only for Rm, Rm+1, ..., Rm+(k-n) to convey that it
+// is safe to assign any of those registers, but not beyond that.
+#define AppendConsecutiveMask(startIndex, endIndex, availableRegistersMask)                                            \
+    regMaskTP selectionStartMask = (1ULL << regAvailableStartIndex) - 1;                                               \
+    regMaskTP selectionEndMask   = (1ULL << (regAvailableEndIndex - registersNeeded + 1)) - 1;                         \
+    consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                            \
+    overallResult |= availableRegistersMask;
+
+    unsigned regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+
+    do
+    {
+        // From LSB, find the first available register (bit `1`)
+        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(currAvailableRegs));
+        regMaskTP startMask    = (1ULL << regAvailableStartIndex) - 1;
+
+        // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
+        regMaskTP maskProcessed = ~(currAvailableRegs | startMask);
+
+        // From regAvailableStart, find the first unavailable register (bit `0`).
+        if (maskProcessed == RBM_NONE)
+        {
+            regAvailableEndIndex = 64;
+            if ((regAvailableEndIndex - regAvailableStartIndex) >= registersNeeded)
+            {
+                AppendConsecutiveMask(regAvailableStartIndex, regAvailableEndIndex, currAvailableRegs);
+            }
+            break;
+        }
+        else
+        {
+            regAvailableEndIndex = BitOperations::BitScanForward(static_cast<DWORD64>(maskProcessed));
+        }
+        regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
+
+        // Anything between regAvailableStart and regAvailableEnd is the range of consecutive registers available.
+        // If they are equal to or greater than our register requirements, then add all of them to the result.
+        if ((regAvailableEndIndex - regAvailableStartIndex) >= registersNeeded)
+        {
+            AppendConsecutiveMask(regAvailableStartIndex, regAvailableEndIndex, (endMask & ~startMask));
+        }
+        currAvailableRegs &= ~endMask;
+    } while (currAvailableRegs != RBM_NONE);
+
+    regMaskTP v0_v31_mask = RBM_V0 | RBM_V31;
+    if ((candidates & v0_v31_mask) == v0_v31_mask)
+    {
+        // Finally, check for round robin case where sequence of last register
+        // round to first register is available.
+        // For n registers needed, it checks if MSB (n-1) + LSB (1) or
+        // MSB (n - 2) + LSB (2) registers are available and if yes,
+        // set the least bit of such MSB.
+        //
+        // This could have done using bit-twiddling, but is simpler when the
+        // checks are done with these hardcoded values.
+        switch (registersNeeded)
+        {
+            case 2:
+            {
+                if ((candidates & v0_v31_mask) != RBM_NONE)
+                {
+                    consecutiveResult |= RBM_V31;
+                    overallResult |= v0_v31_mask;
+                }
+                break;
+            }
+            case 3:
+            {
+                regMaskTP v0_v30_v31_mask = RBM_V0 | RBM_V30 | RBM_V31;
+                if ((candidates & v0_v30_v31_mask) != RBM_NONE)
+                {
+                    consecutiveResult |= RBM_V30;
+                    overallResult |= v0_v30_v31_mask;
+                }
+
+                regMaskTP v0_v1_v31_mask = RBM_V0 | RBM_V1 | RBM_V31;
+                if ((candidates & v0_v1_v31_mask) != RBM_NONE)
+                {
+                    consecutiveResult |= RBM_V31;
+                    overallResult |= v0_v1_v31_mask;
+                }
+                break;
+            }
+            case 4:
+            {
+                regMaskTP v0_v29_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                if ((candidates & v0_v29_v30_v31_mask) != RBM_NONE)
+                {
+                    consecutiveResult |= RBM_V29;
+                    overallResult |= v0_v29_v30_v31_mask;
+                }
+
+                regMaskTP v0_v1_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                if ((candidates & v0_v1_v30_v31_mask) != RBM_NONE)
+                {
+                    consecutiveResult |= RBM_V30;
+                    overallResult |= v0_v1_v30_v31_mask;
+                }
+
+                regMaskTP v0_v1_v2_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                if ((candidates & v0_v1_v2_v31_mask) != RBM_NONE)
+                {
+                    consecutiveResult |= RBM_V31;
+                    overallResult |= v0_v1_v2_v31_mask;
+                }
+                break;
+            }
+            default:
+                assert(!"Unexpected registersNeeded\n");
+        }
+    }
+
+    // consecutiveResult should always be a subset of overallResult
+    assert((overallResult & consecutiveResult) == consecutiveResult);
+    *allConsecutiveCandidates = overallResult;
+    return consecutiveResult;
+}
+
+//------------------------------------------------------------------------
+// filterConsecutiveCandidatesForSpill: Amoung the selected consecutiveCandidates,
+//   check if there are any ranges that would require fewer registers to spill
+//   and returns such mask. The return result would always be a subset of
+//   consecutiveCandidates.
+//
+// Arguments:
+//    consecutiveCandidates   - Consecutive candidates to filter  on.
+//    registersNeeded         - Number of registers needed.
+//
+//  Returns:
+//      Filtered candidates that needs fewer spilling.
+//
+regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveCandidates, unsigned int registersNeeded)
+{
+    assert(consecutiveCandidates != RBM_NONE);
+    assert((registersNeeded >= 2) && (registersNeeded <= 4));
+    regMaskTP consecutiveResultForBusy = RBM_NONE;
+    regMaskTP unprocessedRegs          = consecutiveCandidates;
+    unsigned  regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+    int       maxSpillRegs        = registersNeeded;
+    regMaskTP registersNeededMask = (1ULL << registersNeeded) - 1;
+    do
+    {
+        // From LSB, find the first available register (bit `1`)
+        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(unprocessedRegs));
+
+        // For the current range, find how many registers are free vs. busy
+        regMaskTP maskForCurRange        = RBM_NONE;
+        bool      shouldCheckForRounding = false;
+        switch (registersNeeded)
+        {
+            case 2:
+                shouldCheckForRounding = (regAvailableStartIndex == 63);
+                break;
+            case 3:
+                shouldCheckForRounding = (regAvailableStartIndex >= 62);
+                break;
+            case 4:
+                shouldCheckForRounding = (regAvailableStartIndex >= 61);
+                break;
+            default:
+                assert("Unsupported registersNeeded\n");
+                break;
+        }
+
+        if (shouldCheckForRounding)
+        {
+            unsigned int roundedRegistersNeeded = registersNeeded - (63 - regAvailableStartIndex + 1);
+            maskForCurRange                     = (1ULL << roundedRegistersNeeded) - 1;
+        }
+
+        maskForCurRange |= (registersNeededMask << regAvailableStartIndex);
+        maskForCurRange &= m_AvailableRegs;
+
+        if (maskForCurRange != RBM_NONE)
+        {
+            // In the given range, there are some free registers available. Calculate how many registers
+            // will need spilling if this range is picked.
+
+            int curSpillRegs = registersNeeded - BitOperations::PopCount(maskForCurRange);
+            if (curSpillRegs < maxSpillRegs)
+            {
+                consecutiveResultForBusy = 1ULL << regAvailableStartIndex;
+                maxSpillRegs             = curSpillRegs;
+            }
+            else if (curSpillRegs == maxSpillRegs)
+            {
+                consecutiveResultForBusy |= 1ULL << regAvailableStartIndex;
+            }
+        }
+        unprocessedRegs &= ~(1ULL << regAvailableStartIndex);
+    } while (unprocessedRegs != RBM_NONE);
+
+    // consecutiveResultForBusy should always be a subset of consecutiveCandidates.
+    assert((consecutiveCandidates & consecutiveResultForBusy) == consecutiveResultForBusy);
+    return consecutiveResultForBusy;
+}
+
+//------------------------------------------------------------------------
+// getConsecutiveCandidates: Returns the mask of all the consecutive candidates
+//   for given RefPosition. For first RefPosition of a series of RefPositions that needs
+//   consecutive registers, then returns only the mask such that it satisfies the need
+//   of having free consecutive registers. If free consecutive registers are not available
+//   it finds such a series that needs fewer registers spilling.
+//
+// Arguments:
+//    allCandidates   - Register assigned to the first RefPosition.
+//    refPosition     - Number of registers to check.
+//    busyCandidates  - Register mask of free/busy registers.
+//
+//  Returns:
+//      Register mask of free consecutive registers. If there are not enough free registers,
+//      or the free registers are not consecutive, then return RBM_NONE. In that case,
+//      `busyCandidates` will contain the register mask that can be assigned and will include
+//      both free and busy registers.
+//
+//  Notes:
+//      The consecutive registers mask includes just the bits of first registers or
+//      (n - k) registers. For example, if we need 3 consecutive registers and
+//      allCandidates = 0x1C080D0F00000000, the consecutive register mask returned
+//      will be 0x400000300000000.
+//
+regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
+                                               RefPosition* refPosition,
+                                               regMaskTP*   busyCandidates)
+{
+    assert(compiler->info.compNeedsConsecutiveRegisters);
+    assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
+    regMaskTP freeCandidates = allCandidates & m_AvailableRegs;
+
+    *busyCandidates = RBM_NONE;
+    regMaskTP    overallResult;
+    unsigned int registersNeeded = refPosition->regCount;
+
+    if (freeCandidates != RBM_NONE)
+    {
+        regMaskTP consecutiveResultForFree =
+            filterConsecutiveCandidates(freeCandidates, registersNeeded, &overallResult);
+
+        if (consecutiveResultForFree != RBM_NONE)
+        {
+            // One last time, check if subsequent RefPositions (all RefPositions except the first for which
+            // we assigned above) already have consecutive registers assigned. If yes, and if one of the
+            // register out of the `consecutiveResult` is available for the first RefPosition, then just use
+            // that. This will avoid unnecessary copies.
+
+            regNumber firstRegNum  = REG_NA;
+            regNumber prevRegNum   = REG_NA;
+            int       foundCount   = 0;
+            regMaskTP foundRegMask = RBM_NONE;
+
+            RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(refPosition);
+            assert(consecutiveRefPosition != nullptr);
+
+            for (unsigned int i = 1; i < registersNeeded; i++)
+            {
+                Interval* interval     = consecutiveRefPosition->getInterval();
+                consecutiveRefPosition = getNextConsecutiveRefPosition(consecutiveRefPosition);
+
+                if (!interval->isActive)
+                {
+                    foundRegMask = RBM_NONE;
+                    foundCount   = 0;
+                    continue;
+                }
+
+                regNumber currRegNum = interval->assignedReg->regNum;
+                if ((prevRegNum == REG_NA) || (prevRegNum == REG_PREV(currRegNum)) ||
+                    ((prevRegNum == REG_FP_LAST) && (currRegNum == REG_FP_FIRST)))
+                {
+                    foundRegMask |= genRegMask(currRegNum);
+                    if (prevRegNum == REG_NA)
+                    {
+                        firstRegNum = currRegNum;
+                    }
+                    prevRegNum = currRegNum;
+                    foundCount++;
+                    continue;
+                }
+
+                foundRegMask = RBM_NONE;
+                foundCount   = 0;
+                break;
+            }
+
+            if (foundCount != 0)
+            {
+                assert(firstRegNum != REG_NA);
+                regMaskTP remainingRegsMask = ((1ULL << (registersNeeded - foundCount)) - 1) << (firstRegNum - 1);
+
+                if ((overallResult & remainingRegsMask) != RBM_NONE)
+                {
+                    // If remaining registers are available, then just set the firstRegister mask
+                    consecutiveResultForFree = 1ULL << (firstRegNum - 1);
+                }
+            }
+
+            return consecutiveResultForFree;
+        }
+    }
+    // There are registers available but they are not consecutive.
+    // Here are some options to address them:
+    //
+    //  1.  Scan once again the available registers and find a set which has maximum register available.
+    //      In other words, try to find register sequence that needs fewer registers to be spilled. This
+    //      will give optimal CQ.
+    //
+    //  2.  Check if some of the RefPositions in the series are already in *somewhat* consecutive registers
+    //      and if yes, assign that register sequence. That way, we will avoid copying values of
+    //      RefPositions that are already positioned in the desired registers. Checking this is beneficial
+    //      only if it can happen frequently. So for RefPositions <RP# 5, RP# 6, RP# 7, RP# 8>, it should
+    //      be that, RP# 6 is already in V14 and RP# 8 is already in V16. But this can be rare (not tested).
+    //      In future, if we see such cases being hit, we could use this heuristics.
+    //
+    //  3.  Give one of the free register to the first position and the algorithm will
+    //      give the subsequent consecutive registers (free or busy) to the remaining RefPositions
+    //      of the series. This may not give optimal CQ however.
+    //
+    //  4.  Return the set of available registers and let selection heuristics pick one of them to get
+    //      assigned to the first RefPosition. Remaining RefPositions will be assigned to the subsequent
+    //      registers (if busy, they will be spilled), similar to #3 above and will not give optimal CQ.
+    //
+    //
+    // Among `consecutiveResultForBusy`, we could shortlist the registers that are beneficial from "busy register
+    // selection" heuristics perspective. However, we would need to add logic of try_SPILL_COST(),
+    // try_FAR_NEXT_REF(), etc. here which would complicate things. Instead, we just go with option# 1 and select
+    // registers based on fewer number of registers that has to be spilled.
+    //
+    regMaskTP overallResultForBusy;
+    regMaskTP consecutiveResultForBusy =
+        filterConsecutiveCandidates(allCandidates, registersNeeded, &overallResultForBusy);
+
+    *busyCandidates = consecutiveResultForBusy;
+
+    // Check if we can further check better registers amoung consecutiveResultForBusy.
+    if ((m_AvailableRegs & overallResultForBusy) != RBM_NONE)
+    {
+        // `overallResultForBusy` contains the mask of entire series that can be the consecutive candidates.
+        // If there is an overlap of that with free registers, then try to find a series that will need least
+        // registers spilling as mentioned in #1 above.
+
+        regMaskTP optimalConsecutiveResultForBusy =
+            filterConsecutiveCandidatesForSpill(consecutiveResultForBusy, registersNeeded);
+
+        if (optimalConsecutiveResultForBusy != RBM_NONE)
+        {
+            *busyCandidates = optimalConsecutiveResultForBusy;
+        }
+        else if ((m_AvailableRegs & consecutiveResultForBusy) != RBM_NONE)
+        {
+            // We did not find free consecutive candidates, however we found some registers among the
+            // `allCandidates` that are mix of free and busy. Since `busyCandidates` just has bit set for first
+            // register of such series, return the mask that starts with free register, if possible. The busy
+            // registers will be spilled during assignment of subsequent RefPosition.
+            *busyCandidates = (m_AvailableRegs & consecutiveResultForBusy);
+        }
+    }
+
+    // Return RBM_NONE because there was no free candidates.
+    return RBM_NONE;
+}
+//------------------------------------------------------------------------
+// BuildNode: Build the RefPositions for a node
 //
 // Arguments:
 //    treeNode - the node of interest
@@ -47,7 +570,6 @@ int LinearScan::BuildNode(GenTree* tree)
     assert(!tree->isContained());
     int       srcCount;
     int       dstCount      = 0;
-    regMaskTP dstCandidates = RBM_NONE;
     regMaskTP killMask      = RBM_NONE;
     bool      isLocalDefUse = false;
 
@@ -106,7 +628,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_STORE_LCL_VAR:
             if (tree->IsMultiRegLclVar() && isCandidateMultiRegLclVar(tree->AsLclVar()))
             {
-                dstCount = compiler->lvaGetDesc(tree->AsLclVar()->GetLclNum())->lvFieldCnt;
+                dstCount = compiler->lvaGetDesc(tree->AsLclVar())->lvFieldCnt;
             }
             FALLTHROUGH;
 
@@ -121,8 +643,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             break;
 
-        case GT_LIST:
-        case GT_ARGPLACE:
         case GT_NO_OP:
         case GT_START_NONGC:
             srcCount = 0;
@@ -146,7 +666,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CNS_DBL:
         {
             GenTreeDblCon* dblConst   = tree->AsDblCon();
-            double         constValue = dblConst->AsDblCon()->gtDconVal;
+            double         constValue = dblConst->AsDblCon()->DconValue();
 
             if (emitter::emitIns_valid_imm_for_fmov(constValue))
             {
@@ -169,6 +689,29 @@ int LinearScan::BuildNode(GenTree* tree)
             def->getInterval()->isConstant = true;
         }
         break;
+
+        case GT_CNS_VEC:
+        {
+            GenTreeVecCon* vecCon = tree->AsVecCon();
+
+            if (vecCon->IsAllBitsSet() || vecCon->IsZero())
+            {
+                // Directly encode constant to instructions.
+            }
+            else
+            {
+                // Reserve int to load constant from memory (IF_LARGELDC)
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
+            }
+
+            srcCount = 0;
+            assert(dstCount == 1);
+
+            RefPosition* def               = BuildDef(tree);
+            def->getInterval()->isConstant = true;
+            break;
+        }
 
         case GT_BOX:
         case GT_COMMA:
@@ -220,11 +763,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildOperandUses(tree->gtGetOp1());
             break;
 
-        case GT_JTRUE:
-            srcCount = 0;
-            assert(dstCount == 0);
-            break;
-
         case GT_JMP:
             srcCount = 0;
             assert(dstCount == 0);
@@ -265,10 +803,10 @@ int LinearScan::BuildNode(GenTree* tree)
                 // everything is made explicit by adding casts.
                 assert(tree->gtGetOp1()->TypeGet() == tree->gtGetOp2()->TypeGet());
             }
-
             FALLTHROUGH;
 
         case GT_AND:
+        case GT_AND_NOT:
         case GT_OR:
         case GT_XOR:
         case GT_LSH:
@@ -277,6 +815,12 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_ROR:
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
+            BuildDef(tree);
+            break;
+
+        case GT_BFIZ:
+            assert(tree->gtGetOp1()->OperIs(GT_CAST));
+            srcCount = BuildOperandUses(tree->gtGetOp1()->gtGetOp1());
             BuildDef(tree);
             break;
 
@@ -308,6 +852,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_DIV:
         case GT_MULHI:
+        case GT_MUL_LONG:
         case GT_UDIV:
         {
             srcCount = BuildBinaryUses(tree->AsOp());
@@ -319,33 +864,43 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_INTRINSIC:
         {
-            noway_assert((tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Abs) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Ceiling) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Floor) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Round) ||
-                         (tree->AsIntrinsic()->gtIntrinsicName == NI_System_Math_Sqrt));
+            switch (tree->AsIntrinsic()->gtIntrinsicName)
+            {
+                case NI_System_Math_Max:
+                case NI_System_Math_Min:
+                    assert(varTypeIsFloating(tree->gtGetOp1()));
+                    assert(varTypeIsFloating(tree->gtGetOp2()));
+                    assert(tree->gtGetOp1()->TypeIs(tree->TypeGet()));
 
-            // Both operand and its result must be of the same floating point type.
-            GenTree* op1 = tree->gtGetOp1();
-            assert(varTypeIsFloating(op1));
-            assert(op1->TypeGet() == tree->TypeGet());
+                    srcCount = BuildBinaryUses(tree->AsOp());
+                    assert(dstCount == 1);
+                    BuildDef(tree);
+                    break;
 
-            BuildUse(op1);
-            srcCount = 1;
-            assert(dstCount == 1);
-            BuildDef(tree);
+                case NI_System_Math_Abs:
+                case NI_System_Math_Ceiling:
+                case NI_System_Math_Floor:
+                case NI_System_Math_Truncate:
+                case NI_System_Math_Round:
+                case NI_System_Math_Sqrt:
+                    assert(varTypeIsFloating(tree->gtGetOp1()));
+                    assert(tree->gtGetOp1()->TypeIs(tree->TypeGet()));
+
+                    BuildUse(tree->gtGetOp1());
+                    srcCount = 1;
+                    assert(dstCount == 1);
+                    BuildDef(tree);
+                    break;
+
+                default:
+                    unreached();
+            }
         }
         break;
 
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            srcCount = BuildSIMD(tree->AsSIMD());
-            break;
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
-            srcCount = BuildHWIntrinsic(tree->AsHWIntrinsic());
+            srcCount = BuildHWIntrinsic(tree->AsHWIntrinsic(), &dstCount);
             break;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -356,8 +911,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_NEG:
         case GT_NOT:
-            BuildUse(tree->gtGetOp1());
-            srcCount = 1;
+            srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_NONE);
             assert(dstCount == 1);
             BuildDef(tree);
             break;
@@ -370,8 +924,16 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_GT:
         case GT_TEST_EQ:
         case GT_TEST_NE:
+        case GT_CMP:
+        case GT_TEST:
+        case GT_CCMP:
         case GT_JCMP:
             srcCount = BuildCmp(tree);
+            break;
+
+        case GT_JTRUE:
+            BuildOperandUses(tree->gtGetOp1(), RBM_NONE);
+            srcCount = 1;
             break;
 
         case GT_CKFINITE:
@@ -484,7 +1046,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildPutArgSplit(tree->AsPutArgSplit());
             dstCount = tree->AsPutArgSplit()->gtNumRegs;
             break;
-#endif // FEATURE _SPLIT_ARG
+#endif // FEATURE_ARG_SPLIT
 
         case GT_PUTARG_STK:
             srcCount = BuildPutArgStk(tree->AsPutArgStk());
@@ -502,27 +1064,13 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             break;
 
-        case GT_ADDR:
-        {
-            // For a GT_ADDR, the child node should not be evaluated into a register
-            GenTree* child = tree->gtGetOp1();
-            assert(!isCandidateLocalRef(child));
-            assert(child->isContained());
-            assert(dstCount == 1);
-            srcCount = 0;
-            BuildDef(tree);
-        }
-        break;
-
         case GT_BLK:
-        case GT_DYN_BLK:
             // These should all be eliminated prior to Lowering.
             assert(!"Non-store block node in Lowering");
             srcCount = 0;
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
@@ -537,14 +1085,14 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 1);
 
-            // Need a variable number of temp regs (see genLclHeap() in codegenamd64.cpp):
+            // Need a variable number of temp regs (see genLclHeap() in codegenarm64.cpp):
             // Here '-' means don't care.
             //
             //  Size?                   Init Memory?    # temp regs
             //   0                          -               0
-            //   const and <=6 ptr words    -               0
+            //   const and <=UnrollLimit    -               0
             //   const and <PageSize        No              0
-            //   >6 ptr words               Yes             0
+            //   >UnrollLimit               Yes             0
             //   Non-const                  Yes             0
             //   Non-const                  No              2
             //
@@ -563,12 +1111,9 @@ int LinearScan::BuildNode(GenTree* tree)
                     // Note: The Gentree node is not updated here as it is cheap to recompute stack aligned size.
                     // This should also help in debugging as we can examine the original size specified with
                     // localloc.
-                    sizeVal         = AlignUp(sizeVal, STACK_ALIGN);
-                    size_t stpCount = sizeVal / (REGSIZE_BYTES * 2);
+                    sizeVal = AlignUp(sizeVal, STACK_ALIGN);
 
-                    // For small allocations up to 4 'stp' instructions (i.e. 16 to 64 bytes of localloc)
-                    //
-                    if (stpCount <= 4)
+                    if (sizeVal <= compiler->getUnrollThreshold(Compiler::UnrollKind::Memset))
                     {
                         // Need no internal registers
                     }
@@ -607,19 +1152,13 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
+        case GT_BOUNDS_CHECK:
         {
             GenTreeBoundsChk* node = tree->AsBoundsChk();
             // Consumes arrLen & index - has no result
             assert(dstCount == 0);
-            srcCount = BuildOperandUses(node->gtIndex);
-            srcCount += BuildOperandUses(node->gtArrLen);
+            srcCount = BuildOperandUses(node->GetIndex());
+            srcCount += BuildOperandUses(node->GetArrayLength());
         }
         break;
 
@@ -682,7 +1221,22 @@ int LinearScan::BuildNode(GenTree* tree)
             if (index != nullptr)
             {
                 srcCount++;
-                BuildUse(index);
+                if (index->OperIs(GT_BFIZ) && index->isContained())
+                {
+                    GenTreeCast* cast = index->gtGetOp1()->AsCast();
+                    assert(cast->isContained() && (cns == 0));
+                    BuildUse(cast->CastOp());
+                }
+                else if (index->OperIs(GT_CAST) && index->isContained())
+                {
+                    GenTreeCast* cast = index->AsCast();
+                    assert(cast->isContained() && (cns == 0));
+                    BuildUse(cast->CastOp());
+                }
+                else
+                {
+                    BuildUse(index);
+                }
             }
             assert(dstCount == 1);
 
@@ -707,7 +1261,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 0);
 
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree))
+            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
             {
                 srcCount = BuildGCWriteBarrier(tree);
                 break;
@@ -734,26 +1288,21 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, RBM_EXCEPTION_OBJECT);
             break;
 
-        case GT_CLS_VAR:
-            srcCount = 0;
-            // GT_CLS_VAR, by the time we reach the backend, must always
-            // be a pure use.
-            // It will produce a result of the type of the
-            // node, and use an internal register for the address.
-
-            assert(dstCount == 1);
-            assert((tree->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEASG)) == 0);
-            buildInternalIntRegisterDefForNode(tree);
-            buildInternalRegisterUses();
-            BuildDef(tree);
-            break;
-
         case GT_INDEX_ADDR:
             assert(dstCount == 1);
             srcCount = BuildBinaryUses(tree->AsOp());
             buildInternalIntRegisterDefForNode(tree);
             buildInternalRegisterUses();
             BuildDef(tree);
+            break;
+
+        case GT_SELECT:
+            assert(dstCount == 1);
+            srcCount = BuildSelect(tree->AsConditional());
+            break;
+        case GT_SELECTCC:
+            assert(dstCount == 1);
+            srcCount = BuildSelect(tree->AsOp());
             break;
 
     } // end switch (tree->OperGet())
@@ -765,182 +1314,10 @@ int LinearScan::BuildNode(GenTree* tree)
     // We need to be sure that we've set srcCount and dstCount appropriately
     assert((dstCount < 2) || tree->IsMultiRegNode());
     assert(isLocalDefUse == (tree->IsValue() && tree->IsUnusedValue()));
-    assert(!tree->IsUnusedValue() || (dstCount != 0));
+    assert(!tree->IsValue() || (dstCount != 0));
     assert(dstCount == tree->GetRegisterDstCount(compiler));
     return srcCount;
 }
-
-#ifdef FEATURE_SIMD
-//------------------------------------------------------------------------
-// BuildSIMD: Set the NodeInfo for a GT_SIMD tree.
-//
-// Arguments:
-//    tree       - The GT_SIMD node of interest
-//
-// Return Value:
-//    The number of sources consumed by this node.
-//
-int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
-{
-    int srcCount = 0;
-    // Only SIMDIntrinsicInit can be contained
-    if (simdTree->isContained())
-    {
-        assert(simdTree->gtSIMDIntrinsicID == SIMDIntrinsicInit);
-    }
-    int dstCount = simdTree->IsValue() ? 1 : 0;
-    assert(dstCount == 1);
-
-    bool buildUses = true;
-
-    GenTree* op1 = simdTree->gtGetOp1();
-    GenTree* op2 = simdTree->gtGetOp2();
-
-    switch (simdTree->gtSIMDIntrinsicID)
-    {
-        case SIMDIntrinsicInit:
-        case SIMDIntrinsicCast:
-        case SIMDIntrinsicConvertToSingle:
-        case SIMDIntrinsicConvertToInt32:
-        case SIMDIntrinsicConvertToDouble:
-        case SIMDIntrinsicConvertToInt64:
-        case SIMDIntrinsicWidenLo:
-        case SIMDIntrinsicWidenHi:
-            // No special handling required.
-            break;
-
-        case SIMDIntrinsicGetItem:
-        {
-            op1 = simdTree->gtGetOp1();
-            op2 = simdTree->gtGetOp2();
-
-            // We have an object and an index, either of which may be contained.
-            bool setOp2DelayFree = false;
-            if (!op2->IsCnsIntOrI() && (!op1->isContained() || op1->OperIsLocal()))
-            {
-                // If the index is not a constant and the object is not contained or is a local
-                // we will need a general purpose register to calculate the address
-                // internal register must not clobber input index
-                // TODO-Cleanup: An internal register will never clobber a source; this code actually
-                // ensures that the index (op2) doesn't interfere with the target.
-                buildInternalIntRegisterDefForNode(simdTree);
-                setOp2DelayFree = true;
-            }
-            srcCount += BuildOperandUses(op1);
-            if (!op2->isContained())
-            {
-                RefPosition* op2Use = BuildUse(op2);
-                if (setOp2DelayFree)
-                {
-                    setDelayFree(op2Use);
-                }
-                srcCount++;
-            }
-
-            if (!op2->IsCnsIntOrI() && (!op1->isContained()))
-            {
-                // If vector is not already in memory (contained) and the index is not a constant,
-                // we will use the SIMD temp location to store the vector.
-                compiler->getSIMDInitTempVarNum();
-            }
-            buildUses = false;
-        }
-        break;
-
-        case SIMDIntrinsicSub:
-        case SIMDIntrinsicBitwiseAnd:
-        case SIMDIntrinsicBitwiseOr:
-        case SIMDIntrinsicEqual:
-            // No special handling required.
-            break;
-
-        case SIMDIntrinsicSetX:
-        case SIMDIntrinsicSetY:
-        case SIMDIntrinsicSetZ:
-        case SIMDIntrinsicSetW:
-        case SIMDIntrinsicNarrow:
-        {
-            // Op1 will write to dst before Op2 is free
-            BuildUse(op1);
-            RefPosition* op2Use = BuildUse(op2);
-            setDelayFree(op2Use);
-            srcCount  = 2;
-            buildUses = false;
-            break;
-        }
-
-        case SIMDIntrinsicInitN:
-        {
-            var_types baseType = simdTree->gtSIMDBaseType;
-            srcCount           = (short)(simdTree->gtSIMDSize / genTypeSize(baseType));
-            if (varTypeIsFloating(simdTree->gtSIMDBaseType))
-            {
-                // Need an internal register to stitch together all the values into a single vector in a SIMD reg.
-                buildInternalFloatRegisterDefForNode(simdTree);
-            }
-
-            int initCount = 0;
-            for (GenTree* list = op1; list != nullptr; list = list->gtGetOp2())
-            {
-                assert(list->OperGet() == GT_LIST);
-                GenTree* listItem = list->gtGetOp1();
-                assert(listItem->TypeGet() == baseType);
-                assert(!listItem->isContained());
-                BuildUse(listItem);
-                initCount++;
-            }
-            assert(initCount == srcCount);
-            buildUses = false;
-
-            break;
-        }
-
-        case SIMDIntrinsicInitArray:
-            // We have an array and an index, which may be contained.
-            break;
-
-        case SIMDIntrinsicInitArrayX:
-        case SIMDIntrinsicInitFixed:
-        case SIMDIntrinsicCopyToArray:
-        case SIMDIntrinsicCopyToArrayX:
-        case SIMDIntrinsicNone:
-        case SIMDIntrinsicGetX:
-        case SIMDIntrinsicGetY:
-        case SIMDIntrinsicGetZ:
-        case SIMDIntrinsicGetW:
-        case SIMDIntrinsicHWAccel:
-        case SIMDIntrinsicWiden:
-        case SIMDIntrinsicInvalid:
-            assert(!"These intrinsics should not be seen during register allocation");
-            FALLTHROUGH;
-
-        default:
-            noway_assert(!"Unimplemented SIMD node type.");
-            unreached();
-    }
-    if (buildUses)
-    {
-        assert(!op1->OperIs(GT_LIST));
-        assert(srcCount == 0);
-        srcCount = BuildOperandUses(op1);
-        if ((op2 != nullptr) && !op2->isContained())
-        {
-            srcCount += BuildOperandUses(op2);
-        }
-    }
-    assert(internalCount <= MaxInternalCount);
-    buildInternalRegisterUses();
-    if (dstCount == 1)
-    {
-        BuildDef(simdTree);
-    }
-    else
-    {
-        assert(dstCount == 0);
-    }
-    return srcCount;
-}
-#endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
 
@@ -951,16 +1328,28 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
 //
 // Arguments:
 //    tree       - The GT_HWINTRINSIC node of interest
+//    pDstCount  - OUT parameter - the number of registers defined for the given node
 //
 // Return Value:
 //    The number of sources consumed by this node.
 //
-int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
+int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount)
 {
+    assert(pDstCount != nullptr);
+
     const HWIntrinsic intrin(intrinsicTree);
 
     int srcCount = 0;
-    int dstCount = intrinsicTree->IsValue() ? 1 : 0;
+    int dstCount = 0;
+
+    if (HWIntrinsicInfo::IsMultiReg(intrin.id))
+    {
+        dstCount = intrinsicTree->GetMultiRegCount(compiler);
+    }
+    else if (intrinsicTree->IsValue())
+    {
+        dstCount = 1;
+    }
 
     const bool hasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrin.id);
 
@@ -978,13 +1367,27 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
         if (intrin.category == HW_Category_SIMDByIndexedElement)
         {
-            const unsigned int indexedElementSimdSize = genTypeSize(intrinsicTree->GetAuxiliaryType());
+            var_types indexedElementOpType;
+
+            if (intrin.numOperands == 3)
+            {
+                indexedElementOpType = intrin.op2->TypeGet();
+            }
+            else
+            {
+                assert(intrin.numOperands == 4);
+                indexedElementOpType = intrin.op3->TypeGet();
+            }
+
+            assert(varTypeIsSIMD(indexedElementOpType));
+
+            const unsigned int indexedElementSimdSize = genTypeSize(indexedElementOpType);
             HWIntrinsicInfo::lookupImmBounds(intrin.id, indexedElementSimdSize, intrin.baseType, &immLowerBound,
                                              &immUpperBound);
         }
         else
         {
-            HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->gtSIMDSize, intrin.baseType, &immLowerBound,
+            HWIntrinsicInfo::lookupImmBounds(intrin.id, intrinsicTree->GetSimdSize(), intrin.baseType, &immLowerBound,
                                              &immUpperBound);
         }
 
@@ -1059,17 +1462,40 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
     {
         bool simdRegToSimdRegMove = false;
 
-        if ((intrin.id == NI_Vector64_CreateScalarUnsafe) || (intrin.id == NI_Vector128_CreateScalarUnsafe))
+        switch (intrin.id)
         {
-            simdRegToSimdRegMove = varTypeIsFloating(intrin.op1);
-        }
-        else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
-        {
-            simdRegToSimdRegMove = (intrin.op1->TypeGet() == TYP_DOUBLE);
-        }
-        else if ((intrin.id == NI_Vector64_ToScalar) || (intrin.id == NI_Vector128_ToScalar))
-        {
-            simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
+            case NI_Vector64_CreateScalarUnsafe:
+            case NI_Vector128_CreateScalarUnsafe:
+            {
+                simdRegToSimdRegMove = varTypeIsFloating(intrin.op1);
+                break;
+            }
+
+            case NI_AdvSimd_Arm64_DuplicateToVector64:
+            {
+                simdRegToSimdRegMove = (intrin.op1->TypeGet() == TYP_DOUBLE);
+                break;
+            }
+
+            case NI_Vector64_ToScalar:
+            case NI_Vector128_ToScalar:
+            {
+                simdRegToSimdRegMove = varTypeIsFloating(intrinsicTree);
+                break;
+            }
+
+            case NI_Vector64_ToVector128Unsafe:
+            case NI_Vector128_AsVector3:
+            case NI_Vector128_GetLower:
+            {
+                simdRegToSimdRegMove = true;
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
         }
 
         // If we have an RMW intrinsic or an intrinsic with simple move semantic between two SIMD registers,
@@ -1088,9 +1514,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             tgtPrefUse = BuildUse(intrin.op1);
             srcCount++;
         }
-        else
+        else if ((intrin.id != NI_AdvSimd_VectorTableLookup) && (intrin.id != NI_AdvSimd_Arm64_VectorTableLookup))
         {
             srcCount += BuildOperandUses(intrin.op1);
+        }
+        else
+        {
+            srcCount += BuildConsecutiveRegistersForUse(intrin.op1);
         }
     }
 
@@ -1137,80 +1567,236 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             }
         }
     }
-    else
+
+    else if (HWIntrinsicInfo::NeedsConsecutiveRegisters(intrin.id))
     {
-        if (intrin.op2 != nullptr)
+        if ((intrin.id == NI_AdvSimd_VectorTableLookup) || (intrin.id == NI_AdvSimd_Arm64_VectorTableLookup))
         {
-            // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
-            // (i.e. a register that corresponds to read-modify-write operand) and one of them is the last use.
+            assert(intrin.op2 != nullptr);
+            srcCount += BuildOperandUses(intrin.op2);
+        }
+        else
+        {
+            assert(intrin.op2 != nullptr);
+            assert(intrin.op3 != nullptr);
+            assert((intrin.id == NI_AdvSimd_VectorTableLookupExtension) ||
+                   (intrin.id == NI_AdvSimd_Arm64_VectorTableLookupExtension));
+            assert(isRMW);
+            srcCount += BuildConsecutiveRegistersForUse(intrin.op2, intrin.op1);
+            srcCount += BuildDelayFreeUses(intrin.op3, intrin.op1);
+        }
+        assert(dstCount == 1);
+        buildInternalRegisterUses();
+        BuildDef(intrinsicTree);
+        *pDstCount = 1;
+        return srcCount;
+    }
+    else if (intrin.op2 != nullptr)
+    {
+        // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
+        // (i.e. a register that corresponds to read-modify-write operand) and one of them is the last use.
 
-            bool op2DelayFree = isRMW;
-            bool op3DelayFree = isRMW;
-            bool op4DelayFree = isRMW;
+        assert(intrin.op1 != nullptr);
 
-            assert(intrin.op1 != nullptr);
-
-            if (isRMW && intrin.op1->OperIs(GT_LCL_VAR))
+        bool forceOp2DelayFree = false;
+        if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
+        {
+            if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
             {
-                unsigned int varNum1    = intrin.op1->AsLclVar()->GetLclNum();
-                bool         op1LastUse = false;
-
-                unsigned int varNum2 = BAD_VAR_NUM;
-                unsigned int varNum3 = BAD_VAR_NUM;
-                unsigned int varNum4 = BAD_VAR_NUM;
-
-                if (intrin.op2->OperIs(GT_LCL_VAR))
-                {
-                    varNum2 = intrin.op2->AsLclVar()->GetLclNum();
-                    op1LastUse |= ((varNum1 == varNum2) && intrin.op2->HasLastUse());
-                }
-
-                if (intrin.op3 != nullptr)
-                {
-                    if (intrin.op3->OperIs(GT_LCL_VAR))
-                    {
-                        varNum3 = intrin.op3->AsLclVar()->GetLclNum();
-                        op1LastUse |= ((varNum1 == varNum3) && intrin.op3->HasLastUse());
-                    }
-
-                    if ((intrin.op4 != nullptr) && intrin.op4->OperIs(GT_LCL_VAR))
-                    {
-                        varNum4 = intrin.op4->AsLclVar()->GetLclNum();
-                        op1LastUse |= ((varNum1 == varNum4) && intrin.op4->HasLastUse());
-                    }
-                }
-
-                if (op1LastUse)
-                {
-                    op2DelayFree = (varNum1 != varNum2);
-                    op3DelayFree = (varNum1 != varNum3);
-                    op4DelayFree = (varNum1 != varNum4);
-                }
+                // If the index is not a constant and the object is not contained or is a local
+                // we will need a general purpose register to calculate the address
+                // internal register must not clobber input index
+                // TODO-Cleanup: An internal register will never clobber a source; this code actually
+                // ensures that the index (op2) doesn't interfere with the target.
+                buildInternalIntRegisterDefForNode(intrinsicTree);
+                forceOp2DelayFree = true;
             }
 
-            srcCount += op2DelayFree ? BuildDelayFreeUses(intrin.op2) : BuildOperandUses(intrin.op2);
-
-            if (intrin.op3 != nullptr)
+            if (!intrin.op2->IsCnsIntOrI() && !intrin.op1->isContained())
             {
-                srcCount += op3DelayFree ? BuildDelayFreeUses(intrin.op3) : BuildOperandUses(intrin.op3);
+                // If the index is not a constant or op1 is in register,
+                // we will use the SIMD temp location to store the vector.
+                var_types requiredSimdTempType = (intrin.id == NI_Vector64_GetElement) ? TYP_SIMD8 : TYP_SIMD16;
+                compiler->getSIMDInitTempVarNum(requiredSimdTempType);
+            }
+        }
 
-                if (intrin.op4 != nullptr)
-                {
-                    srcCount += op4DelayFree ? BuildDelayFreeUses(intrin.op4) : BuildOperandUses(intrin.op4);
-                }
+        if (forceOp2DelayFree)
+        {
+            srcCount += BuildDelayFreeUses(intrin.op2);
+        }
+        else
+        {
+            srcCount += isRMW ? BuildDelayFreeUses(intrin.op2, intrin.op1) : BuildOperandUses(intrin.op2);
+        }
+
+        if (intrin.op3 != nullptr)
+        {
+            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
+
+            if (intrin.op4 != nullptr)
+            {
+                srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
             }
         }
     }
 
     buildInternalRegisterUses();
 
-    if (dstCount == 1)
+    if ((dstCount == 1) || (dstCount == 2))
     {
         BuildDef(intrinsicTree);
+
+        if (dstCount == 2)
+        {
+            BuildDef(intrinsicTree, RBM_NONE, 1);
+        }
     }
     else
     {
         assert(dstCount == 0);
+    }
+
+    *pDstCount = dstCount;
+    return srcCount;
+}
+
+//------------------------------------------------------------------------
+//  BuildConsecutiveRegistersForUse: Build ref position(s) for `treeNode` that has a
+//  requirement of allocating consecutive registers. It will create the RefTypeUse
+//  RefPositions for as many consecutive registers are needed for `treeNode` and in
+//  between, it might contain RefTypeUpperVectorRestore RefPositions.
+//
+//  For the first RefPosition of the series, it sets the `regCount` field equal to
+//  the number of subsequent RefPositions (including the first one) involved for this
+//  treeNode. For the subsequent RefPositions, it sets the `regCount` to 0. For all
+//  the RefPositions created, it sets the `needsConsecutive` flag so it can be used to
+//  identify these RefPositions during allocation.
+//
+//  It also populates a `RefPositionMap` to access the subsequent RefPositions from
+//  a given RefPosition. This was preferred rather than adding a field in RefPosition
+//  for this purpose.
+//
+// Arguments:
+//    treeNode       - The GT_HWINTRINSIC node of interest
+//    rmwNode        - Read-modify-write node.
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode)
+{
+    int       srcCount     = 0;
+    Interval* rmwInterval  = nullptr;
+    bool      rmwIsLastUse = false;
+    if ((rmwNode != nullptr))
+    {
+        if (isCandidateLocalRef(rmwNode))
+        {
+            rmwInterval  = getIntervalForLocalVarNode(rmwNode->AsLclVar());
+            rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
+        }
+    }
+    if (treeNode->OperIsFieldList())
+    {
+        assert(compiler->info.compNeedsConsecutiveRegisters);
+
+        unsigned     regCount    = 0;
+        RefPosition* firstRefPos = nullptr;
+        RefPosition* currRefPos  = nullptr;
+        RefPosition* lastRefPos  = nullptr;
+
+        NextConsecutiveRefPositionsMap* refPositionMap = getNextConsecutiveRefPositionsMap();
+        for (GenTreeFieldList::Use& use : treeNode->AsFieldList()->Uses())
+        {
+            RefPosition*        restoreRefPos = nullptr;
+            RefPositionIterator prevRefPos    = refPositions.backPosition();
+            currRefPos                        = BuildUse(use.GetNode(), RBM_NONE, 0);
+
+            // Check if restore Refpositions were created
+            RefPositionIterator tailRefPos = refPositions.backPosition();
+            assert(tailRefPos == currRefPos);
+            prevRefPos++;
+            if (prevRefPos != tailRefPos)
+            {
+                restoreRefPos = prevRefPos;
+                assert(restoreRefPos->refType == RefTypeUpperVectorRestore);
+            }
+
+            currRefPos->needsConsecutive = true;
+            currRefPos->regCount         = 0;
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+            if (restoreRefPos != nullptr)
+            {
+                // If there was a restoreRefPosition created, make sure to link it
+                // as well so during register assignment, we could visit it and
+                // make sure that it doesn't get assigned one of register that is part
+                // of consecutive registers we are allocating for this treeNode.
+                // See assignConsecutiveRegisters().
+                restoreRefPos->needsConsecutive = true;
+                restoreRefPos->regCount         = 0;
+                if (firstRefPos == nullptr)
+                {
+                    // Always set the non UpperVectorRestore as the firstRefPos.
+                    // UpperVectorRestore can be assigned to a different independent
+                    // register.
+                    // See TODO-CQ in assignConsecutiveRegisters().
+                    firstRefPos = currRefPos;
+                }
+                refPositionMap->Set(lastRefPos, restoreRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+                refPositionMap->Set(restoreRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+
+                if (rmwNode != nullptr)
+                {
+                    // If we have rmwNode, determine if the restoreRefPos should be set to delay-free.
+                    if ((restoreRefPos->getInterval() != rmwInterval) || (!rmwIsLastUse && !restoreRefPos->lastUse))
+                    {
+                        setDelayFree(restoreRefPos);
+                    }
+                }
+            }
+            else
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+            {
+                if (firstRefPos == nullptr)
+                {
+                    firstRefPos = currRefPos;
+                }
+                refPositionMap->Set(lastRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+            }
+
+            refPositionMap->Set(currRefPos, nullptr);
+
+            lastRefPos = currRefPos;
+            regCount++;
+            if (rmwNode != nullptr)
+            {
+                // If we have rmwNode, determine if the currRefPos should be set to delay-free.
+                if ((currRefPos->getInterval() != rmwInterval) || (!rmwIsLastUse && !currRefPos->lastUse))
+                {
+                    setDelayFree(currRefPos);
+                }
+            }
+        }
+
+        // Set `regCount` to actual consecutive registers count for first ref-position.
+        // For others, set 0 so we can identify that this is non-first RefPosition.
+        firstRefPos->regCount = regCount;
+
+#ifdef DEBUG
+        // Set the minimum register candidates needed for stress to work.
+        currRefPos = firstRefPos;
+        while (currRefPos != nullptr)
+        {
+            currRefPos->minRegCandidateCount = regCount;
+            currRefPos                       = getNextConsecutiveRefPosition(currRefPos);
+        }
+#endif
+        srcCount += regCount;
+    }
+    else
+    {
+        srcCount += BuildOperandUses(treeNode);
     }
 
     return srcCount;

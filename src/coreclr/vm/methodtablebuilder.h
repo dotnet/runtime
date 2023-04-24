@@ -1,22 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ==++==
-//
-//
-
-//
-// ==--==
-//
-// File: METHODTABLEBUILDER.H
-//
-
-
-//
-
-//
-// ============================================================================
-
 #ifndef METHODTABLEBUILDER_H
 #define METHODTABLEBUILDER_H
 
@@ -89,22 +73,7 @@ public:
           m_pAllocMemTracker(pAllocMemTracker)
     {
         LIMITED_METHOD_CONTRACT;
-        SetBMTData(
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL);
+        SetBMTData();
     }
 public:
     //==========================================================================
@@ -211,7 +180,7 @@ private:
     WORD GetNumStaticFields() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetNumStaticFields(); }
     WORD GetNumInstanceFields() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->GetNumInstanceFields(); }
     BOOL IsInterface() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsInterface(); }
-    BOOL HasOverLayedField() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasOverLayedField(); }
+    BOOL HasOverlaidField() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->HasOverlaidField(); }
     BOOL IsComImport() { WRAPPER_NO_CONTRACT; return GetHalfBakedClass()->IsComImport(); }
 #ifdef FEATURE_COMINTEROP
     void SetIsComClassInterface() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetIsComClassInterface(); }
@@ -249,7 +218,6 @@ private:
     // we create the EEClass object, and thus set the flags immediately at the point
     // we create that object.</NICE>
     void SetUnsafeValueClass() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetUnsafeValueClass(); }
-    void SetCannotBeBlittedByObjectCloner() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetCannotBeBlittedByObjectCloner(); }
     void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); }
     void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); }
     void SetModuleDynamicID(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetModuleDynamicID(x); }
@@ -258,7 +226,7 @@ private:
     void SetNumBoxedRegularStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumBoxedRegularStatics(x); }
     void SetNumBoxedThreadStatics(WORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNumBoxedThreadStatics(x); }
     void SetAlign8Candidate() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetAlign8Candidate(); }
-    void SetHasOverLayedFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasOverLayedFields(); }
+    void SetHasOverlaidFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasOverlaidFields(); }
     void SetNonGCRegularStaticFieldBytes(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNonGCRegularStaticFieldBytes(x); }
     void SetNonGCThreadStaticFieldBytes(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetNonGCThreadStaticFieldBytes(x); }
 #ifdef _DEBUG
@@ -799,9 +767,9 @@ private:
 
         //-----------------------------------------------------------------------------------------
         // Returns the substitution to be used in interpreting the signature.
-        const Substitution &
+        const Substitution *
         GetSubstitution() const
-            { return *m_pSubst; }
+            { return m_pSubst; }
 
         //-----------------------------------------------------------------------------------------
         // Returns true if the names are equal; otherwise returns false. This is a
@@ -1325,6 +1293,7 @@ private:
         bool fIsEnum;
         bool fNoSanityChecks;
         bool fSparse;                           // Set to true if a sparse interface is being used.
+        bool fHasVirtualStaticMethods;          // Set to true if the interface type declares virtual static methods.
 
         // Com Interop, ComWrapper classes extend from ComObject
         bool fIsComObjectType;                  // whether this class is an instance of ComObject class
@@ -1496,7 +1465,7 @@ private:
         AddNonVirtualMethod(bmtMDMethod * pMethod)
         {
             INDEBUG(SealVirtualSlotSection());
-            CONSISTENCY_CHECK(!IsMdVirtual(pMethod->GetDeclAttrs()));
+            CONSISTENCY_CHECK(!IsMdVirtual(pMethod->GetDeclAttrs()) || IsMdStatic(pMethod->GetDeclAttrs()));
             pMethod->SetSlotIndex(pSlotTable->GetSlotCount());
             if (!pSlotTable->AddMethodSlot(bmtMethodSlot(pMethod, pMethod)))
                 return false;
@@ -1724,6 +1693,7 @@ private:
             : m_pType(pItfType),
               m_pImplTable(NULL),       // Lazily created
               m_cImplTable(0),
+              m_cImplTableStatics(0),
               m_declScope(declScope),
               m_equivalenceSet(0),
               m_fEquivalenceSetWithMultipleEntries(false)
@@ -1761,13 +1731,14 @@ private:
         typedef IteratorUtil::ArrayIterator<bmtInterfaceSlotImpl>
             InterfaceSlotIterator;
 
+        // Iterate the interface virtual methods that can be implemented. The static methods can be iterated if statics is set to true
         InterfaceSlotIterator
         IterateInterfaceSlots(
-            StackingAllocator * pStackingAllocator)
+            StackingAllocator * pStackingAllocator, bool statics = false)
         {
             WRAPPER_NO_CONTRACT;
             CheckCreateSlotTable(pStackingAllocator);
-            return InterfaceSlotIterator(m_pImplTable, m_cImplTable);
+            return InterfaceSlotIterator(m_pImplTable + (statics ? m_cImplTable : 0), statics ? m_cImplTableStatics : m_cImplTable);
         }
 
         //-----------------------------------------------------------------------------------------
@@ -1849,6 +1820,7 @@ private:
         bmtRTType *               m_pType;
         bmtInterfaceSlotImpl *    m_pImplTable;
         SLOT_INDEX                m_cImplTable;
+        SLOT_INDEX                m_cImplTableStatics;
         InterfaceDeclarationScope m_declScope;
         UINT32                    m_equivalenceSet;
         bool                      m_fEquivalenceSetWithMultipleEntries;
@@ -2038,7 +2010,9 @@ private:
         DWORD NumInstanceGCPointerFields;   // does not include inherited pointer fields
         DWORD NumGCPointerSeries;
         DWORD NumInstanceFieldBytes;
+        DWORD NumInlineArrayElements;
 
+        bool  fIsAllGCPointers;
         bool  fIsByRefLikeType;
         bool  fHasFixedAddressValueTypes;
         bool  fHasSelfReferencingStaticValueTypeField_WithRVA;
@@ -2085,7 +2059,7 @@ private:
 
     // --------------------------------------------------------------------------------------------
     // Used for analyzing overlapped fields defined by explicit layout types.
-    enum bmtFieldLayoutTag {empty, nonoref, oref};
+    enum bmtFieldLayoutTag : BYTE {empty, nonoref, oref, byref};
 
     // --------------------------------------------------------------------------------------------
     // used for calculating pointer series for tdexplicit
@@ -2238,21 +2212,21 @@ private:
     bmtEnumFieldInfo *bmtEnumFields;
 
     void SetBMTData(
-        LoaderAllocator *bmtAllocator,
-        bmtErrorInfo *bmtError,
-        bmtProperties *bmtProp,
-        bmtVtable *bmtVT,
-        bmtParentInfo *bmtParent,
-        bmtInterfaceInfo *bmtInterface,
-        bmtMetaDataInfo *bmtMetaData,
-        bmtMethodInfo *bmtMethod,
-        bmtMethAndFieldDescs *bmtMFDescs,
-        bmtFieldPlacement *bmtFP,
-        bmtInternalInfo *bmtInternal,
-        bmtGCSeriesInfo *bmtGCSeries,
-        bmtMethodImplInfo *bmtMethodImpl,
-        const bmtGenericsInfo *bmtGenerics,
-        bmtEnumFieldInfo *bmtEnumFields);
+        LoaderAllocator *bmtAllocator = NULL,
+        bmtErrorInfo *bmtError = NULL,
+        bmtProperties *bmtProp = NULL,
+        bmtVtable *bmtVT = NULL,
+        bmtParentInfo *bmtParent = NULL,
+        bmtInterfaceInfo *bmtInterface = NULL,
+        bmtMetaDataInfo *bmtMetaData = NULL,
+        bmtMethodInfo *bmtMethod = NULL,
+        bmtMethAndFieldDescs *bmtMFDescs = NULL,
+        bmtFieldPlacement *bmtFP = NULL,
+        bmtInternalInfo *bmtInternal = NULL,
+        bmtGCSeriesInfo *bmtGCSeries = NULL,
+        bmtMethodImplInfo *bmtMethodImpl = NULL,
+        const bmtGenericsInfo *bmtGenerics = NULL,
+        bmtEnumFieldInfo *bmtEnumFields = NULL);
 
     // --------------------------------------------------------------------------------------------
     // Returns the parent bmtRTType pointer. Can be null if no parent exists.
@@ -2450,7 +2424,8 @@ private:
         MethodTable *               pIntf,
         const Substitution *        pSubstForTypeLoad_OnStack,  // Allocated on stack!
         const Substitution *        pSubstForComparing_OnStack, // Allocated on stack!
-        StackingAllocator *         pStackingAllocator
+        StackingAllocator *         pStackingAllocator,
+        MethodTable *               pMTInterfaceMapOwner
         COMMA_INDEBUG(MethodTable * dbg_pClassMT));
 
 public:
@@ -2461,7 +2436,8 @@ public:
         mdToken                     typeDef,
         const Substitution *        pSubstForTypeLoad,
         Substitution *              pSubstForComparing,
-        StackingAllocator *     pStackingAllocator
+        StackingAllocator *         pStackingAllocator,
+        MethodTable *               pMTInterfaceMapOwner
         COMMA_INDEBUG(MethodTable * dbg_pClassMT));
 
     static void
@@ -2470,7 +2446,8 @@ public:
         MethodTable *           pParentMT,
         const Substitution *    pSubstForTypeLoad,
         Substitution *          pSubstForComparing,
-        StackingAllocator *     pStackingAllocator);
+        StackingAllocator *     pStackingAllocator,
+        MethodTable *           pMTInterfaceMapOwner);
 
 public:
     // --------------------------------------------------------------------------------------------
@@ -2733,7 +2710,7 @@ private:
     // Find the decl method on a given interface entry that matches the method name+signature specified
     // If none is found, return a null method handle
     bmtMethodHandle
-    FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig);
+    FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig, bool searchForStaticMethods = false);
 
     // --------------------------------------------------------------------------------------------
     // Find the decl method within the class hierarchy method name+signature specified
@@ -2771,7 +2748,7 @@ private:
         DWORD               cSlots,
         DWORD *             rgSlots,
         mdToken *           rgTokens,
-        RelativePointer<MethodDesc *> *       rgDeclMD);
+        MethodDesc **       rgDeclMD);
 
     // --------------------------------------------------------------------------------------------
     // Places a methodImpl pair where the decl is declared by the type being built.
@@ -2780,7 +2757,7 @@ private:
         bmtMDMethod *    pDecl,
         bmtMDMethod *    pImpl,
         DWORD*           slots,
-        RelativePointer<MethodDesc *> *     replaced,
+        MethodDesc**     replaced,
         DWORD*           pSlotIndex,
         DWORD            dwMaxSlotSize);
 
@@ -2791,7 +2768,7 @@ private:
         bmtRTMethod *     pDecl,
         bmtMDMethod *     pImpl,
         DWORD*            slots,
-        RelativePointer<MethodDesc *> *      replaced,
+        MethodDesc**      replaced,
         DWORD*            pSlotIndex,
         DWORD             dwMaxSlotSize);
 
@@ -2809,9 +2786,16 @@ private:
         bmtMethodHandle   hDecl,
         bmtMDMethod *     pImpl,
         DWORD*            slots,
-        RelativePointer<MethodDesc *> *      replaced,
+        MethodDesc**      replaced,
         DWORD*            pSlotIndex,
         DWORD             dwMaxSlotSize);
+
+    // --------------------------------------------------------------------------------------------
+    // Validate that the methodimpl is handled correctly
+    VOID
+    ValidateStaticMethodImpl(
+        bmtMethodHandle     hDecl,
+        bmtMethodHandle     hImpl);
 
     // --------------------------------------------------------------------------------------------
     // This will validate that all interface methods that were matched during
@@ -2879,11 +2863,7 @@ private:
     CheckForSystemTypes();
 
     VOID SetupMethodTable2(
-        Module* pLoaderModule
-#ifdef FEATURE_PREJIT
-        , Module* pComputedPZM
-#endif // FEATURE_PREJIT
-        );
+        Module* pLoaderModule);
 
     VOID HandleGCForValueClasses(
         MethodTable **);
@@ -2922,12 +2902,20 @@ private:
 
     static ExplicitFieldTrust::TrustLevel CheckValueClassLayout(
         MethodTable * pMT,
-        BYTE *    pFieldLayout,
-        DWORD *  pFirstObjectOverlapOffset);
+        bmtFieldLayoutTag* pFieldLayout);
+
+    static ExplicitFieldTrust::TrustLevel CheckByRefLikeValueClassLayout(
+        MethodTable * pMT,
+        bmtFieldLayoutTag* pFieldLayout);
+
+    static ExplicitFieldTrust::TrustLevel MarkTagType(
+        bmtFieldLayoutTag* field,
+        SIZE_T size,
+        bmtFieldLayoutTag tagType);
 
     void FindPointerSeriesExplicit(
         UINT   instanceSliceSize,
-        BYTE * pFieldLayout);
+        bmtFieldLayoutTag* pFieldLayout);
 
     VOID    HandleGCForExplicitLayout();
 
@@ -2937,7 +2925,7 @@ private:
 
 #ifdef UNIX_AMD64_ABI
     // checks whether the struct is enregisterable.
-    void SystemVAmd64CheckForPassStructInRegister();
+    void SystemVAmd64CheckForPassStructInRegister(MethodTable** pByValueClassCache);
     // Store the eightbyte classification into the EEClass
     void StoreEightByteClassification(SystemVStructRegisterPassingHelper* helper);
 
@@ -2984,13 +2972,11 @@ private:
                                 LoaderAllocator *pAllocator,
                                 BOOL isIFace,
                                 BOOL fDynamicStatics,
-                                BOOL fHasGenericsStaticsInfo
+                                BOOL fHasGenericsStaticsInfo,
+                                BOOL fHasVirtualStaticMethods
 #ifdef FEATURE_COMINTEROP
                                 , BOOL bHasDynamicInterfaceMap
 #endif
-#ifdef FEATURE_PREJIT
-                                , Module *pComputedPZM
-#endif // FEATURE_PREJIT
                                 , AllocMemTracker *pamTracker
         );
 

@@ -20,8 +20,8 @@ namespace System.IO
 
         /// <summary>
         /// Constructs a new RowConfigReader which reads from the given string.
-        /// <param name="buffer">The string to parse through.</param>
         /// </summary>
+        /// <param name="buffer">The string to parse through.</param>
         public RowConfigReader(string buffer)
         {
             _buffer = buffer;
@@ -31,9 +31,9 @@ namespace System.IO
 
         /// <summary>
         /// Constructs a new RowConfigReader which reads from the given string.
+        /// </summary>
         /// <param name="buffer">The string to parse through.</param>
         /// <param name="comparisonKind">The comparison kind to use.</param>
-        /// </summary>
         public RowConfigReader(string buffer, StringComparison comparisonKind)
         {
             _buffer = buffer;
@@ -132,7 +132,7 @@ namespace System.IO
                 }
                 // Check If the match is at the beginning of the string, or is preceded by a newline.
                 else if (keyIndex == 0
-                    || (keyIndex >= Environment.NewLine.Length && _buffer.Substring(keyIndex - Environment.NewLine.Length, Environment.NewLine.Length) == Environment.NewLine))
+                    || (keyIndex >= Environment.NewLine.Length && _buffer.AsSpan(keyIndex - Environment.NewLine.Length, Environment.NewLine.Length).SequenceEqual(Environment.NewLine)))
                 {
                     // Check if the match is followed by whitespace, meaning it is not part of a larger word.
                     if (HasFollowingWhitespace(keyIndex, key.Length))
@@ -141,7 +141,7 @@ namespace System.IO
                     }
                 }
 
-                startIndex = startIndex + key.Length;
+                startIndex += key.Length;
             }
         }
 

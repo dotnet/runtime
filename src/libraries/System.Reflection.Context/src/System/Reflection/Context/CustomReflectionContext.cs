@@ -22,13 +22,18 @@ namespace System.Reflection.Context
 
         protected CustomReflectionContext(ReflectionContext source)
         {
-            SourceContext = source ?? throw new ArgumentNullException(nameof(source));
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            SourceContext = source;
             _projector = new ReflectionContextProjector(this);
         }
 
         public override Assembly MapAssembly(Assembly assembly)
         {
-            if (assembly == null)
+            if (assembly is null)
             {
                 throw new ArgumentNullException(nameof(assembly));
             }
@@ -38,7 +43,7 @@ namespace System.Reflection.Context
 
         public override TypeInfo MapType(TypeInfo type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -66,8 +71,8 @@ namespace System.Reflection.Context
         protected PropertyInfo CreateProperty(
             Type propertyType,
             string name,
-            Func<object, object>? getter,
-            Action<object, object>? setter)
+            Func<object, object?>? getter,
+            Action<object, object?>? setter)
         {
             return new VirtualPropertyInfo(
                 name,
@@ -83,8 +88,8 @@ namespace System.Reflection.Context
         protected PropertyInfo CreateProperty(
             Type propertyType,
             string name,
-            Func<object, object>? getter,
-            Action<object, object>? setter,
+            Func<object, object?>? getter,
+            Action<object, object?>? setter,
             IEnumerable<Attribute>? propertyCustomAttributes,
             IEnumerable<Attribute>? getterCustomAttributes,
             IEnumerable<Attribute>? setterCustomAttributes)
@@ -115,7 +120,7 @@ namespace System.Reflection.Context
                 if (prop == null)
                     throw new InvalidOperationException(SR.InvalidOperation_AddNullProperty);
 
-                VirtualPropertyBase vp = prop as VirtualPropertyBase;
+                VirtualPropertyBase? vp = prop as VirtualPropertyBase;
                 if (vp == null || vp.ReflectionContext != this)
                     throw new InvalidOperationException(SR.InvalidOperation_AddPropertyDifferentContext);
 

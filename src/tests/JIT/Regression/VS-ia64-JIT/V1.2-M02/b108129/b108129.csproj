@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
@@ -13,6 +14,6 @@
     <Compile Include="test2.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

@@ -53,6 +53,12 @@ namespace System.Reflection.TypeLoading
         // For custom attribute processing
         Type,
 
+        // For calling convention processing
+        CallConvCdecl,
+        CallConvStdcall,
+        CallConvThiscall,
+        CallConvFastcall,
+
         // Pseudo Custom Attributes
         ComImportAttribute,
         DllImportAttribute,
@@ -72,7 +78,7 @@ namespace System.Reflection.TypeLoading
 
     internal static class CoreTypeHelpers
     {
-        public static void GetFullName(this CoreType coreType, out byte[] ns, out byte[] name)
+        public static void GetFullName(this CoreType coreType, out ReadOnlySpan<byte> ns, out ReadOnlySpan<byte> name)
         {
             switch (coreType)
             {
@@ -119,9 +125,13 @@ namespace System.Reflection.TypeLoading
                 case CoreType.OptionalAttribute: ns = Utf8Constants.SystemRuntimeInteropServices; name = Utf8Constants.OptionalAttribute; return;
                 case CoreType.PreserveSigAttribute: ns = Utf8Constants.SystemRuntimeInteropServices; name = Utf8Constants.PreserveSigAttribute; return;
                 case CoreType.FieldOffsetAttribute: ns = Utf8Constants.SystemRuntimeInteropServices; name = Utf8Constants.FieldOffsetAttribute; return;
+                case CoreType.CallConvCdecl: ns = Utf8Constants.SystemRuntimeCompilerServices; name = Utf8Constants.CallConvCdecl; return;
+                case CoreType.CallConvStdcall: ns = Utf8Constants.SystemRuntimeCompilerServices; name = Utf8Constants.CallConvStdcall; return;
+                case CoreType.CallConvThiscall: ns = Utf8Constants.SystemRuntimeCompilerServices; name = Utf8Constants.CallConvThiscall; return;
+                case CoreType.CallConvFastcall: ns = Utf8Constants.SystemRuntimeCompilerServices; name = Utf8Constants.CallConvFastcall; return;
                 default:
                     Debug.Fail("Unexpected coreType passed to GetCoreTypeFullName: " + coreType);
-                    ns = name = null;
+                    ns = name = default;
                     return;
             }
         }

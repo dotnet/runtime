@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="McjRecorderTimeoutBeforeStop.cs" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_MultiCoreJitProfileWriteDelay" Value="1" />
+  </ItemGroup>
+</Project>

@@ -5,8 +5,6 @@ namespace System.Linq
 {
     internal static class Error
     {
-        internal static Exception ArgumentNull(string message) => new ArgumentNullException(message);
-
         internal static Exception ArgumentNotIEnumerableGeneric(string message) =>
             new ArgumentException(Strings.ArgumentNotIEnumerableGeneric(message));
 

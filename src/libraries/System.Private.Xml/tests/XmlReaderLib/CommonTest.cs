@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using OLEDB.Test.ModuleCore;
 using System.IO;
+using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
 
 namespace System.Xml.Tests
@@ -1436,7 +1436,7 @@ namespace System.Xml.Tests
             try
             {
                 ReloadSource(new StringReader(xml));
-                while (DataReader.Read()) { CError.WriteLine(DataReader.Value); };
+                while (DataReader.Read()) { CError.WriteLine(DataReader.Value); }
             }
             catch (XmlException e) { CError.WriteLine(e); return TEST_PASS; }
             return TEST_FAIL;

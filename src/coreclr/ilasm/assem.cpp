@@ -725,8 +725,6 @@ BOOL Assembler::EmitMethod(Method *pMethod)
     //--------------------------------------------------------------------------------
     if (pMethod->m_fEntryPoint)
     {
-        if(fIsInterface) report->error("Entrypoint in Interface: Method '%s'\n",pszMethodName);
-
         if (FAILED(m_pCeeFileGen->SetEntryPoint(m_pCeeFile, MethodToken)))
         {
             report->error("Failed to set entry point for method '%s'\n",pszMethodName);
@@ -766,7 +764,17 @@ BOOL Assembler::EmitMethod(Method *pMethod)
                 dwCPlusTypeFlag= (DWORD)*(pMethod->m_pRetValue->ptr());
                 pValue = (void const *)(pMethod->m_pRetValue->ptr()+1);
                 cbValue = pMethod->m_pRetValue->length()-1;
-                if(dwCPlusTypeFlag == ELEMENT_TYPE_STRING) cbValue /= sizeof(WCHAR);
+                if(dwCPlusTypeFlag == ELEMENT_TYPE_STRING)
+                {
+                    cbValue /= sizeof(WCHAR);
+#if BIGENDIAN
+                    void* pValueTemp = _alloca(cbValue * sizeof(WCHAR));
+                    memcpy(pValueTemp, pValue, cbValue * sizeof(WCHAR));
+                    pValue = pValueTemp;
+
+                    SwapStringLength((WCHAR*)pValue, cbValue);
+#endif
+                }
             }
             else
             {
@@ -804,7 +812,17 @@ BOOL Assembler::EmitMethod(Method *pMethod)
                 dwCPlusTypeFlag= (DWORD)*(pAN->pValue->ptr());
                 pValue = (void const *)(pAN->pValue->ptr()+1);
                 cbValue = pAN->pValue->length()-1;
-                if(dwCPlusTypeFlag == ELEMENT_TYPE_STRING) cbValue /= sizeof(WCHAR);
+                if(dwCPlusTypeFlag == ELEMENT_TYPE_STRING)
+                {
+                    cbValue /= sizeof(WCHAR);
+#if BIGENDIAN
+                    void* pValueTemp = _alloca(cbValue * sizeof(WCHAR));
+                    memcpy(pValueTemp, pValue, cbValue * sizeof(WCHAR));
+                    pValue = pValueTemp;
+
+                    SwapStringLength((WCHAR*)pValue, cbValue);
+#endif
+                }
             }
             else
             {
@@ -986,13 +1004,25 @@ BOOL Assembler::EmitProp(PropDescriptor* pPD)
     }
     mdOthers[nOthers] = mdMethodDefNil; // like null-terminator
 
+    void* pValue = pPD->m_pValue;
+#if BIGENDIAN
+    if (pPD->m_dwCPlusTypeFlag == ELEMENT_TYPE_STRING)
+    {
+        void* pValueTemp = _alloca(pPD->m_cbValue * sizeof(WCHAR));
+        memcpy(pValueTemp, pValue, pPD->m_cbValue * sizeof(WCHAR));
+        pValue = pValueTemp;
+
+        SwapStringLength((WCHAR*)pValue, pPD->m_cbValue);
+    }
+#endif
+
     if(FAILED(m_pEmitter->DefineProperty(   pPD->m_tdClass,
                                             wzMemberName,
                                             pPD->m_dwAttr,
                                             pPD->m_pSig,
                                             pPD->m_dwCSig,
                                             pPD->m_dwCPlusTypeFlag,
-                                            pPD->m_pValue,
+                                            pValue,
                                             pPD->m_cbValue,
                                             mdSet,
                                             mdGet,
@@ -1007,7 +1037,7 @@ BOOL Assembler::EmitProp(PropDescriptor* pPD)
     return TRUE;
 }
 
-Class *Assembler::FindCreateClass(__in __nullterminated const char *pszFQN)
+Class *Assembler::FindCreateClass(_In_ __nullterminated const char *pszFQN)
 {
     Class *pSearch = NULL;
 
@@ -1154,7 +1184,7 @@ BOOL Assembler::DoGlobalFixups()
     return TRUE;
 }
 
-state_t Assembler::AddGlobalLabel(__in __nullterminated char *pszName, HCEESECTION section)
+state_t Assembler::AddGlobalLabel(_In_ __nullterminated char *pszName, HCEESECTION section)
 {
     if (FindGlobalLabel(pszName) != NULL)
     {
@@ -1181,7 +1211,7 @@ state_t Assembler::AddGlobalLabel(__in __nullterminated char *pszName, HCEESECTI
     return m_State;
 }
 
-void Assembler::AddLabel(DWORD CurPC, __in __nullterminated char *pszName)
+void Assembler::AddLabel(DWORD CurPC, _In_ __nullterminated char *pszName)
 {
     if (m_pCurMethod->FindLabel(pszName) != NULL)
     {
@@ -1446,7 +1476,7 @@ acceptable.  Do NOT use for cryptographic purposes.
 */
 
 unsigned hash(
-     __in_ecount(length) const BYTE *k,        /* the key */
+     _In_reads_(length) const BYTE *k,        /* the key */
      unsigned  length,   /* the length of the key */
      unsigned  initval)  /* the previous hash, or an arbitrary value */
 {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.Serialization;
 
 namespace System.Diagnostics.Eventing.Reader
@@ -16,30 +17,30 @@ namespace System.Diagnostics.Eventing.Reader
         {
             switch (errorCode)
             {
-                case 2:
-                case 3:
-                case 15007:
-                case 15027:
-                case 15028:
-                case 15002:
+                case Interop.Errors.ERROR_FILE_NOT_FOUND:
+                case Interop.Errors.ERROR_PATH_NOT_FOUND:
+                case Interop.Errors.ERROR_EVT_CHANNEL_NOT_FOUND:
+                case Interop.Errors.ERROR_EVT_MESSAGE_NOT_FOUND:
+                case Interop.Errors.ERROR_EVT_MESSAGE_ID_NOT_FOUND:
+                case Interop.Errors.ERROR_EVT_PUBLISHER_METADATA_NOT_FOUND:
                     throw new EventLogNotFoundException(errorCode);
 
-                case 13:
-                case 15005:
+                case Interop.Errors.ERROR_INVALID_DATA:
+                case Interop.Errors.ERROR_EVT_INVALID_EVENT_DATA:
                     throw new EventLogInvalidDataException(errorCode);
 
-                case 1818: // RPC_S_CALL_CANCELED is converted to ERROR_CANCELLED
-                case 1223:
+                case Interop.Errors.RPC_S_CALL_CANCELED:
+                case Interop.Errors.ERROR_CANCELLED:
                     throw new OperationCanceledException();
 
-                case 15037:
+                case Interop.Errors.ERROR_EVT_PUBLISHER_DISABLED:
                     throw new EventLogProviderDisabledException(errorCode);
 
-                case 5:
+                case Interop.Errors.ERROR_ACCESS_DENIED:
                     throw new UnauthorizedAccessException();
 
-                case 15011:
-                case 15012:
+                case Interop.Errors.ERROR_EVT_QUERY_RESULT_STALE:
+                case Interop.Errors.ERROR_EVT_QUERY_RESULT_INVALID_POSITION:
                     throw new EventLogReadingException(errorCode);
 
                 default:
@@ -50,7 +51,11 @@ namespace System.Diagnostics.Eventing.Reader
         public EventLogException() { }
         public EventLogException(string message) : base(message) { }
         public EventLogException(string message, Exception innerException) : base(message, innerException) { }
-        protected EventLogException(int errorCode) { _errorCode = errorCode; }
+        protected EventLogException(int errorCode)
+        {
+            _errorCode = errorCode;
+            HResult = Interop.HRESULT_FROM_WIN32(errorCode);
+        }
 
         public override string Message
         {
@@ -63,12 +68,20 @@ namespace System.Diagnostics.Eventing.Reader
 
         private readonly int _errorCode;
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected EventLogException(SerializationInfo serializationInfo, StreamingContext streamingContext)
             : base(serializationInfo, streamingContext)
         {
             _errorCode = serializationInfo.GetInt32("errorCode");
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -86,6 +99,10 @@ namespace System.Diagnostics.Eventing.Reader
         public EventLogNotFoundException(string message) : base(message) { }
         public EventLogNotFoundException(string message, Exception innerException) : base(message, innerException) { }
         internal EventLogNotFoundException(int errorCode) : base(errorCode) { }
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected EventLogNotFoundException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext) { }
     }
 
@@ -101,6 +118,10 @@ namespace System.Diagnostics.Eventing.Reader
         public EventLogReadingException(string message) : base(message) { }
         public EventLogReadingException(string message, Exception innerException) : base(message, innerException) { }
         internal EventLogReadingException(int errorCode) : base(errorCode) { }
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected EventLogReadingException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext) { }
     }
 
@@ -116,6 +137,10 @@ namespace System.Diagnostics.Eventing.Reader
         public EventLogProviderDisabledException(string message) : base(message) { }
         public EventLogProviderDisabledException(string message, Exception innerException) : base(message, innerException) { }
         internal EventLogProviderDisabledException(int errorCode) : base(errorCode) { }
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected EventLogProviderDisabledException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext) { }
     }
 
@@ -129,6 +154,10 @@ namespace System.Diagnostics.Eventing.Reader
         public EventLogInvalidDataException(string message) : base(message) { }
         public EventLogInvalidDataException(string message, Exception innerException) : base(message, innerException) { }
         internal EventLogInvalidDataException(int errorCode) : base(errorCode) { }
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected EventLogInvalidDataException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext) { }
     }
 }

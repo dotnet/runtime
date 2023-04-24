@@ -4,8 +4,9 @@
 // Tests KeepAlive() scopes
 
 using System;
+using System.Runtime.CompilerServices;
 
-public class Test {
+public class Test_keepalivescope {
 
     public static int returnValue = 0;
 	public class Dummy {
@@ -25,11 +26,11 @@ public class Test {
 			obj = new Dummy();
 			result=false;
 		}
-		
-		public void RunTest() {
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		public void RunTestInner() {
 			GC.Collect();
 			GC.WaitForPendingFinalizers();
-		
 			
 			if((Dummy.visited == false)) {  // has not visited the Finalize() yet
 				result=true;
@@ -38,6 +39,12 @@ public class Test {
 			GC.KeepAlive(obj);	// will keep alive 'obj' till this point
 		
 			obj=null;
+		}
+		
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		public void RunTest() {
+			RunTestInner();
+
 			GC.Collect();
 			GC.WaitForPendingFinalizers();
 		

@@ -13,10 +13,6 @@
 #include <clrdata.h>
 #include "dacimpl.h"
 
-#ifndef IMAGE_FILE_MACHINE_ARM64
-#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
-#endif
-
 //
 // DataTargetAdaptor ctor
 //

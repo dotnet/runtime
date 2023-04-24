@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyModel
         public RuntimeLibrary(string type,
             string name,
             string version,
-            string hash,
+            string? hash,
             IReadOnlyList<RuntimeAssetGroup> runtimeAssemblyGroups,
             IReadOnlyList<RuntimeAssetGroup> nativeLibraryGroups,
             IEnumerable<ResourceAssembly> resourceAssemblies,
@@ -35,14 +35,14 @@ namespace Microsoft.Extensions.DependencyModel
         public RuntimeLibrary(string type,
             string name,
             string version,
-            string hash,
+            string? hash,
             IReadOnlyList<RuntimeAssetGroup> runtimeAssemblyGroups,
             IReadOnlyList<RuntimeAssetGroup> nativeLibraryGroups,
             IEnumerable<ResourceAssembly> resourceAssemblies,
             IEnumerable<Dependency> dependencies,
             bool serviceable,
-            string path,
-            string hashPath)
+            string? path,
+            string? hashPath)
             : this(type,
                   name,
                   version,
@@ -86,15 +86,15 @@ namespace Microsoft.Extensions.DependencyModel
         public RuntimeLibrary(string type,
             string name,
             string version,
-            string hash,
+            string? hash,
             IReadOnlyList<RuntimeAssetGroup> runtimeAssemblyGroups,
             IReadOnlyList<RuntimeAssetGroup> nativeLibraryGroups,
             IEnumerable<ResourceAssembly> resourceAssemblies,
             IEnumerable<Dependency> dependencies,
             bool serviceable,
-            string path,
-            string hashPath,
-            string runtimeStoreManifestName)
+            string? path,
+            string? hashPath,
+            string? runtimeStoreManifestName)
             : base(type,
                   name,
                   version,
@@ -105,18 +105,10 @@ namespace Microsoft.Extensions.DependencyModel
                   hashPath,
                   runtimeStoreManifestName)
         {
-            if (runtimeAssemblyGroups == null)
-            {
-                throw new ArgumentNullException(nameof(runtimeAssemblyGroups));
-            }
-            if (nativeLibraryGroups == null)
-            {
-                throw new ArgumentNullException(nameof(nativeLibraryGroups));
-            }
-            if (resourceAssemblies == null)
-            {
-                throw new ArgumentNullException(nameof(resourceAssemblies));
-            }
+            ThrowHelper.ThrowIfNull(runtimeAssemblyGroups);
+            ThrowHelper.ThrowIfNull(nativeLibraryGroups);
+            ThrowHelper.ThrowIfNull(resourceAssemblies);
+
             RuntimeAssemblyGroups = runtimeAssemblyGroups;
             ResourceAssemblies = resourceAssemblies.ToArray();
             NativeLibraryGroups = nativeLibraryGroups;

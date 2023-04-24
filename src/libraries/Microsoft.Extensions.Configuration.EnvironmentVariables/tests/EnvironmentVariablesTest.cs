@@ -31,6 +31,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
             Assert.Equal("SqlClient", envConfigSrc.Get("DEFAULTCONNECTION:PROVIDER"));
             Assert.Equal("AnotherTestConnectionString", envConfigSrc.Get("Inventory:CONNECTIONSTRING"));
             Assert.Equal("MySql", envConfigSrc.Get("Inventory:Provider"));
+            Assert.Equal("EnvironmentVariablesConfigurationProvider Prefix: ''", envConfigSrc.ToString());
         }
 
         [Fact]
@@ -49,6 +50,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
 
             Assert.Equal("TestConnectionString", envConfigSrc.Get("ConnectionString"));
             Assert.Equal("SqlClient", envConfigSrc.Get("Provider"));
+            Assert.Equal("EnvironmentVariablesConfigurationProvider Prefix: 'DefaultConnection:'", envConfigSrc.ToString());
         }
 
         [Fact]
@@ -154,7 +156,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         }
 
         [Fact]
-        public void ReplaceDoubleUnderscoreInEnvironmentVariablesButNotPrefix()
+        public void ReplaceDoubleUnderscoreInEnvironmentVariablesDoubleUnderscorePrefixStillMatches()
         {
             var dict = new Hashtable()
                 {
@@ -168,13 +170,13 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         }
 
         [Fact]
-        public void ReplaceDoubleUnderscoreInEnvironmentVariablesButNotInAnomalousPrefix()
+        public void MixingPathSeparatorsInPrefixStillMatchesEnvironmentVariable()
         {
             var dict = new Hashtable()
                 {
                     {"_____EXPERIMENTAL__data__ConnectionString", "connection"}
                 };
-            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("_____EXPERIMENTAL__");
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("::_EXPERIMENTAL:");
 
             envConfigSrc.Load(dict);
 
@@ -182,7 +184,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         }
 
         [Fact]
-        public void ReplaceDoubleUnderscoreInEnvironmentVariablesWithDuplicatedPrefix()
+        public void OnlyASinglePrefixIsRemovedFromMatchingKey()
         {
             var dict = new Hashtable()
                 {
@@ -196,6 +198,28 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         }
 
         [Fact]
+        public void OnlyEnvironmentVariablesMatchingTheGivenPrefixAreIncluded()
+        {
+            var dict = new Hashtable()
+                {
+                    {"projectA__section1__project", "A"},
+                    {"projectA__section1__projectA", "true"},
+                    {"projectB__section1__project", "B"},
+                    {"projectB__section1__projectB", "true"},
+                    {"section1__project", "unknown"},
+                    {"section1__noProject", "true"}
+                };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("projectB__");
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("B", envConfigSrc.Get("section1:project"));
+            Assert.Equal("true", envConfigSrc.Get("section1:projectB"));
+            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("section1:projectA"));
+            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("section1:noProject"));
+        }
+
+        [Fact]
         public void PrefixPreventsLoadingSqlConnectionStrings()
         {
             var dict = new Hashtable()
@@ -203,12 +227,60 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
                     {"test__test__ConnectionString", "connection"},
                     {"SQLCONNSTR_db1", "connStr"}
                 };
-            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("test__");
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("test:");
 
             envConfigSrc.Load(dict);
 
             Assert.Equal("connection", envConfigSrc.Get("test:ConnectionString"));
             Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("ConnectionStrings:db1_ProviderName"));
+        }
+
+        public const string EnvironmentVariable = "Microsoft__Extensions__Configuration__EnvironmentVariables__Test__Foo";
+        public class SettingsWithFoo
+        {
+            public string? Foo { get; set; }
+        }
+
+        [Fact]
+        public void AddEnvironmentVariablesUsingNormalizedPrefix_Bind_PrefixMatches()
+        {
+            try
+            {
+                Environment.SetEnvironmentVariable(EnvironmentVariable, "myFooValue");
+                var configuration = new ConfigurationBuilder()
+                    .AddEnvironmentVariables("Microsoft:Extensions:Configuration:EnvironmentVariables:Test:")
+                    .Build();
+
+                var settingsWithFoo = new SettingsWithFoo();
+                configuration.Bind(settingsWithFoo);
+
+                Assert.Equal("myFooValue", settingsWithFoo.Foo);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(EnvironmentVariable, null);
+            }
+        }
+
+        [Fact]
+        public void AddEnvironmentVariablesUsingPrefixWithDoubleUnderscores_Bind_PrefixMatches()
+        {
+            try
+            {
+                Environment.SetEnvironmentVariable(EnvironmentVariable, "myFooValue");
+                var configuration = new ConfigurationBuilder()
+                    .AddEnvironmentVariables("Microsoft__Extensions__Configuration__EnvironmentVariables__Test__")
+                    .Build();
+
+                var settingsWithFoo = new SettingsWithFoo();
+                configuration.Bind(settingsWithFoo);
+
+                Assert.Equal("myFooValue", settingsWithFoo.Foo);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(EnvironmentVariable, null);
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

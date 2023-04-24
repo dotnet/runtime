@@ -22,40 +22,40 @@ PerfInfo::PerfInfo(int pid)
     }
 
     SString path;
-    path.Printf("%Sperfinfo-%d.map", tempPath.GetUnicode(), pid);
+    path.Printf("%sperfinfo-%d.map", tempPath.GetUTF8(), pid);
     OpenFile(path);
 }
 
 // Logs image loads into the process' perfinfo-%d.map file
-void PerfInfo::LogImage(PEFile* pFile, WCHAR* guid)
+void PerfInfo::LogImage(PEAssembly* pPEAssembly, CHAR* guid)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        PRECONDITION(pFile != nullptr);
+        PRECONDITION(pPEAssembly != nullptr);
         PRECONDITION(guid != nullptr);
     } CONTRACTL_END;
 
     SString value;
-    const SString& path = pFile->GetPath();
+    const SString& path = pPEAssembly->GetPath();
     if (path.IsEmpty())
     {
         return;
     }
 
     SIZE_T baseAddr = 0;
-    if (pFile->IsILImageReadyToRun())
+    if (pPEAssembly->IsReadyToRun())
     {
-        PEImageLayout *pLoadedLayout = pFile->GetLoaded();
+        PEImageLayout *pLoadedLayout = pPEAssembly->GetLoadedLayout();
         if (pLoadedLayout)
         {
             baseAddr = (SIZE_T)pLoadedLayout->GetBase();
         }
     }
 
-    value.Printf("%S%c%S%c%p", path.GetUnicode(), sDelimiter, guid, sDelimiter, baseAddr);
+    value.Printf("%s%c%s%c%p", path.GetUTF8(), sDelimiter, guid, sDelimiter, baseAddr);
 
     SString command;
     command.Printf("%s", "ImageLoad");
@@ -80,13 +80,12 @@ void PerfInfo::WriteLine(SString& type, SString& value)
     }
 
     SString line;
-    line.Printf("%S%c%S%c\n",
-            type.GetUnicode(), sDelimiter, value.GetUnicode(), sDelimiter);
+    line.Printf("%s%c%s%c\n",
+            type.GetUTF8(), sDelimiter, value.GetUTF8(), sDelimiter);
 
     EX_TRY
     {
-        StackScratchBuffer scratch;
-        const char* strLine = line.GetANSI(scratch);
+        const char* strLine = line.GetUTF8();
         ULONG inCount = line.GetCount();
         ULONG outCount;
 

@@ -1,15 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Data.SqlTypes;
-using System.Xml;
-using System.IO;
-using System.Xml.Serialization;
 using System.Collections;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Collections.Concurrent;
+using System.Data.SqlTypes;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace System.Data.Common
 {
@@ -21,7 +22,7 @@ namespace System.Data.Common
 
         private static readonly ConcurrentDictionary<Type, object> s_typeToNull = new ConcurrentDictionary<Type, object>();
 
-        public SqlUdtStorage(DataColumn column, Type type)
+        public SqlUdtStorage(DataColumn column, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type)
         : this(column, type, GetStaticNullForUdtType(type))
         {
         }
@@ -34,7 +35,11 @@ namespace System.Data.Common
         }
 
         // to support oracle types and other INUllable types that have static Null as field
-        internal static object GetStaticNullForUdtType(Type type) => s_typeToNull.GetOrAdd(type, t =>
+        internal static object GetStaticNullForUdtType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type) => s_typeToNull.GetOrAdd(type, GetStaticNullForUdtTypeCore);
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The only callsite is marked with DynamicallyAccessedMembers. Workaround for https://github.com/mono/linker/issues/1981")]
+        private static object GetStaticNullForUdtTypeCore(Type type)
         {
             // TODO: Is it OK for the null value of a UDT to be null? For now annotating is non-nullable.
             PropertyInfo? propInfo = type.GetProperty("Null", BindingFlags.Public | BindingFlags.Static);
@@ -50,7 +55,7 @@ namespace System.Data.Common
             }
 
             throw ExceptionBuilder.INullableUDTwithoutStaticNull(type.AssemblyQualifiedName!);
-        });
+        }
 
         public override bool IsNull(int record)
         {
@@ -132,24 +137,20 @@ namespace System.Data.Common
 
         public override void SetCapacity(int capacity)
         {
-            object[] newValues = new object[capacity];
-            if (_values != null)
-            {
-                Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
-            }
-            _values = newValues;
+            Array.Resize(ref _values, capacity);
             base.SetCapacity(capacity);
         }
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override object ConvertXmlToObject(string s)
         {
             if (_implementsIXmlSerializable)
             {
                 object Obj = System.Activator.CreateInstance(_dataType, true)!;
 
-                string tempStr = string.Concat("<col>", s, "</col>"); // this is done since you can give fragmet to reader
+                string tempStr = string.Concat("<col>", s, "</col>"); // this is done since you can give fragment to reader
                 StringReader strReader = new StringReader(tempStr);
 
                 using (XmlTextReader xmlTextReader = new XmlTextReader(strReader))
@@ -166,7 +167,8 @@ namespace System.Data.Common
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public override object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute xmlAttrib)
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+        public override object ConvertXmlToObject(XmlReader xmlReader, XmlRootAttribute? xmlAttrib)
         {
             if (null == xmlAttrib)
             {
@@ -192,7 +194,7 @@ namespace System.Data.Common
             }
         }
 
-
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override string ConvertObjectToXml(object value)
         {
             StringWriter strwriter = new StringWriter(FormatProvider);
@@ -211,6 +213,7 @@ namespace System.Data.Common
             return (strwriter.ToString());
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override void ConvertObjectToXml(object value, XmlWriter xmlWriter, XmlRootAttribute? xmlAttrib)
         {
             if (null == xmlAttrib)

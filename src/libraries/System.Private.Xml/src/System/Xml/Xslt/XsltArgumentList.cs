@@ -40,9 +40,9 @@ namespace System.Xml.Xsl
 
         public void AddParam(string name, string namespaceUri, object parameter)
         {
-            CheckArgumentNull(name, nameof(name));
-            CheckArgumentNull(namespaceUri, nameof(namespaceUri));
-            CheckArgumentNull(parameter, nameof(parameter));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+            ArgumentNullException.ThrowIfNull(parameter);
 
             XmlQualifiedName qname = new XmlQualifiedName(name, namespaceUri);
             qname.Verify();
@@ -52,8 +52,9 @@ namespace System.Xml.Xsl
         [RequiresUnreferencedCode(ExtensionObjectWarning)]
         public void AddExtensionObject(string namespaceUri, object extension)
         {
-            CheckArgumentNull(namespaceUri, nameof(namespaceUri));
-            CheckArgumentNull(extension, nameof(extension));
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+            ArgumentNullException.ThrowIfNull(extension);
+
             _extensions.Add(namespaceUri, extension);
         }
 
@@ -89,14 +90,6 @@ namespace System.Xml.Xsl
             _parameters.Clear();
             _extensions.Clear();
             xsltMessageEncountered = null;
-        }
-
-        private static void CheckArgumentNull(object param, string paramName)
-        {
-            if (param == null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
         }
     }
 }

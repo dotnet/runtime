@@ -1,14 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ==++==
-//
-
-//
-
-//
-// ==--==
-
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XX                                                                           XX
@@ -741,7 +733,7 @@ void vector<T, Allocator>::insert_elements_helper(iterator iter, size_type size,
 
     ensure_capacity(m_nSize + size);
 
-    for (int src = m_nSize - 1, dst = m_nSize + size - 1; src >= (int) pos; --src, --dst)
+    for (int src = (int)(m_nSize - 1), dst = (int)(m_nSize + size - 1); src >= (int) pos; --src, --dst)
     {
         m_pArray[dst] = m_pArray[src];
     }

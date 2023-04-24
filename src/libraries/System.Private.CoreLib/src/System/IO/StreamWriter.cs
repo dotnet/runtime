@@ -97,25 +97,20 @@ namespace System.IO
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.stream);
             }
-            if (encoding == null)
-            {
-                encoding = UTF8NoBOM;
-            }
+
             if (!stream.CanWrite)
             {
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
             }
+
             if (bufferSize == -1)
             {
                 bufferSize = DefaultBufferSize;
             }
-            else if (bufferSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
 
             _stream = stream;
-            _encoding = encoding;
+            _encoding = encoding ?? UTF8NoBOM;
             _encoder = _encoding.GetEncoder();
             if (bufferSize < MinBufferSize)
             {
@@ -154,18 +149,36 @@ namespace System.IO
         {
         }
 
-        private static Stream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
+        public StreamWriter(string path, FileStreamOptions options)
+            : this(path, UTF8NoBOM, options)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
-                throw new ArgumentNullException(nameof(encoding));
-            if (path.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyPath);
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+        }
 
-            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan);
+        public StreamWriter(string path, Encoding encoding, FileStreamOptions options)
+            : this(ValidateArgsAndOpenPath(path, encoding, options), encoding, DefaultFileStreamBufferSize)
+        {
+        }
+
+        private static FileStream ValidateArgsAndOpenPath(string path, Encoding encoding, FileStreamOptions options)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(encoding);
+            ArgumentNullException.ThrowIfNull(options);
+            if ((options.Access & FileAccess.Write) == 0)
+            {
+                throw new ArgumentException(SR.Argument_StreamNotWritable, nameof(options));
+            }
+
+            return new FileStream(path, options);
+        }
+
+        private static FileStream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(path);
+            ArgumentNullException.ThrowIfNull(encoding);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
+
+            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize);
         }
 
         public override void Close()
@@ -276,7 +289,7 @@ namespace System.IO
 
             // For sufficiently small char data being flushed, try to encode to the stack.
             // For anything else, fall back to allocating the byte[] buffer.
-            Span<byte> byteBuffer = stackalloc byte[0];
+            scoped Span<byte> byteBuffer;
             if (_byteBuffer is not null)
             {
                 byteBuffer = _byteBuffer;
@@ -348,18 +361,9 @@ namespace System.IO
         [MethodImpl(MethodImplOptions.NoInlining)] // prevent WriteSpan from bloating call sites
         public override void Write(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -486,32 +490,25 @@ namespace System.IO
             }
         }
 
-        private void WriteFormatHelper(string format, ParamsArray args, bool appendNewLine)
+        private void WriteFormatHelper(string format, ReadOnlySpan<object?> args, bool appendNewLine)
         {
-            StringBuilder sb =
-                StringBuilderCache.Acquire((format?.Length ?? 0) + args.Length * 8)
-                .AppendFormatHelper(null, format!, args); // AppendFormatHelper will appropriately throw ArgumentNullException for a null format
+            int estimatedLength = (format?.Length ?? 0) + args.Length * 8;
+            var vsb = estimatedLength <= 256 ?
+                new ValueStringBuilder(stackalloc char[256]) :
+                new ValueStringBuilder(estimatedLength);
 
-            StringBuilder.ChunkEnumerator chunks = sb.GetChunks();
+            vsb.AppendFormatHelper(null, format!, args); // AppendFormatHelper will appropriately throw ArgumentNullException for a null format
 
-            bool more = chunks.MoveNext();
-            while (more)
-            {
-                ReadOnlySpan<char> current = chunks.Current.Span;
-                more = chunks.MoveNext();
+            WriteSpan(vsb.AsSpan(), appendNewLine);
 
-                // If final chunk, include the newline if needed
-                WriteSpan(current, appendNewLine: more ? false : appendNewLine);
-            }
-
-            StringBuilderCache.Release(sb);
+            vsb.Dispose();
         }
 
-        public override void Write(string format, object? arg0)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0), appendNewLine: false);
+                WriteFormatHelper(format, new ReadOnlySpan<object?>(in arg0), appendNewLine: false);
             }
             else
             {
@@ -519,11 +516,12 @@ namespace System.IO
             }
         }
 
-        public override void Write(string format, object? arg0, object? arg1)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1), appendNewLine: false);
+                TwoObjects two = new TwoObjects(arg0, arg1);
+                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2), appendNewLine: false);
             }
             else
             {
@@ -531,11 +529,12 @@ namespace System.IO
             }
         }
 
-        public override void Write(string format, object? arg0, object? arg1, object? arg2)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1, arg2), appendNewLine: false);
+                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
+                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3), appendNewLine: false);
             }
             else
             {
@@ -543,15 +542,15 @@ namespace System.IO
             }
         }
 
-        public override void Write(string format, params object?[] arg)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
         {
             if (GetType() == typeof(StreamWriter))
             {
                 if (arg == null)
                 {
-                    throw new ArgumentNullException((format == null) ? nameof(format) : nameof(arg)); // same as base logic
+                    ArgumentNullException.Throw(format is null ? nameof(format) : nameof(arg)); // same as base logic
                 }
-                WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: false);
+                WriteFormatHelper(format, arg, appendNewLine: false);
             }
             else
             {
@@ -559,11 +558,11 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, object? arg0)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0), appendNewLine: true);
+                WriteFormatHelper(format, new ReadOnlySpan<object?>(in arg0), appendNewLine: true);
             }
             else
             {
@@ -571,11 +570,12 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, object? arg0, object? arg1)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1), appendNewLine: true);
+                TwoObjects two = new TwoObjects(arg0, arg1);
+                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2), appendNewLine: true);
             }
             else
             {
@@ -583,11 +583,12 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, object? arg0, object? arg1, object? arg2)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1, arg2), appendNewLine: true);
+                ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
+                WriteFormatHelper(format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3), appendNewLine: true);
             }
             else
             {
@@ -595,15 +596,12 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, params object?[] arg)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
         {
             if (GetType() == typeof(StreamWriter))
             {
-                if (arg == null)
-                {
-                    throw new ArgumentNullException(nameof(arg));
-                }
-                WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: true);
+                ArgumentNullException.ThrowIfNull(arg);
+                WriteFormatHelper(format, arg, appendNewLine: true);
             }
             else
             {
@@ -688,18 +686,10 @@ namespace System.IO
 
         public override Task WriteAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -848,18 +838,10 @@ namespace System.IO
 
         public override Task WriteLineAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
-            if (index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (buffer.Length - index < count)
             {
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
@@ -941,10 +923,7 @@ namespace System.IO
                 return Task.CompletedTask;
             }
 
-            Task flushTask = Core(flushStream, flushEncoder, cancellationToken);
-
-            _charPos = 0;
-            return flushTask;
+            return Core(flushStream, flushEncoder, cancellationToken);
 
             async Task Core(bool flushStream, bool flushEncoder, CancellationToken cancellationToken)
             {
@@ -961,6 +940,7 @@ namespace System.IO
                 byte[] byteBuffer = _byteBuffer ??= new byte[_encoding.GetMaxByteCount(_charBuffer.Length)];
 
                 int count = _encoder.GetBytes(new ReadOnlySpan<char>(_charBuffer, 0, _charPos), byteBuffer, flushEncoder);
+                _charPos = 0;
                 if (count > 0)
                 {
                     await _stream.WriteAsync(new ReadOnlyMemory<byte>(byteBuffer, 0, count), cancellationToken).ConfigureAwait(false);

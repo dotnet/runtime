@@ -1,0 +1,31 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <Nullable>enable</Nullable>
+    <IgnoreForCI Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">true</IgnoreForCI> 
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)..\tests\SourceGenerators\RoslynTestUtils.cs"
+             Link="SourceGenerators\RoslynTestUtils.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(RoslynApiVersion)" />
+    <PackageReference Include="SQLitePCLRaw.bundle_green" Version="$(SQLitePCLRawbundle_greenVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="TestClasses\*.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Baselines\*.generated.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

@@ -48,7 +48,7 @@ namespace System.Data.Odbc
         public override object? ExecuteScalar() { throw null; }
         public override void Prepare() { }
         public void ResetCommandTimeout() { }
-        object? System.ICloneable.Clone() { throw null; }
+        object System.ICloneable.Clone() { throw null; }
     }
     public sealed partial class OdbcCommandBuilder : System.Data.Common.DbCommandBuilder
     {
@@ -154,7 +154,7 @@ namespace System.Data.Odbc
         protected override System.Data.Common.RowUpdatingEventArgs CreateRowUpdatingEvent(System.Data.DataRow dataRow, System.Data.IDbCommand? command, System.Data.StatementType statementType, System.Data.Common.DataTableMapping tableMapping) { throw null; }
         protected override void OnRowUpdated(System.Data.Common.RowUpdatedEventArgs value) { }
         protected override void OnRowUpdating(System.Data.Common.RowUpdatingEventArgs value) { }
-        object? System.ICloneable.Clone() { throw null; }
+        object System.ICloneable.Clone() { throw null; }
     }
     public sealed partial class OdbcDataReader : System.Data.Common.DbDataReader
     {
@@ -221,6 +221,10 @@ namespace System.Data.Odbc
         internal OdbcException() { }
         public System.Data.Odbc.OdbcErrorCollection Errors { get { throw null; } }
         public override string Source { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
     }
     public sealed partial class OdbcFactory : System.Data.Common.DbProviderFactory
@@ -287,7 +291,7 @@ namespace System.Data.Odbc
         public override object? Value { get { throw null; } set { } }
         public override void ResetDbType() { }
         public void ResetOdbcType() { }
-        object? System.ICloneable.Clone() { throw null; }
+        object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
     }
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DBParametersEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -311,7 +315,7 @@ namespace System.Data.Odbc
         public System.Data.Odbc.OdbcParameter Add(string? parameterName, System.Data.Odbc.OdbcType odbcType, int size) { throw null; }
         public System.Data.Odbc.OdbcParameter Add(string? parameterName, System.Data.Odbc.OdbcType odbcType, int size, string? sourceColumn) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Add(String parameterName, Object value) has been deprecated.  Use AddWithValue(String parameterName, Object value).  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [System.ObsoleteAttribute("Add(String parameterName, Object value) has been deprecated. Use AddWithValue(String parameterName, Object value) instead.")]
         public System.Data.Odbc.OdbcParameter Add(string? parameterName, object? value) { throw null; }
         public override void AddRange(System.Array values) { }
         public void AddRange(System.Data.Odbc.OdbcParameter[] values) { }

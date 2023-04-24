@@ -601,13 +601,11 @@ DebuggerJitInfo * FrameInfo::GetJitInfoFromFrame() const
 
     DebuggerJitInfo *ji = NULL;
 
-    // @todo - we shouldn't need both a MD and an IP here.
     EX_TRY
     {
         _ASSERTE(this->md != NULL);
         ji = g_pDebugger->GetJitInfo(this->md, (const BYTE*)GetControlPC(&(this->registers)));
-        _ASSERTE(ji != NULL);
-        _ASSERTE(ji->m_nativeCodeVersion.GetMethodDesc() == this->md);
+        _ASSERTE(ji == NULL || ji->m_nativeCodeVersion.GetMethodDesc() == this->md);
     }
     EX_CATCH
     {
@@ -1547,7 +1545,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
     d->info.currentAppDomain = AppDomain::GetCurrentDomain();
 
     //  Grab all the info from CrawlFrame that we need to
-    //  check for "Am I in an exeption code blob?" now.
+    //  check for "Am I in an exception code blob?" now.
 
 #ifdef FEATURE_EH_FUNCLETS
     // We are still searching for the parent of the last funclet we encounter.
@@ -1568,7 +1566,7 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 #ifdef FEATURE_MULTICASTSTUB_AS_IL
         use |= dMD->IsMulticastStub();
 #endif
-        use |= dMD->GetILStubResolver()->GetStubType() == ILStubResolver::TailCallCallTargetStub;
+        use |= dMD->GetILStubType() == DynamicMethodDesc::StubTailCallCallTarget;
 
         if (use)
         {
@@ -2017,7 +2015,7 @@ bool PrepareLeafUMChain(DebuggerFrameData * pData, CONTEXT * pCtxTemp)
         }
 
         // @todo - this context is less important because the RS will overwrite it with the live context.
-        // We don't need to even bother getting it. We can just intialize the regdisplay w/ a sentinal.
+        // We don't need to even bother getting it. We can just initialize the regdisplay w/ a sentinel.
         fOk = g_pEEInterface->InitRegDisplay(thread, pRDSrc, pCtxTemp, false);
         thread->ResumeThread();
 
@@ -2103,7 +2101,7 @@ StackWalkAction DebuggerWalkStack(Thread *thread,
 #endif
             memset((void *)&data, 0, sizeof(data));
 
-#if defined(TARGET_X86)
+#if !defined(FEATURE_EH_FUNCLETS)
             // @todo - this seems pointless. context->Eip will be 0; and when we copy it over to the DebuggerRD,
             // the context will be completely null.
             data.regDisplay.ControlPC = context->Eip;

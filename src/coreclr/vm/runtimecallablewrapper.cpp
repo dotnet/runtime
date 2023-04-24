@@ -31,7 +31,6 @@ class Object;
 #include "eeconfig.h"
 #include "comdelegate.h"
 #include "comcache.h"
-#include "notifyexternals.h"
 #include "../md/compiler/custattr.h"
 #include "olevariant.h"
 #include "interopconverter.h"
@@ -51,7 +50,6 @@ SLIST_HEADER RCW::s_RCWStandbyList;
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #include "interoplibinterface.h"
 
-#ifndef CROSSGEN_COMPILE
 
 void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
 {
@@ -66,11 +64,11 @@ void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
 
     SString strMessage;
     SString strResource;
-    WCHAR strClsid[39];
+    WCHAR strClsid[GUID_STR_BUFFER_LEN];
     SString strHRDescription;
 
     // Obtain the textual representation of the HRESULT.
-    StringFromGUID2(m_rclsid, strClsid, sizeof(strClsid) / sizeof(WCHAR));
+    GuidToLPWSTR(m_rclsid, strClsid);
 
     SString strHRHex;
     strHRHex.Printf("%.8x", hr);
@@ -506,11 +504,11 @@ IClassFactory *ComClassFactory::GetIClassFactory()
     {
         SString strMessage;
         SString strResource;
-        WCHAR strClsid[39];
+        WCHAR strClsid[GUID_STR_BUFFER_LEN];
         SString strHRDescription;
 
         // Obtain the textual representation of the HRESULT.
-        StringFromGUID2(m_rclsid, strClsid, sizeof(strClsid) / sizeof(WCHAR));
+        GuidToLPWSTR(m_rclsid, strClsid);
 
         SString strHRHex;
         strHRHex.Printf("%.8x", hr);
@@ -583,11 +581,10 @@ OBJECTREF ComClassFactory::CreateInstance(MethodTable* pMTClass, BOOL ForManaged
 
     return RetObj;
 }
-#endif //#ifndef CROSSGEN_COMPILE
 
 //--------------------------------------------------------------
 // Init the ComClassFactory.
-void ComClassFactory::Init(__in_opt PCWSTR wszServer, MethodTable* pClassMT)
+void ComClassFactory::Init(_In_opt_ PCWSTR wszServer, MethodTable* pClassMT)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -617,7 +614,6 @@ void ComClassFactory::Cleanup()
 
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
-#ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------------------
 // RCW cache, act as the manager for the RCWs
 // uses a hash table to map IUnknown to the corresponding wrappers
@@ -1478,9 +1474,9 @@ void RCW::Initialize(IUnknown* pUnk, DWORD dwSyncBlockIndex, MethodTable *pClass
 
     // We can't safely pump here for Releasing (or directly release)
     // if we're currently in a SendMessage.
-    // Also, clients can opt out of this. The option is is a per-thread flag which they can
+    // Also, clients can opt out of this. The option is a per-thread flag which they can
     // set by calling DisableComEagerCleanup on the appropriate thread. Why would they
-    // want to opt out? Because pumping can lead to re-entrancy in in unexpected places.
+    // want to opt out? Because pumping can lead to re-entrancy in unexpected places.
     // If a client decides to opt out, they are required to cleanup RCWs themselves by
     // calling Marshal.CleanupUnusedObjectsInCurrentContext periodically. The best place
     // to make that call is within their own message pump.
@@ -1875,7 +1871,7 @@ void RCW::CreateDuplicateWrapper(MethodTable *pNewMT, RCWHolder* pNewRCW)
         pNewRCW->InitNoCheck(NewWrapperObj);
 
         // Insert the wrapper into the hashtable. The wrapper will be a duplicate however we
-        // we fix the identity to ensure there is no collison in the hash table & it is required
+        // we fix the identity to ensure there is no collision in the hash table & it is required
         // since the hashtable is used on appdomain unload to determine what RCW's need to released.
         {
             RCWCache::LockHolder lh(pCache);
@@ -2097,9 +2093,7 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
     return hr;
 }
 
-#endif //#ifndef CROSSGEN_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 // Performs QI for the given interface, optionally instantiating it with the given generic args.
 HRESULT RCW::CallQueryInterface(MethodTable *pMT, Instantiation inst, IID *piid, IUnknown **ppUnk)
 {
@@ -2299,7 +2293,7 @@ HRESULT __stdcall RCW::ReleaseAllInterfacesCallBack(LPVOID pData)
 }
 
 //---------------------------------------------------------------------
-// Helper function called from ReleaseAllInterfacesCallBack do do the
+// Helper function called from ReleaseAllInterfacesCallBack to do the
 // actual releases.
 void RCW::ReleaseAllInterfaces()
 {
@@ -2548,7 +2542,11 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
                     MethodTable::InterfaceMapIterator it = pIntfTable->IterateInterfaceMap();
                     while (it.Next())
                     {
-                        bSupportsItf = Object::SupportsInterface(oref, it.GetInterface());
+                        MethodTable *pItf = it.GetInterfaceApprox();
+                        if (pItf->HasInstantiation() || pItf->IsGenericTypeDefinition())
+                            continue;
+
+                        bSupportsItf = Object::SupportsInterface(oref, pItf);
                         if (!bSupportsItf)
                             break;
                     }
@@ -2637,8 +2635,8 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         }
 
         // Convert the IID to a string.
-        WCHAR strIID[39];
-        StringFromGUID2(iid, strIID, sizeof(strIID) / sizeof(WCHAR));
+        WCHAR strIID[GUID_STR_BUFFER_LEN];
+        GuidToLPWSTR(iid, strIID);
 
         // Obtain the textual description of the HRESULT.
         SString strHRDescription;
@@ -2655,8 +2653,8 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
             pSrcItfClass->GetGuid(&SrcItfIID, TRUE);
 
             // Convert the source interface IID to a string.
-            WCHAR strSrcItfIID[39];
-            StringFromGUID2(SrcItfIID, strSrcItfIID, sizeof(strSrcItfIID) / sizeof(WCHAR));
+            WCHAR strSrcItfIID[GUID_STR_BUFFER_LEN];
+            GuidToLPWSTR(SrcItfIID, strSrcItfIID);
 
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_EVENTITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),
                 strCastToName.GetUnicode(), strIID, strSrcItfIID);
@@ -2669,8 +2667,8 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         else if ((pNativeIID = MngStdInterfaceMap::GetNativeIIDForType(thCastTo)) != NULL)
         {
             // Convert the source interface IID to a string.
-            WCHAR strNativeItfIID[39];
-            StringFromGUID2(*pNativeIID, strNativeItfIID, sizeof(strNativeItfIID) / sizeof(WCHAR));
+            WCHAR strNativeItfIID[GUID_STR_BUFFER_LEN];
+            GuidToLPWSTR(*pNativeIID, strNativeItfIID);
 
             // Query for the interface to determine the failure HRESULT.
             HRESULT hr2 = pRCW->SafeQueryInterfaceRemoteAware(iid, (IUnknown**)&pItf);
@@ -2804,5 +2802,4 @@ IUnknown *ComObject::GetComIPFromRCWThrowing(OBJECTREF *pObj, MethodTable* pIntf
 }
 #endif // #ifndef DACCESS_COMPILE
 
-#endif //#ifndef CROSSGEN_COMPILE
 

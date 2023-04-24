@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -126,11 +127,7 @@ namespace MS.Internal.Xml.Cache
                     }
                     else
                     {
-                        if (bldr == null)
-                        {
-                            bldr = new StringBuilder();
-                            bldr.Append(s);
-                        }
+                        bldr ??= new StringBuilder().Append(s);
                         bldr.Append(value);
                     }
                 }
@@ -898,7 +895,7 @@ namespace MS.Internal.Xml.Cache
             get
             {
                 // 32-bit integer is split into 5-bit groups, the maximum number of groups is 7
-                char[] buf = new char[1 + 7 + 1 + 7];
+                Span<char> buf = stackalloc char[1 + 7 + 1 + 7];
                 int idx = 0;
                 int loc;
 
@@ -925,7 +922,7 @@ namespace MS.Internal.Xml.Cache
                     loc >>= 5;
                 } while (loc != 0);
 
-                return new string(buf, 0, idx);
+                return buf.Slice(0, idx).ToString();
             }
         }
 
@@ -1012,7 +1009,7 @@ namespace MS.Internal.Xml.Cache
         }
 
         /// <summary>
-        /// Return true if navigator is positioned to a node of the specified kind.  Whitespace/SignficantWhitespace/Text are
+        /// Return true if navigator is positioned to a node of the specified kind.  Whitespace/SignificantWhitespace/Text are
         /// all treated the same (i.e. they all match each other).
         /// </summary>
         public bool IsKindMatch(XPathNodeType typ)

@@ -60,7 +60,7 @@ typedef SIZE_T NativePtr;
 
 #define NYI_INTERP(msg) _ASSERTE_MSG(false, msg)
 // I wanted to define NYI_INTERP as the following in retail:
-//   #define NYI_INTERP(msg) _ASSERTE_ALL_BUILDS(__FILE__, false)
+//   #define NYI_INTERP(msg) _ASSERTE_ALL_BUILDS(false)
 // but doing so gave a very odd unreachable code error.
 
 
@@ -148,7 +148,7 @@ class InterpreterType
     // low-order bits of a "real" CORINFO_CLASS_HANDLE are zero, then use them as follows:
     //    0x0 ==> if "ci" is a non-struct CORINFO_TYPE_* value, m_tp contents are (ci << 2).
     //    0x1, 0x3 ==> is a CORINFO_CLASS_HANDLE "sh" for a struct type, or'd with 0x1 and possibly 0x2.
-    //       0x2 is added to indicate that an instance does not fit in a INT64 stack slot on the plaform, and
+    //       0x2 is added to indicate that an instance does not fit in a INT64 stack slot on the platform, and
     //         should be referenced via a level of indirection.
     //    0x2 (exactly) indicates that it is a "native struct type".
     //
@@ -318,7 +318,7 @@ public:
     bool IsLargeStruct(CEEInfo* ceeInfo) const
     {
         intptr_t asInt = reinterpret_cast<intptr_t>(m_tp);
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
         if (asInt == CORINFO_TYPE_SHIFTED_REFANY)
         {
             return true;
@@ -539,7 +539,7 @@ typedef InterpreterCache<size_t, ILOffsetToItemCache*> GenericContextToInnerCach
 
 #endif // DACCESS_COMPILE
 
-// This is the information that the intepreter stub provides to the
+// This is the information that the interpreter stub provides to the
 // interpreter about the method being interpreted.
 struct InterpreterMethodInfo
 {
@@ -647,7 +647,7 @@ struct InterpreterMethodInfo
 
 
     // This is an array of size at least "m_numArgs", such that entry "i" describes the "i'th"
-    // arg in the "m_ilArgs" array passed to the intepreter: that is, the ArgDesc contains the type, stack-normal type,
+    // arg in the "m_ilArgs" array passed to the interpreter: that is, the ArgDesc contains the type, stack-normal type,
     // and offset in the "m_ilArgs" array of that argument.  In addition, has extra entries if "m_hasGenericsContextArg"
     // and/or "m_hasRetBuffArg" are true, giving the offset of those arguments -- the offsets of those arguments
     // are in that order in the array.  (The corresponding types should be NativeInt.)
@@ -722,15 +722,7 @@ class InterpreterCEEInfo: public CEEInfo
 {
     CEEJitInfo m_jitInfo;
 public:
-    InterpreterCEEInfo(CORINFO_METHOD_HANDLE meth): CEEInfo((MethodDesc*)meth), m_jitInfo((MethodDesc*)meth, NULL, NULL, CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT) { m_pOverride = this; }
-
-    // Certain methods are unimplemented by CEEInfo (they hit an assert).  They are implemented by CEEJitInfo, yet
-    // don't seem to require any of the CEEJitInfo state we can't provide.  For those case, delegate to the "partial"
-    // CEEJitInfo m_jitInfo.
-    void addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom,CORINFO_MODULE_HANDLE moduleTo)
-    {
-        m_jitInfo.addActiveDependency(moduleFrom, moduleTo);
-    }
+    InterpreterCEEInfo(CORINFO_METHOD_HANDLE meth): CEEInfo((MethodDesc*)meth), m_jitInfo((MethodDesc*)meth, NULL, NULL, CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT) { }
 };
 
 extern INT64 F_CALL_CONV InterpretMethod(InterpreterMethodInfo* methInfo, BYTE* ilArgs, void* stubContext);
@@ -828,7 +820,7 @@ public:
         {
             if (methInfo_->m_localDescs[i].m_type.IsLargeStruct(&m_interpCeeInfo))
             {
-                void* structPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
+                void* structPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
                 *reinterpret_cast<void**>(structPtr) = LargeStructLocalSlot(i);
             }
         }
@@ -907,7 +899,6 @@ public:
 
 #if INTERP_ILSTUBS
     void*      GetStubContext() { return m_stubContext; }
-    void*      GetStubContextAddr() { return &m_stubContext; }
 #endif
 
     OBJECTREF* GetAddressOfSecurityObject() { return &m_securityObject; }
@@ -998,7 +989,15 @@ private:
 #elif defined(HOST_ARM64)
         static const int MaxNumFPRegArgSlots = 8;
 #elif defined(HOST_AMD64)
+#if defined(UNIX_AMD64_ABI)
+        static const int MaxNumFPRegArgSlots = 8;
+#else
         static const int MaxNumFPRegArgSlots = 4;
+#endif
+#elif defined(HOST_LOONGARCH64)
+        static const int MaxNumFPRegArgSlots = 8;
+#elif defined(HOST_RISCV64)
+        static const int MaxNumFPRegArgSlots = 8;
 #endif
 
         ~ArgState()
@@ -1090,7 +1089,7 @@ private:
     {
         if (!m_directCall)
         {
-#if defined(HOST_AMD64)
+#if defined(HOST_AMD64) && !defined(UNIX_AMD64_ABI)
             // In AMD64, a reference to the struct is passed if its size exceeds the word size.
             // Dereference the arg to get to the ref of the struct.
             if (GetArgType(argNum).IsLargeStruct(&m_interpCeeInfo))
@@ -1207,23 +1206,23 @@ private:
     template<typename T>
     __forceinline T* OpStackGetAddr(unsigned ind)
     {
-        return reinterpret_cast<T*>(ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStackX[ind].m_val), sizeof(T)));
+        return reinterpret_cast<T*>(ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStackX[ind].m_val), sizeof(T)));
     }
 
     __forceinline void* OpStackGetAddr(unsigned ind, size_t sz)
     {
-        return ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStackX[ind].m_val), sz);
+        return ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStackX[ind].m_val), sz);
     }
 #else
     template<typename T>
     __forceinline T* OpStackGetAddr(unsigned ind)
     {
-        return reinterpret_cast<T*>(ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStack[ind]), sizeof(T)));
+        return reinterpret_cast<T*>(ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStack[ind]), sizeof(T)));
     }
 
     __forceinline void* OpStackGetAddr(unsigned ind, size_t sz)
     {
-        return ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStack[ind]), sz);
+        return ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(&m_operandStack[ind]), sz);
     }
 #endif
 
@@ -1232,7 +1231,7 @@ private:
         _ASSERTE(sz <= sizeof(INT64));
 
         INT64 ret = 0;
-        memcpy(ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(&ret), sz), src, sz);
+        memcpy(ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(&ret), sz), src, sz);
         return ret;
     }
 
@@ -1769,8 +1768,6 @@ private:
     void DoStringLength();
     void DoStringGetChar();
     void DoGetTypeFromHandle();
-    void DoByReferenceCtor();
-    void DoByReferenceValue();
     void DoSIMDHwAccelerated();
     void DoGetIsSupported();
 
@@ -2047,10 +2044,21 @@ private:
 inline
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 2; }
 #elif  defined(HOST_AMD64)
-unsigned short Interpreter::NumberOfIntegerRegArgs() { return 4; }
-#elif  defined(HOST_ARM)
+unsigned short Interpreter::NumberOfIntegerRegArgs()
+{
+#if defined(UNIX_AMD64_ABI)
+    return 6;
+#else
+    return 4;
+#endif
+}
+#elif defined(HOST_ARM)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 4; }
 #elif defined(HOST_ARM64)
+unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
+#elif defined(HOST_LOONGARCH64)
+unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
+#elif defined(HOST_RISCV64)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
 #else
 #error Unsupported architecture.

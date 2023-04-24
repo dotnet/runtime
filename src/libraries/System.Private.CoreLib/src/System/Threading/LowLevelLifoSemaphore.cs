@@ -242,7 +242,7 @@ namespace System.Threading
             }
         }
 
-        private struct Counts
+        private struct Counts : IEquatable<Counts>
         {
             private const byte SignalCountShift = 0;
             private const byte WaiterCountShift = 32;
@@ -350,10 +350,11 @@ namespace System.Threading
             public Counts InterlockedCompareExchange(Counts newCounts, Counts oldCounts) =>
                 new Counts(Interlocked.CompareExchange(ref _data, newCounts._data, oldCounts._data));
 
-            public static bool operator ==(Counts lhs, Counts rhs) => lhs._data == rhs._data;
-            public static bool operator !=(Counts lhs, Counts rhs) => lhs._data != rhs._data;
+            public static bool operator ==(Counts lhs, Counts rhs) => lhs.Equals(rhs);
+            public static bool operator !=(Counts lhs, Counts rhs) => !lhs.Equals(rhs);
 
-            public override bool Equals([NotNullWhen(true)] object? obj) => obj is Counts counts && _data == counts._data;
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is Counts other && Equals(other);
+            public bool Equals(Counts other) => _data == other._data;
             public override int GetHashCode() => (int)_data + (int)(_data >> 32);
         }
 

@@ -53,6 +53,8 @@ namespace ComWrappersTests.Common
 
     public struct IUnknownVtbl
     {
+        public static Guid IID_IUnknown = new Guid("00000000-0000-0000-C000-000000000046");
+
         public IntPtr QueryInterface;
         public IntPtr AddRef;
         public IntPtr Release;
@@ -84,7 +86,7 @@ namespace ComWrappersTests.Common
     }
 
     //
-    // Native interface defintion with managed wrapper for tracker object
+    // Native interface definition with managed wrapper for tracker object
     //
     sealed class MockReferenceTrackerRuntime
     {
@@ -92,7 +94,12 @@ namespace ComWrappersTests.Common
 
         public static IntPtr CreateTrackerObject()
         {
-            return CreateTrackerObject(IntPtr.Zero, out IntPtr _);
+            IntPtr result = CreateTrackerObject(IntPtr.Zero, out IntPtr inner);
+            if (inner != IntPtr.Zero)
+            {
+                Marshal.Release(inner);
+            }
+            return result;
         }
 
         public static IntPtr CreateTrackerObject(IntPtr outer, out IntPtr inner)
@@ -150,6 +157,24 @@ namespace ComWrappersTests.Common
 
         [DllImport(nameof(MockReferenceTrackerRuntime))]
         extern public static int Trigger_NotifyEndOfReferenceTrackingOnThread();
+
+        [DllImport(nameof(MockReferenceTrackerRuntime))]
+        extern public static IntPtr TrackerTarget_AddRefFromReferenceTrackerAndReturn(IntPtr ptr);
+
+        [DllImport(nameof(MockReferenceTrackerRuntime))]
+        extern public static int TrackerTarget_ReleaseFromReferenceTracker(IntPtr ptr);
+
+        // Suppressing the GC transition here as we want to make sure we are in-sync
+        // with the GC which is setting the connected value.
+        [SuppressGCTransition]
+        [DllImport(nameof(MockReferenceTrackerRuntime))]
+        extern public static byte IsTrackerObjectConnected(IntPtr instance);
+
+        // API used to wrap a QueryInterface(). This is used for testing
+        // scenarios where triggering off of the QueryInterface() slot is
+        // done by the runtime.
+        [DllImport(nameof(MockReferenceTrackerRuntime))]
+        extern public static IntPtr WrapQueryInterface(IntPtr queryInterface);
     }
 
     [Guid("42951130-245C-485E-B60B-4ED4254256F8")]
@@ -207,8 +232,23 @@ namespace ComWrappersTests.Common
 
         ~ITrackerObjectWrapper()
         {
-            ComWrappersHelper.Cleanup(ref this.classNative);
+            if (this.ReregisterForFinalize)
+            {
+                GC.ReRegisterForFinalize(this);
+            }
+            else
+            {
+                byte isConnected = MockReferenceTrackerRuntime.IsTrackerObjectConnected(this.classNative.Instance);
+                if (isConnected != 0)
+                {
+                    throw new Exception("TrackerObject should be disconnected prior to finalization");
+                }
+
+                ComWrappersHelper.Cleanup(ref this.classNative);
+            }
         }
+
+        public bool ReregisterForFinalize { get; set; } = false;
 
         public int AddObjectRef(IntPtr obj)
         {

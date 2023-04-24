@@ -11,7 +11,8 @@ namespace System.Net.Http
     {
         private sealed class ChunkedEncodingWriteStream : HttpContentWriteStream
         {
-            private static readonly byte[] s_finalChunkBytes = { (byte)'0', (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n' };
+            private static readonly byte[] s_crlfBytes = "\r\n"u8.ToArray();
+            private static readonly byte[] s_finalChunkBytes = "0\r\n\r\n"u8.ToArray();
 
             public ChunkedEncodingWriteStream(HttpConnection connection) : base(connection)
             {
@@ -31,12 +32,14 @@ namespace System.Net.Http
                 }
 
                 // Write chunk length in hex followed by \r\n
-                connection.WriteHexInt32Async(buffer.Length, async: false).GetAwaiter().GetResult();
-                connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', async: false).GetAwaiter().GetResult();
+                ValueTask writeTask = connection.WriteHexInt32Async(buffer.Length, async: false);
+                Debug.Assert(writeTask.IsCompleted);
+                writeTask.GetAwaiter().GetResult();
+                connection.Write(s_crlfBytes);
 
                 // Write chunk contents followed by \r\n
                 connection.Write(buffer);
-                connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', async: false).GetAwaiter().GetResult();
+                connection.Write(s_crlfBytes);
             }
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ignored)
@@ -62,20 +65,29 @@ namespace System.Net.Http
                 {
                     // Write chunk length in hex followed by \r\n
                     await connection.WriteHexInt32Async(buffer.Length, async: true).ConfigureAwait(false);
-                    await connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', async: true).ConfigureAwait(false);
+                    await connection.WriteAsync(s_crlfBytes).ConfigureAwait(false);
 
                     // Write chunk contents followed by \r\n
-                    await connection.WriteAsync(buffer, async: true).ConfigureAwait(false);
-                    await connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', async: true).ConfigureAwait(false);
+                    await connection.WriteAsync(buffer).ConfigureAwait(false);
+                    await connection.WriteAsync(s_crlfBytes).ConfigureAwait(false);
                 }
             }
 
-            public override async ValueTask FinishAsync(bool async)
+            public override Task FinishAsync(bool async)
             {
                 // Send 0 byte chunk to indicate end, then final CrLf
                 HttpConnection connection = GetConnectionOrThrow();
                 _connection = null;
-                await connection.WriteBytesAsync(s_finalChunkBytes, async).ConfigureAwait(false);
+
+                if (async)
+                {
+                    return connection.WriteAsync(s_finalChunkBytes).AsTask();
+                }
+                else
+                {
+                    connection.Write(s_finalChunkBytes);
+                    return Task.CompletedTask;
+                }
             }
         }
     }

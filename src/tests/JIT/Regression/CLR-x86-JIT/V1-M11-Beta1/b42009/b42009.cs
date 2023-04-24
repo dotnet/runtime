@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         static int Static1(long arg1, ref int[] arg2, int[] arg3, int arg4)
         { return 0; }
@@ -21,7 +22,8 @@ namespace Test
             );
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int[] an = new int[2];
             Static2(ref an);

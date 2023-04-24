@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Speech.cs" />
   </ItemGroup>

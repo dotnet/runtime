@@ -1378,7 +1378,7 @@ namespace System.CodeDom.Compiler.Tests
             structA.Members.Add(innerStruct);
             class1.Members.Add(structA);
 
-            // create second struct to test tructs of non-primative types
+            // create second struct to test tructs of non-primitive types
             CodeTypeDeclaration structC = new CodeTypeDeclaration("structC");
             structC.IsStruct = true;
 
@@ -1409,14 +1409,14 @@ namespace System.CodeDom.Compiler.Tests
             nestedStructMethod.Statements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeFieldReferenceExpression(new CodeVariableReferenceExpression("varStructA"), "innerStruct"), "int1")));
             class1.Members.Add(nestedStructMethod);
 
-            // create method to test nested non primative struct member
-            CodeMemberMethod nonPrimativeStructMethod = new CodeMemberMethod();
-            nonPrimativeStructMethod.Name = "NonPrimativeStructMethod";
-            nonPrimativeStructMethod.ReturnType = new CodeTypeReference(typeof(DateTime));
-            nonPrimativeStructMethod.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+            // create method to test nested non primitive struct member
+            CodeMemberMethod nonPrimitiveStructMethod = new CodeMemberMethod();
+            nonPrimitiveStructMethod.Name = "NonPrimitiveStructMethod";
+            nonPrimitiveStructMethod.ReturnType = new CodeTypeReference(typeof(DateTime));
+            nonPrimitiveStructMethod.Attributes = MemberAttributes.Public | MemberAttributes.Static;
             CodeVariableDeclarationStatement varStructC = new CodeVariableDeclarationStatement("structC", "varStructC");
-            nonPrimativeStructMethod.Statements.Add(varStructC);
-            nonPrimativeStructMethod.Statements.Add
+            nonPrimitiveStructMethod.Statements.Add(varStructC);
+            nonPrimitiveStructMethod.Statements.Add
                 (
                 new CodeAssignStatement
                 (
@@ -1426,8 +1426,8 @@ namespace System.CodeDom.Compiler.Tests
                 /* Expression2 */ new CodeObjectCreateExpression("DateTime", new CodeExpression[] { new CodePrimitiveExpression(1), new CodePrimitiveExpression(-1) })
                 )
                 );
-            nonPrimativeStructMethod.Statements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeVariableReferenceExpression("varStructC"), "pt1")));
-            class1.Members.Add(nonPrimativeStructMethod);
+            nonPrimitiveStructMethod.Statements.Add(new CodeMethodReturnStatement(new CodeFieldReferenceExpression(new CodeVariableReferenceExpression("varStructC"), "pt1")));
+            class1.Members.Add(nonPrimitiveStructMethod);
 
             AssertEqual(ns,
                 @"namespace NS {
@@ -1440,7 +1440,7 @@ namespace System.CodeDom.Compiler.Tests
                               return varStructA.innerStruct.int1;
                           }
 
-                          public static System.DateTime NonPrimativeStructMethod() {
+                          public static System.DateTime NonPrimitiveStructMethod() {
                               structC varStructC;
                               varStructC.pt1 = new DateTime(1, -1);
                               return varStructC.pt1;
@@ -3513,6 +3513,62 @@ namespace System.CodeDom.Compiler.Tests
                       private void Test<T1, T2, T3, T4>()
                           where T2 : MyBaseClass {
                       }
+                  }
+                ");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/56267")]
+        public void OrdinaryCommentsDoNotAccidentallyBecomeDocumentationComments()
+        {
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithComment")
+            {
+                IsClass = true,
+                Comments =
+                {
+                    new CodeCommentStatement(
+                        "/ Lines starting with exactly one slash" + Environment.NewLine +
+                        "/ each get a separating space," + Environment.NewLine +
+                        "but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs."+ Environment.NewLine +
+                        "// This includes lines starting with more than one slash.",
+                        docComment: false),
+                },
+            };
+
+            AssertEqualPreserveLineBreaks(codeTypeDeclaration,
+                @"
+                  // / Lines starting with exactly one slash
+                  // / each get a separating space,
+                  //but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
+                  //// This includes lines starting with more than one slash.
+                  public class ClassWithComment {
+                  }
+                ");
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The bug was present on .NET Framework: https://github.com/dotnet/runtime/issues/56267")]
+        public void DocumentationCommentsDoNotAccidentallyBecomeOrdinaryComments()
+        {
+            var codeTypeDeclaration = new CodeTypeDeclaration("ClassWithComment")
+            {
+                IsClass = true,
+                Comments =
+                {
+                    new CodeCommentStatement(
+                        "/ Lines starting with a slash each get a separating space," + Environment.NewLine +
+                        "// including lines starting with more than one slash," + Environment.NewLine +
+                        "but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.",
+                        docComment: true),
+                },
+            };
+
+            AssertEqualPreserveLineBreaks(codeTypeDeclaration,
+                @"
+                  /// / Lines starting with a slash each get a separating space,
+                  /// // including lines starting with more than one slash,
+                  ///but other lines do not get a space. This way generated files only change on tool upgrade where there were generation bugs.
+                  public class ClassWithComment {
                   }
                 ");
         }

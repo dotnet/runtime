@@ -1,0 +1,7 @@
+{
+    "changes": [
+        {"document": "StaticLambdaRegression.cs", "update": "StaticLambdaRegression_v1.cs"},
+        {"document": "StaticLambdaRegression.cs", "update": "StaticLambdaRegression_v2.cs"},
+    ]
+}
+

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ProfileCastClassAndIsInst.cs" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredPGO" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitProfileCasts" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitConsumeProfileForCasts" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitRandomGuardedDevirtualization" Value="2" />
+  </ItemGroup>
+</Project>

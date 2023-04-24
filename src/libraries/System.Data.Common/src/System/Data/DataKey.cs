@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Data
 {
-    internal readonly struct DataKey
+    internal readonly struct DataKey : IEquatable<DataKey>
     {
         private const int maxColumns = 32;
 
@@ -154,7 +154,7 @@ namespace System.Data
             return Equals((DataKey)value);
         }
 
-        internal bool Equals(DataKey value)
+        public bool Equals(DataKey value)
         {
             //check to see if this.columns && key2's columns are equal...
             DataColumn[] column1 = _columns;

@@ -27,6 +27,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Serilog;
+using Microsoft.Extensions.ObjectPool;
 
 namespace HttpStress
 {
@@ -36,16 +37,19 @@ namespace HttpStress
         public const string ExpectedResponseContentLength = "Expected-Response-Content-Length";
 
         private readonly IWebHost _webHost;
+        private readonly LogQuicEventListener? _listener;
 
         public string ServerUri { get; }
 
         public StressServer(Configuration configuration)
         {
+            WorkaroundAssemblyResolutionIssues();
+
             ServerUri = configuration.ServerUri;
             (string scheme, string hostname, int port) = ParseServerUri(configuration.ServerUri);
             IWebHostBuilder host = WebHost.CreateDefaultBuilder();
 
-            if (configuration.UseHttpSys)
+            if (configuration.UseHttpSys && OperatingSystem.IsWindows())
             {
                 // Use http.sys.  This requires additional manual configuration ahead of time;
                 // see https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/httpsys?view=aspnetcore-2.2#configure-windows-server.
@@ -102,19 +106,23 @@ namespace HttpStress
                                 certReq.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") }, false));
                                 certReq.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false));
                                 X509Certificate2 cert = certReq.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1), DateTimeOffset.UtcNow.AddMonths(1));
-                                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                                if (OperatingSystem.IsWindows())
                                 {
                                     cert = new X509Certificate2(cert.Export(X509ContentType.Pfx));
                                 }
                                 listenOptions.UseHttps(cert);
                             }
+                            if (configuration.HttpVersion == HttpVersion.Version30)
+                            {
+                                listenOptions.Protocols = HttpProtocols.Http3;
+                            }
                         }
                         else
                         {
                             listenOptions.Protocols =
-                                configuration.HttpVersion == new Version(2,0) ?
+                                configuration.HttpVersion == HttpVersion.Version20 ?
                                 HttpProtocols.Http2 :
-                                HttpProtocols.Http1 ;
+                                HttpProtocols.Http1;
                         }
                     }
                 });
@@ -123,18 +131,23 @@ namespace HttpStress
             LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
             if (configuration.Trace)
             {
+                if (!Directory.Exists(LogHttpEventListener.LogDirectory))
+                {
+                    Directory.CreateDirectory(LogHttpEventListener.LogDirectory);
+                }
                 // Clear existing logs first.
-                foreach (var filename in Directory.GetFiles(".", "server*.log"))
+                foreach (var filename in Directory.GetFiles(LogHttpEventListener.LogDirectory, "server*.log"))
                 {
                     try
                     {
                         File.Delete(filename);
-                    } catch {}
+                    }
+                    catch { }
                 }
 
                 loggerConfiguration = loggerConfiguration
                     // Output diagnostics to the file
-                    .WriteTo.File("server.log", fileSizeLimitBytes: 50 << 20, rollOnFileSizeLimit: true)
+                    .WriteTo.File(Path.Combine(LogHttpEventListener.LogDirectory, "server.log"), fileSizeLimitBytes: 100 << 20, rollOnFileSizeLimit: true)
                     .MinimumLevel.Debug();
             }
             if (configuration.LogAspNet)
@@ -144,6 +157,10 @@ namespace HttpStress
                     .WriteTo.Console(Serilog.Events.LogEventLevel.Warning);
             }
             Log.Logger = loggerConfiguration.CreateLogger();
+            if (configuration.Trace)
+            {
+                _listener = new LogQuicEventListener(Log.Logger);
+            }
 
             host = host
                 .UseSerilog()
@@ -161,7 +178,7 @@ namespace HttpStress
         private static void MapRoutes(IEndpointRouteBuilder endpoints)
         {
             var loggerFactory = endpoints.ServiceProvider.GetService<ILoggerFactory>();
-            var logger = loggerFactory.CreateLogger<StressServer>();
+            var logger = loggerFactory?.CreateLogger<StressServer>();
             var head = new[] { "HEAD" };
 
             endpoints.MapGet("/", async context =>
@@ -307,6 +324,13 @@ namespace HttpStress
             });
         }
 
+        private static void WorkaroundAssemblyResolutionIssues()
+        {
+            // For some reason, System.Security.Cryptography.Encoding.dll fails to resolve when being loaded on-demand by AspNetCore.
+            // Enforce early-loading to workaround this issue.
+            _ = new Oid();
+        }
+
         private static void AppendChecksumHeader(IHeaderDictionary headers, ulong checksum)
         {
             headers.Add("crc32", checksum.ToString());
@@ -315,6 +339,7 @@ namespace HttpStress
         public void Dispose()
         {
             _webHost.Dispose();
+            _listener?.Dispose();
         }
 
         private static (string scheme, string hostname, int port) ParseServerUri(string serverUri)
@@ -377,6 +402,53 @@ namespace HttpStress
             }
 
             return true;
+        }
+    }
+
+    public class LogQuicEventListener : EventListener
+    {
+        private DefaultObjectPool<StringBuilder> _stringBuilderPool = new DefaultObjectPool<StringBuilder>(new StringBuilderPooledObjectPolicy());
+        private readonly Serilog.ILogger _logger;
+
+        public LogQuicEventListener(Serilog.ILogger logger)
+        {
+            _logger = logger;
+        }
+
+        protected override void OnEventSourceCreated(EventSource eventSource)
+        {
+            if (eventSource.Name == "Private.InternalDiagnostics.System.Net.Quic")
+            {
+                EnableEvents(eventSource, EventLevel.LogAlways);
+            }
+        }
+
+        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+            StringBuilder sb = _stringBuilderPool.Get();
+            sb.Append($"{eventData.TimeStamp:HH:mm:ss.fffffff}[{eventData.EventName}] ");
+            for (int i = 0; i < eventData.Payload?.Count; i++)
+            {
+                if (i > 0)
+                {
+                    sb.Append(", ");
+                }
+                sb.Append(eventData.PayloadNames?[i]).Append(": ").Append(eventData.Payload[i]);
+            }
+            if (eventData.Level > EventLevel.Error)
+            {
+                _logger.Debug(sb.ToString());
+            }
+            else
+            {
+                _logger.Error(sb.ToString());
+            }
+            _stringBuilderPool.Return(sb);
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
         }
     }
 }

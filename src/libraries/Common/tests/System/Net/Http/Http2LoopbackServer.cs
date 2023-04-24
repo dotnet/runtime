@@ -44,6 +44,10 @@ namespace System.Net.Test.Common
                     localEndPoint.Address.ToString();
 
                 string scheme = _options.UseSsl ? "https" : "http";
+                if (_options.WebSocketEndpoint)
+                {
+                    scheme = _options.UseSsl ? "wss" : "ws";
+                }
 
                 _uri = new Uri($"{scheme}://{host}:{localEndPoint.Port}/");
 
@@ -91,9 +95,10 @@ namespace System.Net.Test.Common
             Socket connectionSocket = await _listenSocket.AcceptAsync().ConfigureAwait(false);
 
             var stream = new NetworkStream(connectionSocket, ownsSocket: true);
+            var wrapper = new SocketWrapper(connectionSocket);
             Http2LoopbackConnection connection =
-                timeout != null ? await Http2LoopbackConnection.CreateAsync(connectionSocket, stream, _options, timeout.Value).ConfigureAwait(false) :
-                await Http2LoopbackConnection.CreateAsync(connectionSocket, stream, _options).ConfigureAwait(false);
+                timeout != null ? await Http2LoopbackConnection.CreateAsync(wrapper, stream, _options, timeout.Value).ConfigureAwait(false) :
+                await Http2LoopbackConnection.CreateAsync(wrapper, stream, _options).ConfigureAwait(false);
             _connections.Add(connection);
 
             return connection;
@@ -143,7 +148,7 @@ namespace System.Net.Test.Common
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
+            await using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
                 return await connection.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
 			}
@@ -151,7 +156,7 @@ namespace System.Net.Test.Common
 
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
         {
-            using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
+            await using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
                 await funcAsync(connection).ConfigureAwait(false);
             }
@@ -176,7 +181,10 @@ namespace System.Net.Test.Common
 
     public class Http2Options : GenericLoopbackOptions
     {
+        public bool WebSocketEndpoint { get; set; } = false;
         public bool ClientCertificateRequired { get; set; }
+
+        public bool EnableTransparentPingResponse { get; set; } = true;
 
         public Http2Options()
         {
@@ -201,7 +209,7 @@ namespace System.Net.Test.Common
             return Http2LoopbackServer.CreateServer(CreateOptions(options));
         }
 
-        public override async Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        public override async Task<GenericLoopbackConnection> CreateConnectionAsync(SocketWrapper socket, Stream stream, GenericLoopbackOptions options = null)
         {
             return await Http2LoopbackConnection.CreateAsync(socket, stream, CreateOptions(options)).ConfigureAwait(false);
         }
@@ -213,6 +221,7 @@ namespace System.Net.Test.Common
             {
                 http2Options.Address = options.Address;
                 http2Options.UseSsl = options.UseSsl;
+                http2Options.Certificate = options.Certificate;
                 http2Options.SslProtocols = options.SslProtocols;
                 http2Options.ListenBacklog = options.ListenBacklog;
             }

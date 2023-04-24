@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Numerics;
+using System.Text;
+using System.Xml;
+
 namespace System.Xml.Schema
 {
-    using System;
-    using System.Xml;
-    using System.Diagnostics;
-    using System.Text;
-
     /// <summary>
     /// This enum specifies what format should be used when converting string to XsdDateTime
     /// </summary>
@@ -81,8 +82,8 @@ namespace System.Xml.Schema
         private const int ZoneHourShift = 8;
 
         // Maximum number of fraction digits;
-        private const short maxFractionDigits = 7;
-        private const int ticksToFractionDivisor = 10000000;
+        private const short MaxFractionDigits = 7;
+        private const int TicksToFractionDivisor = 10000000;
 
         private static readonly int s_lzyyyy = "yyyy".Length;
         private static readonly int s_lzyyyy_ = "yyyy-".Length;
@@ -126,10 +127,12 @@ namespace System.Xml.Schema
         // Number of days in 400 years
         private const int DaysPer400Years = DaysPer100Years * 4 + 1; // 146097
 
-        private static readonly int[] DaysToMonth365 = {
+        private static ReadOnlySpan<int> DaysToMonth365 => new int[] {
             0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
-        private static readonly int[] DaysToMonth366 = {
+        private static ReadOnlySpan<int> DaysToMonth366 => new int[] {
             0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
+
+        private const int CharStackBufferSize = 64;
 
         /// <summary>
         /// Constructs an XsdDateTime from a string using specific format.
@@ -176,10 +179,10 @@ namespace System.Xml.Schema
         /// </summary>
         public XsdDateTime(DateTime dateTime, XsdDateTimeFlags kinds)
         {
-            Debug.Assert(Bits.ExactlyOne((uint)kinds), "Only one DateTime type code can be set.");
+            Debug.Assert(BitOperations.IsPow2((uint)kinds), "One and only one DateTime type code can be set.");
             _dt = dateTime;
 
-            DateTimeTypeCode code = (DateTimeTypeCode)(Bits.LeastPosition((uint)kinds) - 1);
+            DateTimeTypeCode code = (DateTimeTypeCode)BitOperations.TrailingZeroCount((uint)kinds);
             int zoneHour = 0;
             int zoneMinute = 0;
             XsdDateTimeKind kind;
@@ -191,7 +194,7 @@ namespace System.Xml.Schema
 
                 default:
                     {
-                        Debug.Assert(dateTime.Kind == DateTimeKind.Local, "Unknown DateTimeKind: " + dateTime.Kind);
+                        Debug.Assert(dateTime.Kind == DateTimeKind.Local, $"Unknown DateTimeKind: {dateTime.Kind}");
                         TimeSpan utcOffset = TimeZoneInfo.Local.GetUtcOffset(dateTime);
 
                         if (utcOffset.Ticks < 0)
@@ -220,12 +223,12 @@ namespace System.Xml.Schema
 
         public XsdDateTime(DateTimeOffset dateTimeOffset, XsdDateTimeFlags kinds)
         {
-            Debug.Assert(Bits.ExactlyOne((uint)kinds), "Only one DateTime type code can be set.");
+            Debug.Assert(BitOperations.IsPow2((uint)kinds), "Only one DateTime type code can be set.");
 
             _dt = dateTimeOffset.DateTime;
 
             TimeSpan zoneOffset = dateTimeOffset.Offset;
-            DateTimeTypeCode code = (DateTimeTypeCode)(Bits.LeastPosition((uint)kinds) - 1);
+            DateTimeTypeCode code = (DateTimeTypeCode)BitOperations.TrailingZeroCount((uint)kinds);
             XsdDateTimeKind kind;
             if (zoneOffset.TotalMinutes < 0)
             {
@@ -328,7 +331,7 @@ namespace System.Xml.Schema
         /// </summary>
         public int Fraction
         {
-            get { return (int)(_dt.Ticks % ticksToFractionDivisor); }
+            get { return (int)(_dt.Ticks % TicksToFractionDivisor); }
         }
 
         /// <summary>
@@ -494,76 +497,71 @@ namespace System.Xml.Schema
         /// </summary>
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder(64);
-            char[] text;
+            Span<char> destination = stackalloc char[CharStackBufferSize];
+            bool success = TryFormat(destination, out int charsWritten);
+            Debug.Assert(success);
+
+            return destination.Slice(0, charsWritten).ToString();
+        }
+
+        public bool TryFormat(Span<char> destination, out int charsWritten)
+        {
+            var vsb = new ValueStringBuilder(destination);
+
             switch (InternalTypeCode)
             {
                 case DateTimeTypeCode.DateTime:
-                    PrintDate(sb);
-                    sb.Append('T');
-                    PrintTime(sb);
+                    PrintDate(ref vsb);
+                    vsb.Append('T');
+                    PrintTime(ref vsb);
                     break;
                 case DateTimeTypeCode.Time:
-                    PrintTime(sb);
+                    PrintTime(ref vsb);
                     break;
                 case DateTimeTypeCode.Date:
-                    PrintDate(sb);
+                    PrintDate(ref vsb);
                     break;
                 case DateTimeTypeCode.GYearMonth:
-                    text = new char[s_lzyyyy_MM];
-                    IntToCharArray(text, 0, Year, 4);
-                    text[s_lzyyyy] = '-';
-                    ShortToCharArray(text, s_lzyyyy_, Month);
-                    sb.Append(text);
+                    vsb.AppendSpanFormattable(Year, format: "D4", provider: null);
+                    vsb.Append('-');
+                    vsb.AppendSpanFormattable(Month, format: "D2", provider: null);
                     break;
                 case DateTimeTypeCode.GYear:
-                    text = new char[s_lzyyyy];
-                    IntToCharArray(text, 0, Year, 4);
-                    sb.Append(text);
+                    vsb.AppendSpanFormattable(Year, format: "D4", provider: null);
                     break;
                 case DateTimeTypeCode.GMonthDay:
-                    text = new char[s_lz__mm_dd];
-                    text[0] = '-';
-                    text[s_Lz_] = '-';
-                    ShortToCharArray(text, s_Lz__, Month);
-                    text[s_lz__mm] = '-';
-                    ShortToCharArray(text, s_lz__mm_, Day);
-                    sb.Append(text);
+                    vsb.Append("--");
+                    vsb.AppendSpanFormattable(Month, format: "D2", provider: null);
+                    vsb.Append('-');
+                    vsb.AppendSpanFormattable(Day, format: "D2", provider: null);
                     break;
                 case DateTimeTypeCode.GDay:
-                    text = new char[s_lz___dd];
-                    text[0] = '-';
-                    text[s_Lz_] = '-';
-                    text[s_Lz__] = '-';
-                    ShortToCharArray(text, s_Lz___, Day);
-                    sb.Append(text);
+                    vsb.Append("---");
+                    vsb.AppendSpanFormattable(Day, format: "D2", provider: null);
                     break;
                 case DateTimeTypeCode.GMonth:
-                    text = new char[s_lz__mm__];
-                    text[0] = '-';
-                    text[s_Lz_] = '-';
-                    ShortToCharArray(text, s_Lz__, Month);
-                    text[s_lz__mm] = '-';
-                    text[s_lz__mm_] = '-';
-                    sb.Append(text);
+                    vsb.Append("--");
+                    vsb.AppendSpanFormattable(Month, format: "D2", provider: null);
+                    vsb.Append("--");
                     break;
             }
-            PrintZone(sb);
-            return sb.ToString();
+            PrintZone(ref vsb);
+
+            charsWritten = vsb.Length;
+            return destination.Length >= vsb.Length;
         }
 
         // Serialize year, month and day
-        private void PrintDate(StringBuilder sb)
+        private void PrintDate(ref ValueStringBuilder vsb)
         {
-            char[] text = new char[s_lzyyyy_MM_dd];
+            Span<char> text = vsb.AppendSpan(s_lzyyyy_MM_dd);
             int year, month, day;
             GetYearMonthDay(out year, out month, out day);
-            IntToCharArray(text, 0, year, 4);
+            WriteXDigits(text, 0, year, 4);
             text[s_lzyyyy] = '-';
-            ShortToCharArray(text, s_lzyyyy_, month);
+            Write2Digits(text, s_lzyyyy_, month);
             text[s_lzyyyy_MM] = '-';
-            ShortToCharArray(text, s_lzyyyy_MM_, day);
-            sb.Append(text);
+            Write2Digits(text, s_lzyyyy_MM_, day);
         }
 
         // When printing the date, we need the year, month and the day. When
@@ -608,7 +606,7 @@ namespace System.Xml.Schema
             // Leap year calculation looks different from IsLeapYear since y1, y4,
             // and y100 are relative to year 1, not year 0
             bool leapYear = y1 == 3 && (y4 != 24 || y100 == 3);
-            int[] days = leapYear ? DaysToMonth366 : DaysToMonth365;
+            ReadOnlySpan<int> days = leapYear ? DaysToMonth366 : DaysToMonth365;
             // All months have less than 32 days, so n >> 5 is a good conservative
             // estimate for the month
             month = (n >> 5) + 1;
@@ -620,55 +618,52 @@ namespace System.Xml.Schema
         }
 
         // Serialize hour, minute, second and fraction
-        private void PrintTime(StringBuilder sb)
+        private void PrintTime(ref ValueStringBuilder vsb)
         {
-            char[] text = new char[s_lzHH_mm_ss];
-            ShortToCharArray(text, 0, Hour);
+            Span<char> text = vsb.AppendSpan(s_lzHH_mm_ss);
+            Write2Digits(text, 0, Hour);
             text[s_lzHH] = ':';
-            ShortToCharArray(text, s_lzHH_, Minute);
+            Write2Digits(text, s_lzHH_, Minute);
             text[s_lzHH_mm] = ':';
-            ShortToCharArray(text, s_lzHH_mm_, Second);
-            sb.Append(text);
+            Write2Digits(text, s_lzHH_mm_, Second);
             int fraction = Fraction;
             if (fraction != 0)
             {
-                int fractionDigits = maxFractionDigits;
+                int fractionDigits = MaxFractionDigits;
                 while (fraction % 10 == 0)
                 {
                     fractionDigits--;
                     fraction /= 10;
                 }
-                text = new char[fractionDigits + 1];
+
+                text = vsb.AppendSpan(fractionDigits + 1);
                 text[0] = '.';
-                IntToCharArray(text, 1, fraction, fractionDigits);
-                sb.Append(text);
+                WriteXDigits(text, 1, fraction, fractionDigits);
             }
         }
 
         // Serialize time zone
-        private void PrintZone(StringBuilder sb)
+        private void PrintZone(ref ValueStringBuilder vsb)
         {
-            char[] text;
+            Span<char> text;
             switch (InternalKind)
             {
                 case XsdDateTimeKind.Zulu:
-                    sb.Append('Z');
+                    vsb.Append('Z');
                     break;
                 case XsdDateTimeKind.LocalWestOfZulu:
-                    text = new char[s_lz_zz_zz];
+                    text = vsb.AppendSpan(s_lz_zz_zz);
                     text[0] = '-';
-                    ShortToCharArray(text, s_Lz_, ZoneHour);
+                    Write2Digits(text, s_Lz_, ZoneHour);
                     text[s_lz_zz] = ':';
-                    ShortToCharArray(text, s_lz_zz_, ZoneMinute);
-                    sb.Append(text);
+                    Write2Digits(text, s_lz_zz_, ZoneMinute);
                     break;
                 case XsdDateTimeKind.LocalEastOfZulu:
-                    text = new char[s_lz_zz_zz];
+                    text = vsb.AppendSpan(s_lz_zz_zz);
                     text[0] = '+';
-                    ShortToCharArray(text, s_Lz_, ZoneHour);
+                    Write2Digits(text, s_Lz_, ZoneHour);
                     text[s_lz_zz] = ':';
-                    ShortToCharArray(text, s_lz_zz_, ZoneMinute);
-                    sb.Append(text);
+                    Write2Digits(text, s_lz_zz_, ZoneMinute);
                     break;
                 default:
                     // do nothing
@@ -676,9 +671,9 @@ namespace System.Xml.Schema
             }
         }
 
-        // Serialize integer into character array starting with index [start].
+        // Serialize integer into character Span starting with index [start].
         // Number of digits is set by [digits]
-        private void IntToCharArray(char[] text, int start, int value, int digits)
+        private static void WriteXDigits(Span<char> text, int start, int value, int digits)
         {
             while (digits-- != 0)
             {
@@ -687,8 +682,8 @@ namespace System.Xml.Schema
             }
         }
 
-        // Serialize two digit integer into character array starting with index [start].
-        private void ShortToCharArray(char[] text, int start, int value)
+        // Serialize two digit integer into character Span starting with index [start].
+        private static void Write2Digits(Span<char> text, int start, int value)
         {
             text[start] = (char)(value / 10 + '0');
             text[start + 1] = (char)(value % 10 + '0');
@@ -929,7 +924,7 @@ namespace System.Xml.Schema
                 return false;
             }
 
-            private static readonly int[] s_power10 = new int[maxFractionDigits] { -1, 10, 100, 1000, 10000, 100000, 1000000 };
+            private static ReadOnlySpan<int> Power10 => new int[MaxFractionDigits] { -1, 10, 100, 1000, 10000, 100000, 1000000 };
             private bool ParseTime(ref int start)
             {
                 if (
@@ -955,11 +950,11 @@ namespace System.Xml.Schema
                             { // d < 0 || 9 < d
                                 break;
                             }
-                            if (fractionDigits < maxFractionDigits)
+                            if (fractionDigits < MaxFractionDigits)
                             {
                                 this.fraction = (this.fraction * 10) + d;
                             }
-                            else if (fractionDigits == maxFractionDigits)
+                            else if (fractionDigits == MaxFractionDigits)
                             {
                                 if (5 < d)
                                 {
@@ -976,13 +971,13 @@ namespace System.Xml.Schema
                             }
                             fractionDigits++;
                         }
-                        if (fractionDigits < maxFractionDigits)
+                        if (fractionDigits < MaxFractionDigits)
                         {
                             if (fractionDigits == 0)
                             {
                                 return false; // cannot end with .
                             }
-                            fraction *= s_power10[maxFractionDigits - fractionDigits];
+                            fraction *= Power10[MaxFractionDigits - fractionDigits];
                         }
                         else
                         {

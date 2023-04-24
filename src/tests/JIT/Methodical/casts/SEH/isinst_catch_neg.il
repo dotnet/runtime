@@ -9,14 +9,18 @@
   .ver 4:0:0:0
 }
 .assembly isinst_catch_neg { }
-.namespace JitTest
+.assembly extern xunit.core {}
+.namespace JitTest_isinst_catch_neg_SEH_il
 {
-  .class private auto ansi beforefieldinit Test
+  .class public auto ansi beforefieldinit Test
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  3
       .locals (int32 V_0,

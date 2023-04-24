@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -23,7 +24,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 {
                     using (var textReader = new StreamReader(readStream))
                     {
-                        using (var reader = new JsonTextReader(textReader))
+                        using (var reader = new JsonTextReader(textReader) { MaxDepth = null })
                         {
                             return JObject.Load(reader);
                         }
@@ -55,6 +56,72 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        public void DuplicateEntriesThrowArgumentException()
+        {
+            var context = Create(
+                            "Target",
+                            "Target/runtime",
+                            true,
+                            null,
+                            runtimeLibraries: new[]
+                            {
+                                new RuntimeLibrary(
+                                        "package",
+                                        "DuplicatePackageName",
+                                        "1.2.3",
+                                        "HASH",
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "Banana.dll"),
+                                            new RuntimeAssetGroup("win7-x64", "Banana.Win7-x64.dll")
+                                        },
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "runtimes\\linux\\native\\native.so"),
+                                            new RuntimeAssetGroup("win7-x64", "native\\Banana.Win7-x64.so")
+                                        },
+                                        new [] { new ResourceAssembly("en-US\\Banana.Resource.dll", "en-US")},
+                                        new [] {
+                                            new Dependency("Fruits.Abstract.dll","2.0.0")
+                                        },
+                                        true,
+                                        "PackagePath",
+                                        "PackageHashPath",
+                                        "placeHolderManifest.xml"
+                                    ),
+
+                                new RuntimeLibrary(
+                                        "package",
+                                        "DuplicatePackageName",
+                                        "1.2.3",
+                                        "HASH",
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "Banana.dll"),
+                                            new RuntimeAssetGroup("win7-x64", "Banana.Win7-x64.dll")
+                                        },
+                                        new [] {
+                                            new RuntimeAssetGroup(string.Empty, "runtimes\\linux\\native\\native.so"),
+                                            new RuntimeAssetGroup("win7-x64", "native\\Banana.Win7-x64.so")
+                                        },
+                                        new [] { new ResourceAssembly("en-US\\Banana.Resource.dll", "en-US")},
+                                        new [] {
+                                            new Dependency("Fruits.Abstract.dll","2.0.0")
+                                        },
+                                        true,
+                                        "PackagePath",
+                                        "PackageHashPath",
+                                        "placeHolderManifest.xml"
+                                    ),
+                            },
+                            runtimeGraph: new[]
+                            {
+                                new RuntimeFallbacks("win7-x64", new [] { "win6", "win5"}),
+                                new RuntimeFallbacks("win8-x64", new [] { "win7-x64"}),
+                            });
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => Save(context));
+            Assert.Contains("DuplicatePackageName", ex.Message);
+        }
+
+        [Fact]
         public void SavesRuntimeGraph()
         {
             var result = Save(Create(
@@ -71,11 +138,11 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
             rids.Should().HaveProperty("win7-x64")
                 .Subject.Should().BeOfType<JArray>()
-                .Which.Values<string>().ShouldBeEquivalentTo(new[] { "win6", "win5" });
+                .Which.Values<string>().Should().BeEquivalentTo(new[] { "win6", "win5" });
 
             rids.Should().HaveProperty("win8-x64")
                 .Subject.Should().BeOfType<JArray>()
-                .Which.Values<string>().ShouldBeEquivalentTo(new[] { "win7-x64" });
+                .Which.Values<string>().Should().BeEquivalentTo(new[] { "win7-x64" });
         }
 
         [Fact]
@@ -121,7 +188,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                         "package",
                                         "PackageName",
                                         "1.2.3",
-                                        "HASH+/==", // verify that '+' and '/' is not getting escaped to workaround bug in older xunit https://github.com/dotnet/core-setup/issues/7137
+                                        "HASH+/==", // verify that '+' and '/' is not getting escaped to workaround bug in older xunit https://github.com/dotnet/runtime/issues/3678
                                         new [] {"Banana.dll"},
                                         new [] {
                                             new Dependency("Fruits.Abstract.dll","2.0.0")

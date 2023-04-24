@@ -3,9 +3,13 @@
 
 using System;
 using System.Configuration;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching.Configuration
 {
+#if NETCOREAPP
+    [UnsupportedOSPlatform("browser")]
+#endif
     [ConfigurationCollection(typeof(MemoryCacheElement),
     CollectionType = ConfigurationElementCollectionType.AddRemoveClearMap)]
     internal sealed class MemoryCacheSettingsCollection : ConfigurationElementCollection

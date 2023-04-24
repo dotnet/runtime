@@ -8,6 +8,8 @@ using System.Security.Cryptography.X509Certificates;
 
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
 
+#pragma warning disable IDE0060
+
 namespace System.Net.Security
 {
     internal static class SslStreamPal
@@ -22,6 +24,15 @@ namespace System.Net.Security
 
         public static void VerifyPackageInfo()
         {
+        }
+
+        public static SecurityStatusPal SelectApplicationProtocol(
+            SafeFreeCredentials? credentialsHandle,
+            SafeDeleteSslContext? context,
+            SslAuthenticationOptions sslAuthenticationOptions,
+            ReadOnlySpan<byte> clientProtocols)
+        {
+            throw new PlatformNotSupportedException(nameof(SelectApplicationProtocol));
         }
 
         public static SecurityStatusPal AcceptSecurityContext(
@@ -45,21 +56,18 @@ namespace System.Net.Security
             return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
 
-        public static SafeFreeCredentials AcquireCredentialsHandle(
-            SslStreamCertificateContext? certificateContext,
-            SslProtocols protocols,
-            EncryptionPolicy policy,
-            bool isServer)
+        public static SecurityStatusPal Renegotiate(
+            ref SafeFreeCredentials? credentialsHandle,
+            ref SafeDeleteSslContext? context,
+            SslAuthenticationOptions sslAuthenticationOptions,
+            out byte[]? outputBuffer)
         {
-            return new SafeFreeSslCredentials(certificateContext, protocols, policy);
+            throw new PlatformNotSupportedException();
         }
 
-        internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteSslContext? context)
+        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions _1, bool _2)
         {
-            if (context == null)
-                return null;
-
-            return Interop.AndroidCrypto.SSLStreamGetApplicationProtocol(context.SslContext);
+            return null;
         }
 
         public static SecurityStatusPal EncryptMessage(
@@ -107,17 +115,20 @@ namespace System.Net.Security
 
         public static SecurityStatusPal DecryptMessage(
             SafeDeleteSslContext securityContext,
-            byte[] buffer,
-            ref int offset,
-            ref int count)
+            Span<byte> buffer,
+            out int offset,
+            out int count)
         {
+            offset = 0;
+            count = 0;
+
             try
             {
                 SafeSslHandle sslHandle = securityContext.SslContext;
 
-                securityContext.Write(buffer.AsSpan(offset, count));
+                securityContext.Write(buffer);
 
-                PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, buffer.AsSpan(offset, count), out int read);
+                PAL_SSLStreamStatus ret = Interop.AndroidCrypto.SSLStreamRead(sslHandle, buffer, out int read);
                 if (ret == PAL_SSLStreamStatus.Error)
                     return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
 
@@ -161,9 +172,17 @@ namespace System.Net.Security
 
         public static void QueryContextConnectionInfo(
             SafeDeleteSslContext securityContext,
-            out SslConnectionInfo connectionInfo)
+            ref SslConnectionInfo connectionInfo)
         {
-            connectionInfo = new SslConnectionInfo(securityContext.SslContext);
+            connectionInfo.UpdateSslConnectionInfo(securityContext.SslContext);
+        }
+
+        public static bool TryUpdateClintCertificate(
+            SafeFreeCredentials? _1,
+            SafeDeleteSslContext? _2,
+            SslAuthenticationOptions _3)
+        {
+            return false;
         }
 
         private static SecurityStatusPal HandshakeInternal(
@@ -173,15 +192,13 @@ namespace System.Net.Security
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            Debug.Assert(!credential.IsInvalid);
-
             try
             {
                 SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
 
-                if ((context == null) || context.IsInvalid)
+                if (context == null || context.IsInvalid)
                 {
-                    context = new SafeDeleteSslContext((credential as SafeFreeSslCredentials)!, sslAuthenticationOptions);
+                    context = new SafeDeleteSslContext(sslAuthenticationOptions);
                     sslContext = context;
                 }
 
@@ -202,7 +219,8 @@ namespace System.Net.Security
 
                 outputBuffer = sslContext.ReadPendingWrites();
 
-                return new SecurityStatusPal(statusCode);
+                Exception? validationException = sslContext?.SslStreamProxy.ValidationException;
+                return new SecurityStatusPal(statusCode, validationException);
             }
             catch (Exception exc)
             {
@@ -211,7 +229,6 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal ApplyAlertToken(
-            ref SafeFreeCredentials? credentialsHandle,
             SafeDeleteContext? securityContext,
             TlsAlertType alertType,
             TlsAlertMessage alertMessage)
@@ -222,7 +239,6 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal ApplyShutdownToken(
-            ref SafeFreeCredentials? credentialsHandle,
             SafeDeleteSslContext securityContext)
         {
             SafeSslHandle sslHandle = securityContext.SslContext;

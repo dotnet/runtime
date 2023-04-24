@@ -77,7 +77,7 @@ namespace System.Linq.Expressions
         /// <returns>The new <see cref="LabelTarget"/>.</returns>
         public static LabelTarget Label(Type type, string? name)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             return new LabelTarget(type, name);
         }

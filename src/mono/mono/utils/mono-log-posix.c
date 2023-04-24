@@ -14,7 +14,7 @@
 #include <unistd.h>
 #endif
 
-#if defined(_POSIX_VERSION) 
+#if defined(_POSIX_VERSION) && !defined(HOST_WASI)
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -32,12 +32,12 @@ static void *logUserData = NULL;
 
 /**
  * mapSyslogLevel:
- * 	
+ *
  * 	@level - GLogLevelFlags value
  * 	@returns The equivalent syslog priority value
  */
 static __inline__ int
-mapSyslogLevel(GLogLevelFlags level) 
+mapSyslogLevel(GLogLevelFlags level)
 {
 	if (level & G_LOG_LEVEL_ERROR)
 		return (LOG_ERR);
@@ -58,7 +58,7 @@ mapSyslogLevel(GLogLevelFlags level)
  * mono_log_open_syslog:
  * \param ident Identifier: ignored
  * \param userData Not used
- * Open the syslog interface specifying that we want our PID recorded 
+ * Open the syslog interface specifying that we want our PID recorded
  * and that we're using the \c LOG_USER facility.
  */
 void
@@ -92,10 +92,17 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
  * Close the log file
  */
 void
-mono_log_close_syslog()
+mono_log_close_syslog(void)
 {
 #ifdef HAVE_CLOSELOG
 	closelog();
 #endif
 }
+
+#else
+
+#include <mono/utils/mono-compiler.h>
+
+MONO_EMPTY_SOURCE_FILE (mono_log_posix);
+
 #endif

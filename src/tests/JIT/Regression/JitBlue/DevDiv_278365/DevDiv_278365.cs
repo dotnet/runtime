@@ -4,12 +4,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // This test is a reduced repro case for DevDiv VSO bug 278365.
 // The failure mode is that the RyuJIT/x86 backend changed call to ROUND intrinsic
 // with double return type to ROUND intrinsic with int return type, that is not supported.
 
-internal class Program
+public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Bar()
@@ -31,7 +32,8 @@ internal class Program
         }        
     }
 	
-    private static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

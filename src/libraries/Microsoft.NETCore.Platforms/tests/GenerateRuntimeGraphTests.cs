@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.Build.Evaluation;
@@ -12,18 +14,30 @@ using Xunit.Abstractions;
 
 namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 {
+    // MSBuild engine is not compatible with single file
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class GenerateRuntimeGraphTests
     {
         private Log _log;
         private TestBuildEngine _engine;
 
+        private string defaultRootPath = (PlatformDetection.IsiOS || PlatformDetection.IstvOS) ? Path.GetTempPath() : string.Empty;
+        private string defaultRuntimeFile = "runtime.json";
+
         public GenerateRuntimeGraphTests(ITestOutputHelper output)
         {
             _log = new Log(output);
             _engine = new TestBuildEngine(_log);
+
+            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
+            {
+                var runtimeJsonPath = Path.Combine(defaultRootPath, defaultRuntimeFile);
+                File.Copy(defaultRuntimeFile, runtimeJsonPath, true);
+
+                defaultRuntimeFile = runtimeJsonPath;
+            }
         }
 
-        const string DefaultRuntimeFile = "runtime.json";
         private static ITaskItem[] DefaultRuntimeGroupItems { get; } = GetDefaultRuntimeGroupItems();
 
         private static ITaskItem[] GetDefaultRuntimeGroupItems()
@@ -49,6 +63,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanCreateRuntimeGraph()
         {
             // will generate and compare to existing file.
@@ -56,7 +71,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
             {
                 BuildEngine = _engine,
                 RuntimeGroups = DefaultRuntimeGroupItems,
-                RuntimeJson = DefaultRuntimeFile,
+                RuntimeJson = defaultRuntimeFile,
                 UpdateRuntimeFiles = false
             };
             task.Execute();
@@ -66,6 +81,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanIgnoreExistingInferRids()
         {
             // will generate and compare to existing file.
@@ -73,7 +89,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
             {
                 BuildEngine = _engine,
                 RuntimeGroups = DefaultRuntimeGroupItems,
-                RuntimeJson = DefaultRuntimeFile,
+                RuntimeJson = defaultRuntimeFile,
                 AdditionalRuntimeIdentifiers = new[] { "rhel.9-x64", "centos.9-arm64", "win-x64" },
                 UpdateRuntimeFiles = false
             };
@@ -93,7 +109,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         /// <param name="runtimeFilePrefix">a unique prefix to use for the generated </param>
         private void AssertRuntimeGraphAdditions(string[] additionalRIDs, RuntimeDescription[] expectedAdditions, string additionalRIDParent = null, [CallerMemberName] string runtimeFilePrefix = null)
         {
-            string runtimeFile = runtimeFilePrefix + ".runtime.json";
+            string runtimeFile = Path.Combine(defaultRootPath, runtimeFilePrefix + ".runtime.json");
 
             GenerateRuntimeGraph task = new GenerateRuntimeGraph()
             {
@@ -110,16 +126,17 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
             _log.AssertNoErrorsOrWarnings();
 
             RuntimeGraph expected = RuntimeGraph.Merge(
-                JsonRuntimeFormat.ReadRuntimeGraph(DefaultRuntimeFile),
+                JsonRuntimeFormat.ReadRuntimeGraph(defaultRuntimeFile),
                 new RuntimeGraph(expectedAdditions));
 
             RuntimeGraph actual = JsonRuntimeFormat.ReadRuntimeGraph(runtimeFile);
 
-            // Should this assert fail, it's helpful to diff DefaultRuntimeFile and runtimeFile to see the additions.
+            // Should this assert fail, it's helpful to diff defaultRuntimeFile and runtimeFile to see the additions.
             Assert.Equal(expected, actual);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddVersionsToExistingGroups()
         {
             var additionalRIDs = new[] { "ubuntu.22.04-arm64" };
@@ -136,6 +153,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddParentVersionsToExistingGroups()
         {
             var additionalRIDs = new[] { "centos.9.2-arm64" };
@@ -155,6 +173,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddMajorVersionsToExistingGroups()
         {
 
@@ -170,8 +189,9 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 
             AssertRuntimeGraphAdditions(additionalRIDs, expectedAdditions);
         }
-
+        
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddArchitectureToExistingGroups()
         {
             var additionalRIDs = new[] { "win10-x128" };
@@ -194,16 +214,18 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddArchitectureAndVersionToExistingGroups()
         {
-            var additionalRIDs = new[] { "osx.12-powerpc" };
+            var additionalRIDs = new[] { "osx.13-powerpc" };
             var expectedAdditions = new[]
             {
-                new RuntimeDescription("osx.12-powerpc", new[] { "osx.12", "osx.11.0-powerpc" }),
-                new RuntimeDescription("osx.12-arm64", new[] { "osx.12", "osx.11.0-arm64" }),
-                new RuntimeDescription("osx.12-x64", new[] { "osx.12", "osx.11.0-x64" }),
-                new RuntimeDescription("osx.12", new[] { "osx.11.0" }),
+                new RuntimeDescription("osx.13-powerpc", new[] { "osx.13", "osx.12-powerpc" }),
+                new RuntimeDescription("osx.13-arm64", new[] { "osx.13", "osx.12-arm64" }),
+                new RuntimeDescription("osx.13-x64", new[] { "osx.13", "osx.12-x64" }),
+                new RuntimeDescription("osx.13", new[] { "osx.12" }),
                 // our RID model doesn't give priority to architecture, so the new architecture is applied to all past versions
+                new RuntimeDescription("osx.12-powerpc", new[] { "osx.12", "osx.11.0-powerpc" }),
                 new RuntimeDescription("osx.11.0-powerpc", new[] { "osx.11.0", "osx.10.16-powerpc" }),
                 new RuntimeDescription("osx.10.16-powerpc", new[] { "osx.10.16", "osx.10.15-powerpc" }),
                 new RuntimeDescription("osx.10.15-powerpc", new[] { "osx.10.15", "osx.10.14-powerpc" }),
@@ -220,6 +242,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/77889", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void CanAddNewGroups()
         {
             var additionalRIDs = new[] { "yolinux.42.0-quantum" };

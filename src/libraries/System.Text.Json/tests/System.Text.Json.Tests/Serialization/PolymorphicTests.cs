@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,66 +12,72 @@ namespace System.Text.Json.Serialization.Tests
 {
     public class PolymorphicTests_Span : PolymorphicTests
     {
-        public PolymorphicTests_Span() : base(SerializationWrapper.SpanSerializer) { }
+        public PolymorphicTests_Span() : base(JsonSerializerWrapper.SpanSerializer) { }
     }
 
     public class PolymorphicTests_String : PolymorphicTests
     {
-        public PolymorphicTests_String() : base(SerializationWrapper.StringSerializer) { }
+        public PolymorphicTests_String() : base(JsonSerializerWrapper.StringSerializer) { }
     }
 
-    public class PolymorphicTests_Stream : PolymorphicTests
+    public class PolymorphicTests_AsyncStream : PolymorphicTests
     {
-        public PolymorphicTests_Stream() : base(SerializationWrapper.StreamSerializer) { }
+        public PolymorphicTests_AsyncStream() : base(JsonSerializerWrapper.AsyncStreamSerializer) { }
     }
 
-    public class PolymorphicTests_StreamWithSmallBuffer : PolymorphicTests
+    public class PolymorphicTests_AsyncStreamWithSmallBuffer : PolymorphicTests
     {
-        public PolymorphicTests_StreamWithSmallBuffer() : base(SerializationWrapper.StreamSerializerWithSmallBuffer) { }
+        public PolymorphicTests_AsyncStreamWithSmallBuffer() : base(JsonSerializerWrapper.AsyncStreamSerializerWithSmallBuffer) { }
+    }
+
+    public class PolymorphicTests_SyncStream : PolymorphicTests
+    {
+        public PolymorphicTests_SyncStream() : base(JsonSerializerWrapper.SyncStreamSerializer) { }
     }
 
     public class PolymorphicTests_Writer : PolymorphicTests
     {
-        public PolymorphicTests_Writer() : base(SerializationWrapper.WriterSerializer) { }
+        public PolymorphicTests_Writer() : base(JsonSerializerWrapper.ReaderWriterSerializer) { }
     }
 
-    public abstract class PolymorphicTests
+    public class PolymorphicTests_Document : PolymorphicTests
     {
-        private SerializationWrapper Serializer { get; }
+        public PolymorphicTests_Document() : base(JsonSerializerWrapper.DocumentSerializer) { }
+    }
 
-        public PolymorphicTests(SerializationWrapper serializer)
+    public class PolymorphicTests_Element : PolymorphicTests
+    {
+        public PolymorphicTests_Element() : base(JsonSerializerWrapper.ElementSerializer) { }
+    }
+
+    public class PolymorphicTests_Node : PolymorphicTests
+    {
+        public PolymorphicTests_Node() : base(JsonSerializerWrapper.NodeSerializer) { }
+    }
+
+    public abstract partial class PolymorphicTests : SerializerTests
+    {
+        public PolymorphicTests(JsonSerializerWrapper serializer) : base(serializer)
         {
-            Serializer = serializer;
         }
 
-        [Fact]
-        public async Task PrimitivesAsRootObject()
+        [Theory]
+        [InlineData(1, "1")]
+        [InlineData("stringValue", @"""stringValue""")]
+        [InlineData(true, "true")]
+        [InlineData(null, "null")]
+        [InlineData(new int[] { 1, 2, 3}, "[1,2,3]")]
+        public async Task PrimitivesAsRootObject(object? value, string expectedJson)
         {
-            string json = await Serializer.SerializeWrapper<object>(1);
-            Assert.Equal("1", json);
-            json = await Serializer.SerializeWrapper(1, typeof(object));
-            Assert.Equal("1", json);
+            string json = await Serializer.SerializeWrapper(value);
+            Assert.Equal(expectedJson, json);
+            json = await Serializer.SerializeWrapper(value, typeof(object));
+            Assert.Equal(expectedJson, json);
 
-            json = await Serializer.SerializeWrapper<object>("foo");
-            Assert.Equal(@"""foo""", json);
-            json = await Serializer.SerializeWrapper("foo", typeof(object));
-            Assert.Equal(@"""foo""", json);
-
-            json = await Serializer.SerializeWrapper<object>(true);
-            Assert.Equal(@"true", json);
-            json = await Serializer.SerializeWrapper(true, typeof(object));
-            Assert.Equal(@"true", json);
-
-            json = await Serializer.SerializeWrapper<object>(null);
-            Assert.Equal(@"null", json);
-            json = await Serializer.SerializeWrapper((object)null, typeof(object));
-            Assert.Equal(@"null", json);
-
-            decimal pi = 3.1415926535897932384626433833m;
-            json = await Serializer.SerializeWrapper<object>(pi);
-            Assert.Equal(@"3.1415926535897932384626433833", json);
-            json = await Serializer.SerializeWrapper(pi, typeof(object));
-            Assert.Equal(@"3.1415926535897932384626433833", json);
+            var options = new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() };
+            JsonTypeInfo<object> objectTypeInfo = (JsonTypeInfo<object>)options.GetTypeInfo(typeof(object));
+            json = await Serializer.SerializeWrapper(value, objectTypeInfo);
+            Assert.Equal(expectedJson, json);
         }
 
         [Fact]

@@ -18,10 +18,7 @@ namespace System.Speech.Internal.ObjectTokens
         protected ObjectToken(ISpObjectToken sapiObjectToken, bool disposeSapiToken)
             : base(sapiObjectToken)
         {
-            if (sapiObjectToken == null)
-            {
-                throw new ArgumentNullException(nameof(sapiObjectToken));
-            }
+            ArgumentNullException.ThrowIfNull(sapiObjectToken);
 
             _sapiObjectToken = sapiObjectToken;
             _disposeSapiObjectToken = disposeSapiToken;
@@ -66,7 +63,7 @@ namespace System.Speech.Internal.ObjectTokens
             {
                 if (disposing)
                 {
-                    if (_disposeSapiObjectToken == true && _sapiObjectToken != null)
+                    if (_disposeSapiObjectToken && _sapiObjectToken != null)
                     {
                         Marshal.ReleaseComObject(_sapiObjectToken);
                         _sapiObjectToken = null;
@@ -94,7 +91,7 @@ namespace System.Speech.Internal.ObjectTokens
         public override bool Equals(object obj)
         {
             ObjectToken token = obj as ObjectToken;
-            return token != null && string.Compare(Id, token.Id, StringComparison.OrdinalIgnoreCase) == 0;
+            return token != null && string.Equals(Id, token.Id, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -113,7 +110,7 @@ namespace System.Speech.Internal.ObjectTokens
         {
             get
             {
-                return _attributes != null ? _attributes : (_attributes = OpenKey("Attributes"));
+                return _attributes ??= OpenKey("Attributes");
             }
         }
 

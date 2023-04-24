@@ -3,12 +3,13 @@
 
 
 .assembly extern mscorlib { auto }
+.assembly extern xunit.core {}
 .assembly extern System.Console { auto }
-.assembly extern System.Runtime { auto }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 
-.assembly test { }
+.assembly 'ldind_conv' { }
 
-.class auto Program extends [System.Runtime]System.Object
+.class public auto Program extends [System.Runtime]System.Object
 {
   .method private static void print(class [System.Runtime]System.String) cil managed
   {
@@ -18,8 +19,11 @@
     ret
   }
 
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack 8
 

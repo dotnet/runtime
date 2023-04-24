@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using TestLibrary;
+using Xunit;
 
 class TestType1<T> { }
 class TestType2<T> { }
@@ -116,35 +116,35 @@ public class GenClass<T> : GenBase
     {
         Console.WriteLine("TEST: FuncOnGenClass<{0}>", typeof(T1).Name);
         for (int i = 0; i < max; i++)
-            Assert.AreEqual(o1.FuncOnGenClass(i).ToString(), i == 0 ? $"{typeof(T1)}" : $"TestType{i}`1[{typeof(T1)}]");
+            Assert.Equal(o1.FuncOnGenClass(i).ToString(), i == 0 ? $"{typeof(T1)}" : $"TestType{i}`1[{typeof(T1)}]");
 
         Console.WriteLine("TEST: FuncOnGenClass<{0}>", typeof(T2).Name);
         for (int i = 0; i < max; i++)
-            Assert.AreEqual(o2.FuncOnGenClass(i).ToString(), i == 0 ? $"{typeof(T2)}" : $"TestType{i}`1[{typeof(T2)}]");
+            Assert.Equal(o2.FuncOnGenClass(i).ToString(), i == 0 ? $"{typeof(T2)}" : $"TestType{i}`1[{typeof(T2)}]");
 
         Console.WriteLine("TEST: FuncOnGenClass2<{0}>", typeof(T2).Name);
         for (int i = 0; i < max; i++)
-            Assert.AreEqual(o2.FuncOnGenClass2(i).ToString(), i == 0 ? $"{typeof(T2)}" : $"TestType{i}`1[{typeof(T2)}]");
+            Assert.Equal(o2.FuncOnGenClass2(i).ToString(), i == 0 ? $"{typeof(T2)}" : $"TestType{i}`1[{typeof(T2)}]");
 
         Console.WriteLine("TEST: FuncOnGenClass<{0}>", typeof(T3).Name);
         for (int i = 0; i < max; i++)
-            Assert.AreEqual(o3.FuncOnGenClass(i).ToString(), i == 0 ? $"{typeof(T3)}" : $"TestType{i}`1[{typeof(T3)}]");
+            Assert.Equal(o3.FuncOnGenClass(i).ToString(), i == 0 ? $"{typeof(T3)}" : $"TestType{i}`1[{typeof(T3)}]");
     }
 
     public static void DoTest_GenClass(int max)
     {
-        DoTest_Inner<string, object, Test>(max,
+        DoTest_Inner<string, object, Test_DictionaryExpansion>(max,
             new GenClass<string>(),
             new GenClass<object>(),
-            new GenClass<Test>());
+            new GenClass<Test_DictionaryExpansion>());
     }
 
     public static void DoTest_GenDerived(int max)
     {
-        DoTest_Inner<string, object, Test>(max,
+        DoTest_Inner<string, object, Test_DictionaryExpansion>(max,
             new GenDerived<string, int>(),
             new GenDerived<object, int>(),
-            new GenDerived<Test, int>());
+            new GenDerived<Test_DictionaryExpansion, int>());
     }
 
     public static void DoTest_GenDerived2(int max)
@@ -167,8 +167,8 @@ public class GenClass<T> : GenBase
     [MethodImpl(MethodImplOptions.NoInlining)]
     public override void VFunc()
     {
-        Assert.AreEqual(typeof(KeyValuePair<T, string>).ToString(), "System.Collections.Generic.KeyValuePair`2[System.Object,System.String]");
-        Assert.AreEqual(typeof(KeyValuePair<T, string>).ToString(), "System.Collections.Generic.KeyValuePair`2[System.Object,System.String]");
+        Assert.Equal(typeof(KeyValuePair<T, string>).ToString(), "System.Collections.Generic.KeyValuePair`2[System.Object,System.String]");
+        Assert.Equal(typeof(KeyValuePair<T, string>).ToString(), "System.Collections.Generic.KeyValuePair`2[System.Object,System.String]");
     }
 }
 
@@ -188,7 +188,7 @@ public class GenDerived4 : GenDerived3
 {
 }
 
-public class Test
+public class Test_DictionaryExpansion
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static Type GFunc<T>(int level)
@@ -223,7 +223,7 @@ public class Test
             case 25: default: return typeof(TestType25<T>);
         }
     }
-    
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static Type GFunc2<T>(int level)
     {
@@ -263,25 +263,25 @@ public class Test
     {
         Console.WriteLine("TEST: GFunc<string>");
         for(int i = 0; i < max; i++)
-            Assert.AreEqual(GFunc<string>(i).ToString(), i == 0 ? "System.String" : $"TestType{i}`1[System.String]");
+            Assert.Equal(GFunc<string>(i).ToString(), i == 0 ? "System.String" : $"TestType{i}`1[System.String]");
 
         Console.WriteLine("TEST: GFunc<object>(i)");
         for (int i = 0; i < max; i++)
-            Assert.AreEqual(GFunc<object>(i).ToString(), i == 0 ? "System.Object" : $"TestType{i}`1[System.Object]");
+            Assert.Equal(GFunc<object>(i).ToString(), i == 0 ? "System.Object" : $"TestType{i}`1[System.Object]");
 
         Console.WriteLine("TEST: GFunc2<object>(i)");
         for (int i = 0; i < max; i++)
-            Assert.AreEqual(GFunc2<object>(i).ToString(), i == 0 ? "System.Object" : $"TestType{i}`1[System.Object]");
+            Assert.Equal(GFunc2<object>(i).ToString(), i == 0 ? "System.Object" : $"TestType{i}`1[System.Object]");
 
-        Console.WriteLine("TEST: GFunc<Test>(i)");
+        Console.WriteLine("TEST: GFunc<Test_DictionaryExpansion>(i)");
         for (int i = 0; i < max; i++)
-            Assert.AreEqual(GFunc<Test>(i).ToString(), i == 0 ? "Test" : $"TestType{i}`1[Test]");
+            Assert.Equal(GFunc<Test_DictionaryExpansion>(i).ToString(), i == 0 ? "Test_DictionaryExpansion" : $"TestType{i}`1[Test_DictionaryExpansion]");
     }
-    
+
     public static int Main()
     {
         GenBase deriv4 = new GenDerived4();
-        
+
         for(int i = 5; i <= 25; i += 5)
         {
             // Test for generic classes
@@ -304,7 +304,7 @@ public class Test
 
             // Test for generic methods
             DoTest(i);
-            
+
             {
                 AssemblyBuilder ab = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("CollectibleAsm"+i), AssemblyBuilderAccess.RunAndCollect);
                 var tb = ab.DefineDynamicModule("CollectibleMod" + i).DefineType("CollectibleGenDerived"+i, TypeAttributes.Public, typeof(GenDerived2));
@@ -323,7 +323,7 @@ public class Test
                 }
             }
         }
-        
+
         // After all expansions to existing dictionaries, use GenDerived4. GenDerived4 was allocated before any of its
         // base type dictionaries were expanded.
         for(int i = 0; i < 5; i++)

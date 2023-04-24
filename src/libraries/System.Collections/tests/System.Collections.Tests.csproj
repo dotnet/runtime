@@ -1,8 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
   </PropertyGroup>
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
   <ItemGroup>
     <!-- Common Collections tests -->
     <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs"
@@ -33,14 +37,14 @@
              Link="Common\System\Collections\TestBase.Generic.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\DebugView.Tests.cs"
              Link="Common\System\Collections\DebugView.Tests.cs" />
+    <Compile Include="$(CommonTestPath)System\Collections\DictionaryEntry.Tests.cs"
+             Link="Common\System\Collections\DictionaryEntry.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs"
              Link="Common\System\Collections\TestingTypes.cs" />
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs"
              Link="Common\System\EnumTypes.cs" />
     <Compile Include="$(CommonTestPath)System\ObjectCloner.cs"
              Link="Common\System\ObjectCloner.cs" />
-    <Compile Include="$(CommonTestPath)System\RandomExtensions.cs"
-             Link="Common\System\RandomExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs"
              Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
     <!-- Generic tests -->
@@ -92,8 +96,10 @@
     <Compile Include="Generic\List\List.Generic.Tests.BinarySearch.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Constructor.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.ConvertAll.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.CopyTo.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Find.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.EnsureCapacity.cs" />
+    <Compile Include="Generic\List\List.Generic.Tests.InsertRange.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Remove.cs" />
     <Compile Include="Generic\List\List.Generic.Tests.Sort.cs" />
     <Compile Include="Generic\PriorityQueue\PriorityQueue.Generic.cs" />

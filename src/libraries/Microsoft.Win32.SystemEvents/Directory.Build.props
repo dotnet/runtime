@@ -1,11 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <StrongNameKeyId>Open</StrongNameKeyId>
-    <IsWindowsSpecific>true</IsWindowsSpecific>
-    <PackageDescription>Provides access to Windows system event notifications.
-
-Commonly Used Types:
-Microsoft.Win32.SystemEvents</PackageDescription>
+    <SupportedOSPlatforms>windows</SupportedOSPlatforms>
   </PropertyGroup>
 </Project>

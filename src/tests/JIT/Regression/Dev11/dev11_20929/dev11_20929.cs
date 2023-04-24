@@ -2,15 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-internal static class Repro
+public static class Repro
 {
     private struct foo
     {
         public int x, y;
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         foo f = new foo();

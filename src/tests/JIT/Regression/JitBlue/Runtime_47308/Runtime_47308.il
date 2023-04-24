@@ -9,9 +9,10 @@
 
 .assembly extern System.Console {}
 
-.assembly Test1 {}
+.assembly 'Runtime_47308' {}
+.assembly extern xunit.core {}
 .assembly extern mscorlib{auto}
-.class FullProof {
+.class public FullProof {
 .method static void Test() {
 .maxstack 500
 
@@ -49,6 +50,9 @@ IL_500:       ret
 
 .method public static int32  Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack 3
    .try

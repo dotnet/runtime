@@ -75,11 +75,11 @@ namespace System.Net
         private int _chunkRead;
         private int _totalWritten;
         private State _state;
-        private StringBuilder _saved;
+        private readonly StringBuilder _saved;
         private bool _sawCR;
         private bool _gotit;
         private int _trailerState;
-        private List<Chunk> _chunks;
+        private readonly List<Chunk> _chunks;
 
         public ChunkStream(WebHeaderCollection headers)
         {
@@ -274,7 +274,7 @@ namespace System.Net
                 {
                     if (_saved.Length > 0)
                     {
-                        _chunkSize = int.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.HexNumber);
+                        _chunkSize = int.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
                     }
                 }
                 catch (Exception)
@@ -288,7 +288,7 @@ namespace System.Net
             _chunkRead = 0;
             try
             {
-                _chunkSize = int.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.HexNumber);
+                _chunkSize = int.Parse(RemoveChunkExtension(_saved.ToString()), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
             }
             catch (Exception)
             {
@@ -332,7 +332,7 @@ namespace System.Net
 
         private State ReadTrailer(byte[] buffer, ref int offset, int size)
         {
-            char c = '\0';
+            char c;
 
             // short path
             if (_trailerState == 2 && (char)buffer[offset] == '\r' && _saved.Length == 0)
@@ -365,7 +365,7 @@ namespace System.Net
 
                 if (st > 0)
                 {
-                    _saved.Append(stString.Substring(0, _saved.Length == 0 ? st - 2 : st));
+                    _saved.Append(stString.AsSpan(0, _saved.Length == 0 ? st - 2 : st));
                     st = 0;
                     if (_saved.Length > 4196)
                         ThrowProtocolViolation("Error reading trailer (too long).");

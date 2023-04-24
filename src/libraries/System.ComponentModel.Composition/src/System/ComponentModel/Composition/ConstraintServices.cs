@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition
 
             if (!string.IsNullOrEmpty(requiredTypeIdentity))
             {
-                Expression typeIdentityConstraintBody = ConstraintServices.CreateTypeIdentityContraint(requiredTypeIdentity, parameter);
+                Expression typeIdentityConstraintBody = ConstraintServices.CreateTypeIdentityConstraint(requiredTypeIdentity, parameter);
 
                 constraintBody = Expression.AndAlso(constraintBody, typeIdentityConstraintBody);
             }
@@ -44,7 +44,7 @@ namespace System.ComponentModel.Composition
 
             if (requiredCreationPolicy != CreationPolicy.Any)
             {
-                Expression policyConstraintBody = ConstraintServices.CreateCreationPolicyContraint(requiredCreationPolicy, parameter);
+                Expression policyConstraintBody = ConstraintServices.CreateCreationPolicyConstraint(requiredCreationPolicy, parameter);
 
                 constraintBody = Expression.AndAlso(constraintBody, policyConstraintBody);
             }
@@ -53,12 +53,9 @@ namespace System.ComponentModel.Composition
             return constraint;
         }
 
-        private static Expression CreateContractConstraintBody(string contractName, ParameterExpression parameter)
+        private static BinaryExpression CreateContractConstraintBody(string contractName, ParameterExpression parameter)
         {
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
+            ArgumentNullException.ThrowIfNull(parameter);
 
             // export.ContractName=<contract>;
             return Expression.Equal(
@@ -68,15 +65,8 @@ namespace System.ComponentModel.Composition
 
         private static Expression? CreateMetadataConstraintBody(IEnumerable<KeyValuePair<string, Type>> requiredMetadata, ParameterExpression parameter)
         {
-            if (requiredMetadata == null)
-            {
-                throw new ArgumentNullException(nameof(requiredMetadata));
-            }
-
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
+            ArgumentNullException.ThrowIfNull(requiredMetadata);
+            ArgumentNullException.ThrowIfNull(parameter);
 
             Expression? body = null;
             foreach (KeyValuePair<string, Type> requiredMetadataItem in requiredMetadata)
@@ -91,16 +81,13 @@ namespace System.ComponentModel.Composition
             return body;
         }
 
-        private static Expression CreateCreationPolicyContraint(CreationPolicy policy, ParameterExpression parameter)
+        private static BinaryExpression CreateCreationPolicyConstraint(CreationPolicy policy, ParameterExpression parameter)
         {
+            ArgumentNullException.ThrowIfNull(parameter);
+
             if (policy == CreationPolicy.Any)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
-            }
-
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
             }
 
             //    !definition.Metadata.ContainsKey(CompositionConstants.PartCreationPolicyMetadataName) ||
@@ -114,17 +101,10 @@ namespace System.ComponentModel.Composition
                         CreateMetadataValueEqualsExpression(parameter, policy, CompositionConstants.PartCreationPolicyMetadataName));
         }
 
-        private static Expression CreateTypeIdentityContraint(string requiredTypeIdentity, ParameterExpression parameter)
+        private static BinaryExpression CreateTypeIdentityConstraint(string requiredTypeIdentity, ParameterExpression parameter)
         {
-            if (requiredTypeIdentity == null)
-            {
-                throw new ArgumentNullException(requiredTypeIdentity);
-            }
-
-            if (parameter == null)
-            {
-                throw new ArgumentException(nameof(parameter));
-            }
+            ArgumentNullException.ThrowIfNull(requiredTypeIdentity);
+            ArgumentNullException.ThrowIfNull(parameter);
 
             //    definition.Metadata.ContainsKey(CompositionServices.ExportTypeIdentity) &&
             //        requiredTypeIdentity.Equals(definition.Metadata[CompositionConstants.ExportTypeIdentityMetadataName]);
@@ -134,7 +114,7 @@ namespace System.ComponentModel.Composition
                         CreateMetadataValueEqualsExpression(parameter, requiredTypeIdentity, CompositionConstants.ExportTypeIdentityMetadataName));
         }
 
-        private static Expression CreateMetadataContainsKeyExpression(ParameterExpression parameter, string constantKey)
+        private static MethodCallExpression CreateMetadataContainsKeyExpression(ParameterExpression parameter, string constantKey)
         {
             if (parameter == null)
             {
@@ -153,7 +133,7 @@ namespace System.ComponentModel.Composition
                         Expression.Constant(constantKey));
         }
 
-        private static Expression CreateMetadataOfTypeExpression(ParameterExpression parameter, string constantKey, Type constantType)
+        private static MethodCallExpression CreateMetadataOfTypeExpression(ParameterExpression parameter, string constantKey, Type constantType)
         {
             if (parameter == null)
             {
@@ -181,7 +161,7 @@ namespace System.ComponentModel.Composition
                             );
         }
 
-        private static Expression CreateMetadataValueEqualsExpression(ParameterExpression parameter, object constantValue, string metadataName)
+        private static MethodCallExpression CreateMetadataValueEqualsExpression(ParameterExpression parameter, object constantValue, string metadataName)
         {
             if (parameter == null)
             {
@@ -222,14 +202,14 @@ namespace System.ComponentModel.Composition
                     ConstraintServices._metadataItemMethod,
                     Expression.Constant(CompositionConstants.ProductDefinitionMetadataName));
 
-            // ProductImportDefinition.Contraint((ExportDefinition)exportDefinition.Metadata["ProductDefinition"])
+            // ProductImportDefinition.Constraint((ExportDefinition)exportDefinition.Metadata["ProductDefinition"])
             Expression productMatchExpression =
                 Expression.Invoke(productImportDefinition.Constraint,
                     Expression.Convert(productExportDefinitionExpression, typeof(ExportDefinition)));
 
-            // baseContraint(exportDefinition) &&
+            // baseConstraint(exportDefinition) &&
             // exportDefinition.Metadata.ContainsKey("ProductDefinition") &&
-            // ProductImportDefinition.Contraint((ExportDefinition)exportDefinition.Metadata["ProductDefinition"])
+            // ProductImportDefinition.Constraint((ExportDefinition)exportDefinition.Metadata["ProductDefinition"])
             Expression<Func<ExportDefinition, bool>> constraint =
                  Expression.Lambda<Func<ExportDefinition, bool>>(
                     Expression.AndAlso(

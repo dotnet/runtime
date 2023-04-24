@@ -76,7 +76,7 @@ namespace System.Linq.Tests
         {
             Expression access = Expression.Property(null, typeof(QueryFromExpressionTests), "AsciiControlCharacters");
             IQueryable<char> q = _prov.CreateQuery<char>(access);
-            Assert.Equal(Enumerable.Range(0, 128).Select(i => (char)i).Where(c => char.IsControl(c)), q);
+            Assert.Equal(Enumerable.Range(0, 128).Select(i => (char)i).Where(char.IsControl), q);
         }
 
         [Fact]
@@ -239,7 +239,7 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Range(0, 2), q);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CoalesceShifts()
         {
             Expression list = Expression.ListInit(

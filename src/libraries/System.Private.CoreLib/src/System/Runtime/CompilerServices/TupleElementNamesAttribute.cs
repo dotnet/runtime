@@ -38,10 +38,7 @@ namespace System.Runtime.CompilerServices
         /// </remarks>
         public TupleElementNamesAttribute(string?[] transformNames)
         {
-            if (transformNames == null)
-            {
-                throw new ArgumentNullException(nameof(transformNames));
-            }
+            ArgumentNullException.ThrowIfNull(transformNames);
 
             _transformNames = transformNames;
         }

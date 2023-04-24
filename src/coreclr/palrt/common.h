@@ -13,5 +13,5 @@
 
 #include <switches.h>
 #include <winwrap.h>
-#include "shlwapip.h"
+#include <minipal/utils.h>
 #endif // _COMMON_H_

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Composition.Lightweight.UnitTests</RootNamespace>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ActivationEventOrderingTests.cs" />
@@ -39,7 +39,7 @@
     <ProjectReference Include="Microsoft.Composition.Demos.ExtendedCollectionImports\Microsoft.Composition.Demos.ExtendedCollectionImports.csproj" />
     <ProjectReference Include="TestLibrary\TestLibrary.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
 </Project>

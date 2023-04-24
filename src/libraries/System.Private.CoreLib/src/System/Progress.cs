@@ -47,7 +47,9 @@ namespace System
         /// <exception cref="System.ArgumentNullException">The <paramref name="handler"/> is null (Nothing in Visual Basic).</exception>
         public Progress(Action<T> handler) : this()
         {
-            _handler = handler ?? throw new ArgumentNullException(nameof(handler));
+            ArgumentNullException.ThrowIfNull(handler);
+
+            _handler = handler;
         }
 
         /// <summary>Raised for each reported progress value.</summary>

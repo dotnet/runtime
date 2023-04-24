@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 #endif
 
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
 using System.Runtime.Intrinsics.Arm;
 #endif
 
@@ -41,7 +41,7 @@ namespace System.Text.Encodings.Web
             _scalarEscaper = scalarEscaper;
             _allowedBmpCodePoints = allowedCodePointsBmp;
 
-#if DEBUG && !NETCOREAPP3_1
+#if DEBUG
             // Debug-only assertion to validate that we're no longer using the input
             // argument once the field value has been assigned. All accesses to the bitmap
             // should now go through our instance field. In debug mode, if any code violates
@@ -73,14 +73,14 @@ namespace System.Text.Encodings.Web
             _allowedAsciiCodePoints.PopulateAllowedCodePoints(_allowedBmpCodePoints);
         }
 
-        [Obsolete("Greenfield code shouldn't call this. It should only be used by the TextEncoder adapter.")]
+        [Obsolete("FindFirstCharacterToEncode has been deprecated. It should only be used by the TextEncoder adapter.")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe int FindFirstCharacterToEncode(char* text, int textLength)
         {
             return GetIndexOfFirstCharToEncode(new ReadOnlySpan<char>(text, textLength)); // performs bounds checking
         }
 
-        [Obsolete("Greenfield code shouldn't call this. It should only be used by the TextEncoder adapter.")]
+        [Obsolete("TryEncodeUnicodeScalar has been deprecated. It should only be used by the TextEncoder adapter.")]
         public unsafe bool TryEncodeUnicodeScalar(int unicodeScalar, char* buffer, int bufferLength, out int numberOfCharactersWritten)
         {
             Span<char> destination = new Span<char>(buffer, bufferLength);
@@ -348,11 +348,7 @@ namespace System.Text.Encodings.Web
             int dataOriginalLength = data.Length;
 
 #if NETCOREAPP
-            if (Ssse3.IsSupported
-#if NET5_0_OR_GREATER
-                || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
-#endif
-                )
+            if (Ssse3.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
             {
                 int asciiBytesSkipped;
                 unsafe
@@ -360,13 +356,11 @@ namespace System.Text.Encodings.Web
                     fixed (byte* pData = data)
                     {
                         nuint asciiBytesSkippedNInt;
-#if NET5_0_OR_GREATER
                         if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                         {
                             asciiBytesSkippedNInt = GetIndexOfFirstByteToEncodeAdvSimd64(pData, (uint)dataOriginalLength);
                         }
                         else
-#endif
                         {
                             Debug.Assert(Ssse3.IsSupported, "#ifdef was ill-formed.");
                             asciiBytesSkippedNInt = GetIndexOfFirstByteToEncodeSsse3(pData, (uint)dataOriginalLength);
@@ -427,12 +421,11 @@ namespace System.Text.Encodings.Web
                 {
                     idx = GetIndexOfFirstCharToEncodeSsse3(pData, lengthInChars);
                 }
-#if NET5_0_OR_GREATER
                 else if (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
                 {
                     idx = GetIndexOfFirstCharToEncodeAdvSimd64(pData, lengthInChars);
                 }
-#endif
+
                 Debug.Assert(0 <= idx && idx <= lengthInChars);
 #endif
 

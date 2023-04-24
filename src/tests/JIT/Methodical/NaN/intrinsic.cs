@@ -1,11 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
+using Xunit;
+namespace Test_intrinsic
+{
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace JitTest
 {
     using System;
 
-    internal class Test
+    public class Test
     {
         private static void Fail(String func, double arg, double exp, double res)
         {
@@ -482,7 +485,8 @@ namespace JitTest
             Fail2("Atan2", arg1, arg2, exp, res);
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {
@@ -597,4 +601,5 @@ namespace JitTest
             return 100;
         }
     }
+}
 }

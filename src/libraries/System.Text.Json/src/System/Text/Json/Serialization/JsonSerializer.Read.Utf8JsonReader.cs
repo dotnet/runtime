@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -13,11 +14,12 @@ namespace System.Text.Json
         /// <summary>
         /// Reads one JSON value (including objects or arrays) from the provided reader into a <typeparamref name="TValue"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="reader">The reader to read.</param>
         /// <param name="options">Options to control the serializer behavior during reading.</param>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or a value could not be read from the reader.
         /// </exception>
@@ -37,8 +39,8 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
-        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
         ///     the state it was in when the method was called.
         ///   </para>
         ///
@@ -49,22 +51,15 @@ namespace System.Text.Json
         ///
         ///   <para>
         ///     The <see cref="JsonReaderOptions"/> used to create the instance of the <see cref="Utf8JsonReader"/> take precedence over the <see cref="JsonSerializerOptions"/> when they conflict.
-        ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
+        ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, and <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
         ///   </para>
         /// </remarks>
-        public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions? options = null)
         {
-            if (options == null)
-            {
-                options = JsonSerializerOptions.s_defaultOptions;
-            }
-
-            options.RootBuiltInConvertersAndTypeInfoCreator();
-
-            ReadStack state = default;
-            state.Initialize(typeof(TValue), options, supportContinuation: false);
-
-            return ReadValueCore<TValue>(options, ref reader, ref state);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            return Read<TValue>(ref reader, jsonTypeInfo);
         }
 
         /// <summary>
@@ -78,7 +73,7 @@ namespace System.Text.Json
         /// <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <paramref name="returnType"/> is not compatible with the JSON,
         /// or a value could not be read from the reader.
         /// </exception>
@@ -98,8 +93,8 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
-        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
         ///     the state it was in when the method was called.
         ///   </para>
         ///
@@ -109,44 +104,238 @@ namespace System.Text.Json
         ///   </para>
         ///   <para>
         ///     The <see cref="JsonReaderOptions"/> used to create the instance of the <see cref="Utf8JsonReader"/> take precedence over the <see cref="JsonSerializerOptions"/> when they conflict.
-        ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
+        ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, and <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
         ///   </para>
         /// </remarks>
-        public static object? Deserialize(ref Utf8JsonReader reader, [DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options = null)
         {
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
 
-            if (options == null)
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
+            return ReadAsObject(ref reader, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Reads one JSON value (including objects or arrays) from the provided reader into a <typeparamref name="TValue"/>.
+        /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
+        /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
+        /// <param name="reader">The reader to read.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="JsonException">
+        /// The JSON is invalid,
+        /// <typeparamref name="TValue"/> is not compatible with the JSON,
+        /// or a value could not be read from the reader.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="reader"/> is using unsupported options.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     If the <see cref="Utf8JsonReader.TokenType"/> property of <paramref name="reader"/>
+        ///     is <see cref="JsonTokenType.PropertyName"/> or <see cref="JsonTokenType.None"/>, the
+        ///     reader will be advanced by one call to <see cref="Utf8JsonReader.Read"/> to determine
+        ///     the start of the value.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
+        ///     the state it was in when the method was called.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     This method makes a copy of the data the reader acted on, so there is no caller
+        ///     requirement to maintain data integrity beyond the return of this method.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     The <see cref="JsonReaderOptions"/> used to create the instance of the <see cref="Utf8JsonReader"/> take precedence over the <see cref="JsonSerializerOptions"/> when they conflict.
+        ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, and <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
+        ///   </para>
+        /// </remarks>
+        public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonTypeInfo<TValue> jsonTypeInfo)
+        {
+            if (jsonTypeInfo is null)
             {
-                options = JsonSerializerOptions.s_defaultOptions;
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            options.RootBuiltInConvertersAndTypeInfoCreator();
+            jsonTypeInfo.EnsureConfigured();
+            return Read(ref reader, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Reads one JSON value (including objects or arrays) from the provided reader into an instance specified by the <paramref name="jsonTypeInfo"/>.
+        /// </summary>
+        /// <returns>A <paramref name="jsonTypeInfo"/> representation of the JSON value.</returns>
+        /// <param name="reader">The reader to read.</param>
+        /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
+        /// <exception cref="JsonException">
+        /// The JSON is invalid,
+        /// <paramref name="jsonTypeInfo"/> is not compatible with the JSON,
+        /// or a value could not be read from the reader.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="reader"/> is using unsupported options.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     If the <see cref="Utf8JsonReader.TokenType"/> property of <paramref name="reader"/>
+        ///     is <see cref="JsonTokenType.PropertyName"/> or <see cref="JsonTokenType.None"/>, the
+        ///     reader will be advanced by one call to <see cref="Utf8JsonReader.Read"/> to determine
+        ///     the start of the value.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
+        ///     the state it was in when the method was called.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     This method makes a copy of the data the reader acted on, so there is no caller
+        ///     requirement to maintain data integrity beyond the return of this method.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     The <see cref="JsonReaderOptions"/> used to create the instance of the <see cref="Utf8JsonReader"/> take precedence over the <see cref="JsonSerializerOptions"/> when they conflict.
+        ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, and <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
+        ///   </para>
+        /// </remarks>
+        public static object? Deserialize(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
+        {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return ReadAsObject(ref reader, jsonTypeInfo);
+        }
+
+        /// <summary>
+        /// Reads one JSON value (including objects or arrays) from the provided reader into a <paramref name="returnType"/>.
+        /// </summary>
+        /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
+        /// <param name="reader">The reader to read.</param>
+        /// <param name="returnType">The type of the object to convert to and return.</param>
+        /// <param name="context">A metadata provider for serializable types.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="returnType"/> or <paramref name="context"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="JsonException">
+        /// The JSON is invalid,
+        /// <paramref name="returnType"/> is not compatible with the JSON,
+        /// or a value could not be read from the reader.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="reader"/> is using unsupported options.
+        /// </exception>
+        /// <exception cref="NotSupportedException">
+        /// There is no compatible <see cref="System.Text.Json.Serialization.JsonConverter"/>
+        /// for <paramref name="returnType"/> or its serializable members.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonSerializerContext.GetTypeInfo(Type)"/> method on the provided <paramref name="context"/>
+        /// did not return a compatible <see cref="JsonTypeInfo"/> for <paramref name="returnType"/>.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     If the <see cref="Utf8JsonReader.TokenType"/> property of <paramref name="reader"/>
+        ///     is <see cref="JsonTokenType.PropertyName"/> or <see cref="JsonTokenType.None"/>, the
+        ///     reader will be advanced by one call to <see cref="Utf8JsonReader.Read"/> to determine
+        ///     the start of the value.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
+        ///     the state it was in when the method was called.
+        ///   </para>
+        ///
+        ///   <para>
+        ///     This method makes a copy of the data the reader acted on, so there is no caller
+        ///     requirement to maintain data integrity beyond the return of this method.
+        ///   </para>
+        ///   <para>
+        ///     The <see cref="JsonReaderOptions"/> used to create the instance of the <see cref="Utf8JsonReader"/> take precedence over the <see cref="JsonSerializerOptions"/> when they conflict.
+        ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, and <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
+        ///   </para>
+        /// </remarks>
+        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerContext context)
+        {
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
+
+            return ReadAsObject(ref reader, GetTypeInfo(context, returnType));
+        }
+
+        private static TValue? Read<TValue>(ref Utf8JsonReader reader, JsonTypeInfo<TValue> jsonTypeInfo)
+        {
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+
+            if (reader.CurrentState.Options.CommentHandling == JsonCommentHandling.Allow)
+            {
+                ThrowHelper.ThrowArgumentException_SerializerDoesNotSupportComments(nameof(reader));
+            }
 
             ReadStack state = default;
-            state.Initialize(returnType, options, supportContinuation: false);
+            state.Initialize(jsonTypeInfo);
+            Utf8JsonReader restore = reader;
 
-            return ReadValueCore<object>(options, ref reader, ref state);
-        }
-
-        private static void CheckSupportedOptions(JsonReaderOptions readerOptions, string paramName)
-        {
-            if (readerOptions.CommentHandling == JsonCommentHandling.Allow)
+            try
             {
-                throw new ArgumentException(SR.JsonSerializerDoesNotSupportComments, paramName);
+                Utf8JsonReader scopedReader = GetReaderScopedToNextValue(ref reader, ref state);
+                return jsonTypeInfo.Deserialize(ref scopedReader, ref state);
+            }
+            catch (JsonException)
+            {
+                reader = restore;
+                throw;
             }
         }
 
-        private static TValue? ReadValueCore<TValue>(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
+        private static object? ReadAsObject(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
         {
-            JsonReaderState readerState = reader.CurrentState;
-            CheckSupportedOptions(readerState.Options, nameof(reader));
+            Debug.Assert(jsonTypeInfo.IsConfigured);
 
-            // Value copy to overwrite the ref on an exception and undo the destructive reads.
+            if (reader.CurrentState.Options.CommentHandling == JsonCommentHandling.Allow)
+            {
+                ThrowHelper.ThrowArgumentException_SerializerDoesNotSupportComments(nameof(reader));
+            }
+
+            ReadStack state = default;
+            state.Initialize(jsonTypeInfo);
             Utf8JsonReader restore = reader;
+
+            try
+            {
+                Utf8JsonReader scopedReader = GetReaderScopedToNextValue(ref reader, ref state);
+                return jsonTypeInfo.DeserializeAsObject(ref scopedReader, ref state);
+            }
+            catch (JsonException)
+            {
+                reader = restore;
+                throw;
+            }
+        }
+
+        private static Utf8JsonReader GetReaderScopedToNextValue(ref Utf8JsonReader reader, scoped ref ReadStack state)
+        {
+            // Advances the provided reader, validating that it is pointing to a complete JSON value.
+            // If successful, returns a new Utf8JsonReader that is scoped to the next value, reusing existing buffers.
 
             ReadOnlySpan<byte> valueSpan = default;
             ReadOnlySequence<byte> valueSequence = default;
@@ -176,167 +365,111 @@ namespace System.Text.Json
                     // Any of the "value start" states are acceptable.
                     case JsonTokenType.StartObject:
                     case JsonTokenType.StartArray:
+                        long startingOffset = reader.TokenStartIndex;
+
+                        if (!reader.TrySkip())
                         {
-                            long startingOffset = reader.TokenStartIndex;
-
-                            if (!reader.TrySkip())
-                            {
-                                ThrowHelper.ThrowJsonReaderException(ref reader, ExceptionResource.NotEnoughData);
-                            }
-
-                            long totalLength = reader.BytesConsumed - startingOffset;
-                            ReadOnlySequence<byte> sequence = reader.OriginalSequence;
-
-                            if (sequence.IsEmpty)
-                            {
-                                valueSpan = reader.OriginalSpan.Slice(
-                                    checked((int)startingOffset),
-                                    checked((int)totalLength));
-                            }
-                            else
-                            {
-                                valueSequence = sequence.Slice(startingOffset, totalLength);
-                            }
-
-                            Debug.Assert(
-                                reader.TokenType == JsonTokenType.EndObject ||
-                                reader.TokenType == JsonTokenType.EndArray);
-
-                            break;
+                            ThrowHelper.ThrowJsonReaderException(ref reader, ExceptionResource.NotEnoughData);
                         }
+
+                        long totalLength = reader.BytesConsumed - startingOffset;
+                        ReadOnlySequence<byte> sequence = reader.OriginalSequence;
+
+                        if (sequence.IsEmpty)
+                        {
+                            valueSpan = reader.OriginalSpan.Slice(
+                                checked((int)startingOffset),
+                                checked((int)totalLength));
+                        }
+                        else
+                        {
+                            valueSequence = sequence.Slice(startingOffset, totalLength);
+                        }
+
+                        Debug.Assert(reader.TokenType is JsonTokenType.EndObject or JsonTokenType.EndArray);
+                        break;
 
                     // Single-token values
                     case JsonTokenType.Number:
                     case JsonTokenType.True:
                     case JsonTokenType.False:
                     case JsonTokenType.Null:
+                        if (reader.HasValueSequence)
                         {
-                            if (reader.HasValueSequence)
-                            {
-                                valueSequence = reader.ValueSequence;
-                            }
-                            else
-                            {
-                                valueSpan = reader.ValueSpan;
-                            }
-
-                            break;
+                            valueSequence = reader.ValueSequence;
                         }
+                        else
+                        {
+                            valueSpan = reader.ValueSpan;
+                        }
+
+                        break;
+
                     // String's ValueSequence/ValueSpan omits the quotes, we need them back.
                     case JsonTokenType.String:
+                        ReadOnlySequence<byte> originalSequence = reader.OriginalSequence;
+
+                        if (originalSequence.IsEmpty)
                         {
-                            ReadOnlySequence<byte> sequence = reader.OriginalSequence;
+                            // Since the quoted string fit in a ReadOnlySpan originally
+                            // the contents length plus the two quotes can't overflow.
+                            int payloadLength = reader.ValueSpan.Length + 2;
+                            Debug.Assert(payloadLength > 1);
 
-                            if (sequence.IsEmpty)
-                            {
-                                // Since the quoted string fit in a ReadOnlySpan originally
-                                // the contents length plus the two quotes can't overflow.
-                                int payloadLength = reader.ValueSpan.Length + 2;
-                                Debug.Assert(payloadLength > 1);
+                            ReadOnlySpan<byte> readerSpan = reader.OriginalSpan;
 
-                                ReadOnlySpan<byte> readerSpan = reader.OriginalSpan;
+                            Debug.Assert(
+                                readerSpan[(int)reader.TokenStartIndex] == (byte)'"',
+                                $"Calculated span starts with {readerSpan[(int)reader.TokenStartIndex]}");
 
-                                Debug.Assert(
-                                    readerSpan[(int)reader.TokenStartIndex] == (byte)'"',
-                                    $"Calculated span starts with {readerSpan[(int)reader.TokenStartIndex]}");
+                            Debug.Assert(
+                                readerSpan[(int)reader.TokenStartIndex + payloadLength - 1] == (byte)'"',
+                                $"Calculated span ends with {readerSpan[(int)reader.TokenStartIndex + payloadLength - 1]}");
 
-                                Debug.Assert(
-                                    readerSpan[(int)reader.TokenStartIndex + payloadLength - 1] == (byte)'"',
-                                    $"Calculated span ends with {readerSpan[(int)reader.TokenStartIndex + payloadLength - 1]}");
-
-                                valueSpan = readerSpan.Slice((int)reader.TokenStartIndex, payloadLength);
-                            }
-                            else
-                            {
-                                long payloadLength = 2;
-
-                                if (reader.HasValueSequence)
-                                {
-                                    payloadLength += reader.ValueSequence.Length;
-                                }
-                                else
-                                {
-                                    payloadLength += reader.ValueSpan.Length;
-                                }
-
-                                valueSequence = sequence.Slice(reader.TokenStartIndex, payloadLength);
-                                Debug.Assert(
-                                    valueSequence.First.Span[0] == (byte)'"',
-                                    $"Calculated sequence starts with {valueSequence.First.Span[0]}");
-
-                                Debug.Assert(
-                                    valueSequence.ToArray()[payloadLength - 1] == (byte)'"',
-                                    $"Calculated sequence ends with {valueSequence.ToArray()[payloadLength - 1]}");
-                            }
-
-                            break;
+                            valueSpan = readerSpan.Slice((int)reader.TokenStartIndex, payloadLength);
                         }
+                        else
+                        {
+                            long payloadLength = reader.HasValueSequence
+                                ? reader.ValueSequence.Length + 2
+                                : reader.ValueSpan.Length + 2;
+
+                            valueSequence = originalSequence.Slice(reader.TokenStartIndex, payloadLength);
+                            Debug.Assert(
+                                valueSequence.First.Span[0] == (byte)'"',
+                                $"Calculated sequence starts with {valueSequence.First.Span[0]}");
+
+                            Debug.Assert(
+                                valueSequence.ToArray()[payloadLength - 1] == (byte)'"',
+                                $"Calculated sequence ends with {valueSequence.ToArray()[payloadLength - 1]}");
+                        }
+
+                        break;
+
                     default:
-                        {
-                            byte displayByte;
+                        byte displayByte = reader.HasValueSequence
+                            ? reader.ValueSequence.First.Span[0]
+                            : reader.ValueSpan[0];
 
-                            if (reader.HasValueSequence)
-                            {
-                                displayByte = reader.ValueSequence.First.Span[0];
-                            }
-                            else
-                            {
-                                displayByte = reader.ValueSpan[0];
-                            }
+                        ThrowHelper.ThrowJsonReaderException(
+                            ref reader,
+                            ExceptionResource.ExpectedStartOfValueNotFound,
+                            displayByte);
 
-                            ThrowHelper.ThrowJsonReaderException(
-                                ref reader,
-                                ExceptionResource.ExpectedStartOfValueNotFound,
-                                displayByte);
-
-                            break;
-                        }
+                        break;
                 }
             }
             catch (JsonReaderException ex)
             {
-                reader = restore;
                 // Re-throw with Path information.
-                ThrowHelper.ReThrowWithPath(state, ex);
+                ThrowHelper.ReThrowWithPath(ref state, ex);
             }
 
-            int length = valueSpan.IsEmpty ? checked((int)valueSequence.Length) : valueSpan.Length;
-            byte[] rented = ArrayPool<byte>.Shared.Rent(length);
-            Span<byte> rentedSpan = rented.AsSpan(0, length);
+            Debug.Assert(!valueSpan.IsEmpty ^ !valueSequence.IsEmpty);
 
-            try
-            {
-                if (valueSpan.IsEmpty)
-                {
-                    valueSequence.CopyTo(rentedSpan);
-                }
-                else
-                {
-                    valueSpan.CopyTo(rentedSpan);
-                }
-
-                JsonReaderOptions originalReaderOptions = readerState.Options;
-
-                var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
-
-                JsonConverter jsonConverter = state.Current.JsonPropertyInfo!.ConverterBase;
-                TValue? value = ReadCore<TValue>(jsonConverter, ref newReader, options, ref state);
-
-                // The reader should have thrown if we have remaining bytes.
-                Debug.Assert(newReader.BytesConsumed == length);
-
-                return value;
-            }
-            catch (JsonException)
-            {
-                reader = restore;
-                throw;
-            }
-            finally
-            {
-                rentedSpan.Clear();
-                ArrayPool<byte>.Shared.Return(rented);
-            }
+            return valueSpan.IsEmpty
+                ? new Utf8JsonReader(valueSequence, reader.CurrentState.Options)
+                : new Utf8JsonReader(valueSpan, reader.CurrentState.Options);
         }
     }
 }

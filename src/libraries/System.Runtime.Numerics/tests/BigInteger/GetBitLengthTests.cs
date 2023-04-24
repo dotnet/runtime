@@ -38,8 +38,9 @@ namespace System.Numerics.Tests
             VerifyLoopGetBitLength(random, false);
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "OOM on browser due to large array allocations")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // OOM on 32 bit
+        [OuterLoop("Allocates large arrays")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "OOM on browser and mobile due to large array allocations")]
         public static void RunGetBitLengthTestsLarge()
         {
             // Very large cases

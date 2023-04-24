@@ -26,6 +26,8 @@ namespace System.Threading
         public static System.Threading.CompressedStack Capture() { throw null; }
         public System.Threading.CompressedStack CreateCopy() { throw null; }
         public static System.Threading.CompressedStack GetCompressedStack() { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static void Run(System.Threading.CompressedStack compressedStack, System.Threading.ContextCallback callback, object? state) { }
     }
@@ -36,7 +38,7 @@ namespace System.Threading
         public Thread(System.Threading.ParameterizedThreadStart start, int maxStackSize) { }
         public Thread(System.Threading.ThreadStart start) { }
         public Thread(System.Threading.ThreadStart start, int maxStackSize) { }
-        [System.ObsoleteAttribute("The ApartmentState property has been deprecated.  Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.", false)]
+        [System.ObsoleteAttribute("The ApartmentState property has been deprecated. Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.")]
         public System.Threading.ApartmentState ApartmentState { get { throw null; } set { } }
         public System.Globalization.CultureInfo CurrentCulture { get { throw null; } set { } }
         public static System.Security.Principal.IPrincipal? CurrentPrincipal { get { throw null; } set { } }
@@ -64,7 +66,7 @@ namespace System.Threading
         ~Thread() { }
         public static void FreeNamedDataSlot(string name) { }
         public System.Threading.ApartmentState GetApartmentState() { throw null; }
-        [System.ObsoleteAttribute("Thread.GetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public System.Threading.CompressedStack GetCompressedStack() { throw null; }
         public static int GetCurrentProcessorId() { throw null; }
         public static object? GetData(System.LocalDataStoreSlot slot) { throw null; }
@@ -79,26 +81,34 @@ namespace System.Threading
         public static void MemoryBarrier() { }
         [System.ObsoleteAttribute("Thread.ResetAbort is not supported and throws PlatformNotSupportedException.", DiagnosticId = "SYSLIB0006", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public static void ResetAbort() { }
-        [System.ObsoleteAttribute("Thread.Resume has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [System.ObsoleteAttribute("Thread.Resume has been deprecated. Use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.")]
         public void Resume() { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public void SetApartmentState(System.Threading.ApartmentState state) { }
-        [System.ObsoleteAttribute("Thread.SetCompressedStack is no longer supported. Please use the System.Threading.CompressedStack class")]
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public void SetCompressedStack(System.Threading.CompressedStack stack) { }
         public static void SetData(System.LocalDataStoreSlot slot, object? data) { }
         public static void Sleep(int millisecondsTimeout) { }
         public static void Sleep(System.TimeSpan timeout) { }
         public static void SpinWait(int iterations) { }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Start() { }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Start(object? parameter) { }
-        [System.ObsoleteAttribute("Thread.Suspend has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [System.ObsoleteAttribute("Thread.Suspend has been deprecated. Use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.")]
         public void Suspend() { }
         public bool TrySetApartmentState(System.Threading.ApartmentState state) { throw null; }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void UnsafeStart() { }
+#if !FEATURE_WASM_THREADS
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void UnsafeStart(object? parameter) { }
         public static byte VolatileRead(ref byte address) { throw null; }
         public static double VolatileRead(ref double address) { throw null; }
@@ -153,6 +163,8 @@ namespace System.Threading
     public partial class ThreadInterruptedException : System.SystemException
     {
         public ThreadInterruptedException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected ThreadInterruptedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ThreadInterruptedException(string? message) { }
         public ThreadInterruptedException(string? message, System.Exception? innerException) { }
@@ -187,6 +199,8 @@ namespace System.Threading
     public partial class ThreadStateException : System.SystemException
     {
         public ThreadStateException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected ThreadStateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ThreadStateException(string? message) { }
         public ThreadStateException(string? message, System.Exception? innerException) { }

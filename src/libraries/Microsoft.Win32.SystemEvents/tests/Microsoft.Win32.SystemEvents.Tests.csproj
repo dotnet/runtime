@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkMinimum)</TargetFrameworks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
@@ -22,6 +25,7 @@
     <Compile Include="SystemEvents.SessionSwitch.cs" />
     <Compile Include="SystemEvents.PowerMode.cs" />
     <Compile Include="SystemEvents.TimeChanged.cs" />
+    <Compile Include="ShutdownTest.cs" />
     <Compile Include="SystemEventsTest.cs" />
     <Compile Include="SystemEvents.DisplaySettings.cs" />
     <Compile Include="SystemEvents.CreateTimer.cs" />

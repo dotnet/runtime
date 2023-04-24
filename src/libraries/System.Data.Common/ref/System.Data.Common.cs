@@ -88,6 +88,8 @@ namespace System.Data
     public partial class ConstraintException : System.Data.DataException
     {
         public ConstraintException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected ConstraintException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ConstraintException(string? s) { }
         public ConstraintException(string? message, System.Exception? innerException) { }
@@ -96,13 +98,16 @@ namespace System.Data
     [System.ComponentModel.DesignTimeVisibleAttribute(false)]
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataColumnEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.ToolboxItemAttribute(false)]
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public partial class DataColumn : System.ComponentModel.MarshalByValueComponent
     {
         public DataColumn() { }
         public DataColumn(string? columnName) { }
-        public DataColumn(string? columnName, System.Type dataType) { }
-        public DataColumn(string? columnName, System.Type dataType, string? expr) { }
-        public DataColumn(string? columnName, System.Type dataType, string? expr, System.Data.MappingType type) { }
+        public DataColumn(string? columnName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)] System.Type dataType) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        public DataColumn(string? columnName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)] System.Type dataType, string? expr) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types or types used in expressions may be trimmed if not referenced directly.")]
+        public DataColumn(string? columnName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)] System.Type dataType, string? expr, System.Data.MappingType type) { }
         [System.ComponentModel.DefaultValueAttribute(true)]
         public bool AllowDBNull { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]
@@ -126,7 +131,7 @@ namespace System.Data
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string Expression { get { throw null; } set { } }
+        public string Expression { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from types used in the expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.PropertyCollection ExtendedProperties { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(-1)]
@@ -174,8 +179,9 @@ namespace System.Data
         public System.Data.DataColumn Add() { throw null; }
         public void Add(System.Data.DataColumn column) { }
         public System.Data.DataColumn Add(string? columnName) { throw null; }
-        public System.Data.DataColumn Add(string? columnName, System.Type type) { throw null; }
-        public System.Data.DataColumn Add(string? columnName, System.Type type, string expression) { throw null; }
+        public System.Data.DataColumn Add(string? columnName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)] System.Type type) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members might be trimmed for some data types or expressions.")]
+        public System.Data.DataColumn Add(string? columnName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)] System.Type type, string expression) { throw null; }
         public void AddRange(System.Data.DataColumn[] columns) { }
         public bool CanRemove(System.Data.DataColumn? column) { throw null; }
         public void Clear() { }
@@ -190,6 +196,8 @@ namespace System.Data
     public partial class DataException : System.SystemException
     {
         public DataException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected DataException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public DataException(string? s) { }
         public DataException(string? s, System.Exception? innerException) { }
@@ -446,10 +454,8 @@ namespace System.Data
         public object this[string property] { get { throw null; } set { } }
         public System.Data.DataRow Row { get { throw null; } }
         public System.Data.DataRowVersion RowVersion { get { throw null; } }
-#nullable disable
         string System.ComponentModel.IDataErrorInfo.Error { get { throw null; } }
         string System.ComponentModel.IDataErrorInfo.this[string colName] { get { throw null; } }
-#nullable enable
         public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged { add { } remove { } }
         public void BeginEdit() { }
         public void CancelEdit() { }
@@ -461,33 +467,44 @@ namespace System.Data
         public void EndEdit() { }
         public override bool Equals(object? other) { throw null; }
         public override int GetHashCode() { throw null; }
-#nullable disable
         System.ComponentModel.AttributeCollection System.ComponentModel.ICustomTypeDescriptor.GetAttributes() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetClassName() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetComponentName() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         System.ComponentModel.TypeConverter System.ComponentModel.ICustomTypeDescriptor.GetConverter() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         System.ComponentModel.EventDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultEvent() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultProperty() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[] attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[]? attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
-        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
-#nullable enable
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[]? attributes) { throw null; }
+        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
     }
     [System.ComponentModel.DefaultPropertyAttribute("DataSetName")]
     [System.ComponentModel.DesignerAttribute("Microsoft.VSDesigner.Data.VS.DataSetDesigner, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.ToolboxItemAttribute("Microsoft.VSDesigner.Data.VS.DataSetToolboxItem, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.Xml.Serialization.XmlRootAttribute("DataSet")]
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetDataSetSchema")]
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors)]
     public partial class DataSet : System.ComponentModel.MarshalByValueComponent, System.ComponentModel.IListSource, System.ComponentModel.ISupportInitialize, System.ComponentModel.ISupportInitializeNotification, System.Runtime.Serialization.ISerializable, System.Xml.Serialization.IXmlSerializable
     {
         public DataSet() { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected DataSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected DataSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context, bool ConstructSchema) { }
         public DataSet(string dataSetName) { }
         [System.ComponentModel.DefaultValueAttribute(false)]
@@ -518,12 +535,10 @@ namespace System.Data
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public virtual System.Data.SchemaSerializationMode SchemaSerializationMode { get { throw null; } set { } }
-#nullable disable
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public override System.ComponentModel.ISite Site { get { throw null; } set { } }
+        public override System.ComponentModel.ISite? Site { get { throw null; } set { } }
         bool System.ComponentModel.IListSource.ContainsListCollection { get { throw null; } }
-#nullable enable
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public System.Data.DataTableCollection Tables { get { throw null; } }
         public event System.EventHandler? Initialized { add { } remove { } }
@@ -541,21 +556,34 @@ namespace System.Data
         public System.Data.DataSet? GetChanges() { throw null; }
         public System.Data.DataSet? GetChanges(System.Data.DataRowState rowStates) { throw null; }
         public static System.Xml.Schema.XmlSchemaComplexType GetDataSetSchema(System.Xml.Schema.XmlSchemaSet? schemaSet) { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected virtual System.Xml.Schema.XmlSchema? GetSchemaSerializable() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         protected void GetSerializationData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public string GetXml() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public string GetXmlSchema() { throw null; }
         public bool HasChanges() { throw null; }
         public bool HasChanges(System.Data.DataRowState rowStates) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void InferXmlSchema(System.IO.Stream? stream, string[]? nsArray) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void InferXmlSchema(System.IO.TextReader? reader, string[]? nsArray) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void InferXmlSchema(string fileName, string[]? nsArray) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void InferXmlSchema(System.Xml.XmlReader? reader, string[]? nsArray) { }
         protected virtual void InitializeDerivedDataSet() { }
         protected bool IsBinarySerialized(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, params System.Data.DataTable[] tables) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, System.Data.FillErrorEventHandler? errorHandler, params System.Data.DataTable[] tables) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, params string[] tables) { }
         public void Merge(System.Data.DataRow[] rows) { }
         public void Merge(System.Data.DataRow[] rows, bool preserveChanges, System.Data.MissingSchemaAction missingSchemaAction) { }
@@ -568,44 +596,71 @@ namespace System.Data
         protected virtual void OnRemoveRelation(System.Data.DataRelation relation) { }
         protected internal virtual void OnRemoveTable(System.Data.DataTable table) { }
         protected internal void RaisePropertyChanging(string name) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.Stream? stream) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.Stream? stream, System.Data.XmlReadMode mode) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.TextReader? reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.TextReader? reader, System.Data.XmlReadMode mode) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(string fileName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(string fileName, System.Data.XmlReadMode mode) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.Xml.XmlReader? reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.Xml.XmlReader? reader, System.Data.XmlReadMode mode) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.IO.TextReader? reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.Xml.XmlReader? reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         protected virtual void ReadXmlSerializable(System.Xml.XmlReader reader) { }
         public virtual void RejectChanges() { }
         public virtual void Reset() { }
         protected virtual bool ShouldSerializeRelations() { throw null; }
         protected virtual bool ShouldSerializeTables() { throw null; }
-#nullable disable
         System.Collections.IList System.ComponentModel.IListSource.GetList() { throw null; }
         System.Xml.Schema.XmlSchema System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-#nullable enable
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.Stream? stream, System.Converter<System.Type, string> multipleTargetConverter) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.TextWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.TextWriter? writer, System.Converter<System.Type, string> multipleTargetConverter) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(string fileName, System.Converter<System.Type, string> multipleTargetConverter) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.Xml.XmlWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.Xml.XmlWriter? writer, System.Converter<System.Type, string> multipleTargetConverter) { }
     }
     public enum DataSetDateTime
@@ -616,10 +671,10 @@ namespace System.Data
         Utc = 4,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All)]
-    [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+    [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is not supported.")]
     public partial class DataSysDescriptionAttribute : System.ComponentModel.DescriptionAttribute
     {
-        [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [System.ObsoleteAttribute("DataSysDescriptionAttribute has been deprecated and is not supported.")]
         public DataSysDescriptionAttribute(string description) { }
         public override string Description { get { throw null; } }
     }
@@ -629,10 +684,14 @@ namespace System.Data
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataTableEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     [System.ComponentModel.ToolboxItemAttribute(false)]
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetDataTableSchema")]
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.NonPublicConstructors)]
     public partial class DataTable : System.ComponentModel.MarshalByValueComponent, System.ComponentModel.IListSource, System.ComponentModel.ISupportInitialize, System.ComponentModel.ISupportInitializeNotification, System.Runtime.Serialization.ISerializable, System.Xml.Serialization.IXmlSerializable
     {
         protected internal bool fInitInProgress;
         public DataTable() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected DataTable(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public DataTable(string? tableName) { }
         public DataTable(string? tableName, string? tableNamespace) { }
@@ -651,7 +710,7 @@ namespace System.Data
         public System.Data.DataView DefaultView { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string DisplayExpression { get { throw null; } set { } }
+        public string DisplayExpression { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from types used in the expressions may be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.PropertyCollection ExtendedProperties { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
@@ -675,9 +734,7 @@ namespace System.Data
         public System.Data.DataRowCollection Rows { get { throw null; } }
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-#nullable disable
-        public override System.ComponentModel.ISite Site { get { throw null; } set { } }
-#nullable enable
+        public override System.ComponentModel.ISite? Site { get { throw null; } set { } }
         bool System.ComponentModel.IListSource.ContainsListCollection { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
@@ -698,6 +755,7 @@ namespace System.Data
         public void BeginLoadData() { }
         public void Clear() { }
         public virtual System.Data.DataTable Clone() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members of types used in the filter or expression might be trimmed.")]
         public object Compute(string? expression, string? filter) { throw null; }
         public System.Data.DataTable Copy() { throw null; }
         public System.Data.DataTableReader CreateDataReader() { throw null; }
@@ -708,12 +766,18 @@ namespace System.Data
         public System.Data.DataTable? GetChanges(System.Data.DataRowState rowStates) { throw null; }
         public static System.Xml.Schema.XmlSchemaComplexType GetDataTableSchema(System.Xml.Schema.XmlSchemaSet? schemaSet) { throw null; }
         public System.Data.DataRow[] GetErrors() { throw null; }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected virtual System.Type GetRowType() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         protected virtual System.Xml.Schema.XmlSchema? GetSchema() { throw null; }
         public void ImportRow(System.Data.DataRow? row) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")]
         public virtual void Load(System.Data.IDataReader reader, System.Data.LoadOption loadOption, System.Data.FillErrorEventHandler? errorHandler) { }
         public System.Data.DataRow LoadDataRow(object?[] values, bool fAcceptChanges) { throw null; }
         public System.Data.DataRow LoadDataRow(object?[] values, System.Data.LoadOption loadOption) { throw null; }
@@ -734,51 +798,85 @@ namespace System.Data
         protected virtual void OnTableCleared(System.Data.DataTableClearEventArgs e) { }
         protected virtual void OnTableClearing(System.Data.DataTableClearEventArgs e) { }
         protected virtual void OnTableNewRow(System.Data.DataTableNewRowEventArgs e) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.Stream? stream) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.IO.TextReader? reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(string fileName) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public System.Data.XmlReadMode ReadXml(System.Xml.XmlReader? reader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.IO.TextReader? reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void ReadXmlSchema(System.Xml.XmlReader? reader) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         protected virtual void ReadXmlSerializable(System.Xml.XmlReader? reader) { }
         public void RejectChanges() { }
         public virtual void Reset() { }
         public System.Data.DataRow[] Select() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members of types used in the filter expression might be trimmed.")]
         public System.Data.DataRow[] Select(string? filterExpression) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members of types used in the filter expression might be trimmed.")]
         public System.Data.DataRow[] Select(string? filterExpression, string? sort) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members of types used in the filter expression might be trimmed.")]
         public System.Data.DataRow[] Select(string? filterExpression, string? sort, System.Data.DataViewRowState recordStates) { throw null; }
         System.Collections.IList System.ComponentModel.IListSource.GetList() { throw null; }
         System.Xml.Schema.XmlSchema? System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
-#nullable disable
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
-#nullable enable
         public override string ToString() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.Stream? stream, System.Data.XmlWriteMode mode, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.IO.TextWriter? writer, System.Data.XmlWriteMode mode, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(string fileName, System.Data.XmlWriteMode mode, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer, System.Data.XmlWriteMode mode) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXml(System.Xml.XmlWriter? writer, System.Data.XmlWriteMode mode, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.Stream? stream) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.Stream? stream, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.TextWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.IO.TextWriter? writer, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(string fileName) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(string fileName, bool writeHierarchy) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.Xml.XmlWriter? writer) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         public void WriteXmlSchema(System.Xml.XmlWriter? writer, bool writeHierarchy) { }
     }
     public sealed partial class DataTableClearEventArgs : System.EventArgs
@@ -856,6 +954,7 @@ namespace System.Data
         public override decimal GetDecimal(int ordinal) { throw null; }
         public override double GetDouble(int ordinal) { throw null; }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public override System.Type GetFieldType(int ordinal) { throw null; }
         public override float GetFloat(int ordinal) { throw null; }
         public override System.Guid GetGuid(int ordinal) { throw null; }
@@ -864,6 +963,7 @@ namespace System.Data
         public override long GetInt64(int ordinal) { throw null; }
         public override string GetName(int ordinal) { throw null; }
         public override int GetOrdinal(string name) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public override System.Type GetProviderSpecificFieldType(int ordinal) { throw null; }
         public override object GetProviderSpecificValue(int ordinal) { throw null; }
         public override int GetProviderSpecificValues(object[] values) { throw null; }
@@ -883,6 +983,7 @@ namespace System.Data
     {
         public DataView() { }
         public DataView(System.Data.DataTable? table) { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members of types used in the filter expression might be trimmed.")]
         public DataView(System.Data.DataTable table, string? RowFilter, string? Sort, System.Data.DataViewRowState RowState) { }
         [System.ComponentModel.DefaultValueAttribute(true)]
         public bool AllowDelete { get { throw null; } set { } }
@@ -903,7 +1004,7 @@ namespace System.Data
         protected bool IsOpen { get { throw null; } }
         public System.Data.DataRowView this[int recordIndex] { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute("")]
-        public virtual string? RowFilter { get { throw null; } set { } }
+        public virtual string? RowFilter { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members of types used in the filter expression might be trimmed.")] set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.DataViewRowState.CurrentRows)]
         public System.Data.DataViewRowState RowStateFilter { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute("")]
@@ -914,21 +1015,19 @@ namespace System.Data
         bool System.Collections.IList.IsFixedSize { get { throw null; } }
         bool System.Collections.IList.IsReadOnly { get { throw null; } }
         object? System.Collections.IList.this[int recordIndex] { get { throw null; } set { } }
-#nullable disable
         bool System.ComponentModel.IBindingList.AllowEdit { get { throw null; } }
         bool System.ComponentModel.IBindingList.AllowNew { get { throw null; } }
         bool System.ComponentModel.IBindingList.AllowRemove { get { throw null; } }
         bool System.ComponentModel.IBindingList.IsSorted { get { throw null; } }
         System.ComponentModel.ListSortDirection System.ComponentModel.IBindingList.SortDirection { get { throw null; } }
-        System.ComponentModel.PropertyDescriptor System.ComponentModel.IBindingList.SortProperty { get { throw null; } }
+        System.ComponentModel.PropertyDescriptor? System.ComponentModel.IBindingList.SortProperty { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsChangeNotification { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsSearching { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsSorting { get { throw null; } }
-        string System.ComponentModel.IBindingListView.Filter { get { throw null; } set { } }
+        string? System.ComponentModel.IBindingListView.Filter { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members of types used in the filter expression might be trimmed.")] set { } }
         System.ComponentModel.ListSortDescriptionCollection System.ComponentModel.IBindingListView.SortDescriptions { get { throw null; } }
         bool System.ComponentModel.IBindingListView.SupportsAdvancedSorting { get { throw null; } }
         bool System.ComponentModel.IBindingListView.SupportsFiltering { get { throw null; } }
-#nullable enable
         public event System.EventHandler? Initialized { add { } remove { } }
         public event System.ComponentModel.ListChangedEventHandler? ListChanged { add { } remove { } }
         public virtual System.Data.DataRowView AddNew() { throw null; }
@@ -956,18 +1055,16 @@ namespace System.Data
         void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
-#nullable disable
         void System.ComponentModel.IBindingList.AddIndex(System.ComponentModel.PropertyDescriptor property) { }
-        object System.ComponentModel.IBindingList.AddNew() { throw null; }
+        object? System.ComponentModel.IBindingList.AddNew() { throw null; }
         void System.ComponentModel.IBindingList.ApplySort(System.ComponentModel.PropertyDescriptor property, System.ComponentModel.ListSortDirection direction) { }
         int System.ComponentModel.IBindingList.Find(System.ComponentModel.PropertyDescriptor property, object key) { throw null; }
         void System.ComponentModel.IBindingList.RemoveIndex(System.ComponentModel.PropertyDescriptor property) { }
         void System.ComponentModel.IBindingList.RemoveSort() { }
         void System.ComponentModel.IBindingListView.ApplySort(System.ComponentModel.ListSortDescriptionCollection sorts) { }
         void System.ComponentModel.IBindingListView.RemoveFilter() { }
-        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
-        string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
-#nullable enable
+        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[]? listAccessors) { throw null; }
+        string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[]? listAccessors) { throw null; }
         public System.Data.DataTable ToTable() { throw null; }
         public System.Data.DataTable ToTable(bool distinct, params string[] columnNames) { throw null; }
         public System.Data.DataTable ToTable(string? tableName) { throw null; }
@@ -983,7 +1080,7 @@ namespace System.Data
         [System.ComponentModel.DefaultValueAttribute(null)]
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         public System.Data.DataSet? DataSet { get { throw null; } set { } }
-        public string DataViewSettingCollectionString { get { throw null; } set { } }
+        public string DataViewSettingCollectionString { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Members of types used in the RowFilter expression might be trimmed.")] set { } }
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public System.Data.DataViewSettingCollection DataViewSettings { get { throw null; } }
         int System.Collections.ICollection.Count { get { throw null; } }
@@ -992,17 +1089,15 @@ namespace System.Data
         bool System.Collections.IList.IsFixedSize { get { throw null; } }
         bool System.Collections.IList.IsReadOnly { get { throw null; } }
         object? System.Collections.IList.this[int index] { get { throw null; } set { } }
-#nullable disable
         bool System.ComponentModel.IBindingList.AllowEdit { get { throw null; } }
         bool System.ComponentModel.IBindingList.AllowNew { get { throw null; } }
         bool System.ComponentModel.IBindingList.AllowRemove { get { throw null; } }
         bool System.ComponentModel.IBindingList.IsSorted { get { throw null; } }
         System.ComponentModel.ListSortDirection System.ComponentModel.IBindingList.SortDirection { get { throw null; } }
-        System.ComponentModel.PropertyDescriptor System.ComponentModel.IBindingList.SortProperty { get { throw null; } }
+        System.ComponentModel.PropertyDescriptor? System.ComponentModel.IBindingList.SortProperty { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsChangeNotification { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsSearching { get { throw null; } }
         bool System.ComponentModel.IBindingList.SupportsSorting { get { throw null; } }
-#nullable enable
         public event System.ComponentModel.ListChangedEventHandler? ListChanged { add { } remove { } }
         public System.Data.DataView CreateDataView(System.Data.DataTable table) { throw null; }
         protected virtual void OnListChanged(System.ComponentModel.ListChangedEventArgs e) { }
@@ -1016,16 +1111,14 @@ namespace System.Data
         void System.Collections.IList.Insert(int index, object? value) { }
         void System.Collections.IList.Remove(object? value) { }
         void System.Collections.IList.RemoveAt(int index) { }
-#nullable disable
         void System.ComponentModel.IBindingList.AddIndex(System.ComponentModel.PropertyDescriptor property) { }
-        object System.ComponentModel.IBindingList.AddNew() { throw null; }
+        object? System.ComponentModel.IBindingList.AddNew() { throw null; }
         void System.ComponentModel.IBindingList.ApplySort(System.ComponentModel.PropertyDescriptor property, System.ComponentModel.ListSortDirection direction) { }
         int System.ComponentModel.IBindingList.Find(System.ComponentModel.PropertyDescriptor property, object key) { throw null; }
         void System.ComponentModel.IBindingList.RemoveIndex(System.ComponentModel.PropertyDescriptor property) { }
         void System.ComponentModel.IBindingList.RemoveSort() { }
-        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
-        string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
-#nullable enable
+        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[]? listAccessors) { throw null; }
+        string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[]? listAccessors) { throw null; }
         protected virtual void TableCollectionChanged(object sender, System.ComponentModel.CollectionChangeEventArgs e) { }
     }
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataViewRowStateEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -1049,7 +1142,7 @@ namespace System.Data
         [System.ComponentModel.BrowsableAttribute(false)]
         public System.Data.DataViewManager? DataViewManager { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string RowFilter { get { throw null; } set { } }
+        public string RowFilter { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members of types used in the filter expression might be trimmed.")] set { } }
         public System.Data.DataViewRowState RowStateFilter { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string Sort { get { throw null; } set { } }
@@ -1087,6 +1180,8 @@ namespace System.Data
         public int RowCount { get { throw null; } }
         public void CopyToRows(System.Data.DataRow[] array) { }
         public void CopyToRows(System.Data.DataRow[] array, int arrayIndex) { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public enum DbType
@@ -1122,6 +1217,8 @@ namespace System.Data
     public partial class DeletedRowInaccessibleException : System.Data.DataException
     {
         public DeletedRowInaccessibleException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected DeletedRowInaccessibleException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public DeletedRowInaccessibleException(string? s) { }
         public DeletedRowInaccessibleException(string? message, System.Exception? innerException) { }
@@ -1129,6 +1226,8 @@ namespace System.Data
     public partial class DuplicateNameException : System.Data.DataException
     {
         public DuplicateNameException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected DuplicateNameException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public DuplicateNameException(string? s) { }
         public DuplicateNameException(string? message, System.Exception? innerException) { }
@@ -1161,6 +1260,8 @@ namespace System.Data
     public partial class EvaluateException : System.Data.InvalidExpressionException
     {
         public EvaluateException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected EvaluateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public EvaluateException(string? s) { }
         public EvaluateException(string? message, System.Exception? innerException) { }
@@ -1200,7 +1301,7 @@ namespace System.Data
         public override System.Data.DataTable? Table { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.Rule.Cascade)]
         public virtual System.Data.Rule UpdateRule { get { throw null; } set { } }
-        public override bool Equals(object? key) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? key) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     public partial interface IColumnMapping
@@ -1223,8 +1324,10 @@ namespace System.Data
         System.Data.MissingSchemaAction MissingSchemaAction { get; set; }
         System.Data.ITableMappingCollection TableMappings { get; }
         int Fill(System.Data.DataSet dataSet);
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType);
         System.Data.IDataParameter[] GetFillParameters();
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         int Update(System.Data.DataSet dataSet);
     }
     public partial interface IDataParameter
@@ -1271,6 +1374,7 @@ namespace System.Data
         System.DateTime GetDateTime(int i);
         decimal GetDecimal(int i);
         double GetDouble(int i);
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         System.Type GetFieldType(int i);
         float GetFloat(int i);
         System.Guid GetGuid(int i);
@@ -1339,6 +1443,8 @@ namespace System.Data
     public partial class InRowChangingEventException : System.Data.DataException
     {
         public InRowChangingEventException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected InRowChangingEventException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InRowChangingEventException(string? s) { }
         public InRowChangingEventException(string? message, System.Exception? innerException) { }
@@ -1361,6 +1467,8 @@ namespace System.Data
     public partial class InvalidConstraintException : System.Data.DataException
     {
         public InvalidConstraintException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected InvalidConstraintException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidConstraintException(string? s) { }
         public InvalidConstraintException(string? message, System.Exception? innerException) { }
@@ -1368,6 +1476,8 @@ namespace System.Data
     public partial class InvalidExpressionException : System.Data.DataException
     {
         public InvalidExpressionException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected InvalidExpressionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidExpressionException(string? s) { }
         public InvalidExpressionException(string? message, System.Exception? innerException) { }
@@ -1431,6 +1541,8 @@ namespace System.Data
     public partial class MissingPrimaryKeyException : System.Data.DataException
     {
         public MissingPrimaryKeyException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected MissingPrimaryKeyException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MissingPrimaryKeyException(string? s) { }
         public MissingPrimaryKeyException(string? message, System.Exception? innerException) { }
@@ -1445,6 +1557,8 @@ namespace System.Data
     public partial class NoNullAllowedException : System.Data.DataException
     {
         public NoNullAllowedException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected NoNullAllowedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public NoNullAllowedException(string? s) { }
         public NoNullAllowedException(string? message, System.Exception? innerException) { }
@@ -1463,12 +1577,16 @@ namespace System.Data
     public partial class PropertyCollection : System.Collections.Hashtable, System.ICloneable
     {
         public PropertyCollection() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected PropertyCollection(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override object Clone() { throw null; }
     }
     public partial class ReadOnlyException : System.Data.DataException
     {
         public ReadOnlyException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected ReadOnlyException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ReadOnlyException(string? s) { }
         public ReadOnlyException(string? message, System.Exception? innerException) { }
@@ -1476,6 +1594,8 @@ namespace System.Data
     public partial class RowNotInTableException : System.Data.DataException
     {
         public RowNotInTableException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected RowNotInTableException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public RowNotInTableException(string? s) { }
         public RowNotInTableException(string? message, System.Exception? innerException) { }
@@ -1500,6 +1620,7 @@ namespace System.Data
     public enum SerializationFormat
     {
         Xml = 0,
+        [System.ObsoleteAttribute("SerializationFormat.Binary is obsolete and should not be used. See https://aka.ms/serializationformat-binary-obsolete for more information.", DiagnosticId = "SYSLIB0038")]
         Binary = 1,
     }
     public enum SqlDbType
@@ -1560,6 +1681,8 @@ namespace System.Data
     public partial class StrongTypingException : System.Data.DataException
     {
         public StrongTypingException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected StrongTypingException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public StrongTypingException(string? message) { }
         public StrongTypingException(string? s, System.Exception? innerException) { }
@@ -1567,6 +1690,8 @@ namespace System.Data
     public partial class SyntaxErrorException : System.Data.InvalidExpressionException
     {
         public SyntaxErrorException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SyntaxErrorException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SyntaxErrorException(string? s) { }
         public SyntaxErrorException(string? message, System.Exception? innerException) { }
@@ -1585,6 +1710,9 @@ namespace System.Data
     public abstract partial class TypedTableBase<T> : System.Data.DataTable, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable where T : System.Data.DataRow
     {
         protected TypedTableBase() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected TypedTableBase(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Data.EnumerableRowCollection<TResult> Cast<TResult>() { throw null; }
         public System.Collections.Generic.IEnumerator<T> GetEnumerator() { throw null; }
@@ -1609,7 +1737,7 @@ namespace System.Data
         public bool IsPrimaryKey { get { throw null; } }
         [System.ComponentModel.ReadOnlyAttribute(true)]
         public override System.Data.DataTable? Table { get { throw null; } }
-        public override bool Equals(object? key2) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? key2) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     public enum UpdateRowSource
@@ -1629,6 +1757,8 @@ namespace System.Data
     public partial class VersionNotFoundException : System.Data.DataException
     {
         public VersionNotFoundException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected VersionNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public VersionNotFoundException(string? s) { }
         public VersionNotFoundException(string? message, System.Exception? innerException) { }
@@ -1657,6 +1787,7 @@ namespace System.Data.Common
         Start = 1,
         End = 2,
     }
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public partial class DataAdapter : System.ComponentModel.Component, System.Data.IDataAdapter
     {
         protected DataAdapter() { }
@@ -1668,7 +1799,7 @@ namespace System.Data.Common
         [System.ComponentModel.DefaultValueAttribute(false)]
         public bool ContinueUpdateOnError { get { throw null; } set { } }
         [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
-        public System.Data.LoadOption FillLoadOption { get { throw null; } set { } }
+        public System.Data.LoadOption FillLoadOption { get { throw null; } [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Using LoadOption may cause members from types used in the expression column to be trimmed if not referenced directly.")] set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.MissingMappingAction.Passthrough)]
         public System.Data.MissingMappingAction MissingMappingAction { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(System.Data.MissingSchemaAction.Add)]
@@ -1679,7 +1810,7 @@ namespace System.Data.Common
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public System.Data.Common.DataTableMappingCollection TableMappings { get { throw null; } }
         public event System.Data.FillErrorEventHandler? FillError { add { } remove { } }
-        [System.ObsoleteAttribute("CloneInternals() has been deprecated.  Use the DataAdapter(DataAdapter from) constructor.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("CloneInternals() has been deprecated. Use the DataAdapter(DataAdapter from) constructor instead.")]
         protected virtual System.Data.Common.DataAdapter CloneInternals() { throw null; }
         protected virtual System.Data.Common.DataTableMappingCollection CreateTableMappings() { throw null; }
         protected override void Dispose(bool disposing) { }
@@ -1687,8 +1818,11 @@ namespace System.Data.Common
         protected virtual int Fill(System.Data.DataSet dataSet, string srcTable, System.Data.IDataReader dataReader, int startRecord, int maxRecords) { throw null; }
         protected virtual int Fill(System.Data.DataTable dataTable, System.Data.IDataReader dataReader) { throw null; }
         protected virtual int Fill(System.Data.DataTable[] dataTables, System.Data.IDataReader dataReader, int startRecord, int maxRecords) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("dataReader's schema table types cannot be statically analyzed.")]
         protected virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, string srcTable, System.Data.IDataReader dataReader) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("dataReader's schema table types cannot be statically analyzed.")]
         protected virtual System.Data.DataTable? FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDataReader dataReader) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public virtual System.Data.IDataParameter[] GetFillParameters() { throw null; }
@@ -1701,6 +1835,7 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual bool ShouldSerializeFillLoadOption() { throw null; }
         protected virtual bool ShouldSerializeTableMappings() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public virtual int Update(System.Data.DataSet dataSet) { throw null; }
     }
     public sealed partial class DataColumnMapping : System.MarshalByRefObject, System.Data.IColumnMapping, System.ICloneable
@@ -1714,9 +1849,9 @@ namespace System.Data.Common
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public string SourceColumn { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public System.Data.DataColumn? GetDataColumnBySchemaAction(System.Data.DataTable dataTable, System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
+        public System.Data.DataColumn? GetDataColumnBySchemaAction(System.Data.DataTable dataTable, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)] System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static System.Data.DataColumn? GetDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, System.Data.DataTable dataTable, System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
+        public static System.Data.DataColumn? GetDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, System.Data.DataTable dataTable, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)] System.Type? dataType, System.Data.MissingSchemaAction schemaAction) { throw null; }
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -1751,7 +1886,7 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Data.Common.DataColumnMapping? GetColumnMappingBySchemaAction(System.Data.Common.DataColumnMappingCollection? columnMappings, string sourceColumn, System.Data.MissingMappingAction mappingAction) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static System.Data.DataColumn? GetDataColumn(System.Data.Common.DataColumnMappingCollection? columnMappings, string sourceColumn, System.Type? dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
+        public static System.Data.DataColumn? GetDataColumn(System.Data.Common.DataColumnMappingCollection? columnMappings, string sourceColumn, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)] System.Type? dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
         public int IndexOf(object? value) { throw null; }
         public int IndexOf(string? sourceColumn) { throw null; }
@@ -1782,7 +1917,7 @@ namespace System.Data.Common
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.Data.Common.DataColumnMapping? GetColumnMappingBySchemaAction(string sourceColumn, System.Data.MissingMappingAction mappingAction) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public System.Data.DataColumn? GetDataColumn(string sourceColumn, System.Type? dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
+        public System.Data.DataColumn? GetDataColumn(string sourceColumn, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)] System.Type? dataType, System.Data.DataTable dataTable, System.Data.MissingMappingAction mappingAction, System.Data.MissingSchemaAction schemaAction) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public System.Data.DataTable? GetDataTableBySchemaAction(System.Data.DataSet dataSet, System.Data.MissingSchemaAction schemaAction) { throw null; }
         object System.ICloneable.Clone() { throw null; }
@@ -1832,6 +1967,58 @@ namespace System.Data.Common
         public void RemoveAt(string sourceTable) { }
         System.Data.ITableMapping System.Data.ITableMappingCollection.Add(string sourceTableName, string dataSetTableName) { throw null; }
         System.Data.ITableMapping System.Data.ITableMappingCollection.GetByDataSetTable(string dataSetTableName) { throw null; }
+    }
+    public abstract class DbBatch : System.IDisposable, System.IAsyncDisposable
+    {
+        public System.Data.Common.DbBatchCommandCollection BatchCommands { get { throw null; } }
+        protected abstract System.Data.Common.DbBatchCommandCollection DbBatchCommands { get; }
+        public abstract int Timeout { get; set; }
+        public System.Data.Common.DbConnection? Connection { get; set; }
+        protected abstract System.Data.Common.DbConnection? DbConnection { get; set; }
+        public System.Data.Common.DbTransaction? Transaction { get; set; }
+        protected abstract System.Data.Common.DbTransaction? DbTransaction { get; set; }
+        public System.Data.Common.DbDataReader ExecuteReader(System.Data.CommandBehavior behavior = System.Data.CommandBehavior.Default) { throw null; }
+        protected abstract System.Data.Common.DbDataReader ExecuteDbDataReader(System.Data.CommandBehavior behavior);
+        public System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteReaderAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteReaderAsync(System.Data.CommandBehavior behavior, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        protected abstract System.Threading.Tasks.Task<System.Data.Common.DbDataReader> ExecuteDbDataReaderAsync(System.Data.CommandBehavior behavior, System.Threading.CancellationToken cancellationToken);
+        public abstract int ExecuteNonQuery();
+        public abstract System.Threading.Tasks.Task<int> ExecuteNonQueryAsync(System.Threading.CancellationToken cancellationToken = default);
+        public abstract object? ExecuteScalar();
+        public abstract System.Threading.Tasks.Task<object?> ExecuteScalarAsync(System.Threading.CancellationToken cancellationToken = default);
+        public abstract void Prepare();
+        public abstract System.Threading.Tasks.Task PrepareAsync(System.Threading.CancellationToken cancellationToken = default);
+        public abstract void Cancel();
+        public System.Data.Common.DbBatchCommand CreateBatchCommand() { throw null; }
+        protected abstract System.Data.Common.DbBatchCommand CreateDbBatchCommand();
+        public virtual void Dispose() { throw null; }
+        public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+    }
+    public abstract class DbBatchCommand
+    {
+        public abstract string CommandText { get; set; }
+        public abstract System.Data.CommandType CommandType { get; set; }
+        public abstract int RecordsAffected { get; }
+        public System.Data.Common.DbParameterCollection Parameters { get { throw null; } }
+        protected abstract System.Data.Common.DbParameterCollection DbParameterCollection { get; }
+    }
+    public abstract class DbBatchCommandCollection : System.Collections.Generic.IList<DbBatchCommand>
+    {
+        public abstract System.Collections.Generic.IEnumerator<System.Data.Common.DbBatchCommand> GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public abstract void Add(System.Data.Common.DbBatchCommand item);
+        public abstract void Clear();
+        public abstract bool Contains(System.Data.Common.DbBatchCommand item);
+        public abstract void CopyTo(System.Data.Common.DbBatchCommand[] array, int arrayIndex);
+        public abstract bool Remove(System.Data.Common.DbBatchCommand item);
+        public abstract int Count { get; }
+        public abstract bool IsReadOnly { get; }
+        public abstract int IndexOf(DbBatchCommand item);
+        public abstract void Insert(int index, DbBatchCommand item);
+        public abstract void RemoveAt(int index);
+        public System.Data.Common.DbBatchCommand this[int index] { get { throw null; } set { throw null; } }
+        protected abstract System.Data.Common.DbBatchCommand GetBatchCommand(int index);
+        protected abstract void SetBatchCommand(int index, System.Data.Common.DbBatchCommand batchCommand);
     }
     public abstract partial class DbColumn
     {
@@ -1991,6 +2178,9 @@ namespace System.Data.Common
         public virtual System.Threading.Tasks.Task ChangeDatabaseAsync(string databaseName, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public abstract void Close();
         public virtual System.Threading.Tasks.Task CloseAsync() { throw null; }
+        public virtual bool CanCreateBatch { get { throw null; } }
+        public System.Data.Common.DbBatch CreateBatch() { throw null; }
+        protected virtual System.Data.Common.DbBatch CreateDbBatch() { throw null; }
         public System.Data.Common.DbCommand CreateCommand() { throw null; }
         protected abstract System.Data.Common.DbCommand CreateDbCommand();
         public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
@@ -2009,6 +2199,7 @@ namespace System.Data.Common
         System.Data.IDbTransaction System.Data.IDbConnection.BeginTransaction(System.Data.IsolationLevel isolationLevel) { throw null; }
         System.Data.IDbCommand System.Data.IDbConnection.CreateCommand() { throw null; }
     }
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
     public partial class DbConnectionStringBuilder : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.ComponentModel.ICustomTypeDescriptor
     {
         public DbConnectionStringBuilder() { }
@@ -2044,6 +2235,7 @@ namespace System.Data.Common
         protected internal void ClearPropertyDescriptors() { }
         public virtual bool ContainsKey(string keyword) { throw null; }
         public virtual bool EquivalentTo(System.Data.Common.DbConnectionStringBuilder connectionStringBuilder) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         protected virtual void GetProperties(System.Collections.Hashtable propertyDescriptors) { }
         public virtual bool Remove(string keyword) { throw null; }
         public virtual bool ShouldSerialize(string keyword) { throw null; }
@@ -2054,20 +2246,24 @@ namespace System.Data.Common
         void System.Collections.IDictionary.Remove(object keyword) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         System.ComponentModel.AttributeCollection System.ComponentModel.ICustomTypeDescriptor.GetAttributes() { throw null; }
-        string System.ComponentModel.ICustomTypeDescriptor.GetClassName() { throw null; }
-        string System.ComponentModel.ICustomTypeDescriptor.GetComponentName() { throw null; }
+        string? System.ComponentModel.ICustomTypeDescriptor.GetClassName() { throw null; }
+        string? System.ComponentModel.ICustomTypeDescriptor.GetComponentName() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         System.ComponentModel.TypeConverter System.ComponentModel.ICustomTypeDescriptor.GetConverter() { throw null; }
-        System.ComponentModel.EventDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultEvent() { throw null; }
-        System.ComponentModel.PropertyDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultProperty() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
-        object System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
+        System.ComponentModel.EventDescriptor? System.ComponentModel.ICustomTypeDescriptor.GetDefaultEvent() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
+        System.ComponentModel.PropertyDescriptor? System.ComponentModel.ICustomTypeDescriptor.GetDefaultProperty() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
+        object? System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[] attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[]? attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
-        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[]? attributes) { throw null; }
+        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
         public override string ToString() { throw null; }
         public virtual bool TryGetValue(string keyword, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? value) { throw null; }
     }
@@ -2109,10 +2305,15 @@ namespace System.Data.Common
         protected virtual int Fill(System.Data.DataTable dataTable, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
         protected virtual int Fill(System.Data.DataTable[] dataTables, int startRecord, int maxRecords, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
         public int Fill(int startRecord, int maxRecords, params System.Data.DataTable[] dataTables) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public override System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from command) schema table types cannot be statically analyzed.")]
         protected virtual System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, System.Data.IDbCommand command, string srcTable, System.Data.CommandBehavior behavior) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public System.Data.DataTable[] FillSchema(System.Data.DataSet dataSet, System.Data.SchemaType schemaType, string srcTable) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public System.Data.DataTable? FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from command) schema table types cannot be statically analyzed.")]
         protected virtual System.Data.DataTable? FillSchema(System.Data.DataTable dataTable, System.Data.SchemaType schemaType, System.Data.IDbCommand command, System.Data.CommandBehavior behavior) { throw null; }
         protected virtual System.Data.IDataParameter GetBatchedParameter(int commandIdentifier, int parameterIndex) { throw null; }
         protected virtual bool GetBatchedRecordsAffected(int commandIdentifier, out int recordsAffected, out System.Exception? error) { throw null; }
@@ -2123,10 +2324,15 @@ namespace System.Data.Common
         protected virtual void OnRowUpdating(System.Data.Common.RowUpdatingEventArgs value) { }
         object System.ICloneable.Clone() { throw null; }
         protected virtual void TerminateBatching() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public int Update(System.Data.DataRow[] dataRows) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         protected virtual int Update(System.Data.DataRow[] dataRows, System.Data.Common.DataTableMapping tableMapping) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public override int Update(System.Data.DataSet dataSet) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public int Update(System.Data.DataSet dataSet, string srcTable) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("IDataReader's (built from adapter commands) schema table types cannot be statically analyzed.")]
         public int Update(System.Data.DataTable dataTable) { throw null; }
     }
     public abstract partial class DbDataReader : System.MarshalByRefObject, System.Collections.IEnumerable, System.Data.IDataReader, System.Data.IDataRecord, System.IDisposable, System.IAsyncDisposable
@@ -2160,6 +2366,7 @@ namespace System.Data.Common
         public abstract double GetDouble(int ordinal);
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public abstract System.Collections.IEnumerator GetEnumerator();
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public abstract System.Type GetFieldType(int ordinal);
         public System.Threading.Tasks.Task<T> GetFieldValueAsync<T>(int ordinal) { throw null; }
         public virtual System.Threading.Tasks.Task<T> GetFieldValueAsync<T>(int ordinal, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -2172,6 +2379,7 @@ namespace System.Data.Common
         public abstract string GetName(int ordinal);
         public abstract int GetOrdinal(string name);
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public virtual System.Type GetProviderSpecificFieldType(int ordinal) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual object GetProviderSpecificValue(int ordinal) { throw null; }
@@ -2218,6 +2426,7 @@ namespace System.Data.Common
         protected virtual System.Data.Common.DbDataReader GetDbDataReader(int i) { throw null; }
         public abstract decimal GetDecimal(int i);
         public abstract double GetDouble(int i);
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public abstract System.Type GetFieldType(int i);
         public abstract float GetFloat(int i);
         public abstract System.Guid GetGuid(int i);
@@ -2230,23 +2439,43 @@ namespace System.Data.Common
         public abstract object GetValue(int i);
         public abstract int GetValues(object[] values);
         public abstract bool IsDBNull(int i);
-#nullable disable
         System.ComponentModel.AttributeCollection System.ComponentModel.ICustomTypeDescriptor.GetAttributes() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetClassName() { throw null; }
         string System.ComponentModel.ICustomTypeDescriptor.GetComponentName() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
         System.ComponentModel.TypeConverter System.ComponentModel.ICustomTypeDescriptor.GetConverter() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         System.ComponentModel.EventDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultEvent() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptor System.ComponentModel.ICustomTypeDescriptor.GetDefaultProperty() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Editors registered in TypeDescriptor.AddEditorTable may be trimmed.")]
         object System.ComponentModel.ICustomTypeDescriptor.GetEditor(System.Type editorBaseType) { throw null; }
         System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[] attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        System.ComponentModel.EventDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetEvents(System.Attribute[]? attributes) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
         System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties() { throw null; }
-        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
-        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[] attributes) { throw null; }
-        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor pd) { throw null; }
-#nullable enable
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ICustomTypeDescriptor.GetProperties(System.Attribute[]? attributes) { throw null; }
+        object System.ComponentModel.ICustomTypeDescriptor.GetPropertyOwner(System.ComponentModel.PropertyDescriptor? pd) { throw null; }
+    }
+    public abstract class DbDataSource : IDisposable, IAsyncDisposable
+    {
+        public abstract string ConnectionString { get; }
+        protected abstract System.Data.Common.DbConnection CreateDbConnection();
+        protected virtual System.Data.Common.DbConnection OpenDbConnection() { throw null; }
+        protected virtual System.Threading.Tasks.ValueTask<System.Data.Common.DbConnection> OpenDbConnectionAsync(System.Threading.CancellationToken cancellationToken = default)  { throw null; }
+        protected virtual System.Data.Common.DbCommand CreateDbCommand(string? commandText = null) { throw null; }
+        protected virtual System.Data.Common.DbBatch CreateDbBatch() { throw null; }
+        public System.Data.Common.DbConnection CreateConnection() { throw null; }
+        public System.Data.Common.DbConnection OpenConnection() { throw null; }
+        public System.Threading.Tasks.ValueTask<System.Data.Common.DbConnection> OpenConnectionAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public System.Data.Common.DbCommand CreateCommand(string? commandText = null) { throw null; }
+        public System.Data.Common.DbBatch CreateBatch() { throw null; }
+        public void Dispose() { throw null; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        protected virtual void Dispose(bool disposing) { throw null; }
+        protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
     }
     public abstract partial class DbDataSourceEnumerator
     {
@@ -2267,12 +2496,16 @@ namespace System.Data.Common
     public abstract partial class DbException : System.Runtime.InteropServices.ExternalException
     {
         protected DbException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected DbException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected DbException(string? message) { }
         protected DbException(string? message, System.Exception? innerException) { }
         protected DbException(string? message, int errorCode) { }
         public virtual bool IsTransient { get { throw null; } }
         public virtual string? SqlState { get { throw null; } }
+        public System.Data.Common.DbBatchCommand? BatchCommand { get { throw null; } }
+        protected virtual System.Data.Common.DbBatchCommand? DbBatchCommand { get { throw null; } }
     }
     public static partial class DbMetaDataCollectionNames
     {
@@ -2418,22 +2651,28 @@ namespace System.Data.Common
     public static partial class DbProviderFactories
     {
         public static System.Data.Common.DbProviderFactory? GetFactory(System.Data.Common.DbConnection connection) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Provider type and its members might be trimmed if not referenced directly.")]
         public static System.Data.Common.DbProviderFactory GetFactory(System.Data.DataRow providerRow) { throw null; }
         public static System.Data.Common.DbProviderFactory GetFactory(string providerInvariantName) { throw null; }
         public static System.Data.DataTable GetFactoryClasses() { throw null; }
         public static System.Collections.Generic.IEnumerable<string> GetProviderInvariantNames() { throw null; }
         public static void RegisterFactory(string providerInvariantName, System.Data.Common.DbProviderFactory factory) { }
-        public static void RegisterFactory(string providerInvariantName, string factoryTypeAssemblyQualifiedName) { }
-        public static void RegisterFactory(string providerInvariantName, System.Type providerFactoryClass) { }
+        public static void RegisterFactory(string providerInvariantName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)] string factoryTypeAssemblyQualifiedName) { }
+        public static void RegisterFactory(string providerInvariantName, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)] System.Type providerFactoryClass) { }
         public static bool TryGetFactory(string providerInvariantName, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Data.Common.DbProviderFactory? factory) { throw null; }
         public static bool UnregisterFactory(string providerInvariantName) { throw null; }
     }
+
+    [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
     public abstract partial class DbProviderFactory
     {
         protected DbProviderFactory() { }
+        public virtual bool CanCreateBatch { get { throw null; } }
         public virtual bool CanCreateCommandBuilder { get { throw null; } }
         public virtual bool CanCreateDataAdapter { get { throw null; } }
         public virtual bool CanCreateDataSourceEnumerator { get { throw null; } }
+        public virtual System.Data.Common.DbBatch CreateBatch() { throw null; }
+        public virtual System.Data.Common.DbBatchCommand CreateBatchCommand() { throw null; }
         public virtual System.Data.Common.DbCommand? CreateCommand() { throw null; }
         public virtual System.Data.Common.DbCommandBuilder? CreateCommandBuilder() { throw null; }
         public virtual System.Data.Common.DbConnection? CreateConnection() { throw null; }
@@ -2441,8 +2680,9 @@ namespace System.Data.Common
         public virtual System.Data.Common.DbDataAdapter? CreateDataAdapter() { throw null; }
         public virtual System.Data.Common.DbDataSourceEnumerator? CreateDataSourceEnumerator() { throw null; }
         public virtual System.Data.Common.DbParameter? CreateParameter() { throw null; }
+        public virtual System.Data.Common.DbDataSource CreateDataSource(string connectionString) { throw null; }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false, Inherited=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
     public sealed partial class DbProviderSpecificTypePropertyAttribute : System.Attribute
     {
         public DbProviderSpecificTypePropertyAttribute(bool isProviderSpecificTypeProperty) { }
@@ -2573,7 +2813,7 @@ namespace System.Data.SqlTypes
         public SqlAlreadyFilledException(string? message, System.Exception? e) { }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlBinary : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlBinary : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlBinary>
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -2588,7 +2828,8 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlBinary Concat(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlBinary other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
@@ -2598,11 +2839,11 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlBoolean NotEquals(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
         public static System.Data.SqlTypes.SqlBinary operator +(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ==(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
-        public static explicit operator byte[]? (System.Data.SqlTypes.SqlBinary x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlBinary (System.Data.SqlTypes.SqlGuid x) { throw null; }
+        public static explicit operator byte[]?(System.Data.SqlTypes.SqlBinary x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlBinary(System.Data.SqlTypes.SqlGuid x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >=(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlBinary (byte[] x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlBinary(byte[] x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
@@ -2611,9 +2852,10 @@ namespace System.Data.SqlTypes
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
         public System.Data.SqlTypes.SqlGuid ToSqlGuid() { throw null; }
         public override string ToString() { throw null; }
+        public static SqlBinary WrapBytes(byte[] bytes) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlBoolean : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlBoolean : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlBoolean>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlBoolean False;
@@ -2632,7 +2874,8 @@ namespace System.Data.SqlTypes
         public int CompareTo(System.Data.SqlTypes.SqlBoolean value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlBoolean other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
@@ -2645,20 +2888,20 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlBoolean operator |(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ==(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ^(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
-        public static explicit operator bool (System.Data.SqlTypes.SqlBoolean x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlBoolean (System.Data.SqlTypes.SqlByte x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlBoolean (System.Data.SqlTypes.SqlDecimal x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlBoolean (System.Data.SqlTypes.SqlDouble x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlBoolean (System.Data.SqlTypes.SqlInt16 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlBoolean (System.Data.SqlTypes.SqlInt32 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlBoolean (System.Data.SqlTypes.SqlInt64 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlBoolean (System.Data.SqlTypes.SqlMoney x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlBoolean (System.Data.SqlTypes.SqlSingle x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlBoolean (System.Data.SqlTypes.SqlString x) { throw null; }
+        public static explicit operator bool(System.Data.SqlTypes.SqlBoolean x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlBoolean(System.Data.SqlTypes.SqlByte x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlBoolean(System.Data.SqlTypes.SqlDecimal x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlBoolean(System.Data.SqlTypes.SqlDouble x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlBoolean(System.Data.SqlTypes.SqlInt16 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlBoolean(System.Data.SqlTypes.SqlInt32 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlBoolean(System.Data.SqlTypes.SqlInt64 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlBoolean(System.Data.SqlTypes.SqlMoney x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlBoolean(System.Data.SqlTypes.SqlSingle x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlBoolean(System.Data.SqlTypes.SqlString x) { throw null; }
         public static bool operator false(System.Data.SqlTypes.SqlBoolean x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >=(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlBoolean (bool x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlBoolean(bool x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
@@ -2683,7 +2926,7 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlBoolean Xor(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlByte : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlByte : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlByte>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlByte MaxValue;
@@ -2700,7 +2943,8 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlByte Divide(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlByte other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
@@ -2718,19 +2962,19 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlByte operator /(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ==(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
         public static System.Data.SqlTypes.SqlByte operator ^(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlByte (System.Data.SqlTypes.SqlBoolean x) { throw null; }
-        public static explicit operator byte (System.Data.SqlTypes.SqlByte x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlByte (System.Data.SqlTypes.SqlDecimal x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlByte (System.Data.SqlTypes.SqlDouble x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlByte (System.Data.SqlTypes.SqlInt16 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlByte (System.Data.SqlTypes.SqlInt32 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlByte (System.Data.SqlTypes.SqlInt64 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlByte (System.Data.SqlTypes.SqlMoney x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlByte (System.Data.SqlTypes.SqlSingle x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlByte (System.Data.SqlTypes.SqlString x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlByte(System.Data.SqlTypes.SqlBoolean x) { throw null; }
+        public static explicit operator byte(System.Data.SqlTypes.SqlByte x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlByte(System.Data.SqlTypes.SqlDecimal x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlByte(System.Data.SqlTypes.SqlDouble x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlByte(System.Data.SqlTypes.SqlInt16 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlByte(System.Data.SqlTypes.SqlInt32 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlByte(System.Data.SqlTypes.SqlInt64 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlByte(System.Data.SqlTypes.SqlMoney x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlByte(System.Data.SqlTypes.SqlSingle x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlByte(System.Data.SqlTypes.SqlString x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >=(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlByte (byte x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlByte(byte x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
@@ -2772,8 +3016,8 @@ namespace System.Data.SqlTypes
         public System.IO.Stream Stream { get { throw null; } set { } }
         public byte[] Value { get { throw null; } }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlBytes (System.Data.SqlTypes.SqlBinary value) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlBinary (System.Data.SqlTypes.SqlBytes value) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlBytes(System.Data.SqlTypes.SqlBinary value) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlBinary(System.Data.SqlTypes.SqlBytes value) { throw null; }
         public long Read(long offset, byte[] buffer, int offsetInBuffer, int count) { throw null; }
         public void SetLength(long value) { }
         public void SetNull() { }
@@ -2799,8 +3043,8 @@ namespace System.Data.SqlTypes
         public System.Data.SqlTypes.StorageState Storage { get { throw null; } }
         public char[] Value { get { throw null; } }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlString (System.Data.SqlTypes.SqlChars value) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlChars (System.Data.SqlTypes.SqlString value) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlString(System.Data.SqlTypes.SqlChars value) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlChars(System.Data.SqlTypes.SqlString value) { throw null; }
         public long Read(long offset, char[] buffer, int offsetInBuffer, int count) { throw null; }
         public void SetLength(long value) { }
         public void SetNull() { }
@@ -2823,7 +3067,7 @@ namespace System.Data.SqlTypes
         BinarySort = 32768,
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlDateTime : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlDateTime : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlDateTime>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlDateTime MaxValue;
@@ -2846,7 +3090,8 @@ namespace System.Data.SqlTypes
         public int CompareTo(System.Data.SqlTypes.SqlDateTime value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlDateTime x, System.Data.SqlTypes.SqlDateTime y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlDateTime other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlDateTime x, System.Data.SqlTypes.SqlDateTime y) { throw null; }
@@ -2856,11 +3101,11 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlBoolean NotEquals(System.Data.SqlTypes.SqlDateTime x, System.Data.SqlTypes.SqlDateTime y) { throw null; }
         public static System.Data.SqlTypes.SqlDateTime operator +(System.Data.SqlTypes.SqlDateTime x, System.TimeSpan t) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ==(System.Data.SqlTypes.SqlDateTime x, System.Data.SqlTypes.SqlDateTime y) { throw null; }
-        public static explicit operator System.DateTime (System.Data.SqlTypes.SqlDateTime x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlDateTime (System.Data.SqlTypes.SqlString x) { throw null; }
+        public static explicit operator System.DateTime(System.Data.SqlTypes.SqlDateTime x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlDateTime(System.Data.SqlTypes.SqlString x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >(System.Data.SqlTypes.SqlDateTime x, System.Data.SqlTypes.SqlDateTime y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >=(System.Data.SqlTypes.SqlDateTime x, System.Data.SqlTypes.SqlDateTime y) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDateTime (System.DateTime value) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDateTime(System.DateTime value) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlDateTime x, System.Data.SqlTypes.SqlDateTime y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlDateTime x, System.Data.SqlTypes.SqlDateTime y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlDateTime x, System.Data.SqlTypes.SqlDateTime y) { throw null; }
@@ -2874,7 +3119,7 @@ namespace System.Data.SqlTypes
         public override string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlDecimal : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlDecimal : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlDecimal>
     {
         private int _dummyPrimitive;
         public static readonly byte MaxPrecision;
@@ -2904,7 +3149,8 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlDecimal ConvertToPrecScale(System.Data.SqlTypes.SqlDecimal n, int precision, int scale) { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Divide(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlDecimal other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Floor(System.Data.SqlTypes.SqlDecimal n) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
@@ -2917,21 +3163,21 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlDecimal operator +(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
         public static System.Data.SqlTypes.SqlDecimal operator /(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ==(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlDecimal (System.Data.SqlTypes.SqlBoolean x) { throw null; }
-        public static explicit operator decimal (System.Data.SqlTypes.SqlDecimal x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlDecimal (System.Data.SqlTypes.SqlDouble x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlDecimal (System.Data.SqlTypes.SqlSingle x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlDecimal (System.Data.SqlTypes.SqlString x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlDecimal (double x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlDecimal(System.Data.SqlTypes.SqlBoolean x) { throw null; }
+        public static explicit operator decimal(System.Data.SqlTypes.SqlDecimal x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlDecimal(System.Data.SqlTypes.SqlDouble x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlDecimal(System.Data.SqlTypes.SqlSingle x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlDecimal(System.Data.SqlTypes.SqlString x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlDecimal(double x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >=(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDecimal (System.Data.SqlTypes.SqlByte x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDecimal (System.Data.SqlTypes.SqlInt16 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDecimal (System.Data.SqlTypes.SqlInt32 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDecimal (System.Data.SqlTypes.SqlInt64 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDecimal (System.Data.SqlTypes.SqlMoney x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDecimal (decimal x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDecimal (long x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDecimal(System.Data.SqlTypes.SqlByte x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDecimal(System.Data.SqlTypes.SqlInt16 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDecimal(System.Data.SqlTypes.SqlInt32 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDecimal(System.Data.SqlTypes.SqlInt64 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDecimal(System.Data.SqlTypes.SqlMoney x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDecimal(decimal x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDecimal(long x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
@@ -2958,9 +3204,11 @@ namespace System.Data.SqlTypes
         public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
         public override string ToString() { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Truncate(System.Data.SqlTypes.SqlDecimal n, int position) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public int WriteTdsValue(System.Span<uint> destination) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlDouble : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlDouble : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlDouble>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlDouble MaxValue;
@@ -2975,7 +3223,8 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlDouble Divide(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlDouble other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
@@ -2987,19 +3236,19 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlDouble operator +(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
         public static System.Data.SqlTypes.SqlDouble operator /(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ==(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlDouble (System.Data.SqlTypes.SqlBoolean x) { throw null; }
-        public static explicit operator double (System.Data.SqlTypes.SqlDouble x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlDouble (System.Data.SqlTypes.SqlString x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlDouble(System.Data.SqlTypes.SqlBoolean x) { throw null; }
+        public static explicit operator double(System.Data.SqlTypes.SqlDouble x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlDouble(System.Data.SqlTypes.SqlString x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >=(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDouble (System.Data.SqlTypes.SqlByte x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDouble (System.Data.SqlTypes.SqlDecimal x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDouble (System.Data.SqlTypes.SqlInt16 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDouble (System.Data.SqlTypes.SqlInt32 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDouble (System.Data.SqlTypes.SqlInt64 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDouble (System.Data.SqlTypes.SqlMoney x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDouble (System.Data.SqlTypes.SqlSingle x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlDouble (double x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDouble(System.Data.SqlTypes.SqlByte x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDouble(System.Data.SqlTypes.SqlDecimal x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDouble(System.Data.SqlTypes.SqlInt16 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDouble(System.Data.SqlTypes.SqlInt32 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDouble(System.Data.SqlTypes.SqlInt64 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDouble(System.Data.SqlTypes.SqlMoney x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDouble(System.Data.SqlTypes.SqlSingle x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlDouble(double x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
@@ -3023,9 +3272,8 @@ namespace System.Data.SqlTypes
         public override string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlGuid : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlGuid : System.Data.SqlTypes.INullable, System.IComparable, System.Runtime.Serialization.ISerializable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlGuid>
     {
-        private object _dummy;
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlGuid Null;
         public SqlGuid(byte[] value) { throw null; }
@@ -3037,7 +3285,8 @@ namespace System.Data.SqlTypes
         public int CompareTo(System.Data.SqlTypes.SqlGuid value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlGuid other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
@@ -3046,12 +3295,12 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlBoolean LessThanOrEqual(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean NotEquals(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ==(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlGuid (System.Data.SqlTypes.SqlBinary x) { throw null; }
-        public static explicit operator System.Guid (System.Data.SqlTypes.SqlGuid x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlGuid (System.Data.SqlTypes.SqlString x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlGuid(System.Data.SqlTypes.SqlBinary x) { throw null; }
+        public static explicit operator System.Guid(System.Data.SqlTypes.SqlGuid x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlGuid(System.Data.SqlTypes.SqlString x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >=(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlGuid (System.Guid x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlGuid(System.Guid x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
@@ -3059,13 +3308,14 @@ namespace System.Data.SqlTypes
         System.Xml.Schema.XmlSchema System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public byte[]? ToByteArray() { throw null; }
         public System.Data.SqlTypes.SqlBinary ToSqlBinary() { throw null; }
         public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }
         public override string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlInt16 : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlInt16 : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlInt16>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlInt16 MaxValue;
@@ -3082,7 +3332,8 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlInt16 Divide(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlInt16 other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
@@ -3100,19 +3351,19 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlInt16 operator /(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ==(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
         public static System.Data.SqlTypes.SqlInt16 operator ^(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt16 (System.Data.SqlTypes.SqlBoolean x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt16 (System.Data.SqlTypes.SqlDecimal x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt16 (System.Data.SqlTypes.SqlDouble x) { throw null; }
-        public static explicit operator short (System.Data.SqlTypes.SqlInt16 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt16 (System.Data.SqlTypes.SqlInt32 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt16 (System.Data.SqlTypes.SqlInt64 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt16 (System.Data.SqlTypes.SqlMoney x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt16 (System.Data.SqlTypes.SqlSingle x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt16 (System.Data.SqlTypes.SqlString x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt16(System.Data.SqlTypes.SqlBoolean x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt16(System.Data.SqlTypes.SqlDecimal x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt16(System.Data.SqlTypes.SqlDouble x) { throw null; }
+        public static explicit operator short(System.Data.SqlTypes.SqlInt16 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt16(System.Data.SqlTypes.SqlInt32 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt16(System.Data.SqlTypes.SqlInt64 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt16(System.Data.SqlTypes.SqlMoney x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt16(System.Data.SqlTypes.SqlSingle x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt16(System.Data.SqlTypes.SqlString x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >=(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlInt16 (System.Data.SqlTypes.SqlByte x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlInt16 (short x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlInt16(System.Data.SqlTypes.SqlByte x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlInt16(short x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
@@ -3139,7 +3390,7 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlInt16 Xor(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlInt32 : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlInt32 : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlInt32>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlInt32 MaxValue;
@@ -3156,7 +3407,8 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlInt32 Divide(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlInt32 other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
@@ -3174,19 +3426,19 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlInt32 operator /(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ==(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
         public static System.Data.SqlTypes.SqlInt32 operator ^(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt32 (System.Data.SqlTypes.SqlBoolean x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt32 (System.Data.SqlTypes.SqlDecimal x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt32 (System.Data.SqlTypes.SqlDouble x) { throw null; }
-        public static explicit operator int (System.Data.SqlTypes.SqlInt32 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt32 (System.Data.SqlTypes.SqlInt64 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt32 (System.Data.SqlTypes.SqlMoney x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt32 (System.Data.SqlTypes.SqlSingle x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt32 (System.Data.SqlTypes.SqlString x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt32(System.Data.SqlTypes.SqlBoolean x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt32(System.Data.SqlTypes.SqlDecimal x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt32(System.Data.SqlTypes.SqlDouble x) { throw null; }
+        public static explicit operator int(System.Data.SqlTypes.SqlInt32 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt32(System.Data.SqlTypes.SqlInt64 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt32(System.Data.SqlTypes.SqlMoney x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt32(System.Data.SqlTypes.SqlSingle x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt32(System.Data.SqlTypes.SqlString x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >=(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlInt32 (System.Data.SqlTypes.SqlByte x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlInt32 (System.Data.SqlTypes.SqlInt16 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlInt32 (int x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlInt32(System.Data.SqlTypes.SqlByte x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlInt32(System.Data.SqlTypes.SqlInt16 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlInt32(int x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
@@ -3213,7 +3465,7 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlInt32 Xor(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlInt64 : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlInt64 : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlInt64>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlInt64 MaxValue;
@@ -3230,7 +3482,8 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlInt64 Divide(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlInt64 other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
@@ -3248,19 +3501,19 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlInt64 operator /(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ==(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
         public static System.Data.SqlTypes.SqlInt64 operator ^(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt64 (System.Data.SqlTypes.SqlBoolean x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt64 (System.Data.SqlTypes.SqlDecimal x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt64 (System.Data.SqlTypes.SqlDouble x) { throw null; }
-        public static explicit operator long (System.Data.SqlTypes.SqlInt64 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt64 (System.Data.SqlTypes.SqlMoney x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt64 (System.Data.SqlTypes.SqlSingle x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlInt64 (System.Data.SqlTypes.SqlString x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt64(System.Data.SqlTypes.SqlBoolean x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt64(System.Data.SqlTypes.SqlDecimal x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt64(System.Data.SqlTypes.SqlDouble x) { throw null; }
+        public static explicit operator long(System.Data.SqlTypes.SqlInt64 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt64(System.Data.SqlTypes.SqlMoney x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt64(System.Data.SqlTypes.SqlSingle x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlInt64(System.Data.SqlTypes.SqlString x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >=(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlInt64 (System.Data.SqlTypes.SqlByte x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlInt64 (System.Data.SqlTypes.SqlInt16 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlInt64 (System.Data.SqlTypes.SqlInt32 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlInt64 (long x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlInt64(System.Data.SqlTypes.SqlByte x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlInt64(System.Data.SqlTypes.SqlInt16 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlInt64(System.Data.SqlTypes.SqlInt32 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlInt64(long x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
@@ -3287,7 +3540,7 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlInt64 Xor(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlMoney : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlMoney : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlMoney>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlMoney MaxValue;
@@ -3305,8 +3558,11 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlMoney Divide(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlMoney other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
+        public static System.Data.SqlTypes.SqlMoney FromTdsValue(long value) { throw null; }
         public override int GetHashCode() { throw null; }
+        public long GetTdsValue() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThanOrEqual(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
@@ -3317,21 +3573,21 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlMoney operator +(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public static System.Data.SqlTypes.SqlMoney operator /(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ==(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlMoney (System.Data.SqlTypes.SqlBoolean x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlMoney (System.Data.SqlTypes.SqlDecimal x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlMoney (System.Data.SqlTypes.SqlDouble x) { throw null; }
-        public static explicit operator decimal (System.Data.SqlTypes.SqlMoney x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlMoney (System.Data.SqlTypes.SqlSingle x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlMoney (System.Data.SqlTypes.SqlString x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlMoney (double x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlMoney(System.Data.SqlTypes.SqlBoolean x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlMoney(System.Data.SqlTypes.SqlDecimal x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlMoney(System.Data.SqlTypes.SqlDouble x) { throw null; }
+        public static explicit operator decimal(System.Data.SqlTypes.SqlMoney x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlMoney(System.Data.SqlTypes.SqlSingle x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlMoney(System.Data.SqlTypes.SqlString x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlMoney(double x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >=(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlMoney (System.Data.SqlTypes.SqlByte x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlMoney (System.Data.SqlTypes.SqlInt16 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlMoney (System.Data.SqlTypes.SqlInt32 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlMoney (System.Data.SqlTypes.SqlInt64 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlMoney (decimal x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlMoney (long x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlMoney(System.Data.SqlTypes.SqlByte x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlMoney(System.Data.SqlTypes.SqlInt16 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlMoney(System.Data.SqlTypes.SqlInt32 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlMoney(System.Data.SqlTypes.SqlInt64 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlMoney(decimal x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlMoney(long x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
@@ -3371,7 +3627,7 @@ namespace System.Data.SqlTypes
         public SqlNullValueException(string? message, System.Exception? e) { }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlSingle : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlSingle : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlSingle>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlSingle MaxValue;
@@ -3387,7 +3643,8 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlSingle Divide(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlSingle other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean GreaterThan(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
@@ -3399,19 +3656,19 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlSingle operator +(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
         public static System.Data.SqlTypes.SqlSingle operator /(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ==(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlSingle (System.Data.SqlTypes.SqlBoolean x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlSingle (System.Data.SqlTypes.SqlDouble x) { throw null; }
-        public static explicit operator float (System.Data.SqlTypes.SqlSingle x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlSingle (System.Data.SqlTypes.SqlString x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlSingle(System.Data.SqlTypes.SqlBoolean x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlSingle(System.Data.SqlTypes.SqlDouble x) { throw null; }
+        public static explicit operator float(System.Data.SqlTypes.SqlSingle x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlSingle(System.Data.SqlTypes.SqlString x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >=(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlSingle (System.Data.SqlTypes.SqlByte x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlSingle (System.Data.SqlTypes.SqlDecimal x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlSingle (System.Data.SqlTypes.SqlInt16 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlSingle (System.Data.SqlTypes.SqlInt32 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlSingle (System.Data.SqlTypes.SqlInt64 x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlSingle (System.Data.SqlTypes.SqlMoney x) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlSingle (float x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlSingle(System.Data.SqlTypes.SqlByte x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlSingle(System.Data.SqlTypes.SqlDecimal x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlSingle(System.Data.SqlTypes.SqlInt16 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlSingle(System.Data.SqlTypes.SqlInt32 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlSingle(System.Data.SqlTypes.SqlInt64 x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlSingle(System.Data.SqlTypes.SqlMoney x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlSingle(float x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
@@ -3435,7 +3692,7 @@ namespace System.Data.SqlTypes
         public override string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlString : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlString : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlString>
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -3466,7 +3723,8 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlString Concat(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
-        public override bool Equals(object? value) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlString other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public byte[]? GetNonUnicodeBytes() { throw null; }
         public byte[]? GetUnicodeBytes() { throw null; }
@@ -3478,21 +3736,21 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlBoolean NotEquals(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
         public static System.Data.SqlTypes.SqlString operator +(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator ==(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlString (System.Data.SqlTypes.SqlBoolean x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlString (System.Data.SqlTypes.SqlByte x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlString (System.Data.SqlTypes.SqlDateTime x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlString (System.Data.SqlTypes.SqlDecimal x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlString (System.Data.SqlTypes.SqlDouble x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlString (System.Data.SqlTypes.SqlGuid x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlString (System.Data.SqlTypes.SqlInt16 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlString (System.Data.SqlTypes.SqlInt32 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlString (System.Data.SqlTypes.SqlInt64 x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlString (System.Data.SqlTypes.SqlMoney x) { throw null; }
-        public static explicit operator System.Data.SqlTypes.SqlString (System.Data.SqlTypes.SqlSingle x) { throw null; }
-        public static explicit operator string (System.Data.SqlTypes.SqlString x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlString(System.Data.SqlTypes.SqlBoolean x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlString(System.Data.SqlTypes.SqlByte x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlString(System.Data.SqlTypes.SqlDateTime x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlString(System.Data.SqlTypes.SqlDecimal x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlString(System.Data.SqlTypes.SqlDouble x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlString(System.Data.SqlTypes.SqlGuid x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlString(System.Data.SqlTypes.SqlInt16 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlString(System.Data.SqlTypes.SqlInt32 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlString(System.Data.SqlTypes.SqlInt64 x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlString(System.Data.SqlTypes.SqlMoney x) { throw null; }
+        public static explicit operator System.Data.SqlTypes.SqlString(System.Data.SqlTypes.SqlSingle x) { throw null; }
+        public static explicit operator string(System.Data.SqlTypes.SqlString x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator >=(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
-        public static implicit operator System.Data.SqlTypes.SqlString (string x) { throw null; }
+        public static implicit operator System.Data.SqlTypes.SqlString(string x) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator !=(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean operator <=(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
@@ -3521,6 +3779,8 @@ namespace System.Data.SqlTypes
     public partial class SqlTypeException : System.SystemException
     {
         public SqlTypeException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SqlTypeException(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext sc) { }
         public SqlTypeException(string? message) { }
         public SqlTypeException(string? message, System.Exception? e) { }
@@ -3549,10 +3809,12 @@ namespace System.Data.SqlTypes
 }
 namespace System.Xml
 {
-    [System.ObsoleteAttribute("XmlDataDocument class will be removed in a future release.")]
+    [System.ObsoleteAttribute("XmlDataDocument has been deprecated and is not supported.")]
     public partial class XmlDataDocument : System.Xml.XmlDocument
     {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("XmlDataDocument is used for serialization and deserialization. Members from serialized types may be trimmed if not referenced directly.")]
         public XmlDataDocument() { }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("XmlDataDocument is used for serialization and deserialization. Members from serialized types may be trimmed if not referenced directly.")]
         public XmlDataDocument(System.Data.DataSet dataset) { }
         public System.Data.DataSet DataSet { get { throw null; } }
         public override System.Xml.XmlNode CloneNode(bool deep) { throw null; }

@@ -17,9 +17,8 @@ namespace System.ServiceProcess.Tests
         private const int connectionTimeout = 30000;
         private readonly TestServiceProvider _testService;
 
-        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
-        protected static bool IsProcessElevated => s_isElevated.Value;
-        protected static bool IsElevatedAndSupportsEventLogs => IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer;
+        protected static bool IsElevatedAndSupportsEventLogs => PlatformDetection.IsPrivilegedProcess && PlatformDetection.IsNotWindowsNanoServer;
+        protected static bool IsElevatedAndWindows10OrLater => PlatformDetection.IsPrivilegedProcess && PlatformDetection.IsWindows10OrLater;
 
         private bool _disposed;
 
@@ -71,7 +70,19 @@ namespace System.ServiceProcess.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+#if NETCOREAPP
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [InlineData(-2)]
+        [InlineData((long)int.MaxValue + 1)]
+        public void RequestAdditionalTime_Throws_ArgumentOutOfRangeException(long milliseconds)
+        {
+            TimeSpan time = TimeSpan.FromMilliseconds(milliseconds);
+            using var serviceBase = new ServiceBase();
+            Assert.Throws<ArgumentOutOfRangeException>("time", () => serviceBase.RequestAdditionalTime(time));
+        }
+#endif
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void TestOnStartThenStop()
         {
             ServiceController controller = ConnectToServer();
@@ -81,7 +92,7 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(nameof(IsElevatedAndWindows10OrLater))] // flaky on Windows 8.1
         public void TestOnStartWithArgsThenStop()
         {
             ServiceController controller = ConnectToServer();
@@ -107,7 +118,7 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void TestOnPauseThenStop()
         {
             ServiceController controller = ConnectToServer();
@@ -121,7 +132,7 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void TestOnPauseAndContinueThenStop()
         {
             ServiceController controller = ConnectToServer();
@@ -139,7 +150,7 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void TestOnExecuteCustomCommand()
         {
             if (PlatformDetection.IsWindowsServerCore)
@@ -166,7 +177,7 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Stopped);
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void TestOnContinueBeforePause()
         {
             ServiceController controller = ConnectToServer();
@@ -183,7 +194,7 @@ namespace System.ServiceProcess.Tests
         public void LogWritten()
         {
             string serviceName = Guid.NewGuid().ToString();
-            // If the username is null, then the service is created under LocalSystem Account which have access to EventLog.
+            // If the username is null, then the service is created under LocalSystem Account which has access to EventLog.
             var testService = new TestServiceProvider(serviceName);
             Assert.True(EventLog.SourceExists(serviceName));
             testService.DeleteTestServices();
@@ -198,7 +209,7 @@ namespace System.ServiceProcess.Tests
             testService.DeleteTestServices();
         }
 
-        [ConditionalFact(nameof(IsProcessElevated))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework receives the Connected Byte Code after the Exception Thrown Byte Code")]
         public void PropagateExceptionFromOnStart()
         {
@@ -207,6 +218,21 @@ namespace System.ServiceProcess.Tests
             testService.Client.Connect(connectionTimeout);
             Assert.Equal((int)PipeMessageByteCode.Connected, testService.GetByte());
             Assert.Equal((int)PipeMessageByteCode.ExceptionThrown, testService.GetByte());
+            testService.DeleteTestServices();
+        }
+
+        [ConditionalFact(nameof(IsElevatedAndSupportsEventLogs))]
+        public void NoServiceNameOnServiceBase()
+        {
+            // When installing a service, you must supply a non empty name.
+            // When a service starts itself (using StartServiceCtrlDispatcher) it's legal to pass an empty string for the name.
+            string serviceName = "NoServiceNameOnServiceBase";
+            var testService = new TestServiceProvider(serviceName);
+
+            // Ensure it has successfully written to the event log,
+            // indicating it figured out its own name.
+            Assert.True(EventLog.SourceExists(serviceName));
+
             testService.DeleteTestServices();
         }
 

@@ -24,12 +24,6 @@
 
 #include <log.h>
 
-
-#ifndef TYPELIB_SIG
-#define TYPELIB_SIG_MSFT                    0x5446534D  // MSFT
-#define TYPELIB_SIG_SLTG                    0x47544C53  // SLTG
-#endif
-
 //*****************************************************************************
 // Checks the given storage object to see if it is an NT PE image.
 //*****************************************************************************
@@ -62,20 +56,6 @@ int _IsNTPEImage(                       // true if file is NT PE image.
         return (false);
 }
 
-BOOL _GetFileTypeForPathExt(StgIO * pStgIO, FILETYPE * piType)
-{
-    // Avoid confusion.
-    *piType = pStgIO->GetFileType();
-
-    // All file types except .obj have a signature built in.  You should
-    // not get to this code for those file types unless that file is corrupt,
-    // or someone has changed a format without updating this code.
-    _ASSERTE((*piType == FILETYPE_UNKNOWN) || (*piType == FILETYPE_NTOBJ) || (*piType == FILETYPE_TLB));
-
-    // If we found a type, then you're ok.
-    return (*piType != FILETYPE_UNKNOWN);
-}
-
 HRESULT _GetFileTypeForPath(StgIO *pStgIO, FILETYPE *piType)
 {
     ULONG       lSignature=0;
@@ -97,9 +77,7 @@ HRESULT _GetFileTypeForPath(StgIO *pStgIO, FILETYPE *piType)
             *piType = FILETYPE_CLB;
         else if ((WORD) lSignature ==IMAGE_DOS_SIGNATURE && _IsNTPEImage(pStgIO))
             *piType = FILETYPE_NTPE;
-        else if (lSignature == TYPELIB_SIG_MSFT || lSignature == TYPELIB_SIG_SLTG)
-            *piType = FILETYPE_TLB;
-        else if (!_GetFileTypeForPathExt(pStgIO, piType))
+        else
             return CLDB_E_FILE_CORRUPT;
     }
     return S_OK;
@@ -376,7 +354,7 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
     }
     // PE/COFF executable/object format.  This requires us to find the .clb
     // inside the binary before doing the Init.
-    else if (m_eFileType == FILETYPE_NTPE || m_eFileType == FILETYPE_NTOBJ)
+    else if (m_eFileType == FILETYPE_NTPE)
     {
         //<TODO>@FUTURE: Ideally the FindImageMetaData function
         //@FUTURE:  would take the pStgIO and map only the part of the file where
@@ -389,61 +367,37 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
         IfFailGo( pStgIO->MapFileToMem(ptr, &cbSize) );
 
         // Find the .clb inside of the content.
-        if (m_eFileType == FILETYPE_NTPE)
-        {
-            m_pImage = ptr;
-            m_dwImageSize = cbSize;
-            hr = FindImageMetaData(ptr,
-                                   cbSize,
-                                   pStgIO->GetMemoryMappedType() == MTYPE_IMAGE,
-                                   &ptr,
-                                   &cbSize);
-        }
-        else
-        {
-            _ASSERTE(pStgIO->GetMemoryMappedType() != MTYPE_IMAGE);
-            hr = FindObjMetaData(ptr, cbSize, &ptr, &cbSize);
-        }
+        m_pImage = ptr;
+        m_dwImageSize = cbSize;
+        hr = FindImageMetaData(ptr,
+                               cbSize,
+                               pStgIO->GetMemoryMappedType() == MTYPE_IMAGE,
+                               &ptr,
+                               &cbSize);
+
         // Was the metadata found inside the PE file?
-        if (FAILED(hr))
+        IfFailGo(hr);
+
+        // Metadata was found inside the file.
+        // Now reset the base of the stg object so that all memory accesses
+        // are relative to the .clb content.
+        //
+        IfFailGo( pStgIO->SetBaseRange(ptr, cbSize) );
+
+        // If user wanted us to make a local copy of the data, do that now.
+        if (IsOfCopyMemory(dwFlags))
         {
-            if (hr == E_OUTOFMEMORY)
-                IfFailGo(E_OUTOFMEMORY);
-
-            // No clb in the PE, assume it is a type library.
-            m_eFileType = FILETYPE_TLB;
-
-            // Let the caller deal with a TypeLib.
-            IfFailGo(hr);
+            // Cache the PEKind, Machine.
+            GetPEKind(pStgIO->GetMemoryMappedType(), NULL, NULL);
+            // Copy the file into memory; releases the file.
+            IfFailGo(pStgIO->LoadFileToMemory());
+            // No longer have the image.
+            m_pImage = NULL;
+            m_dwImageSize = 0;
         }
-        else
-        {
-            // Metadata was found inside the file.
-            // Now reset the base of the stg object so that all memory accesses
-            // are relative to the .clb content.
-            //
-            IfFailGo( pStgIO->SetBaseRange(ptr, cbSize) );
 
-            // If user wanted us to make a local copy of the data, do that now.
-            if (IsOfCopyMemory(dwFlags))
-            {
-                // Cache the PEKind, Machine.
-                GetPEKind(pStgIO->GetMemoryMappedType(), NULL, NULL);
-                // Copy the file into memory; releases the file.
-                IfFailGo(pStgIO->LoadFileToMemory());
-                // No longer have the image.
-                m_pImage = NULL;
-                m_dwImageSize = 0;
-            }
-
-            // Defer to the normal lookup.
-            IfFailGo( InitFileForRead(pStgIO, IsOfRead(dwFlags)) );
-        }
-    }
-    else if (m_eFileType == FILETYPE_TLB)
-    {
-        // Let the caller deal with a TypeLib.
-        IfFailGo(CLDB_E_NO_DATA);
+        // Defer to the normal lookup.
+        IfFailGo( InitFileForRead(pStgIO, IsOfRead(dwFlags)) );
     }
     // This spells trouble, we need to handle all types we might find.
     else
@@ -527,8 +481,7 @@ __checkReturn
 HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
     CorSaveSize               fSave,                // Quick or accurate?
     UINT32                   *pcbSaveSize,          // Put the size here.
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)        // Profile data for working set optimization
+    MetaDataReorderingOptions reorderingOptions)
 {
     HRESULT hr = S_OK;              // A result.
     UINT32  cbTotal = 0;            // The total size.
@@ -593,40 +546,13 @@ HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
 
     if (reorderingOptions & ReArrangeStringPool)
     {
-        if (pProfileData != NULL)
-        {
-            UINT32 cbHotSize = 0;          // Size of pool data.
-            UINT32 cbStream;               // Size of just the stream.
-            DWORD  bCompressed;            // Will the stream be compressed data?
-
-            // Ask the metadata to size its hot data.
-            IfFailGo(m_MiniMd.GetSaveSize(fSave, &cbHotSize, &bCompressed, reorderingOptions, pProfileData));
-            cbStream = cbHotSize;
-            m_bSaveCompressed = bCompressed;
-
-            if (cbHotSize != 0)
-            {
-                // Add this item to the save list.
-                IfFailGo(AddStreamToList(cbHotSize, HOT_MODEL_STREAM));
-
-                // Ask the storage system to add stream fixed overhead.
-                IfFailGo(TiggerStorage::GetStreamSaveSize(HOT_MODEL_STREAM, cbHotSize, &cbHotSize));
-
-                // Log the size info.
-                LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
-                    HOT_MODEL_STREAM, cbStream, cbHotSize));
-
-                cbTotal += cbHotSize;
-            }
-        }
-
         // get string pool save size
         IfFailGo(GetPoolSaveSize(STRING_POOL_STREAM, MDPoolStrings, &cbSize));
         cbTotal += cbSize;
     }
 
     // Query the MiniMd for its size.
-    IfFailGo(GetTablesSaveSize(fSave, &cbSize, reorderingOptions, pProfileData));
+    IfFailGo(GetTablesSaveSize(fSave, &cbSize, reorderingOptions));
     cbTotal += cbSize;
 
     // Get the pools' sizes.
@@ -724,10 +650,6 @@ CLiteWeightStgdbRW::GetPoolSaveSize(
         // Ask the storage system to add stream fixed overhead.
         IfFailGo(TiggerStorage::GetStreamSaveSize(szHeap, cbSize, &cbSize));
 
-        // Log the size info.
-        LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
-            szHeap, cbStream, cbSize));
-
         // Give the size of the pool to the caller's total.
         *pcbSaveSize = cbSize;
     }
@@ -744,8 +666,7 @@ __checkReturn
 HRESULT CLiteWeightStgdbRW::GetTablesSaveSize(
     CorSaveSize               fSave,
     UINT32                   *pcbSaveSize,
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)           // Add pool data to this value.
+    MetaDataReorderingOptions reorderingOptions)
 {
     UINT32  cbSize = 0;             // Size of pool data.
     UINT32  cbHotSize = 0;          // Size of pool data.
@@ -756,31 +677,6 @@ HRESULT CLiteWeightStgdbRW::GetTablesSaveSize(
 
     *pcbSaveSize = 0;
 
-    if( !(reorderingOptions & ReArrangeStringPool) )
-    {
-        if (pProfileData != NULL)
-        {
-            // Ask the metadata to size its hot data.
-            IfFailGo(m_MiniMd.GetSaveSize(fSave, &cbHotSize, &bCompressed, reorderingOptions, pProfileData));
-            cbStream = cbHotSize;
-            m_bSaveCompressed = bCompressed;
-
-            if (cbHotSize != 0)
-            {
-                szName = HOT_MODEL_STREAM;
-
-                // Add this item to the save list.
-                IfFailGo(AddStreamToList(cbHotSize, szName));
-
-                // Ask the storage system to add stream fixed overhead.
-                IfFailGo(TiggerStorage::GetStreamSaveSize(szName, cbHotSize, &cbHotSize));
-
-                // Log the size info.
-                LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
-                    szName, cbStream, cbHotSize));
-            }
-        }
-    }
     // Ask the metadata to size its data.
     IfFailGo(m_MiniMd.GetSaveSize(fSave, &cbSize, &bCompressed));
     cbStream = cbSize;
@@ -792,10 +688,6 @@ HRESULT CLiteWeightStgdbRW::GetTablesSaveSize(
 
     // Ask the storage system to add stream fixed overhead.
     IfFailGo(TiggerStorage::GetStreamSaveSize(szName, cbSize, &cbSize));
-
-    // Log the size info.
-    LOG((LF_METADATA, LL_INFO10, "Metadata: GetSaveSize for %ls: %d data, %d total.\n",
-        szName, cbStream, cbSize));
 
     // Give the size of the pool to the caller's total.
     *pcbSaveSize = cbHotSize + cbSize;
@@ -834,8 +726,7 @@ ErrExit:
 __checkReturn
 HRESULT CLiteWeightStgdbRW::SaveToStream(
     IStream                  *pIStream,
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)
+    MetaDataReorderingOptions reorderingOptions)
 {
     HRESULT     hr = S_OK;              // A result.
     StgIO       *pStgIO = 0;
@@ -856,7 +747,7 @@ HRESULT CLiteWeightStgdbRW::SaveToStream(
     IfFailGo(pStorage->Init(pStgIO, ov.m_RuntimeVersion));
 
     // Save worker will do tables, pools.
-    IfFailGo(SaveToStorage(pStorage, reorderingOptions, pProfileData));
+    IfFailGo(SaveToStorage(pStorage, reorderingOptions));
 
 ErrExit:
     if (pStgIO != NULL)
@@ -871,8 +762,7 @@ ErrExit:
 __checkReturn
 HRESULT CLiteWeightStgdbRW::SaveToStorage(
     TiggerStorage            *pStorage,
-    MetaDataReorderingOptions reorderingOptions,
-    CorProfileData           *pProfileData)
+    MetaDataReorderingOptions reorderingOptions)
 {
     HRESULT  hr;                     // A result.
     LPCWSTR  szName;                 // Name of the tables stream.
@@ -901,28 +791,6 @@ HRESULT CLiteWeightStgdbRW::SaveToStorage(
         pIStreamTbl = 0;
     }
 
-    if (pProfileData != NULL)
-    {
-        DWORD bCompressed;
-        UINT32 cbHotSize;
-        // Will the stream be compressed data?
-
-        // Only create this additional stream if it will be non-empty
-        IfFailGo(m_MiniMd.GetSaveSize(cssAccurate, &cbHotSize, &bCompressed, reorderingOptions, pProfileData));
-
-        if (cbHotSize > 0)
-        {
-            // Create a stream and save the hot tables.
-            szName = HOT_MODEL_STREAM;
-            IfFailGo(pStorage->CreateStream(szName,
-                    STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE,
-                    0, 0, &pIStreamTbl));
-            IfFailGo(m_MiniMd.SaveTablesToStream(pIStreamTbl, reorderingOptions, pProfileData));
-            pIStreamTbl->Release();
-            pIStreamTbl = 0;
-        }
-    }
-
     if (reorderingOptions & ReArrangeStringPool)
     {
         // Save the string pool before the tables when we do not have the string pool cache
@@ -934,7 +802,7 @@ HRESULT CLiteWeightStgdbRW::SaveToStorage(
     IfFailGo(pStorage->CreateStream(szName,
             STGM_DIRECT | STGM_READWRITE | STGM_SHARE_EXCLUSIVE,
             0, 0, &pIStreamTbl));
-    IfFailGo(m_MiniMd.SaveTablesToStream(pIStreamTbl, NoReordering, NULL));
+    IfFailGo(m_MiniMd.SaveTablesToStream(pIStreamTbl, NoReordering));
     pIStreamTbl->Release();
     pIStreamTbl = 0;
 

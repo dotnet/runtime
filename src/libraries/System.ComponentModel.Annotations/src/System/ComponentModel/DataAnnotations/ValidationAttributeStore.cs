@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 
@@ -20,7 +20,7 @@ namespace System.ComponentModel.DataAnnotations
     /// </remarks>
     internal sealed class ValidationAttributeStore
     {
-        private readonly Dictionary<Type, TypeStoreItem> _typeStoreItems = new Dictionary<Type, TypeStoreItem>();
+        private readonly ConcurrentDictionary<Type, TypeStoreItem> _typeStoreItems = new();
 
         /// <summary>
         ///     Gets the singleton <see cref="ValidationAttributeStore" />
@@ -107,8 +107,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             EnsureValidationContext(validationContext);
             var typeItem = GetTypeStoreItem(validationContext.ObjectType);
-            PropertyStoreItem? item;
-            return typeItem.TryGetPropertyStoreItem(validationContext.MemberName!, out item);
+            return typeItem.TryGetPropertyStoreItem(validationContext.MemberName!, out _);
         }
 
         /// <summary>
@@ -120,17 +119,14 @@ namespace System.ComponentModel.DataAnnotations
         {
             Debug.Assert(type != null);
 
-            lock (_typeStoreItems)
-            {
-                if (!_typeStoreItems.TryGetValue(type, out TypeStoreItem? item))
-                {
-                    // use CustomAttributeExtensions.GetCustomAttributes() to get inherited attributes as well as direct ones
-                    var attributes = CustomAttributeExtensions.GetCustomAttributes(type, true);
-                    item = new TypeStoreItem(type, attributes);
-                    _typeStoreItems[type] = item;
-                }
+            return _typeStoreItems.GetOrAdd(type, AddTypeStoreItem);
 
-                return item;
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+                Justification = "The parameter in the parent method has already been marked DynamicallyAccessedMemberTypes.All.")]
+            static TypeStoreItem AddTypeStoreItem(Type type)
+            {
+                AttributeCollection attributes = TypeDescriptor.GetAttributes(type);
+                return new TypeStoreItem(type, attributes);
             }
         }
 
@@ -140,10 +136,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationContext">The context to check</param>
         private static void EnsureValidationContext(ValidationContext validationContext)
         {
-            if (validationContext == null)
-            {
-                throw new ArgumentNullException(nameof(validationContext));
-            }
+            ArgumentNullException.ThrowIfNull(validationContext);
         }
 
         internal static bool IsPublic(PropertyInfo p) =>
@@ -154,7 +147,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         private abstract class StoreItem
         {
-            internal StoreItem(IEnumerable<Attribute> attributes)
+            internal StoreItem(AttributeCollection attributes)
             {
                 ValidationAttributes = attributes.OfType<ValidationAttribute>();
                 DisplayAttribute = attributes.OfType<DisplayAttribute>().SingleOrDefault();
@@ -170,19 +163,20 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         private sealed class TypeStoreItem : StoreItem
         {
-            internal const DynamicallyAccessedMemberTypes DynamicallyAccessedTypes = DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties;
+            internal const DynamicallyAccessedMemberTypes DynamicallyAccessedTypes = DynamicallyAccessedMemberTypes.All;
 
             private readonly object _syncRoot = new object();
             [DynamicallyAccessedMembers(DynamicallyAccessedTypes)]
             private readonly Type _type;
             private Dictionary<string, PropertyStoreItem>? _propertyStoreItems;
 
-            internal TypeStoreItem([DynamicallyAccessedMembers(DynamicallyAccessedTypes)] Type type, IEnumerable<Attribute> attributes)
+            internal TypeStoreItem([DynamicallyAccessedMembers(DynamicallyAccessedTypes)] Type type, AttributeCollection attributes)
                 : base(attributes)
             {
                 _type = type;
             }
 
+            [RequiresUnreferencedCode("The Types of _type's properties cannot be statically discovered.")]
             internal PropertyStoreItem GetPropertyStoreItem(string propertyName)
             {
                 if (!TryGetPropertyStoreItem(propertyName, out PropertyStoreItem? item))
@@ -194,6 +188,7 @@ namespace System.ComponentModel.DataAnnotations
                 return item;
             }
 
+            [RequiresUnreferencedCode("The Types of _type's properties cannot be statically discovered.")]
             internal bool TryGetPropertyStoreItem(string propertyName, [NotNullWhen(true)] out PropertyStoreItem? item)
             {
                 if (string.IsNullOrEmpty(propertyName))
@@ -205,32 +200,63 @@ namespace System.ComponentModel.DataAnnotations
                 {
                     lock (_syncRoot)
                     {
-                        if (_propertyStoreItems == null)
-                        {
-                            _propertyStoreItems = CreatePropertyStoreItems();
-                        }
+                        _propertyStoreItems ??= CreatePropertyStoreItems();
                     }
                 }
 
                 return _propertyStoreItems.TryGetValue(propertyName, out item);
             }
 
+            [RequiresUnreferencedCode("The Types of _type's properties cannot be statically discovered.")]
             private Dictionary<string, PropertyStoreItem> CreatePropertyStoreItems()
             {
                 var propertyStoreItems = new Dictionary<string, PropertyStoreItem>();
 
-                // exclude index properties to match old TypeDescriptor functionality
-                var properties = _type.GetRuntimeProperties()
-                    .Where(prop => IsPublic(prop) && !prop.GetIndexParameters().Any());
-                foreach (PropertyInfo property in properties)
+                var properties = TypeDescriptor.GetProperties(_type);
+                foreach (PropertyDescriptor property in properties)
                 {
-                    // use CustomAttributeExtensions.GetCustomAttributes() to get inherited attributes as well as direct ones
-                    var item = new PropertyStoreItem(property.PropertyType,
-                        CustomAttributeExtensions.GetCustomAttributes(property, true));
+                    var item = new PropertyStoreItem(property.PropertyType, GetExplicitAttributes(property));
                     propertyStoreItems[property.Name] = item;
                 }
 
                 return propertyStoreItems;
+            }
+
+            /// <summary>
+            ///     Method to extract only the explicitly specified attributes from a <see cref="PropertyDescriptor"/>
+            /// </summary>
+            /// <remarks>
+            ///     Normal TypeDescriptor semantics are to inherit the attributes of a property's type.  This method
+            ///     exists to suppress those inherited attributes.
+            /// </remarks>
+            /// <param name="propertyDescriptor">The property descriptor whose attributes are needed.</param>
+            /// <returns>A new <see cref="AttributeCollection"/> stripped of any attributes from the property's type.</returns>
+            [RequiresUnreferencedCode("The Type of propertyDescriptor.PropertyType cannot be statically discovered.")]
+            private static AttributeCollection GetExplicitAttributes(PropertyDescriptor propertyDescriptor)
+            {
+                AttributeCollection propertyDescriptorAttributes = propertyDescriptor.Attributes;
+                List<Attribute> attributes = new List<Attribute>(propertyDescriptorAttributes.Count);
+                foreach (Attribute attribute in propertyDescriptorAttributes)
+                {
+                    attributes.Add(attribute);
+                }
+
+                AttributeCollection typeAttributes = TypeDescriptor.GetAttributes(propertyDescriptor.PropertyType);
+                bool removedAttribute = false;
+                foreach (Attribute attr in typeAttributes)
+                {
+                    for (int i = attributes.Count - 1; i >= 0; --i)
+                    {
+                        // We must use ReferenceEquals since attributes could Match if they are the same.
+                        // Only ReferenceEquals will catch actual duplications.
+                        if (object.ReferenceEquals(attr, attributes[i]))
+                        {
+                            attributes.RemoveAt(i);
+                            removedAttribute = true;
+                        }
+                    }
+                }
+                return removedAttribute ? new AttributeCollection(attributes.ToArray()) : propertyDescriptorAttributes;
             }
         }
 
@@ -239,7 +265,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         private sealed class PropertyStoreItem : StoreItem
         {
-            internal PropertyStoreItem(Type propertyType, IEnumerable<Attribute> attributes)
+            internal PropertyStoreItem(Type propertyType, AttributeCollection attributes)
                 : base(attributes)
             {
                 Debug.Assert(propertyType != null);

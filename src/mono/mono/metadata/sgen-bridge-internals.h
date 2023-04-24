@@ -69,7 +69,6 @@ typedef struct {
 	MonoGCBridgeXRef *api_xrefs;
 } SgenBridgeProcessor;
 
-void sgen_old_bridge_init (SgenBridgeProcessor *collector);
 void sgen_new_bridge_init (SgenBridgeProcessor *collector);
 void sgen_tarjan_bridge_init (SgenBridgeProcessor *collector);
 void sgen_set_bridge_implementation (const char *name);

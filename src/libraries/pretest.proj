@@ -5,6 +5,7 @@
     <!-- Create an intermediate runsettings file to enable VSTest discovery. -->
     <EnableRunSettingsSupport>true</EnableRunSettingsSupport>
     <CreateIntermediateRunSettingsFile>true</CreateIntermediateRunSettingsFile>
+    <CreateVsCodeRunSettingsFile>true</CreateVsCodeRunSettingsFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -16,13 +17,23 @@
     the targeting and runtimepack before the test runners which consume that asset are built.
   -->
   <ItemGroup>
-    <ExternalsProject Include="externals.csproj" />
+    <ExternalsProject Include="externals.csproj" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''" />
     <ProjectReference Include="@(ExternalsProject)" Condition="'$(MSBuildRestoreSessionId)' != ''" />
 
-    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'"/>
-    <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'Android'" />
-    <ProjectReference Include="$(CommonTestPath)WasmTestRunner\WasmTestRunner.csproj" Condition="'$(TargetOS)' == 'Browser'" />
+    <ProjectReference Include="$(CommonTestPath)AppleTestRunner\AppleTestRunner.csproj" Condition="'$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'"/>
+    <ProjectReference Include="$(CommonTestPath)AndroidTestRunner\AndroidTestRunner.csproj" Condition="'$(TargetOS)' == 'android'" />
+    <ProjectReference Include="$(CommonTestPath)WasmTestRunner\WasmTestRunner.csproj" Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'" />
+    <ProjectReference Include="$(MonoProjectRoot)wasm\symbolicator\WasmSymbolicator.csproj" Condition="'$(TargetOS)' == 'browser'" />
+
+    <!-- needed to test workloads for wasm -->
+    <ProjectReference Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Runtime.sfxproj" Pack="true" Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'" />
   </ItemGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets"
+          Condition="'$(TargetOS)' == 'browser' and '$(ContinuousIntegrationBuild)' == 'true'" />
+
+  <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets"
+          Condition="'$(TargetOS)' == 'wasi' and '$(ContinuousIntegrationBuild)' == 'true'" />
 
   <Target Name="BuildExternalsProject"
           BeforeTargets="Build">
@@ -38,6 +49,9 @@
 
   <Target Name="GetSharedFrameworkRuntimeFiles">
     <ItemGroup>
+      <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.Android.so" />
+      <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.Android.dex" />
+      <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.Android.jar" />
       <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.OpenSsl.so" />
       <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.Apple.dylib" />
       <ManualRuntimePackNativeFile Include="System.Security.Cryptography.Native.OpenSsl.dylib" />
@@ -55,12 +69,12 @@
           AfterTargets="BuildExternalsProject"
           Inputs="@(SharedFrameworkRuntimeFile)"
           Outputs="$(MicrosoftNetCoreAppRuntimePackDir)data\PlatformManifest.txt"
-          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFile)"
-                              PackageId="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(PackageRID)"
+                              PackageId="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(OutputRid)"
                               PackageVersion="$(ProductVersion)"
                               PlatformManifestFile="$(MicrosoftNetCoreAppRuntimePackDir)data\PlatformManifest.txt"
-                              PreferredPackages="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(PackageRID)"
+                              PreferredPackages="$(MicrosoftNetCoreAppFrameworkName).Runtime.$(OutputRid)"
                               PermitDllAndExeFilesLackingFileVersion="true" />
   </Target>
 
@@ -70,7 +84,7 @@
           AfterTargets="BuildExternalsProject"
           Inputs="@(SharedFrameworkRuntimeFile)"
           Outputs="$(MicrosoftNetCoreAppRefPackDataDir)PlatformManifest.txt"
-          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFile)"
                               PackageId="$(MicrosoftNetCoreAppFrameworkName).Ref"
                               PackageVersion="$(ProductVersion)"
@@ -83,22 +97,22 @@
   <UsingTask TaskName="GenerateTestSharedFrameworkDepsFile" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
   <Target Name="GenerateTestSharedFrameworkAssets"
           AfterTargets="BuildExternalsProject"
-          Inputs="$(NETCoreAppTestSharedFrameworkPath)*.*"
-          Outputs="$(NETCoreAppTestSharedFrameworkPath)$(MicrosoftNetCoreAppFrameworkName).deps.json"
-          Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
+          Inputs="$(NetCoreAppCurrentTestHostSharedFrameworkPath)*.*"
+          Outputs="$(NetCoreAppCurrentTestHostSharedFrameworkPath)$(MicrosoftNetCoreAppFrameworkName).deps.json"
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <!-- Shared framework deps file generation. Produces a test shared-framework deps file. -->
-    <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NETCoreAppTestSharedFrameworkPath)"
-                                         RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
-                                         TargetRuntimeIdentifier="$(PackageRID)" />
+    <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NetCoreAppCurrentTestHostSharedFrameworkPath)"
+                                         RuntimeGraphFiles="$(BundledRuntimeIdentifierGraphFile)"
+                                         TargetRuntimeIdentifier="$(OutputRid)" />
   </Target>
 
   <Target Name="GetRuntimePackFiles">
     <ItemGroup>
       <RuntimePackLibFile Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.*">
-        <TargetPath>runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)</TargetPath>
+        <TargetPath>runtimes/$(OutputRid)/lib/$(NetCoreAppCurrent)</TargetPath>
       </RuntimePackLibFile>
       <RuntimePackNativeFile Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)*.*">
-        <TargetPath>runtimes/$(PackageRID)/native</TargetPath>
+        <TargetPath>runtimes/$(OutputRid)/native</TargetPath>
         <IsNative>true</IsNative>
       </RuntimePackNativeFile>
       <!-- Clear the IsNative flag on System.Private.CoreLib given that it is present in native dir but it is actually managed -->
@@ -124,7 +138,7 @@
           AfterTargets="BuildExternalsProject"
           Inputs="@(RuntimePackLibFile);@(RuntimePackNativeFile)"
           Outputs="$(MicrosoftNetCoreAppRuntimePackDir)data\RuntimeList.xml"
-          Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+          Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <ItemGroup>
       <FrameworkListRootAttribute Include="Name" Value="$(NetCoreAppCurrentBrandName)" />
       <FrameworkListRootAttribute Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />

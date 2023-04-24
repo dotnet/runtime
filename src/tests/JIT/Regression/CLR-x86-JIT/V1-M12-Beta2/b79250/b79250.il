@@ -8,7 +8,8 @@
   .ver 4:0:0:0
 }
 .assembly b79250 {}
-.class ILGEN_0xdea951c0 {
+.assembly extern xunit.core {}
+.class public ILGEN_0xdea951c0 {
 
 //BEGIN STATIC FIELDS
 .field static	float32 field_0x0
@@ -1528,7 +1529,10 @@ ldc.r8 4.4
 
  ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	19
 .locals (int32)

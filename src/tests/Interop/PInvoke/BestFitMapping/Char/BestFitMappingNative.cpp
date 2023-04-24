@@ -75,23 +75,3 @@ extern "C" bool DLL_EXPORT STDMETHODCALLTYPE CharBuffer_InOutByRef_StringBuilder
 
     return TRUE;
 }
-
-extern "C" bool DLL_EXPORT STDMETHODCALLTYPE Char_In_ArrayWithOffset (char* pArrayWithOffset)
-{
-    return TRUE;
-}
-
-extern "C" bool DLL_EXPORT STDMETHODCALLTYPE Char_InOut_ArrayWithOffset (char* pArrayWithOffset)
-{
-    return TRUE;
-}
-
-extern "C" bool DLL_EXPORT STDMETHODCALLTYPE Char_InByRef_ArrayWithOffset (char** ppArrayWithOffset)
-{
-    return TRUE;
-}
-
-extern "C" bool DLL_EXPORT STDMETHODCALLTYPE Char_InOutByRef_ArrayWithOffset (char** ppArrayWithOffset)
-{
-    return TRUE;
-}

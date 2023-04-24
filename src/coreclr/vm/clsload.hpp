@@ -124,7 +124,7 @@ class NameHandle
     LPCUTF8 m_nameSpace;
     LPCUTF8 m_name;
 
-    PTR_Module m_pTypeScope;
+    PTR_ModuleBase m_pTypeScope;
     mdToken m_mdType;
     mdToken m_mdTokenNotToLoad;
     NameHandleTable m_WhichTable;
@@ -163,18 +163,9 @@ public:
         SUPPORTS_DAC;
     }
 
-    NameHandle(Module* pModule, mdToken token) :
-        m_nameSpace(NULL),
-        m_name(NULL),
-        m_pTypeScope(pModule),
-        m_mdType(token),
-        m_mdTokenNotToLoad(tdNoTypes),
-        m_WhichTable(nhCaseSensitive),
-        m_Bucket()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-    }
+    NameHandle(ModuleBase* pModule, mdToken token);
+
+    NameHandle(Module* pModule, mdToken token);
 
     NameHandle(const NameHandle & p)
     {
@@ -218,14 +209,16 @@ public:
         return m_nameSpace;
     }
 
+#ifndef DACCESS_COMPILE
     void SetTypeToken(Module* pModule, mdToken mdToken)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pTypeScope = dac_cast<PTR_Module>(pModule);
+        m_pTypeScope = dac_cast<PTR_ModuleBase>(pModule);
         m_mdType = mdToken;
     }
+#endif
 
-    PTR_Module GetTypeModule() const
+    PTR_ModuleBase GetTypeModule() const
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
@@ -377,7 +370,7 @@ public:
         kNormalAccessNoTransparency,
 
         // Used by DynamicMethods with restrictedSkipVisibility in full trust CoreCLR
-        // CoreCLR: Do RestrictedMemberAcess visibility checks but bypass transparency checks.
+        // CoreCLR: Do RestrictedMemberAccess visibility checks but bypass transparency checks.
         kRestrictedMemberAccessNoTransparency,
 
     };
@@ -561,7 +554,7 @@ private:
 public:
     //#LoaderModule
     // LoaderModule determines in which module an item gets placed.
-    // For everything except paramaterized types and methods the choice is easy.
+    // For everything except parameterized types and methods the choice is easy.
     //
     // If NGEN'ing we may choose to place the item into the current module (which is different from runtime behavior).
     //
@@ -665,7 +658,7 @@ public:
                                           ClassLoadLevel level = CLASS_LOADED,
                                           Instantiation * pTargetInstantiation = NULL /* used to verify arity of the loaded type */);
 
-    static TypeHandle LoadTypeDefOrRefThrowing(Module *pModule,
+    static TypeHandle LoadTypeDefOrRefThrowing(ModuleBase *pModule,
                                                mdToken typeRefOrDef,
                                                NotFoundAction fNotFound = ThrowIfNotFound,
                                                PermitUninstantiatedFlag fUninstantiated = FailIfUninstDefOrRef,
@@ -680,7 +673,8 @@ public:
                                                      LoadTypesFlag fLoadTypes = LoadTypes,
                                                      ClassLoadLevel level = CLASS_LOADED,
                                                      BOOL dropGenericArgumentLevel = FALSE,
-                                                     const Substitution *pSubst = NULL /* substitution to apply if the token is a type spec with generic variables */ );
+                                                     const Substitution *pSubst = NULL /* substitution to apply if the token is a type spec with generic variables */,
+                                                     MethodTable *pMTInterfaceMapOwner = NULL);
 
     // Load constructed types by providing their constituents
     static TypeHandle LoadPointerOrByrefTypeThrowing(CorElementType typ,
@@ -705,10 +699,19 @@ public:
                                             LoadTypesFlag fLoadTypes = LoadTypes,
                                             ClassLoadLevel level = CLASS_LOADED);
 
-    // Load types by name
+    // External class loader entry point
+    // Load types by name - doesn't support nested types.
+    // See overload using NameHandle.
     static TypeHandle LoadTypeByNameThrowing(Assembly *pAssembly,
                                              LPCUTF8 nameSpace,
                                              LPCUTF8 name,
+                                             NotFoundAction fNotFound = ThrowIfNotFound,
+                                             LoadTypesFlag fLoadTypes = LoadTypes,
+                                             ClassLoadLevel level = CLASS_LOADED);
+
+    // Load types using a NameHandle.
+    static TypeHandle LoadTypeByNameThrowing(Assembly *pAssembly,
+                                             NameHandle *pNameHandle,
                                              NotFoundAction fNotFound = ThrowIfNotFound,
                                              LoadTypesFlag fLoadTypes = LoadTypes,
                                              ClassLoadLevel level = CLASS_LOADED);
@@ -717,7 +720,7 @@ public:
     // (Just a no-op on TypeDefs)
     // Return FALSE if operation failed (e.g. type does not exist)
     // *pfUsesTypeForwarder is set to TRUE if a type forwarder is found. It is never set to FALSE.
-    static BOOL ResolveTokenToTypeDefThrowing(Module *         pTypeRefModule,
+    static BOOL ResolveTokenToTypeDefThrowing(ModuleBase *     pTypeRefModule,
                                               mdTypeRef        typeRefToken,
                                               Module **        ppTypeDefModule,
                                               mdTypeDef *      pTypeDefToken,
@@ -748,7 +751,7 @@ public:
 public:
     // Looks up class in the local module table, if it is there it succeeds,
     // Otherwise it fails, This is meant only for optimizations etc
-    static TypeHandle LookupTypeDefOrRefInModule(Module *pModule, mdToken cl, ClassLoadLevel *pLoadLevel = NULL);
+    static TypeHandle LookupTypeDefOrRefInModule(ModuleBase *pModule, mdToken cl, ClassLoadLevel *pLoadLevel = NULL);
 
 private:
 
@@ -873,7 +876,7 @@ public:
     //Creates a key with both the namespace and name converted to lowercase and
     //made into a proper namespace-path.
     VOID CreateCanonicallyCasedKey(LPCUTF8 pszNameSpace, LPCUTF8 pszName,
-                                      __out LPUTF8 *ppszOutNameSpace, __out LPUTF8 *ppszOutName);
+                                      _Out_ LPUTF8 *ppszOutNameSpace, _Out_ LPUTF8 *ppszOutName);
 
     static HRESULT FindTypeDefByExportedType(IMDInternalImport *pCTImport,
                                              mdExportedType mdCurrent,
@@ -898,30 +901,19 @@ private:
                                                   ClassLoadLevel level = CLASS_LOADED,
                                                   const InstantiationContext *pInstContext = NULL);
 
-    static TypeHandle LookupTypeKeyUnderLock(TypeKey *pKey,
-                                             EETypeHashTable *pTable,
-                                             CrstBase *pLock);
+    static TypeHandle LookupTypeKey(TypeKey *pKey, EETypeHashTable *pTable);
 
-    static TypeHandle LookupTypeKey(TypeKey *pKey,
-                                    EETypeHashTable *pTable,
-                                    CrstBase *pLock,
-                                    BOOL fCheckUnderLock);
-
-    static TypeHandle LookupInLoaderModule(TypeKey* pKey, BOOL fCheckUnderLock);
-#ifdef FEATURE_PREJIT
-    static TypeHandle LookupInPreferredZapModule(TypeKey* pKey, BOOL fCheckUnderLock);
-#endif // FEATURE_PREJIT
+    static TypeHandle LookupInLoaderModule(TypeKey* pKey);
 
     // Lookup a handle in the appropriate table
     // (declaring module for TypeDef or loader-module for constructed types)
     static TypeHandle LookupTypeHandleForTypeKey(TypeKey *pTypeKey);
-    static TypeHandle LookupTypeHandleForTypeKeyInner(TypeKey *pTypeKey, BOOL fCheckUnderLock);
 
     static void DECLSPEC_NORETURN  ThrowTypeLoadException(TypeKey *pKey, UINT resIDWhy);
 
 
     BOOL IsNested(const NameHandle* pName, mdToken *mdEncloser);
-    static BOOL IsNested(Module *pModude, mdToken typeDefOrRef, mdToken *mdEncloser);
+    static BOOL IsNested(ModuleBase *pModude, mdToken typeDefOrRef, mdToken *mdEncloser);
 
 public:
     // Helpers for FindClassModule()

@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
-
+using System.Tests;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Http.Tests
@@ -34,6 +35,51 @@ namespace System.Net.Http.Tests
         private const string rawPrefix = "raw";
         private const string parsedPrefix = "parsed";
         private const string invalidHeaderValue = "invalid";
+
+        [Fact]
+        public void TryAddWithoutValidation_ValidAndInvalidValues_InsertionOrderIsPreserved()
+        {
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com");
+            request.Headers.TryAddWithoutValidation("Accept", "text/bar");
+            request.Headers.TryAddWithoutValidation("Accept", "invalid");
+            request.Headers.TryAddWithoutValidation("Accept", "text/baz");
+
+            // Force parsing
+            _ = request.Headers.Accept.Count;
+
+            Assert.Equal(1, request.Headers.NonValidated.Count);
+            HeaderStringValues accept = request.Headers.NonValidated["Accept"];
+            Assert.Equal(new[] { "text/bar", "invalid", "text/baz" }, accept);
+        }
+
+        [Fact]
+        public void MixedAddAndTryAddWithoutValidation_ParsedAndRawValues_InsertionOrderIsPreserved()
+        {
+            HttpHeaders headers = new HttpRequestMessage().Headers;
+
+            headers.Add("Accept", "text/foo");
+            headers.TryAddWithoutValidation("Accept", "text/bar");
+            headers.TryAddWithoutValidation("Accept", "invalid");
+
+            var expectedValues = new string[] { "text/foo", "text/bar", "invalid" };
+
+            Assert.Equal(expectedValues, headers.NonValidated["Accept"]);
+
+            Assert.True(headers.TryGetValues("Accept", out IEnumerable<string>? values));
+            Assert.Equal(expectedValues, values);
+
+            Assert.Equal(expectedValues, headers.NonValidated["Accept"]);
+        }
+
+        [Fact]
+        public void TryAddWithoutValidation_AddInvalidViaHeaderValue_ValuePassed()
+        {
+            MockHeaders headers = new MockHeaders();
+            headers.TryAddWithoutValidation("Via", "1.1 foo.bar, foo");
+
+            Assert.Equal(1, headers.First().Value.Count());
+            Assert.Equal("1.1 foo.bar, foo", headers.First().Value.ElementAt(0));
+        }
 
         [Theory]
         [InlineData(null)]
@@ -165,11 +211,10 @@ namespace System.Net.Http.Tests
             MockHeaders headers = new MockHeaders();
 
             // The parser returns 'true' to indicate that it could parse the value (empty values allowed) and an
-            // value of 'null'. HttpHeaders will remove the header from the collection since the known header doesn't
-            // have a value.
+            // value of 'null'.
             headers.TryAddWithoutValidation(headers.Descriptor, string.Empty);
             Assert.Equal(0, headers.Parser.TryParseValueCallCount);
-            Assert.Equal(0, headers.Count());
+            Assert.Equal(1, headers.Count());
 
             headers.Clear();
             headers.TryAddWithoutValidation("custom", (string)null);
@@ -190,36 +235,24 @@ namespace System.Net.Http.Tests
             Assert.Equal(1, headers.Count());
             Assert.Equal(2, headers.First().Value.Count());
 
-            // If you compare this test with the previous one: Note that we reversed the order of adding the invalid
-            // string and the valid string. However, when enumerating header values the order is still the same as in
-            // the previous test.
-            // We don't keep track of the order if we have both invalid & valid values. This would add complexity
-            // and additional memory to store the information. Given how rare this scenario is we consider this
-            // by design. Note that this scenario is only an issue if:
-            // - The header value has an invalid format (very rare for standard headers) AND
-            // - There are multiple header values (some valid, some invalid) AND
-            // - The order of the headers matters (e.g. Transfer-Encoding)
-            Assert.Equal(parsedPrefix, headers.First().Value.ElementAt(0));
-            Assert.Equal(invalidHeaderValue, headers.First().Value.ElementAt(1));
-
+            Assert.Equal(invalidHeaderValue, headers.First().Value.ElementAt(0));
+            Assert.Equal(parsedPrefix, headers.First().Value.ElementAt(1));
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
 
-            string expected = headers.Descriptor.Name + ": " + parsedPrefix + ", " + invalidHeaderValue + Environment.NewLine;
+            string expected = headers.Descriptor.Name + ": " + invalidHeaderValue + ", " + parsedPrefix + Environment.NewLine;
             Assert.Equal(expected, headers.ToString());
         }
 
         [Fact]
-        public void TryAddWithoutValidation_AddNullValueForKnownHeader_ParserRejectsNullEmptyStringAdded()
+        public void TryAddWithoutValidation_AddNullValueForKnownHeader_ParserDoesNotRejectsNullEmptyStringAdded()
         {
             MockHeaders headers = new MockHeaders();
             headers.TryAddWithoutValidation(headers.Descriptor, (string)null);
 
             Assert.Equal(0, headers.Parser.TryParseValueCallCount);
 
-            // MockParser is called with an empty string and decides that it is OK to have empty values but they
-            // shouldn't be added to the list of header values. HttpHeaders will remove the header since it doesn't
-            // have values.
-            Assert.Equal(0, headers.Count());
+            // MockParser is called with an empty string and decides that it is OK to have empty values.
+            Assert.Equal(1, headers.Count());
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
         }
 
@@ -254,19 +287,19 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void TryAddWithoutValidation_AddNullAndEmptyValuesToKnownHeader_HeaderRemovedFromCollection()
+        public void TryAddWithoutValidation_AddNullAndEmptyValuesToKnownHeader_HeaderNotRemovedFromCollection()
         {
             MockHeaders headers = new MockHeaders();
             headers.TryAddWithoutValidation(headers.Descriptor, (string)null);
             headers.TryAddWithoutValidation(headers.Descriptor, string.Empty);
 
             Assert.Equal(0, headers.Parser.TryParseValueCallCount);
-            Assert.Equal(0, headers.Count());
+            Assert.Equal(1, headers.Count());
 
             // TryAddWithoutValidation() adds 'null' as string.empty to distinguish between an empty raw value and no raw
             // value. When the parser is called later, the parser can decide whether empty strings are valid or not.
             // In our case the MockParser returns 'success' with a parsed value of 'null' indicating that it is OK to
-            // have empty values, but they should be ignored.
+            // have empty values.
             Assert.Equal(2, headers.Parser.EmptyValueCount);
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
         }
@@ -329,60 +362,36 @@ namespace System.Net.Http.Tests
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
         }
 
-        [Fact]
-        public void TryAddWithoutValidation_AddValueContainingNewLine_NewLineFollowedByWhitespaceIsOKButNewLineFollowedByNonWhitespaceIsRejected()
+        [Theory]
+        [MemberData(nameof(HeaderValuesWithNewLines))]
+        public void TryAddWithoutValidation_AddValueContainingNewLine_InvalidValueSaved(string headerValue)
         {
-            MockHeaders headers = new MockHeaders();
+            var headers = new HttpRequestHeaders();
 
-            // The header parser rejects both of the following values. Both values contain new line chars. According
-            // to the RFC, LWS supports newlines followed by whitespace. I.e. the first value gets rejected by the
-            // parser, but added to the list of invalid values.
-            headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\n other: value"); // OK, LWS is allowed
+            // This value is considered invalid, however, since TryAddWithoutValidation() only causes the
+            // header value to be analyzed when it gets actually accessed, no exception is thrown.
+            headers.TryAddWithoutValidation("foo", headerValue);
+
+            Assert.True(headers.Contains("foo"));
+            Assert.Equal(1, headers.NonValidated.Count);
+            Assert.Equal(headerValue, headers.NonValidated["foo"].ToString());
+
             Assert.Equal(1, headers.Count());
-            Assert.Equal(1, headers.First().Value.Count());
-            Assert.Equal(invalidHeaderValue + "\r\n other: value", headers.First().Value.First());
-            Assert.Equal(1, headers.Parser.TryParseValueCallCount);
+            Assert.True(headers.Contains("foo"));
 
-            // This value is considered invalid (newline char followed by non-whitespace). However, since
-            // TryAddWithoutValidation() only causes the header value to be analyzed when it gets actually accessed, no
-            // exception is thrown. Instead the value is discarded and a warning is logged.
-            headers.Clear();
-            headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\nother:value");
-            Assert.False(headers.Contains(headers.Descriptor));
-            Assert.Equal(0, headers.Count());
+            Assert.Equal(1, headers.NonValidated.Count);
 
-            // Adding newline followed by whitespace to a custom header is OK.
             headers.Clear();
-            headers.TryAddWithoutValidation("custom", "value\r\n other: value"); // OK, LWS is allowed
+            headers.TryAddWithoutValidation("foo", new[] { "valid", headerValue });
+
+            Assert.Equal(1, headers.NonValidated.Count);
+            Assert.Equal(new[] { "valid", headerValue }, headers.NonValidated["foo"]);
+
             Assert.Equal(1, headers.Count());
-            Assert.Equal(1, headers.First().Value.Count());
-            Assert.Equal("value\r\n other: value", headers.First().Value.First());
+            Assert.Equal(new[] { "valid", headerValue }, headers.First().Value);
 
-            // Adding newline followed by non-whitespace chars is invalid. The value is discarded and a warning is
-            // logged.
-            headers.Clear();
-            headers.TryAddWithoutValidation("custom", "value\r\nother: value");
-            Assert.False(headers.Contains("custom"));
-            Assert.Equal(0, headers.Count());
-
-            // Also ending a value with newline is invalid. Verify that valid values are added.
-            headers.Clear();
-            headers.Parser.TryParseValueCallCount = 0;
-            headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix + "\rvalid");
-            headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\n");
-            headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix + "\n," + invalidHeaderValue + "\r\nother");
-            Assert.Equal(1, headers.Count());
-            Assert.Equal(1, headers.First().Value.Count());
-            Assert.Equal(parsedPrefix + "\rvalid", headers.First().Value.First());
-            Assert.Equal(4, headers.Parser.TryParseValueCallCount);
-
-            headers.Clear();
-            headers.TryAddWithoutValidation("custom", "value\r\ninvalid");
-            headers.TryAddWithoutValidation("custom", "value\r\n valid");
-            headers.TryAddWithoutValidation("custom", "validvalue, invalid\r\nvalue");
-            Assert.Equal(1, headers.Count());
-            Assert.Equal(1, headers.First().Value.Count());
-            Assert.Equal("value\r\n valid", headers.First().Value.First());
+            Assert.Equal(1, headers.NonValidated.Count);
+            Assert.Equal(new[] { "valid", headerValue }, headers.NonValidated["foo"]);
         }
 
         [Fact]
@@ -632,15 +641,15 @@ namespace System.Net.Http.Tests
             Assert.Equal(1, headers.Count());
             Assert.Equal(2, headers.First().Value.Count());
 
-            Assert.Equal(parsedPrefix + "1", headers.First().Value.ElementAt(0));
-            Assert.Equal(invalidHeaderValue, headers.First().Value.ElementAt(1));
+            Assert.Equal(invalidHeaderValue, headers.First().Value.ElementAt(0));
+            Assert.Equal(parsedPrefix + "1", headers.First().Value.ElementAt(1));
 
             // Value is already parsed. There shouldn't be additional calls to the parser.
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
         }
 
         [Fact]
-        public void Add_SingleFirstTryAddWithoutValidationForEmptyValueThenAdd_OneParsedValueAddedEmptyIgnored()
+        public void Add_SingleFirstTryAddWithoutValidationForEmptyValueThenAdd_TwoParsedValueAddedEmptyNotIgnored()
         {
             MockHeaders headers = new MockHeaders();
             headers.TryAddWithoutValidation(headers.Descriptor, string.Empty);
@@ -651,9 +660,9 @@ namespace System.Net.Http.Tests
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
 
             Assert.Equal(1, headers.Count());
-            Assert.Equal(1, headers.First().Value.Count());
+            Assert.Equal(2, headers.First().Value.Count());
 
-            Assert.Equal(parsedPrefix + "1", headers.First().Value.ElementAt(0));
+            Assert.Equal(parsedPrefix + "1", headers.First().Value.ElementAt(1));
 
             // Value is already parsed. There shouldn't be additional calls to the parser.
             Assert.Equal(2, headers.Parser.TryParseValueCallCount);
@@ -811,22 +820,23 @@ namespace System.Net.Http.Tests
             Assert.Equal(3, headers.GetValues("CuStOm-HeAdEr").Count());
         }
 
-        [Fact]
-        public void Add_AddValueContainingNewLine_NewLineFollowedByWhitespaceIsOKButNewLineFollowedByNonWhitespaceIsRejected()
+        [Theory]
+        [MemberData(nameof(HeaderValuesWithNewLines))]
+        public void Add_AddValueContainingNewLine_Rejected(string headerValue)
         {
-            MockHeaders headers = new MockHeaders();
+            var headers = new HttpRequestHeaders();
+
+            Assert.Throws<FormatException>(() => headers.Add("foo", headerValue));
+            Assert.Equal(0, headers.Count());
+            Assert.Equal(0, headers.NonValidated.Count);
 
             headers.Clear();
-            headers.Add("custom", "value\r");
+            Assert.Throws<FormatException>(() => headers.Add("foo", new[] { "valid", headerValue }));
             Assert.Equal(1, headers.Count());
             Assert.Equal(1, headers.First().Value.Count());
-            Assert.Equal("value\r", headers.First().Value.First());
-
-            headers.Clear();
-            Assert.Throws<FormatException>(() => { headers.Add("custom", new string[] { "valid\n", "invalid\r\nother" }); });
-            Assert.Equal(1, headers.Count());
-            Assert.Equal(1, headers.First().Value.Count());
-            Assert.Equal("valid\n", headers.First().Value.First());
+            Assert.Equal("valid", headers.First().Value.First());
+            Assert.Equal(1, headers.NonValidated.Count);
+            Assert.Equal("valid", headers.NonValidated["foo"].ToString());
         }
 
         [Fact]
@@ -996,26 +1006,27 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void RemoveParsedValue_FirstAddInvalidNewlineCharsValueThenCallRemoveParsedValue_HeaderRemoved()
+        public void RemoveParsedValue_FirstAddNewlineCharsValueThenCallRemoveParsedValue_InvalidValueRemains()
         {
             MockHeaders headers = new MockHeaders();
 
-            // Add header value with invalid newline chars.
+            // Add header value with newline chars.
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
 
             Assert.Equal(0, headers.Parser.TryParseValueCallCount);
 
             headers.RemoveParsedValue(headers.Descriptor, "");
 
-            Assert.False(headers.Contains(headers.Descriptor), "Store should not have an entry for 'knownHeader'.");
+            Assert.True(headers.Contains(headers.Descriptor));
+            Assert.Equal(new[] { invalidHeaderValue + "\r\ninvalid" }, headers.GetValues(headers.Descriptor));
         }
 
         [Fact]
-        public void RemoveParsedValue_FirstAddInvalidNewlineCharsValueThenAddValidValueThenCallAddParsedValue_HeaderRemoved()
+        public void RemoveParsedValue_FirstAddNewlineCharsValueThenAddValidValueThenCallAddParsedValue_HeaderNotRemoved()
         {
             MockHeaders headers = new MockHeaders();
 
-            // Add header value with invalid newline chars.
+            // Add header value with newline chars.
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
             headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix + "1");
 
@@ -1023,7 +1034,7 @@ namespace System.Net.Http.Tests
 
             headers.RemoveParsedValue(headers.Descriptor, parsedPrefix + "1");
 
-            Assert.False(headers.Contains(headers.Descriptor), "Store should not have an entry for 'knownHeader'.");
+            Assert.True(headers.Contains(headers.Descriptor));
         }
 
         [Fact]
@@ -1189,6 +1200,8 @@ namespace System.Net.Http.Tests
             // TryGetValues() should trigger parsing of values added with TryAddWithoutValidation()
             Assert.Equal(3, headers.Parser.TryParseValueCallCount);
 
+            // The first 2 valid values should be present.
+            // The last empty value will be ignored.
             Assert.Equal(2, values.Count());
 
             // Check returned values
@@ -1280,34 +1293,34 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void GetParsedValues_GetValuesFromUninitializedHeaderStore_ReturnsNull()
+        public void GetSingleParsedValue_GetValuesFromUninitializedHeaderStore_ReturnsNull()
         {
             MockHeaders headers = new MockHeaders();
 
             // Get header values from uninitialized store (store collection is null).
-            object storeValue = headers.GetParsedValues(customHeader);
+            object storeValue = headers.GetSingleParsedValue(customHeader);
             Assert.Null(storeValue);
         }
 
         [Fact]
-        public void GetParsedValues_GetValuesForNonExistingHeader_ReturnsNull()
+        public void GetSingleParsedValue_GetValuesForNonExistingHeader_ReturnsNull()
         {
             MockHeaders headers = new MockHeaders();
             headers.Add("custom1", "customValue1");
 
             // Get header values for non-existing header (but other headers exist in the store).
-            object storeValue = headers.GetParsedValues(customHeader);
+            object storeValue = headers.GetSingleParsedValue(customHeader);
             Assert.Null(storeValue);
         }
 
         [Fact]
-        public void GetParsedValues_GetSingleValueForExistingHeader_ReturnsAddedValue()
+        public void GetSingleParsedValue_GetSingleValueForExistingHeader_ReturnsAddedValue()
         {
             MockHeaders headers = new MockHeaders();
             headers.Add(customHeader.Name, "customValue1");
 
             // Get header values for non-existing header (but other headers exist in the store).
-            object storeValue = headers.GetParsedValues(customHeader);
+            object storeValue = headers.GetSingleParsedValue(customHeader);
             Assert.NotNull(storeValue);
 
             // If we only have one value, then GetValues() should return just the value and not wrap it in a List<T>.
@@ -1315,17 +1328,17 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void GetParsedValues_HeaderWithEmptyValues_ReturnsEmpty()
+        public void GetSingleParsedValue_HeaderWithEmptyValues_ReturnsEmpty()
         {
             MockHeaders headers = new MockHeaders();
             headers.Add(headers.Descriptor, string.Empty);
 
-            object storeValue = headers.GetParsedValues(headers.Descriptor);
+            object storeValue = headers.GetSingleParsedValue(headers.Descriptor);
             Assert.Null(storeValue);
         }
 
         [Fact]
-        public void GetParsedValues_GetMultipleValuesForExistingHeader_ReturnsListOfValues()
+        public void GetSingleParsedValue_GetMultipleValuesForExistingHeader_ReturnsListOfValues()
         {
             MockHeaders headers = new MockHeaders();
             headers.TryAddWithoutValidation("custom", rawPrefix + "0"); // this must not influence the result.
@@ -1335,7 +1348,7 @@ namespace System.Net.Http.Tests
             // Only 1 value should get parsed (call to Add() with known header value).
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
 
-            object storeValue = headers.GetParsedValues(headers.Descriptor);
+            object storeValue = headers.GetParsedAndInvalidValues(headers.Descriptor);
             Assert.NotNull(storeValue);
 
             // GetValues<T>() should trigger parsing of values added with TryAddWithoutValidation()
@@ -1351,7 +1364,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void GetParsedValues_GetValuesForExistingHeaderWithInvalidValues_ReturnsOnlyParsedValues()
+        public void GetSingleParsedValue_GetValuesForExistingHeaderWithInvalidValues_ReturnsOnlyParsedValues()
         {
             MockHeaders headers = new MockHeaders();
             headers.Add(headers.Descriptor, rawPrefix);
@@ -1364,7 +1377,7 @@ namespace System.Net.Http.Tests
             // Only 1 value should get parsed (call to Add() with known header value).
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
 
-            object storeValue = headers.GetParsedValues(headers.Descriptor);
+            object storeValue = headers.GetSingleParsedValue(headers.Descriptor);
             Assert.NotNull(storeValue);
 
             // GetValues<T>() should trigger parsing of values added with TryAddWithoutValidation()
@@ -1375,7 +1388,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void GetParsedValues_GetValuesForExistingHeaderWithOnlyInvalidValues_ReturnsEmptyEnumerator()
+        public void GetSingleParsedValue_GetValuesForExistingHeaderWithOnlyInvalidValues_ReturnsEmptyEnumerator()
         {
             MockHeaders headers = new MockHeaders();
 
@@ -1386,7 +1399,7 @@ namespace System.Net.Http.Tests
 
             Assert.Equal(0, headers.Parser.TryParseValueCallCount);
 
-            object storeValue = headers.GetParsedValues(headers.Descriptor);
+            object storeValue = headers.GetSingleParsedValue(headers.Descriptor);
             Assert.Null(storeValue);
 
             // GetValues<T>() should trigger parsing of values added with TryAddWithoutValidation()
@@ -1394,58 +1407,75 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void GetParsedValues_AddInvalidValueToHeader_HeaderGetsRemovedAndNullReturned()
+        public void GetSingleParsedValue_AddInvalidValueToHeader_HeaderNotRemovedAndNullReturned()
         {
             MockHeaders headers = new MockHeaders();
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
 
             Assert.Equal(0, headers.Parser.TryParseValueCallCount);
 
-            object storeValue = headers.GetParsedValues(headers.Descriptor);
+            object storeValue = headers.GetSingleParsedValue(headers.Descriptor);
             Assert.Null(storeValue);
-            Assert.False(headers.Contains(headers.Descriptor));
+            Assert.True(headers.Contains(headers.Descriptor));
         }
 
         [Fact]
-        public void GetParsedValues_GetParsedValuesForKnownHeaderWithInvalidNewlineChars_ReturnsNull()
+        public void GetSingleParsedValue_GetSingleParsedValueForKnownHeaderWithNewlineChars_ReturnsNull()
         {
             MockHeaders headers = new MockHeaders();
 
-            // Add header value with invalid newline chars.
+            // Add header value with newline chars.
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
 
             Assert.Equal(0, headers.Parser.TryParseValueCallCount);
-            Assert.Null(headers.GetParsedValues(headers.Descriptor));
-            Assert.Equal(0, headers.Count());
+            Assert.Null(headers.GetSingleParsedValue(headers.Descriptor));
+            Assert.Equal(1, headers.Count());
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
         }
 
         [Fact]
-        public void GetHeaderStrings_SetValidAndInvalidHeaderValues_AllHeaderValuesReturned()
+        public void NonValidated_Default_Empty()
+        {
+            HttpHeadersNonValidated v = default;
+            Assert.Equal(0, v.Count);
+            Assert.Empty(v);
+            Assert.False(v.TryGetValues("Host", out HeaderStringValues values));
+            Assert.Empty(values);
+        }
+
+        [Fact]
+        public void NonValidated_SetValidAndInvalidHeaderValues_AllHeaderValuesReturned()
         {
             MockHeaderParser parser = new MockHeaderParser("---");
             MockHeaders headers = new MockHeaders(parser);
 
-            // Add header value with invalid newline chars.
             headers.Add(headers.Descriptor, rawPrefix + "1");
             headers.TryAddWithoutValidation(headers.Descriptor, "value2,value3");
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue);
 
-            foreach (var header in headers.GetHeaderStrings())
+            string expectedValue = $"{parsedPrefix}1---value2,value3---{invalidHeaderValue}";
+
+            Assert.Equal(1, headers.NonValidated.Count);
+
+            int iterations = 0;
+            foreach (KeyValuePair<string, HeaderStringValues> header in headers.NonValidated)
             {
-                Assert.Equal(headers.Descriptor.Name, header.Key);
                 // Note that raw values don't get parsed but just added to the result.
-                Assert.Equal("value2,value3---" + invalidHeaderValue + "---" + parsedPrefix + "1", header.Value);
+                iterations++;
+                Assert.Equal(headers.Descriptor.Name, header.Key);
+                Assert.Equal(3, header.Value.Count);
+                Assert.Equal(expectedValue, header.Value.ToString());
             }
+
+            Assert.Equal(1, iterations);
         }
 
         [Fact]
-        public void GetHeaderStrings_SetMultipleHeaders_AllHeaderValuesReturned()
+        public void NonValidated_SetMultipleHeaders_AllHeaderValuesReturned()
         {
             MockHeaderParser parser = new MockHeaderParser(true);
             MockHeaders headers = new MockHeaders(parser);
 
-            // Add header value with invalid newline chars.
             headers.Add(headers.Descriptor, rawPrefix + "1");
             headers.Add("header2", "value2");
             headers.Add("header3", (string)null);
@@ -1456,17 +1486,17 @@ namespace System.Net.Http.Tests
             string[] expectedHeaderValues = { parsedPrefix + "1", "value2", "", "value41, value42" };
             int i = 0;
 
-            foreach (var header in headers.GetHeaderStrings())
+            foreach (KeyValuePair<string, HeaderStringValues> header in headers.NonValidated)
             {
                 Assert.NotEqual(expectedHeaderNames.Length, i);
                 Assert.Equal(expectedHeaderNames[i], header.Key);
-                Assert.Equal(expectedHeaderValues[i], header.Value);
+                Assert.Equal(expectedHeaderValues[i], header.Value.ToString());
                 i++;
             }
         }
 
         [Fact]
-        public void GetHeaderStrings_SetMultipleValuesOnSingleValueHeader_AllHeaderValuesReturned()
+        public void NonValidated_SetMultipleValuesOnSingleValueHeader_AllHeaderValuesReturned()
         {
             MockHeaderParser parser = new MockHeaderParser(false);
             MockHeaders headers = new MockHeaders(parser);
@@ -1474,11 +1504,73 @@ namespace System.Net.Http.Tests
             headers.TryAddWithoutValidation(headers.Descriptor, "value1");
             headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix);
 
-            foreach (var header in headers.GetHeaderStrings())
+            foreach (KeyValuePair<string, HeaderStringValues> header in headers.NonValidated)
             {
                 Assert.Equal(headers.Descriptor.Name, header.Key);
                 // Note that the added rawPrefix did not get parsed
-                Assert.Equal("value1, " + rawPrefix, header.Value);
+                Assert.Equal("value1, " + rawPrefix, header.Value.ToString());
+            }
+        }
+
+        [Fact]
+        public void NonValidated_ValidAndInvalidValues_DictionaryMembersWork()
+        {
+            var headers = new HttpResponseHeaders();
+            IReadOnlyDictionary<string, HeaderStringValues> nonValidated = headers.NonValidated;
+
+            Assert.True(headers.TryAddWithoutValidation("Location", "http:/invalidLocation"));
+            Assert.True(headers.TryAddWithoutValidation("Location", "http:/anotherLocation"));
+            Assert.True(headers.TryAddWithoutValidation("Date", "not a date"));
+
+            Assert.Equal(2, nonValidated.Count);
+
+            Assert.True(nonValidated.ContainsKey("Location"));
+            Assert.True(nonValidated.ContainsKey("Date"));
+
+            Assert.False(nonValidated.ContainsKey("Age"));
+            Assert.False(nonValidated.TryGetValue("Age", out _));
+            Assert.Throws<KeyNotFoundException>(() => nonValidated["Age"]);
+
+            Assert.True(nonValidated.TryGetValue("Location", out HeaderStringValues locations));
+            Assert.Equal(2, locations.Count);
+            Assert.Equal(new[] { "http:/invalidLocation", "http:/anotherLocation" }, locations.ToArray());
+            Assert.Equal("http:/invalidLocation, http:/anotherLocation", locations.ToString());
+
+            Assert.True(nonValidated.TryGetValue("Date", out HeaderStringValues dates));
+            Assert.Equal(1, dates.Count);
+            Assert.Equal(new[] { "not a date" }, dates.ToArray());
+            Assert.Equal("not a date", dates.ToString());
+
+            dates = nonValidated["Date"];
+            Assert.Equal(1, dates.Count);
+            Assert.Equal(new[] { "not a date" }, dates.ToArray());
+            Assert.Equal("not a date", dates.ToString());
+
+            Assert.Equal(new HashSet<string> { "Location", "Date" }, nonValidated.Keys.ToHashSet());
+        }
+
+        [Fact]
+        public void NonValidated_ValidInvalidAndRaw_AllReturned()
+        {
+            var headers = new HttpResponseHeaders();
+            IReadOnlyDictionary<string, HeaderStringValues> nonValidated = headers.NonValidated;
+
+            // Parsed value
+            headers.Date = new DateTimeOffset(1, 2, 3, 4, 5, 6, TimeSpan.Zero);
+
+            // Invalid value
+            headers.TryAddWithoutValidation("Date", "not a date");
+            foreach (KeyValuePair<string, IEnumerable<string>> _ in headers) { }
+
+            // Raw value
+            headers.TryAddWithoutValidation("Date", "another not a date");
+
+            // All three show up
+            Assert.Equal(1, nonValidated.Count);
+            Assert.Equal(3, nonValidated["Date"].Count);
+            using (new ThreadCultureChange(new CultureInfo("en-US")))
+            {
+                Assert.Equal(new HashSet<string> { "not a date", "another not a date", "Sat, 03 Feb 0001 04:05:06 GMT" }, nonValidated["Date"].ToHashSet());
             }
         }
 
@@ -1541,20 +1633,20 @@ namespace System.Net.Http.Tests
             Assert.True(headers.Contains(headers.Descriptor));
 
             // Contains() should trigger parsing of values added with TryAddWithoutValidation(): If the value was invalid,
-            // i.e. contains invalid newline chars, then the header will be removed from the collection.
-            Assert.Equal(1, headers.Parser.TryParseValueCallCount);
+            // i.e. contains newline chars, then the header will not be removed from the collection.
+            Assert.Equal(0, headers.Parser.TryParseValueCallCount);
         }
 
         [Fact]
-        public void Contains_AddValuesWithInvalidNewlineChars_HeadersGetRemovedWhenCallingContains()
+        public void Contains_AddValuesWithNewlineChars_HeadersNotRemovedWhenCallingContains()
         {
             MockHeaders headers = new MockHeaders();
 
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
             headers.TryAddWithoutValidation("custom", "invalid\r\nvalue");
 
-            Assert.False(headers.Contains(headers.Descriptor), "Store should not have an entry for 'knownHeader'.");
-            Assert.False(headers.Contains("custom"), "Store should not have an entry for 'custom'.");
+            Assert.True(headers.Contains(headers.Descriptor));
+            Assert.True(headers.Contains("custom"));
         }
 
         [Fact]
@@ -1562,7 +1654,7 @@ namespace System.Net.Http.Tests
         {
             MockHeaders headers = new MockHeaders();
 
-            var enumerator = headers.GetEnumerator();
+            IEnumerator<KeyValuePair<string, IEnumerable<string>>> enumerator = headers.GetEnumerator();
             Assert.False(enumerator.MoveNext());
         }
 
@@ -1577,7 +1669,7 @@ namespace System.Net.Http.Tests
             // The value added with TryAddWithoutValidation() wasn't parsed yet.
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
 
-            var enumerator = headers.GetEnumerator();
+            IEnumerator<KeyValuePair<string, IEnumerable<string>>> enumerator = headers.GetEnumerator();
 
             // Getting the enumerator doesn't trigger parsing.
             Assert.Equal(1, headers.Parser.TryParseValueCallCount);
@@ -1610,7 +1702,7 @@ namespace System.Net.Http.Tests
             headers.Add(customHeaderName, string.Empty);
             headers.Add(headers.Descriptor, string.Empty);
 
-            var enumerator = headers.GetEnumerator();
+            IEnumerator<KeyValuePair<string, IEnumerable<string>>> enumerator = headers.GetEnumerator();
 
             Assert.True(enumerator.MoveNext());
             Assert.Equal(customHeaderName, enumerator.Current.Key);
@@ -1631,7 +1723,7 @@ namespace System.Net.Http.Tests
 
             System.Collections.IEnumerable headersAsIEnumerable = headers;
 
-            var enumerator = headersAsIEnumerable.GetEnumerator();
+            IEnumerator enumerator = headersAsIEnumerable.GetEnumerator();
 
             KeyValuePair<string, IEnumerable<string>> currentValue;
 
@@ -1644,6 +1736,24 @@ namespace System.Net.Http.Tests
             }
 
             Assert.False(enumerator.MoveNext(), "Only 2 values expected, but enumerator returns a third one.");
+        }
+
+        [Fact]
+        public void GetEnumerator_InvalidValueBetweenValidHeaders_EnumeratorReturnsAllValidValuesAndDoesNotRemoveInvalidValue()
+        {
+            MockHeaders headers = new MockHeaders();
+            headers.TryAddWithoutValidation("foo", "fooValue");
+            headers.TryAddWithoutValidation("invalid", "invalid\nvalue");
+            headers.TryAddWithoutValidation("bar", "barValue");
+
+            Assert.Equal(3, headers.Count);
+
+            IDictionary<string, IEnumerable<string>> dict = headers.ToDictionary(pair => pair.Key, pair => pair.Value);
+            Assert.Equal("fooValue", Assert.Single(Assert.Contains("foo", dict)));
+            Assert.Equal("barValue", Assert.Single(Assert.Contains("bar", dict)));
+
+            Assert.Equal(3, headers.Count);
+            Assert.True(headers.NonValidated.Contains("invalid"));
         }
 
         [Fact]
@@ -1713,11 +1823,11 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void AddParsedValue_FirstAddInvalidNewlineCharsValueThenCallAddParsedValue_ParsedValueAdded()
+        public void AddParsedValue_FirstAddNewlineCharsValueThenCallAddParsedValue_ParsedValueAdded()
         {
             MockHeaders headers = new MockHeaders();
 
-            // Add header value with invalid newline chars.
+            // Add header value with newline chars.
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
 
             Assert.Equal(0, headers.Parser.TryParseValueCallCount);
@@ -1725,16 +1835,15 @@ namespace System.Net.Http.Tests
             headers.AddParsedValue(headers.Descriptor, parsedPrefix + "1");
 
             Assert.True(headers.Contains(headers.Descriptor), "Store should have an entry for 'knownHeader'.");
-            Assert.Equal(1, headers.GetValues(headers.Descriptor).Count());
-            Assert.Equal(parsedPrefix + "1", headers.GetValues(headers.Descriptor).First());
+            Assert.Equal(new[] { invalidHeaderValue + "\r\ninvalid", parsedPrefix + "1" }, headers.GetValues(headers.Descriptor));
         }
 
         [Fact]
-        public void AddParsedValue_FirstAddInvalidNewlineCharsValueThenAddValidValueThenCallAddParsedValue_ParsedValueAdded()
+        public void AddParsedValue_FirstAddNewlineCharsValueThenAddValidValueThenCallAddParsedValue_ParsedValueAdded()
         {
             MockHeaders headers = new MockHeaders();
 
-            // Add header value with invalid newline chars.
+            // Add header value with newline chars.
             headers.TryAddWithoutValidation(headers.Descriptor, invalidHeaderValue + "\r\ninvalid");
             headers.TryAddWithoutValidation(headers.Descriptor, rawPrefix + "0");
 
@@ -1743,9 +1852,9 @@ namespace System.Net.Http.Tests
             headers.AddParsedValue(headers.Descriptor, parsedPrefix + "1");
 
             Assert.True(headers.Contains(headers.Descriptor), "Store should have an entry for 'knownHeader'.");
-            Assert.Equal(2, headers.GetValues(headers.Descriptor).Count());
-            Assert.Equal(parsedPrefix + "0", headers.GetValues(headers.Descriptor).ElementAt(0));
-            Assert.Equal(parsedPrefix + "1", headers.GetValues(headers.Descriptor).ElementAt(1));
+            Assert.Equal(3, headers.GetValues(headers.Descriptor).Count());
+            Assert.Equal(parsedPrefix + "0", headers.GetValues(headers.Descriptor).ElementAt(1));
+            Assert.Equal(parsedPrefix + "1", headers.GetValues(headers.Descriptor).ElementAt(2));
         }
 
         [Fact]
@@ -1965,7 +2074,7 @@ namespace System.Net.Http.Tests
             // Now add all headers that are in source but not destination to destination.
             destination.AddHeaders(source);
 
-            Assert.Equal(8, destination.Count());
+            Assert.Equal(9, destination.Count());
 
             Assert.Equal(2, destination.GetValues("custom1").Count());
             Assert.Equal("source10", destination.GetValues("custom1").ElementAt(0));
@@ -1983,11 +2092,10 @@ namespace System.Net.Http.Tests
             // invalid value.
             Assert.Equal(3, destination.GetValues(known2Header).Count());
             Assert.Equal(parsedPrefix + "5", destination.GetValues(known2Header).ElementAt(0));
-            Assert.Equal(parsedPrefix + "7", destination.GetValues(known2Header).ElementAt(1));
-            Assert.Equal(invalidHeaderValue, destination.GetValues(known2Header).ElementAt(2));
-
-            // Header 'known3' should not be copied, since it doesn't contain any values.
-            Assert.False(destination.Contains(known3Header), "'known3' header value count.");
+            Assert.Equal(invalidHeaderValue, destination.GetValues(known2Header).ElementAt(1));
+            Assert.Equal(parsedPrefix + "7", destination.GetValues(known2Header).ElementAt(2));
+            // Header 'known3' should be copied, since parsing should not remove any values.
+            Assert.True(destination.Contains(known3Header), "'known3' header value count.");
 
             Assert.Equal(2, destination.GetValues(known4Header).Count());
             Assert.Equal(known4Value1.ToString(), destination.GetValues(known4Header).ElementAt(0));
@@ -2031,7 +2139,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void AddHeaders_SourceHasInvalidHeaderValues_InvalidHeadersRemovedFromSourceAndNotCopiedToDestination()
+        public void AddHeaders_SourceHasInvalidHeaderValues_InvalidHeadersNotRemovedFromSourceAndCopiedToDestination()
         {
             MockHeaders source = new MockHeaders();
             source.TryAddWithoutValidation(known1Header, invalidHeaderValue + "\r\ninvalid");
@@ -2040,12 +2148,375 @@ namespace System.Net.Http.Tests
             MockHeaders destination = new MockHeaders();
             destination.AddHeaders(source);
 
-            Assert.Equal(0, source.Count());
-            Assert.False(source.Contains(known1Header), "source contains 'known' header.");
-            Assert.False(source.Contains("custom"), "source contains 'custom' header.");
-            Assert.Equal(0, destination.Count());
-            Assert.False(destination.Contains(known1Header), "destination contains 'known' header.");
-            Assert.False(destination.Contains("custom"), "destination contains 'custom' header.");
+            Assert.Equal(2, source.Count());
+            Assert.True(source.Contains(known1Header));
+            Assert.True(source.Contains("custom"));
+            Assert.Equal(2, destination.Count());
+            Assert.True(destination.Contains(known1Header));
+            Assert.True(destination.Contains("custom"));
+        }
+
+        [Fact]
+        public void AddHeaders_ResponseHeaderToRequestHeaders_Success()
+        {
+            const string Name = "WWW-Authenticate";
+            const string Value = "Basic realm=\"Access to the staging site\", charset=\"UTF-8\"";
+
+            var request = new HttpRequestMessage();
+            Assert.True(request.Headers.TryAddWithoutValidation(Name, Value));
+
+            Assert.True(request.Headers.Contains(Name));
+            Assert.True(request.Headers.NonValidated.Contains(Name));
+
+            Assert.True(request.Headers.TryGetValues(Name, out IEnumerable<string> values));
+            Assert.Equal(Value, values.Single());
+
+            Assert.True(request.Headers.NonValidated.TryGetValues(Name, out HeaderStringValues nvValues));
+            Assert.Equal(Value, nvValues.Single());
+        }
+
+        [Fact]
+        public void AddHeaders_RequestHeaderToResponseHeaders_Success()
+        {
+            const string Name = "Referer";
+            const string Value = "https://dot.net";
+
+            var response = new HttpResponseMessage();
+            Assert.True(response.Headers.TryAddWithoutValidation(Name, Value));
+
+            Assert.True(response.Headers.Contains(Name));
+            Assert.True(response.Headers.NonValidated.Contains(Name));
+
+            Assert.True(response.Headers.TryGetValues(Name, out IEnumerable<string> values));
+            Assert.Equal(Value, values.Single());
+
+            Assert.True(response.Headers.NonValidated.TryGetValues(Name, out HeaderStringValues nvValues));
+            Assert.Equal(Value, nvValues.Single());
+        }
+
+        [Fact]
+        public void HeaderStringValues_Default_Empty()
+        {
+            HeaderStringValues v = default;
+            Assert.Equal(0, v.Count);
+            Assert.Empty(v);
+            Assert.Equal(string.Empty, v.ToString());
+        }
+
+        [Fact]
+        public void HeaderStringValues_Constructed_ProducesExpectedResults()
+        {
+            // 0 strings
+            foreach (HeaderStringValues hsv in new[] { new HeaderStringValues(KnownHeaders.Accept.Descriptor, Array.Empty<string>()) })
+            {
+                Assert.Equal(0, hsv.Count);
+
+                HeaderStringValues.Enumerator e = hsv.GetEnumerator();
+
+                Assert.False(e.MoveNext());
+
+                Assert.Equal(string.Empty, hsv.ToString());
+            }
+
+            // 1 string
+            foreach (HeaderStringValues hsv in new[] { new HeaderStringValues(KnownHeaders.Accept.Descriptor, "hello"), new HeaderStringValues(KnownHeaders.Accept.Descriptor, new[] { "hello" }) })
+            {
+                Assert.Equal(1, hsv.Count);
+
+                HeaderStringValues.Enumerator e = hsv.GetEnumerator();
+
+                Assert.True(e.MoveNext());
+                Assert.Equal("hello", e.Current);
+
+                Assert.False(e.MoveNext());
+
+                Assert.Equal("hello", hsv.ToString());
+            }
+
+            // 2 strings
+            foreach (HeaderStringValues hsv in new[] { new HeaderStringValues(KnownHeaders.Accept.Descriptor, new[] { "hello", "world" }) })
+            {
+                Assert.Equal(2, hsv.Count);
+
+                HeaderStringValues.Enumerator e = hsv.GetEnumerator();
+
+                Assert.True(e.MoveNext());
+                Assert.Equal("hello", e.Current);
+
+                Assert.True(e.MoveNext());
+                Assert.Equal("world", e.Current);
+
+                Assert.False(e.MoveNext());
+
+                Assert.Equal("hello, world", hsv.ToString());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NumberOfHeadersUpToArrayThreshold_AddNonValidated_EnumerateNonValidated))]
+        public void Add_WithinArrayThresholdHeaders_EnumerationPreservesOrdering(int numberOfHeaders, bool addNonValidated, bool enumerateNonValidated)
+        {
+            var headers = new MockHeaders();
+
+            for (int i = 0; i < numberOfHeaders; i++)
+            {
+                if (addNonValidated)
+                {
+                    headers.TryAddWithoutValidation(i.ToString(), i.ToString());
+                }
+                else
+                {
+                    headers.Add(i.ToString(), i.ToString());
+                }
+            }
+
+            KeyValuePair<string, string>[] entries = enumerateNonValidated
+                ? headers.NonValidated.Select(pair => KeyValuePair.Create(pair.Key, Assert.Single(pair.Value))).ToArray()
+                : headers.Select(pair => KeyValuePair.Create(pair.Key, Assert.Single(pair.Value))).ToArray();
+
+            Assert.Equal(numberOfHeaders, entries.Length);
+            for (int i = 0; i < numberOfHeaders; i++)
+            {
+                Assert.Equal(i.ToString(), entries[i].Key);
+                Assert.Equal(i.ToString(), entries[i].Value);
+            }
+        }
+
+        [Fact]
+        public void Add_Remove_HeaderOrderingIsPreserved()
+        {
+            var headers = new MockHeaders();
+            headers.Add("a", "");
+            headers.Add("b", "");
+            headers.Add("c", "");
+
+            headers.Remove("b");
+
+            Assert.Equal(new[] { "a", "c" }, headers.Select(pair => pair.Key));
+        }
+
+        [Fact]
+        public void Add_AddToExistingKey_OriginalOrderingIsPreserved()
+        {
+            var headers = new MockHeaders();
+            headers.Add("a", "a1");
+            headers.Add("b", "b1");
+            headers.Add("a", "a2");
+
+            Assert.Equal(new[] { "a", "b" }, headers.Select(pair => pair.Key));
+        }
+
+        [Theory]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        [InlineData(HttpHeaders.ArrayThreshold / 4)]
+        [InlineData(HttpHeaders.ArrayThreshold / 2)]
+        [InlineData(HttpHeaders.ArrayThreshold - 1)]
+        [InlineData(HttpHeaders.ArrayThreshold)]
+        [InlineData(HttpHeaders.ArrayThreshold + 1)]
+        [InlineData(HttpHeaders.ArrayThreshold * 2)]
+        [InlineData(HttpHeaders.ArrayThreshold * 4)]
+        public void Add_LargeNumberOfHeaders_OperationsStillSupported(int numberOfHeaders)
+        {
+            string[] keys = Enumerable.Range(1, numberOfHeaders).Select(i => i.ToString()).ToArray();
+
+            var headers = new MockHeaders();
+            foreach (string key in keys)
+            {
+                Assert.False(headers.NonValidated.Contains(key));
+                headers.TryAddWithoutValidation(key, key);
+                Assert.True(headers.NonValidated.Contains(key));
+            }
+
+            string[] nonValidatedKeys = headers.NonValidated.Select(pair => pair.Key).ToArray();
+            Assert.Equal(numberOfHeaders, nonValidatedKeys.Length);
+
+            string[] newKeys = headers.Select(pair => pair.Key).ToArray();
+            Assert.Equal(numberOfHeaders, newKeys.Length);
+
+            string[] nonValidatedKeysAfterValidation = headers.NonValidated.Select(pair => pair.Key).ToArray();
+            Assert.Equal(numberOfHeaders, nonValidatedKeysAfterValidation.Length);
+
+            if (numberOfHeaders > HttpHeaders.ArrayThreshold)
+            {
+                // Ordering is lost when adding more than ArrayThreshold headers
+                Array.Sort(nonValidatedKeys, (a, b) => int.Parse(a).CompareTo(int.Parse(b)));
+                Array.Sort(newKeys, (a, b) => int.Parse(a).CompareTo(int.Parse(b)));
+                Array.Sort(nonValidatedKeysAfterValidation, (a, b) => int.Parse(a).CompareTo(int.Parse(b)));
+            }
+            Assert.Equal(keys, nonValidatedKeys);
+            Assert.Equal(keys, newKeys);
+            Assert.Equal(keys, nonValidatedKeysAfterValidation);
+
+            headers.Add("3", "secondValue");
+            Assert.True(headers.TryGetValues("3", out IEnumerable<string> valuesFor3));
+            Assert.Equal(new[] { "3", "secondValue" }, valuesFor3);
+
+            Assert.True(headers.TryAddWithoutValidation("invalid", "invalid\nvalue"));
+            Assert.True(headers.TryAddWithoutValidation("valid", "validValue"));
+
+            Assert.Equal(numberOfHeaders + 2, headers.NonValidated.Count);
+
+            // Remove all headers except for "1", "valid", "invalid"
+            for (int i = 2; i <= numberOfHeaders; i++)
+            {
+                Assert.True(headers.Remove(i.ToString()));
+            }
+
+            Assert.False(headers.Remove("3"));
+
+            // "1", "invalid", "valid"
+            Assert.True(headers.NonValidated.Contains("invalid"));
+            Assert.Equal(3, headers.NonValidated.Count);
+
+            Assert.Equal(new[] { "1", "invalid", "valid" }, headers.Select(pair => pair.Key).OrderBy(i => i));
+
+            Assert.Equal(3, headers.NonValidated.Count);
+
+            headers.Clear();
+
+            Assert.Equal(0, headers.NonValidated.Count);
+            Assert.Empty(headers);
+            Assert.False(headers.Contains("3"));
+
+            Assert.True(headers.TryAddWithoutValidation("3", "newValue"));
+            Assert.True(headers.TryGetValues("3", out valuesFor3));
+            Assert.Equal(new[] { "newValue" }, valuesFor3);
+        }
+
+        [Fact]
+        public async Task ConcurrentReads_AreThreadSafe()
+        {
+            if (Environment.ProcessorCount < 3) return;
+
+            const int TestRunTimeMs = 100;
+
+            bool running = true;
+            HttpRequestHeaders headers = CreateHeaders();
+
+            Task readerTask1 = Task.Run(ReaderWorker);
+            Task readerTask2 = Task.Run(ReaderWorker);
+            Task writerTask = Task.Run(() =>
+            {
+                while (Volatile.Read(ref running)) Volatile.Write(ref headers, CreateHeaders());
+            });
+
+            await Task.Delay(TimeSpan.FromMilliseconds(TestRunTimeMs));
+
+            Volatile.Write(ref running, false);
+
+            await writerTask;
+            await readerTask1;
+            await readerTask2;
+
+            void ReaderWorker()
+            {
+                var tests = new Action<HttpRequestHeaders>[0];
+                tests = new Action<HttpRequestHeaders>[]
+                {
+                    static headers => Assert.Equal(6, headers.NonValidated.Count),
+                    static headers => Assert.True(headers.Contains("a")),
+                    static headers => Assert.False(headers.Contains("b")),
+                    static headers => Assert.True(headers.NonValidated.Contains("a")),
+                    static headers => Assert.False(headers.NonValidated.Contains("b")),
+                    static headers => Assert.True(headers.Contains("c")),
+                    static headers => Assert.True(headers.Contains("f")),
+                    static headers => Assert.True(headers.Contains("h")),
+                    static headers => Assert.True(headers.Contains("H")),
+                    static headers => Assert.True(headers.Contains("Accept")),
+                    static headers => Assert.True(headers.Contains("Cache-Control")),
+                    static headers => Assert.True(headers.TryGetValues("a", out var values) && values.Single() == "b"),
+                    static headers => Assert.False(headers.TryGetValues("b", out _)),
+                    static headers => Assert.True(headers.NonValidated.TryGetValues("a", out var values) && values.Single() == "b"),
+                    static headers => Assert.False(headers.NonValidated.TryGetValues("b", out _)),
+                    static headers => Assert.True(headers.TryGetValues("f", out var values) && values.Single() == "g"),
+                    static headers => Assert.True(headers.NonValidated.TryGetValues("f", out var values) && values.Single() == "g"),
+                    static headers => Assert.True(headers.TryGetValues("c", out var values) && values.Count() == 2 && values.First() == "d" && values.Last() == "e"),
+                    static headers => Assert.True(headers.NonValidated.TryGetValues("c", out var values) && values.Count() == 2 && values.First() == "d" && values.Last() == "e"),
+                    static headers => Assert.True(headers.TryGetValues("h", out var values) && values.Count() == 2 && values.First() == "i" && values.Last() == "j"),
+                    static headers => Assert.True(headers.NonValidated.TryGetValues("h", out var values) && values.Count() == 2 && values.First() == "i" && values.Last() == "j"),
+                    static headers => Assert.Equal("only-if-cached, private", headers.NonValidated["Cache-Control"].ToString()),
+                    static headers => Assert.Equal("text/json", headers.Accept.Single().MediaType),
+                    headers =>
+                    {
+                        var newHeaders = new HttpRequestMessage().Headers;
+                        newHeaders.AddHeaders(headers);
+                        for (int i = 0; i < tests.Length - 1; i++)
+                        {
+                            tests[i](newHeaders);
+                        }
+                    },
+                };
+
+                while (Volatile.Read(ref running))
+                {
+                    tests[Random.Shared.Next(tests.Length)](Volatile.Read(ref headers));
+                }
+            }
+
+            static HttpRequestHeaders CreateHeaders()
+            {
+                HttpRequestHeaders headers = new HttpRequestMessage().Headers;
+
+                var actions = new Action<HttpRequestHeaders>[]
+                {
+                    static headers => headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/json")),
+                    static headers => headers.CacheControl = new CacheControlHeaderValue { Private = true, OnlyIfCached = true },
+                    static headers => headers.Add("a", "b"),
+                    static headers => headers.Add("c", new[] { "d", "e" }),
+                    static headers => headers.TryAddWithoutValidation("f", "g"),
+                    static headers => headers.TryAddWithoutValidation("h", new[] { "i", "j" }),
+                };
+
+                foreach (Action<HttpRequestHeaders> action in actions.OrderBy(_ => Random.Shared.Next()))
+                {
+                    action(headers);
+                }
+
+                return headers;
+            }
+        }
+
+        [Fact]
+        public void TryAddInvalidHeader_ShouldThrowFormatException()
+        {
+            MockHeaders headers = new MockHeaders();
+            AssertExtensions.ThrowsContains<FormatException>(() => headers.Remove("\u0080"), "\u0080");
+        }
+
+        [Theory]
+        [InlineData("\n")]
+        [InlineData("invalid\n")]
+        [InlineData("\r")]
+        [InlineData("invalid\r")]
+        [InlineData("\r\n")]
+        [InlineData("invalid\r\n")]
+        public void TryGetValues_InvalidValuesContainingNewLines_ShouldNotRemoveInvalidValueAndShouldReturnRequestedValue(string value)
+        {
+            const string Name = "custom";
+            HttpHeaders headers = new HttpRequestMessage().Headers;
+
+            headers.TryAddWithoutValidation(Name, value);
+            Assert.Equal(1, headers.NonValidated.Count);
+
+            Assert.True(headers.TryGetValues(Name, out IEnumerable<string> values));
+
+            // The entry should still exist as the parsing during the validating access should not remove the invalid value.
+            Assert.Equal(1, headers.NonValidated.Count);
+            Assert.Equal(1, values.Count());
+            Assert.Equal(value, values.Single());
+        }
+
+        public static IEnumerable<object[]> NumberOfHeadersUpToArrayThreshold_AddNonValidated_EnumerateNonValidated()
+        {
+            for (int i = 0; i <= HttpHeaders.ArrayThreshold; i++)
+            {
+                yield return new object[] { i, false, false };
+                yield return new object[] { i, false, true };
+                yield return new object[] { i, true, false };
+                yield return new object[] { i, true, true };
+            }
         }
 
         public static IEnumerable<object[]> GetInvalidHeaderNames()
@@ -2071,6 +2542,16 @@ namespace System.Net.Http.Tests
             yield return new object[] { "invalid=header" };
             yield return new object[] { "invalid{header" };
             yield return new object[] { "invalid}header" };
+        }
+
+        public static IEnumerable<object[]> HeaderValuesWithNewLines()
+        {
+            foreach (string pattern in new[] { "*", "*foo", "* foo", "foo*", "foo* ", "foo*bar", "foo* bar" })
+            foreach (string newLine in new[] { "\r", "\n", "\r\n" })
+            foreach (string prefix in new[] { "", "valid, " })
+            {
+                yield return new object[] { prefix + pattern.Replace("*", newLine) };
+            }
         }
 
         #region Helper methods

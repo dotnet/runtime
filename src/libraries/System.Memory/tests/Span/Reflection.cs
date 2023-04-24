@@ -32,11 +32,8 @@ namespace System.SpanTests
         public static void MemoryExtensions_StaticWithSpanArguments()
         {
             Type type = typeof(MemoryExtensions);
-
             MethodInfo method = type.GetMethod(nameof(MemoryExtensions.CompareTo));
-
-            int result = (int)method.Invoke(null, new object[] { default, default, StringComparison.Ordinal });
-            Assert.Equal(0, result);
+            Assert.Throws<NotSupportedException>(() => method.Invoke(null, new object[] { default, default, StringComparison.Ordinal }));
         }
 
         [Fact]
@@ -45,27 +42,26 @@ namespace System.SpanTests
             Type type = typeof(BinaryPrimitives);
 
             MethodInfo method = type.GetMethod(nameof(BinaryPrimitives.ReadInt16LittleEndian));
-            Assert.Throws<TargetInvocationException>(() => method.Invoke(null, new object[] { default }));
+            Assert.Throws<NotSupportedException>(() => method.Invoke(null, new object[] { default }));
 
             method = type.GetMethod(nameof(BinaryPrimitives.TryReadInt16LittleEndian));
-            bool result = (bool)method.Invoke(null, new object[] { default, null });
-            Assert.False(result);
+            Assert.Throws<NotSupportedException>(() => method.Invoke(null, new object[] { default, null }));
         }
 
         [Fact]
         public static void MemoryMarshal_GenericStaticReturningSpan()
         {
-            Type type = typeof(MemoryMarshal);
+            MethodInfo createSpanMethod = typeof(MemoryMarshal).GetMethod(nameof(MemoryMarshal.CreateSpan));
 
             int value = 0;
             ref int refInt = ref value;
+            Type refIntType = refInt.GetType();
 
-            MethodInfo method = type.GetMethod(nameof(MemoryMarshal.CreateSpan)).MakeGenericMethod((refInt.GetType()));
+            MethodInfo method = createSpanMethod.MakeGenericMethod(refIntType);
             Assert.Throws<NotSupportedException>(() => method.Invoke(null, new object[] { null, 0 }));
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14993", TestRuntimes.Mono)]
         public static void Span_Constructor()
         {
             Type type = typeof(Span<int>);
@@ -102,7 +98,6 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14998", TestRuntimes.Mono)]
         public static void Span_InstanceMethod()
         {
             Type type = typeof(Span<int>);
@@ -112,7 +107,6 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14993", TestRuntimes.Mono)]
         public static void ReadOnlySpan_Constructor()
         {
             Type type = typeof(ReadOnlySpan<int>);
@@ -149,7 +143,6 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14998", TestRuntimes.Mono)]
         public static void ReadOnlySpan_InstanceMethod()
         {
             Type type = typeof(ReadOnlySpan<int>);
@@ -159,7 +152,6 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14998", TestRuntimes.Mono)]
         public static void Memory_PropertyReturningSpan()
         {
             Type type = typeof(Memory<int>);
@@ -169,7 +161,6 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14962", TestRuntimes.Mono)]
         public static void ReadOnlyMemory_PropertyReturningReadOnlySpan()
         {
             Type type = typeof(ReadOnlyMemory<int>);

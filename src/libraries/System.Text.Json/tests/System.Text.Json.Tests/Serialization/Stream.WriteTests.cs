@@ -5,38 +5,44 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json.Serialization.Tests.Schemas.OrderPayload;
 using System.Threading.Tasks;
+using System.Text.Json.Serialization.Metadata;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class StreamTests
+    public partial class StreamTests
     {
         [Fact]
-        public static async Task WriteNullArgumentFail()
+        public async Task WriteNullArgumentFail()
         {
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.SerializeAsync((Stream)null, 1));
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.SerializeAsync((Stream)null, 1, typeof(int)));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize((Stream)null, 1));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize((Stream)null, 1, typeof(int)));
         }
 
         [Fact]
-        public static async Task VerifyValueFail()
+        public async Task VerifyValueFail()
         {
             MemoryStream stream = new MemoryStream();
             await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.SerializeAsync(stream, "", (Type)null));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(stream, "", (Type)null));
         }
 
         [Fact]
-        public static async Task VerifyTypeFail()
+        public async Task VerifyTypeFail()
         {
             MemoryStream stream = new MemoryStream();
             await Assert.ThrowsAsync<ArgumentException>(async () => await JsonSerializer.SerializeAsync(stream, 1, typeof(string)));
+            Assert.Throws<ArgumentException>(() => JsonSerializer.Serialize(stream, 1, typeof(string)));
         }
 
         [Fact]
-        public static async Task NullObjectValue()
+        public async Task NullObjectValue()
         {
             MemoryStream stream = new MemoryStream();
-            await JsonSerializer.SerializeAsync(stream, (object)null);
+
+            await Serializer.SerializeWrapper(stream, (object)null);
 
             stream.Seek(0, SeekOrigin.Begin);
 
@@ -49,8 +55,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
-        public static async Task RoundTripAsync()
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
+        public async Task RoundTripAsync()
         {
             byte[] buffer;
 
@@ -69,7 +75,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static async Task RoundTripLargeJsonViaJsonElementAsync()
+
+        public async Task RoundTripLargeJsonViaJsonElementAsync()
         {
             // Generating tailored json
             int i = 0;
@@ -88,18 +95,20 @@ namespace System.Text.Json.Serialization.Tests
 
             JsonElement root = JsonSerializer.Deserialize<JsonElement>(json.ToString());
             var ms = new MemoryStream();
-            await JsonSerializer.SerializeAsync(ms, root, root.GetType());
+
+            await Serializer.SerializeWrapper(ms, root, root.GetType());
         }
 
         [Fact]
-        public static async Task RoundTripLargeJsonViaPocoAsync()
+        public async Task RoundTripLargeJsonViaPocoAsync()
         {
             byte[] array = JsonSerializer.Deserialize<byte[]>(JsonSerializer.Serialize(new byte[11056]));
             var ms = new MemoryStream();
-            await JsonSerializer.SerializeAsync(ms, array, array.GetType());
+
+            await Serializer.SerializeWrapper(ms, array, array.GetType());
         }
 
-        private static async Task WriteAsync(TestStream stream)
+        private async Task WriteAsync(TestStream stream)
         {
             JsonSerializerOptions options = new JsonSerializerOptions
             {
@@ -112,7 +121,7 @@ namespace System.Text.Json.Serialization.Tests
                 obj.Initialize();
                 obj.Verify();
 
-                await JsonSerializer.SerializeAsync(stream, obj, options: options);
+                await Serializer.SerializeWrapper(stream, obj, options: options);
             }
 
             // Must be changed if the test classes change:
@@ -125,7 +134,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, stream.TestFlushCount);
         }
 
-        private static async Task ReadAsync(TestStream stream)
+        private async Task ReadAsync(TestStream stream)
         {
             JsonSerializerOptions options = new JsonSerializerOptions
             {
@@ -133,7 +142,7 @@ namespace System.Text.Json.Serialization.Tests
                 DefaultBufferSize = 1
             };
 
-            LargeDataTestClass obj = await JsonSerializer.DeserializeAsync<LargeDataTestClass>(stream, options);
+            LargeDataTestClass obj = await Serializer.DeserializeWrapper<LargeDataTestClass>(stream, options);
             // Must be changed if the test classes change; may be > since last read may not have filled buffer.
             Assert.InRange(stream.TestRequestedReadBytesCount, 551368, int.MaxValue);
 
@@ -147,16 +156,17 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static async Task WritePrimitivesAsync()
+        public async Task WritePrimitivesAsync()
         {
-            MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"1"));
+            MemoryStream stream = new MemoryStream();
             JsonSerializerOptions options = new JsonSerializerOptions
             {
                 DefaultBufferSize = 1
             };
 
-            int i = await JsonSerializer.DeserializeAsync<int>(stream, options);
-            Assert.Equal(1, i);
+            await Serializer.SerializeWrapper(stream, 1, options);
+            string jsonSerialized = Encoding.UTF8.GetString(stream.ToArray());
+            Assert.Equal("1", jsonSerialized);
         }
 
         private class Session
@@ -199,7 +209,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(16000)]
         [InlineData(32000)]
         [InlineData(64000)]
-        public static async Task LargeJsonFile(int bufferSize)
+        public async Task LargeJsonFile(int bufferSize)
         {
             const int SessionResponseCount = 100;
 
@@ -259,12 +269,12 @@ namespace System.Text.Json.Serialization.Tests
             // Async case.
             using (var memoryStream = new MemoryStream())
             {
-                await JsonSerializer.SerializeAsync(memoryStream, list, options);
+                await Serializer.SerializeWrapper(memoryStream, list, options);
                 string jsonSerialized = Encoding.UTF8.GetString(memoryStream.ToArray());
                 Assert.Equal(json, jsonSerialized);
 
                 memoryStream.Position = 0;
-                List<SessionResponse> deserializedList = await JsonSerializer.DeserializeAsync<List<SessionResponse>>(memoryStream, options);
+                List<SessionResponse> deserializedList = await Serializer.DeserializeWrapper<List<SessionResponse>>(memoryStream, options);
                 Assert.Equal(SessionResponseCount, deserializedList.Count);
             }
         }
@@ -278,9 +288,9 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(10, false, false)]
         [InlineData(100, false, false)]
         [InlineData(1000, false, false)]
-        public static async Task VeryLargeJsonFileTest(int payloadSize, bool ignoreNull, bool writeIndented)
+        public async Task VeryLargeJsonFileTest(int payloadSize, bool ignoreNull, bool writeIndented)
         {
-            List<Order> list = PopulateLargeObject(payloadSize);
+            List<Order> list = JsonTestHelper.PopulateLargeObject(payloadSize);
 
             JsonSerializerOptions options = new JsonSerializerOptions
             {
@@ -302,12 +312,12 @@ namespace System.Text.Json.Serialization.Tests
             // Async case.
             using (var memoryStream = new MemoryStream())
             {
-                await JsonSerializer.SerializeAsync(memoryStream, list, options);
+                await Serializer.SerializeWrapper(memoryStream, list, options);
                 string jsonSerialized = Encoding.UTF8.GetString(memoryStream.ToArray());
                 Assert.Equal(json, jsonSerialized);
 
                 memoryStream.Position = 0;
-                List<Order> deserializedList = await JsonSerializer.DeserializeAsync<List<Order>>(memoryStream, options);
+                List<Order> deserializedList = await Serializer.DeserializeWrapper<List<Order>>(memoryStream, options);
                 Assert.Equal(payloadSize, deserializedList.Count);
             }
         }
@@ -322,16 +332,16 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(4, false, false)]
         [InlineData(8, false, false)]
         [InlineData(16, false, false)] // This results a reader\writer depth of 324 which currently works on all test platforms.
-        public static async Task DeepNestedJsonFileTest(int depthFactor, bool ignoreNull, bool writeIndented)
+        public async Task DeepNestedJsonFileTest(int depthFactor, bool ignoreNull, bool writeIndented)
         {
             const int ListLength = 10;
 
             int length = ListLength * depthFactor;
             List<Order>[] orders = new List<Order>[length];
-            orders[0] = PopulateLargeObject(1);
+            orders[0] = JsonTestHelper.PopulateLargeObject(1);
             for (int i = 1; i < length; i++ )
             {
-                orders[i] = PopulateLargeObject(1);
+                orders[i] = JsonTestHelper.PopulateLargeObject(1);
                 orders[i - 1][0].RelatedOrder = orders[i];
             }
 
@@ -354,28 +364,28 @@ namespace System.Text.Json.Serialization.Tests
             // Async case.
             using (var memoryStream = new MemoryStream())
             {
-                await JsonSerializer.SerializeAsync(memoryStream, orders[0], options);
+                await Serializer.SerializeWrapper(memoryStream, orders[0], options);
                 string jsonSerialized = Encoding.UTF8.GetString(memoryStream.ToArray());
                 Assert.Equal(json, jsonSerialized);
 
                 memoryStream.Position = 0;
-                List<Order> deserializedList = await JsonSerializer.DeserializeAsync<List<Order>>(memoryStream, options);
+                List<Order> deserializedList = await Serializer.DeserializeWrapper<List<Order>>(memoryStream, options);
             }
         }
 
         [Theory]
         [InlineData(1)]
         [InlineData(4)]
-        public static async Task NestedJsonFileCircularDependencyTest(int depthFactor)
+        public async Task NestedJsonFileCircularDependencyTest(int depthFactor)
         {
             const int ListLength = 2;
 
             int length = ListLength * depthFactor;
             List<Order>[] orders = new List<Order>[length];
-            orders[0] = PopulateLargeObject(1000);
+            orders[0] = JsonTestHelper.PopulateLargeObject(1000);
             for (int i = 1; i < length; i++)
             {
-                orders[i] = PopulateLargeObject(1);
+                orders[i] = JsonTestHelper.PopulateLargeObject(1);
                 orders[i - 1][0].RelatedOrder = orders[i];
             }
 
@@ -394,7 +404,131 @@ namespace System.Text.Json.Serialization.Tests
 
             using (var memoryStream = new MemoryStream())
             {
-                await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.SerializeAsync(memoryStream, orders[0], options));
+                await Assert.ThrowsAsync<JsonException>(async () => await Serializer.SerializeWrapper(memoryStream, orders[0], options));
+            }
+        }
+
+        [Theory]
+        [InlineData(32)]
+        [InlineData(128)]
+        [InlineData(1024)]
+        [InlineData(1024 * 16)] // the default JsonSerializerOptions.DefaultBufferSize value
+        [InlineData(1024 * 1024)]
+        public async Task ShouldUseFastPathOnSmallPayloads(int defaultBufferSize)
+        {
+            if (Serializer.ForceSmallBufferInOptions)
+            {
+                return;
+            }
+
+            var instrumentedResolver = new PocoWithInstrumentedFastPath.Context(
+                new JsonSerializerOptions
+                {
+                    DefaultBufferSize = defaultBufferSize,
+                });
+
+            // The current implementation uses a heuristic
+            int smallValueThreshold = defaultBufferSize / 2;
+            PocoWithInstrumentedFastPath smallValue = CreateValueWithSerializationSize(smallValueThreshold);
+
+            var stream = new MemoryStream();
+
+            // The first 10 serializations should not call into the fast path
+            for (int i = 0; i < 10; i++)
+            {
+                await Serializer.SerializeWrapper(stream, smallValue, instrumentedResolver.Options);
+                stream.Position = 0;
+                Assert.Equal(0, instrumentedResolver.FastPathInvocationCount);
+            }
+
+            // Subsequent iterations do call into the fast path
+            for (int i = 0; i < 10; i++)
+            {
+                await Serializer.SerializeWrapper(stream, smallValue, instrumentedResolver.Options);
+                stream.Position = 0;
+                Assert.Equal(i + 1, instrumentedResolver.FastPathInvocationCount);
+            }
+
+            // Polymorphic serialization should use the fast path
+            await Serializer.SerializeWrapper(stream, (object)smallValue, instrumentedResolver.Options);
+            stream.Position = 0;
+            Assert.Equal(11, instrumentedResolver.FastPathInvocationCount);
+
+            // Attempt to serialize a value that is deemed large
+            var largeValue = CreateValueWithSerializationSize(smallValueThreshold + 1);
+            await Serializer.SerializeWrapper(stream, largeValue, instrumentedResolver.Options);
+            stream.Position = 0;
+            Assert.Equal(12, instrumentedResolver.FastPathInvocationCount);
+
+            // Any subsequent attempts no longer call into the fast path
+            for (int i = 0; i < 10; i++)
+            {
+                await Serializer.SerializeWrapper(stream, smallValue, instrumentedResolver.Options);
+                stream.Position = 0;
+                Assert.Equal(12, instrumentedResolver.FastPathInvocationCount);
+            }
+
+            static PocoWithInstrumentedFastPath CreateValueWithSerializationSize(int targetSerializationSize)
+            {
+                int objectSerializationPaddingSize = """{"Value":""}""".Length; // 12
+                return new PocoWithInstrumentedFastPath { Value = new string('a', targetSerializationSize - objectSerializationPaddingSize) };
+            }
+        }
+
+        public class PocoWithInstrumentedFastPath
+        {
+            public string? Value { get; set; }
+
+            public class Context : JsonSerializerContext, IJsonTypeInfoResolver
+            {
+                public int FastPathInvocationCount { get; private set; }
+
+                public Context(JsonSerializerOptions options) : base(options)
+                { }
+
+                protected override JsonSerializerOptions? GeneratedSerializerOptions => Options;
+                public override JsonTypeInfo? GetTypeInfo(Type type) => GetTypeInfo(type, Options);
+
+                public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
+                {
+                    if (type == typeof(string))
+                    {
+                        return JsonMetadataServices.CreateValueInfo<string>(options, JsonMetadataServices.StringConverter);
+                    }
+
+                    if (type == typeof(object))
+                    {
+                        return JsonMetadataServices.CreateValueInfo<object>(options, JsonMetadataServices.ObjectConverter);
+                    }
+
+                    if (type == typeof(PocoWithInstrumentedFastPath))
+                    {
+                        return JsonMetadataServices.CreateObjectInfo<PocoWithInstrumentedFastPath>(options,
+                            new JsonObjectInfoValues<PocoWithInstrumentedFastPath>
+                            {
+                                PropertyMetadataInitializer = _ => new JsonPropertyInfo[1]
+                                {
+                                    JsonMetadataServices.CreatePropertyInfo<string>(options,
+                                        new JsonPropertyInfoValues<string>
+                                        {
+                                            DeclaringType = typeof(PocoWithInstrumentedFastPath),
+                                            PropertyName = "Value",
+                                            Getter = obj => ((PocoWithInstrumentedFastPath)obj).Value,
+                                        })
+                                },
+
+                                SerializeHandler = (writer, value) =>
+                                {
+                                    writer.WriteStartObject();
+                                    writer.WriteString("Value", value.Value);
+                                    writer.WriteEndObject();
+                                    FastPathInvocationCount++;
+                                }
+                            });
+                    }
+
+                    return null;
+                }
             }
         }
 
@@ -405,7 +539,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(8192)]
         [InlineData(16384)]
         [InlineData(65536)]
-        public static async Task FlushThresholdTest(int bufferSize)
+        public async Task FlushThresholdTest(int bufferSize)
         {
             // bufferSize * 0.9 is the threshold size from codebase, subtract 2 for [" characters, then create a 
             // string containing (threshold - 2) amount of char 'a' which when written into output buffer produces buffer 
@@ -425,7 +559,7 @@ namespace System.Text.Json.Serialization.Tests
 
             using (var memoryStream = new MemoryStream())
             {
-                await JsonSerializer.SerializeAsync(memoryStream, list, options);
+                await Serializer.SerializeWrapper(memoryStream, list, options);
                 string jsonSerialized = Encoding.UTF8.GetString(memoryStream.ToArray());
                 Assert.Equal(json, jsonSerialized);
 
@@ -454,188 +588,6 @@ namespace System.Text.Json.Serialization.Tests
                 list.Add(1);
             }
             return list;
-        }
-
-        internal static List<Order> PopulateLargeObject(int size)
-        {
-            List<Order> orders = new List<Order>(size);
-            for (int i = 0; i < size; i++)
-            {
-                Order order = new Order
-                {
-                    OrderNumber = i,
-                    Customer = new User
-                    {
-                        UserId = "222ffbbb888kkk",
-                        Name = "John Doe",
-                        Username = "johndoe",
-                        CreatedAt = new DateTime(),
-                        ImageId = string.Empty,
-                        UserType = UserType.Customer,
-                        UpdatedAt = new DateTime(),
-                        TwitterId = string.Empty,
-                        FacebookId = "9988998877662222111",
-                        SubscriptionType = 2,
-                        IsNew = true,
-                        IsEmployee = false
-                    },
-                    ShippingInfo = new List<ShippingInfo>
-                    {
-                        new ShippingInfo()
-                        {
-                            OrderNumber = i,
-                            Employee = new User
-                            {
-                                UserId = "222ffbbb888" + i,
-                                Name = "Shipping Coordinator",
-                                Username = "coordinator" + i,
-                                CreatedAt = new DateTime(),
-                                ImageId = string.Empty,
-                                UserType = UserType.Employee,
-                                UpdatedAt = new DateTime(),
-                                TwitterId = string.Empty,
-                                SubscriptionType = 0,
-                                IsEmployee = true
-                            },
-                            CarrierId = "TTT123999MMM",
-                            ShippingType = "Ground",
-                            EstimatedDelivery = new DateTime(),
-                            Tracking = new Uri("http://TestShipCompany.test/track/123" + i),
-                            CarrierName = "TestShipCompany",
-                            HandlingInstruction = "Do cats eat bats? Do cats eat bats. Do cats eat bats? Do cats eat bats. Do cats eat bats? Do cats eat bats. Do cats eat bats? Do cats eat bats",
-                            CurrentStatus = "Out for delivery",
-                            IsDangerous = false
-                        }
-                    },
-                    OneTime = true,
-                    Cancelled = false,
-                    IsGift = i % 2 == 0,
-                    IsGPickUp = i % 5 == 0,
-                    ShippingAddress = new Address()
-                    {
-                        City = "Redmond"
-                    },
-                    PickupAddress = new Address
-                    {
-                        City = "Bellevue"
-                    },
-                    Coupon = SampleEnumInt64.Max,
-                    UserInteractions = new List<Comment>
-                    {
-                        new Comment
-                        {
-                            Id = 200 + i,
-                            OrderNumber = i,
-                            Customer = new User
-                            {
-                                UserId = "222ffbbb888kkk",
-                                Name = "John Doe",
-                                Username = "johndoe",
-                                CreatedAt = new DateTime(),
-                                ImageId = string.Empty,
-                                UserType = UserType.Customer,
-                                UpdatedAt = new DateTime(),
-                                TwitterId = "twitterId" + i,
-                                FacebookId = "9988998877662222111",
-                                SubscriptionType = 2,
-                                IsNew = true,
-                                IsEmployee = false
-                            },
-                            Title = "Green Field",
-                            Message = "Down, down, down. Would the fall never come to an end! 'I wonder how many miles I've fallen by this time. I think-' (for, you see, Alice had learnt several things of this sort in her lessons in the schoolroom, and though this was not a very good opportunity for showing off her knowledge, as there was no one to listen to her, still it was good practice to say it over) '-yes, that's about the right distance-but then I wonder what Latitude or Longitude I've got to",
-                            Responses = new List<Comment>()
-                        }
-                    },
-                    Created = new DateTime(2019, 11, 10),
-                    Confirmed = new DateTime(2019, 11, 11),
-                    ShippingDate = new DateTime(2019, 11, 12),
-                    EstimatedDelivery = new DateTime(2019, 11, 15),
-                    ReviewedBy = new User()
-                    {
-                        UserId = "222ffbbb888" + i,
-                        Name = "Shipping Coordinator",
-                        Username = "coordinator" + i,
-                        CreatedAt = new DateTime(),
-                        ImageId = string.Empty,
-                        UserType = UserType.Employee,
-                        UpdatedAt = new DateTime(),
-                        TwitterId = string.Empty,
-                        SubscriptionType = 0,
-                        IsEmployee = true
-                    }
-                };
-                List<Product> products = new List<Product>();
-                for (int j = 0; j < i % 4; j++)
-                {
-                    Product product = new Product()
-                    {
-                        ProductId = Guid.NewGuid(),
-                        Name = "Surface Pro",
-                        SKU = "LL123" + j,
-                        Brand = new TestClassWithInitializedProperties(),
-                        ProductCategory = new SimpleTestClassWithNonGenericCollectionWrappers(),
-                        Description = "Down, down, down. Would the fall never come to an end! 'I wonder how many miles I've fallen by this time. I think-' (for, you see, Alice had learnt several things of this sort in her lessons in the schoolroom, and though this was not a very good opportunity for showing off her knowledge, as there was no one to listen to her, still it was good practice to say it over) '-yes, that's about the right distance-but then I wonder what Latitude or Longitude I've got to",
-                        Created = new DateTime(2000, 10, 12),
-                        Title = "Surface Pro 6 for Business - 512GB",
-                        Price = new Price(),
-                        BestChoice = true,
-                        AverageStars = 4.8f,
-                        Featured = true,
-                        ProductRestrictions = new TestClassWithInitializedProperties(),
-                        SalesInfo = new SimpleTestClassWithGenericCollectionWrappers(),
-                        Origin = SampleEnum.One,
-                        Manufacturer = new BasicCompany(),
-                        Fragile = true,
-                        DetailsUrl = new Uri("http://dotnet.test/link/entries/entry/1"),
-                        NetWeight = 2.7m,
-                        GrossWeight = 3.3m,
-                        Length = i,
-                        Height = i + 1,
-                        Width = i + 2,
-                        FeaturedImage = new FeaturedImage(),
-                        PreviewImage = new PreviewImage(),
-                        KeyWords = new List<string> { "surface", "pro", "laptop" },
-                        RelatedImages = new List<Image>(),
-                        RelatedVideo = new Uri("http://dotnet.test/link/entries/entry/2"),
-                        GuaranteeStartsAt = new DateTime(),
-                        GuaranteeEndsAt = new DateTime(),
-                        IsActive = true,
-                        RelatedProducts = new List<Product>()
-                    };
-                    product.SalesInfo.Initialize();
-                    List<Review> reviews = new List<Review>();
-                    for (int k = 0; k < i % 3; k++)
-                    {
-
-                        Review review = new Review
-                        {
-                            Customer = new User
-                            {
-                                UserId = "333344445555",
-                                Name = "Customer" + i + k,
-                                Username = "cust" + i + k,
-                                CreatedAt = new DateTime(),
-                                ImageId = string.Empty,
-                                UserType = UserType.Customer,
-                                SubscriptionType = k
-                            },
-                            ProductSku = product.SKU,
-                            CustomerName = "Customer" + i + k,
-                            Stars = j + k,
-                            Title = $"Title {i}{j}{k}",
-                            Comment = "",
-                            Images = new List<Uri>{ new Uri($"http://dotnet.test/link/images/image/{k}"), new Uri($"http://dotnet.test/link/images/image/{j}")},
-                            ReviewId = i + j +k
-                        };
-                        reviews.Add(review);
-                    }
-                    product.Reviews = reviews;
-                    products.Add(product);
-                }
-                order.Products = products;
-                orders.Add(order);
-            }
-            return orders;
         }
     }
 

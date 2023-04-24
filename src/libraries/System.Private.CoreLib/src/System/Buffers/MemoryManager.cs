@@ -48,7 +48,7 @@ namespace System.Buffers
 
         /// <summary>
         /// Returns an array segment.
-        /// <remarks>Returns the default array segment if not overriden.</remarks>
+        /// <remarks>Returns the default array segment if not overridden.</remarks>
         /// </summary>
         protected internal virtual bool TryGetArray(out ArraySegment<T> segment)
         {

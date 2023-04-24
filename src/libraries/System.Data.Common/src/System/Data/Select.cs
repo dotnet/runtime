@@ -4,11 +4,13 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
     internal sealed class Select
     {
+        internal const string RequiresUnreferencedCodeMessage = "Members of types used in the filter expression might be trimmed.";
         private readonly DataTable _table;
         private readonly IndexField[] _indexFields;
         private readonly DataViewRowState _recordStates;
@@ -34,6 +36,7 @@ namespace System.Data
         private int _nCandidates;
         private int _matchedCandidates;
 
+        [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         public Select(DataTable table, string? filterExpression, string? sort, DataViewRowState recordStates)
         {
             _table = table;
@@ -46,7 +49,7 @@ namespace System.Data
             _recordStates = recordStates;
         }
 
-        private bool IsSupportedOperator(int op)
+        private static bool IsSupportedOperator(int op)
         {
             return ((op >= Operators.EqualTo && op <= Operators.LessOrEqual) || op == Operators.Is || op == Operators.IsNot);
         }
@@ -596,6 +599,8 @@ namespace System.Data
             return newRows;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "All constructors are marked as unsafe.")]
         private bool AcceptRecord(int record)
         {
             DataRow? row = _table._recordManager[record];
@@ -625,11 +630,13 @@ namespace System.Data
             }
             catch (Exception e) when (ADP.IsCatchableExceptionType(e))
             {
-                throw ExprException.FilterConvertion(_rowFilter!.Expression);
+                throw ExprException.FilterConversion(_rowFilter!.Expression);
             }
             return result;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "All constructors are marked as unsafe.")]
         private int Eval(BinaryNode expr, DataRow row, DataRowVersion version)
         {
             if (expr._op == Operators.And)
@@ -669,22 +676,22 @@ namespace System.Data
                 StorageType resultType;
                 if (expr._left.IsSqlColumn || expr._right.IsSqlColumn)
                 {
-                    resultType = expr.ResultSqlType(leftType, rightType, isLConst, isRConst, expr._op);
+                    resultType = BinaryNode.ResultSqlType(leftType, rightType, expr._op);
                 }
                 else
                 {
-                    resultType = expr.ResultType(leftType, rightType, isLConst, isRConst, expr._op);
+                    resultType = BinaryNode.ResultType(leftType, rightType, isLConst, isRConst, expr._op);
                 }
                 if (StorageType.Empty == resultType)
                 {
-                    expr.SetTypeMismatchError(expr._op, vLeft.GetType(), vRight.GetType());
+                    BinaryNode.SetTypeMismatchError(expr._op, vLeft.GetType(), vRight.GetType());
                 }
 
                 // if comparing a Guid column value against a string literal
                 // use InvariantCulture instead of DataTable.Locale because in the Danish related cultures
                 // sorting a Guid as a string has different results than in Invariant and English related cultures.
                 // This fix is restricted to DataTable.Select("GuidColumn = 'string literal'") types of queries
-                NameNode? namedNode = null;
+                NameNode? namedNode;
                 System.Globalization.CompareInfo? comparer =
                     ((isLConst && !isRConst && (leftType == StorageType.String) && (rightType == StorageType.Guid) && (null != (namedNode = expr._right as NameNode)) && (namedNode._column!.DataType == typeof(Guid))) ||
                      (isRConst && !isLConst && (rightType == StorageType.String) && (leftType == StorageType.Guid) && (null != (namedNode = expr._left as NameNode)) && (namedNode._column!.DataType == typeof(Guid))))

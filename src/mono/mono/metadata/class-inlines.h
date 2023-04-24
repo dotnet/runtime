@@ -33,11 +33,16 @@ mono_get_object_type (void)
 	return m_class_get_byval_arg (mono_defaults.object_class);
 }
 
-
 static inline gboolean
 mono_class_is_def (MonoClass *klass)
 {
 	return m_class_get_class_kind (klass) == MONO_CLASS_DEF;
+}
+
+static inline gboolean
+m_class_is_array (MonoClass *klass)
+{
+	return m_class_get_rank (klass) != 0;
 }
 
 static inline gboolean
@@ -201,6 +206,30 @@ m_class_is_private (MonoClass *klass)
 }
 
 static inline gboolean
+m_method_is_static (MonoMethod *method)
+{
+	return (method->flags & METHOD_ATTRIBUTE_STATIC) != 0;
+}
+
+static inline gboolean
+m_method_is_virtual (MonoMethod *method)
+{
+	return (method->flags & METHOD_ATTRIBUTE_VIRTUAL) != 0;
+}
+
+static inline gboolean
+m_method_is_abstract (MonoMethod *method)
+{
+        return (method->flags & METHOD_ATTRIBUTE_ABSTRACT) != 0;
+}
+
+static inline gboolean
+m_method_is_final (MonoMethod *method)
+{
+        return (method->flags & METHOD_ATTRIBUTE_FINAL) != 0;
+}
+
+static inline gboolean
 m_method_is_icall (MonoMethod *method)
 {
 	return (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) != 0;
@@ -213,6 +242,12 @@ m_method_is_synchronized (MonoMethod *method)
 }
 
 static inline gboolean
+m_method_is_aggressive_inlining (MonoMethod *method)
+{
+	return (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) != 0;
+}
+
+static inline gboolean
 m_method_is_pinvoke (MonoMethod *method)
 {
 	return (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) != 0;
@@ -222,6 +257,19 @@ static inline gboolean
 m_method_is_wrapper (MonoMethod *method)
 {
 	return method->wrapper_type != 0;
+}
+
+static inline void
+m_field_set_parent (MonoClassField *field, MonoClass *klass)
+{
+	uintptr_t old_flags = m_field_get_meta_flags (field);
+	field->parent_and_flags = ((uintptr_t)klass) | old_flags;
+}
+
+static inline void
+m_field_set_meta_flags (MonoClassField *field, unsigned int flags)
+{
+	field->parent_and_flags |= (field->parent_and_flags & ~MONO_CLASS_FIELD_META_FLAG_MASK) | flags;
 }
 
 #endif

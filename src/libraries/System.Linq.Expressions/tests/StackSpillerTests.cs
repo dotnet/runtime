@@ -413,7 +413,7 @@ namespace System.Linq.Expressions.Tests
                 il: @"
                     .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                     {
-                      .maxstack 4
+                      .maxstack 3
                       .locals init (
                         [0] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueVector&,
                         [1] int32,
@@ -516,7 +516,7 @@ namespace System.Linq.Expressions.Tests
                 il: @"
                     .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                     {
-                      .maxstack 3
+                      .maxstack 2
                       .locals init (
                         [0] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar&,
                         [1] int32,
@@ -611,7 +611,7 @@ namespace System.Linq.Expressions.Tests
                 il: @"
                     .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                     {
-                      .maxstack 3
+                      .maxstack 2
                       .locals init (
                         [0] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar&,
                         [1] int32,
@@ -716,7 +716,7 @@ namespace System.Linq.Expressions.Tests
                 il: @"
                     .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                     {
-                      .maxstack 3
+                      .maxstack 2
                       .locals init (
                         [0] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar&,
                         [1] int32,
@@ -810,7 +810,7 @@ namespace System.Linq.Expressions.Tests
                 il: @"
                     .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                     {
-                      .maxstack 3
+                      .maxstack 2
                       .locals init (
                         [0] int32&,
                         [1] int32,
@@ -902,7 +902,7 @@ namespace System.Linq.Expressions.Tests
                 il: @"
                     .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                     {
-                      .maxstack 5
+                      .maxstack 4
                       .locals init (
                         [0] int32&,
                         [1] int32,
@@ -985,7 +985,7 @@ namespace System.Linq.Expressions.Tests
                 il: @"
                     .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                     {
-                      .maxstack 4
+                      .maxstack 3
                       .locals init (
                         [0] int32&,
                         [1] int32,
@@ -1096,7 +1096,7 @@ namespace System.Linq.Expressions.Tests
                 il: @"
                     .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                     {
-                      .maxstack 3
+                      .maxstack 2
                       .locals init (
                         [0] int32&,
                         [1] int32,
@@ -1202,7 +1202,7 @@ namespace System.Linq.Expressions.Tests
                 il: @"
                     .method valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueList ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                     {
-                      .maxstack 3
+                      .maxstack 2
                       .locals init (
                         [0] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueList,
                         [1] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueList&,
@@ -1309,7 +1309,7 @@ namespace System.Linq.Expressions.Tests
                 il: @"
                     .method valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                     {
-                      .maxstack 3
+                      .maxstack 2
                       .locals init (
                         [0] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar,
                         [1] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar&,
@@ -1416,7 +1416,7 @@ namespace System.Linq.Expressions.Tests
                 il: @"
                     .method valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                     {
-                      .maxstack 3
+                      .maxstack 2
                       .locals init (
                         [0] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar,
                         [1] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar&,
@@ -1513,7 +1513,7 @@ namespace System.Linq.Expressions.Tests
                 il: @"
                     .method valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                     {
-                      .maxstack 6
+                      .maxstack 4
                       .locals init (
                         [0] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar,
                         [1] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar&,
@@ -1605,7 +1605,7 @@ namespace System.Linq.Expressions.Tests
                 il: @"
                     .method valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                     {
-                      .maxstack 3
+                      .maxstack 2
                       .locals init (
                         [0] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar,
                         [1] valuetype [System.Linq.Expressions.Tests]System.Linq.Expressions.Tests.StackSpillerTests+ValueBar&,
@@ -1676,9 +1676,7 @@ namespace System.Linq.Expressions.Tests
                     }");
         }
 
-#if FEATURE_COMPILE
-
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_Constant()
         {
             ParameterExpression xs = Expression.Parameter(typeof(int[]));
@@ -1694,7 +1692,7 @@ namespace System.Linq.Expressions.Tests
             e.VerifyIL(@"
                 .method void ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,int32[])
                 {
-                  .maxstack 4
+                  .maxstack 3
                   .locals init (
                     [0] int32[],
                     [1] int32,
@@ -1736,7 +1734,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_Default()
         {
             ParameterExpression xs = Expression.Parameter(typeof(int[]));
@@ -1752,7 +1750,7 @@ namespace System.Linq.Expressions.Tests
             e.VerifyIL(@"
                 .method void ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,int32[])
                 {
-                  .maxstack 4
+                  .maxstack 3
                   .locals init (
                     [0] int32[],
                     [1] int32,
@@ -1794,7 +1792,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_LiteralField_NotNetFramework()
         {
             Expression<Func<double>> e =
@@ -1808,7 +1806,7 @@ namespace System.Linq.Expressions.Tests
             e.VerifyIL(@"
                 .method float64 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                 {
-                  .maxstack 3
+                  .maxstack 2
                   .locals init (
                     [0] float64,
                     [1] float64
@@ -1842,7 +1840,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_StaticReadOnlyField()
         {
             Expression<Func<string>> e =
@@ -1857,7 +1855,7 @@ namespace System.Linq.Expressions.Tests
             e.VerifyIL(@"
                 .method string ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure)
                 {
-                  .maxstack 3
+                  .maxstack 2
                   .locals init (
                     [0] string,
                     [1] string
@@ -1891,7 +1889,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_RuntimeVariables1()
         {
             ParameterExpression f = Expression.Parameter(typeof(Action<IRuntimeVariables, int>));
@@ -1908,7 +1906,7 @@ namespace System.Linq.Expressions.Tests
             e.VerifyIL(@"
                 .method void ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,class [System.Private.CoreLib]System.Action`2<class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32>)
                 {
-                  .maxstack 4
+                  .maxstack 3
                   .locals init (
                     [0] class [System.Private.CoreLib]System.Action`2<class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32>,
                     [1] int32,
@@ -1950,7 +1948,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_RuntimeVariables2()
         {
             ParameterExpression f = Expression.Parameter(typeof(Action<IRuntimeVariables, int>));
@@ -1969,7 +1967,7 @@ namespace System.Linq.Expressions.Tests
             e.VerifyIL(@"
                 .method void ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,class [System.Private.CoreLib]System.Action`2<class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32>,int32)
                 {
-                  .maxstack 10
+                  .maxstack 6
                   .locals init (
                     [0] object[],
                     [1] class [System.Private.CoreLib]System.Action`2<class [System.Linq.Expressions]System.Runtime.CompilerServices.IRuntimeVariables,int32>,
@@ -2028,7 +2026,7 @@ namespace System.Linq.Expressions.Tests
             );
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_NoSpillBeyondSpillSite1()
         {
             ParameterExpression f = Expression.Parameter(typeof(Func<int, int, int, int>));
@@ -2059,7 +2057,7 @@ namespace System.Linq.Expressions.Tests
             e.VerifyIL(@"
                 .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,class [System.Private.CoreLib]System.Func`4<int32,int32,int32,int32>,int32,int32,int32)
                 {
-                  .maxstack 5
+                  .maxstack 4
                   .locals init (
                     [0] class [System.Private.CoreLib]System.Func`4<int32,int32,int32,int32>,
                     [1] int32,
@@ -2101,7 +2099,7 @@ namespace System.Linq.Expressions.Tests
                 }");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void Spill_Optimizations_NoSpillBeyondSpillSite2()
         {
             ParameterExpression f = Expression.Parameter(typeof(Func<int, int, int, int>));
@@ -2137,7 +2135,7 @@ namespace System.Linq.Expressions.Tests
             e.VerifyIL(@"
                 .method int32 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,int32,int32,int32,int32)
                 {
-                  .maxstack 3
+                  .maxstack 2
                   .locals init (
                     [0] int32,
                     [1] int32,
@@ -2186,8 +2184,6 @@ namespace System.Linq.Expressions.Tests
                   IL_001a: ret
                 }");
         }
-
-#endif
 
         private static void Test(Func<Expression, Expression> factory, Expression arg1)
         {

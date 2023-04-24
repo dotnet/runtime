@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+      <OutputType>Exe</OutputType>
+      <!-- SDK maximum supported version. -->
+      <TargetFramework>net7.0</TargetFramework>
+      <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

@@ -1,13 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//Simple arithmatic manipulation of one 2D array elements
+//Simple arithmetic manipulation of one 2D array elements
 
 using System;
+using Xunit;
 
 public class string1
 {
     public static Random rand;
+    public const int DefaultSeed = 20010415;
     public static int size;
 
     public static double GenerateDbl()
@@ -131,16 +133,25 @@ public class string1
             }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = false;
 
-        rand = new Random();
+        int seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
+        rand = new Random(seed);
         size = rand.Next(5, 8);
 
         Console.WriteLine();
         Console.WriteLine("2D Array");
-        Console.WriteLine("Element manipulation of {0} by {0} matrices with different arithmatic operations", size);
+        Console.WriteLine("Random seed: {0}; set environment variable CORECLR_SEED to this value to reproduce", seed);
+        Console.WriteLine("Element manipulation of {0} by {0} matrices with different arithmetic operations", size);
         Console.WriteLine("Matrix element stores string converted from random double");
         Console.WriteLine("array set/get, ref/out param are used");
 
@@ -190,7 +201,7 @@ public class string1
 
         Console.WriteLine();
         Console.WriteLine("3D Array");
-        Console.WriteLine("Element manipulation of {0} by {1} by {0} matrices with different arithmatic operations", size, size + 1);
+        Console.WriteLine("Element manipulation of {0} by {1} by {0} matrices with different arithmetic operations", size, size + 1);
 
         String[,,] ima3d = new String[size, size + 1, size];
         String[][] refa3d = new String[size][];

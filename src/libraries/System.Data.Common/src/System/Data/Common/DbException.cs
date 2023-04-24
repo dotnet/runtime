@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
+
 namespace System.Data.Common
 {
     [Serializable]
@@ -15,6 +17,8 @@ namespace System.Data.Common
 
         protected DbException(string? message, int errorCode) : base(message, errorCode) { }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected DbException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context)
         {
         }
@@ -41,5 +45,9 @@ namespace System.Data.Common
         /// A standard SQL 5-character return code, or <see langword="null" />.
         /// </returns>
         public virtual string? SqlState => null;
+
+        public DbBatchCommand? BatchCommand => DbBatchCommand;
+
+        protected virtual DbBatchCommand? DbBatchCommand => null;
     }
 }

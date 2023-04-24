@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
+
+     <!-- some tests require full ICU data, force it -->
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
   <ItemGroup>
     <!-- Common Collections tests -->

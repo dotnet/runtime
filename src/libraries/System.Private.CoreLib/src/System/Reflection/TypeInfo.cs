@@ -98,7 +98,11 @@ namespace System.Reflection
             get => GetProperties(TypeInfo.DeclaredOnlyLookup);
         }
 
-        public virtual IEnumerable<Type> ImplementedInterfaces => GetInterfaces();
+        public virtual IEnumerable<Type> ImplementedInterfaces
+        {
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+            get => GetInterfaces();
+        }
 
         // a re-implementation of ISAF from Type, skipping the use of UnderlyingType
         public virtual bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)

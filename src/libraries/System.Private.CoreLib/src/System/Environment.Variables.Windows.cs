@@ -20,7 +20,7 @@ namespace System
                 builder.EnsureCapacity((int)length);
             }
 
-            if (length == 0 && Marshal.GetLastWin32Error() == Interop.Errors.ERROR_ENVVAR_NOT_FOUND)
+            if (length == 0 && Marshal.GetLastPInvokeError() == Interop.Errors.ERROR_ENVVAR_NOT_FOUND)
             {
                 builder.Dispose();
                 return null;
@@ -34,7 +34,7 @@ namespace System
         {
             if (!Interop.Kernel32.SetEnvironmentVariable(variable, value))
             {
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
                 switch (errorCode)
                 {
                     case Interop.Errors.ERROR_ENVVAR_NOT_FOUND:
@@ -48,10 +48,10 @@ namespace System
 
                     case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
                     case Interop.Errors.ERROR_NO_SYSTEM_RESOURCES:
-                        throw new OutOfMemoryException(Interop.Kernel32.GetMessage(errorCode));
+                        throw new OutOfMemoryException(Marshal.GetPInvokeErrorMessage(errorCode));
 
                     default:
-                        throw new ArgumentException(Interop.Kernel32.GetMessage(errorCode));
+                        throw new ArgumentException(Marshal.GetPInvokeErrorMessage(errorCode));
                 }
             }
         }

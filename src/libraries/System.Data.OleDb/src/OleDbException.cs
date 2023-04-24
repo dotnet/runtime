@@ -35,12 +35,14 @@ namespace System.Data.OleDb
             this.oledbErrors = errors;
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo si, StreamingContext context)
         {
-            if (null == si)
-            {
-                throw new ArgumentNullException(nameof(si));
-            }
+            ArgumentNullException.ThrowIfNull(si);
+
             si.AddValue("oledbErrors", oledbErrors, typeof(OleDbErrorCollection));
             base.GetObjectData(si, context);
         }
@@ -59,24 +61,15 @@ namespace System.Data.OleDb
         {
             get
             {
-                OleDbErrorCollection errors = this.oledbErrors;
-                return ((null != errors) ? errors : new OleDbErrorCollection(null));
+                return this.oledbErrors ?? new OleDbErrorCollection(null);
             }
         }
 
         internal static OleDbException CreateException(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult errorCode, Exception? inner)
         {
             OleDbErrorCollection errors = new OleDbErrorCollection(errorInfo);
-            string? message = null;
-            string? source = null;
-            OleDbHResult hr = 0;
-
-            if (null != errorInfo)
-            {
-                hr = errorInfo.GetDescription(out message);
-
-                hr = errorInfo.GetSource(out source);
-            }
+            errorInfo.GetDescription(out string? message);
+            errorInfo.GetSource(out string? source);
 
             int count = errors.Count;
             if (0 < errors.Count)
@@ -137,7 +130,7 @@ namespace System.Data.OleDb
             {
             }
 
-            public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+            public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
             {
                 if (destinationType == null)
                 {

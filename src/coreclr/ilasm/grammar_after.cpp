@@ -60,14 +60,14 @@ static Keywords keywords[] = {
 #define NEW_INLINE_NAMES
                 // The volatile instruction collides with the volatile keyword, so
                 // we treat it as a keyword everywhere and modify the grammar accordingly (Yuck!)
-#define OPDEF(c,s,pop,push,args,type,l,s1,s2,ctrl) { s, args, c, lengthof(s)-1 },
-#define OPALIAS(alias_c, s, c) { s, NO_VALUE, c, lengthof(s)-1 },
+#define OPDEF(c,s,pop,push,args,type,l,s1,s2,ctrl) { s, args, c, STRING_LENGTH(s) },
+#define OPALIAS(alias_c, s, c) { s, NO_VALUE, c, STRING_LENGTH(s) },
 #include "opcode.def"
 #undef OPALIAS
 #undef OPDEF
 
                 /* keywords */
-#define KYWD(name, sym, val)    { name, sym, val, lengthof(name)-1 },
+#define KYWD(name, sym, val)    { name, sym, val, STRING_LENGTH(name) },
 #include "il_kywd.h"
 #undef KYWD
 
@@ -76,27 +76,27 @@ static Keywords keywords[] = {
 /********************************************************************************/
 /* File encoding-dependent functions */
 /*--------------------------------------------------------------------------*/
-char* nextcharU(__in __nullterminated char* pos)
+char* nextcharU(_In_ __nullterminated char* pos)
 {
     return ++pos;
 }
 
-char* nextcharW(__in __nullterminated char* pos)
+char* nextcharW(_In_ __nullterminated char* pos)
 {
     return (pos+2);
 }
 /*--------------------------------------------------------------------------*/
-unsigned SymAU(__in __nullterminated char* curPos)
+unsigned SymAU(_In_ __nullterminated char* curPos)
 {
     return (unsigned)*curPos;
 }
 
-unsigned SymW(__in __nullterminated char* curPos)
+unsigned SymW(_In_ __nullterminated char* curPos)
 {
     return (unsigned)*((WCHAR*)curPos);
 }
 /*--------------------------------------------------------------------------*/
-char* NewStrFromTokenAU(__in_ecount(tokLen) char* curTok, size_t tokLen)
+char* NewStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen)
 {
     char *nb = new char[tokLen+1];
     if(nb != NULL)
@@ -106,7 +106,7 @@ char* NewStrFromTokenAU(__in_ecount(tokLen) char* curTok, size_t tokLen)
     }
     return nb;
 }
-char* NewStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen)
+char* NewStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen)
 {
     WCHAR* wcurTok = (WCHAR*)curTok;
     char *nb = new char[(tokLen<<1) + 2];
@@ -118,14 +118,14 @@ char* NewStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen)
     return nb;
 }
 /*--------------------------------------------------------------------------*/
-char* NewStaticStrFromTokenAU(__in_ecount(tokLen) char* curTok, size_t tokLen, __out_ecount(bufSize) char* staticBuf, size_t bufSize)
+char* NewStaticStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen, _Out_writes_(bufSize) char* staticBuf, size_t bufSize)
 {
     if(tokLen >= bufSize) return NULL;
     memcpy(staticBuf, curTok, tokLen);
     staticBuf[tokLen] = 0;
     return staticBuf;
 }
-char* NewStaticStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen, __out_ecount(bufSize) char* staticBuf, size_t bufSize)
+char* NewStaticStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen, _Out_writes_(bufSize) char* staticBuf, size_t bufSize)
 {
     WCHAR* wcurTok = (WCHAR*)curTok;
     if(tokLen >= bufSize/2) return NULL;
@@ -134,10 +134,10 @@ char* NewStaticStrFromTokenW(__in_ecount(tokLen) char* curTok, size_t tokLen, __
     return staticBuf;
 }
 /*--------------------------------------------------------------------------*/
-unsigned GetDoubleAU(__in __nullterminated char* begNum, unsigned L, double** ppRes)
+unsigned GetDoubleAU(_In_ __nullterminated char* begNum, unsigned L, double** ppRes)
 {
     static char dbuff[128];
-    char* pdummy;
+    char* pdummy = NULL;
     if(L > 127) L = 127;
     memcpy(dbuff,begNum,L);
     dbuff[L] = 0;
@@ -145,10 +145,10 @@ unsigned GetDoubleAU(__in __nullterminated char* begNum, unsigned L, double** pp
     return ((unsigned)(pdummy - dbuff));
 }
 
-unsigned GetDoubleW(__in __nullterminated char* begNum, unsigned L, double** ppRes)
+unsigned GetDoubleW(_In_ __nullterminated char* begNum, unsigned L, double** ppRes)
 {
     static char dbuff[256];
-    char* pdummy;
+    char* pdummy = NULL;
     if(L > 254) L = 254;
     memcpy(dbuff,begNum,L);
     dbuff[L] = 0;
@@ -198,9 +198,9 @@ char* yygetline(int Line)
     return buff;
 }
 
-void yyerror(__in __nullterminated const char* str) {
+void yyerror(_In_ __nullterminated const char* str) {
     char tokBuff[64];
-    WCHAR *wzfile = (WCHAR*)(PENV->in->namew());
+    const char* szfile = PENV->in->name();
     int iline = PENV->curLine;
 
     size_t len = PENV->curPos - PENV->curTok;
@@ -210,22 +210,30 @@ void yyerror(__in __nullterminated const char* str) {
     tokBuff[len+1] = 0;
     if(PENV->bExternSource)
     {
-        wzfile = PASM->m_wzSourceFileName;
+        szfile = PASM->m_szSourceFileName;
         iline = PENV->nExtLine;
     }
+
+    const char* fmt = "%s(%d) : error : %s at token '%s' in: %s\n";
     if(Sym == SymW) // Unicode file
-        fprintf(stderr, "%S(%d) : error : %s at token '%S' in: %S\n",
-                wzfile, iline, str, (WCHAR*)tokBuff, (WCHAR*)yygetline(PENV->curLine));
+    {
+        MAKE_UTF8PTR_FROMWIDE(tokBuffUtf8, (WCHAR*)tokBuff);
+        MAKE_UTF8PTR_FROMWIDE(curLineUtf8, (WCHAR*)yygetline(PENV->curLine));
+        fprintf(stderr, fmt,
+                szfile, iline, str, tokBuffUtf8, curLineUtf8);
+    }
     else
-        fprintf(stderr, "%S(%d) : error : %s at token '%s' in: %s\n",
-                wzfile, iline, str, tokBuff, yygetline(PENV->curLine));
+    {
+        fprintf(stderr, fmt,
+                szfile, iline, str, tokBuff, yygetline(PENV->curLine));
+    }
     parser->success = false;
 }
 
 /********************************************************************************/
 /* looks up the typedef 'name' of length 'nameLen' (name does not need to be
    null terminated)   Returns 0 on failure */
-TypeDefDescr* findTypedef(__in_ecount(NameLen) char* name, size_t NameLen)
+TypeDefDescr* findTypedef(_In_reads_(NameLen) char* name, size_t NameLen)
 {
     TypeDefDescr* pRet = NULL;
     static char Name[4096];
@@ -354,7 +362,7 @@ static unsigned __int64 str2uint64(const char* str, const char** endStr, unsigne
 }
 /********************************************************************************/
 /* Append an UTF-8 string preceded by compressed length, no zero terminator, to a BinStr */
-static void AppendStringWithLength(BinStr* pbs, __in __nullterminated char* sz)
+static void AppendStringWithLength(BinStr* pbs, _In_ __nullterminated char* sz)
 {
     if((pbs != NULL) && (sz != NULL))
     {
@@ -365,6 +373,134 @@ static void AppendStringWithLength(BinStr* pbs, __in __nullterminated char* sz)
             memcpy(pb,sz,L);
     }
 }
+
+/********************************************************************************/
+/* Append a typed field initializer to an untyped custom attribute blob
+ * Since the result is untyped, we have to byte-swap here on big-endian systems
+ */
+#ifdef BIGENDIAN
+static int ByteSwapCustomBlob(BYTE *ptr, int length, int type, bool isSZArray)
+{
+    BYTE *orig_ptr = ptr;
+
+    int nElem = 1;
+    if (isSZArray)
+    {
+        _ASSERTE(length >= 4);
+        nElem = GET_UNALIGNED_32(ptr);
+        SET_UNALIGNED_VAL32(ptr, nElem);
+        if (nElem == 0xffffffff)
+            nElem = 0;
+        ptr += 4;
+        length -= 4;
+    }
+
+    for (int i = 0; i < nElem; i++)
+    {
+        switch (type)
+        {
+            case ELEMENT_TYPE_BOOLEAN:
+            case ELEMENT_TYPE_I1:
+            case ELEMENT_TYPE_U1:
+                _ASSERTE(length >= 1);
+                ptr++;
+                length--;
+                break;
+            case ELEMENT_TYPE_CHAR:
+            case ELEMENT_TYPE_I2:
+            case ELEMENT_TYPE_U2:
+                _ASSERTE(length >= 2);
+                SET_UNALIGNED_VAL16(ptr, GET_UNALIGNED_16(ptr));
+                ptr += 2;
+                length -= 2;
+                break;
+            case ELEMENT_TYPE_I4:
+            case ELEMENT_TYPE_U4:
+            case ELEMENT_TYPE_R4:
+                _ASSERTE(length >= 4);
+                SET_UNALIGNED_VAL32(ptr, GET_UNALIGNED_32(ptr));
+                ptr += 4;
+                length -= 4;
+                break;
+            case ELEMENT_TYPE_I8:
+            case ELEMENT_TYPE_U8:
+            case ELEMENT_TYPE_R8:
+                _ASSERTE(length >= 8);
+                SET_UNALIGNED_VAL64(ptr, GET_UNALIGNED_64(ptr));
+                ptr += 8;
+                length -= 8;
+                break;
+            case ELEMENT_TYPE_STRING:
+            case SERIALIZATION_TYPE_TYPE:
+                _ASSERTE(length >= 1);
+                if (*ptr == 0xFF)
+                {
+                    ptr++;
+                    length--;
+                }
+                else
+                {
+                    int skipped = CorSigUncompressData((PCCOR_SIGNATURE&)ptr);
+                    _ASSERTE(length >= skipped);
+                    ptr += skipped;
+                    length -= skipped;
+                }
+                break;
+            case SERIALIZATION_TYPE_TAGGED_OBJECT:
+            {
+                _ASSERTE(length >= 1);
+                bool objIsSZArray = false;
+                int objType = *ptr;
+                ptr++;
+                length--;
+                if (type == ELEMENT_TYPE_SZARRAY)
+                {
+                    _ASSERTE(length >= 1);
+                    objIsSZArray = false;
+                    objType = *ptr;
+                    ptr++;
+                    length--;
+                }
+                int skipped = ByteSwapCustomBlob(ptr, length, objType, objIsSZArray);
+                _ASSERTE(length >= skipped);
+                ptr += skipped;
+                length -= skipped;
+                break;
+            }
+        }
+    }
+
+    return ptr - orig_ptr;
+}
+#endif
+
+static void AppendFieldToCustomBlob(BinStr* pBlob, _In_ BinStr* pField)
+{
+    pBlob->appendFrom(pField, (*(pField->ptr()) == ELEMENT_TYPE_SZARRAY) ? 2 : 1);
+
+#ifdef BIGENDIAN
+    BYTE *fieldPtr = pField->ptr();
+    int fieldLength = pField->length();
+
+    bool isSZArray = false;
+    int type = fieldPtr[0];
+    fieldLength--;
+    if (type == ELEMENT_TYPE_SZARRAY)
+    {
+        isSZArray = true;
+        type = fieldPtr[1];
+        fieldLength--;
+    }
+
+    // This may be a bytearray that must not be swapped.
+    if (type == ELEMENT_TYPE_STRING && !isSZArray)
+        return;
+
+    BYTE *blobPtr = pBlob->ptr() + (pBlob->length() - fieldLength);
+    ByteSwapCustomBlob(blobPtr, fieldLength, type, isSZArray);
+#endif
+}
+
 
 /********************************************************************************/
 /* fetch the next token, and return it   Also set the yylval.union if the
@@ -422,7 +558,7 @@ BOOL IsValidStartingSymbol(unsigned x) { return (x < 128)&&_ValidSS[x]; }
 BOOL IsValidContinuingSymbol(unsigned x) { return (x < 128)&&_ValidCS[x]; }
 
 
-char* nextBlank(__in __nullterminated char* curPos)
+char* nextBlank(_In_ __nullterminated char* curPos)
 {
     for(;;)
     {
@@ -450,7 +586,7 @@ char* nextBlank(__in __nullterminated char* curPos)
     }
 }
 
-char* skipBlanks(__in __nullterminated char* curPos, unsigned* pstate)
+char* skipBlanks(_In_ __nullterminated char* curPos, unsigned* pstate)
 {
     const unsigned eolComment = 1;
     const unsigned multiComment = 2;
@@ -530,14 +666,13 @@ PAST_WHITESPACE:
     return curPos;
 }
 
-char* FullFileName(__in __nullterminated WCHAR* wzFileName, unsigned uCodePage);
+char* FullFileName(_In_ __nullterminated WCHAR* wzFileName, unsigned uCodePage);
 
 int ProcessEOF()
 {
     PARSING_ENVIRONMENT* prev_penv = parser->PEStack.POP();
     if(prev_penv != NULL)
     {
-        //delete [] (WCHAR*)(PENV->in->namew());
         delete PENV->in;
         delete PENV;
         parser->penv = prev_penv;
@@ -863,12 +998,16 @@ Its_An_Id:
 
                                 }
                                 if(PASM->m_fReportProgress)
-                                    parser->msg("\nIncluding '%S'\n",wzFile);
+                                {
+                                    MAKE_UTF8PTR_FROMWIDE(fileUtf8, wzFile);
+                                    parser->msg("\nIncluding '%s'\n",fileUtf8);
+                                }
                                 MappedFileStream *pIn = new MappedFileStream(wzFile);
                                 if((pIn != NULL)&&pIn->IsValid())
                                 {
                                     parser->PEStack.PUSH(PENV);
                                     PASM->SetSourceFileName(FullFileName(wzFile,CP_UTF8)); // deletes the argument!
+                                    delete [] wzFile;
                                     parser->CreateEnvironment(pIn);
                                     NEXT_TOKEN;
                                 }
@@ -1104,7 +1243,7 @@ Its_An_Id:
             if (Sym(nextchar(curPos))=='.' && Sym(nextchar(nextchar(curPos)))=='.')
             {
                 curPos = nextchar(nextchar(nextchar(curPos)));
-                tok = ELIPSIS;
+                tok = ELLIPSIS;
             }
             else
             {
@@ -1152,7 +1291,7 @@ Just_A_Character:
 #endif
 
 /**************************************************************************/
-static char* newString(__in __nullterminated const char* str1)
+static char* newString(_In_ __nullterminated const char* str1)
 {
     char* ret = new char[strlen(str1)+1];
     if(ret) strcpy_s(ret, strlen(str1)+1, str1);
@@ -1162,7 +1301,7 @@ static char* newString(__in __nullterminated const char* str1)
 /**************************************************************************/
 /* concatenate strings and release them */
 
-static char* newStringWDel(__in __nullterminated char* str1, char delimiter, __in __nullterminated char* str3)
+static char* newStringWDel(_In_ __nullterminated char* str1, char delimiter, _In_ __nullterminated char* str3)
 {
     size_t len1 = strlen(str1);
     size_t len = len1+2;
@@ -1286,7 +1425,7 @@ AGAIN:
                             TyParFixupList.PEEK(n));
                         m = 0;
                     }
-                    *pb = (*pb == ELEMENT_TYPE_MVARFIXUP)? ELEMENT_TYPE_MVAR : ELEMENT_TYPE_VAR;
+                    *pb = (BYTE)((*pb == ELEMENT_TYPE_MVARFIXUP) ? ELEMENT_TYPE_MVAR : ELEMENT_TYPE_VAR);
                     int compressed_size_m = (int)CorSigCompressData(m,pb+1);
 
                     // Note that CorSigCompressData() (and hence, CorSigUncompressData()) store a number
@@ -1502,7 +1641,7 @@ void AsmParse::ParseFile(ReadStream* stream)
 };
 
 /**************************************************************************/
-char* AsmParse::fillBuff(__in_opt __nullterminated char* pos)
+char* AsmParse::fillBuff(_In_opt_z_ char* pos)
 {
     int iPutToBuffer;
     g_uCodePage = CP_UTF8;
@@ -1636,7 +1775,7 @@ BinStr* AsmParse::MakeTypeClass(CorElementType kind, mdToken tk)
     return(ret);
 }
 /**************************************************************************/
-void PrintANSILine(FILE* pF, __in __nullterminated char* sz)
+void PrintANSILine(FILE* pF, _In_ __nullterminated char* sz)
 {
         WCHAR *wz = &wzUniBuf[0];
         if(g_uCodePage != CP_ACP)
@@ -1659,7 +1798,7 @@ void AsmParse::error(const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
 
-    if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%S(%d) : ", penv->in->namew(), penv->curLine);
+    if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%s(%d) : ", penv->in->name(), penv->curLine);
     psz+=sprintf_s(psz, (dwUniBuf >> 1), "error : ");
     _vsnprintf_s(psz, (dwUniBuf >> 1),(dwUniBuf >> 1)-strlen(sz)-1, fmt, args);
     PrintANSILine(pF,sz);
@@ -1674,7 +1813,7 @@ void AsmParse::warn(const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
 
-    if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%S(%d) : ", penv->in->namew(), penv->curLine);
+    if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%s(%d) : ", penv->in->name(), penv->curLine);
     psz+=sprintf_s(psz, (dwUniBuf >> 1), "warning : ");
     _vsnprintf_s(psz, (dwUniBuf >> 1),(dwUniBuf >> 1)-strlen(sz)-1, fmt, args);
     PrintANSILine(pF,sz);

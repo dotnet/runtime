@@ -56,18 +56,8 @@ namespace System.IO.Pipes
             PipeOptions options, TokenImpersonationLevel impersonationLevel, HandleInheritability inheritability)
             : base(direction, 0)
         {
-            if (pipeName == null)
-            {
-                throw new ArgumentNullException(nameof(pipeName));
-            }
-            if (serverName == null)
-            {
-                throw new ArgumentNullException(nameof(serverName), SR.ArgumentNull_ServerName);
-            }
-            if (pipeName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_NeedNonemptyPipeName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(pipeName);
+            ArgumentNullException.ThrowIfNull(serverName);
             if (serverName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyServerName);
@@ -100,10 +90,8 @@ namespace System.IO.Pipes
         public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
             : base(direction, 0)
         {
-            if (safePipeHandle == null)
-            {
-                throw new ArgumentNullException(nameof(safePipeHandle));
-            }
+            ArgumentNullException.ThrowIfNull(safePipeHandle);
+
             if (safePipeHandle.IsInvalid)
             {
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));
@@ -131,13 +119,12 @@ namespace System.IO.Pipes
         {
             CheckConnectOperationsClient();
 
-            if (timeout < 0 && timeout != Timeout.Infinite)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_InvalidTimeout);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(timeout, Timeout.Infinite);
 
             ConnectInternal(timeout, CancellationToken.None, Environment.TickCount);
         }
+
+        public void Connect(TimeSpan timeout) => Connect(ToTimeoutMilliseconds(timeout));
 
         private void ConnectInternal(int timeout, CancellationToken cancellationToken, int startTime)
         {
@@ -149,14 +136,14 @@ namespace System.IO.Pipes
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // Determine how long we should wait in this connection attempt
-                int waitTime = timeout - elapsed;
+                int waitTime = timeout == Timeout.Infinite ? CancellationCheckInterval : timeout - elapsed;
                 if (cancellationToken.CanBeCanceled && waitTime > CancellationCheckInterval)
                 {
                     waitTime = CancellationCheckInterval;
                 }
 
                 // Try to connect.
-                if (TryConnect(waitTime, cancellationToken))
+                if (TryConnect(waitTime))
                 {
                     return;
                 }
@@ -193,10 +180,7 @@ namespace System.IO.Pipes
         {
             CheckConnectOperationsClient();
 
-            if (timeout < 0 && timeout != Timeout.Infinite)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_InvalidTimeout);
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(timeout, Timeout.Infinite);
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -204,7 +188,23 @@ namespace System.IO.Pipes
             }
 
             int startTime = Environment.TickCount; // We need to measure time here, not in the lambda
-            return Task.Run(() => ConnectInternal(timeout, cancellationToken, startTime), cancellationToken);
+
+            return Task.Factory.StartNew(static state =>
+            {
+                var tuple = ((NamedPipeClientStream stream, int timeout, CancellationToken cancellationToken, int startTime))state!;
+                tuple.stream.ConnectInternal(tuple.timeout, tuple.cancellationToken, tuple.startTime);
+            }, (this, timeout, cancellationToken, startTime), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+        }
+
+        public Task ConnectAsync(TimeSpan timeout, CancellationToken cancellationToken = default) =>
+            ConnectAsync(ToTimeoutMilliseconds(timeout), cancellationToken);
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
+            return (int)totalMilliseconds;
         }
 
         // override because named pipe clients can't get/set properties when waiting to connect

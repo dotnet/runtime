@@ -69,7 +69,7 @@ namespace System.ConfigurationTests
             string assemblyName = PlatformDetection.IsNetFramework ? "System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" : "System.Configuration.ConfigurationManager";
 
             // InternalConfigFactory allows you to specify your own host / hostInitParams
-            // Ensure ImplictMachineConfigHost can init within this process and not throw an Invalid cast exception
+            // Ensure ImplicitMachineConfigHost can init within this process and not throw an Invalid cast exception
             using (var temp = new TempConfig(TestData.EmptyConfig))
             {
                 string typeName = "System.Configuration.Internal.InternalConfigConfigurationFactory, " + assemblyName;

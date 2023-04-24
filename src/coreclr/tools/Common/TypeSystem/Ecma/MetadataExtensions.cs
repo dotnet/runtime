@@ -24,6 +24,20 @@ namespace Internal.TypeSystem.Ecma
             return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.EcmaModule));
         }
 
+        public static IEnumerable<CustomAttributeValue<TypeDesc>> GetDecodedCustomAttributes(this EcmaType This,
+            string attributeNamespace, string attributeName)
+        {
+            var metadataReader = This.MetadataReader;
+            var attributeHandles = metadataReader.GetTypeDefinition(This.Handle).GetCustomAttributes();
+            foreach (var attributeHandle in attributeHandles)
+            {
+                if (IsEqualCustomAttributeName(attributeHandle, metadataReader, attributeNamespace, attributeName))
+                {
+                    yield return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(This.EcmaModule));
+                }
+            }
+        }
+
         public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this EcmaMethod This,
             string attributeNamespace, string attributeName)
         {
@@ -108,7 +122,7 @@ namespace Internal.TypeSystem.Ecma
             return default(CustomAttributeHandle);
         }
 
-        private static bool IsEqualCustomAttributeName(CustomAttributeHandle attributeHandle, MetadataReader metadataReader, 
+        public static bool IsEqualCustomAttributeName(CustomAttributeHandle attributeHandle, MetadataReader metadataReader,
             string attributeNamespace, string attributeName)
         {
             StringHandle namespaceHandle, nameHandle;
@@ -122,8 +136,8 @@ namespace Internal.TypeSystem.Ecma
         public static bool GetAttributeNamespaceAndName(this MetadataReader metadataReader, CustomAttributeHandle attributeHandle,
             out StringHandle namespaceHandle, out StringHandle nameHandle)
         {
-            EntityHandle attributeType, attributeCtor;
-            if (!GetAttributeTypeAndConstructor(metadataReader, attributeHandle, out attributeType, out attributeCtor))
+            EntityHandle attributeType;
+            if (!GetAttributeTypeAndConstructor(metadataReader, attributeHandle, out attributeType, out _))
             {
                 namespaceHandle = default(StringHandle);
                 nameHandle = default(StringHandle);
@@ -196,7 +210,7 @@ namespace Internal.TypeSystem.Ecma
 
         public static PInvokeFlags GetDelegatePInvokeFlags(this EcmaType type)
         {
-            PInvokeFlags flags = new PInvokeFlags();
+            PInvokeFlags flags = new PInvokeFlags(PInvokeAttributes.PreserveSig);
 
             if (!type.IsDelegate)
             {
@@ -280,6 +294,21 @@ namespace Internal.TypeSystem.Ecma
         public static bool IsPublic(this MethodAttributes flags)
         {
             return (flags & MethodAttributes.MemberAccessMask) == MethodAttributes.Public;
+        }
+
+        public static unsafe byte* GetTypeNamePointer(this MetadataReader reader, TypeDefinitionHandle handle)
+        {
+            return reader.GetBlobReader(reader.GetTypeDefinition(handle).Name).CurrentPointer;
+        }
+
+        public static unsafe byte* GetTypeNamespacePointer(this MetadataReader reader, TypeDefinitionHandle handle)
+        {
+            return reader.GetBlobReader(reader.GetTypeDefinition(handle).Namespace).CurrentPointer;
+        }
+
+        public static unsafe byte* GetMethodNamePointer(this MetadataReader reader, MethodDefinitionHandle handle)
+        {
+            return reader.GetBlobReader(reader.GetMethodDefinition(handle).Name).CurrentPointer;
         }
     }
 }

@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct VT
 {
@@ -25,7 +26,8 @@ public class charMDArrTest
     static char[][,] ja1 = new char[2][,];
     static char[][, ,] ja2 = new char[2][, ,];
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         bool pass = true;

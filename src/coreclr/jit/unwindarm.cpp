@@ -15,7 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if defined(TARGET_ARM) && defined(TARGET_UNIX)
+#if defined(TARGET_ARM) && defined(FEATURE_CFI_SUPPORT)
 short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
     short dwarfReg = DWARF_REG_ILLEGAL;
@@ -71,100 +71,52 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
             dwarfReg = 15;
             break;
         case REG_F0:
-            dwarfReg = 64;
-            break;
-        case REG_F1:
-            dwarfReg = 65;
+            dwarfReg = 256;
             break;
         case REG_F2:
-            dwarfReg = 66;
-            break;
-        case REG_F3:
-            dwarfReg = 67;
+            dwarfReg = 257;
             break;
         case REG_F4:
-            dwarfReg = 68;
-            break;
-        case REG_F5:
-            dwarfReg = 69;
+            dwarfReg = 258;
             break;
         case REG_F6:
-            dwarfReg = 70;
-            break;
-        case REG_F7:
-            dwarfReg = 71;
+            dwarfReg = 259;
             break;
         case REG_F8:
-            dwarfReg = 72;
-            break;
-        case REG_F9:
-            dwarfReg = 73;
+            dwarfReg = 260;
             break;
         case REG_F10:
-            dwarfReg = 74;
-            break;
-        case REG_F11:
-            dwarfReg = 75;
+            dwarfReg = 261;
             break;
         case REG_F12:
-            dwarfReg = 76;
-            break;
-        case REG_F13:
-            dwarfReg = 77;
+            dwarfReg = 262;
             break;
         case REG_F14:
-            dwarfReg = 78;
-            break;
-        case REG_F15:
-            dwarfReg = 79;
+            dwarfReg = 263;
             break;
         case REG_F16:
-            dwarfReg = 80;
-            break;
-        case REG_F17:
-            dwarfReg = 81;
+            dwarfReg = 264;
             break;
         case REG_F18:
-            dwarfReg = 82;
-            break;
-        case REG_F19:
-            dwarfReg = 83;
+            dwarfReg = 265;
             break;
         case REG_F20:
-            dwarfReg = 84;
-            break;
-        case REG_F21:
-            dwarfReg = 85;
+            dwarfReg = 266;
             break;
         case REG_F22:
-            dwarfReg = 86;
-            break;
-        case REG_F23:
-            dwarfReg = 87;
+            dwarfReg = 267;
             break;
         case REG_F24:
-            dwarfReg = 88;
-            break;
-        case REG_F25:
-            dwarfReg = 89;
+            dwarfReg = 268;
             break;
         case REG_F26:
-            dwarfReg = 90;
-            break;
-        case REG_F27:
-            dwarfReg = 91;
+            dwarfReg = 269;
             break;
         case REG_F28:
-            dwarfReg = 92;
-            break;
-        case REG_F29:
-            dwarfReg = 93;
+            dwarfReg = 270;
             break;
         case REG_F30:
-            dwarfReg = 94;
-            break;
-        case REG_F31:
-            dwarfReg = 95;
+            dwarfReg = 271;
             break;
         default:
             noway_assert(!"unexpected REG_NUM");
@@ -172,7 +124,7 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 
     return dwarfReg;
 }
-#endif // TARGET_ARM && TARGET_UNIX
+#endif // TARGET_ARM && FEATURE_CFI_SUPPORT
 
 #ifdef TARGET_ARMARCH
 
@@ -189,13 +141,13 @@ void Compiler::unwindBegProlog()
 {
     assert(compGeneratingProlog);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         unwindBegPrologCFI();
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     FuncInfoDsc* func = funCurrentFunc();
 
@@ -221,12 +173,12 @@ void Compiler::unwindBegEpilog()
 {
     assert(compGeneratingEpilog);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     funCurrentFunc()->uwi.AddEpilog();
 }
@@ -367,7 +319,7 @@ void Compiler::unwindPushMaskInt(regMaskTP maskInt)
             ~(RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5 | RBM_R6 | RBM_R7 | RBM_R8 | RBM_R9 | RBM_R10 |
               RBM_R11 | RBM_R12 | RBM_LR)) == 0);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         // If we are pushing LR, we should give unwind codes in terms of caller's PC
@@ -378,7 +330,7 @@ void Compiler::unwindPushMaskInt(regMaskTP maskInt)
         unwindPushPopMaskCFI(maskInt, false);
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     bool useOpsize16 = ((maskInt & (RBM_LOW_REGS | RBM_LR)) == maskInt); // Can PUSH use the 16-bit encoding?
     unwindPushPopMaskInt(maskInt, useOpsize16);
@@ -389,25 +341,25 @@ void Compiler::unwindPushMaskFloat(regMaskTP maskFloat)
     // Only floating point registers should be in maskFloat
     assert((maskFloat & RBM_ALLFLOAT) == maskFloat);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         unwindPushPopMaskCFI(maskFloat, true);
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     unwindPushPopMaskFloat(maskFloat);
 }
 
 void Compiler::unwindPopMaskInt(regMaskTP maskInt)
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     // Only r0-r12 and lr and pc are supported (pc is mapped to lr when encoding)
     assert((maskInt &
@@ -430,12 +382,12 @@ void Compiler::unwindPopMaskInt(regMaskTP maskInt)
 
 void Compiler::unwindPopMaskFloat(regMaskTP maskFloat)
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     // Only floating point registers should be in maskFloat
     assert((maskFloat & RBM_ALLFLOAT) == maskFloat);
@@ -444,7 +396,7 @@ void Compiler::unwindPopMaskFloat(regMaskTP maskFloat)
 
 void Compiler::unwindAllocStack(unsigned size)
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -453,7 +405,7 @@ void Compiler::unwindAllocStack(unsigned size)
         }
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -498,7 +450,7 @@ void Compiler::unwindAllocStack(unsigned size)
 
 void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         if (compGeneratingProlog)
@@ -507,7 +459,7 @@ void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
         }
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -526,12 +478,12 @@ void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
 
 void Compiler::unwindBranch16()
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -542,12 +494,12 @@ void Compiler::unwindBranch16()
 
 void Compiler::unwindNop(unsigned codeSizeInBytes) // codeSizeInBytes is 2 or 4 bytes for Thumb2 instruction
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
 
@@ -583,12 +535,12 @@ void Compiler::unwindNop(unsigned codeSizeInBytes) // codeSizeInBytes is 2 or 4 
 // for them.
 void Compiler::unwindPadding()
 {
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     UnwindInfo* pu = &funCurrentFunc()->uwi;
     GetEmitter()->emitUnwindNopPadding(pu->GetCurrentEmitterLocation(), this);
@@ -611,31 +563,50 @@ void Compiler::unwindReserve()
 void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 {
     BOOL isFunclet          = (func->funKind == FUNC_ROOT) ? FALSE : TRUE;
-    bool funcHasColdSection = false;
+    bool funcHasColdSection = (fgFirstColdBlock != nullptr);
 
-#if defined(TARGET_UNIX)
+#ifdef DEBUG
+    if (JitConfig.JitFakeProcedureSplitting() && funcHasColdSection)
+    {
+        funcHasColdSection = false; // "Trick" the VM into thinking we don't have a cold section.
+    }
+#endif // DEBUG
+
+#ifdef FEATURE_EH_FUNCLETS
+    // If hot/cold splitting occurred at fgFirstFuncletBB, then the main body is not split.
+    const bool splitAtFirstFunclet = (funcHasColdSection && (fgFirstColdBlock == fgFirstFuncletBB));
+
+    if (!isFunclet && splitAtFirstFunclet)
+    {
+        funcHasColdSection = false;
+    }
+#endif // FEATURE_EH_FUNCLETS
+
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
+        // Report zero-sized unwind info for cold part of main function
+        // so the EE chains unwind info.
+        // TODO: Support cold EH funclets.
         DWORD unwindCodeBytes = 0;
-        if (fgFirstColdBlock != nullptr)
+        if (funcHasColdSection)
         {
             eeReserveUnwindInfo(isFunclet, true /*isColdCode*/, unwindCodeBytes);
         }
+
         unwindCodeBytes = (DWORD)(func->cfiCodes->size() * sizeof(CFI_CODE));
         eeReserveUnwindInfo(isFunclet, false /*isColdCode*/, unwindCodeBytes);
 
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     // If there is cold code, split the unwind data between the hot section and the
     // cold section. This needs to be done before we split into fragments, as each
     // of the hot and cold sections can have multiple fragments.
 
-    if (fgFirstColdBlock != NULL)
+    if (funcHasColdSection)
     {
-        assert(!isFunclet); // TODO-CQ: support hot/cold splitting with EH
-
         emitLocation* startLoc;
         emitLocation* endLoc;
         unwindGetFuncLocations(func, false, &startLoc, &endLoc);
@@ -643,8 +614,6 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
         func->uwiCold = new (this, CMK_UnwindInfo) UnwindInfo();
         func->uwiCold->InitUnwindInfo(this, startLoc, endLoc);
         func->uwiCold->HotColdSplitCodes(&func->uwi);
-
-        funcHasColdSection = true;
     }
 
     // First we need to split the function or funclet into fragments that are no larger
@@ -652,7 +621,11 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     // The ARM Exception Data specification "Function Fragments" section describes this.
     func->uwi.Split();
 
-    func->uwi.Reserve(isFunclet, true);
+    // If the function is split, EH funclets are always cold; skip this call for cold funclets.
+    if (!isFunclet || !funcHasColdSection)
+    {
+        func->uwi.Reserve(isFunclet, true);
+    }
 
     // After the hot section, split and reserve the cold section
 
@@ -686,15 +659,20 @@ void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode
     static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
     static_assert_no_msg(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     if (generateCFIUnwindCodes())
     {
+        // TODO: Support cold EH funclets.
         unwindEmitFuncCFI(func, pHotCode, pColdCode);
         return;
     }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
-    func->uwi.Allocate((CorJitFuncKind)func->funKind, pHotCode, pColdCode, true);
+    // If the function is split, EH funclets are always cold; skip this call for cold funclets.
+    if ((func->funKind == FUNC_ROOT) || (func->uwiCold == NULL))
+    {
+        func->uwi.Allocate((CorJitFuncKind)func->funKind, pHotCode, pColdCode, true);
+    }
 
     if (func->uwiCold != NULL)
     {
@@ -1615,13 +1593,11 @@ void UnwindFragmentInfo::Finalize(UNATIVE_OFFSET functionLength)
     // The unwind code words are already here, following the header, so we're done!
 }
 
-void UnwindFragmentInfo::Reserve(BOOL isFunclet, bool isHotCode)
+void UnwindFragmentInfo::Reserve(bool isFunclet, bool isHotCode)
 {
-    assert(isHotCode || !isFunclet); // TODO-CQ: support hot/cold splitting in functions with EH
-
     MergeCodes();
 
-    BOOL isColdCode = isHotCode ? FALSE : TRUE;
+    bool isColdCode = !isHotCode;
 
     ULONG unwindSize = Size();
 
@@ -1651,12 +1627,6 @@ void UnwindFragmentInfo::Allocate(
     UNATIVE_OFFSET startOffset;
     UNATIVE_OFFSET endOffset;
     UNATIVE_OFFSET codeSize;
-
-    // We don't support hot/cold splitting with EH, so if there is cold code, this
-    // better not be a funclet!
-    // TODO-CQ: support funclets in cold code
-
-    noway_assert(isHotCode || funKind == CORJIT_FUNC_ROOT);
 
     // Compute the final size, and start and end offsets of the fragment
 
@@ -1704,7 +1674,17 @@ void UnwindFragmentInfo::Allocate(
 
     if (isHotCode)
     {
-        assert(endOffset <= uwiComp->info.compTotalHotCodeSize);
+#ifdef DEBUG
+        if (JitConfig.JitFakeProcedureSplitting() && (pColdCode != NULL))
+        {
+            assert(endOffset <= uwiComp->info.compNativeCodeSize);
+        }
+        else
+#endif // DEBUG
+        {
+            assert(endOffset <= uwiComp->info.compTotalHotCodeSize);
+        }
+
         pColdCode = NULL;
     }
     else
@@ -1741,7 +1721,12 @@ void UnwindFragmentInfo::Dump(int indent)
     printf("%*sUnwindFragmentInfo #%d, @0x%08p, size:%d:\n", indent, "", ufiNum, dspPtr(this), sizeof(*this));
     printf("%*s  uwiComp: 0x%08p\n", indent, "", dspPtr(uwiComp));
     printf("%*s  ufiNext: 0x%08p\n", indent, "", dspPtr(ufiNext));
-    printf("%*s  ufiEmitLoc: 0x%08p\n", indent, "", dspPtr(ufiEmitLoc));
+    printf("%*s  ufiEmitLoc: 0x%08p ", indent, "", dspPtr(ufiEmitLoc));
+    if (ufiEmitLoc != nullptr)
+    {
+        ufiEmitLoc->Print(uwiComp->compMethodID);
+    }
+    printf("\n");
     printf("%*s  ufiHasPhantomProlog: %s\n", indent, "", dspBool(ufiHasPhantomProlog));
     printf("%*s  %d epilog%s\n", indent, "", count, (count != 1) ? "s" : "");
     printf("%*s  ufiEpilogList: 0x%08p\n", indent, "", dspPtr(ufiEpilogList));
@@ -1822,7 +1807,7 @@ void UnwindInfo::HotColdSplitCodes(UnwindInfo* puwi)
 // so the fragment size will fit in the unwind data "Function Length" field.
 // The ARM Exception Data specification "Function Fragments" section describes this.
 // We split the function so that it is no larger than 512K bytes, or the value of
-// the COMPlus_JitSplitFunctionSize value, if defined (and smaller). We must determine
+// the DOTNET_JitSplitFunctionSize value, if defined (and smaller). We must determine
 // how to split the function/funclet before we issue the instructions, so we can
 // reserve the unwind space with the VM. The instructions issued may shrink (but not
 // expand!) during issuing (although this is extremely rare in any case, and may not
@@ -1841,7 +1826,7 @@ void UnwindInfo::Split()
     maxFragmentSize = UW_MAX_FRAGMENT_SIZE_BYTES;
 
 #ifdef DEBUG
-    // Consider COMPlus_JitSplitFunctionSize
+    // Consider DOTNET_JitSplitFunctionSize
     unsigned splitFunctionSize = (unsigned)JitConfig.JitSplitFunctionSize();
 
     if (splitFunctionSize != 0)
@@ -1925,7 +1910,7 @@ void UnwindInfo::Split()
 
 #ifdef DEBUG
     // Did the emitter split the function/funclet into as many fragments as we asked for?
-    // It might be fewer if the COMPlus_JitSplitFunctionSize was used, but it better not
+    // It might be fewer if the DOTNET_JitSplitFunctionSize was used, but it better not
     // be fewer if we're splitting into 512K blocks!
 
     unsigned fragCount = 0;
@@ -1942,7 +1927,7 @@ void UnwindInfo::Split()
 
         // If this fires, then we split into fewer fragments than we asked for, and we are using
         // the default, unwind-data-defined 512K maximum fragment size. We won't be able to fit
-        // this fragment into the unwind data! If you set COMPlus_JitSplitFunctionSize to something
+        // this fragment into the unwind data! If you set DOTNET_JitSplitFunctionSize to something
         // small, we might not be able to split into as many fragments as asked for, because we
         // can't split prologs or epilogs.
         assert(maxFragmentSize != UW_MAX_FRAGMENT_SIZE_BYTES);
@@ -1958,10 +1943,9 @@ void UnwindInfo::Split()
 
 // Reserve space for the unwind info for all fragments
 
-void UnwindInfo::Reserve(BOOL isFunclet, bool isHotCode)
+void UnwindInfo::Reserve(bool isFunclet, bool isHotCode)
 {
     assert(uwiInitialized == UWI_INITIALIZED_PATTERN);
-    assert(isHotCode || !isFunclet);
 
     for (UnwindFragmentInfo* pFrag = &uwiFragmentFirst; pFrag != NULL; pFrag = pFrag->ufiNext)
     {
@@ -2318,7 +2302,7 @@ void DumpUnwindInfo(Compiler*         comp,
     else
     {
         printf("  --- One epilog, unwind codes at %u\n", epilogCount);
-        assert(epilogCount < _countof(epilogStartAt));
+        assert(epilogCount < ArrLen(epilogStartAt));
         epilogStartAt[epilogCount] = true; // the one and only epilog starts its unwind codes at this offset
     }
 

@@ -5,10 +5,11 @@ using System.Diagnostics;
 using System.ComponentModel;
 using System.Collections.Generic;
 using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
-    internal readonly struct IndexField
+    internal readonly struct IndexField : IEquatable<IndexField>
     {
         public readonly DataColumn Column;
         public readonly bool IsDescending; // false = Asc; true = Desc what is default value for this?
@@ -21,15 +22,15 @@ namespace System.Data
             IsDescending = isDescending;
         }
 
-        public static bool operator ==(IndexField if1, IndexField if2) =>
-            if1.Column == if2.Column && if1.IsDescending == if2.IsDescending;
+        public static bool operator ==(IndexField if1, IndexField if2) => if1.Equals(if2);
 
-        public static bool operator !=(IndexField if1, IndexField if2) => !(if1 == if2);
+        public static bool operator !=(IndexField if1, IndexField if2) => !if1.Equals(if2);
 
         // must override Equals if == operator is defined
-        public override bool Equals(object? obj) => obj is IndexField ?
-            this == (IndexField)obj :
-            false;
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is IndexField other && Equals(other);
+
+        public bool Equals(IndexField other) => Column == other.Column && IsDescending == other.IsDescending;
 
         // must override GetHashCode if Equals is redefined
         public override int GetHashCode() =>
@@ -50,7 +51,7 @@ namespace System.Data
             protected override int CompareNode(int record1, int record2) =>
                 _index.CompareRecords(record1, record2);
 
-            protected override int CompareSateliteTreeNode(int record1, int record2) =>
+            protected override int CompareSatelliteTreeNode(int record1, int record2) =>
                 _index.CompareDuplicateRecords(record1, record2);
         }
 
@@ -167,7 +168,7 @@ namespace System.Data
 
         public DataViewRowState RecordStates => _recordStates;
 
-        public IFilter? RowFilter => (IFilter?)((null != _rowFilter) ? _rowFilter.Target : null);
+        public IFilter? RowFilter => (IFilter?)(_rowFilter?.Target);
 
         public int GetRecord(int recordIndex)
         {
@@ -641,8 +642,8 @@ namespace System.Data
 
         private Range GetRangeFromNode(int nodeId)
         {
-            // fill range with the min and max indexes of matching record (i.e min and max of satelite tree)
-            // min index is the index of the node in main tree, and max is the min + size of satelite tree-1
+            // fill range with the min and max indexes of matching record (i.e min and max of satellite tree)
+            // min index is the index of the node in main tree, and max is the min + size of satellite tree-1
 
             if (IndexTree.NIL == nodeId)
             {
@@ -781,7 +782,7 @@ namespace System.Data
             return pos;
         }
 
-        // existing functionality, it calls the overlaod with fireEvent== true, so it still fires the event
+        // existing functionality, it calls the overload with fireEvent== true, so it still fires the event
         private int InsertRecord(int record, bool fireEvent)
         {
             DataCommonEventSource.Log.Trace("<ds.Index.InsertRecord|INFO> {0}, record={1}, fireEvent={2}", ObjectID, record, fireEvent);
@@ -895,6 +896,7 @@ namespace System.Data
                 }
             }
         }
+
         // new RecordChanged which takes oldIndex and newIndex and fires _onListChanged
         public void RecordChanged(int oldIndex, int newIndex)
         {
@@ -1119,7 +1121,7 @@ namespace System.Data
                         if (_filter(listener))
                         {
                             // perform the action on each listener
-                            // some actions may throw an exception blocking remaning listeners from being notified (just like events)
+                            // some actions may throw an exception blocking remaining listeners from being notified (just like events)
                             action(listener!, arg1, arg2, arg3);
                         }
                         else

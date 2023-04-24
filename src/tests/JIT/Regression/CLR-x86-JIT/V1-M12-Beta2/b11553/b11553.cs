@@ -4,10 +4,12 @@
 using System;
 using System.IO;
 using System.Reflection;
+using Xunit;
 
-internal class test
+public class test
 {
-    public static int Main(String[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         Type t = typeof(int);
         Type t2 = typeof(long);

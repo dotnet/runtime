@@ -1,14 +1,14 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
-using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
     /// Provides helpers to create and initialize metadata for JSON-serializable types.
     /// </summary>
+    /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
     [EditorBrowsable(EditorBrowsableState.Never)]
     public static partial class JsonMetadataServices
     {
@@ -16,115 +16,62 @@ namespace System.Text.Json.Serialization.Metadata
         /// Creates metadata for a property or field.
         /// </summary>
         /// <typeparam name="T">The type that the converter for the property returns or accepts when converting JSON data.</typeparam>
-        /// <returns>A <see cref="JsonPropertyInfo"/> instance intialized with the provided metadata.</returns>
-        public static JsonPropertyInfo CreatePropertyInfo<T>(
-            JsonSerializerOptions options,
-            bool isProperty,
-            Type declaringType,
-            JsonTypeInfo propertyTypeInfo,
-            JsonConverter<T>? converter,
-            Func<object, T>? getter,
-            Action<object, T>? setter,
-            JsonIgnoreCondition ignoreCondition,
-            JsonNumberHandling numberHandling,
-            string propertyName,
-            string? jsonPropertyName)
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> to initialize the metadata with.</param>
+        /// <param name="propertyInfo">Provides serialization metadata about the property or field.</param>
+        /// <returns>A <see cref="JsonPropertyInfo"/> instance initialized with the provided metadata.</returns>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonPropertyInfo CreatePropertyInfo<T>(JsonSerializerOptions options, JsonPropertyInfoValues<T> propertyInfo)
         {
-            if (options == null)
+            if (options is null)
             {
-                throw new ArgumentNullException(nameof(options));
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
+            if (propertyInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyInfo));
             }
 
+            Type? declaringType = propertyInfo.DeclaringType;
             if (declaringType == null)
             {
-                throw new ArgumentNullException(nameof(declaringType));
+                throw new ArgumentException(nameof(propertyInfo.DeclaringType));
             }
 
-            if (propertyTypeInfo == null)
-            {
-                throw new ArgumentNullException(nameof(propertyTypeInfo));
-            }
-
+            string? propertyName = propertyInfo.PropertyName;
             if (propertyName == null)
             {
-                throw new ArgumentNullException(propertyName);
+                throw new ArgumentException(nameof(propertyInfo.PropertyName));
             }
 
-            if (converter == null)
+            if (!propertyInfo.IsProperty && propertyInfo.IsVirtual)
             {
-                converter = propertyTypeInfo.PropertyInfoForTypeInfo.ConverterBase as JsonConverter<T>;
-                if (converter == null)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.ConverterForPropertyMustBeValid, declaringType, propertyName, typeof(T)));
-                }
+                throw new InvalidOperationException(SR.Format(SR.FieldCannotBeVirtual, nameof(propertyInfo.IsProperty), nameof(propertyInfo.IsVirtual)));
             }
 
-            JsonPropertyInfo<T> jsonPropertyInfo = new JsonPropertyInfo<T>();
-            jsonPropertyInfo.InitializeForSourceGen(
-                options,
-                isProperty,
-                declaringType,
-                propertyTypeInfo,
-                converter,
-                getter,
-                setter,
-                ignoreCondition,
-                numberHandling,
-                propertyName,
-                jsonPropertyName);
-
-            return jsonPropertyInfo;
+            return CreatePropertyInfoCore(propertyInfo, options);
         }
 
         /// <summary>
         /// Creates metadata for a complex class or struct.
         /// </summary>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> to initialize the metadata with.</param>
+        /// <param name="objectInfo">Provides serialization metadata about an object type with constructors, properties, and fields.</param>
         /// <typeparam name="T">The type of the class or struct.</typeparam>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> or <paramref name="objectInfo"/> is null.</exception>
         /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the class or struct.</returns>
-        public static JsonTypeInfo<T> CreateObjectInfo<T>() where T : notnull => new JsonTypeInfoInternal<T>();
-
-        /// <summary>
-        /// Initializes metadata for a class or struct.
-        /// </summary>
-        /// <typeparam name="T">The type of the class or struct</typeparam>
-        /// <param name="info"></param>
-        /// <param name="options"></param>
-        /// <param name="createObjectFunc"></param>
-        /// <param name="propInitFunc"></param>
-        /// <param name="numberHandling"></param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/>, <paramref name="info"/>, or <paramref name="propInitFunc"/> is null.</exception>
-        /// <exception cref="ArgumentException">Thrown when <paramref name="info"/>, does not represent a complex class or struct type.</exception>
-        public static void InitializeObjectInfo<T>(
-            JsonTypeInfo<T> info,
-            JsonSerializerOptions options,
-            Func<T>? createObjectFunc,
-            Func<JsonSerializerContext, JsonPropertyInfo[]> propInitFunc,
-            JsonNumberHandling numberHandling)
-            where T : notnull
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonTypeInfo<T> CreateObjectInfo<T>(JsonSerializerOptions options, JsonObjectInfoValues<T> objectInfo) where T : notnull
         {
-            if (info == null)
+            if (options is null)
             {
-                throw new ArgumentNullException(nameof(info));
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
+            if (objectInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(objectInfo));
             }
 
-            if (info.PropertyInfoForTypeInfo != null)
-            {
-                // ConverterStrategy.Object is the only info type we won't have set PropertyInfoForTypeInfo for at this point.
-                throw new ArgumentException(SR.InitializeTypeInfoAsObjectInvalid, nameof(info));
-            }
-
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            if (propInitFunc == null)
-            {
-                throw new ArgumentNullException(nameof(propInitFunc));
-            }
-
-            ((JsonTypeInfoInternal<T>)info).InitializeAsObject(options, createObjectFunc, propInitFunc, numberHandling);
-            Debug.Assert(info.PropertyInfoForTypeInfo!.ConverterStrategy == ConverterStrategy.Object);
+            return CreateCore(options, objectInfo);
         }
 
         /// <summary>
@@ -132,22 +79,20 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <typeparam name="T">The generic type definition.</typeparam>
         /// <returns>A <see cref="JsonTypeInfo{T}"/> instance representing the type.</returns>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonTypeInfo<T> CreateValueInfo<T>(JsonSerializerOptions options, JsonConverter converter)
         {
-            JsonTypeInfo<T> info = new JsonTypeInfoInternal<T>(options);
-            info.PropertyInfoForTypeInfo = CreateJsonPropertyInfoForClassInfo(typeof(T), info, converter, options);
-            return info;
-        }
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(options));
+            }
+            if (converter is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(converter));
+            }
 
-        internal static JsonPropertyInfo CreateJsonPropertyInfoForClassInfo(
-            Type type,
-            JsonTypeInfo typeInfo,
-            JsonConverter converter,
-            JsonSerializerOptions options)
-        {
-            JsonPropertyInfo propertyInfo = converter.CreateJsonPropertyInfo();
-            propertyInfo.InitializeForTypeInfo(type, typeInfo, converter, options);
-            return propertyInfo;
+            JsonTypeInfo<T> info = CreateCore<T>(converter, options);
+            return info;
         }
     }
 }

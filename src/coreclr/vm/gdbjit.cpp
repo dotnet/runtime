@@ -508,12 +508,11 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
         return E_FAIL;
 
     const Module* mod = methodDescPtr->GetMethodTable()->GetModule();
-    SString modName = mod->GetFile()->GetPath();
+    SString modName = mod->GetPEAssembly()->GetPath();
     if (modName.IsEmpty())
         return E_FAIL;
 
-    StackScratchBuffer scratch;
-    const char* szModName = modName.GetUTF8(scratch);
+    const char* szModName = modName.GetUTF8();
 
     MethodDebugInfo methodDebugInfo(numMap, locals.countVars);
 
@@ -527,7 +526,7 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
     locals.localsName = new NewArrayHolder<char>[locals.size];
     locals.localsScope = new LocalsInfo::Scope [locals.size];
 
-    for (ULONG32 i = 0; i < locals.size; i++)
+    for (int i = 0; i < locals.size; i++)
     {
         size_t sizeRequired = WideCharToMultiByte(CP_UTF8, 0, methodDebugInfo.locals[i].name, -1, NULL, 0, NULL, NULL);
         locals.localsName[i] = new char[sizeRequired];
@@ -554,11 +553,11 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
         s.source = map[j].source;
         s.lineNumber = 0;
 
-        for (ULONG32 i = 0; i < methodDebugInfo.size; i++)
+        for (int i = 0; i < methodDebugInfo.size; i++)
         {
             const SequencePointInfo& sp = methodDebugInfo.points[i];
 
-            if (methodDebugInfo.points[i].ilOffset == map[j].ilOffset)
+            if ((ULONG)(methodDebugInfo.points[i].ilOffset) == map[j].ilOffset)
             {
                 s.fileIndex = 0;
                 int len = WideCharToMultiByte(CP_UTF8, 0, sp.fileName, -1, s.fileName, sizeof(s.fileName), NULL, NULL);
@@ -956,8 +955,7 @@ void TypeInfoBase::CalculateName()
 
     TypeString::AppendType(sName, typeHandle, formatFlags);
 
-    StackScratchBuffer buffer;
-    const UTF8 *utf8 = sName.GetUTF8(buffer);
+    const UTF8 *utf8 = sName.GetUTF8();
     if (typeHandle.IsValueType())
     {
         m_type_name = new char[strlen(utf8) + 1];
@@ -1245,7 +1243,7 @@ void FunctionMember::MangleName(char *buf, int &buf_offset, const char *name)
     int name_length = strlen(name);
 
     char tmp[20];
-    int tmp_len = sprintf_s(tmp, _countof(tmp), "%i", name_length);
+    int tmp_len = sprintf_s(tmp, ARRAY_SIZE(tmp), "%i", name_length);
     if (tmp_len <= 0)
         return;
 
@@ -1298,11 +1296,9 @@ void FunctionMember::DumpLinkageName(char* ptr, int& offset)
     md->GetMethodInfoNoSig(namespaceOrClassName, methodName);
     SString utf8namespaceOrClassName;
     SString utf8methodName;
-    namespaceOrClassName.ConvertToUTF8(utf8namespaceOrClassName);
-    methodName.ConvertToUTF8(utf8methodName);
 
-    const char *nspace = utf8namespaceOrClassName.GetUTF8NoConvert();
-    const char *mname = utf8methodName.GetUTF8NoConvert();
+    const char *nspace = utf8namespaceOrClassName.GetUTF8();
+    const char *mname = utf8methodName.GetUTF8();
 
     if (!nspace || !mname)
     {
@@ -1337,7 +1333,7 @@ bool FunctionMember::GetBlockInNativeCode(int blockILOffset, int blockILLen, TAD
 
     bool inBlock = false;
 
-    for (int i = 0; i < nlines; ++i)
+    for (unsigned i = 0; i < nlines; ++i)
     {
         TADDR nativeOffset = lines[i].nativeOffset + pCode;
 
@@ -1391,20 +1387,21 @@ void FunctionMember::DumpTryCatchBlock(char* ptr, int& offset, int ilOffset, int
     TADDR startOffset;
     TADDR endOffset;
 
-    if (!GetBlockInNativeCode(ilOffset, ilLen, &startOffset, &endOffset))
-        return;
-
-    if (ptr != nullptr)
+    if (GetBlockInNativeCode(ilOffset, ilLen, &startOffset, &endOffset))
     {
-        DebugInfoTryCatchSub subEntry;
+        if (ptr != nullptr)
+        {
+            DebugInfoTryCatchSub subEntry;
 
-        subEntry.m_sub_abbrev = abbrev;
-        subEntry.m_sub_low_pc = md->GetNativeCode() + startOffset;
-        subEntry.m_sub_high_pc = endOffset - startOffset;
+            subEntry.m_sub_abbrev = abbrev;
+            subEntry.m_sub_low_pc = md->GetNativeCode() + startOffset;
+            subEntry.m_sub_high_pc = endOffset - startOffset;
 
-        memcpy(ptr + offset, &subEntry, sizeof(DebugInfoTryCatchSub));
+            memcpy(ptr + offset, &subEntry, sizeof(DebugInfoTryCatchSub));
+        }
+
+        offset += sizeof(DebugInfoTryCatchSub);
     }
-    offset += sizeof(DebugInfoTryCatchSub);
 }
 
 void FunctionMember::DumpTryCatchDebugInfo(char* ptr, int& offset)
@@ -1697,7 +1694,7 @@ void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
         {
             DebugInfoInheritance buf;
             buf.m_abbrev = 18;
-            if (RefTypeInfo *m_p = dynamic_cast<RefTypeInfo*>(m_parent))
+            if (RefTypeInfo *m_p = (RefTypeInfo*)(m_parent))
                 buf.m_type = m_p->m_value_type->m_type_offset;
             else
                 buf.m_type = m_parent->m_type_offset;
@@ -2164,7 +2161,7 @@ void Elf_Builder::Initialize(PCODE codePtr, TADDR codeLen)
     //
     // Create '.text' section
     //
-    Elf_SectionTracker *text = OpenSection(".text", SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR);
+    Elf_SectionTracker *text = OpenSection(".text", SHT_NOBITS, SHF_ALLOC | SHF_EXECINSTR);
     {
         text->DisableHeaderUpdate();
         text->Header()->sh_addr = codePtr;
@@ -2537,9 +2534,8 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
 
     /* Get module name */
     const Module* mod = methodDescPtr->GetMethodTable()->GetModule();
-    SString modName = mod->GetFile()->GetPath();
-    StackScratchBuffer scratch;
-    const char* szModName = modName.GetUTF8(scratch);
+    SString modName = mod->GetPEAssembly()->GetPath();
+    const char* szModName = modName.GetUTF8();
     const char* szModuleFile = SplitFilename(szModName);
 
     int length = MultiByteToWideChar(CP_UTF8, 0, szModuleFile, -1, NULL, 0);
@@ -2901,7 +2897,7 @@ bool NotifyGdb::EmitDebugInfo(Elf_Builder &elfBuilder, MethodDesc* methodDescPtr
     {
         char name[256];
 
-        sprintf_s(name, _countof(name), ".thunk_%i", i);
+        sprintf_s(name, ARRAY_SIZE(name), ".thunk_%i", i);
 
         Elf_SectionTracker *thunk = elfBuilder.OpenSection(name, SHT_PROGBITS, SHF_ALLOC | SHF_EXECINSTR);
         thunk->DisableHeaderUpdate();
@@ -3121,12 +3117,12 @@ public:
         unsigned totalSize = 0;
 
         // Compute buffer size
-        for (unsigned i = 0; i < m_dirs_count; ++i)
+        for (int i = 0; i < m_dirs_count; ++i)
             totalSize += strlen(m_dirs[i]) + 1;
         totalSize += 1;
 
         char cnv_buf[16];
-        for (unsigned i = 0; i < m_files_count; ++i)
+        for (int i = 0; i < m_files_count; ++i)
         {
             int len = Leb128Encode(static_cast<uint32_t>(m_files[i].dir), cnv_buf, sizeof(cnv_buf));
             totalSize += strlen(m_files[i].name) + 1 + len + 2;
@@ -3139,7 +3135,7 @@ public:
 
         char *ptr = buf.MemPtr;
 
-        for (unsigned i = 0; i < m_dirs_count; ++i)
+        for (int i = 0; i < m_dirs_count; ++i)
         {
             strcpy(ptr, m_dirs[i]);
             ptr += strlen(m_dirs[i]) + 1;
@@ -3147,7 +3143,7 @@ public:
         // final zero byte for directory table
         *ptr++ = 0;
 
-        for (unsigned i = 0; i < m_files_count; ++i)
+        for (int i = 0; i < m_files_count; ++i)
         {
             strcpy(ptr, m_files[i].name);
             ptr += strlen(m_files[i].name) + 1;
@@ -3166,7 +3162,7 @@ public:
     }
 };
 
-/* Buid the source files table for DWARF source line info */
+/* Build the source files table for DWARF source line info */
 bool NotifyGdb::BuildFileTable(MemBuf& buf, SymbolsInfo* lines, unsigned nlines, const char * &cuPath)
 {
     FileTableBuilder fileTable(nlines);
@@ -3228,7 +3224,7 @@ static void fixLineMapping(SymbolsInfo* lines, unsigned nlines)
 {
     // Fix EPILOGUE line mapping
     int prevLine = 0;
-    for (int i = 0; i < nlines; ++i)
+    for (unsigned i = 0; i < nlines; ++i)
     {
         if (lines[i].lineNumber == HiddenLine)
             continue;
@@ -3260,12 +3256,12 @@ static void fixLineMapping(SymbolsInfo* lines, unsigned nlines)
             prevLine = lines[i].lineNumber;
     }
     // Skip HiddenLines
-    for (int i = 0; i < nlines; ++i)
+    for (unsigned i = 0; i < nlines; ++i)
     {
         if (lines[i].lineNumber == HiddenLine)
         {
             lines[i].lineNumber = 0;
-            if (i + 1 < nlines && lines[i + 1].ilOffset == ICorDebugInfo::NO_MAPPING)
+            if ((unsigned)(i + 1) < nlines && lines[i + 1].ilOffset == ICorDebugInfo::NO_MAPPING)
                 lines[i + 1].lineNumber = 0;
         }
     }
@@ -3295,7 +3291,7 @@ bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, TADDR codeSize, Symb
 
     int prevLine = 1, prevFile = 0;
 
-    for (int i = 0; i < nlines; ++i)
+    for (unsigned i = 0; i < nlines; ++i)
     {
         /* different source file */
         if (lines[i].fileIndex != prevFile)
@@ -3331,7 +3327,7 @@ bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, TADDR codeSize, Symb
     int lastAddr = nlines > 0 ? lines[nlines - 1].nativeOffset : 0;
 
     // Advance PC to the end of function
-    if (lastAddr < codeSize) {
+    if ((TADDR)lastAddr < codeSize) {
         int len = Leb128Encode(static_cast<uint32_t>(codeSize - lastAddr), cnv_buf, sizeof(cnv_buf));
         IssueParamCommand(ptr, DW_LNS_advance_pc, cnv_buf, len);
     }
@@ -3615,7 +3611,7 @@ const char * NotifyGdb::SplitFilename(const char* path)
     const char *pSlash = nullptr;
     for (const char *p = path; *p != '\0'; p++)
     {
-        if (*p == '/' || *p == '\\')
+        if (*p == DIRECTORY_SEPARATOR_CHAR_A)
             pSlash = p;
     }
 
@@ -3672,6 +3668,8 @@ Elf64_Ehdr::Elf64_Ehdr()
     e_machine = EM_X86_64;
 #elif defined(TARGET_ARM64)
     e_machine = EM_AARCH64;
+#elif defined(TARGET_LOONGARCH64)
+    e_machine = EM_LOONGARCH;
 #endif
     e_flags = 0;
     e_version = 1;

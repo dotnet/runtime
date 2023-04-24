@@ -1,7 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
+    <IsTrimmable>false</IsTrimmable>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Provides Managed Extensibility Framework types that are useful to developers of extensible applications, or hosts.
+
+Commonly Used Types:
+System.Composition.Hosting.CompositionHost</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Composition\Hosting\CompositionHost.cs" />
     <Compile Include="System\Composition\Hosting\Core\CompositeActivator.cs" />
@@ -30,10 +41,12 @@
     <Compile Include="System\Composition\Hosting\Util\MethodInfoExtensions.cs" />
     <Compile Include="System\Composition\Hosting\Util\SmallSparseInitonlyArray.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
 </Project>

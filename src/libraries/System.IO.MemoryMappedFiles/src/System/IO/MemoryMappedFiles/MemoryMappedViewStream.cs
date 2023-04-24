@@ -24,10 +24,7 @@ namespace System.IO.MemoryMappedFiles
 
         public override void SetLength(long value)
         {
-            if (value < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
 
             throw new NotSupportedException(SR.NotSupported_MMViewStreamsFixedLength);
         }
@@ -37,7 +34,7 @@ namespace System.IO.MemoryMappedFiles
         {
             try
             {
-                if (disposing && !_view.IsClosed)
+                if (disposing && !_view.IsClosed && CanWrite)
                 {
                     Flush();
                 }

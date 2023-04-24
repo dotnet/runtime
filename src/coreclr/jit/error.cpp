@@ -32,7 +32,7 @@ unsigned fatal_NYI;
 void DECLSPEC_NORETURN fatal(int errCode)
 {
 #ifdef DEBUG
-    if (errCode != CORJIT_SKIPPED) // Don't stop on NYI: use COMPlus_AltJitAssertOnNYI for that.
+    if (errCode != CORJIT_SKIPPED) // Don't stop on NYI: use DOTNET_AltJitAssertOnNYI for that.
     {
         if (JitConfig.DebugBreakOnVerificationFailure())
         {
@@ -239,7 +239,7 @@ DWORD getBreakOnBadCode()
 /*****************************************************************************/
 void debugError(const char* msg, const char* file, unsigned line)
 {
-    const char* tail = strrchr(file, '\\');
+    const char* tail = strrchr(file, DIRECTORY_SEPARATOR_CHAR_A);
     if (tail != nullptr)
     {
         tail = tail + 1;
@@ -254,15 +254,11 @@ void debugError(const char* msg, const char* file, unsigned line)
     logf(LL_ERROR, "COMPILATION FAILED: file: %s:%d compiling method %s reason %s\n", tail, line,
          env->compiler->info.compFullName, msg);
 
-    // We now only assert when user explicitly set ComPlus_JitRequired=1
-    // If ComPlus_JitRequired is 0 or is not set, we will not assert.
+    // We now only assert when user explicitly set DOTNET_JitRequired=1
+    // If DOTNET_JitRequired is 0 or is not set, we will not assert.
     if (JitConfig.JitRequired() == 1 || getBreakOnBadCode())
     {
-        // Don't assert if verification is done.
-        if (!env->compiler->tiVerificationNeeded || getBreakOnBadCode())
-        {
-            assertAbort(msg, file, line);
-        }
+        assertAbort(msg, file, line);
     }
 
     BreakIfDebuggerPresent();
@@ -279,13 +275,15 @@ extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned 
     const char* msg       = why;
     LogEnv*     env       = JitTls::GetLogEnv();
     const int   BUFF_SIZE = 8192;
-    char*       buff      = (char*)alloca(BUFF_SIZE);
+    char*       buff      = (char*)_alloca(BUFF_SIZE);
     const char* phaseName = "unknown phase";
     if (env->compiler)
     {
         phaseName = PhaseNames[env->compiler->mostRecentlyActivePhase];
-        _snprintf_s(buff, BUFF_SIZE, _TRUNCATE, "Assertion failed '%s' in '%s' during '%s' (IL size %d)\n", why,
-                    env->compiler->info.compFullName, phaseName, env->compiler->info.compILCodeSize);
+        _snprintf_s(buff, BUFF_SIZE, _TRUNCATE,
+                    "Assertion failed '%s' in '%s' during '%s' (IL size %d; hash 0x%08x; %s)\n", why,
+                    env->compiler->info.compFullName, phaseName, env->compiler->info.compILCodeSize,
+                    env->compiler->info.compMethodHash(), env->compiler->compGetTieringName(/* short name */ true));
         msg = buff;
     }
     printf(""); // null string means flush
@@ -308,13 +306,13 @@ extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned 
     if (comp != nullptr && comp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
         // If we hit an assert, and we got here, it's either because the user hit "ignore" on the
-        // dialog pop-up, or they set COMPlus_ContinueOnAssert=1 to not emit a pop-up, but just continue.
+        // dialog pop-up, or they set DOTNET_ContinueOnAssert=1 to not emit a pop-up, but just continue.
         // If we're an altjit, we have two options: (1) silently continue, as a normal JIT would, probably
         // leading to additional asserts, or (2) tell the VM that the AltJit wants to skip this function,
-        // thus falling back to the fallback JIT. Setting COMPlus_AltJitSkipOnAssert=1 chooses this "skip"
+        // thus falling back to the fallback JIT. Setting DOTNET_AltJitSkipOnAssert=1 chooses this "skip"
         // to the fallback JIT behavior. This is useful when doing ASM diffs, where we only want to see
         // the first assert for any function, but we don't want to kill the whole ngen process on the
-        // first assert (which would happen if you used COMPlus_NoGuiOnAssert=1 for example).
+        // first assert (which would happen if you used DOTNET_NoGuiOnAssert=1 for example).
         if (JitConfig.AltJitSkipOnAssert() != 0)
         {
             fatal(CORJIT_SKIPPED);
@@ -323,7 +321,7 @@ extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned 
 }
 
 /*********************************************************************/
-BOOL vlogf(unsigned level, const char* fmt, va_list args)
+bool vlogf(unsigned level, const char* fmt, va_list args)
 {
     return JitTls::GetLogEnv()->compHnd->logMsg(level, fmt, args);
 }
@@ -490,7 +488,7 @@ void logf(unsigned level, const char* fmt, ...)
     va_end(args);
 }
 
-void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg, __in_z const char* file, unsigned line)
+void DECLSPEC_NORETURN badCode3(const char* msg, const char* msg2, int arg, _In_z_ const char* file, unsigned line)
 {
     const int BUFF_SIZE = 512;
     char      buf1[BUFF_SIZE];

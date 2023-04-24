@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Configuration.Internal;
 using System.Globalization;
 using System.Runtime.Serialization;
@@ -23,35 +24,39 @@ namespace System.Configuration
         private int _line;
 
         // Default ctor is required for serialization.
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected ConfigurationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             Init(info.GetString("filename"), info.GetInt32("line"));
         }
 
-        [Obsolete("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [Obsolete("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException() : this(null, null, null, 0) { }
 
-        [Obsolete("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [Obsolete("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message) : this(message, null, null, 0) { }
 
-        [Obsolete("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [Obsolete("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, Exception inner) : this(message, inner, null, 0) { }
 
-        [Obsolete("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [Obsolete("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, XmlNode node)
             : this(message, null, GetXmlNodeFilename(node), GetXmlNodeLineNumber(node))
         { }
 
-        [Obsolete("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [Obsolete("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, Exception inner, XmlNode node)
             : this(message, inner, GetXmlNodeFilename(node), GetXmlNodeLineNumber(node))
         { }
 
-        [Obsolete("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [Obsolete("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, string filename, int line) : this(message, null, filename, line) { }
 
-        [Obsolete("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [Obsolete("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, Exception inner, string filename, int line) : base(message, inner)
         {
             Init(filename, line);
@@ -90,6 +95,10 @@ namespace System.Configuration
             _line = line;
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -97,10 +106,10 @@ namespace System.Configuration
             info.AddValue("line", _line);
         }
 
-        [Obsolete("This class is obsolete, use System.Configuration.ConfigurationErrorsException.GetFilename instead")]
+        [Obsolete("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException.GetFilename instead.")]
         public static string GetXmlNodeFilename(XmlNode node) => (node as IConfigErrorInfo)?.Filename ?? string.Empty;
 
-        [Obsolete("This class is obsolete, use System.Configuration.ConfigurationErrorsException.GetFilename instead")]
+        [Obsolete("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException.GetLinenumber instead.")]
         public static int GetXmlNodeLineNumber(XmlNode node) => (node as IConfigErrorInfo)?.LineNumber ?? 0;
     }
 }

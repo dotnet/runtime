@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -17,7 +18,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Constructor that accepts the regular expression pattern
         /// </summary>
         /// <param name="pattern">The regular expression to use.  It cannot be null.</param>
-        public RegularExpressionAttribute(string pattern)
+        public RegularExpressionAttribute([StringSyntax(StringSyntaxAttribute.Regex)] string pattern)
             : base(() => SR.RegexAttribute_ValidationError)
         {
             Pattern = pattern;
@@ -29,6 +30,11 @@ namespace System.ComponentModel.DataAnnotations
         ///     (-1 means never timeout).
         /// </summary>
         public int MatchTimeoutInMilliseconds { get; set; }
+
+        /// <summary>
+        /// Gets the timeout to use when matching the regular expression pattern
+        /// </summary>
+        public TimeSpan MatchTimeout => TimeSpan.FromMilliseconds(MatchTimeoutInMilliseconds);
 
         /// <summary>
         ///     Gets the regular expression pattern to use
@@ -60,11 +66,14 @@ namespace System.ComponentModel.DataAnnotations
                 return true;
             }
 
-            var m = Regex!.Match(stringValue);
+            foreach (ValueMatch m in Regex!.EnumerateMatches(stringValue))
+            {
+                // We are looking for an exact match, not just a search hit. This matches what
+                // the RegularExpressionValidator control does
+                return m.Index == 0 && m.Length == stringValue.Length;
+            }
 
-            // We are looking for an exact match, not just a search hit. This matches what
-            // the RegularExpressionValidator control does
-            return (m.Success && m.Index == 0 && m.Length == stringValue.Length);
+            return false;
         }
 
         /// <summary>

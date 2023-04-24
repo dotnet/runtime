@@ -14,15 +14,6 @@ namespace System.Net.Http
     {
         private sealed class ChunkedEncodingReadStream : HttpContentReadStream
         {
-            /// <summary>How long a chunk indicator is allowed to be.</summary>
-            /// <remarks>
-            /// While most chunks indicators will contain no more than ulong.MaxValue.ToString("X").Length characters,
-            /// "chunk extensions" are allowed. We place a limit on how long a line can be to avoid OOM issues if an
-            /// infinite chunk length is sent.  This value is arbitrary and can be changed as needed.
-            /// </remarks>
-            private const int MaxChunkBytesAllowed = 16 * 1024;
-            /// <summary>How long a trailing header can be.  This value is arbitrary and can be changed as needed.</summary>
-            private const int MaxTrailingHeaderLength = 16 * 1024;
             /// <summary>The number of bytes remaining in the chunk.</summary>
             private ulong _chunkBytesRemaining;
             /// <summary>The current state of the parsing state machine for the chunked response.</summary>
@@ -37,17 +28,27 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                if (_connection == null || buffer.Length == 0)
+                if (_connection == null)
                 {
-                    // Response body fully consumed or the caller didn't ask for any data.
+                    // Response body fully consumed
                     return 0;
                 }
 
-                // Try to consume from data we already have in the buffer.
-                int bytesRead = ReadChunksFromConnectionBuffer(buffer, cancellationRegistration: default);
-                if (bytesRead > 0)
+                if (buffer.Length == 0)
                 {
-                    return bytesRead;
+                    if (PeekChunkFromConnectionBuffer())
+                    {
+                        return 0;
+                    }
+                }
+                else
+                {
+                    // Try to consume from data we already have in the buffer.
+                    int bytesRead = ReadChunksFromConnectionBuffer(buffer, cancellationRegistration: default);
+                    if (bytesRead > 0)
+                    {
+                        return bytesRead;
+                    }
                 }
 
                 // Nothing available to consume.  Fall back to I/O.
@@ -68,7 +69,8 @@ namespace System.Net.Http
                         // as the connection buffer.  That avoids an unnecessary copy while still reading
                         // the maximum amount we'd otherwise read at a time.
                         Debug.Assert(_connection.RemainingBuffer.Length == 0);
-                        bytesRead = _connection.Read(buffer.Slice(0, (int)Math.Min((ulong)buffer.Length, _chunkBytesRemaining)));
+                        Debug.Assert(buffer.Length != 0);
+                        int bytesRead = _connection.Read(buffer.Slice(0, (int)Math.Min((ulong)buffer.Length, _chunkBytesRemaining)));
                         if (bytesRead == 0)
                         {
                             throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _chunkBytesRemaining));
@@ -81,15 +83,35 @@ namespace System.Net.Http
                         return bytesRead;
                     }
 
+                    if (buffer.Length == 0)
+                    {
+                        // User requested a zero-byte read, and we have no data available in the buffer for processing.
+                        // This zero-byte read indicates their desire to trade off the extra cost of a zero-byte read
+                        // for reduced memory consumption when data is not immediately available.
+                        // So, we will issue our own zero-byte read against the underlying stream to allow it to make use of
+                        // optimizations, such as deferring buffer allocation until data is actually available.
+                        _connection.Read(buffer);
+                    }
+
                     // We're only here if we need more data to make forward progress.
-                    _connection.Fill();
+                    Fill();
 
                     // Now that we have more, see if we can get any response data, and if
                     // we can we're done.
-                    int bytesCopied = ReadChunksFromConnectionBuffer(buffer, cancellationRegistration: default);
-                    if (bytesCopied > 0)
+                    if (buffer.Length == 0)
                     {
-                        return bytesCopied;
+                        if (PeekChunkFromConnectionBuffer())
+                        {
+                            return 0;
+                        }
+                    }
+                    else
+                    {
+                        int bytesCopied = ReadChunksFromConnectionBuffer(buffer, cancellationRegistration: default);
+                        if (bytesCopied > 0)
+                        {
+                            return bytesCopied;
+                        }
                     }
                 }
             }
@@ -102,17 +124,27 @@ namespace System.Net.Http
                     return ValueTask.FromCanceled<int>(cancellationToken);
                 }
 
-                if (_connection == null || buffer.Length == 0)
+                if (_connection == null)
                 {
-                    // Response body fully consumed or the caller didn't ask for any data.
+                    // Response body fully consumed
                     return new ValueTask<int>(0);
                 }
 
-                // Try to consume from data we already have in the buffer.
-                int bytesRead = ReadChunksFromConnectionBuffer(buffer.Span, cancellationRegistration: default);
-                if (bytesRead > 0)
+                if (buffer.Length == 0)
                 {
-                    return new ValueTask<int>(bytesRead);
+                    if (PeekChunkFromConnectionBuffer())
+                    {
+                        return new ValueTask<int>(0);
+                    }
+                }
+                else
+                {
+                    // Try to consume from data we already have in the buffer.
+                    int bytesRead = ReadChunksFromConnectionBuffer(buffer.Span, cancellationRegistration: default);
+                    if (bytesRead > 0)
+                    {
+                        return new ValueTask<int>(bytesRead);
+                    }
                 }
 
                 // We may have just consumed the remainder of the response (with no actual data
@@ -132,7 +164,6 @@ namespace System.Net.Http
                 // Should only be called if ReadChunksFromConnectionBuffer returned 0.
 
                 Debug.Assert(_connection != null);
-                Debug.Assert(buffer.Length > 0);
 
                 CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
                 try
@@ -154,6 +185,7 @@ namespace System.Net.Http
                             // as the connection buffer.  That avoids an unnecessary copy while still reading
                             // the maximum amount we'd otherwise read at a time.
                             Debug.Assert(_connection.RemainingBuffer.Length == 0);
+                            Debug.Assert(buffer.Length != 0);
                             int bytesRead = await _connection.ReadAsync(buffer.Slice(0, (int)Math.Min((ulong)buffer.Length, _chunkBytesRemaining))).ConfigureAwait(false);
                             if (bytesRead == 0)
                             {
@@ -167,15 +199,35 @@ namespace System.Net.Http
                             return bytesRead;
                         }
 
+                        if (buffer.Length == 0)
+                        {
+                            // User requested a zero-byte read, and we have no data available in the buffer for processing.
+                            // This zero-byte read indicates their desire to trade off the extra cost of a zero-byte read
+                            // for reduced memory consumption when data is not immediately available.
+                            // So, we will issue our own zero-byte read against the underlying stream to allow it to make use of
+                            // optimizations, such as deferring buffer allocation until data is actually available.
+                            await _connection.ReadAsync(buffer).ConfigureAwait(false);
+                        }
+
                         // We're only here if we need more data to make forward progress.
-                        await _connection.FillAsync(async: true).ConfigureAwait(false);
+                        await FillAsync().ConfigureAwait(false);
 
                         // Now that we have more, see if we can get any response data, and if
                         // we can we're done.
-                        int bytesCopied = ReadChunksFromConnectionBuffer(buffer.Span, ctr);
-                        if (bytesCopied > 0)
+                        if (buffer.Length == 0)
                         {
-                            return bytesCopied;
+                            if (PeekChunkFromConnectionBuffer())
+                            {
+                                return 0;
+                            }
+                        }
+                        else
+                        {
+                            int bytesCopied = ReadChunksFromConnectionBuffer(buffer.Span, ctr);
+                            if (bytesCopied > 0)
+                            {
+                                return bytesCopied;
+                            }
                         }
                     }
                 }
@@ -208,8 +260,7 @@ namespace System.Net.Http
                     {
                         while (true)
                         {
-                            ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(int.MaxValue, ctr);
-                            if (bytesRead.Length == 0)
+                            if (ReadChunkFromConnectionBuffer(int.MaxValue, ctr) is not ReadOnlyMemory<byte> bytesRead || bytesRead.Length == 0)
                             {
                                 break;
                             }
@@ -222,7 +273,7 @@ namespace System.Net.Http
                             return;
                         }
 
-                        await _connection.FillAsync(async: true).ConfigureAwait(false);
+                        await FillAsync().ConfigureAwait(false);
                     }
                 }
                 catch (Exception exc) when (CancellationHelper.ShouldWrapInOperationCanceledException(exc, cancellationToken))
@@ -235,18 +286,23 @@ namespace System.Net.Http
                 }
             }
 
+            private bool PeekChunkFromConnectionBuffer()
+            {
+                return ReadChunkFromConnectionBuffer(maxBytesToRead: 0, cancellationRegistration: default).HasValue;
+            }
+
             private int ReadChunksFromConnectionBuffer(Span<byte> buffer, CancellationTokenRegistration cancellationRegistration)
             {
+                Debug.Assert(buffer.Length > 0);
                 int totalBytesRead = 0;
                 while (buffer.Length > 0)
                 {
-                    ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(buffer.Length, cancellationRegistration);
-                    Debug.Assert(bytesRead.Length <= buffer.Length);
-                    if (bytesRead.Length == 0)
+                    if (ReadChunkFromConnectionBuffer(buffer.Length, cancellationRegistration) is not ReadOnlyMemory<byte> bytesRead || bytesRead.Length == 0)
                     {
                         break;
                     }
 
+                    Debug.Assert(bytesRead.Length <= buffer.Length);
                     totalBytesRead += bytesRead.Length;
                     bytesRead.Span.CopyTo(buffer);
                     buffer = buffer.Slice(bytesRead.Length);
@@ -254,9 +310,9 @@ namespace System.Net.Http
                 return totalBytesRead;
             }
 
-            private ReadOnlyMemory<byte> ReadChunkFromConnectionBuffer(int maxBytesToRead, CancellationTokenRegistration cancellationRegistration)
+            private ReadOnlyMemory<byte>? ReadChunkFromConnectionBuffer(int maxBytesToRead, CancellationTokenRegistration cancellationRegistration)
             {
-                Debug.Assert(maxBytesToRead > 0 && _connection != null);
+                Debug.Assert(_connection != null);
 
                 try
                 {
@@ -267,8 +323,7 @@ namespace System.Net.Http
                             Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
 
                             // Read the chunk header line.
-                            _connection._allowedReadLineBytes = MaxChunkBytesAllowed;
-                            if (!_connection.TryReadNextLine(out currentLine))
+                            if (!_connection.TryReadNextChunkedLine(out currentLine))
                             {
                                 // Could not get a whole line, so we can't parse the chunk header.
                                 return default;
@@ -310,7 +365,7 @@ namespace System.Net.Http
                             }
 
                             int bytesToConsume = Math.Min(maxBytesToRead, (int)Math.Min((ulong)connectionBuffer.Length, _chunkBytesRemaining));
-                            Debug.Assert(bytesToConsume > 0);
+                            Debug.Assert(bytesToConsume > 0 || maxBytesToRead == 0);
 
                             _connection.ConsumeFromRemainingBuffer(bytesToConsume);
                             _chunkBytesRemaining -= (ulong)bytesToConsume;
@@ -324,8 +379,7 @@ namespace System.Net.Http
                         case ParsingState.ExpectChunkTerminator:
                             Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
 
-                            _connection._allowedReadLineBytes = MaxChunkBytesAllowed;
-                            if (!_connection.TryReadNextLine(out currentLine))
+                            if (!_connection.TryReadNextChunkedLine(out currentLine))
                             {
                                 return default;
                             }
@@ -341,39 +395,23 @@ namespace System.Net.Http
                         case ParsingState.ConsumeTrailers:
                             Debug.Assert(_chunkBytesRemaining == 0, $"Expected {nameof(_chunkBytesRemaining)} == 0, got {_chunkBytesRemaining}");
 
-                            while (true)
+                            // Consume the receive buffer. If the stream is disposed, pass a null response to avoid
+                            // processing headers for a connection returned to the pool.
+                            if (_connection.ParseHeaders(IsDisposed ? null : _response, isFromTrailer: true))
                             {
-                                _connection._allowedReadLineBytes = MaxTrailingHeaderLength;
-                                if (!_connection.TryReadNextLine(out currentLine))
-                                {
-                                    break;
-                                }
+                                // Dispose of the registration and then check whether cancellation has been
+                                // requested. This is necessary to make deterministic a race condition between
+                                // cancellation being requested and unregistering from the token.  Otherwise,
+                                // it's possible cancellation could be requested just before we unregister and
+                                // we then return a connection to the pool that has been or will be disposed
+                                // (e.g. if a timer is used and has already queued its callback but the
+                                // callback hasn't yet run).
+                                cancellationRegistration.Dispose();
+                                CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
 
-                                if (currentLine.IsEmpty)
-                                {
-                                    // Dispose of the registration and then check whether cancellation has been
-                                    // requested. This is necessary to make determinstic a race condition between
-                                    // cancellation being requested and unregistering from the token.  Otherwise,
-                                    // it's possible cancellation could be requested just before we unregister and
-                                    // we then return a connection to the pool that has been or will be disposed
-                                    // (e.g. if a timer is used and has already queued its callback but the
-                                    // callback hasn't yet run).
-                                    cancellationRegistration.Dispose();
-                                    CancellationHelper.ThrowIfCancellationRequested(cancellationRegistration.Token);
-
-                                    _state = ParsingState.Done;
-                                    _connection.CompleteResponse();
-                                    _connection = null;
-
-                                    break;
-                                }
-                                // Parse the trailer.
-                                else if (!IsDisposed)
-                                {
-                                    // Make sure that we don't inadvertently consume trailing headers
-                                    // while draining a connection that's being returned back to the pool.
-                                    HttpConnection.ParseHeaderNameValue(_connection, currentLine, _response, isFromTrailer: true);
-                                }
+                                _state = ParsingState.Done;
+                                _connection.CompleteResponse();
+                                _connection = null;
                             }
 
                             return default;
@@ -425,7 +463,7 @@ namespace System.Net.Http
                 Done
             }
 
-            public override bool NeedsDrain => (_connection != null);
+            public override bool NeedsDrain => CanReadFromConnection;
 
             public override async ValueTask<bool> DrainAsync(int maxDrainBytes)
             {
@@ -441,8 +479,7 @@ namespace System.Net.Http
                         drainedBytes += _connection.RemainingBuffer.Length;
                         while (true)
                         {
-                            ReadOnlyMemory<byte> bytesRead = ReadChunkFromConnectionBuffer(int.MaxValue, ctr);
-                            if (bytesRead.Length == 0)
+                            if (ReadChunkFromConnectionBuffer(int.MaxValue, ctr) is not ReadOnlyMemory<byte> bytesRead || bytesRead.Length == 0)
                             {
                                 break;
                             }
@@ -476,7 +513,7 @@ namespace System.Net.Http
                             }
                         }
 
-                        await _connection.FillAsync(async: true).ConfigureAwait(false);
+                        await FillAsync().ConfigureAwait(false);
                     }
                 }
                 finally
@@ -484,6 +521,24 @@ namespace System.Net.Http
                     ctr.Dispose();
                     cts?.Dispose();
                 }
+            }
+
+            private void Fill()
+            {
+                Debug.Assert(_connection is not null);
+                ValueTask fillTask = _state == ParsingState.ConsumeTrailers
+                    ? _connection.FillForHeadersAsync(async: false)
+                    : _connection.FillAsync(async: false);
+                Debug.Assert(fillTask.IsCompleted);
+                fillTask.GetAwaiter().GetResult();
+            }
+
+            private ValueTask FillAsync()
+            {
+                Debug.Assert(_connection is not null);
+                return _state == ParsingState.ConsumeTrailers
+                    ? _connection.FillForHeadersAsync(async: true)
+                    : _connection.FillAsync(async: true);
             }
         }
     }

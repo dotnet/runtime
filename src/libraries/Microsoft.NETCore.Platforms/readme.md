@@ -82,7 +82,7 @@ NuGet's extensibility mechanism for platform-specific assets requires a RID be d
 As such, whenever we want to put a new RID in a project.json in order to get assets specific for that RID we have to define the rid in some package.  Typically that package is `Microsoft.NETCore.Platforms` if the RID is "official".  If you'd like to prototype you can put the RID in any other package and so long as that package is referenced you can use that RID.
 
 ### Do I really need to add a new RID?
-If you're prototyping on a platform that is compatible with an existing platform then you can reuse the RID for that exsisting platform.  New RIDs are only needed when an asset needs to be different on a particular platform.
+If you're prototyping on a platform that is compatible with an existing platform then you can reuse the RID for that existing platform.  New RIDs are only needed when an asset needs to be different on a particular platform.
 
 `Microsoft.NETCore.Platforms` attempts to define all RIDs that packages may need, and as such will define RIDs for platforms that we don't actually cross compile for.  This is to support higher-level packages, 3rd party packages, that may need to cross-compile for that RID.
 
@@ -100,7 +100,7 @@ For example:
 
 This will create a new RID for `myLinuxDistro` where `myLinuxDistro` should be the string used for the `ID=` value in the `/etc/os-release` file.
 
-Whenever modifying the `runtimeGroups.props` you should rebuild the project with `/p:UpdateRuntimeFiles=true` so that your changes will be regenerated in the checked-in `runtime.json`.
+Whenever modifying the `runtimeGroups.props` make sure to pack the project via the `dotnet pack` command and inspect if the generated package contains the desired changes.
 
 RuntimeGroup items have the following format:
 - `Identity`: the base string for the RID, without version architecture, or qualifiers.

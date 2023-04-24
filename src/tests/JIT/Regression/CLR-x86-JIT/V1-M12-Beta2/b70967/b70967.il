@@ -9,10 +9,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly bug
+.assembly 'b70967'
 {
 }
-.module bug.exe
+.assembly extern xunit.core {}
 // MVID: {E3F734BC-107A-4058-AF49-D8BBB8B75D93}
 
 .file alignment 512
@@ -20,10 +20,13 @@
 // Image base: 0x03010000
 .namespace JitTest
 {
-  .class private auto ansi beforefieldinit Test extends [mscorlib]System.Object
+  .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32 Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  8
       .locals (int32 V_0)

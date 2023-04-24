@@ -10,7 +10,7 @@ namespace System.IO.Compression
         // const tables used in decoding:
 
         // Extra bits for length code 257 - 285.
-        private static readonly byte[] s_extraLengthBits =
+        private static ReadOnlySpan<byte> ExtraLengthBits => new byte[]
         {
             0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3,
             3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 16
@@ -18,7 +18,7 @@ namespace System.IO.Compression
 
         // The base length for length code 257 - 285.
         // The formula to get the real length for a length code is lengthBase[code - 257] + (value stored in extraBits)
-        private static readonly int[] s_lengthBase =
+        private static ReadOnlySpan<byte> LengthBase => new byte[]
         {
             3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43, 51,
             59, 67, 83, 99, 115, 131, 163, 195, 227, 3
@@ -26,16 +26,16 @@ namespace System.IO.Compression
 
         // The base distance for distance code 0 - 31
         // The real distance for a distance code is  distanceBasePosition[code] + (value stored in extraBits)
-        private static readonly int[] s_distanceBasePosition =
+        private static ReadOnlySpan<ushort> DistanceBasePosition => new ushort[]
         {
             1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257, 385, 513,
             769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577, 32769, 49153
         };
 
         // code lengths for code length alphabet is stored in following order
-        private static readonly byte[] s_codeOrder = { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
+        private static ReadOnlySpan<byte> CodeOrder => new byte[] { 16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15 };
 
-        private static readonly byte[] s_staticDistanceTreeTable =
+        private static ReadOnlySpan<byte> StaticDistanceTreeTable => new byte[]
         {
             0x00, 0x10, 0x08, 0x18, 0x04, 0x14, 0x0c, 0x1c, 0x02, 0x12, 0x0a, 0x1a,
             0x06, 0x16, 0x0e, 0x1e, 0x01, 0x11, 0x09, 0x19, 0x05, 0x15, 0x0d, 0x1d,
@@ -95,7 +95,7 @@ namespace System.IO.Compression
 
         public int AvailableOutput => _output.AvailableBytes;
 
-        public int Inflate(Memory<byte> bytes)
+        public int Inflate(Span<byte> bytes)
         {
             // copy bytes from output to outputbytes if we have available bytes
             // if buffer is not filled up. keep decoding until no input are available
@@ -124,7 +124,7 @@ namespace System.IO.Compression
                 }
                 if (copied > 0)
                 {
-                    bytes = bytes.Slice(copied, bytes.Length - copied);
+                    bytes = bytes.Slice(copied);
                     count += copied;
                 }
 
@@ -139,7 +139,7 @@ namespace System.IO.Compression
             return count;
         }
 
-        public int Inflate(byte[] bytes, int offset, int length) => Inflate(bytes.AsMemory(offset, length));
+        public int Inflate(byte[] bytes, int offset, int length) => Inflate(bytes.AsSpan(offset, length));
 
         //Each block of compressed data begins with 3 header bits
         // containing the following data:
@@ -165,7 +165,7 @@ namespace System.IO.Compression
         private bool Decode()
         {
             bool eob = false;
-            bool result = false;
+            bool result;
 
             if (Finished())
             {
@@ -388,11 +388,11 @@ namespace System.IO.Compression
                             }
                             else
                             {
-                                if (symbol < 0 || symbol >= s_extraLengthBits.Length)
+                                if ((uint)symbol >= ExtraLengthBits.Length)
                                 {
                                     throw new InvalidDataException(SR.GenericInvalidData);
                                 }
-                                _extraBits = s_extraLengthBits[symbol];
+                                _extraBits = ExtraLengthBits[symbol];
                                 Debug.Assert(_extraBits != 0, "We handle other cases separately!");
                             }
                             _length = symbol;
@@ -410,11 +410,11 @@ namespace System.IO.Compression
                                 return false;
                             }
 
-                            if (_length < 0 || _length >= s_lengthBase.Length)
+                            if (_length < 0 || _length >= LengthBase.Length)
                             {
                                 throw new InvalidDataException(SR.GenericInvalidData);
                             }
-                            _length = s_lengthBase[_length] + bits;
+                            _length = LengthBase[_length] + bits;
                         }
                         _state = InflaterState.HaveFullLength;
                         goto case InflaterState.HaveFullLength;
@@ -431,7 +431,7 @@ namespace System.IO.Compression
                             _distanceCode = _input.GetBits(5);
                             if (_distanceCode >= 0)
                             {
-                                _distanceCode = s_staticDistanceTreeTable[_distanceCode];
+                                _distanceCode = StaticDistanceTreeTable[_distanceCode];
                             }
                         }
 
@@ -456,7 +456,7 @@ namespace System.IO.Compression
                             {
                                 return false;
                             }
-                            offset = s_distanceBasePosition[_distanceCode] + bits;
+                            offset = DistanceBasePosition[_distanceCode] + bits;
                         }
                         else
                         {
@@ -544,13 +544,13 @@ namespace System.IO.Compression
                         {
                             return false;
                         }
-                        _codeLengthTreeCodeLength[s_codeOrder[_loopCounter]] = (byte)bits;
+                        _codeLengthTreeCodeLength[CodeOrder[_loopCounter]] = (byte)bits;
                         ++_loopCounter;
                     }
 
-                    for (int i = _codeLengthCodeCount; i < s_codeOrder.Length; i++)
+                    for (int i = _codeLengthCodeCount; i < CodeOrder.Length; i++)
                     {
-                        _codeLengthTreeCodeLength[s_codeOrder[i]] = 0;
+                        _codeLengthTreeCodeLength[CodeOrder[i]] = 0;
                     }
 
                     // create huffman tree for code length
@@ -689,7 +689,5 @@ namespace System.IO.Compression
             _state = InflaterState.DecodeTop;
             return true;
         }
-
-        public void Dispose() { }
     }
 }

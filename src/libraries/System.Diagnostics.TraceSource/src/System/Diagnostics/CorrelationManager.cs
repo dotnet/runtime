@@ -12,7 +12,7 @@ namespace System.Diagnostics
     {
         private readonly AsyncLocal<Guid> _activityId = new AsyncLocal<Guid>();
         private readonly AsyncLocal<StackNode?> _stack = new AsyncLocal<StackNode?>();
-        private readonly Stack _stackWrapper;
+        private readonly AsyncLocalStackWrapper _stackWrapper;
 
         internal CorrelationManager()
         {
@@ -29,10 +29,7 @@ namespace System.Diagnostics
 
         public void StartLogicalOperation(object operationId)
         {
-            if (operationId == null)
-            {
-                throw new ArgumentNullException(nameof(operationId));
-            }
+            ArgumentNullException.ThrowIfNull(operationId);
 
             _stackWrapper.Push(operationId);
         }
@@ -95,7 +92,7 @@ namespace System.Diagnostics
                 }
             }
 
-            private IEnumerator GetEnumerator(StackNode? n)
+            private static IEnumerator GetEnumerator(StackNode? n)
             {
                 while (n != null)
                 {

@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Text.Json.Node;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class JsonValueConverter : JsonConverter<JsonValue>
+    internal sealed class JsonValueConverter : JsonConverter<JsonValue>
     {
         public override void Write(Utf8JsonWriter writer, JsonValue value, JsonSerializerOptions options)
         {
@@ -17,7 +18,7 @@ namespace System.Text.Json.Serialization.Converters
         public override JsonValue Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             JsonElement element = JsonElement.ParseValue(ref reader);
-            JsonValue value = new JsonValue<JsonElement>(element, options.GetNodeOptions());
+            JsonValue value = new JsonValueTrimmable<JsonElement>(element, JsonMetadataServices.JsonElementConverter, options.GetNodeOptions());
             return value;
         }
     }

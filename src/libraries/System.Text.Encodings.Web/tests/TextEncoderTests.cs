@@ -53,7 +53,6 @@ namespace System.Text.Encodings.Web.Tests
         [InlineData(10, 10)]
         [InlineData(11, 11)]
         [InlineData(12, 11)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void EncodeUtf8_WellFormedInput_DoesNotRequireEncoding_CopiedToDestinationCorrectly(int destinationSize, int expectedBytesCopied)
         {
             // This test considers input which is well-formed and doesn't need to be encoded.
@@ -151,7 +150,7 @@ namespace System.Text.Encodings.Web.Tests
                     Assert.Equal(OperationStatus.Done, encoder.EncodeUtf8(aggregateInputBytesSoFar.ToArray(), destination, out bytesConsumed, out bytesWritten, isFinalBlock: true));
                     Assert.Equal(aggregateInputBytesSoFar.Count, bytesConsumed);
                     Assert.Equal(expectedOutputBytesSoFar.Count + "[FFFD]".Length, bytesWritten);
-                    Assert.Equal(expectedOutputBytesSoFar.Concat(Encoding.UTF8.GetBytes("[FFFD]")).ToArray(), new Span<byte>(destination, 0, expectedOutputBytesSoFar.Count + "[FFFD]".Length).ToArray());
+                    Assert.Equal(expectedOutputBytesSoFar.Concat("[FFFD]"u8.ToArray()), new Span<byte>(destination, 0, expectedOutputBytesSoFar.Count + "[FFFD]".Length).ToArray());
                 }
 
                 // Consume the remainder of this entry and make sure it escaped properly (if needed).
@@ -223,7 +222,7 @@ namespace System.Text.Encodings.Web.Tests
         {
             // Arrange
 
-            byte[] inputBytes = Encoding.UTF8.GetBytes("\U00000040\U00000400\U00004000\U00040000"); // code units of different lengths
+            byte[] inputBytes = "\U00000040\U00000400\U00004000\U00040000"u8.ToArray(); // code units of different lengths
             var encoder = new ConfigurableScalarTextEncoder(_ => true /* allow everything */);
 
             // Act
@@ -240,7 +239,7 @@ namespace System.Text.Encodings.Web.Tests
         {
             // Arrange
 
-            byte[] inputBytes = Encoding.UTF8.GetBytes("\U00000040\U00000400\U00004000\U00040000"); // code units of different lengths
+            byte[] inputBytes = "\U00000040\U00000400\U00004000\U00040000"u8.ToArray(); // code units of different lengths
             var encoder = new ConfigurableScalarTextEncoder(codePoint => codePoint != 0x4000 /* disallow U+4000, allow all else */);
 
             // Act
@@ -258,7 +257,6 @@ namespace System.Text.Encodings.Web.Tests
         [InlineData(new byte[] { 0xF1, 0x80, 0x80 }, 0)]
         [InlineData(new byte[] { 0xF1, 0x80, 0x80, 0x80, 0xFF }, 4)]
         [InlineData(new byte[] { 0xFF, 0x80, 0x80, 0x80, 0xFF }, 0)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void FindFirstCharToEncodeUtf8_IllFormedData_ReturnsIndexOfIllFormedSubsequence(byte[] utf8Data, int expectedIndex)
         {
             // Arrange

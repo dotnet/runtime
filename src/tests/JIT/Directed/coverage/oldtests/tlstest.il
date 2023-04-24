@@ -7,6 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 .assembly extern mscorlib {}
 .assembly extern tls1 {}
@@ -14,7 +15,7 @@
 .assembly tlstest {}
 .namespace 'tls'
 {
-  .class private auto ansi beforefieldinit tlstest
+  .class public auto ansi beforefieldinit tlstest
          extends [mscorlib]System.Object
   {
     .method private hidebysig static uint8 
@@ -34,9 +35,11 @@
       IL_0009:  ret
     } // end of method tlstest::f
 
-    .method private hidebysig static int32 
-            Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
+      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+          01 00 00 00
+      )
       .entrypoint
       .maxstack  2
       .locals (uint8& pinned V_0)

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -17,7 +15,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> containing service descriptors.</param>
         /// <returns>The <see cref="ServiceProvider"/>.</returns>
-
         public static ServiceProvider BuildServiceProvider(this IServiceCollection services)
         {
             return BuildServiceProvider(services, ServiceProviderOptions.Default);
@@ -48,33 +45,16 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="ServiceProvider"/>.</returns>
         public static ServiceProvider BuildServiceProvider(this IServiceCollection services, ServiceProviderOptions options)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
-
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
 
-            IServiceProviderEngine engine;
-
-#if !NETSTANDARD2_1
-            engine = new DynamicServiceProviderEngine(services);
-#else
-            if (RuntimeFeature.IsDynamicCodeCompiled)
-            {
-                engine = new DynamicServiceProviderEngine(services);
-            }
-            else
-            {
-                // Don't try to compile Expressions/IL if they are going to get interpreted
-                engine = new RuntimeServiceProviderEngine(services);
-            }
-#endif
-
-            return new ServiceProvider(services, engine, options);
+            return new ServiceProvider(services, options);
         }
     }
 }

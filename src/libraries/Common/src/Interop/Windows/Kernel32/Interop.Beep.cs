@@ -8,7 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool Beep(int frequency, int duration);
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool Beep(int frequency, int duration);
     }
 }

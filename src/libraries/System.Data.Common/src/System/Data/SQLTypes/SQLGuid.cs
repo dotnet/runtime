@@ -2,9 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Data.Common;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlTypes
 {
@@ -15,49 +20,30 @@ namespace System.Data.SqlTypes
     [Serializable]
     [XmlSchemaProvider("GetXsdType")]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct SqlGuid : INullable, IComparable, IXmlSerializable
+    public struct SqlGuid : INullable, IComparable, ISerializable, IXmlSerializable, IEquatable<SqlGuid>
     {
-        private const int SizeOfGuid = 16;
-
-        // Comparison orders.
-        private static readonly int[] s_rgiGuidOrder = new int[16]
-        {10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3};
+        private const int SizeOfGuid = 16; // sizeof(Guid)
 
         // NOTE: If any instance fields change, update SqlTypeWorkarounds type in System.Data.SqlClient.
-        private byte[]? m_value; // the SqlGuid is null if m_value is null
+        private Guid? _value; // the SqlGuid is null if _value is null
 
         // constructor
-        // construct a SqlGuid.Null
-        private SqlGuid(bool fNull)
-        {
-            m_value = null;
-        }
-
         public SqlGuid(byte[] value)
         {
             if (value == null || value.Length != SizeOfGuid)
                 throw new ArgumentException(SQLResource.InvalidArraySizeMessage);
 
-            m_value = new byte[SizeOfGuid];
-            value.CopyTo(m_value, 0);
-        }
-
-        internal SqlGuid(byte[] value, bool ignored)
-        {
-            if (value == null || value.Length != SizeOfGuid)
-                throw new ArgumentException(SQLResource.InvalidArraySizeMessage);
-
-            m_value = value;
+            _value = new Guid(value);
         }
 
         public SqlGuid(string s)
         {
-            m_value = (new Guid(s)).ToByteArray();
+            _value = new Guid(s);
         }
 
         public SqlGuid(Guid g)
         {
-            m_value = g.ToByteArray();
+            _value = g;
         }
 
         public SqlGuid(int a, short b, short c, byte d, byte e, byte f, byte g, byte h, byte i, byte j, byte k)
@@ -65,24 +51,28 @@ namespace System.Data.SqlTypes
         {
         }
 
+        // Maintains backwards-compatible binary serialization for the `private byte[] m_value` field
+        // see src/libraries/System.Runtime.Serialization.Formatters/tests/BinaryFormatterTestData.cs
+        // for test data
+        private SqlGuid(SerializationInfo info, StreamingContext context)
+        {
+            byte[]? value = (byte[]?)info.GetValue("m_value", typeof(byte[]));
+            if (value is null)
+                _value = null;
+            else
+                _value = new Guid(value);
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("m_value", ToByteArray(), typeof(byte[]));
+        }
 
         // INullable
-        public bool IsNull
-        {
-            get { return (m_value is null); }
-        }
+        public bool IsNull => _value is null;
 
         // property: Value
-        public Guid Value
-        {
-            get
-            {
-                if (m_value is null)
-                    throw new SqlNullValueException();
-                else
-                    return new Guid(m_value);
-            }
-        }
+        public Guid Value => _value ?? throw new SqlNullValueException();
 
         // Implicit conversion from Guid to SqlGuid
         public static implicit operator SqlGuid(Guid x)
@@ -98,18 +88,17 @@ namespace System.Data.SqlTypes
 
         public byte[]? ToByteArray()
         {
-            byte[] ret = new byte[SizeOfGuid];
-            m_value!.CopyTo(ret, 0); // TODO: NRE
-            return ret;
+            if (_value is null)
+                return null;
+            return _value.GetValueOrDefault().ToByteArray();
         }
 
         public override string ToString()
         {
-            if (m_value is null)
+            if (_value is null)
                 return SQLResource.NullString;
 
-            Guid g = new Guid(m_value);
-            return g.ToString();
+            return _value.GetValueOrDefault().ToString();
         }
 
         public static SqlGuid Parse(string s)
@@ -120,24 +109,36 @@ namespace System.Data.SqlTypes
                 return new SqlGuid(s);
         }
 
-
         // Comparison operators
         private static EComparison Compare(SqlGuid x, SqlGuid y)
         {
-            //Swap to the correct order to be compared
+            // Comparison orders.
+            ReadOnlySpan<byte> rgiGuidOrder = new byte[SizeOfGuid] { 10, 11, 12, 13, 14, 15, 8, 9, 6, 7, 4, 5, 0, 1, 2, 3 };
+
+            Debug.Assert(!x.IsNull);
+            Debug.Assert(!y.IsNull);
+
+            // Swap to the correct order to be compared
+            Span<byte> xBytes = stackalloc byte[SizeOfGuid];
+            bool xWrote = x._value.GetValueOrDefault().TryWriteBytes(xBytes);
+            Debug.Assert(xWrote);
+
+            Span<byte> yBytes = stackalloc byte[SizeOfGuid];
+            bool yWrote = y._value.GetValueOrDefault().TryWriteBytes(yBytes);
+            Debug.Assert(yWrote);
+
             for (int i = 0; i < SizeOfGuid; i++)
             {
-                byte b1, b2;
-
-                b1 = x.m_value![s_rgiGuidOrder[i]];
-                b2 = y.m_value![s_rgiGuidOrder[i]];
+                byte b1 = xBytes[rgiGuidOrder[i]];
+                byte b2 = yBytes[rgiGuidOrder[i]];
                 if (b1 != b2)
+                {
                     return (b1 < b2) ? EComparison.LT : EComparison.GT;
+                }
             }
+
             return EComparison.EQ;
         }
-
-
 
         // Implicit conversions
 
@@ -158,7 +159,8 @@ namespace System.Data.SqlTypes
         // Overloading comparison operators
         public static SqlBoolean operator ==(SqlGuid x, SqlGuid y)
         {
-            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(Compare(x, y) == EComparison.EQ);
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null :
+                    new SqlBoolean(x._value.GetValueOrDefault() == y._value.GetValueOrDefault());
         }
 
         public static SqlBoolean operator !=(SqlGuid x, SqlGuid y)
@@ -246,7 +248,6 @@ namespace System.Data.SqlTypes
             return (SqlBinary)this;
         }
 
-
         // IComparable
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -256,10 +257,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlGuid)
+            if (value is SqlGuid i)
             {
-                SqlGuid i = (SqlGuid)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlGuid));
@@ -280,26 +279,16 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object? value)
-        {
-            if (!(value is SqlGuid))
-            {
-                return false;
-            }
+        public override bool Equals([NotNullWhen(true)] object? value) =>
+            value is SqlGuid other && Equals(other);
 
-            SqlGuid i = (SqlGuid)value;
-
-            if (i.IsNull || IsNull)
-                return (i.IsNull && IsNull);
-            else
-                return (this == i).Value;
-        }
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(SqlGuid other) => _value == other._value;
 
         // For hashing purpose
-        public override int GetHashCode()
-        {
-            return IsNull ? 0 : Value.GetHashCode();
-        }
+        public override int GetHashCode() => _value.GetHashCode();
 
         XmlSchema? IXmlSerializable.GetSchema() { return null; }
 
@@ -310,23 +299,23 @@ namespace System.Data.SqlTypes
             {
                 // Read the next value.
                 reader.ReadElementString();
-                m_value = null;
+                _value = null;
             }
             else
             {
-                m_value = new Guid(reader.ReadElementString()).ToByteArray();
+                _value = new Guid(reader.ReadElementString());
             }
         }
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            if (m_value is null)
+            if (_value is null)
             {
                 writer.WriteAttributeString("xsi", "nil", XmlSchema.InstanceNamespace, "true");
             }
             else
             {
-                writer.WriteString(XmlConvert.ToString(new Guid(m_value)));
+                writer.WriteString(XmlConvert.ToString(_value.GetValueOrDefault()));
             }
         }
 
@@ -335,6 +324,6 @@ namespace System.Data.SqlTypes
             return new XmlQualifiedName("string", XmlSchema.Namespace);
         }
 
-        public static readonly SqlGuid Null = new SqlGuid(true);
+        public static readonly SqlGuid Null;
     } // SqlGuid
 } // namespace System.Data.SqlTypes

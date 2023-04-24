@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using Xunit;
 
 namespace System.IO.Tests
@@ -239,6 +240,18 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2));
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2 + alternateStream));
         }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [InlineData("/proc/cmdline")]
+        [InlineData("/proc/version")]
+        [InlineData("/proc/filesystems")]
+        public void Linux_CopyFromProcfsToFile(string path)
+        {
+            string testFile = GetTestFilePath();
+            File.Copy(path, testFile);
+            Assert.Equal(File.ReadAllText(path), File.ReadAllText(testFile)); // assumes chosen files won't change between reads
+        }
         #endregion
     }
 
@@ -338,12 +351,27 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2, overwrite: true));
             Assert.Throws<IOException>(() => Copy(testFileAlternateStream, testFile2 + alternateStream, overwrite: true));
         }
+
+        [Fact]
+        public void DestinationFileIsTruncatedWhenItsLargerThanSourceFile()
+        {
+            string sourcePath = GetTestFilePath();
+            string destPath = GetTestFilePath();
+
+            byte[] content = RandomNumberGenerator.GetBytes(1000);
+            File.WriteAllBytes(sourcePath, content);
+            File.WriteAllBytes(destPath, RandomNumberGenerator.GetBytes(content.Length * 2));
+
+            Copy(sourcePath, destPath, overwrite: true);
+
+            Assert.Equal(content, File.ReadAllBytes(destPath));
+        }
     }
 
     /// <summary>
     /// Single tests that shouldn't be duplicated by inheritance.
     /// </summary>
-    [SkipOnPlatform(TestPlatforms.Browser, "https://github.com/dotnet/runtime/issues/40867 - flock not supported")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
     public sealed class File_Copy_Single : FileSystemTest
     {
         [Fact]

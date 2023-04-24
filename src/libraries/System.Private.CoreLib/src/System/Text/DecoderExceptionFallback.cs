@@ -51,9 +51,7 @@ namespace System.Text
             const int MaxLength = 20;
             for (int i = 0; i < bytesUnknown.Length && i < MaxLength; i++)
             {
-                strBytes.Append('[');
-                strBytes.Append(bytesUnknown[i].ToString("X2", CultureInfo.InvariantCulture));
-                strBytes.Append(']');
+                strBytes.Append($"[{bytesUnknown[i]:X2}]");
             }
 
             // In case the string's really long
@@ -102,6 +100,7 @@ namespace System.Text
             _index = index;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private DecoderFallbackException(SerializationInfo serializationInfo, StreamingContext streamingContext)
             : base(serializationInfo, streamingContext)
         {

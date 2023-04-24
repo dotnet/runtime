@@ -106,6 +106,7 @@ namespace ILCompiler.PEWriter
     /// </summary>
     public class OutputInfoBuilder
     {
+        private readonly List<EcmaModule> _inputModules;
         private readonly List<OutputNode> _nodes;
         private readonly List<OutputSymbol> _symbols;
         private readonly List<Section> _sections;
@@ -117,6 +118,7 @@ namespace ILCompiler.PEWriter
 
         public OutputInfoBuilder()
         {
+            _inputModules = new List<EcmaModule>();
             _nodes = new List<OutputNode>();
             _symbols = new List<OutputSymbol>();
             _sections = new List<Section>();
@@ -125,6 +127,11 @@ namespace ILCompiler.PEWriter
             _methodSymbolMap = new Dictionary<ISymbolDefinitionNode, MethodWithGCInfo>();
 
             _relocCounts = new Dictionary<RelocType, int>();
+        }
+
+        public void AddInputModule(EcmaModule module)
+        {
+            _inputModules.Add(module);
         }
 
         public void AddNode(OutputNode node, ISymbolDefinitionNode symbol)
@@ -175,25 +182,33 @@ namespace ILCompiler.PEWriter
         public IEnumerable<MethodInfo> EnumerateMethods()
         {
             DebugNameFormatter nameFormatter = new DebugNameFormatter();
-            TypeNameFormatter typeNameFormatter = new TypeString();
-            HashSet<MethodDesc> emittedMethods = new HashSet<MethodDesc>();
+            TypeNameFormatter typeNameFormatter = TypeString.Instance;
             foreach (KeyValuePair<ISymbolDefinitionNode, MethodWithGCInfo> symbolMethodPair in _methodSymbolMap)
             {
-                EcmaMethod ecmaMethod = symbolMethodPair.Value.Method.GetTypicalMethodDefinition() as EcmaMethod;
-                if (ecmaMethod != null && emittedMethods.Add(ecmaMethod))
+                MethodInfo methodInfo = new MethodInfo();
+                if (symbolMethodPair.Value.Method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                 {
-                    MethodInfo methodInfo = new MethodInfo();
                     methodInfo.MethodToken = (uint)MetadataTokens.GetToken(ecmaMethod.Handle);
                     methodInfo.AssemblyName = ecmaMethod.Module.Assembly.GetName().Name;
-                    methodInfo.Name = FormatMethodName(symbolMethodPair.Value.Method, typeNameFormatter);
-                    OutputNode node = _nodeSymbolMap[symbolMethodPair.Key];
-                    Section section = _sections[node.SectionIndex];
-                    methodInfo.HotRVA = (uint)(section.RVAWhenPlaced + node.Offset);
-                    methodInfo.HotLength = (uint)node.Length;
-                    methodInfo.ColdRVA = 0;
-                    methodInfo.ColdLength = 0;
-                    yield return methodInfo;
                 }
+                methodInfo.Name = FormatMethodName(symbolMethodPair.Value.Method, typeNameFormatter);
+                OutputNode node = _nodeSymbolMap[symbolMethodPair.Key];
+                Section section = _sections[node.SectionIndex];
+                methodInfo.HotRVA = (uint)(section.RVAWhenPlaced + node.Offset);
+                methodInfo.HotLength = (uint)node.Length;
+                methodInfo.ColdRVA = 0;
+                methodInfo.ColdLength = 0;
+                yield return methodInfo;
+            }
+        }
+
+        public IEnumerable<AssemblyInfo> EnumerateInputAssemblies()
+        {
+            foreach (EcmaModule inputModule in _inputModules)
+            {
+                yield return new AssemblyInfo(
+                    inputModule.Assembly.GetName().Name,
+                    inputModule.MetadataReader.GetGuid(inputModule.MetadataReader.GetModuleDefinition().Mvid));
             }
         }
 

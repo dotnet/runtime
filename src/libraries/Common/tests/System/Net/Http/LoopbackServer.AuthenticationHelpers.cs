@@ -150,7 +150,7 @@ namespace System.Net.Test.Common
                     }
 
                     // Realm is mandatory.
-                    if (string.IsNullOrEmpty(realm))
+                    if (realm == null)
                         return false;
                 }
                 else if (trimmedValue.StartsWith(nameof(cnonce)))

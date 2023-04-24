@@ -11,15 +11,7 @@ namespace System.Reflection.Metadata
     {
         internal const string ClrPrefix = "<CLR>";
 
-        internal static readonly byte[] WinRTPrefix = new[] {
-            (byte)'<',
-            (byte)'W',
-            (byte)'i',
-            (byte)'n',
-            (byte)'R',
-            (byte)'T',
-            (byte)'>'
-        };
+        internal static readonly byte[] WinRTPrefix = "<WinRT>"u8.ToArray();
 
         #region Projection Tables
 
@@ -327,8 +319,7 @@ namespace System.Reflection.Metadata
         {
             Debug.Assert(_metadataKind != MetadataKind.Ecma335);
 
-            bool isIDisposable;
-            int projectionIndex = GetProjectionIndexForTypeReference(handle, out isIDisposable);
+            int projectionIndex = GetProjectionIndexForTypeReference(handle, out _);
             if (projectionIndex >= 0)
             {
                 return TreatmentAndRowId((byte)TypeRefTreatment.UseProjectionInfo, projectionIndex);

@@ -14,13 +14,13 @@
    however thread safe */
 
 /* The log has a very simple structure, and it meant to be dumped from a NTSD
-   extention (eg. strike). There is no memory allocation system calls etc to purtub things */
+   extension (eg. strike). There is no memory allocation system calls etc to purtub things */
 
 // ******************************************************************************
 // WARNING!!!: These classes are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/stresslog.h
-// Parser: https://github.com/dotnet/diagnostics/blob/master/src/SOS/Strike/stressLogDump.cpp
+// See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/stresslog.h
+// Parser: https://github.com/dotnet/diagnostics/blob/main/src/SOS/Strike/stressLogDump.cpp
 // ******************************************************************************
 
 /*************************************************************************************/
@@ -45,6 +45,8 @@
 #ifndef _ASSERTE
 #define _ASSERTE(expr)
 #endif
+#else
+#include <stddef.h> // offsetof
 #endif // STRESS_LOG_ANALYZER
 
 /* The STRESS_LOG* macros work like printf.  In fact the use printf in their implementation
@@ -57,11 +59,11 @@
             %pK     // The pointer is a code address (used for stack track)
 */
 
-/*  STRESS_LOG_VA was added to allow sendign GC trace output to the stress log. msg must be enclosed
-      in ()'s and contain a format string followed by 0 - 4 arguments.  The arguments must be numbers or
-      string literals.  LogMsgOL is overloaded so that all of the possible sets of parameters are covered.
-      This was done becasue GC Trace uses dprintf which dosen't contain info on how many arguments are
-      getting passed in and using va_args would require parsing the format string during the GC
+/*  STRESS_LOG_VA was added to allow sending GC trace output to the stress log. msg must be enclosed
+    in ()'s and contain a format string followed by 0 to 12 arguments. The arguments must be numbers
+     or string literals. This was done because GC Trace uses dprintf which doesn't contain info on
+    how many arguments are getting passed in and using va_args would require parsing the format
+    string during the GC
 */
 #define STRESS_LOG_VA(dprintfLevel,msg) do {                                                        \
             if (StressLog::LogOn(LF_GC, LL_ALWAYS))                                                 \
@@ -257,6 +259,8 @@
 #define STRESS_LOG_GC_STACK
 #endif //_DEBUG
 
+void ReplacePid(LPCWSTR original, LPWSTR replaced, size_t replacedLength);
+
 class ThreadStressLog;
 
 struct StressLogMsg;
@@ -314,20 +318,56 @@ public:
     unsigned __int64 startTimeStamp;        // start time from when tick counter started
     FILETIME startTime;                     // time the application started
     SIZE_T   moduleOffset;                  // Used to compute format strings.
-#if defined(HOST_WINDOWS) && defined(HOST_64BIT)
-#define MEMORY_MAPPED_STRESSLOG
-#endif
-
-#ifdef MEMORY_MAPPED_STRESSLOG
-    MapViewHolder hMapView;
-    static void* AllocMemoryMapped(size_t n);
-
     struct ModuleDesc
     {
-        uint8_t*      baseAddress;
+        uint8_t* baseAddress;
         size_t        size;
     };
     static const size_t MAX_MODULES = 5;
+    ModuleDesc    modules[MAX_MODULES];     // descriptor of the modules images
+
+#if defined(HOST_64BIT)
+#define MEMORY_MAPPED_STRESSLOG
+#ifdef HOST_WINDOWS
+#define MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS (void*)0x400000000000
+#else
+#define MEMORY_MAPPED_STRESSLOG_BASE_ADDRESS nullptr
+#endif
+#endif
+
+#ifdef STRESS_LOG_ANALYZER
+    static size_t writing_base_address;
+    static size_t reading_base_address;
+
+    template<typename T>
+    static T* TranslateMemoryMappedPointer(T* input)
+    {
+        if (input == nullptr)
+        {
+            return nullptr;
+        }
+
+        return ((T*)(((uint8_t*)input) - writing_base_address + reading_base_address));
+    }
+#else
+    template<typename T>
+    static T* TranslateMemoryMappedPointer(T* input)
+    {
+        return input;
+    }
+#endif
+
+#ifdef MEMORY_MAPPED_STRESSLOG
+
+    //
+    // Intentionally avoid unmapping the file during destructor to avoid a race
+    // condition between additional logging in other thread and the destructor.
+    //
+    // The operating system will make sure the file get unmapped during process shutdown
+    //
+    LPVOID hMapView;
+    static void* AllocMemoryMapped(size_t n);
+
     struct StressLogHeader
     {
         size_t        headerSize;               // size of this header including size field and moduleImage
@@ -339,8 +379,9 @@ public:
         Volatile<ThreadStressLog*>  logs;       // the list of logs for every thread.
         uint64_t      tickFrequency;            // number of ticks per second
         uint64_t      startTimeStamp;           // start time from when tick counter started
-        uint64_t      threadsWithNoLog;         // threads that didn't get a log
-        uint64_t      reserved[15];             // for future expansion
+        uint32_t      threadsWithNoLog;         // threads that didn't get a log
+        uint32_t      reserved1;
+        uint64_t      reserved2[15];             // for future expansion
         ModuleDesc    modules[MAX_MODULES];     // descriptor of the modules images
         uint8_t       moduleImage[64*1024*1024];// copy of the module images described by modules field
     };
@@ -504,7 +545,7 @@ inline BOOL StressLog::LogOn(unsigned facility, unsigned level)
 #endif
 
 // The order of fields is important.  Keep the prefix length as the first field.
-// And make sure the timeStamp field is naturally alligned, so we don't waste
+// And make sure the timeStamp field is naturally aligned, so we don't waste
 // space on 32-bit platforms
 struct StressMsg {
     static const size_t formatOffsetBits = 26;
@@ -545,52 +586,47 @@ struct StressLogChunk
     DWORD dwSig2;
 
 #if !defined(STRESS_LOG_READONLY)
+
+#ifdef MEMORY_MAPPED_STRESSLOG
+    static bool s_memoryMapped;
+#endif //MEMORY_MAPPED_STRESSLOG
+
 #ifdef HOST_WINDOWS
     static HANDLE s_LogChunkHeap;
+#endif //HOST_WINDOWS
 
     void * operator new (size_t size) throw()
     {
+#ifdef MEMORY_MAPPED_STRESSLOG
+        if (s_memoryMapped)
+            return StressLog::AllocMemoryMapped(size);
+#endif //MEMORY_MAPPED_STRESSLOG
         if (IsInCantAllocStressLogRegion ())
         {
             return NULL;
         }
-
-        if (s_LogChunkHeap != NULL)
-        {
-            //no need to zero memory because we could handle garbage contents
-            return HeapAlloc(s_LogChunkHeap, 0, size);
-        }
-        else
-        {
-#ifdef MEMORY_MAPPED_STRESSLOG
-            return StressLog::AllocMemoryMapped(size);
+#ifdef HOST_WINDOWS
+        _ASSERTE(s_LogChunkHeap);
+        return HeapAlloc(s_LogChunkHeap, 0, size);
 #else
-            return nullptr;
-#endif //MEMORY_MAPPED_STRESSLOG
-        }
+        return malloc(size);
+#endif //HOST_WINDOWS
     }
 
     void operator delete (void * chunk)
     {
-        if (s_LogChunkHeap != NULL)
-            HeapFree (s_LogChunkHeap, 0, chunk);
-    }
+#ifdef MEMORY_MAPPED_STRESSLOG
+        if (s_memoryMapped)
+            return;
+#endif //MEMORY_MAPPED_STRESSLOG
+#ifdef HOST_WINDOWS
+        _ASSERTE(s_LogChunkHeap);
+        HeapFree (s_LogChunkHeap, 0, chunk);
 #else
-    void* operator new (size_t size) throw()
-    {
-        if (IsInCantAllocStressLogRegion())
-        {
-            return NULL;
-        }
-
-        return malloc(size);
-    }
-
-    void operator delete (void* chunk)
-    {
         free(chunk);
+#endif //HOST_WINDOWS
     }
-#endif
+
 #endif //!STRESS_LOG_READONLY
 
     StressLogChunk (StressLogChunk * p = NULL, StressLogChunk * n = NULL)
@@ -713,6 +749,7 @@ public:
 
 #if defined(MEMORY_MAPPED_STRESSLOG) && !defined(STRESS_LOG_ANALYZER)
     void* __cdecl operator new(size_t n, const NoThrow&) NOEXCEPT;
+    void __cdecl operator delete (void * chunk);
 #endif
 
     ~ThreadStressLog ()
@@ -770,7 +807,7 @@ public:
 
     BOOL IsValid () const
     {
-        return chunkListHead != NULL && (!curWriteChunk || curWriteChunk->IsValid ());
+        return chunkListHead != NULL && (!curWriteChunk || StressLog::TranslateMemoryMappedPointer(curWriteChunk)->IsValid ());
     }
 
 #ifdef STRESS_LOG_READONLY
@@ -785,131 +822,7 @@ public:
     }
 #endif //STRESS_LOG_READONLY
 
-    static const char* gcStartMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "{ =========== BEGINGC %d, (requested generation = %lu, collect_classes = %lu) ==========\n";
-    }
-
-    static const char* gcEndMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "========== ENDGC %d (gen = %lu, collect_classes = %lu) ===========}\n";
-    }
-
-    static const char* gcRootMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "    GC Root %p RELOCATED %p -> %p  MT = %pT\n";
-    }
-
-    static const char* gcRootPromoteMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "    IGCHeap::Promote: Promote GC Root *%p = %p MT = %pT\n";
-    }
-
-    static const char* gcPlugMoveMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "GC_HEAP RELOCATING Objects in heap within range [%p %p) by -0x%x bytes\n";
-    }
-
-    static const char* gcServerThread0StartMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "%d gc thread waiting...";
-    }
-
-    static const char* gcServerThreadNStartMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "%d gc thread waiting... Done";
-    }
-
-    static const char* gcDetailedStartMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "*GC* %d(gen0:%d)(%d)(alloc: %Id)(%s)(%d)";
-    }
-
-    static const char* gcDetailedEndMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "*EGC* %Id(gen0:%Id)(%Id)(%d)(%s)(%s)(%s)(ml: %d->%d)";
-    }
-
-    static const char* gcStartMarkMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "---- Mark Phase on heap %d condemning %d ----";
-    }
-
-    static const char* gcStartPlanMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "---- Plan Phase on heap %d ---- Condemned generation %d, promotion: %d";
-    }
-
-    static const char* gcStartRelocateMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "---- Relocate phase on heap %d -----";
-    }
-
-    static const char* gcEndRelocateMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "---- End of Relocate phase on heap %d ----";
-    }
-
-    static const char* gcStartCompactMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "---- Compact Phase on heap %d: %Ix(%Ix)----";
-    }
-
-    static const char* gcEndCompactMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "---- End of Compact phase on heap %d ----";
-    }
-
-    static const char* gcMemCopyMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return " mc: [%Ix->%Ix, %Ix->%Ix[";
-    }
-
-    static const char* gcPlanPlugMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "(%Ix)[%Ix->%Ix, NA: [%Ix(%Id), %Ix[: %Ix(%d), x: %Ix (%s)";
-    }
-
-    static const char* gcPlanPinnedPlugMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "(%Ix)PP: [%Ix, %Ix[%Ix](m:%d)";
-    }
-
-    static const char* gcDesiredNewAllocationMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "h%d g%d surv: %Id current: %Id alloc: %Id (%d%%) f: %d%% new-size: %Id new-alloc: %Id";
-    }
-
-    static const char* gcMakeUnusedArrayMsg()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "Making unused array [%Ix, %Ix[";
-    }
-
-    static const char* gcStartBgcThread()
-    {
-        STATIC_CONTRACT_LEAF;
-        return "beginning of bgc on heap %d: gen2 FL: %d, FO: %d, frag: %d";
-    }
+    #include "gcmsg.inl"
 
     static const char* TaskSwitchMsg()
     {

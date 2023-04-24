@@ -28,42 +28,13 @@ void CeeSectionString::deleteEntries(StringTableEntry *e)
     delete e;
 }
 
-#ifdef RDATA_STATS
-int CeeSectionString::dumpEntries(StringTableEntry *e)
-{
-    if (!e)
-        return 0;
-    else {
-        printf("    HashId: %d, value: %S\n", e->m_hashId, computOffset(e->m_offset));
-        return dumpEntries(e->m_next) + 1;
-    }
-}
-
-void CeeSectionString::dumpTable()
-{
-    int sum = 0, count = 0;
-    for (int i=0; i < MaxRealEntries; i++) {
-        if (stringTable[i]) {
-            printf("Bucket %d\n", i);
-            printf("Total size: %d\n\n",
-                    count = dumpEntries(stringTable[i]));
-            sum += count;
-        }
-    }
-    printf("Total number strings: %d\n\n", sum);
-}
-#endif
-
 CeeSectionString::~CeeSectionString()
 {
-#ifdef RDATA_STATS
-    dumpTable();
-#endif
     for (int i=0; i < MaxRealEntries; i++)
         deleteEntries(stringTable[i]);
 }
 
-StringTableEntry* CeeSectionString::createEntry(__in_z LPWSTR target, ULONG hashId)
+StringTableEntry* CeeSectionString::createEntry(_In_z_ LPWSTR target, ULONG hashId)
 {
     StringTableEntry *entry = new (nothrow) StringTableEntry;
     if (!entry)
@@ -90,7 +61,7 @@ StringTableEntry* CeeSectionString::createEntry(__in_z LPWSTR target, ULONG hash
 // check for match. The goal is to have very large hashId space so that
 // string compares are minimized
 StringTableEntry *CeeSectionString::findStringInsert(
-                        StringTableEntry *&head, __in_z LPWSTR target, ULONG hashId)
+                        StringTableEntry *&head, _In_z_ LPWSTR target, ULONG hashId)
 {
     StringTableEntry *cur, *prev;
     cur = prev = head;
@@ -116,7 +87,7 @@ StringTableEntry *CeeSectionString::findStringInsert(
     return entry;
 }
 
-HRESULT CeeSectionString::getEmittedStringRef(__in_z LPWSTR target, StringRef *ref)
+HRESULT CeeSectionString::getEmittedStringRef(_In_z_ LPWSTR target, StringRef *ref)
 {
     TESTANDRETURN(ref!=NULL, E_POINTER);
     ULONG hashId = HashString(target) % MaxVirtualEntries;

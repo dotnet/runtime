@@ -25,6 +25,7 @@
 #define FireEtwGCAllocationTick_V1(AllocationAmount, AllocationKind, ClrInstanceID) 0
 #define FireEtwGCAllocationTick_V2(AllocationAmount, AllocationKind, ClrInstanceID, AllocationAmount64, TypeID, TypeName, HeapIndex) 0
 #define FireEtwGCAllocationTick_V3(AllocationAmount, AllocationKind, ClrInstanceID, AllocationAmount64, TypeID, TypeName, HeapIndex, Address) 0
+#define FireEtwGCAllocationTick_V4(AllocationAmount, AllocationKind, ClrInstanceID, AllocationAmount64, TypeID, TypeName, HeapIndex, Address, LastAllocationAmount) 0
 #define FireEtwGCCreateConcurrentThread() 0
 #define FireEtwGCCreateConcurrentThread_V1(ClrInstanceID) 0
 #define FireEtwGCTerminateConcurrentThread() 0
@@ -77,6 +78,7 @@
 #define FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID) 0
 #define FireEtwThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadWave, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID) 0
 #define FireEtwThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID) 0
+#define FireEtwThreadPoolMinMaxThreads (MinWorkerThreads, MaxWorkerThreads, MinIOCompletionThreads, MaxIOCompletionThreads, ClrInstanceID) 0
 #define FireEtwThreadPoolWorkingThreadCount(Count, ClrInstanceID) 0
 #define FireEtwThreadPoolEnqueue(WorkID, ClrInstanceID) 0
 #define FireEtwThreadPoolDequeue(WorkID, ClrInstanceID) 0
@@ -96,7 +98,9 @@
 #define FireEtwExceptionThrownStop() 0
 #define FireEtwContention() 0
 #define FireEtwContentionStart_V1(ContentionFlags, ClrInstanceID) 0
+#define FireEtwContentionStart_V2(ContentionFlags, ClrInstanceID, LockID, AssociatedObjectID, LockOwnerThreadID) 0
 #define FireEtwContentionStop(ContentionFlags, ClrInstanceID) 0
+#define FireEtwLockCreated(LockID, AssociatedObjectID, ClrInstanceID) 0
 #define FireEtwCLRStackWalk(ClrInstanceID, Reserved1, Reserved2, FrameCount, Stack) 0
 #define FireEtwAppDomainMemAllocated(AppDomainID, Allocated, ClrInstanceID) 0
 #define FireEtwAppDomainMemSurvived(AppDomainID, Survived, ProcessSurvived, ClrInstanceID) 0
@@ -164,8 +168,11 @@
 #define FireEtwGCMarkWithType(HeapNum, ClrInstanceID, Type, Bytes) 0
 #define FireEtwGCJoin_V2(Heap, JoinTime, JoinType, ClrInstanceID, JoinID) 0
 #define FireEtwGCPerHeapHistory_V3(ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values) 0
+#define FireEtwGCLOHCompact(ClrInstanceID, Count, Values_Len_, Values) 0
+#define FireEtwGCFitBucketInfo(ClrInstanceID, BucketKind, TotalSize, Count, Values_Len_, Values) 0
 #define FireEtwGCGlobalHeapHistory_V2(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure) 0
 #define FireEtwGCGlobalHeapHistory_V3(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure, CondemnReasons0, CondemnReasons1) 0
+#define FireEtwGCGlobalHeapHistory_V4(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID, PauseMode, MemoryPressure, CondemnReasons0, CondemnReasons1, Count, Values_Len_, Values) 0
 #define FireEtwDebugIPCEventStart() 0
 #define FireEtwDebugIPCEventEnd() 0
 #define FireEtwDebugExceptionProcessingStart() 0

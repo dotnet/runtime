@@ -1,10 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <RestorePackages>false</RestorePackages>
     <CLRTestPriority>1</CLRTestPriority>
-  </PropertyGroup>
-  <PropertyGroup>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <DebugType>Full</DebugType>
   </PropertyGroup>

@@ -17,38 +17,22 @@ namespace ILCompiler
         private MethodDesc _method;
 
         public SingleMethodCompilationModuleGroup(
-            TypeSystemContext context,
-            bool isCompositeBuildMode,
-            bool isInputBubble,
-            IEnumerable<EcmaModule> compilationModuleSet,
-            IEnumerable<ModuleDesc> versionBubbleModuleSet,
-            bool compileGenericDependenciesFromVersionBubbleModuleSet,
+            ReadyToRunCompilationModuleGroupConfig config,
             MethodDesc method) :
-                base(context,
-                     isCompositeBuildMode,
-                     isInputBubble,
-                     compilationModuleSet,
-                     versionBubbleModuleSet,
-                     compileGenericDependenciesFromVersionBubbleModuleSet)
+                base(config)
         {
             _method = method;
         }
 
         public override bool ContainsMethodBody(MethodDesc method, bool unboxingStub)
         {
-            return method == _method;
-        }
-
-        public override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)
-        {
-            // Profiler guided restrictions are ignored for single method compilation
-            return;
+            return (method == _method) || (method == _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
         }
 
         public override ReadyToRunFlags GetReadyToRunFlags()
         {
             // Partial by definition.
-            return ReadyToRunFlags.READYTORUN_FLAG_Partial;
+            return base.GetReadyToRunFlags() | ReadyToRunFlags.READYTORUN_FLAG_Partial;
         }
     }
 }

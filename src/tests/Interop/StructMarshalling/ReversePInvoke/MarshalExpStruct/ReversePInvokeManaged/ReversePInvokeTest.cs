@@ -5,9 +5,9 @@ using System;
 using System.Text;
 using System.Security;
 using System.Runtime.InteropServices;
-using TestLibrary;
+using Xunit;
 
-public class Test
+public class Test_ReversePInvokeTest
 {
     const int iNative = 11;//the value passed from Native side to Managed side
     const int iManaged = 10;//The value passed from Managed side to Native sid
@@ -27,8 +27,8 @@ public class Test
 
     #region Methods implementation
 
-    #region ReversePinvoke, ByRef, Cdel  
-    
+    #region ReversePinvoke, ByRef, Cdel
+
     //ReversePinvoke,Cdel
     // 1.1
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -41,7 +41,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Cdecl");
         INNER2 sourceINNER2 = Helper.NewINNER2(77, 77.0F, "Native");
-        Assert.IsTrue(Helper.ValidateINNER2(sourceINNER2, inner2, "TestMethod_DoCallBack_MarshalStructByRef_INNER2_Cdecl"));
+        Assert.True(Helper.ValidateINNER2(sourceINNER2, inner2, "TestMethod_DoCallBack_MarshalStructByRef_INNER2_Cdecl"));
         //changed the value
         inner2.f1 = 1;
         inner2.f2 = 1.0F;
@@ -62,7 +62,7 @@ public class Test
         InnerExplicit source_ie = new InnerExplicit();
         source_ie.f1 = 77;
         source_ie.f3 = "Native";
-        Assert.IsTrue(Helper.ValidateInnerExplicit(source_ie, inner2, "TestMethod_DoCallBack_MarshalStructByRef_InnerExplicit_Cdecl"));
+        Assert.True(Helper.ValidateInnerExplicit(source_ie, inner2, "TestMethod_DoCallBack_MarshalStructByRef_InnerExplicit_Cdecl"));
         //changed the value
         inner2.f1 = 1;
         inner2.f3 = "some string";
@@ -80,7 +80,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Cdecl");
         InnerArrayExplicit source_iae = Helper.NewInnerArrayExplicit(77, 77.0F, "Native", "Native");
-        Assert.IsTrue(Helper.ValidateInnerArrayExplicit(source_iae, iae, "TestMethod_DoCallBack_MarshalStructByRef_InnerArrayExplicit_Cdecl"));
+        Assert.True(Helper.ValidateInnerArrayExplicit(source_iae, iae, "TestMethod_DoCallBack_MarshalStructByRef_InnerArrayExplicit_Cdecl"));
         //changed the value
         for (int i = 0; i < Common.NumArrElements; i++)
         {
@@ -102,7 +102,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Cdecl");
         OUTER3 sourceOUTER3 = Helper.NewOUTER3(77, 77.0F, "Native", "Native");
-        Assert.IsTrue(Helper.ValidateOUTER3(sourceOUTER3, outer3, "TestMethod_DoCallBack_MarshalStructByRef_OUTER3_Cdecl"));
+        Assert.True(Helper.ValidateOUTER3(sourceOUTER3, outer3, "TestMethod_DoCallBack_MarshalStructByRef_OUTER3_Cdecl"));
         //changed the value
         for (int i = 0; i < Common.NumArrElements; i++)
         {
@@ -124,9 +124,9 @@ public class Test
     public static bool TestMethod_DoCallBack_MarshalStructByRef_U_Cdecl(ref U u)
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Cdecl");
-        U changeU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, 
+        U changeU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue,
             sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 1.23);
-        Assert.IsTrue(Helper.ValidateU(changeU, u, "TestMethod_DoCallBack_MarshalStructByRef_U_Cdecl"));
+        Assert.True(Helper.ValidateU(changeU, u, "TestMethod_DoCallBack_MarshalStructByRef_U_Cdecl"));
         //changed the value
         u.d = 3.2;
         return true;
@@ -143,7 +143,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Cdecl");
         ByteStructPack2Explicit change_bspe = Helper.NewByteStructPack2Explicit(64, 64);
-        Assert.IsTrue(Helper.ValidateByteStructPack2Explicit(change_bspe, bspe, "TestMethod_DoCallBack_MarshalStructByRef_ByteStructPack2Explicit_Cdecl"));
+        Assert.True(Helper.ValidateByteStructPack2Explicit(change_bspe, bspe, "TestMethod_DoCallBack_MarshalStructByRef_ByteStructPack2Explicit_Cdecl"));
         //changed the value
         bspe.b1 = 32;
         bspe.b2 = 32;
@@ -161,7 +161,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Cdecl");
         ShortStructPack4Explicit change_sspe = Helper.NewShortStructPack4Explicit(64, 64);
-        Assert.IsTrue(Helper.ValidateShortStructPack4Explicit(change_sspe, sspe, "TestMethod_DoCallBack_MarshalStructByRef_ShortStructPack4Explicit_Cdecl"));
+        Assert.True(Helper.ValidateShortStructPack4Explicit(change_sspe, sspe, "TestMethod_DoCallBack_MarshalStructByRef_ShortStructPack4Explicit_Cdecl"));
         //changed the value
         sspe.s1 = 32;
         sspe.s2 = 32;
@@ -179,7 +179,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Cdecl");
         IntStructPack8Explicit change_ispe = Helper.NewIntStructPack8Explicit(64, 64);
-        Assert.IsTrue(Helper.ValidateIntStructPack8Explicit(change_ispe, ispe, "TestMethod_DoCallBack_MarshalStructByRef_IntStructPack8Explicit_Cdecl"));
+        Assert.True(Helper.ValidateIntStructPack8Explicit(change_ispe, ispe, "TestMethod_DoCallBack_MarshalStructByRef_IntStructPack8Explicit_Cdecl"));
         //changed the value
         ispe.i1 = 32;
         ispe.i2 = 32;
@@ -197,7 +197,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Cdecl");
         LongStructPack16Explicit change_lspe = Helper.NewLongStructPack16Explicit(64, 64);
-        Assert.IsTrue(Helper.ValidateLongStructPack16Explicit(change_lspe, lspe, "TestMethod_DoCallBack_MarshalStructByRef_LongStructPack16Explicit_Cdecl"));
+        Assert.True(Helper.ValidateLongStructPack16Explicit(change_lspe, lspe, "TestMethod_DoCallBack_MarshalStructByRef_LongStructPack16Explicit_Cdecl"));
         //changed the value
         lspe.l1 = 32;
         lspe.l2 = 32;
@@ -205,7 +205,7 @@ public class Test
     }
 
     #endregion
-    
+
     #region ReversePinvoke, ByRef, Stdcall
 
     //ReversePinvoke,Stdcall
@@ -220,7 +220,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Stdcall");
         INNER2 sourceINNER2 = Helper.NewINNER2(77, 77.0F, "Native");
-        Assert.IsTrue(Helper.ValidateINNER2(sourceINNER2, inner2, "TestMethod_DoCallBack_MarshalStructByRef_INNER2_Stdcall"));
+        Assert.True(Helper.ValidateINNER2(sourceINNER2, inner2, "TestMethod_DoCallBack_MarshalStructByRef_INNER2_Stdcall"));
         //changed the value
         inner2.f1 = 1;
         inner2.f2 = 1.0F;
@@ -241,7 +241,7 @@ public class Test
         InnerExplicit source_ie = new InnerExplicit();
         source_ie.f1 = 77;
         source_ie.f3 = "Native";
-        Assert.IsTrue(Helper.ValidateInnerExplicit(inner2,source_ie, "TestMethod_DoCallBack_MarshalStructByRef_InnerExplicit_Stdcall"));
+        Assert.True(Helper.ValidateInnerExplicit(inner2,source_ie, "TestMethod_DoCallBack_MarshalStructByRef_InnerExplicit_Stdcall"));
         //changed the value
         inner2.f1 = 1;
         inner2.f3 = "some string";
@@ -259,7 +259,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Stdcall");
         InnerArrayExplicit source_iae = Helper.NewInnerArrayExplicit(77, 77.0F, "Native", "Native");
-        Assert.IsTrue(Helper.ValidateInnerArrayExplicit(source_iae, iae, "TestMethod_DoCallBack_MarshalStructByRef_InnerArrayExplicit_Stdcall"));
+        Assert.True(Helper.ValidateInnerArrayExplicit(source_iae, iae, "TestMethod_DoCallBack_MarshalStructByRef_InnerArrayExplicit_Stdcall"));
         //changed the value
         for (int i = 0; i < Common.NumArrElements; i++)
         {
@@ -281,7 +281,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Stdcall");
         OUTER3 sourceOUTER3 = Helper.NewOUTER3(77, 77.0F, "Native", "Native");
-        Assert.IsTrue(Helper.ValidateOUTER3(sourceOUTER3, outer3, "TestMethod_DoCallBack_MarshalStructByRef_OUTER3_Stdcall"));
+        Assert.True(Helper.ValidateOUTER3(sourceOUTER3, outer3, "TestMethod_DoCallBack_MarshalStructByRef_OUTER3_Stdcall"));
         //changed the value
         for (int i = 0; i < Common.NumArrElements; i++)
         {
@@ -303,9 +303,9 @@ public class Test
     public static bool TestMethod_DoCallBack_MarshalStructByRef_U_Stdcall(ref U u)
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Stdcall");
-        U changeU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, 
+        U changeU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue,
             sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 1.23);
-        Assert.IsTrue(Helper.ValidateU(changeU, u, "TestMethod_DoCallBack_MarshalStructByRef_U_Stdcall"));
+        Assert.True(Helper.ValidateU(changeU, u, "TestMethod_DoCallBack_MarshalStructByRef_U_Stdcall"));
         //changed the value
         u.d = 3.2;
         return true;
@@ -322,7 +322,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Stdcall");
         ByteStructPack2Explicit change_bspe = Helper.NewByteStructPack2Explicit(64, 64);
-        Assert.IsTrue(Helper.ValidateByteStructPack2Explicit(change_bspe, bspe, "TestMethod_DoCallBack_MarshalStructByRef_ByteStructPack2Explicit_Stdcall"));
+        Assert.True(Helper.ValidateByteStructPack2Explicit(change_bspe, bspe, "TestMethod_DoCallBack_MarshalStructByRef_ByteStructPack2Explicit_Stdcall"));
         //changed the value
         bspe.b1 = 32;
         bspe.b2 = 32;
@@ -340,7 +340,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Stdcall");
         ShortStructPack4Explicit change_sspe = Helper.NewShortStructPack4Explicit(64, 64);
-        Assert.IsTrue(Helper.ValidateShortStructPack4Explicit(change_sspe, sspe, "TestMethod_DoCallBack_MarshalStructByRef_ShortStructPack4Explicit_Stdcall"));
+        Assert.True(Helper.ValidateShortStructPack4Explicit(change_sspe, sspe, "TestMethod_DoCallBack_MarshalStructByRef_ShortStructPack4Explicit_Stdcall"));
         //changed the value
         sspe.s1 = 32;
         sspe.s2 = 32;
@@ -358,7 +358,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Stdcall");
         IntStructPack8Explicit change_ispe = Helper.NewIntStructPack8Explicit(64, 64);
-        Assert.IsTrue(Helper.ValidateIntStructPack8Explicit(change_ispe, ispe, "TestMethod_DoCallBack_MarshalStructByRef_IntStructPack8Explicit_Stdcall"));
+        Assert.True(Helper.ValidateIntStructPack8Explicit(change_ispe, ispe, "TestMethod_DoCallBack_MarshalStructByRef_IntStructPack8Explicit_Stdcall"));
         //changed the value
         ispe.i1 = 32;
         ispe.i2 = 32;
@@ -376,7 +376,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Stdcall");
         LongStructPack16Explicit change_lspe = Helper.NewLongStructPack16Explicit(64, 64);
-        Assert.IsTrue(Helper.ValidateLongStructPack16Explicit(change_lspe, lspe, "TestMethod_DoCallBack_MarshalStructByRef_LongStructPack16Explicit_Stdcall"));
+        Assert.True(Helper.ValidateLongStructPack16Explicit(change_lspe, lspe, "TestMethod_DoCallBack_MarshalStructByRef_LongStructPack16Explicit_Stdcall"));
         //changed the value
         lspe.l1 = 32;
         lspe.l2 = 32;
@@ -384,7 +384,7 @@ public class Test
     }
 
     #endregion
-    
+
     #region ReversePinvoke, ByVal, Cdel
 
     // 3.1
@@ -398,7 +398,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Ref,Cdecl");
         INNER2 sourceINNER2 = Helper.NewINNER2(1, 1.0F, "some string");
-        Assert.IsTrue(Helper.ValidateINNER2(sourceINNER2, inner2, "TestMethod_DoCallBack_MarshalStructByVal_INNER2_Cdecl"));
+        Assert.True(Helper.ValidateINNER2(sourceINNER2, inner2, "TestMethod_DoCallBack_MarshalStructByVal_INNER2_Cdecl"));
         //changed the value
         inner2.f1 = 77;
         inner2.f2 = 77.0F;
@@ -419,7 +419,7 @@ public class Test
         InnerExplicit source_ie = new InnerExplicit();
         source_ie.f1 = 1;
         source_ie.f3 = "Native";
-        Assert.IsTrue(Helper.ValidateInnerExplicit(source_ie, inner2, "TestMethod_DoCallBack_MarshalStructByVal_InnerExplicit_Cdecl"));
+        Assert.True(Helper.ValidateInnerExplicit(source_ie, inner2, "TestMethod_DoCallBack_MarshalStructByVal_InnerExplicit_Cdecl"));
         //changed the value
         inner2.f1 = 1;
         inner2.f3 = "changed string";
@@ -437,7 +437,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Cdecl");
         InnerArrayExplicit source_iae = Helper.NewInnerArrayExplicit(1, 1.0F, "some string", "some string");
-        Assert.IsTrue(Helper.ValidateInnerArrayExplicit(source_iae, iae, "TestMethod_DoCallBack_MarshalStructByVal_InnerArrayExplicit_Cdecl"));
+        Assert.True(Helper.ValidateInnerArrayExplicit(source_iae, iae, "TestMethod_DoCallBack_MarshalStructByVal_InnerArrayExplicit_Cdecl"));
         //changed the value
         for (int i = 0; i < Common.NumArrElements; i++)
         {
@@ -459,7 +459,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Cdecl");
         OUTER3 sourceOUTER3 = Helper.NewOUTER3(1, 1.0F, "some string", "some string");
-        Assert.IsTrue(Helper.ValidateOUTER3(sourceOUTER3, outer3, "TestMethod_DoCallBack_MarshalStructByVal_OUTER3_Cdecl"));
+        Assert.True(Helper.ValidateOUTER3(sourceOUTER3, outer3, "TestMethod_DoCallBack_MarshalStructByVal_OUTER3_Cdecl"));
         //changed the value
         for (int i = 0; i < Common.NumArrElements; i++)
         {
@@ -481,9 +481,9 @@ public class Test
     public static bool TestMethod_DoCallBack_MarshalStructByVal_U_Cdecl( U u)
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Cdecl");
-        U changeU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, 
+        U changeU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue,
             sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 3.2);
-        Assert.IsTrue(Helper.ValidateU(changeU, u, "TestMethod_DoCallBack_MarshalStructByVal_U_Cdecl"));
+        Assert.True(Helper.ValidateU(changeU, u, "TestMethod_DoCallBack_MarshalStructByVal_U_Cdecl"));
         //changed the value
         u.d = 1.23;
         return true;
@@ -500,7 +500,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Cdecl");
         ByteStructPack2Explicit change_bspe = Helper.NewByteStructPack2Explicit(32, 32);
-        Assert.IsTrue(Helper.ValidateByteStructPack2Explicit(change_bspe, bspe, "TestMethod_DoCallBack_MarshalStructByVal_ByteStructPack2Explicit_Cdecl"));
+        Assert.True(Helper.ValidateByteStructPack2Explicit(change_bspe, bspe, "TestMethod_DoCallBack_MarshalStructByVal_ByteStructPack2Explicit_Cdecl"));
         //changed the value
         bspe.b1 = 64;
         bspe.b2 = 64;
@@ -518,7 +518,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Cdecl");
         ShortStructPack4Explicit change_sspe = Helper.NewShortStructPack4Explicit(32, 32);
-        Assert.IsTrue(Helper.ValidateShortStructPack4Explicit(change_sspe, sspe, "TestMethod_DoCallBack_MarshalStructByVal_ShortStructPack4Explicit_Cdecl"));
+        Assert.True(Helper.ValidateShortStructPack4Explicit(change_sspe, sspe, "TestMethod_DoCallBack_MarshalStructByVal_ShortStructPack4Explicit_Cdecl"));
         //changed the value
         sspe.s1 = 64;
         sspe.s2 = 64;
@@ -536,7 +536,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Cdecl");
         IntStructPack8Explicit change_ispe = Helper.NewIntStructPack8Explicit(32, 32);
-        Assert.IsTrue(Helper.ValidateIntStructPack8Explicit(change_ispe, ispe, "TestMethod_DoCallBack_MarshalStructByVal_IntStructPack8Explicit_Cdecl"));
+        Assert.True(Helper.ValidateIntStructPack8Explicit(change_ispe, ispe, "TestMethod_DoCallBack_MarshalStructByVal_IntStructPack8Explicit_Cdecl"));
         //changed the value
         ispe.i1 = 64;
         ispe.i2 = 64;
@@ -554,7 +554,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Cdecl");
         LongStructPack16Explicit change_lspe = Helper.NewLongStructPack16Explicit(32, 32);
-        Assert.IsTrue(Helper.ValidateLongStructPack16Explicit(change_lspe, lspe, "TestMethod_DoCallBack_MarshalStructByVal_LongStructPack16Explicit_Cdecl"));
+        Assert.True(Helper.ValidateLongStructPack16Explicit(change_lspe, lspe, "TestMethod_DoCallBack_MarshalStructByVal_LongStructPack16Explicit_Cdecl"));
         //changed the value
         lspe.l1 = 64;
         lspe.l2 = 64;
@@ -562,9 +562,9 @@ public class Test
     }
 
     #endregion
-    
+
     #region ReversePinvoke, ByVal, Stdcall
-   
+
     // 4.1
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public delegate bool ByValStdcallcaller_INNER2([In, Out] INNER2 inner2);
@@ -576,14 +576,14 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Stdcall");
         INNER2 sourceINNER2 = Helper.NewINNER2(1, 1.0F, "some string");
-        Assert.IsTrue(Helper.ValidateINNER2(sourceINNER2, inner2, "TestMethod_DoCallBack_MarshalStructByVal_INNER2_Stdcall"));
+        Assert.True(Helper.ValidateINNER2(sourceINNER2, inner2, "TestMethod_DoCallBack_MarshalStructByVal_INNER2_Stdcall"));
         //changed the value
         inner2.f1 = 77;
         inner2.f2 = 77.0F;
         inner2.f3 = "changed string";
         return true;
     }
-    
+
     // 4.2
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public delegate bool ByValStdcallcaller_InnerExplicit([In, Out] InnerExplicit inner2);
@@ -597,13 +597,13 @@ public class Test
         InnerExplicit source_ie = new InnerExplicit();
         source_ie.f1 = 1;
         source_ie.f3 = "Native";
-        Assert.IsTrue(Helper.ValidateInnerExplicit(source_ie, inner2, "TestMethod_DoCallBack_MarshalStructByVal_InnerExplicit_Stdcall"));
+        Assert.True(Helper.ValidateInnerExplicit(source_ie, inner2, "TestMethod_DoCallBack_MarshalStructByVal_InnerExplicit_Stdcall"));
         //changed the value
         inner2.f1 = 1;
         inner2.f3 = "changed string";
         return true;
     }
-   
+
     // 4.3
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public delegate bool ByValStdcallcaller_InnerArrayExplicit([In, Out] InnerArrayExplicit inner2);
@@ -615,7 +615,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Stdcall");
         InnerArrayExplicit source_iae = Helper.NewInnerArrayExplicit(1, 1.0F, "some string", "some string");
-        Assert.IsTrue(Helper.ValidateInnerArrayExplicit(source_iae, iae, "TestMethod_DoCallBack_MarshalStructByVal_InnerArrayExplicit_Stdcall"));
+        Assert.True(Helper.ValidateInnerArrayExplicit(source_iae, iae, "TestMethod_DoCallBack_MarshalStructByVal_InnerArrayExplicit_Stdcall"));
         //changed the value
         for (int i = 0; i < Common.NumArrElements; i++)
         {
@@ -625,7 +625,7 @@ public class Test
         iae.f4 = "changed string";
         return true;
     }
- 
+
     // 4.4
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public delegate bool ByValStdcallcaller_OUTER3([In, Out] OUTER3 outer3);
@@ -637,7 +637,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Stdcall");
         OUTER3 sourceOUTER3 = Helper.NewOUTER3(1, 1.0F, "some string", "some string");
-        Assert.IsTrue(Helper.ValidateOUTER3(sourceOUTER3, outer3, "TestMethod_DoCallBack_MarshalStructByVal_OUTER3_Stdcall"));
+        Assert.True(Helper.ValidateOUTER3(sourceOUTER3, outer3, "TestMethod_DoCallBack_MarshalStructByVal_OUTER3_Stdcall"));
         //changed the value
         for (int i = 0; i < Common.NumArrElements; i++)
         {
@@ -659,14 +659,14 @@ public class Test
     public static bool TestMethod_DoCallBack_MarshalStructByVal_U_Stdcall(U u)
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Stdcall");
-        U changeU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue, 
+        U changeU = Helper.NewU(Int32.MinValue, UInt32.MaxValue, new IntPtr(-32), new UIntPtr(32), short.MinValue, ushort.MaxValue, byte.MinValue,
             sbyte.MaxValue, long.MinValue, ulong.MaxValue, 32.0F, 3.2);
-        Assert.IsTrue(Helper.ValidateU(changeU, u, "TestMethod_DoCallBack_MarshalStructByVal_U_Stdcall"));
+        Assert.True(Helper.ValidateU(changeU, u, "TestMethod_DoCallBack_MarshalStructByVal_U_Stdcall"));
         //changed the value
         u.d = 1.23;
         return true;
     }
-   
+
     // 4.6
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     public delegate bool ByValStdcallcaller_ByteStructPack2Explicit([In, Out] ByteStructPack2Explicit bspe);
@@ -678,7 +678,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Stdcall");
         ByteStructPack2Explicit change_bspe = Helper.NewByteStructPack2Explicit(32, 32);
-        Assert.IsTrue(Helper.ValidateByteStructPack2Explicit(change_bspe, bspe, "TestMethod_DoCallBack_MarshalStructByVal_ByteStructPack2Explicit_Stdcall"));
+        Assert.True(Helper.ValidateByteStructPack2Explicit(change_bspe, bspe, "TestMethod_DoCallBack_MarshalStructByVal_ByteStructPack2Explicit_Stdcall"));
         //changed the value
         bspe.b1 = 64;
         bspe.b2 = 64;
@@ -696,7 +696,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Stdcall");
         ShortStructPack4Explicit change_sspe = Helper.NewShortStructPack4Explicit(32, 32);
-        Assert.IsTrue(Helper.ValidateShortStructPack4Explicit(change_sspe, sspe, "TestMethod_DoCallBack_MarshalStructByVal_ShortStructPack4Explicit_Stdcall"));
+        Assert.True(Helper.ValidateShortStructPack4Explicit(change_sspe, sspe, "TestMethod_DoCallBack_MarshalStructByVal_ShortStructPack4Explicit_Stdcall"));
         //changed the value
         sspe.s1 = 64;
         sspe.s2 = 64;
@@ -714,7 +714,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Stdcall");
         IntStructPack8Explicit change_ispe = Helper.NewIntStructPack8Explicit(32, 32);
-        Assert.IsTrue(Helper.ValidateIntStructPack8Explicit(change_ispe, ispe, "TestMethod_DoCallBack_MarshalStructByVal_IntStructPack8Explicit_Stdcall"));
+        Assert.True(Helper.ValidateIntStructPack8Explicit(change_ispe, ispe, "TestMethod_DoCallBack_MarshalStructByVal_IntStructPack8Explicit_Stdcall"));
         //changed the value
         ispe.i1 = 64;
         ispe.i2 = 64;
@@ -732,7 +732,7 @@ public class Test
     {
         Console.WriteLine("Reverse,Pinvoke,By Val,Stdcall");
         LongStructPack16Explicit change_lspe = Helper.NewLongStructPack16Explicit(32, 32);
-        Assert.IsTrue(Helper.ValidateLongStructPack16Explicit(change_lspe, lspe, "TestMethod_DoCallBack_MarshalStructByVal_LongStructPack16Explicit_Stdcall"));
+        Assert.True(Helper.ValidateLongStructPack16Explicit(change_lspe, lspe, "TestMethod_DoCallBack_MarshalStructByVal_LongStructPack16Explicit_Stdcall"));
         //changed the value
         lspe.l1 = 64;
         lspe.l2 = 64;
@@ -740,7 +740,7 @@ public class Test
     }
 
     #endregion
-    
+
     #endregion
 
     static int Main()
@@ -759,7 +759,7 @@ public class Test
             DoCallBack_MarshalByRefStruct_Cdecl_ShortStructPack4Explicit(new ByRefCdeclcaller_ShortStructPack4Explicit(TestMethod_DoCallBack_MarshalStructByRef_ShortStructPack4Explicit_Cdecl));
             DoCallBack_MarshalByRefStruct_Cdecl_IntStructPack8Explicit(new ByRefCdeclcaller_IntStructPack8Explicit(TestMethod_DoCallBack_MarshalStructByRef_IntStructPack8Explicit_Cdecl));
             DoCallBack_MarshalByRefStruct_Cdecl_LongStructPack16Explicit(new ByRefCdeclcaller_LongStructPack16Explicit(TestMethod_DoCallBack_MarshalStructByRef_LongStructPack16Explicit_Cdecl));
-            
+
             ////Reverse Pinvoke,ByRef,StdCall
             DoCallBack_MarshalByRefStruct_Stdcall_INNER2(new ByRefStdcallcaller_INNER2(TestMethod_DoCallBack_MarshalStructByRef_INNER2_Stdcall));
             DoCallBack_MarshalByRefStruct_Stdcall_InnerExplicit(new ByRefStdcallcaller_InnerExplicit(TestMethod_DoCallBack_MarshalStructByRef_InnerExplicit_Stdcall));
@@ -792,7 +792,7 @@ public class Test
             DoCallBack_MarshalByValStruct_Stdcall_ShortStructPack4Explicit(new ByValStdcallcaller_ShortStructPack4Explicit(TestMethod_DoCallBack_MarshalStructByVal_ShortStructPack4Explicit_Stdcall));
             DoCallBack_MarshalByValStruct_Stdcall_IntStructPack8Explicit(new ByValStdcallcaller_IntStructPack8Explicit(TestMethod_DoCallBack_MarshalStructByVal_IntStructPack8Explicit_Stdcall));
             DoCallBack_MarshalByValStruct_Stdcall_LongStructPack16Explicit(new ByValStdcallcaller_LongStructPack16Explicit(TestMethod_DoCallBack_MarshalStructByVal_LongStructPack16Explicit_Stdcall));
-        
+
             #endregion
 
             return 100;

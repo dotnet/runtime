@@ -77,10 +77,33 @@ public:
         }
     }
 
+    void Set(ValueNumKind vnk, ValueNum vn)
+    {
+        if (vnk == VNK_Liberal)
+        {
+            SetLiberal(vn);
+        }
+        else
+        {
+            assert(vnk == VNK_Conservative);
+            SetConservative(vn);
+        }
+    }
+
     void SetBoth(ValueNum vn)
     {
         m_liberal      = vn;
         m_conservative = vn;
+    }
+
+    bool operator==(const ValueNumPair& other) const
+    {
+        return (m_liberal == other.m_liberal) && (m_conservative == other.m_conservative);
+    }
+
+    bool operator!=(const ValueNumPair& other) const
+    {
+        return !(*this == other);
     }
 
     void operator=(const ValueNumPair& vn2)

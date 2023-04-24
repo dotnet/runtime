@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.DataContracts;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -9,7 +10,8 @@ namespace System.Runtime.Serialization.Json
     {
         private readonly JsonEnumDataContractCriticalHelper _helper;
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public JsonEnumDataContract(EnumDataContract traditionalDataContract)
             : base(new JsonEnumDataContractCriticalHelper(traditionalDataContract))
         {
@@ -18,7 +20,8 @@ namespace System.Runtime.Serialization.Json
 
         public bool IsULong => _helper.IsULong;
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             object enumValue;
@@ -31,14 +34,12 @@ namespace System.Runtime.Serialization.Json
                 enumValue = Enum.ToObject(TraditionalDataContract.UnderlyingType, jsonReader.ReadElementContentAsLong());
             }
 
-            if (context != null)
-            {
-                context.AddNewObject(enumValue);
-            }
+            context?.AddNewObject(enumValue);
             return enumValue;
         }
 
-        [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             if (IsULong)
@@ -55,7 +56,8 @@ namespace System.Runtime.Serialization.Json
         {
             private readonly bool _isULong;
 
-            [RequiresUnreferencedCode(DataContractJsonSerializer.SerializerTrimmerWarning)]
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public JsonEnumDataContractCriticalHelper(EnumDataContract traditionalEnumDataContract)
                 : base(traditionalEnumDataContract)
             {

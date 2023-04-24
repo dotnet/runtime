@@ -12,7 +12,6 @@
 #ifndef PRIMITIVES_H_
 #define PRIMITIVES_H_
 
-
 typedef const BYTE                  CORDB_ADDRESS_TYPE;
 typedef DPTR(CORDB_ADDRESS_TYPE)    PTR_CORDB_ADDRESS_TYPE;
 
@@ -165,7 +164,7 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
 
 // After a breakpoint exception, the CPU points to _after_ the break instruction.
 // Adjust the IP so that it points at the break instruction. This lets us patch that
-// opcode and re-excute what was underneath the bp.
+// opcode and re-execute what was underneath the bp.
 inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;

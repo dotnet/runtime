@@ -76,11 +76,8 @@ enum MDInternalImportFlags
 {
     MDInternalImport_Default            = 0,
     MDInternalImport_NoCache            = 1, // Do not share/cached the results of opening the image
-#ifdef FEATURE_PREJIT
-    MDInternalImport_TrustedNativeImage = 2, // The image is a native image, and so its format can be trusted
-    MDInternalImport_ILMetaData         = 4, // Open the IL metadata, even if this is a native image
-    MDInternalImport_TrustedNativeImage_and_IL = MDInternalImport_TrustedNativeImage | MDInternalImport_ILMetaData,
-#endif
+    // unused                           = 2,
+    // unused                           = 4,
     MDInternalImport_OnlyLookInCache    =0x20, // Only look in the cache. (If the cache does not have the image already loaded, return NULL)
 };  // enum MDInternalImportFlags
 
@@ -105,9 +102,9 @@ STDAPI GetAssemblyMDInternalImportByStreamEx( // Return code.
 
 __success(SUCCEEDED(return))
 STDAPI GetNativeImageDescription(
-    __in_z LPCWSTR wzCustomString,                     // [IN] Custom string of the native image
+    _In_z_ LPCWSTR wzCustomString,                     // [IN] Custom string of the native image
     DWORD dwConfigMask,                         // [IN] Config mask of the native image
-    __out_ecount_part_opt(*pdwLength,*pdwLength) LPWSTR pwzZapInfo,// [OUT] The description string. Can be NULL to find the size of buffer to allocate
+    _Out_writes_to_opt_(*pdwLength,*pdwLength) LPWSTR pwzZapInfo,// [OUT] The description string. Can be NULL to find the size of buffer to allocate
     LPDWORD pdwLength);                         // [IN/OUT] Length of the pwzZapInfo buffer on IN.
                                                 //          Number of WCHARs (including termintating NULL) on OUT
 
@@ -286,9 +283,6 @@ typedef enum CorOpenFlagsInternal
 #endif
 
 // %%Classes: ----------------------------------------------------------------
-#ifndef lengthof
-#define lengthof(rg)    (sizeof(rg)/sizeof(rg[0]))
-#endif
 
 #define COR_MODULE_CLASS    "<Module>"
 #define COR_WMODULE_CLASS   W("<Module>")
@@ -469,62 +463,6 @@ DECLARE_INTERFACE_(IGetIMDInternalImport, IUnknown)
         IMDInternalImport ** ppIMDInternalImport   // [OUT] Buffer to receive IMDInternalImport*
     ) PURE;
 };
-
-// ===========================================================================
-#ifdef FEATURE_PREJIT
-// ===========================================================================
-
-// Use the default JIT compiler
-#define DEFAULT_NGEN_COMPILER_DLL_NAME W("clrjit.dll")
-
-#ifndef DACCESS_COMPILE
-
-/* --------------------------------------------------------------------------- *
- * NGen logger
- * --------------------------------------------------------------------------- */
- #include "mscorsvc.h"
-
-struct ICorSvcLogger;
-class SvcLogger
-{
-public:
-
-    SvcLogger();
-    ~SvcLogger();
-    void ReleaseLogger();
-    void SetSvcLogger(ICorSvcLogger *pCorSvcLoggerArg);
-    BOOL HasSvcLogger();
-    ICorSvcLogger* GetSvcLogger();
-    void Printf(const CHAR *format, ...);
-    void SvcPrintf(const CHAR *format, ...);
-    void Printf(const WCHAR *format, ...);
-    void Printf(CorSvcLogLevel logLevel, const WCHAR *format, ...);
-    void SvcPrintf(const WCHAR *format, ...);
-    void Log(const WCHAR *message, CorSvcLogLevel logLevel = LogLevel_Warning);
-    //Need to add this to allocate StackSString, as we don't want static class
-
-private:
-
-    void LogHelper(SString s, CorSvcLogLevel logLevel = LogLevel_Success);
-    //instantiations that need VM services like contracts in dllmain.
-    void CheckInit();
-
-    StackSString* pss;
-    ICorSvcLogger *pCorSvcLogger;
-};  // class SvcLogger
-
-SvcLogger *GetSvcLogger();
-BOOL       HasSvcLogger();
-#endif // #ifndef DACCESS_COMPILE
-
-// ===========================================================================
-#endif // #ifdef FEATURE_PREJIT
-// ===========================================================================
-
-struct CORCOMPILE_ASSEMBLY_SIGNATURE;
-struct CORCOMPILE_VERSION_INFO;
-struct CORCOMPILE_DEPENDENCY;
-typedef GUID CORCOMPILE_NGEN_SIGNATURE;
 
 #endif  // _CORPRIV_H_
 

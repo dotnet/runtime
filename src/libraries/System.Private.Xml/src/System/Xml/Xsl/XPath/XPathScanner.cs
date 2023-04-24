@@ -566,7 +566,7 @@ namespace System.Xml.Xsl.XPath
         }
 
         // May be called for the following tokens: Name, String, Eof, Comma, LParens, RParens, LBracket, RBracket, RBrace
-        private string LexKindToString(LexKind t)
+        private static string LexKindToString(LexKind t)
         {
             Debug.Assert(LexKind.FirstStringable <= t);
 
@@ -582,7 +582,7 @@ namespace System.Xml.Xsl.XPath
                 case LexKind.String: return "<string literal>";
                 case LexKind.Eof: return "<eof>";
                 default:
-                    Debug.Fail("Unexpected LexKind: " + t.ToString());
+                    Debug.Fail($"Unexpected LexKind: {t}");
                     return string.Empty;
             }
         }

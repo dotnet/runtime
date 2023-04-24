@@ -9,12 +9,15 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class File_ReadWriteAllTextAsync : FileSystemTest
     {
+        protected virtual bool IsAppend { get; }
+
         #region Utilities
 
         protected virtual Task WriteAsync(string path, string content) => File.WriteAllTextAsync(path, content);
+
+        protected virtual Task WriteAsync(string path, string content, Encoding encoding) => File.WriteAllTextAsync(path, content, encoding);
 
         protected virtual Task<string> ReadAsync(string path) => File.ReadAllTextAsync(path);
 
@@ -72,19 +75,31 @@ namespace System.IO.Tests
             Assert.Equal(toWrite, await ReadAsync(path));
         }
 
-        [Fact]
-        public virtual async Task OverwriteAsync()
+        [Theory]
+        [InlineData(200, 100)]
+        [InlineData(50_000, 40_000)] // tests a different code path than the line above
+        public async Task AppendOrOverwriteAsync(int linesSizeLength, int overwriteLinesLength)
         {
             string path = GetTestFilePath();
-            string lines = new string('c', 200);
-            string overwriteLines = new string('b', 100);
+            string lines = new string('c', linesSizeLength);
+            string overwriteLines = new string('b', overwriteLinesLength);
+
             await WriteAsync(path, lines);
-            await WriteAsync(path, overwriteLines);
-            Assert.Equal(overwriteLines, await ReadAsync(path));
+            await WriteAsync(path, overwriteLines); ;
+
+            if (IsAppend)
+            {
+                Assert.Equal(lines + overwriteLines, await ReadAsync(path));
+            }
+            else
+            {
+                Assert.DoesNotContain("Append", GetType().Name); // ensure that all "Append" types override this property
+
+                Assert.Equal(overwriteLines, await ReadAsync(path));
+            }
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public async Task OpenFile_ThrowsIOExceptionAsync()
         {
             string path = GetTestFilePath();
@@ -104,7 +119,7 @@ namespace System.IO.Tests
         /// <summary>
         /// On Unix, modifying a file that is ReadOnly will fail under normal permissions.
         /// If the test is being run under the superuser, however, modification of a ReadOnly
-        /// file is allowed.
+        /// file is allowed. On Windows, modifying a file that is ReadOnly will always fail.
         /// </summary>
         [Fact]
         public async Task WriteToReadOnlyFileAsync()
@@ -114,8 +129,7 @@ namespace System.IO.Tests
             File.SetAttributes(path, FileAttributes.ReadOnly);
             try
             {
-                // Operation succeeds when being run by the Unix superuser
-                if (PlatformDetection.IsSuperUser)
+                if (PlatformDetection.IsNotWindows && PlatformDetection.IsPrivilegedProcess)
                 {
                     await WriteAsync(path, "text");
                     Assert.Equal("text", await ReadAsync(path));
@@ -141,10 +155,47 @@ namespace System.IO.Tests
                 async () => await File.WriteAllTextAsync(path, "", token));
         }
 
+        [Theory]
+        [MemberData(nameof(File_ReadWriteAllText.OutputIsTheSameAsForStreamWriter_Args), MemberType = typeof(File_ReadWriteAllText))]
+        public async Task OutputIsTheSameAsForStreamWriterAsync(string content, Encoding encoding)
+        {
+            string filePath = GetTestFilePath();
+            await WriteAsync(filePath, content, encoding); // it uses System.File.IO APIs
+
+            string swPath = GetTestFilePath();
+            using (StreamWriter sw = new StreamWriter(swPath, IsAppend, encoding))
+            {
+                await sw.WriteAsync(content);
+            }
+
+            Assert.Equal(await File.ReadAllTextAsync(swPath, encoding), await File.ReadAllTextAsync(filePath, encoding));
+            Assert.Equal(await File.ReadAllBytesAsync(swPath), await File.ReadAllBytesAsync(filePath)); // ensure Preamble was stored
+        }
+
+        [Theory]
+        [MemberData(nameof(File_ReadWriteAllText.OutputIsTheSameAsForStreamWriter_Args), MemberType = typeof(File_ReadWriteAllText))]
+        public async Task OutputIsTheSameAsForStreamWriter_OverwriteAsync(string content, Encoding encoding)
+        {
+            string filePath = GetTestFilePath();
+            string swPath = GetTestFilePath();
+
+            for (int i = 0; i < 2; i++)
+            {
+                await WriteAsync(filePath, content, encoding); // it uses System.File.IO APIs
+
+                using (StreamWriter sw = new StreamWriter(swPath, IsAppend, encoding))
+                {
+                    await sw.WriteAsync(content);
+                }
+            }
+
+            Assert.Equal(await File.ReadAllTextAsync(swPath, encoding), await File.ReadAllTextAsync(filePath, encoding));
+            Assert.Equal(await File.ReadAllBytesAsync(swPath), await File.ReadAllBytesAsync(filePath)); // ensure Preamble was stored once
+        }
+
         #endregion
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class File_ReadWriteAllText_EncodedAsync : File_ReadWriteAllTextAsync
     {
         protected override Task WriteAsync(string path, string content) =>

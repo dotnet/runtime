@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Data.ProviderBase
@@ -55,6 +56,7 @@ namespace System.Data.ProviderBase
 
         private readonly LoadOption _loadOption;
 
+        [RequiresUnreferencedCode("chapterValue and dataReader schema table rows DataTypes type cannot be statically analyzed.")]
         internal SchemaMapping(DataAdapter adapter, DataSet? dataset, DataTable? datatable, DataReaderContainer dataReader, bool keyInfo,
                                     SchemaType schemaType, string? sourceTableName, bool gettingData,
                                     DataColumn? parentChapterColumn, object? parentChapterValue)
@@ -381,6 +383,7 @@ namespace System.Data.ProviderBase
             return _mappedDataValues!;
         }
 
+        [RequiresUnreferencedCode("Row chapter column types cannot be statically analyzed")]
         internal void LoadDataRowWithClear()
         {
             // for FillErrorEvent to ensure no values leftover from previous row
@@ -391,6 +394,7 @@ namespace System.Data.ProviderBase
             LoadDataRow();
         }
 
+        [RequiresUnreferencedCode("Row chapter column types cannot be statically analyzed")]
         internal void LoadDataRow()
         {
             try
@@ -446,6 +450,7 @@ namespace System.Data.ProviderBase
             }
         }
 
+        [RequiresUnreferencedCode("Row chapter column types cannot be statically analyzed")]
         internal int LoadDataRowChapters(DataRow dataRow)
         {
             int datarowadded = 0;
@@ -492,7 +497,7 @@ namespace System.Data.ProviderBase
             return datarowadded;
         }
 
-        private int[] CreateIndexMap(int count, int index)
+        private static int[] CreateIndexMap(int count, int index)
         {
             int[] values = new int[count];
             for (int i = 0; i < index; ++i)
@@ -513,7 +518,7 @@ namespace System.Data.ProviderBase
             return fieldNames;
         }
 
-        private DataColumn[] ResizeColumnArray(DataColumn[] rgcol, int len)
+        private static DataColumn[] ResizeColumnArray(DataColumn[] rgcol, int len)
         {
             Debug.Assert(rgcol != null, "invalid call to ResizeArray");
             Debug.Assert(len <= rgcol.Length, "invalid len passed to ResizeArray");
@@ -522,7 +527,7 @@ namespace System.Data.ProviderBase
             return tmp;
         }
 
-        private void AddItemToAllowRollback(ref List<object>? items, object value)
+        private static void AddItemToAllowRollback(ref List<object>? items, object value)
         {
             if (null == items)
             {
@@ -531,7 +536,7 @@ namespace System.Data.ProviderBase
             items.Add(value);
         }
 
-        private void RollbackAddedItems(List<object>? items)
+        private static void RollbackAddedItems(List<object>? items)
         {
             if (null != items)
             {
@@ -543,27 +548,19 @@ namespace System.Data.ProviderBase
                         DataColumn? column = (items[i] as DataColumn);
                         if (null != column)
                         {
-                            if (null != column.Table)
-                            {
-                                column.Table.Columns.Remove(column);
-                            }
+                            column.Table?.Columns.Remove(column);
                         }
                         else
                         {
                             DataTable? table = (items[i] as DataTable);
-                            if (null != table)
-                            {
-                                if (null != table.DataSet)
-                                {
-                                    table.DataSet.Tables.Remove(table);
-                                }
-                            }
+                            table?.DataSet?.Tables.Remove(table);
                         }
                     }
                 }
             }
         }
 
+        [RequiresUnreferencedCode("chapterValue's type cannot be statically analyzed")]
         private object[]? SetupSchemaWithoutKeyInfo(MissingMappingAction mappingAction, MissingSchemaAction schemaAction, bool gettingData, DataColumn? parentChapterColumn, object? chapterValue)
         {
             Debug.Assert(_dataTable != null);
@@ -759,6 +756,7 @@ namespace System.Data.ProviderBase
             return dataValues;
         }
 
+        [RequiresUnreferencedCode("chapterValue and _schemaTable schema rows DataTypes type cannot be statically analyzed. When _loadOption is set, members from types used in the expression column may be trimmed if not referenced directly.")]
         private object[]? SetupSchemaWithKeyInfo(MissingMappingAction mappingAction, MissingSchemaAction schemaAction, bool gettingData, DataColumn? parentChapterColumn, object? chapterValue)
         {
             Debug.Assert(_dataTable != null);
@@ -1004,6 +1002,7 @@ namespace System.Data.ProviderBase
                         {
                             AddAdditionalProperties(dataColumn, schemaRow.DataRow);
                         }
+
                         AddItemToAllowRollback(ref addedItems, dataColumn);
                         columnCollection.Add(dataColumn);
                     }
@@ -1020,10 +1019,7 @@ namespace System.Data.ProviderBase
                     //
                     if (addPrimaryKeys && schemaRow.IsKey)
                     {
-                        if (keys == null)
-                        {
-                            keys = new DataColumn[schemaRows.Length];
-                        }
+                        keys ??= new DataColumn[schemaRows.Length];
                         keys[keyCount++] = dataColumn;
 
                         // see case 3 above, we do want dataColumn.AllowDBNull not schemaRow.AllowDBNull
@@ -1138,7 +1134,8 @@ namespace System.Data.ProviderBase
             return dataValues;
         }
 
-        private void AddAdditionalProperties(DataColumn targetColumn, DataRow schemaRow)
+        [RequiresUnreferencedCode("Members from types used in the expression column may be trimmed if not referenced directly.")]
+        private static void AddAdditionalProperties(DataColumn targetColumn, DataRow schemaRow)
         {
             DataColumnCollection columns = schemaRow.Table.Columns;
             DataColumn? column;

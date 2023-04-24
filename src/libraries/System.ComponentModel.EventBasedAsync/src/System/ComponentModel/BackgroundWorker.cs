@@ -126,7 +126,7 @@ namespace System.ComponentModel
 
             _asyncOperation = AsyncOperationManager.CreateOperation(null);
             Task.Factory.StartNew(
-                        arg => WorkerThreadStart(arg),
+                        WorkerThreadStart,
                         argument,
                         CancellationToken.None,
                         TaskCreationOptions.DenyChildAttach,

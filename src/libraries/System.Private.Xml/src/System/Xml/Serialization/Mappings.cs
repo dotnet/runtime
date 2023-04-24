@@ -1,18 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Xml.Schema;
+using System;
+using System.Text;
+using System.ComponentModel;
+using System.Xml;
+using System.Xml.Serialization;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System.Reflection;
-    using System.Collections;
-    using System.Xml.Schema;
-    using System;
-    using System.Text;
-    using System.ComponentModel;
-    using System.Xml;
-    using System.Xml.Serialization;
-    using System.Diagnostics.CodeAnalysis;
-
     // These classes represent a mapping between classes and a particular XML format.
     // There are two class of mapping information: accessors (such as elements and
     // attributes), and mappings (which specify the type of an accessor).
@@ -52,7 +54,7 @@ namespace System.Xml.Serialization
         [AllowNull]
         internal virtual string Name
         {
-            get { return _name == null ? string.Empty : _name; }
+            get { return _name ?? string.Empty; }
             set { _name = value; }
         }
 
@@ -98,14 +100,14 @@ namespace System.Xml.Serialization
             set { _topLevelInSchema = value; }
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         internal static string? EscapeName(string? name)
         {
             if (name == null || name.Length == 0) return name;
             return XmlConvert.EncodeLocalName(name);
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         internal static string? EscapeQName(string? name)
         {
             if (name == null || name.Length == 0) return name;
@@ -120,7 +122,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         internal static string? UnescapeName(string? name)
         {
             return XmlConvert.DecodeName(name);
@@ -130,11 +132,11 @@ namespace System.Xml.Serialization
         {
             if (Any)
             {
-                return (Namespace == null ? "##any" : Namespace) + ":" + Name;
+                return $"{Namespace ?? "##any"}:{Name}";
             }
             else
             {
-                return Namespace == defaultNs ? Name : Namespace + ":" + Name;
+                return Namespace == defaultNs ? Name : $"{Namespace}:{Name}";
             }
         }
     }
@@ -444,14 +446,14 @@ namespace System.Xml.Serialization
         [AllowNull]
         internal string XmlName
         {
-            get { return _xmlName == null ? string.Empty : _xmlName; }
+            get { return _xmlName ?? string.Empty; }
             set { _xmlName = value; }
         }
 
         [AllowNull]
         internal string Name
         {
-            get { return _name == null ? string.Empty : _name; }
+            get { return _name ?? string.Empty; }
             set { _name = value; }
         }
 
@@ -512,24 +514,8 @@ namespace System.Xml.Serialization
             get { return _baseMapping != null && Members != null; }
         }
 
-        internal NameTable LocalElements
-        {
-            get
-            {
-                if (_elements == null)
-                    _elements = new NameTable();
-                return _elements;
-            }
-        }
-        internal NameTable LocalAttributes
-        {
-            get
-            {
-                if (_attributes == null)
-                    _attributes = new NameTable();
-                return _attributes;
-            }
-        }
+        internal NameTable LocalElements => _elements ??= new NameTable();
+        internal NameTable LocalAttributes => _attributes ??= new NameTable();
         object? INameScope.this[string? name, string? ns]
         {
             get
@@ -591,13 +577,8 @@ namespace System.Xml.Serialization
 
         internal CodeIdentifiers Scope
         {
-            get
-            {
-                if (_scope == null)
-                    _scope = new CodeIdentifiers();
-                return _scope;
-            }
-            set { _scope = value; }
+            get => _scope ??= new CodeIdentifiers();
+            set => _scope = value;
         }
 
         internal MemberMapping? FindDeclaringMapping(MemberMapping member, out StructMapping? declaringMapping, string? parent)
@@ -628,8 +609,7 @@ namespace System.Xml.Serialization
         }
         internal bool Declares(MemberMapping member, string? parent)
         {
-            StructMapping? m;
-            return (FindDeclaringMapping(member, out m, parent) != null);
+            return (FindDeclaringMapping(member, out _, parent) != null);
         }
 
         internal void SetContentModel(TextAccessor? text, bool hasElements)
@@ -765,14 +745,14 @@ namespace System.Xml.Serialization
             Array.Sort(elements, new AccessorComparer());
         }
 
-        internal sealed class AccessorComparer : IComparer
+        internal sealed class AccessorComparer : IComparer<ElementAccessor>
         {
-            public int Compare(object? o1, object? o2)
+            public int Compare(ElementAccessor? a1, ElementAccessor? a2)
             {
-                if (o1 == o2)
+                if (a1 == a2)
                     return 0;
-                Accessor a1 = (Accessor)o1!;
-                Accessor a2 = (Accessor)o2!;
+                Debug.Assert(a1 != null);
+                Debug.Assert(a2 != null);
                 int w1 = a1.Mapping!.TypeDesc!.Weight;
                 int w2 = a2.Mapping!.TypeDesc!.Weight;
                 if (w1 == w2)
@@ -880,13 +860,12 @@ namespace System.Xml.Serialization
         }
     }
 
-    internal sealed class MemberMappingComparer : IComparer
+    internal sealed class MemberMappingComparer : IComparer<MemberMapping>
     {
-        public int Compare(object? o1, object? o2)
+        public int Compare(MemberMapping? m1, MemberMapping? m2)
         {
-            MemberMapping m1 = (MemberMapping)o1!;
-            MemberMapping m2 = (MemberMapping)o2!;
-
+            Debug.Assert(m1 != null);
+            Debug.Assert(m2 != null);
             bool m1Text = m1.IsText;
             if (m1Text)
             {
@@ -953,7 +932,7 @@ namespace System.Xml.Serialization
 
         internal string Name
         {
-            get { return _name == null ? string.Empty : _name; }
+            get { return _name ?? string.Empty; }
             set { _name = value; }
         }
 
@@ -1238,7 +1217,7 @@ namespace System.Xml.Serialization
             if (element.Parent == null || !(element.Parent is XmlSchema))
                 return;
 
-            XmlSchemaObjectTable? elements = null;
+            XmlSchemaObjectTable? elements;
             if (Schema != null && Schema.TargetNamespace == elementNs)
             {
                 XmlSchemas.Preprocess(Schema);
@@ -1264,7 +1243,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private bool Match(XmlSchemaElement e1, XmlSchemaElement e2)
+        private static bool Match(XmlSchemaElement e1, XmlSchemaElement e2)
         {
             if (e1.IsNillable != e2.IsNillable)
                 return false;
@@ -1295,8 +1274,7 @@ namespace System.Xml.Serialization
                 if (_getSchemaMethod != null)
                 {
                     // get the type info
-                    if (_schemas == null)
-                        _schemas = new XmlSchemaSet();
+                    _schemas ??= new XmlSchemaSet();
                     object? typeInfo = _getSchemaMethod.Invoke(null, new object[] { _schemas });
                     _xsiType = XmlQualifiedName.Empty;
 
@@ -1358,7 +1336,7 @@ namespace System.Xml.Serialization
                             {
                                 throw new InvalidOperationException(SR.Format(SR.XmlGetSchemaTypeMissing, _getSchemaMethod.DeclaringType!.FullName, _getSchemaMethod.Name, _xsiType.Name, _xsiType.Namespace));
                             }
-                            _xsdType = _xsdType.Redefined != null ? _xsdType.Redefined : _xsdType;
+                            _xsdType = _xsdType.Redefined ?? _xsdType;
                         }
                     }
                 }

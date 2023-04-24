@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern System.Console { }
+.assembly extern xunit.core {}
 /*
 
 using System;
@@ -56,19 +57,12 @@ class Program
 
 */
 
-
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 4.0.30215.0
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-
-
-
-// Metadata version: v4.0.30215
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 4:0:0:0
 }
-.assembly bug393447
+.assembly 'dev10_393447'
 {
   .custom instance void [mscorlib]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .custom instance void [mscorlib]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
@@ -76,7 +70,6 @@ class Program
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-.module bug393447.exe
 // MVID: {1A8972AD-8254-4063-BA42-1661A4257C01}
 .imagebase 0x00400000
 .file alignment 0x00000200
@@ -180,6 +173,9 @@ class Program
 
   .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     // Code size       51 (0x33)
     .maxstack  8

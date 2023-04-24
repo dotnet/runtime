@@ -79,7 +79,7 @@ namespace System.Data
             (capacity < 128) ? 128 : (capacity + capacity);
 
         // Normalization: 64, 256, 1024, 2k, 3k, ....
-        private int NormalizedMinimumCapacity(int capacity)
+        private static int NormalizedMinimumCapacity(int capacity)
         {
             if (capacity < 1024 - 10)
             {
@@ -94,6 +94,7 @@ namespace System.Data
 
             return (((capacity + 10) >> 10) + 1) << 10;
         }
+
         internal int NewRecordBase()
         {
             int record;
@@ -191,7 +192,7 @@ namespace System.Data
             }
         }
 
-        internal void SetKeyValues(int record, DataKey key, object[] keyValues)
+        internal static void SetKeyValues(int record, DataKey key, object[] keyValues)
         {
             for (int i = 0; i < keyValues.Length; i++)
             {

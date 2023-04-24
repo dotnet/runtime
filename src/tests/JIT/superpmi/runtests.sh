@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Run CoreCLR OSS tests on Linux or Mac
 # Use the instructions here:
@@ -23,8 +23,8 @@ CORECLRROOT=~/src/coreclr
 COREFXROOT=~/src/corefx
 WINDOWSCORECLRROOT=~/WindowsMachine/coreclr
 WINDOWSFLAVOR=windows.x64.Debug
-UNIXANYFLAVOR=OSX.AnyCPU.Debug
-UNIXARCHFLAVOR=OSX.x64.Debug
+UNIXANYFLAVOR=osx.AnyCPU.Debug
+UNIXARCHFLAVOR=osx.x64.Debug
 
 ARGS="\
 --testRootDir=${TESTROOT}/${WINDOWSFLAVOR} \

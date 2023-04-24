@@ -3698,7 +3698,7 @@ namespace System.IO.Packaging.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop doesn't support Package.Open with FileAccess.Write")]
         public void ZipPackage_CreateWithFileAccessWrite()
         {
-            string packageName = "test.zip";
+            string packageName = Path.Combine(TestDirectory, "test.zip");
 
             using (Package package = Package.Open(packageName, FileMode.Create, FileAccess.Write))
             {
@@ -3823,9 +3823,15 @@ namespace System.IO.Packaging.Tests
                         byte[] readBuffer = new byte[buffer.Length];
                         for (long i = 0; i < SizeInMb; i++)
                         {
-                            int actualRead = partStream.Read(readBuffer, 0, readBuffer.Length);
+                            int totalRead = 0;
+                            while (totalRead < readBuffer.Length)
+                            {
+                                int actualRead = partStream.Read(readBuffer, totalRead, readBuffer.Length - totalRead);
+                                Assert.InRange(actualRead, 1, readBuffer.Length - totalRead);
+                                totalRead += actualRead;
+                            }
 
-                            Assert.Equal(actualRead, readBuffer.Length);
+                            Assert.Equal(readBuffer.Length, totalRead);
                             Assert.True(buffer.AsSpan().SequenceEqual(readBuffer));
                         }
                     }

@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.ComponentModel.Composition.cs" />
     <Compile Include="System.ComponentModel.Composition.Forwards.cs" />

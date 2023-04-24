@@ -58,17 +58,17 @@ namespace System.Threading.Tasks.Dataflow
             Func<ISourceBlock<T[]>, T[], IList<T[]>?, int>? itemCountingFunc = null;
             if (dataflowBlockOptions.BoundedCapacity > 0)
             {
-                onItemsRemoved = (owningSource, count) => ((BatchBlock<T>)owningSource)._target.OnItemsRemoved(count);
-                itemCountingFunc = (owningSource, singleOutputItem, multipleOutputItems) => BatchBlockTargetCore.CountItems(singleOutputItem, multipleOutputItems);
+                onItemsRemoved = static (owningSource, count) => ((BatchBlock<T>)owningSource)._target.OnItemsRemoved(count);
+                itemCountingFunc = static (owningSource, singleOutputItem, multipleOutputItems) => BatchBlockTargetCore.CountItems(singleOutputItem, multipleOutputItems);
             }
 
             // Initialize source
             _source = new SourceCore<T[]>(this, dataflowBlockOptions,
-                owningSource => ((BatchBlock<T>)owningSource)._target.Complete(exception: null, dropPendingMessages: true, releaseReservedMessages: false),
+                static owningSource => ((BatchBlock<T>)owningSource)._target.Complete(exception: null, dropPendingMessages: true, releaseReservedMessages: false),
                 onItemsRemoved, itemCountingFunc);
 
             // Initialize target
-            _target = new BatchBlockTargetCore(this, batchSize, batch => _source.AddMessage(batch), dataflowBlockOptions);
+            _target = new BatchBlockTargetCore(this, batchSize, _source.AddMessage, dataflowBlockOptions);
 
             // When the target is done, let the source know it won't be getting any more data
             _target.Completion.ContinueWith(delegate { _source.Complete(); },
@@ -78,7 +78,7 @@ namespace System.Threading.Tasks.Dataflow
             // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-            _source.Completion.ContinueWith((completed, state) =>
+            _source.Completion.ContinueWith(static (completed, state) =>
             {
                 var thisBlock = ((BatchBlock<T>)state!) as IDataflowBlock;
                 Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
@@ -87,14 +87,12 @@ namespace System.Threading.Tasks.Dataflow
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
-                dataflowBlockOptions.CancellationToken, _source.Completion, state => ((BatchBlockTargetCore)state!).Complete(exception: null, dropPendingMessages: true, releaseReservedMessages: false), _target);
-#if FEATURE_TRACING
+                dataflowBlockOptions.CancellationToken, _source.Completion, static (state, _) => ((BatchBlockTargetCore)state!).Complete(exception: null, dropPendingMessages: true, releaseReservedMessages: false), _target);
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
                 etwLog.DataflowBlockCreated(this, dataflowBlockOptions);
             }
-#endif
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Complete"]/*' />
@@ -103,7 +101,10 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
         void IDataflowBlock.Fault(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
 
             _target.Complete(exception, dropPendingMessages: true, releaseReservedMessages: false);
         }
@@ -637,10 +638,9 @@ namespace System.Threading.Tasks.Dataflow
 
                 // Create task and store into _taskForInputProcessing prior to scheduling the task
                 // so that _taskForInputProcessing will be visibly set in the task loop.
-                _nonGreedyState!.TaskForInputProcessing = new Task(thisBatchTarget => ((BatchBlockTargetCore)thisBatchTarget!).ProcessMessagesLoopCore(), this,
+                _nonGreedyState!.TaskForInputProcessing = new Task(static thisBatchTarget => ((BatchBlockTargetCore)thisBatchTarget!).ProcessMessagesLoopCore(), this,
                                                     Common.GetCreationOptionsForTask(isReplacementReplica));
 
-#if FEATURE_TRACING
                 DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
                 if (etwLog.IsEnabled())
                 {
@@ -648,7 +648,6 @@ namespace System.Threading.Tasks.Dataflow
                         _owningBatch, _nonGreedyState.TaskForInputProcessing, DataflowEtwProvider.TaskLaunchedReason.ProcessingInputMessages,
                         _messages.Count + _nonGreedyState.PostponedMessages.Count);
                 }
-#endif
 
                 // Start the task handling scheduling exceptions
                 Exception? exception = Common.StartTaskSafe(_nonGreedyState.TaskForInputProcessing, _dataflowBlockOptions.TaskScheduler);
@@ -1102,7 +1101,7 @@ namespace System.Threading.Tasks.Dataflow
                         catch (Exception e)
                         {
                             if (throwOnFirstException) throw;
-                            if (exceptions == null) exceptions = new List<Exception>(1);
+                            exceptions ??= new List<Exception>(1);
                             exceptions.Add(e);
                         }
                     }
@@ -1180,9 +1179,9 @@ namespace System.Threading.Tasks.Dataflow
                 /// <summary>Gets the messages waiting to be processed.</summary>
                 public IEnumerable<T> InputQueue { get { return _target._messages.ToList(); } }
                 /// <summary>Gets the task being used for input processing.</summary>
-                public Task? TaskForInputProcessing { get { return _target._nonGreedyState != null ? _target._nonGreedyState.TaskForInputProcessing : null; } }
+                public Task? TaskForInputProcessing { get { return _target._nonGreedyState?.TaskForInputProcessing; } }
                 /// <summary>Gets the collection of postponed messages.</summary>
-                public QueuedMap<ISourceBlock<T>, DataflowMessageHeader>? PostponedMessages { get { return _target._nonGreedyState != null ? _target._nonGreedyState.PostponedMessages : null; } }
+                public QueuedMap<ISourceBlock<T>, DataflowMessageHeader>? PostponedMessages { get { return _target._nonGreedyState?.PostponedMessages; } }
                 /// <summary>Gets whether the block is declining further messages.</summary>
                 public bool IsDecliningPermanently { get { return _target._decliningPermanently; } }
                 /// <summary>Gets the DataflowBlockOptions used to configure this block.</summary>

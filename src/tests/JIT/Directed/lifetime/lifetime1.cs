@@ -5,8 +5,9 @@
 // testing the JIT handling and GC reporting of "liveness" of GC variable
 
 using System;
+using Xunit;
 
-internal class Test
+public class Test_lifetime1
 {
     private class A
     {
@@ -14,12 +15,12 @@ internal class Test
         {
             Console.WriteLine("A");
             _iMember = 123;
-            Test.aExists = true;
+            Test_lifetime1.aExists = true;
         }
         ~A()
         {
             Console.WriteLine("~A");
-            Test.aExists = false;
+            Test_lifetime1.aExists = false;
         }
         public bool F()
         {
@@ -39,7 +40,7 @@ internal class Test
         // Testcase 1
         Console.WriteLine();
         Console.WriteLine("Testcase 1");
-        if (!Test.aExists)
+        if (!Test_lifetime1.aExists)
         {
             Console.WriteLine("Testcase 1 FAILED");
             return -1;
@@ -53,16 +54,16 @@ internal class Test
     {
         A a = new A();
         a.F();
-        a = null;
 
         // Testcase 3
         Console.WriteLine();
         Console.WriteLine("Testcase 3");
-        if (!Test.aExists)
+        if (!Test_lifetime1.aExists)
         {
             Console.WriteLine("Testcase 3 FAILED");
             return -1;
         }
+        GC.KeepAlive(a);
         return 100;
     }
 
@@ -81,7 +82,7 @@ internal class Test
         GC.WaitForPendingFinalizers();
         Console.WriteLine();
         Console.WriteLine("Testcase 5");
-        if (!Test.aExists)
+        if (!Test_lifetime1.aExists)
         {
             Console.WriteLine("Testcase 5 FAILED");
             return -1;
@@ -102,7 +103,8 @@ internal class Test
     }
 
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (f1() != 100) return -1;
         CleanGC();
@@ -111,7 +113,7 @@ internal class Test
         Console.WriteLine();
         Console.WriteLine("Testcase 2");
         // here JIT should know a is not live anymore
-        if (Test.aExists)
+        if (Test_lifetime1.aExists)
         {
             Console.WriteLine("Testcase 2 FAILED");
             return -1;
@@ -124,7 +126,7 @@ internal class Test
         // Testcase 4
         Console.WriteLine();
         Console.WriteLine("Testcase 4");
-        if (Test.aExists)
+        if (Test_lifetime1.aExists)
         {
             Console.WriteLine("Testcase 4 FAILED");
             return -1;
@@ -137,7 +139,7 @@ internal class Test
         // Testcase 7
         Console.WriteLine();
         Console.WriteLine("Testcase 7");
-        if (Test.aExists)
+        if (Test_lifetime1.aExists)
         {
             Console.WriteLine("Testcase 7 FAILED");
             return -1;

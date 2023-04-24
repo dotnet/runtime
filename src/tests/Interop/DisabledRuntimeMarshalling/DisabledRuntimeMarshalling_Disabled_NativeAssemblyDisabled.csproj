@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/84402 -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="PInvokeAssemblyMarshallingDisabled/*.cs" />
+    <Compile Include="*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Native_DisabledMarshalling/DisabledRuntimeMarshallingNative_DisabledMarshalling.csproj" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>

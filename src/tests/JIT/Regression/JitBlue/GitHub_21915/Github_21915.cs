@@ -3,11 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Some tests for removing bounds checks based
 // on byte and sbyte-based indices
 
-class GitHub_21915
+public class GitHub_21915
 {
     private static ReadOnlySpan<byte> A => new byte[256] {
     0, 0, 0, 7, 8, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -70,7 +71,8 @@ class GitHub_21915
         return NeedsEscapingByte256(data[i] + 127);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ReadOnlySpan<byte> bytes = new byte[] { 2, 3 };
 

@@ -18,7 +18,7 @@ namespace System.Linq
             {
                 int[] array = new int[_end - _start];
                 int cur = _start;
-                for (int i = 0; i != array.Length; ++i)
+                for (int i = 0; i < array.Length; ++i)
                 {
                     array[i] = cur;
                     ++cur;

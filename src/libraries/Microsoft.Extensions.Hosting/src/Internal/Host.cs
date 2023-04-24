@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,7 +22,8 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly HostOptions _options;
         private readonly IHostEnvironment _hostEnvironment;
         private readonly PhysicalFileProvider _defaultProvider;
-        private IEnumerable<IHostedService> _hostedServices;
+        private IEnumerable<IHostedService>? _hostedServices;
+        private volatile bool _stopCalled;
 
         public Host(IServiceProvider services,
                     IHostEnvironment hostEnvironment,
@@ -31,17 +33,22 @@ namespace Microsoft.Extensions.Hosting.Internal
                     IHostLifetime hostLifetime,
                     IOptions<HostOptions> options)
         {
-            Services = services ?? throw new ArgumentNullException(nameof(services));
-            _applicationLifetime = (applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime))) as ApplicationLifetime;
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(applicationLifetime);
+            ThrowHelper.ThrowIfNull(logger);
+            ThrowHelper.ThrowIfNull(hostLifetime);
+
+            Services = services;
+            _applicationLifetime = (applicationLifetime as ApplicationLifetime)!;
             _hostEnvironment = hostEnvironment;
             _defaultProvider = defaultProvider;
 
             if (_applicationLifetime is null)
             {
-                throw new ArgumentException("Replacing IHostApplicationLifetime is not supported.", nameof(applicationLifetime));
+                throw new ArgumentException(SR.IHostApplicationLifetimeReplacementNotSupported, nameof(applicationLifetime));
             }
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _hostLifetime = hostLifetime ?? throw new ArgumentNullException(nameof(hostLifetime));
+            _logger = logger;
+            _hostLifetime = hostLifetime;
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         }
 
@@ -57,16 +64,67 @@ namespace Microsoft.Extensions.Hosting.Internal
             await _hostLifetime.WaitForStartAsync(combinedCancellationToken).ConfigureAwait(false);
 
             combinedCancellationToken.ThrowIfCancellationRequested();
-            _hostedServices = Services.GetService<IEnumerable<IHostedService>>();
+            _hostedServices = Services.GetRequiredService<IEnumerable<IHostedService>>();
 
-            foreach (IHostedService hostedService in _hostedServices)
+            List<Exception> exceptions = new List<Exception>();
+
+            if (_options.ServicesStartConcurrently)
             {
-                // Fire IHostedService.Start
-                await hostedService.StartAsync(combinedCancellationToken).ConfigureAwait(false);
-
-                if (hostedService is BackgroundService backgroundService)
+                Task tasks = Task.WhenAll(_hostedServices.Select(async service =>
                 {
-                    _ = TryExecuteBackgroundServiceAsync(backgroundService);
+                    await service.StartAsync(combinedCancellationToken).ConfigureAwait(false);
+
+                    if (service is BackgroundService backgroundService)
+                    {
+                        _ = TryExecuteBackgroundServiceAsync(backgroundService);
+                    }
+                }));
+
+                try
+                {
+                    await tasks.ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    exceptions.AddRange(tasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
+                }
+            }
+            else
+            {
+                foreach (IHostedService hostedService in _hostedServices)
+                {
+                    try
+                    {
+                        // Fire IHostedService.Start
+                        await hostedService.StartAsync(combinedCancellationToken).ConfigureAwait(false);
+
+                        if (hostedService is BackgroundService backgroundService)
+                        {
+                            _ = TryExecuteBackgroundServiceAsync(backgroundService);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions.Add(ex);
+                        break;
+                    }
+                }
+            }
+
+            if (exceptions.Count > 0)
+            {
+                if (exceptions.Count == 1)
+                {
+                    // Rethrow if it's a single error
+                    Exception singleException = exceptions[0];
+                    _logger.HostedServiceStartupFaulted(singleException);
+                    ExceptionDispatchInfo.Capture(singleException).Throw();
+                }
+                else
+                {
+                    var ex = new AggregateException("One or more hosted services failed to start.", exceptions);
+                    _logger.HostedServiceStartupFaulted(ex);
+                    throw ex;
                 }
             }
 
@@ -78,12 +136,26 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         private async Task TryExecuteBackgroundServiceAsync(BackgroundService backgroundService)
         {
+            // backgroundService.ExecuteTask may not be set (e.g. if the derived class doesn't call base.StartAsync)
+            Task? backgroundTask = backgroundService.ExecuteTask;
+            if (backgroundTask == null)
+            {
+                return;
+            }
+
             try
             {
-                await backgroundService.ExecuteTask.ConfigureAwait(false);
+                await backgroundTask.ConfigureAwait(false);
             }
             catch (Exception ex)
             {
+                // When the host is being stopped, it cancels the background services.
+                // This isn't an error condition, so don't log it as an error.
+                if (_stopCalled && backgroundTask.IsCanceled && ex is OperationCanceledException)
+                {
+                    return;
+                }
+
                 _logger.BackgroundServiceFaulted(ex);
                 if (_options.BackgroundServiceExceptionBehavior == BackgroundServiceExceptionBehavior.StopHost)
                 {
@@ -95,6 +167,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
+            _stopCalled = true;
             _logger.Stopping();
 
             using (var cts = new CancellationTokenSource(_options.ShutdownTimeout))
@@ -104,18 +177,37 @@ namespace Microsoft.Extensions.Hosting.Internal
                 // Trigger IHostApplicationLifetime.ApplicationStopping
                 _applicationLifetime.StopApplication();
 
-                IList<Exception> exceptions = new List<Exception>();
+                var exceptions = new List<Exception>();
                 if (_hostedServices != null) // Started?
                 {
-                    foreach (IHostedService hostedService in _hostedServices.Reverse())
+                    // Ensure hosted services are stopped in LIFO order
+                    IEnumerable<IHostedService> hostedServices = _hostedServices.Reverse();
+
+                    if (_options.ServicesStopConcurrently)
                     {
+                        Task tasks = Task.WhenAll(hostedServices.Select(async service => await service.StopAsync(token).ConfigureAwait(false)));
+
                         try
                         {
-                            await hostedService.StopAsync(token).ConfigureAwait(false);
+                            await tasks.ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
-                            exceptions.Add(ex);
+                            exceptions.AddRange(tasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
+                        }
+                    }
+                    else
+                    {
+                        foreach (IHostedService hostedService in hostedServices)
+                        {
+                            try
+                            {
+                                await hostedService.StopAsync(token).ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                exceptions.Add(ex);
+                            }
                         }
                     }
                 }
@@ -134,9 +226,19 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 if (exceptions.Count > 0)
                 {
-                    var ex = new AggregateException("One or more hosted services failed to stop.", exceptions);
-                    _logger.StoppedWithException(ex);
-                    throw ex;
+                    if (exceptions.Count == 1)
+                    {
+                        // Rethrow if it's a single error
+                        Exception singleException = exceptions[0];
+                        _logger.StoppedWithException(singleException);
+                        ExceptionDispatchInfo.Capture(singleException).Throw();
+                    }
+                    else
+                    {
+                        var ex = new AggregateException("One or more hosted services failed to stop.", exceptions);
+                        _logger.StoppedWithException(ex);
+                        throw ex;
+                    }
                 }
             }
 

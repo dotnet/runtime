@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tests
     {
         // To avoid interactions between tests when they are run in parallel, we run all these tests in their
         // own sub-process using RemoteExecutor.Invoke()  However this makes it very inconvenient to debug the test.
-        // By seting this #if to true you stub out RemoteInvoke and the code will run in-proc which is useful
+        // By setting this #if to true you stub out RemoteInvoke and the code will run in-proc which is useful
         // in debugging.
 #if false
         class NullDispose : IDisposable
@@ -487,6 +487,73 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.True(!listen.Name.StartsWith("BuildTestSource"));
                 }));
+            }).Dispose();
+        }
+
+        /// <summary>
+        /// Tests that DiagnosticSourceEventSource can read property values from base classes
+        /// </summary>
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestBaseClassProperties()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestBaseClassProperties"))
+                {
+                    Assert.Equal(0, eventSourceListener.EventCount);
+                    eventSourceListener.Enable(
+                        "  TestBaseClassProperties/TestEvent1:Point_X=Point.X;Point_Y=Point.Y;Url_2=Url2\r\n");
+
+                    /***************************************************************************************/
+                    // Emit an event that matches the first pattern.
+                    MyClass val = new MyDerivedClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 }, Url2 = "Second url", AnotherString = "another" };
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", val);
+
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestBaseClassProperties", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(7, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("another", eventSourceListener.LastEvent.Arguments["AnotherString"]);
+                    Assert.Equal("3", eventSourceListener.LastEvent.Arguments["Point_X"]);
+                    Assert.Equal("5", eventSourceListener.LastEvent.Arguments["Point_Y"]);
+                    Assert.Equal("Second url", eventSourceListener.LastEvent.Arguments["Url_2"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+                }
+            }).Dispose();
+        }
+
+        /// <summary>
+        /// Tests that DiagnosticSourceEventSource can read property values from base classes
+        /// </summary>
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestBaseClassDuplicateProperties()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestBaseClassProperties"))
+                {
+                    Assert.Equal(0, eventSourceListener.EventCount);
+                    eventSourceListener.Enable(
+                        "  TestBaseClassProperties/TestEvent1:Point_X=Point.X;Point_Y=Point.Y;Url=Url\r\n");
+
+                    /***************************************************************************************/
+                    // Emit an event that matches the first pattern.
+                    MyClass val = new MyOtherDerivedClass() { Url = "MyUrl", Point = new MyDerivedPoint() { X = 3, Y = 5 } };
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", val);
+
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestBaseClassProperties", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(4, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("3", eventSourceListener.LastEvent.Arguments["Point_X"]);
+                    Assert.Equal("5", eventSourceListener.LastEvent.Arguments["Point_Y"]);
+                    Assert.Equal("MyUrl", eventSourceListener.LastEvent.Arguments["Url"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+                }
             }).Dispose();
         }
 
@@ -1268,6 +1335,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72801", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void NoExceptionThrownWhenProcessingStaticActivityProperties()
         {
             // Ensures that no exception is thrown when static properties on the Activity type are passed to EventListener.
@@ -1313,6 +1381,17 @@ namespace System.Diagnostics.Tests
         public MyPoint Point { get; set; }
     }
 
+    internal class MyDerivedClass : MyClass
+    {
+        public string Url2 { get; set; }
+        public string AnotherString { get; set; }
+    }
+
+    internal class MyOtherDerivedClass : MyClass
+    {
+        public new MyDerivedPoint Point { get; set; }
+    }
+
     /// <summary>
     /// classes for test data.
     /// </summary>
@@ -1321,6 +1400,9 @@ namespace System.Diagnostics.Tests
         public int X { get; set; }
         public int Y { get; set; }
     }
+
+    internal class MyDerivedPoint : MyPoint
+    { }
 
     /// <summary>
     /// classes for test data

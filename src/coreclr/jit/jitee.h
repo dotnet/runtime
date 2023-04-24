@@ -16,8 +16,8 @@ public:
         JIT_FLAG_DEBUG_CODE              = 2, // generate "debuggable" code (no code-mangling optimizations)
         JIT_FLAG_DEBUG_EnC               = 3, // We are in Edit-n-Continue mode
         JIT_FLAG_DEBUG_INFO              = 4, // generate line and local-var info
-        JIT_FLAG_MIN_OPT                 = 5, // disable all jit optimizations (not necesarily debuggable code)
-        JIT_FLAG_UNUSED1                 = 6,
+        JIT_FLAG_MIN_OPT                 = 5, // disable all jit optimizations (not necessarily debuggable code)
+        JIT_FLAG_ENABLE_CFG              = 6, // generate CFG enabled code
         JIT_FLAG_MCJIT_BACKGROUND        = 7, // Calling from multicore JIT background thread, do not call JitComplete
 
     #if defined(TARGET_X86)
@@ -63,7 +63,7 @@ public:
         JIT_FLAG_BBINSTR                 = 29, // Collect basic block profile information
         JIT_FLAG_BBOPT                   = 30, // Optimize method based on profile information
         JIT_FLAG_FRAMED                  = 31, // All methods have an EBP frame
-        JIT_FLAG_UNUSED12                = 32,
+        JIT_FLAG_BBINSTR_IF_LOOPS        = 32, // JIT must instrument current method if it has loops
         JIT_FLAG_PUBLISH_SECRET_PARAM    = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
         JIT_FLAG_UNUSED13                = 34,
         JIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
@@ -161,8 +161,8 @@ public:
     {
         // We don't want to have to check every one, so we assume it is exactly the same values as the JitFlag
         // values defined in this type.
-        m_jitFlags = flags.GetFlagsRaw();
-        m_instructionSetFlags.SetFromFlagsRaw(flags.GetInstructionSetFlagsRaw());
+        m_jitFlags            = flags.GetFlagsRaw();
+        m_instructionSetFlags = flags.GetInstructionSetFlags();
 
         C_ASSERT(sizeof(JitFlags) == sizeof(CORJIT_FLAGS));
 
@@ -174,6 +174,7 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_EnC, JIT_FLAG_DEBUG_EnC);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO, JIT_FLAG_DEBUG_INFO);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT, JIT_FLAG_MIN_OPT);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ENABLE_CFG, JIT_FLAG_ENABLE_CFG);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND, JIT_FLAG_MCJIT_BACKGROUND);
 
 #if defined(TARGET_X86)
@@ -186,13 +187,6 @@ public:
 #endif
 
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ALT_JIT, JIT_FLAG_ALT_JIT);
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
-
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD, JIT_FLAG_FEATURE_SIMD);
-
-#endif
-
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE, JIT_FLAG_MAKEFINALCODE);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN, JIT_FLAG_READYTORUN);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE, JIT_FLAG_PROF_ENTERLEAVE);
@@ -204,6 +198,7 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB, JIT_FLAG_IL_STUB);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT, JIT_FLAG_PROCSPLIT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR, JIT_FLAG_BBINSTR);
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR_IF_LOOPS, JIT_FLAG_BBINSTR_IF_LOOPS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_BBOPT, JIT_FLAG_BBOPT);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_FRAMED, JIT_FLAG_FRAMED);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM, JIT_FLAG_PUBLISH_SECRET_PARAM);

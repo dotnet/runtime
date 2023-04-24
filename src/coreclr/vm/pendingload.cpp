@@ -114,7 +114,7 @@ BOOL PendingTypeLoadTable::InsertValue(PendingTypeLoadEntry *pData)
 
     _ASSERTE(m_dwNumBuckets != 0);
 
-    DWORD           dwHash = pData->GetTypeKey().ComputeHash();
+    DWORD           dwHash = HashTypeKey(&pData->GetTypeKey());
     DWORD           dwBucket = dwHash % m_dwNumBuckets;
     PendingTypeLoadTable::TableEntry * pNewEntry = AllocNewEntry();
     if (pNewEntry == NULL)
@@ -130,7 +130,6 @@ BOOL PendingTypeLoadTable::InsertValue(PendingTypeLoadEntry *pData)
     return TRUE;
 }
 
-
 BOOL PendingTypeLoadTable::DeleteValue(TypeKey *pKey)
 {
     CONTRACTL
@@ -145,7 +144,7 @@ BOOL PendingTypeLoadTable::DeleteValue(TypeKey *pKey)
 
     _ASSERTE(m_dwNumBuckets != 0);
 
-    DWORD           dwHash = pKey->ComputeHash();
+    DWORD           dwHash = HashTypeKey(pKey);
     DWORD           dwBucket = dwHash % m_dwNumBuckets;
     PendingTypeLoadTable::TableEntry * pSearch;
     PendingTypeLoadTable::TableEntry **ppPrev = &m_pBuckets[dwBucket];
@@ -182,7 +181,7 @@ PendingTypeLoadTable::TableEntry *PendingTypeLoadTable::FindItem(TypeKey *pKey)
     _ASSERTE(m_dwNumBuckets != 0);
 
 
-    DWORD           dwHash = pKey->ComputeHash();
+    DWORD           dwHash = HashTypeKey(pKey);
     DWORD           dwBucket = dwHash % m_dwNumBuckets;
     PendingTypeLoadTable::TableEntry * pSearch;
 
@@ -218,7 +217,7 @@ void PendingTypeLoadTable::Dump()
             SString name;
             TypeKey entryTypeKey = pSearch->pData->GetTypeKey();
             TypeString::AppendTypeKeyDebug(name, &entryTypeKey);
-            LOG((LF_CLASSLOADER, LL_INFO10000, "  Entry %S with handle %p at level %s\n", name.GetUnicode(), pSearch->pData->m_typeHandle.AsPtr(),
+            LOG((LF_CLASSLOADER, LL_INFO10000, "  Entry %s with handle %p at level %s\n", name.GetUTF8(), pSearch->pData->m_typeHandle.AsPtr(),
                  pSearch->pData->m_typeHandle.IsNull() ? "not-applicable" : classLoadLevelName[pSearch->pData->m_typeHandle.GetLoadLevel()]));
         }
     }

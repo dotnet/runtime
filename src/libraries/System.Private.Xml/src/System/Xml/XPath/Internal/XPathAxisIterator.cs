@@ -29,8 +29,8 @@ namespace MS.Internal.Xml.XPath
 
         public XPathAxisIterator(XPathNavigator nav, string name, string namespaceURI, bool matchSelf) : this(nav, matchSelf)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
-            if (namespaceURI == null) throw new ArgumentNullException(nameof(namespaceURI));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(namespaceURI);
 
             this.name = name;
             this.uri = namespaceURI;

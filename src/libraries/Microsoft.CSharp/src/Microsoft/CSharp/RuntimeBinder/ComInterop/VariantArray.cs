@@ -47,7 +47,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     internal static class VariantArray
     {
         // Don't need a dictionary for this, it will have very few elements
-        // (guarenteed less than 28, in practice 0-2)
+        // (guaranteed less than 28, in practice 0-2)
         private static readonly List<Type> s_generatedTypes = new List<Type>(0);
 
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicFields, typeof(VariantArray1))]
@@ -82,7 +82,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 // See if we can find an existing type
                 foreach (Type t in s_generatedTypes)
                 {
-                    int arity = int.Parse(t.Name.Substring("VariantArray".Length), CultureInfo.InvariantCulture);
+                    int arity = int.Parse(t.Name.AsSpan("VariantArray".Length), provider: CultureInfo.InvariantCulture);
                     if (size == arity)
                     {
                         return t;

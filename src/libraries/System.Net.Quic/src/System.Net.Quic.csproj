@@ -1,72 +1,181 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)</TargetFrameworks>
+    <!-- DllImports are in shared msquic interop file -->
+    <NoWarn>$(NoWarn);SYSLIB1054</NoWarn>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.SystemNetQuic_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'freebsd' or '$(TargetPlatformIdentifier)' == 'osx'">$(DefineConstants);SOCKADDR_HAS_LENGTH</DefineConstants>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetQuic_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <ApiExclusionListPath Condition="'$(TargetPlatformIdentifier)' == ''">ExcludeApiList.PNSE.txt</ApiExclusionListPath>
+    <!-- This controls if we consume official binaries from MsQuic or if we use binaries published from dotnet/msquic repo.
+         Release branches should generally consume MsQuic release code, transport allows us to consume and test pre-released versions -->
+    <UseQuicTransportPackage  Condition="'$(UseQuicTransportPackage)' == ''">true</UseQuicTransportPackage>
   </PropertyGroup>
-  <!-- Source files -->
-  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
-    <Compile Include="System\Net\Quic\*.cs" />
-    <Compile Include="System\Net\Quic\Implementations\*.cs" />
-    <Compile Include="System\Net\Quic\Implementations\Mock\*.cs" />
-    <Compile Include="System\Net\Quic\Implementations\MsQuic\*.cs" />
-    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\*.cs" />
-    <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\*.cs" />
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.Versioning.RequiresPreviewFeaturesAttribute" />
   </ItemGroup>
-  <!-- System.Net common -->
-  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
+  <!-- Source files -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
+    <Compile Include="System\Net\Quic\**\*.cs" Exclude="System\Net\Quic\*.Unsupported.cs"/>
+    <!-- System.Net common -->
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddress.cs" Link="Common\System\Net\SocketAddress.cs" />
+    <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs" Link="Common\System\Net\IPAddressParserStatics.cs" />
+    <Compile Include="$(CommonPath)System\Net\Internals\IPEndPointExtensions.cs" Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\TlsAlertMessage.cs" Link="Common\System\Net\Security\TlsAlertMessage.cs" />
+  </ItemGroup>
+  <!-- Unsupported platforms -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
+    <Compile Include="System\Net\Quic\*.Unsupported.cs" />
+    <!-- [ActiveIssue("https://github.com/dotnet/runtime/issues/71559")]: PNSE generator cannot handle required keyword, so excluding affected classes in ExcludeApiList.PNSE.txt and including real code for now. -->
+    <Compile Include="System\Net\Quic\QuicListenerOptions.cs" />
+    <Compile Include="System\Net\Quic\QuicConnectionOptions.cs" />
+    <Compile Include="System\Net\Quic\QuicDefaults.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" Link="Common\Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_INFO.cs" Link="Common\Interop\Windows\Crypt32\Interop.CERT_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs" Link="Common\Interop\Windows\Crypt32\Interop.CERT_PUBLIC_KEY_INFO.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_ALGORITHM_IDENTIFIER.cs" Link="Common\Interop\Windows\Crypt32\Interop.Interop.CRYPT_ALGORITHM_IDENTIFIER.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CRYPT_BIT_BLOB.cs" Link="Common\Interop\Windows\Crypt32\Interop.Interop.CRYPT_BIT_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates.cs" Link="Common\Interop\Windows\Crypt32\Interop.certificates.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs" Link="Common\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs" Link="Common\Interop\Windows\Crypt32\Interop.Interop.MsgEncodingType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs" Link="Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Windows.cs" Link="Common\System\Net\Security\CertificateValidation.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs" Link="Common\System\Net\SocketAddressPal.Windows.cs" />
+  </ItemGroup>
+  <!-- Unix (OSX + Linux) specific files -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'freebsd'">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs" Link="Common\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs" Link="Common\Interop\Unix\System.Native\Interop.SocketAddress.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.BIO.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ERR.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Initialization.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509Ext.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Ext.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509Stack.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Stack.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs" Link="Common\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeX509Handles.Unix.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs" Link="Common\Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs" Link="Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
+    <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs" Link="Common\System\Net\SocketAddressPal.Unix.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux'">
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs" Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs" Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- FreeBSD specific files -->
-  <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true' ">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'freebsd' ">
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs" Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs" Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- OSX specific files -->
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx'">
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.OSX.cs" Link="Common\System\Net\Security\CertificateValidation.OSX.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs" Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>
-  <!-- Project references -->
+
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Security\src\System.Net.Security.csproj" SkipUseReferenceAssembly="true" />
+    <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Console" Condition="'$(Configuration)' == 'Debug'" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
+    <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Security.Cryptography.Encoding" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Channels" />
   </ItemGroup>
-  <!-- Support for deploying msquic -->
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Reference Include="Microsoft.Win32.Registry" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux' or '$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'freebsd'">
+    <Reference Include="System.Diagnostics.StackTrace" Condition="'$(Configuration)' == 'Debug'" />
+  </ItemGroup>
+
+  <!-- Support for deploying msquic on Windows. We make msquic.dll part of runtime binaries: either from official releases or our transport feed. -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and
+                        '$(TargetOS)' == 'windows' and
+                        ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm64') and
+                        '$(DotNetBuildFromSource)' != 'true'">
+
+    <!-- Project references -->
+    <PackageReference Include="runtime.win-$(TargetArchitecture).runtime.native.System.Net.MsQuic.Transport"
+                      Version="$(SystemNetMsQuicTransportVersion)"
+                      PrivateAssets="all"
+                      Condition="'$(UseQuicTransportPackage)' == 'true'"
+                      GeneratePathProperty="true" />
+
+    <PackageReference Include="Microsoft.Native.Quic.MsQuic.Schannel"
+                      Version="$(MicrosoftNativeQuicMsQuicVersion)"
+                      PrivateAssets="all"
+                      Condition="'$(UseQuicTransportPackage)' != 'true'"
+                      GeneratePathProperty="true" />
+
+    <NativeBinPlaceItem Include="$(PkgMicrosoft_Native_Quic_MsQuic_Schannel)\build\native\bin\$(TargetArchitecture)\*"
+                        Condition="'$(UseQuicTransportPackage)' != 'true'" />
+    <NativeBinPlaceItem Include="$(PkgRuntime_win-x64_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
+                        Condition="'$(UseQuicTransportPackage)' == 'true'" />
+    <NativeBinPlaceItem Include="$(PkgRuntime_win-x86_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
+                        Condition="'$(UseQuicTransportPackage)' == 'true'" />
+    <NativeBinPlaceItem Include="$(PkgRuntime_win-arm64_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
+                        Condition="'$(UseQuicTransportPackage)' == 'true'" />
+  </ItemGroup>
+
+  <!-- Include msquic in debug version for macOS so we can test it without packages. -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' and
+                          '$(TargetOS)' == 'osx' and
+                          '$(TargetArchitecture)' == 'x64' and
+                          '$(Configuration)' == 'Debug' and
+                          '$(DotNetBuildFromSource)' != 'true'">
+      <!-- MsQuic packages do not have macOS binaries. Our transport package is only one source. -->
+      <PackageReference Include="runtime.osx-$(TargetArchitecture).runtime.native.System.Net.MsQuic.Transport"
+                        Version="$(SystemNetMsQuicTransportVersion)"
+                        PrivateAssets="all"
+                        GeneratePathProperty="true" />
+      <NativeBinPlaceItem Include="$(PkgRuntime_osx-x64_runtime_native_System_Net_MsQuic_Transport)\runtimes\osx-$(TargetArchitecture)\native\*" />
+  </ItemGroup>
+  <ItemGroup Condition="'@(NativeBinplaceItem)' != ''">
+    <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(LibrariesAllBinArtifactsPath)" ItemName="NativeBinPlaceItem" />
+    <BinPlaceDir Include="$(LibrariesNativeArtifactsPath)" ItemName="NativeBinPlaceItem" />
+  </ItemGroup>
+
+  <!-- Local builds - developers only -->
   <ItemGroup>
-    <Content Include="msquic.dll" Condition="Exists('msquic.dll')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Include="msquic.pdb" Condition="Exists('msquic.pdb')">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
     <Content Include="libmsquic.dylib" Condition="Exists('libmsquic.dylib')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

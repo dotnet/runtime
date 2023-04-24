@@ -78,7 +78,7 @@ namespace System.IO.Compression
             {
                 throw new ArgumentOutOfRangeException(nameof(quality), SR.Format(SR.BrotliEncoder_Quality, quality, 0, BrotliUtils.Quality_Max));
             }
-            if (!Interop.Brotli.BrotliEncoderSetParameter(_state, BrotliEncoderParameter.Quality, (uint)quality))
+            if (Interop.Brotli.BrotliEncoderSetParameter(_state, BrotliEncoderParameter.Quality, (uint)quality) == Interop.BOOL.FALSE)
             {
                 throw new InvalidOperationException(SR.Format(SR.BrotliEncoder_InvalidSetParameter, "Quality"));
             }
@@ -96,7 +96,7 @@ namespace System.IO.Compression
             {
                 throw new ArgumentOutOfRangeException(nameof(window), SR.Format(SR.BrotliEncoder_Window, window, BrotliUtils.WindowBits_Min, BrotliUtils.WindowBits_Max));
             }
-            if (!Interop.Brotli.BrotliEncoderSetParameter(_state, BrotliEncoderParameter.LGWin, (uint)window))
+            if (Interop.Brotli.BrotliEncoderSetParameter(_state, BrotliEncoderParameter.LGWin, (uint)window) == Interop.BOOL.FALSE)
             {
                 throw new InvalidOperationException(SR.Format(SR.BrotliEncoder_InvalidSetParameter, "Window"));
             }
@@ -109,12 +109,14 @@ namespace System.IO.Compression
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="inputSize" /> is less than 0, the minimum allowed input size, or greater than <see cref="int.MaxValue" /> - 515, the maximum allowed input size.</exception>
         public static int GetMaxCompressedLength(int inputSize)
         {
-            if (inputSize < 0 || inputSize > BrotliUtils.MaxInputSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(inputSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(inputSize);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(inputSize, BrotliUtils.MaxInputSize);
+
             if (inputSize == 0)
+            {
                 return 1;
+            }
+
             int numLargeBlocks = inputSize >> 24;
             int tail = inputSize & 0xFFFFFF;
             int tailOverhead = (tail > (1 << 20)) ? 4 : 3;
@@ -129,7 +131,7 @@ namespace System.IO.Compression
         /// <param name="destination">When this method returns, a span of bytes where the compressed data will be stored.</param>
         /// <param name="bytesWritten">When this method returns, the total number of bytes that were written to <paramref name="destination" />.</param>
         /// <returns>One of the enumeration values that describes the status with which the operation finished.</returns>
-        public OperationStatus Flush(Span<byte> destination, out int bytesWritten) => Compress(ReadOnlySpan<byte>.Empty, destination, out int bytesConsumed, out bytesWritten, BrotliEncoderOperation.Flush);
+        public OperationStatus Flush(Span<byte> destination, out int bytesWritten) => Compress(ReadOnlySpan<byte>.Empty, destination, out _, out bytesWritten, BrotliEncoderOperation.Flush);
 
         internal OperationStatus Compress(ReadOnlyMemory<byte> source, Memory<byte> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock) => Compress(source.Span, destination.Span, out bytesConsumed, out bytesWritten, isFinalBlock);
 
@@ -161,7 +163,7 @@ namespace System.IO.Compression
                     fixed (byte* inBytes = &MemoryMarshal.GetReference(source))
                     fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
                     {
-                        if (!Interop.Brotli.BrotliEncoderCompressStream(_state, operation, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _))
+                        if (Interop.Brotli.BrotliEncoderCompressStream(_state, operation, ref availableInput, &inBytes, ref availableOutput, &outBytes, out _) == Interop.BOOL.FALSE)
                         {
                             return OperationStatus.InvalidData;
                         }
@@ -173,7 +175,7 @@ namespace System.IO.Compression
                         bytesWritten += destination.Length - (int)availableOutput;
 
                         // no bytes written, no remaining input to give to the encoder, and no output in need of retrieving means we are Done
-                        if ((int)availableOutput == destination.Length && !Interop.Brotli.BrotliEncoderHasMoreOutput(_state) && availableInput == 0)
+                        if ((int)availableOutput == destination.Length && Interop.Brotli.BrotliEncoderHasMoreOutput(_state) == Interop.BOOL.FALSE && availableInput == 0)
                         {
                             return OperationStatus.Done;
                         }
@@ -218,7 +220,7 @@ namespace System.IO.Compression
                 fixed (byte* outBytes = &MemoryMarshal.GetReference(destination))
                 {
                     nuint availableOutput = (nuint)destination.Length;
-                    bool success = Interop.Brotli.BrotliEncoderCompress(quality, window, /*BrotliEncoderMode*/ 0, (nuint)source.Length, inBytes, ref availableOutput, outBytes);
+                    bool success = Interop.Brotli.BrotliEncoderCompress(quality, window, /*BrotliEncoderMode*/ 0, (nuint)source.Length, inBytes, &availableOutput, outBytes) != Interop.BOOL.FALSE;
 
                     Debug.Assert(success ? availableOutput <= (nuint)destination.Length : availableOutput == 0);
 

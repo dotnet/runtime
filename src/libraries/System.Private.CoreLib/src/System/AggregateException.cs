@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.ExceptionServices;
@@ -54,10 +55,7 @@ namespace System
         public AggregateException(string? message, Exception innerException)
             : base(message, innerException)
         {
-            if (innerException == null)
-            {
-                throw new ArgumentNullException(nameof(innerException));
-            }
+            ArgumentNullException.ThrowIfNull(innerException);
 
             _innerExceptions = new[] { innerException };
         }
@@ -72,7 +70,7 @@ namespace System
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
         public AggregateException(IEnumerable<Exception> innerExceptions) :
-            this(SR.AggregateException_ctor_DefaultMessage, innerExceptions)
+            this(SR.AggregateException_ctor_DefaultMessage, innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions)))
         {
         }
 
@@ -86,7 +84,7 @@ namespace System
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
         public AggregateException(params Exception[] innerExceptions) :
-            this(SR.AggregateException_ctor_DefaultMessage, innerExceptions)
+            this(SR.AggregateException_ctor_DefaultMessage, innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions)))
         {
         }
 
@@ -101,7 +99,7 @@ namespace System
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
         public AggregateException(string? message, IEnumerable<Exception> innerExceptions)
-            : this(message, innerExceptions == null ? null : new List<Exception>(innerExceptions).ToArray(), cloneExceptions: false)
+            : this(message, new List<Exception>(innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions))).ToArray(), cloneExceptions: false)
         {
         }
 
@@ -116,18 +114,13 @@ namespace System
         /// <exception cref="System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
         public AggregateException(string? message, params Exception[] innerExceptions) :
-            this(message, innerExceptions, cloneExceptions: true)
+            this(message, innerExceptions ?? throw new ArgumentNullException(nameof(innerExceptions)), cloneExceptions: true)
         {
         }
 
-        private AggregateException(string? message, Exception[]? innerExceptions, bool cloneExceptions) :
-            base(message, innerExceptions?.Length > 0 ? innerExceptions[0] : null)
+        private AggregateException(string? message, Exception[] innerExceptions, bool cloneExceptions) :
+            base(message, innerExceptions.Length > 0 ? innerExceptions[0] : null)
         {
-            if (innerExceptions == null)
-            {
-                throw new ArgumentNullException(nameof(innerExceptions));
-            }
-
             _innerExceptions = cloneExceptions ? new Exception[innerExceptions.Length] : innerExceptions;
 
             for (int i = 0; i < _innerExceptions.Length; i++)
@@ -191,6 +184,8 @@ namespace System
         /// contains contextual information about the source or destination. </param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="info"/> argument is null.</exception>
         /// <exception cref="System.Runtime.Serialization.SerializationException">The exception could not be deserialized correctly.</exception>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected AggregateException(SerializationInfo info, StreamingContext context) :
             base(info, context)
         {
@@ -212,6 +207,8 @@ namespace System
         /// <param name="context">The <see cref="System.Runtime.Serialization.StreamingContext"/> that
         /// contains contextual information about the source or destination. </param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="info"/> argument is null.</exception>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -265,10 +262,7 @@ namespace System
         /// null.</exception>
         public void Handle(Func<Exception, bool> predicate)
         {
-            if (predicate == null)
-            {
-                throw new ArgumentNullException(nameof(predicate));
-            }
+            ArgumentNullException.ThrowIfNull(predicate);
 
             List<Exception>? unhandledExceptions = null;
             for (int i = 0; i < _innerExceptions.Length; i++)
@@ -352,7 +346,7 @@ namespace System
                     return base.Message;
                 }
 
-                StringBuilder sb = StringBuilderCache.Acquire();
+                var sb = new ValueStringBuilder(stackalloc char[256]);
                 sb.Append(base.Message);
                 sb.Append(' ');
                 for (int i = 0; i < _innerExceptions.Length; i++)
@@ -362,7 +356,7 @@ namespace System
                     sb.Append(") ");
                 }
                 sb.Length--;
-                return StringBuilderCache.GetStringAndRelease(sb);
+                return sb.ToString();
             }
         }
 

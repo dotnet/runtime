@@ -3,8 +3,6 @@
 
 /*++
 
-
-
 Module Name:
 
     mutex.ccpp
@@ -15,8 +13,6 @@ Abstract:
     the WIN32 API
 
 Revision History:
-
-
 
 --*/
 
@@ -90,7 +86,7 @@ CObjectType CorUnix::otNamedMutex(
 static CAllowedObjectTypes aotNamedMutex(otiNamedMutex);
 
 static PalObjectTypeId anyMutexTypeIds[] = {otiMutex, otiNamedMutex};
-static CAllowedObjectTypes aotAnyMutex(anyMutexTypeIds, _countof(anyMutexTypeIds));
+static CAllowedObjectTypes aotAnyMutex(anyMutexTypeIds, ARRAY_SIZE(anyMutexTypeIds));
 
 /*++
 Function:
@@ -125,7 +121,7 @@ CreateMutexW(
 
     if (lpName != nullptr)
     {
-        int bytesWritten = WideCharToMultiByte(CP_ACP, 0, lpName, -1, utf8Name, _countof(utf8Name), nullptr, nullptr);
+        int bytesWritten = WideCharToMultiByte(CP_ACP, 0, lpName, -1, utf8Name, ARRAY_SIZE(utf8Name), nullptr, nullptr);
         if (bytesWritten == 0)
         {
             DWORD errorCode = GetLastError();
@@ -220,6 +216,7 @@ CorUnix::InternalCreateMutex(
     IPalObject *pobjRegisteredMutex = NULL;
     ISynchStateController *pssc = NULL;
     HANDLE hMutex = nullptr;
+    bool createdNamedMutex = false;
 
     _ASSERTE(NULL != pthr);
     _ASSERTE(NULL != phMutex);
@@ -284,6 +281,21 @@ CorUnix::InternalCreateMutex(
             goto InternalCreateMutexExit;
         }
     }
+    else
+    {
+        SharedMemoryProcessDataHeader *processDataHeader;
+        try
+        {
+            processDataHeader = NamedMutexProcessData::CreateOrOpen(lpName, !!bInitialOwner, &createdNamedMutex);
+        }
+        catch (SharedMemoryException ex)
+        {
+            palError = ex.GetErrorCode();
+            goto InternalCreateMutexExit;
+        }
+
+        SharedMemoryProcessDataHeader::PalObject_SetProcessDataHeader(pobjMutex, processDataHeader);
+    }
 
     palError = g_pObjectManager->RegisterObject(
         pthr,
@@ -292,57 +304,39 @@ CorUnix::InternalCreateMutex(
         &hMutex,
         &pobjRegisteredMutex
         );
+    _ASSERTE(palError != ERROR_ALREADY_EXISTS); // PAL's naming infrastructure is not used for named mutexes
+    _ASSERTE(palError != NO_ERROR || pobjRegisteredMutex == pobjMutex);
+    _ASSERTE((palError == NO_ERROR) == (hMutex != nullptr));
+
+    // When RegisterObject succeeds, the object would have an additional reference from the handle, and one reference is
+    // released below through pobjRegisteredMutex. When RegisterObject fails, it releases the initial reference to the object.
+    // Either way, pobjMutex is invalidated by the above call to RegisterObject.
+    pobjMutex = nullptr;
 
     if (palError != NO_ERROR)
     {
-        _ASSERTE(palError != ERROR_ALREADY_EXISTS); // PAL's naming infrastructure is not used for named mutexes
-        _ASSERTE(pobjRegisteredMutex == nullptr);
-        _ASSERTE(hMutex == nullptr);
         goto InternalCreateMutexExit;
     }
 
-    // Now that the object has been registered successfully, it would have a reference associated with the handle, so release
-    // the initial reference. Any errors from now on need to revoke the handle.
-    _ASSERTE(pobjRegisteredMutex == pobjMutex);
-    _ASSERTE(hMutex != nullptr);
-    pobjMutex->ReleaseReference(pthr);
+    pobjRegisteredMutex->ReleaseReference(pthr);
     pobjRegisteredMutex = nullptr;
-
-    if (lpName != nullptr)
-    {
-        SharedMemoryProcessDataHeader *processDataHeader;
-        bool created = false;
-        try
-        {
-            processDataHeader = NamedMutexProcessData::CreateOrOpen(lpName, !!bInitialOwner, &created);
-        }
-        catch (SharedMemoryException ex)
-        {
-            palError = ex.GetErrorCode();
-            goto InternalCreateMutexExit;
-        }
-        SharedMemoryProcessDataHeader::PalObject_SetProcessDataHeader(pobjMutex, processDataHeader);
-
-        if (!created)
-        {
-            // Indicate to the caller that an existing mutex was opened, and hence the caller will not have initial ownership
-            // of the mutex if requested through bInitialOwner
-            palError = ERROR_ALREADY_EXISTS;
-        }
-    }
 
     *phMutex = hMutex;
     hMutex = nullptr;
-    pobjMutex = nullptr;
+
+    if (lpName != nullptr && !createdNamedMutex)
+    {
+        // Indicate to the caller that an existing mutex was opened, and hence the caller will not have initial ownership of the
+        // mutex if requested through bInitialOwner
+        palError = ERROR_ALREADY_EXISTS;
+    }
 
 InternalCreateMutexExit:
 
     _ASSERTE(pobjRegisteredMutex == nullptr);
-    if (hMutex != nullptr)
-    {
-        g_pObjectManager->RevokeHandle(pthr, hMutex);
-    }
-    else if (NULL != pobjMutex)
+    _ASSERTE(hMutex == nullptr);
+
+    if (pobjMutex != nullptr)
     {
         pobjMutex->ReleaseReference(pthr);
     }
@@ -569,7 +563,7 @@ OpenMutexW(
     }
 
     {
-        int bytesWritten = WideCharToMultiByte(CP_ACP, 0, lpName, -1, utf8Name, _countof(utf8Name), nullptr, nullptr);
+        int bytesWritten = WideCharToMultiByte(CP_ACP, 0, lpName, -1, utf8Name, ARRAY_SIZE(utf8Name), nullptr, nullptr);
         if (bytesWritten == 0)
         {
             DWORD errorCode = GetLastError();
@@ -647,29 +641,6 @@ CorUnix::InternalOpenMutex(
         goto InternalOpenMutexExit;
     }
 
-    palError = g_pObjectManager->RegisterObject(
-        pthr,
-        pobjMutex,
-        &aotNamedMutex,
-        &hMutex,
-        &pobjRegisteredMutex
-        );
-
-    if (palError != NO_ERROR)
-    {
-        _ASSERTE(palError != ERROR_ALREADY_EXISTS); // PAL's naming infrastructure is not used for named mutexes
-        _ASSERTE(pobjRegisteredMutex == nullptr);
-        _ASSERTE(hMutex == nullptr);
-        goto InternalOpenMutexExit;
-    }
-
-    // Now that the object has been registered successfully, it would have a reference associated with the handle, so release
-    // the initial reference. Any errors from now on need to revoke the handle.
-    _ASSERTE(pobjRegisteredMutex == pobjMutex);
-    _ASSERTE(hMutex != nullptr);
-    pobjMutex->ReleaseReference(pthr);
-    pobjRegisteredMutex = nullptr;
-
     {
         SharedMemoryProcessDataHeader *processDataHeader;
         try
@@ -681,26 +652,49 @@ CorUnix::InternalOpenMutex(
             palError = ex.GetErrorCode();
             goto InternalOpenMutexExit;
         }
+
         if (processDataHeader == nullptr)
         {
             palError = ERROR_FILE_NOT_FOUND;
             goto InternalOpenMutexExit;
         }
+
         SharedMemoryProcessDataHeader::PalObject_SetProcessDataHeader(pobjMutex, processDataHeader);
     }
 
+    palError = g_pObjectManager->RegisterObject(
+        pthr,
+        pobjMutex,
+        &aotNamedMutex,
+        &hMutex,
+        &pobjRegisteredMutex
+        );
+    _ASSERTE(palError != ERROR_ALREADY_EXISTS); // PAL's naming infrastructure is not used for named mutexes
+    _ASSERTE(palError != NO_ERROR || pobjRegisteredMutex == pobjMutex);
+    _ASSERTE((palError == NO_ERROR) == (hMutex != nullptr));
+
+    // When RegisterObject succeeds, the object would have an additional reference from the handle, and one reference is
+    // released below through pobjRegisteredMutex. When RegisterObject fails, it releases the initial reference to the object.
+    // Either way, pobjMutex is invalidated by the above call to RegisterObject.
+    pobjMutex = nullptr;
+
+    if (palError != NO_ERROR)
+    {
+        goto InternalOpenMutexExit;
+    }
+
+    pobjRegisteredMutex->ReleaseReference(pthr);
+    pobjRegisteredMutex = nullptr;
+
     *phMutex = hMutex;
     hMutex = nullptr;
-    pobjMutex = nullptr;
 
 InternalOpenMutexExit:
 
     _ASSERTE(pobjRegisteredMutex == nullptr);
-    if (hMutex != nullptr)
-    {
-        g_pObjectManager->RevokeHandle(pthr, hMutex);
-    }
-    else if (NULL != pobjMutex)
+    _ASSERTE(hMutex == nullptr);
+
+    if (pobjMutex != nullptr)
     {
         pobjMutex->ReleaseReference(pthr);
     }
@@ -1121,7 +1115,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         SharedMemoryHelpers::BuildSharedFilesPath(lockFilePath, SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME);
         if (created)
         {
-            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath, true /* isGlobalLockAcquired */);
+            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath, true /* isGlobalLockAcquired */, false /* hasCurrentUserAccessOnly */, true /* setStickyFlag */);
         }
 
         // Create the session directory
@@ -1130,7 +1124,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         SharedMemoryHelpers::VerifyStringOperation(id->AppendSessionDirectoryName(lockFilePath));
         if (created)
         {
-            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath, true /* isGlobalLockAcquired */);
+            SharedMemoryHelpers::EnsureDirectoryExists(lockFilePath, true /* isGlobalLockAcquired */, id->IsSessionScope(), false /* setStickyFlag */);
             autoCleanup.m_lockFilePath = &lockFilePath;
             autoCleanup.m_sessionDirectoryPathCharCount = lockFilePath.GetCount();
         }
@@ -1138,7 +1132,7 @@ SharedMemoryProcessDataHeader *NamedMutexProcessData::CreateOrOpen(
         // Create or open the lock file
         SharedMemoryHelpers::VerifyStringOperation(lockFilePath.Append('/'));
         SharedMemoryHelpers::VerifyStringOperation(lockFilePath.Append(id->GetName(), id->GetNameCharCount()));
-        int lockFileDescriptor = SharedMemoryHelpers::CreateOrOpenFile(lockFilePath, created);
+        int lockFileDescriptor = SharedMemoryHelpers::CreateOrOpenFile(lockFilePath, created, id->IsSessionScope());
         if (lockFileDescriptor == -1)
         {
             _ASSERTE(!created);

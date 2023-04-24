@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const double sqrtDoubleDelta = 0.0006283185307180;
         private const double sqrtDoubleExpectedResult = 5909.0605337797215;
-
-        [Benchmark(InnerIterationCount = SqrtDoubleIterations)]
-        public static void SqrtDoubleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        SqrtDoubleTest();
-                    }
-                }
-            }
-        }
 
         public static void SqrtDoubleTest()
         {

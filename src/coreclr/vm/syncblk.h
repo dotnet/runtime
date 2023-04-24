@@ -74,13 +74,9 @@ class AppDomain;
 #ifdef EnC_SUPPORTED
 class EnCSyncBlockInfo;
 typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
-
 #endif // EnC_SUPPORTED
 
 #include "eventstore.hpp"
-
-#include "eventstore.hpp"
-
 #include "synch.h"
 
 // At a negative offset from each Object is an ObjHeader.  The 'size' of the
@@ -102,7 +98,7 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 
 #define BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX    0x08000000
 
-// if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is clear, the rest of the header dword is layed out as follows:
+// if BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX is clear, the rest of the header dword is laid out as follows:
 // - lower ten bits (bits 0 thru 9) is thread id used for the thin locks
 //   value is zero if no thread is holding the lock
 // - following six bits (bits 10 thru 15) is recursion level used for the thin locks
@@ -382,13 +378,21 @@ private:
         LockState CompareExchange(LockState toState, LockState fromState)
         {
             LIMITED_METHOD_CONTRACT;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+            return (UINT32)FastInterlockedCompareExchange((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#else
             return (UINT32)InterlockedCompareExchange((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#endif
         }
 
         LockState CompareExchangeAcquire(LockState toState, LockState fromState)
         {
             LIMITED_METHOD_CONTRACT;
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+            return (UINT32)FastInterlockedCompareExchangeAcquire((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#else
             return (UINT32)InterlockedCompareExchangeAcquire((LONG *)&m_state, (LONG)toState, (LONG)fromState);
+#endif
         }
 
     public:
@@ -432,6 +436,7 @@ private:
 
     ULONG           m_Recursion;
     PTR_Thread      m_HoldingThread;
+    SIZE_T          m_HoldingOSThreadId;
 
     LONG            m_TransientPrecious;
 
@@ -443,6 +448,7 @@ private:
     CLREvent        m_SemEvent;
 
     DWORD m_waiterStarvationStartTimeMs;
+    int m_emittedLockCreatedEvent;
 
     static const DWORD WaiterStarvationDurationMsBeforeStoppingPreemptingWaiters = 100;
 
@@ -450,12 +456,14 @@ private:
     AwareLock(DWORD indx)
         : m_Recursion(0),
 #ifndef DACCESS_COMPILE
-// PreFAST has trouble with intializing a NULL PTR_Thread.
+// PreFAST has trouble with initializing a NULL PTR_Thread.
           m_HoldingThread(NULL),
 #endif // DACCESS_COMPILE
+          m_HoldingOSThreadId(0),
           m_TransientPrecious(0),
           m_dwSyncIndex(indx),
-          m_waiterStarvationStartTimeMs(0)
+          m_waiterStarvationStartTimeMs(0),
+          m_emittedLockCreatedEvent(0)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -521,13 +529,14 @@ private:
     bool ShouldStopPreemptingWaiters() const;
 
 private: // friend access is required for this unsafe function
-    void InitializeToLockedWithNoWaiters(ULONG recursionLevel, PTR_Thread holdingThread)
+    void InitializeToLockedWithNoWaiters(ULONG recursionLevel, PTR_Thread holdingThread, SIZE_T holdingOSThreadId)
     {
         WRAPPER_NO_CONTRACT;
 
         m_lockState.InitializeToLockedWithNoWaiters();
         m_Recursion = recursionLevel;
         m_HoldingThread = holdingThread;
+        m_HoldingOSThreadId = holdingOSThreadId;
     }
 
 public:
@@ -554,7 +563,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        // CLREvent::SetMonitorEvent works even if the event has not been intialized yet
+        // CLREvent::SetMonitorEvent works even if the event has not been initialized yet
         m_SemEvent.SetMonitorEvent();
 
         m_lockState.InterlockedTrySetShouldNotPreemptWaitersIfNecessary(this);
@@ -567,7 +576,7 @@ public:
     void    IncrementTransientPrecious()
     {
         LIMITED_METHOD_CONTRACT;
-        FastInterlockIncrement(&m_TransientPrecious);
+        InterlockedIncrement(&m_TransientPrecious);
         _ASSERTE(m_TransientPrecious > 0);
     }
 
@@ -575,7 +584,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(m_TransientPrecious > 0);
-        FastInterlockDecrement(&m_TransientPrecious);
+        InterlockedDecrement(&m_TransientPrecious);
     }
 
     DWORD GetSyncBlockIndex();
@@ -618,9 +627,30 @@ public:
 #endif // !TARGET_UNIX
 
     InteropSyncBlockInfo()
+        : m_pUMEntryThunk{}
+#ifdef FEATURE_COMINTEROP
+        , m_pCCW{}
+#ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+        , m_pCCF{}
+#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+        , m_pRCW{}
+#endif // FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
+        , m_externalComObjectContext{}
+        , m_managedObjectComWrapperLock{}
+        , m_managedObjectComWrapperMap{}
+#endif // FEATURE_COMWRAPPERS
+#ifdef FEATURE_OBJCMARSHAL
+        , m_taggedMemory{}
+        , m_taggedAlloc{}
+#endif // FEATURE_OBJCMARSHAL
     {
         LIMITED_METHOD_CONTRACT;
-        ZeroMemory(this, sizeof(InteropSyncBlockInfo));
+
+#if defined(FEATURE_COMWRAPPERS)
+        // The GC thread does enumerate these objects so add CRST_UNSAFE_COOPGC.
+        m_managedObjectComWrapperLock.Init(CrstManagedObjectWrapperMap, CRST_UNSAFE_COOPGC);
+#endif // FEATURE_COMWRAPPERS
     }
 #ifndef DACCESS_COMPILE
     ~InteropSyncBlockInfo();
@@ -733,7 +763,7 @@ public:
     bool SetUMEntryThunk(void* pUMEntryThunk)
     {
         WRAPPER_NO_CONTRACT;
-        return (FastInterlockCompareExchangePointer(&m_pUMEntryThunk,
+        return (InterlockedCompareExchangeT(&m_pUMEntryThunk,
                                                     pUMEntryThunk,
                                                     NULL) == NULL);
     }
@@ -772,6 +802,9 @@ public:
     TADDR               m_pRCW;
 #endif
 
+#endif // FEATURE_COMINTEROP
+
+#if defined(FEATURE_COMWRAPPERS)
 public:
     bool TryGetManagedObjectComWrapper(_In_ INT64 wrapperId, _Out_ void** mocw)
     {
@@ -793,11 +826,9 @@ public:
         if (m_managedObjectComWrapperMap == NULL)
         {
             NewHolder<ManagedObjectComWrapperByIdMap> map = new ManagedObjectComWrapperByIdMap();
-            if (FastInterlockCompareExchangePointer((ManagedObjectComWrapperByIdMap**)&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
+            if (InterlockedCompareExchangeT((ManagedObjectComWrapperByIdMap**)&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
             {
                 map.SuppressRelease();
-                // The GC thread does enumerate these objects so add CRST_UNSAFE_COOPGC.
-                m_managedObjectComWrapperLock.Init(CrstManagedObjectWrapperMap, CRST_UNSAFE_COOPGC);
             }
 
             _ASSERTE(m_managedObjectComWrapperMap != NULL);
@@ -820,19 +851,24 @@ public:
         if (m_managedObjectComWrapperMap == NULL)
             return;
 
-        CrstHolder lock(&m_managedObjectComWrapperLock);
-
-        if (callback != NULL)
+        CQuickArrayList<void*> localList;
         {
-            ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
-            while (iter != m_managedObjectComWrapperMap->End())
+            CrstHolder lock(&m_managedObjectComWrapperLock);
+            if (callback != NULL)
             {
-                callback(iter->Value());
-                ++iter;
+                ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
+                while (iter != m_managedObjectComWrapperMap->End())
+                {
+                    localList.Push(iter->Value());
+                    ++iter;
+                }
             }
+
+            m_managedObjectComWrapperMap->RemoveAll();
         }
 
-        m_managedObjectComWrapperMap->RemoveAll();
+        for (SIZE_T i = 0; i < localList.Size(); i++)
+            callback(localList[i]);
     }
 
     using EnumWrappersCallback = bool(void* mocw, void* cxt);
@@ -869,7 +905,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (FastInterlockCompareExchangePointer(
+        return (InterlockedCompareExchangeT(
                         &m_externalComObjectContext,
                         eoc,
                         curr) == curr);
@@ -882,8 +918,51 @@ private:
 
     CrstExplicitInit m_managedObjectComWrapperLock;
     NewHolder<ManagedObjectComWrapperByIdMap> m_managedObjectComWrapperMap;
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_COMWRAPPERS
 
+#ifdef FEATURE_OBJCMARSHAL
+public:
+#ifndef DACCESS_COMPILE
+    PTR_VOID AllocTaggedMemory(_Out_ size_t* memoryInSizeT)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(memoryInSizeT != NULL);
+
+        *memoryInSizeT = GetTaggedMemorySizeInBytes() / sizeof(SIZE_T);
+
+        // The allocation is meant to indicate that memory
+        // has been made available by the system. Calling the 'get'
+        // without allocating memory indicates there has been
+        // no request for reference tracking tagged memory.
+        m_taggedMemory = m_taggedAlloc;
+        return m_taggedMemory;
+    }
+#endif // !DACCESS_COMPILE
+
+    PTR_VOID GetTaggedMemory()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_taggedMemory;
+    }
+
+    size_t GetTaggedMemorySizeInBytes()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return ARRAY_SIZE(m_taggedAlloc);
+    }
+
+private:
+    PTR_VOID m_taggedMemory;
+
+    // Two pointers worth of bytes of the requirement for
+    // the current consuming implementation so that is what
+    // is being allocated.
+    // If the size of this array is changed, the NativeAOT version
+    // should be updated as well.
+    // See the TAGGED_MEMORY_SIZE_IN_POINTERS constant in
+    // ObjectiveCMarshal.NativeAot.cs
+    BYTE m_taggedAlloc[2 * sizeof(void*)];
+#endif // FEATURE_OBJCMARSHAL
 };
 
 typedef DPTR(InteropSyncBlockInfo) PTR_InteropSyncBlockInfo;
@@ -925,7 +1004,7 @@ class SyncBlock
     // space for the minimum, which is the pointer within an SLink.
     SLink       m_Link;
 
-    // This is the hash code for the object. It can either have been transfered
+    // This is the hash code for the object. It can either have been transferred
     // from the header dword, in which case it will be limited to 26 bits, or
     // have been generated right into this member variable here, when it will
     // be a full 32 bits.
@@ -933,7 +1012,7 @@ class SyncBlock
     // A 0 in this variable means no hash code has been set yet - this saves having
     // another flag to express this state, and it enables us to use a 32-bit interlocked
     // operation to set the hash code, on the other hand it means that hash codes
-    // can never be 0. ObjectNative::GetHashCode in COMObject.cpp makes sure to enforce this.
+    // can never be 0. ObjectNative::GetHashCode in objectnative.cpp makes sure to enforce this.
     DWORD m_dwHashCode;
 
     // In some early version of VB when there were no arrays developers used to use BSTR as arrays
@@ -1067,7 +1146,7 @@ class SyncBlock
     DWORD SetHashCode(DWORD hashCode)
     {
         WRAPPER_NO_CONTRACT;
-        DWORD result = FastInterlockCompareExchange((LONG*)&m_dwHashCode, hashCode, 0);
+        DWORD result = InterlockedCompareExchange((LONG*)&m_dwHashCode, hashCode, 0);
         if (result == 0)
         {
             // the sync block now holds a hash code, which we can't afford to lose.
@@ -1174,10 +1253,10 @@ class SyncBlock
     // This should ONLY be called when initializing a SyncBlock (i.e. ONLY from
     // ObjHeader::GetSyncBlock()), otherwise we'll have a race condition.
     // </NOTE>
-    void InitState(ULONG recursionLevel, PTR_Thread holdingThread)
+    void InitState(ULONG recursionLevel, PTR_Thread holdingThread, SIZE_T holdingOSThreadId)
     {
         WRAPPER_NO_CONTRACT;
-        m_Monitor.InitializeToLockedWithNoWaiters(recursionLevel, holdingThread);
+        m_Monitor.InitializeToLockedWithNoWaiters(recursionLevel, holdingThread, holdingOSThreadId);
     }
 
 #if defined(ENABLE_CONTRACTS_IMPL)
@@ -1237,8 +1316,8 @@ class SyncBlockCache
     DWORD       m_FreeSyncBlock;        // Next Free Syncblock in the array
 
         // The next variables deal with SyncTableEntries.  Instead of having the object-header
-        // point directly at SyncBlocks, the object points a a syncTableEntry, which points at
-        // the syncBlock.  This is done because in a common case (need a hash code for an object)
+        // point directly at SyncBlocks, the object points at a syncTableEntry, which in turn points
+        // at the syncBlock.  This is done because in a common case (need a hash code for an object)
         // you just need a syncTableEntry.
 
     DWORD       m_FreeSyncTableIndex;   // We allocate a large array of SyncTableEntry structures.
@@ -1423,7 +1502,7 @@ class ObjHeader
             // note that indx could be carrying the BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX bit that we need to preserve
             newValue = (indx |
                 (oldValue & ~(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | MASK_SYNCBLOCKINDEX)));
-            if (FastInterlockCompareExchange((LONG*)&m_SyncBlockValue,
+            if (InterlockedCompareExchange((LONG*)&m_SyncBlockValue,
                                              newValue,
                                              oldValue)
                 == oldValue)
@@ -1439,7 +1518,7 @@ class ObjHeader
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE(m_SyncBlockValue & BIT_SBLK_SPIN_LOCK);
-        FastInterlockAnd(&m_SyncBlockValue, ~(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | MASK_SYNCBLOCKINDEX));
+        InterlockedAnd((LONG*)&m_SyncBlockValue, ~(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | MASK_SYNCBLOCKINDEX));
     }
 
     // Used only GC
@@ -1459,14 +1538,14 @@ class ObjHeader
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE((bit & MASK_SYNCBLOCKINDEX) == 0);
-        FastInterlockOr(&m_SyncBlockValue, bit);
+        InterlockedOr((LONG*)&m_SyncBlockValue, bit);
     }
     void ClrBit(DWORD bit)
     {
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE((bit & MASK_SYNCBLOCKINDEX) == 0);
-        FastInterlockAnd(&m_SyncBlockValue, ~bit);
+        InterlockedAnd((LONG*)&m_SyncBlockValue, ~bit);
     }
     //GC accesses this bit when all threads are stopped.
     void SetGCBit()
@@ -1504,7 +1583,7 @@ class ObjHeader
         LIMITED_METHOD_CONTRACT;
 
         _ASSERTE((oldBits & BIT_SBLK_SPIN_LOCK) == 0);
-        DWORD result = FastInterlockCompareExchange((LONG*)&m_SyncBlockValue, newBits, oldBits);
+        DWORD result = InterlockedCompareExchange((LONG*)&m_SyncBlockValue, newBits, oldBits);
         return result;
     }
 

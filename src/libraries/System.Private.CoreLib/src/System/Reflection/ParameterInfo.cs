@@ -2,11 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    public class ParameterInfo : ICustomAttributeProvider, IObjectReference
+    public class ParameterInfo : ICustomAttributeProvider
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
+#pragma warning disable SA1001 // CommasMustBeSpacedCorrectly
+        , IObjectReference
+#pragma warning restore SA1001
+#pragma warning restore SYSLIB0050
     {
         protected ParameterInfo() { }
 
@@ -28,9 +34,7 @@ namespace System.Reflection
 
         public virtual bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
+            ArgumentNullException.ThrowIfNull(attributeType);
             return false;
         }
 
@@ -40,17 +44,19 @@ namespace System.Reflection
         public virtual object[] GetCustomAttributes(bool inherit) => Array.Empty<object>();
         public virtual object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
-
+            ArgumentNullException.ThrowIfNull(attributeType);
             return Array.Empty<object>();
         }
+
+        public virtual Type GetModifiedParameterType() => throw new NotSupportedException();
 
         public virtual Type[] GetOptionalCustomModifiers() => Type.EmptyTypes;
         public virtual Type[] GetRequiredCustomModifiers() => Type.EmptyTypes;
 
         public virtual int MetadataToken => MetadataToken_ParamDef;
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public object GetRealObject(StreamingContext context)
         {
             // Once all the serializable fields have come in we can set up the real
@@ -94,7 +100,12 @@ namespace System.Reflection
             }
         }
 
-        public override string ToString() => ParameterType.FormatTypeName() + " " + Name;
+        public override string ToString()
+        {
+            string typeName = ParameterType.FormatTypeName();
+            string? name = Name;
+            return name is null ? typeName : typeName + " " + name;
+        }
 
         protected ParameterAttributes AttrsImpl;
         protected Type? ClassImpl;

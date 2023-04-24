@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Test unsupported outside of windows -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
@@ -13,6 +14,6 @@
     <Compile Include="mcc_i32.il ..\common\common.il" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

@@ -19,12 +19,12 @@ namespace System.Threading
         {
             uint mutexFlags = initiallyOwned ? Interop.Kernel32.CREATE_MUTEX_INITIAL_OWNER : 0;
             SafeWaitHandle mutexHandle = Interop.Kernel32.CreateMutexEx(IntPtr.Zero, name, mutexFlags, AccessRights);
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
 
             if (mutexHandle.IsInvalid)
             {
                 mutexHandle.SetHandleAsInvalid();
-#if TARGET_UNIX || TARGET_BROWSER
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
                 if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
                     throw new ArgumentException(SR.Argument_WaitHandleNameTooLong, nameof(name));
@@ -41,15 +41,7 @@ namespace System.Threading
 
         private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            if (name.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             result = null;
             // To allow users to view & edit the ACL's, call OpenMutex
@@ -60,8 +52,11 @@ namespace System.Threading
 
             if (myHandle.IsInvalid)
             {
-                int errorCode = Marshal.GetLastWin32Error();
-#if TARGET_UNIX || TARGET_BROWSER
+                int errorCode = Marshal.GetLastPInvokeError();
+
+                myHandle.Dispose();
+
+#if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
                 if (errorCode == Interop.Errors.ERROR_FILENAME_EXCED_RANGE)
                 {
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8

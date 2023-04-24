@@ -2,6 +2,7 @@
 ' The .NET Foundation licenses this file to you under the MIT license.
 
 Imports System
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Globalization
 Imports System.Runtime.Versioning
 Imports System.Text
@@ -599,6 +600,7 @@ EmptyMatchString:
             Return Expression.Length
         End Function
 
+        <RequiresUnreferencedCode("The object's type cannot be statically analyzed and its members may be trimmed")>
         Public Function Len(ByVal Expression As Object) As Integer
             If Expression Is Nothing Then
                 Return 0
@@ -1073,7 +1075,7 @@ RedimAndExit:
                     Select Case Style.Chars(0)
                         '(F)ixed
                         Case "f"c, "F"c
-                            If String.Compare(Style, NAMEDFORMAT_FIXED, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_FIXED, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CDbl(Expression).ToString("0.00", Nothing)
                                 Return True
                             End If
@@ -1085,13 +1087,13 @@ RedimAndExit:
                     '(O)n/off
                     Select Case Style.Chars(0)
                         Case "y"c, "Y"c
-                            If String.Compare(Style, NAMEDFORMAT_YES_NO, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_YES_NO, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CInt(CBool(Expression)).ToString(CachedYesNoFormatStyle, Nothing)
                                 Return True
                             End If
 
                         Case "o"c, "O"c
-                            If String.Compare(Style, NAMEDFORMAT_ON_OFF, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_ON_OFF, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CInt(CBool(Expression)).ToString(CachedOnOffFormatStyle, Nothing)
                                 Return True
                             End If
@@ -1102,7 +1104,7 @@ RedimAndExit:
                     '(P)ercent
                     Select Case Style.Chars(0)
                         Case "p"c, "P"c
-                            If String.Compare(Style, NAMEDFORMAT_PERCENT, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_PERCENT, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CDbl(Expression).ToString("0.00%", Nothing)
                                 Return True
                             End If
@@ -1115,12 +1117,12 @@ RedimAndExit:
 
                     Select Case Style.Chars(0)
                         Case "s"c, "S"c
-                            If String.Compare(Style, NAMEDFORMAT_STANDARD, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_STANDARD, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CDbl(Expression).ToString("N2", Nothing)
                                 Return True
                             End If
                         Case "c"c, "C"c
-                            If String.Compare(Style, NAMEDFORMAT_CURRENCY, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_CURRENCY, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CDbl(Expression).ToString("C", Nothing)
                                 Return True
                             End If
@@ -1133,13 +1135,13 @@ RedimAndExit:
 
                     Select Case Style.Chars(5)
                         Case "t"c, "T"c
-                            If String.Compare(Style, NAMEDFORMAT_LONG_TIME, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_LONG_TIME, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CDate(Expression).ToString("T", Nothing)
                                 Return True
                             End If
 
                         Case "d"c, "D"c
-                            If String.Compare(Style, NAMEDFORMAT_LONG_DATE, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_LONG_DATE, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CDate(Expression).ToString("D", Nothing)
                                 Return True
                             End If
@@ -1154,25 +1156,25 @@ RedimAndExit:
 
                     Select Case Style.Chars(6)
                         Case "a"c, "A"c
-                            If String.Compare(Style, NAMEDFORMAT_TRUE_FALSE, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_TRUE_FALSE, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CInt(CBool(Expression)).ToString(CachedTrueFalseFormatStyle, Nothing)
                                 Return True
                             End If
 
                         Case "t"c, "T"c
-                            If String.Compare(Style, NAMEDFORMAT_SHORT_TIME, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_SHORT_TIME, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CDate(Expression).ToString("t", Nothing)
                                 Return True
                             End If
 
                         Case "d"c, "D"c
-                            If String.Compare(Style, NAMEDFORMAT_SHORT_DATE, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_SHORT_DATE, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CDate(Expression).ToString("d", Nothing)
                                 Return True
                             End If
 
                         Case "i"c, "I"c
-                            If String.Compare(Style, NAMEDFORMAT_SCIENTIFIC, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_SCIENTIFIC, StringComparison.OrdinalIgnoreCase) Then
                                 Dim dbl As Double
                                 dbl = CDbl(Expression)
                                 If System.Double.IsNaN(dbl) OrElse System.Double.IsInfinity(dbl) Then
@@ -1192,13 +1194,13 @@ RedimAndExit:
 
                     Select Case Style.Chars(7)
                         Case "t"c, "T"c
-                            If String.Compare(Style, NAMEDFORMAT_MEDIUM_TIME, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_MEDIUM_TIME, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CDate(Expression).ToString("T", Nothing)
                                 Return True
                             End If
 
                         Case "d"c, "D"c
-                            If String.Compare(Style, NAMEDFORMAT_MEDIUM_DATE, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_MEDIUM_DATE, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CDate(Expression).ToString("D", Nothing)
                                 Return True
                             End If
@@ -1207,7 +1209,7 @@ RedimAndExit:
                 Case 12
                     Select Case Style.Chars(0)
                         Case "g"c, "G"c
-                            If String.Compare(Style, NAMEDFORMAT_GENERAL_DATE, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_GENERAL_DATE, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CDate(Expression).ToString("G", Nothing)
                                 Return True
                             End If
@@ -1216,7 +1218,7 @@ RedimAndExit:
                 Case 14
                     Select Case Style.Chars(0)
                         Case "g"c, "G"c
-                            If String.Compare(Style, NAMEDFORMAT_GENERAL_NUMBER, StringComparison.OrdinalIgnoreCase) = 0 Then
+                            If String.Equals(Style, NAMEDFORMAT_GENERAL_NUMBER, StringComparison.OrdinalIgnoreCase) Then
                                 ReturnValue = CDbl(Expression).ToString("G", Nothing)
                                 Return True
                             End If

@@ -15,7 +15,6 @@
 
 #include "ex.h"
 
-class CorProfileData;
 class IMetaModelCommon;
 class MDInternalRW;
 class UTSemReadWrite;
@@ -167,7 +166,7 @@ struct HENUMInternal
         DWORD           tkKind,             // kind of token that we are iterating
         HENUMInternal   **ppEnum);          // return the created HENUMInternal
 
-    // Destory Enum. This will free the memory
+    // Destroy Enum. This will free the memory
     static void DestroyEnum(
         HENUMInternal   *pmdEnum);
 
@@ -272,7 +271,7 @@ typedef struct
 
 
 //
-// structure use to retrieve class layout informaiton
+// structure use to retrieve class layout information
 //
 typedef struct
 {
@@ -627,7 +626,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         DWORD      *pdwFlags) PURE;
 
     //*****************************************
-    // return method implementation informaiton, like RVA and implflags
+    // return method implementation information, like RVA and implflags
     //*****************************************
     // returned void in v1.0/v1.1
     __checkReturn
@@ -637,7 +636,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
         DWORD       *pdwImplFlags) PURE;    // [OUT] Impl. Flags
 
     //*****************************************
-    // return method implementation informaiton, like RVA and implflags
+    // return method implementation information, like RVA and implflags
     //*****************************************
     __checkReturn
     STDMETHOD(GetFieldRVA)(
@@ -1177,32 +1176,6 @@ enum MetaDataReorderingOptions {
     NoReordering=0x0,
     ReArrangeStringPool=0x1
 };
-
-#ifdef FEATURE_PREJIT
-
-// {0702E333-8D64-4ca7-B564-4AA56B1FCEA3}
-EXTERN_GUID(IID_IMetaDataCorProfileData, 0x702e333, 0x8d64, 0x4ca7, 0xb5, 0x64, 0x4a, 0xa5, 0x6b, 0x1f, 0xce, 0xa3 );
-
-#undef  INTERFACE
-#define INTERFACE IMetaDataCorProfileData
-DECLARE_INTERFACE_(IMetaDataCorProfileData, IUnknown)
-{
-    STDMETHOD(SetCorProfileData)(
-        CorProfileData *pProfileData) PURE;         // [IN] Pointer to profile data
-};
-
-// {2B464817-C0F6-454e-99E7-C352D8384D7B}
-EXTERN_GUID(IID_IMDInternalMetadataReorderingOptions, 0x2B464817, 0xC0F6, 0x454e, 0x99, 0xE7, 0xC3, 0x52, 0xD8, 0x38, 0x4D, 0x7B );
-
-#undef  INTERFACE
-#define INTERFACE IMDInternalMetadataReorderingOptions
-DECLARE_INTERFACE_(IMDInternalMetadataReorderingOptions, IUnknown)
-{
-    STDMETHOD(SetMetaDataReorderingOptions)(
-        MetaDataReorderingOptions options) PURE;         // [IN] metadata reordering options
-};
-
-#endif //FEATURE_PREJIT
 
 #ifdef __HOLDER_H_
 

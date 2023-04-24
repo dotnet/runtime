@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <WixLocalization Culture="en-us" Language="1033" xmlns="http://schemas.microsoft.com/wix/2006/localization">
   <String Id="Caption">[WixBundleName] Installer</String>
   <String Id="Title">[BUNDLEMONIKER]</String>
@@ -65,7 +65,7 @@ Ready? Set? Let's go!</String>
   <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
   <String Id="ResourcesHeader">Resources</String>
   <String Id="DocumentationLink">&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Documentation&lt;/A&gt;</String>
-  <String Id="RelaseNotesLink">&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;Release Notes&lt;/A&gt;</String>
+  <String Id="ReleaseNotesLink">&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;Release Notes&lt;/A&gt;</String>
   <String Id="TutorialLink">&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;Tutorials&lt;/A&gt;</String>
   <String Id="TelemetryLink">&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;.NET Telemetry&lt;/A&gt;</String>
   <String Id="PrivacyStatementLink">&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;Privacy Statement&lt;/A&gt;</String>

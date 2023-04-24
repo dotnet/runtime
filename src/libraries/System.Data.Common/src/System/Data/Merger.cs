@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -104,7 +105,7 @@ namespace System.Data
                             DataColumn targetColumn = targetTable.Columns[dc.ColumnName]!;
                             if (!existingColumns!.Contains(targetColumn))
                             {
-                                targetColumn.Expression = dc.Expression;
+                                targetColumn.CopyExpressionFrom(dc);
                             }
                         }
                     }
@@ -162,10 +163,7 @@ namespace System.Data
                     _dataSet.Tables[src.TableName, src.Namespace];
             }
 
-            if (dt != null)
-            {
-                dt.EvaluateExpressions();
-            }
+            dt?.EvaluateExpressions();
 
             if (!_isStandAlonetable)
             {
@@ -281,11 +279,7 @@ namespace System.Data
                         // Getting our own copy instead. ndxSearch = dst.primaryKey.Key.GetSortIndex();
                         // IMO, Better would be to reuse index
                         // ndxSearch = dst.primaryKey.Key.GetSortIndex(DataViewRowState.OriginalRows | DataViewRowState.Added );
-                        if (null != ndxSearch)
-                        {
-                            ndxSearch.RemoveRef();
-                            ndxSearch = null;
-                        }
+                        ndxSearch?.RemoveRef();
                         ndxSearch = new Index(dst, dst._primaryKey!.Key.GetIndexDesc(), DataViewRowState.OriginalRows | DataViewRowState.Added, null);
                         ndxSearch.AddRef(); // need to addref twice, otherwise it will be collected
                         ndxSearch.AddRef(); // in past first adref was done in const
@@ -310,11 +304,7 @@ namespace System.Data
                     targetRow.Table.EvaluateExpressions(targetRow, DataRowAction.Change, null);
                 }
             }
-            if (null != ndxSearch)
-            {
-                ndxSearch.RemoveRef();
-                ndxSearch = null;
-            }
+            ndxSearch?.RemoveRef();
 
             _dataSet.EnforceConstraints = fEnforce;
         }
@@ -405,7 +395,7 @@ namespace System.Data
                     {
                         for (int i = oldCount; i < targetTable.Columns.Count; i++)
                         {
-                            targetTable.Columns[i].Expression = table.Columns[targetTable.Columns[i].ColumnName]!.Expression;
+                            targetTable.Columns[i].CopyExpressionFrom(table.Columns[targetTable.Columns[i].ColumnName]!);
                         }
                     }
 
@@ -607,7 +597,7 @@ namespace System.Data
                 }
                 else
                 {
-                    Debug.Assert(MissingSchemaAction.Error == _missingSchemaAction, "Unexpected value of MissingSchemaAction parameter : " + _missingSchemaAction.ToString());
+                    Debug.Assert(MissingSchemaAction.Error == _missingSchemaAction, $"Unexpected value of MissingSchemaAction parameter : {_missingSchemaAction}");
                     throw ExceptionBuilder.MergeMissingDefinition(relation.RelationName);
                 }
             }
@@ -633,7 +623,7 @@ namespace System.Data
             }
         }
 
-        private DataKey GetSrcKey(DataTable src, DataTable dst)
+        private static DataKey GetSrcKey(DataTable src, DataTable dst)
         {
             if (src._primaryKey != null)
             {

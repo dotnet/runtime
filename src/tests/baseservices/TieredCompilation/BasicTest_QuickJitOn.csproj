@@ -3,19 +3,10 @@
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
-    <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BasicTest.cs" />
+
+    <CLRTestEnvironmentVariable Include="DOTNET_TC_QuickJit" Value="1" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_TC_QuickJit=1
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_TC_QuickJit=1
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>

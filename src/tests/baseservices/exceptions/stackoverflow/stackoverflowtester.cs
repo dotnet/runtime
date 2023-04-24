@@ -40,19 +40,25 @@ namespace TestStackOverflow
 
             stderrLines = lines;
 
-            int expectedExitCode;
+            int[] expectedExitCodes;
             if ((Environment.OSVersion.Platform == PlatformID.Unix) || (Environment.OSVersion.Platform == PlatformID.MacOSX))
             {
-                expectedExitCode = 128 + 6;
+                expectedExitCodes = new int[] { 128 + 6};
             }
             else
             {
-                expectedExitCode = unchecked((int)0xC00000FD);
+                expectedExitCodes = new int[] { unchecked((int)0xC00000FD), unchecked((int)0x800703E9) };
             }
 
-            if (testProcess.ExitCode != expectedExitCode)
+            if (!Array.Exists(expectedExitCodes, code => testProcess.ExitCode == code))
             {
-                Console.WriteLine($"Exit code: 0x{testProcess.ExitCode:X8}, expected 0x{expectedExitCode:X8}");
+                string separator = string.Empty;
+                StringBuilder expectedListBuilder = new StringBuilder();
+                Array.ForEach(expectedExitCodes, code => {
+                    expectedListBuilder.Append($"{separator}0x{code:X8}");
+                    separator = " or ";
+                });
+                Console.WriteLine($"Exit code: 0x{testProcess.ExitCode:X8}, expected {expectedListBuilder.ToString()}");
                 return false;
             }
 
@@ -240,7 +246,7 @@ namespace TestStackOverflow
             return false;
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             s_currentPath = Directory.GetCurrentDirectory();
             s_corerunPath = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");

@@ -332,7 +332,10 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestPrecanceledToken()
         {
-            var options = new ExecutionDataflowBlockOptions { CancellationToken = new CancellationToken(true) };
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            var options = new ExecutionDataflowBlockOptions { CancellationToken = cts.Token };
             var blocks = new []
             {
                 new ActionBlock<int>(i => { }, options),
@@ -348,7 +351,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 ab.Complete();
                 ((IDataflowBlock)ab).Fault(new Exception());
 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ab.Completion);
+                await AssertExtensions.CanceledAsync(cts.Token, ab.Completion);
             }
         }
 
@@ -366,7 +369,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public async Task TestFaulting()
         {
             for (int trial = 0; trial < 3; trial++)

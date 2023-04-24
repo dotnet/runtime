@@ -9,8 +9,8 @@ namespace System.Net.NetworkInformation
 {
     internal static class UnixCommandLinePing
     {
-        // Ubuntu has ping under /bin, OSX under /sbin, ArchLinux under /usr/bin.
-        private static readonly string[] s_binFolders = { "/bin/", "/sbin/", "/usr/bin/" };
+        // Ubuntu has ping under /bin, OSX under /sbin, ArchLinux under /usr/bin, Android under /system/bin.
+        private static readonly string[] s_binFolders = { "/bin/", "/sbin/", "/usr/bin/", "/system/bin" };
         private const string s_ipv4PingFile = "ping";
         private const string s_ipv6PingFile = "ping6";
 
@@ -40,10 +40,8 @@ namespace System.Net.NetworkInformation
         {
             if (pingBinary != null)
             {
-                string? linkedName = Interop.Sys.ReadLink(pingBinary);
-
-                // If pingBinary is not link linkedName will be null
-                if (linkedName != null && linkedName.EndsWith("busybox", StringComparison.Ordinal))
+                System.IO.FileSystemInfo? linkInfo = File.ResolveLinkTarget(pingBinary, returnFinalTarget: true);
+                if (linkInfo?.Name.EndsWith("busybox", StringComparison.Ordinal) == true)
                 {
                     return true;
                 }
@@ -90,7 +88,8 @@ namespace System.Net.NetworkInformation
             // OSX: ping requires -W flag which accepts timeout in MILLISECONDS; ping6 doesn't support timeout
             if (OperatingSystem.IsFreeBSD())
             {
-                if (ipv4)
+                // Syntax changed in FreeBSD 13.0 and options are not common for both address families
+                if (ipv4 || Environment.OSVersion.Version.Major > 12)
                 {
                     sb.Append(" -W ");
                 }
@@ -135,7 +134,8 @@ namespace System.Net.NetworkInformation
                 if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsMacOS())
                 {
                     // OSX and FreeBSD use -h to set hop limit for IPv6 and -m ttl for IPv4
-                    if (ipv4)
+                    // Syntax changed in FreeBSD 13.0 and options are not common for both address families
+                    if (ipv4 || (OperatingSystem.IsFreeBSD() && Environment.OSVersion.Version.Major > 12))
                     {
                         sb.Append(" -m ");
                     }

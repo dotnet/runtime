@@ -16,7 +16,7 @@ if /i "%~1" == "wasm"  (set __VCBuildArch=x86_amd64)
 :: is no longer set as a global environment variable and is instead only set if the user
 :: has launched the Visual Studio Developer Command Prompt.
 ::
-:: Following this logic, we will default to the Visual Studio toolset assocated with the active
+:: Following this logic, we will default to the Visual Studio toolset associated with the active
 :: Developer Command Prompt. Otherwise, we will query VSWhere to locate the later version of
 :: Visual Studio available on the machine. Finally, we will fail the script if no supported
 :: instance can be found.
@@ -45,14 +45,14 @@ set "__VSCOMNTOOLS="
 set "VSCMD_START_DIR="
 
 :VSDetected
-if "%VisualStudioVersion%"=="16.0" (
-    set __VSVersion=vs2019
-    set __PlatformToolset=v142
+if "%VisualStudioVersion%"=="17.0" (
+    set __VSVersion=vs2022
+    set __PlatformToolset=v143
     goto :SetVCEnvironment
 )
 
 :VSMissing
-echo %__MsgPrefix%Error: Visual Studio 2019 with C++ tools required. ^
+echo %__MsgPrefix%Error: Visual Studio 2022 with C++ tools required. ^
 Please see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md for build requirements.
 exit /b 1
 
@@ -61,6 +61,7 @@ exit /b 1
 if "%__VCBuildArch%"=="" exit /b 0
 
 :: Set the environment for the native build
+if not exist "%VCINSTALLDIR%Auxiliary\Build\vcvarsall.bat" goto :VSMissing
 call "%VCINSTALLDIR%Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
 if not "%ErrorLevel%"=="0" exit /b 1
 

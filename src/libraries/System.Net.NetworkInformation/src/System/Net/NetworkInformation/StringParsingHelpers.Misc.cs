@@ -8,10 +8,62 @@ namespace System.Net.NetworkInformation
 {
     internal static partial class StringParsingHelpers
     {
+        // in some environments (restricted docker container, shared hosting etc.),
+        // procfs is not accessible and we get UnauthorizedAccessException while the
+        // inner exception is set to IOException.
+
+        internal static string[] ReadAllLines(string filePath)
+        {
+            try
+            {
+                return File.ReadAllLines(filePath);
+            }
+            catch (Exception e)
+            {
+                throw CreateNetworkInformationException(e);
+            }
+        }
+
+        internal static string ReadAllText(string filePath)
+        {
+            try
+            {
+                return File.ReadAllText(filePath);
+            }
+            catch (Exception e)
+            {
+                throw CreateNetworkInformationException(e);
+            }
+        }
+
+
+        internal static StreamReader OpenStreamReader(string filePath)
+        {
+            try
+            {
+                return new StreamReader(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 0x1000, useAsync: false));
+            }
+            catch (Exception e)
+            {
+                throw CreateNetworkInformationException(e);
+            }
+        }
+
+        internal static NetworkInformationException CreateNetworkInformationException(Exception inner)
+        {
+            // Overload accepting message and inner exception is internal and thus inaccessible in
+            // the unit test project
+#if NETWORKINFORMATION_TEST
+            return new NetworkInformationException();
+#else
+            return new NetworkInformationException(SR.net_PInvokeError, inner);
+#endif
+        }
+
         internal static int ParseNumRoutesFromRouteFile(string filePath)
         {
-            string routeFile = File.ReadAllText(filePath);
-            return CountOccurrences(Environment.NewLine, routeFile) - 1; // File includes one-line header
+            string routeFile = ReadAllText(filePath);
+            return routeFile.AsSpan().Count(Environment.NewLine) - 1; // File includes one-line header
         }
 
         internal static int ParseNumIPInterfaces(string folderPath)
@@ -34,7 +86,7 @@ namespace System.Net.NetworkInformation
         internal static int ParseDefaultTtlFromFile(string filePath)
         {
             // snmp6 does not include Default TTL info. Read it from snmp.
-            string snmp4FileContents = File.ReadAllText(filePath);
+            string snmp4FileContents = ReadAllText(filePath);
             int firstIpHeader = snmp4FileContents.IndexOf("Ip:", StringComparison.Ordinal);
             int secondIpHeader = snmp4FileContents.IndexOf("Ip:", firstIpHeader + 1, StringComparison.Ordinal);
             int endOfSecondLine = snmp4FileContents.IndexOf(Environment.NewLine, secondIpHeader, StringComparison.Ordinal);
@@ -49,45 +101,12 @@ namespace System.Net.NetworkInformation
         internal static int ParseRawIntFile(string filePath)
         {
             int ret;
-            if (!int.TryParse(File.ReadAllText(filePath).Trim(), out ret))
+            if (!int.TryParse(ReadAllText(filePath).AsSpan().Trim(), out ret))
             {
                 throw ExceptionHelper.CreateForParseFailure();
             }
 
             return ret;
-        }
-
-        internal static long ParseRawLongFile(string filePath)
-        {
-            long ret;
-            if (!long.TryParse(File.ReadAllText(filePath).Trim(), out ret))
-            {
-                throw ExceptionHelper.CreateForParseFailure();
-            }
-
-            return ret;
-        }
-
-        internal static int ParseRawHexFileAsInt(string filePath)
-        {
-            return Convert.ToInt32(File.ReadAllText(filePath).Trim(), 16);
-        }
-
-        private static int CountOccurrences(string value, string candidate)
-        {
-            Debug.Assert(candidate != null, "CountOccurrences: Candidate string was null.");
-            int index = 0;
-            int occurrences = 0;
-            while (index != -1)
-            {
-                index = candidate.IndexOf(value, index + 1, StringComparison.Ordinal);
-                if (index != -1)
-                {
-                    occurrences++;
-                }
-            }
-
-            return occurrences;
         }
     }
 }

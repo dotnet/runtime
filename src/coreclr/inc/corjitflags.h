@@ -31,8 +31,8 @@ public:
         CORJIT_FLAG_DEBUG_CODE              = 2, // generate "debuggable" code (no code-mangling optimizations)
         CORJIT_FLAG_DEBUG_EnC               = 3, // We are in Edit-n-Continue mode
         CORJIT_FLAG_DEBUG_INFO              = 4, // generate line and local-var info
-        CORJIT_FLAG_MIN_OPT                 = 5, // disable all jit optimizations (not necesarily debuggable code)
-        CORJIT_FLAG_UNUSED1                 = 6,
+        CORJIT_FLAG_MIN_OPT                 = 5, // disable all jit optimizations (not necessarily debuggable code)
+        CORJIT_FLAG_ENABLE_CFG              = 6, // generate control-flow guard checks
         CORJIT_FLAG_MCJIT_BACKGROUND        = 7, // Calling from multicore JIT background thread, do not call JitComplete
 
     #if defined(TARGET_X86)
@@ -57,13 +57,7 @@ public:
         CORJIT_FLAG_ALT_JIT                 = 14, // JIT should consider itself an ALT_JIT
         CORJIT_FLAG_UNUSED8                 = 15,
         CORJIT_FLAG_UNUSED9                 = 16,
-
-
-    #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
-        CORJIT_FLAG_FEATURE_SIMD            = 17,
-    #else
         CORJIT_FLAG_UNUSED10                = 17,
-    #endif // !(defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64))
 
         CORJIT_FLAG_MAKEFINALCODE           = 18, // Use the final code generator, i.e., not the interpreter.
         CORJIT_FLAG_READYTORUN              = 19, // Use version-resilient code generation
@@ -79,7 +73,7 @@ public:
         CORJIT_FLAG_BBINSTR                 = 29, // Collect basic block profile information
         CORJIT_FLAG_BBOPT                   = 30, // Optimize method based on profile information
         CORJIT_FLAG_FRAMED                  = 31, // All methods have an EBP frame
-        CORJIT_FLAG_UNUSED12                = 32,
+        CORJIT_FLAG_BBINSTR_IF_LOOPS        = 32, // JIT must instrument current method if it has loops
         CORJIT_FLAG_PUBLISH_SECRET_PARAM    = 33, // JIT must place stub secret param into local 0.  (used by IL stubs)
         CORJIT_FLAG_UNUSED13                = 34,
         CORJIT_FLAG_SAMPLING_JIT_BACKGROUND = 35, // JIT is being invoked as a result of stack sampling for hot methods in the background
@@ -98,7 +92,7 @@ public:
         CORJIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
 
 #if defined(TARGET_ARM)
-        CORJIT_FLAG_SOFTFP_ABI              = 43, // JIT should generate PC-relative address computations instead of EE relocation records
+        CORJIT_FLAG_SOFTFP_ABI              = 43, // On ARM should enable armel calling convention
 #else // !defined(TARGET_ARM)
         CORJIT_FLAG_UNUSED16                = 43,
 #endif // !defined(TARGET_ARM)
@@ -208,9 +202,19 @@ public:
     }
 
     // DO NOT USE THIS FUNCTION! (except in very restricted special cases)
-    uint64_t GetInstructionSetFlagsRaw()
+    uint64_t* GetInstructionSetFlagsRaw()
     {
         return instructionSetFlags.GetFlagsRaw();
+    }
+
+    CORINFO_InstructionSetFlags GetInstructionSetFlags()
+    {
+        return instructionSetFlags;
+    }
+
+    const int GetInstructionFlagsFieldCount()
+    {
+        return instructionSetFlags.GetInstructionFlagsFieldCount();
     }
 
 private:

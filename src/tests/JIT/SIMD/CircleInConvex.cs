@@ -189,10 +189,10 @@ namespace ClassLibrary
 
         static int cmp(Point a, Point b)
         {
-            if (a.X < b.X || a.X == b.X && a.Y < b.Y)
-                return 1;
+            if (a.X == b.X)
+                return a.Y < b.Y ? 1 : a.Y > b.Y ? -1 : 0;
             else
-                return 0;
+                return a.X < b.X ? 1 : a.X > b.X ? -1 : 0;
         }
 
         static bool cw(Point a, Point b, Point c)
@@ -242,7 +242,7 @@ namespace ClassLibrary
             return (float)(mantissa * exponent);
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             List<Point> points = new List<Point>();
             Random random = new Random(13);
@@ -258,8 +258,8 @@ namespace ClassLibrary
             float r;
             FindCircle(points, out O, out r);
 
-            float expRes = 75656240.0F;
-            float ulp    =        8.0F;
+            float expRes = 1191233374.188854F;
+            float ulp    =             384.0F;
             if (Math.Abs(r - expRes) <= ulp)
                 return 100;
             return 0;

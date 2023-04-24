@@ -20,10 +20,6 @@
 
 #include <posterror.h>
 
-#if !defined(lengthof)
-#define lengthof(x) (sizeof(x)/sizeof(x[0]))
-#endif
-
 // Local prototypes.
 HRESULT FillErrorInfo(LPCWSTR szMsg, DWORD dwHelpContext);
 
@@ -58,7 +54,7 @@ void SetResourceCultureCallbacks(
 //*****************************************************************************
 STDAPI UtilLoadStringRC(
     UINT iResourceID,
-    __out_ecount(iMax) LPWSTR szBuffer,
+    _Out_writes_(iMax) LPWSTR szBuffer,
     int iMax,
     int bQuiet
 )
@@ -67,7 +63,7 @@ STDAPI UtilLoadStringRC(
     return UtilLoadResourceString(bQuiet? CCompRC::Optional : CCompRC::Required,iResourceID, szBuffer, iMax);
 }
 
-HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax)
+HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResourceID, _Out_writes_ (iMax) LPWSTR szBuffer, int iMax)
 {
     CONTRACTL
     {
@@ -101,8 +97,8 @@ HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResour
 //*****************************************************************************
 // Format a Runtime Error message.
 //*****************************************************************************
-HRESULT __cdecl FormatRuntimeErrorVa(
-    __inout_ecount(cchMsg) WCHAR       *rcMsg,                 // Buffer into which to format.
+static HRESULT FormatRuntimeErrorVA(
+    _Inout_updates_(cchMsg) WCHAR       *rcMsg,                 // Buffer into which to format.
     ULONG       cchMsg,                 // Size of buffer, characters.
     HRESULT     hrRpt,                  // The HR to report.
     va_list     marker)                 // Optional args.
@@ -114,7 +110,8 @@ HRESULT __cdecl FormatRuntimeErrorVa(
     }
     CONTRACTL_END;
 
-    WCHAR       rcBuf[512];             // Resource string.
+    WCHAR       rcBuf[512]; // Resource string.
+    char        msgBufUtf8[2048];
     HRESULT     hr;
 
     // Ensure nul termination.
@@ -123,10 +120,22 @@ HRESULT __cdecl FormatRuntimeErrorVa(
     // If this is one of our errors or if it is simply a resource ID, then grab the error from the rc file.
     if ((HRESULT_FACILITY(hrRpt) == FACILITY_URT) || (HIWORD(hrRpt) == 0))
     {
-        hr = UtilLoadStringRC(LOWORD(hrRpt), rcBuf, NumItems(rcBuf), true);
+        hr = UtilLoadStringRC(LOWORD(hrRpt), rcBuf, ARRAY_SIZE(rcBuf), true);
         if (hr == S_OK)
         {
-            _vsnwprintf_s(rcMsg, cchMsg, _TRUNCATE, rcBuf, marker);
+            hr = E_OUTOFMEMORY; // Out of memory is possible
+
+            MAKE_UTF8PTR_FROMWIDE_NOTHROW(rcUtf8, rcBuf);
+            if (rcUtf8 != NULL)
+            {
+                _vsnprintf_s(msgBufUtf8, ARRAY_SIZE(msgBufUtf8), _TRUNCATE, rcUtf8, marker);
+                MAKE_WIDEPTR_FROMUTF8_NOTHROW(msgBuf, msgBufUtf8);
+                if (msgBuf != NULL)
+                {
+                    hr = S_OK; // Performed all formatting allocations.
+                    wcscpy_s(rcMsg, cchMsg, msgBuf);
+                }
+            }
         }
     }
     // Otherwise it isn't one of ours, so we need to see if the system can
@@ -148,32 +157,9 @@ HRESULT __cdecl FormatRuntimeErrorVa(
             hr = HRESULT_FROM_GetLastError();
     }
 
-    // If we failed to find the message anywhere, then issue a hard coded message.
-    if (FAILED(hr))
-    {
-        _snwprintf_s(rcMsg, cchMsg, _TRUNCATE, W("Common Language Runtime Internal error: 0x%08x"), hrRpt);
-        DEBUG_STMT(DbgWriteEx(rcMsg));
-    }
-
+    _ASSERTE(SUCCEEDED(hr));
     return hrRpt;
-} // FormatRuntimeErrorVa
-
-//*****************************************************************************
-// Format a Runtime Error message, varargs.
-//*****************************************************************************
-HRESULT __cdecl FormatRuntimeError(
-    __out_ecount(cchMsg) WCHAR       *rcMsg,                 // Buffer into which to format.
-    ULONG       cchMsg,                 // Size of buffer, characters.
-    HRESULT     hrRpt,                  // The HR to report.
-    ...)                                // Optional args.
-{
-    WRAPPER_NO_CONTRACT;
-    va_list     marker;                 // User text.
-    va_start(marker, hrRpt);
-    hrRpt = FormatRuntimeErrorVa(rcMsg, cchMsg, hrRpt, marker);
-    va_end(marker);
-    return hrRpt;
-}
+} // FormatRuntimeErrorVA
 
 #ifdef FEATURE_COMINTEROP
 //*****************************************************************************
@@ -261,8 +247,7 @@ Exit1:
 // not formatted so no add'l parameters are required.  If any errors in this
 // process occur, hrRpt is returned for the client with no error posted.
 //*****************************************************************************
-extern "C"
-HRESULT __cdecl PostErrorVA(                      // Returned error.
+static HRESULT PostErrorVA(                      // Returned error.
     HRESULT     hrRpt,                  // Reported error.
     va_list     marker)                  // Error arguments.
 {
@@ -280,8 +265,6 @@ HRESULT __cdecl PostErrorVA(                      // Returned error.
     WCHAR      *rcMsg = (WCHAR*)alloca(cchMsg * sizeof(WCHAR));             // Error message.
     HRESULT     hr;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     // Return warnings without text.
     if (!FAILED(hrRpt))
         goto ErrExit;
@@ -296,7 +279,7 @@ HRESULT __cdecl PostErrorVA(                      // Returned error.
     }
 
     // Format the error.
-    FormatRuntimeErrorVa(rcMsg, cchMsg, hrRpt, marker);
+    FormatRuntimeErrorVA(rcMsg, cchMsg, hrRpt, marker);
 
     // Turn the error into a posted error message.  If this fails, we still
     // return the original error message since a message caused by our error
@@ -305,8 +288,6 @@ HRESULT __cdecl PostErrorVA(                      // Returned error.
     _ASSERTE(hr == S_OK);
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
 
 #endif // FEATURE_COMINTEROP
 
@@ -323,8 +304,7 @@ ErrExit:
 // not formatted so no add'l parameters are required.  If any errors in this
 // process occur, hrRpt is returned for the client with no error posted.
 //*****************************************************************************
-extern "C"
-HRESULT __cdecl PostError(
+HRESULT PostError(
     HRESULT hrRpt,      // Reported error.
     ...)                // Error arguments.
 {

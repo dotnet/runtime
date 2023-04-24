@@ -54,7 +54,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 [UnconditionalSuppressMessage("TrimAnalysis", "IL2073:MissingDynamicallyAccessedMembers",
                     Justification = "The getter of the dictionary is not annotated to preserve the constructor, but the sources that are adding the items to " +
-                    "the dictionary are annotated so we can supress the message as we know the constructor will be preserved.")]
+                    "the dictionary are annotated so we can suppress the message as we know the constructor will be preserved.")]
                 [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
                 get => _backingDictionary[key];
                 [param: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
@@ -67,7 +67,7 @@ namespace System.Xml.Xsl.Xslt
 
             public bool ContainsKey(string key) => _backingDictionary.ContainsKey(key);
 
-            public bool TryGetValue(string key, [MaybeNullWhen(false)] out Type? value) => _backingDictionary.TryGetValue(key, out value);
+            public bool TryGetValue(string key, [MaybeNullWhen(false)] out Type value) => _backingDictionary.TryGetValue(key, out value);
         }
     }
 }

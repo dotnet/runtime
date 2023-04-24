@@ -15,7 +15,17 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// The default timeout for <see cref="IHost.StopAsync(System.Threading.CancellationToken)"/>.
         /// </summary>
-        public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
+        public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+        /// <summary>
+        /// Determines if the <see cref="IHost"/> will start registered instances of <see cref="IHostedService"/> concurrently or sequentially. Defaults to false.
+        /// </summary>
+        public bool ServicesStartConcurrently { get; set; }
+
+        /// <summary>
+        /// Determines if the <see cref="IHost"/> will stop registered instances of <see cref="IHostedService"/> concurrently or sequentially. Defaults to false.
+        /// </summary>
+        public bool ServicesStopConcurrently { get; set; }
 
         /// <summary>
         /// The behavior the <see cref="IHost"/> will follow when any of
@@ -34,6 +44,20 @@ namespace Microsoft.Extensions.Hosting
                 && int.TryParse(timeoutSeconds, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds))
             {
                 ShutdownTimeout = TimeSpan.FromSeconds(seconds);
+            }
+
+            var servicesStartConcurrently = configuration["servicesStartConcurrently"];
+            if (!string.IsNullOrEmpty(servicesStartConcurrently)
+                && bool.TryParse(servicesStartConcurrently, out bool startBehavior))
+            {
+                ServicesStartConcurrently = startBehavior;
+            }
+
+            var servicesStopConcurrently = configuration["servicesStopConcurrently"];
+            if (!string.IsNullOrEmpty(servicesStopConcurrently)
+                && bool.TryParse(servicesStopConcurrently, out bool stopBehavior))
+            {
+                ServicesStopConcurrently = stopBehavior;
             }
         }
     }

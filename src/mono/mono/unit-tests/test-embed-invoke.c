@@ -3,5 +3,5 @@
  */
 
 #define _TESTCASE_
-#include <mono/mini/jit.h>
+#include <mono/jit/jit.h>
 #include <embed/test-invoke.c>

@@ -3,10 +3,12 @@
 //
 
 using System;
+using Xunit;
 
-class test
+public class test
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int i = 0;
         i += ParamOnStack();

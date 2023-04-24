@@ -11,13 +11,13 @@ namespace System.ComponentModel
     /// </summary>
     public abstract class InstanceCreationEditor
     {
-        public virtual string Text => SR.InstanceCreationEditorDefaultText;
+        public virtual string Text => SR.GetResourceString(nameof(SR.InstanceCreationEditorDefaultText), "(New...)");
 
         /// <summary>
         /// This method is invoked when you user chooses the link displayed by the PropertyGrid for the InstanceCreationEditor.
         /// The object returned from this method must be an instance of the specified type, or null in which case the editor will do nothing.
         ///
         /// </summary>
-        public abstract object CreateInstance(ITypeDescriptorContext context, Type instanceType);
+        public abstract object? CreateInstance(ITypeDescriptorContext context, Type instanceType);
     }
 }

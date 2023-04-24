@@ -140,4 +140,46 @@ namespace Internal.IL
             return _module.GetObject(MetadataTokens.EntityHandle(token), notFoundBehavior);
         }
     }
+
+    public sealed partial class EcmaMethodILScope : MethodILScope
+    {
+        private readonly EcmaModule _module;
+        private readonly EcmaMethod _method;
+
+        public static EcmaMethodILScope Create(EcmaMethod method)
+        {
+            return new EcmaMethodILScope(method);
+        }
+
+        private EcmaMethodILScope(EcmaMethod method)
+        {
+            _method = method;
+            _module = method.Module;
+        }
+
+        public EcmaModule Module
+        {
+            get
+            {
+                return _module;
+            }
+        }
+
+        public override MethodDesc OwningMethod
+        {
+            get
+            {
+                return _method;
+            }
+        }
+
+        public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw)
+        {
+            // UserStrings cannot be wrapped in EntityHandle
+            if ((token & 0xFF000000) == 0x70000000)
+                return _module.GetUserString(MetadataTokens.UserStringHandle(token));
+
+            return _module.GetObject(MetadataTokens.EntityHandle(token), notFoundBehavior);
+        }
+    }
 }

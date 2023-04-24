@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 namespace Test
 {
@@ -23,9 +24,10 @@ namespace Test
     }
 
 
-    internal static class App
+    public static class App
     {
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var container1 = new Container<string>();
             var container2 = new Container<object>();

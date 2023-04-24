@@ -94,9 +94,9 @@ namespace CoreXml.Test.XLinq
                 if (originalReader.NodeType == XmlNodeType.Element)
                 {
                     // read all r1 attributes
-                    var origAttrs = MoveAtrributeEnumerator(originalReader).ToArray();
+                    var origAttrs = MoveAttributeEnumerator(originalReader).ToArray();
                     // read all r2 attributes
-                    var filteredAttrs = MoveAtrributeEnumerator(filteredReader).ToArray();
+                    var filteredAttrs = MoveAttributeEnumerator(filteredReader).ToArray();
 
                     // Verify HasAttributes consistency
                     TestLog.Compare(filteredAttrs.Any(), filteredReader.HasAttributes, "has attributes");
@@ -241,7 +241,7 @@ namespace CoreXml.Test.XLinq
             }
         }
 
-        private static IEnumerable<string[]> IndexedAtrributeEnumerator(XmlReader r, bool moveToElement)
+        private static IEnumerable<string[]> IndexedAttributeEnumerator(XmlReader r, bool moveToElement)
         {
             TestLog.Compare(r.NodeType, XmlNodeType.Element, "Assert for enumerator");  // assert
             int aCount = r.AttributeCount;
@@ -254,7 +254,7 @@ namespace CoreXml.Test.XLinq
             r.MoveToElement();
         }
 
-        private static IEnumerable<string[]> MoveAtrributeEnumerator(XmlReader r)
+        private static IEnumerable<string[]> MoveAttributeEnumerator(XmlReader r)
         {
             TestLog.Compare(r.NodeType, XmlNodeType.Element, "Assert for enumerator");  // assert
             if (r.MoveToFirstAttribute())

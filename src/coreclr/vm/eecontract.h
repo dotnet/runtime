@@ -40,7 +40,7 @@ class EEContract : public BaseContract
     }
 
     void Disable();
-    void DoChecks(UINT testmask, __in_z const char *szFunction, __in_z const char *szFile, int lineNum);
+    void DoChecks(UINT testmask, _In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum);
 };
 
 

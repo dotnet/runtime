@@ -60,7 +60,7 @@ namespace System.Net.NetworkInformation
         public List<UnixUnicastIPAddressInformation> UnicastAddress { get { return _unicastAddresses; } }
 
         /// <summary>
-        /// Returns a list of all Unicast addresses of the interface's IP Addresses.
+        /// Returns a list of all Multicast addresses of the interface's IP Addresses.
         /// </summary>
         public List<IPAddress>? MulticastAddresess { get { return _multicastAddresses; } }
 
@@ -69,11 +69,8 @@ namespace System.Net.NetworkInformation
         {
             if (IPAddressUtil.IsMulticast(ipAddress))
             {
-                if (_multicastAddresses == null)
-                {
-                    // Deferred initialization.
-                    _multicastAddresses = new List<IPAddress>();
-                }
+                // Deferred initialization.
+                _multicastAddresses ??= new List<IPAddress>();
 
                 _multicastAddresses.Add(ipAddress);
             }

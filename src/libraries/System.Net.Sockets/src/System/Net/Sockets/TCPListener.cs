@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.Versioning;
 using System.Diagnostics;
@@ -23,10 +24,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, localEP);
 
-            if (localEP == null)
-            {
-                throw new ArgumentNullException(nameof(localEP));
-            }
+            ArgumentNullException.ThrowIfNull(localEP);
             _serverSocketEP = localEP;
             _serverSocket = new Socket(_serverSocketEP.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
         }
@@ -37,10 +35,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, localaddr);
 
-            if (localaddr == null)
-            {
-                throw new ArgumentNullException(nameof(localaddr));
-            }
+            ArgumentNullException.ThrowIfNull(localaddr);
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
@@ -51,7 +46,7 @@ namespace System.Net.Sockets
         }
 
         // Initiailizes a new instance of the TcpListener class that listens on the specified port.
-        [Obsolete("This method has been deprecated. Please use TcpListener(IPAddress localaddr, int port) instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This constructor has been deprecated. Use TcpListener(IPAddress localaddr, int port) instead.")]
         public TcpListener(int port)
         {
             if (!TcpValidationHelpers.ValidatePortNumber(port))
@@ -139,10 +134,7 @@ namespace System.Net.Sockets
 
         public void Start(int backlog)
         {
-            if (backlog > (int)SocketOptionName.MaxConnections || backlog < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(backlog));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(backlog);
 
             // Already listening.
             if (_active)
@@ -209,35 +201,38 @@ namespace System.Net.Sockets
         }
 
         public IAsyncResult BeginAcceptSocket(AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(AcceptSocketAsync(), callback, state);
+            TaskToAsyncResult.Begin(AcceptSocketAsync(), callback, state);
 
         public Socket EndAcceptSocket(IAsyncResult asyncResult) =>
             EndAcceptCore<Socket>(asyncResult);
 
         public IAsyncResult BeginAcceptTcpClient(AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(AcceptTcpClientAsync(), callback, state);
+            TaskToAsyncResult.Begin(AcceptTcpClientAsync(), callback, state);
 
         public TcpClient EndAcceptTcpClient(IAsyncResult asyncResult) =>
             EndAcceptCore<TcpClient>(asyncResult);
 
-        public Task<Socket> AcceptSocketAsync()
+        public Task<Socket> AcceptSocketAsync() => AcceptSocketAsync(CancellationToken.None).AsTask();
+
+        public ValueTask<Socket> AcceptSocketAsync(CancellationToken cancellationToken)
         {
             if (!_active)
             {
                 throw new InvalidOperationException(SR.net_stopped);
             }
 
-            return _serverSocket!.AcceptAsync();
+            return _serverSocket!.AcceptAsync(cancellationToken);
         }
 
-        public Task<TcpClient> AcceptTcpClientAsync()
-        {
-            return WaitAndWrap(AcceptSocketAsync());
+        public Task<TcpClient> AcceptTcpClientAsync() => AcceptTcpClientAsync(CancellationToken.None).AsTask();
 
-            static async Task<TcpClient> WaitAndWrap(Task<Socket> task) =>
+        public ValueTask<TcpClient> AcceptTcpClientAsync(CancellationToken cancellationToken)
+        {
+            return WaitAndWrap(AcceptSocketAsync(cancellationToken));
+
+            static async ValueTask<TcpClient> WaitAndWrap(ValueTask<Socket> task) =>
                 new TcpClient(await task.ConfigureAwait(false));
         }
-
 
         // This creates a TcpListener that listens on both IPv4 and IPv6 on the given port.
         public static TcpListener Create(int port)
@@ -288,7 +283,7 @@ namespace System.Net.Sockets
         {
             try
             {
-                return TaskToApm.End<TResult>(asyncResult);
+                return TaskToAsyncResult.End<TResult>(asyncResult);
             }
             catch (SocketException) when (!_active)
             {

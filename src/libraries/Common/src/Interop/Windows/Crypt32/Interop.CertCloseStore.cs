@@ -8,7 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [DllImport(Interop.Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool CertCloseStore(IntPtr hCertStore, uint dwFlags);
+        [LibraryImport(Interop.Libraries.Crypt32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool CertCloseStore(IntPtr hCertStore, uint dwFlags);
     }
 }

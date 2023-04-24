@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
-using Internal.Runtime.CompilerServices;
 
 namespace System.StubHelpers
 {
@@ -37,7 +35,7 @@ namespace System.StubHelpers
 
         internal static char ConvertToManaged(byte nativeChar)
         {
-            var bytes = new ReadOnlySpan<byte>(ref nativeChar, 1);
+            var bytes = new ReadOnlySpan<byte>(in nativeChar);
             string str = Encoding.Default.GetString(bytes);
             return str[0];
         }
@@ -122,11 +120,6 @@ namespace System.StubHelpers
                 return new string((sbyte*)cstr);
         }
 
-        internal static void ClearNative(IntPtr pNative)
-        {
-            Marshal.FreeCoTaskMem(pNative);
-        }
-
         internal static unsafe void ConvertFixedToNative(int flags, string strManaged, IntPtr pNativeBuffer, int length)
         {
             if (strManaged == null)
@@ -147,7 +140,7 @@ namespace System.StubHelpers
             // Flags defined in ILFixedCSTRMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit).
             bool throwOnUnmappableChar = 0 != (flags >> 8);
             bool bestFit = 0 != (flags & 0xFF);
-            uint defaultCharUsed = 0;
+            Interop.BOOL defaultCharUsed = Interop.BOOL.FALSE;
 
             int cbWritten;
 
@@ -161,14 +154,14 @@ namespace System.StubHelpers
                     numChars,
                     buffer,
                     length,
-                    IntPtr.Zero,
-                    throwOnUnmappableChar ? new IntPtr(&defaultCharUsed) : IntPtr.Zero);
+                    null,
+                    throwOnUnmappableChar ? &defaultCharUsed : null);
 #else
                 cbWritten = Encoding.UTF8.GetBytes(pwzChar, numChars, buffer, length);
 #endif
             }
 
-            if (defaultCharUsed != 0)
+            if (defaultCharUsed != Interop.BOOL.FALSE)
             {
                 throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
             }
@@ -183,8 +176,8 @@ namespace System.StubHelpers
 
         internal static unsafe string ConvertFixedToManaged(IntPtr cstr, int length)
         {
-            int end = SpanHelpers.IndexOf(ref *(byte*)cstr, 0, length);
-            if (end != -1)
+            int end = new ReadOnlySpan<byte>((byte*)cstr, length).IndexOf((byte)0);
+            if (end >= 0)
             {
                 length = end;
             }
@@ -192,60 +185,6 @@ namespace System.StubHelpers
             return new string((sbyte*)cstr, 0, length);
         }
     }  // class CSTRMarshaler
-
-    internal static class UTF8Marshaler
-    {
-        private const int MAX_UTF8_CHAR_SIZE = 3;
-        internal static unsafe IntPtr ConvertToNative(int flags, string strManaged, IntPtr pNativeBuffer)
-        {
-            if (null == strManaged)
-            {
-                return IntPtr.Zero;
-            }
-
-            int nb;
-            byte* pbNativeBuffer = (byte*)pNativeBuffer;
-
-            // If we are marshaling into a stack buffer allocated by the ILStub
-            // we will use a "1-pass" mode where we convert the string directly into the unmanaged buffer.
-            // else we will allocate the precise native heap memory.
-            if (pbNativeBuffer != null)
-            {
-                // this is the number of bytes allocated by the ILStub.
-                nb = (strManaged.Length + 1) * MAX_UTF8_CHAR_SIZE;
-
-                // nb is the actual number of bytes written by Encoding.GetBytes.
-                // use nb to de-limit the string since we are allocating more than
-                // required on stack
-                nb = strManaged.GetBytesFromEncoding(pbNativeBuffer, nb, Encoding.UTF8);
-            }
-            // required bytes > 260 , allocate required bytes on heap
-            else
-            {
-                nb = Encoding.UTF8.GetByteCount(strManaged);
-                // + 1 for the null character.
-                pbNativeBuffer = (byte*)Marshal.AllocCoTaskMem(nb + 1);
-                strManaged.GetBytesFromEncoding(pbNativeBuffer, nb, Encoding.UTF8);
-            }
-            pbNativeBuffer[nb] = 0x0;
-            return (IntPtr)pbNativeBuffer;
-        }
-
-        internal static unsafe string? ConvertToManaged(IntPtr cstr)
-        {
-            if (IntPtr.Zero == cstr)
-                return null;
-
-            byte* pBytes = (byte*)cstr;
-            int nbBytes = string.strlen(pBytes);
-            return string.CreateStringFromEncoding(pBytes, nbBytes, Encoding.UTF8);
-        }
-
-        internal static void ClearNative(IntPtr pNative)
-        {
-            Marshal.FreeCoTaskMem(pNative);
-        }
-    }
 
     internal static class UTF8BufferMarshaler
     {
@@ -362,7 +301,7 @@ namespace System.StubHelpers
                 if (length == 1)
                 {
                     // In the empty string case, we need to use FastAllocateString rather than the
-                    // String .ctor, since newing up a 0 sized string will always return String.Emtpy.
+                    // String .ctor, since newing up a 0 sized string will always return String.Empty.
                     // When we marshal that out as a bstr, it can wind up getting modified which
                     // corrupts string.Empty.
                     ret = string.FastAllocateString(0);
@@ -443,7 +382,7 @@ namespace System.StubHelpers
         {
             if (IntPtr.Zero != pNative)
             {
-                Marshal.FreeCoTaskMem((IntPtr)(((long)pNative) - sizeof(uint)));
+                Marshal.FreeCoTaskMem(pNative - sizeof(uint));
             }
         }
     }  // class VBByValStrMarshaler
@@ -508,6 +447,17 @@ namespace System.StubHelpers
             managed.Slice(0, numChars).CopyTo(native);
             native[numChars] = '\0';
         }
+
+        internal static unsafe string ConvertToManaged(IntPtr nativeHome, int length)
+        {
+            int end = new ReadOnlySpan<char>((char*)nativeHome, length).IndexOf('\0');
+            if (end >= 0)
+            {
+                length = end;
+            }
+
+            return new string((char*)nativeHome, 0, length);
+        }
     }  // class WSTRBufferMarshaler
 #if FEATURE_COMINTEROP
 
@@ -534,10 +484,7 @@ namespace System.StubHelpers
                 throw new InvalidOperationException(SR.Interop_Marshal_SafeHandle_InvalidOperation);
             }
 
-            if (handle is null)
-            {
-                throw new ArgumentNullException(nameof(handle));
-            }
+            ArgumentNullException.ThrowIfNull(handle);
 
             return StubHelpers.AddToCleanupList(ref cleanupWorkList, handle);
         }
@@ -567,7 +514,7 @@ namespace System.StubHelpers
     }  // class DateMarshaler
 
 #if FEATURE_COMINTEROP
-    internal static class InterfaceMarshaler
+    internal static partial class InterfaceMarshaler
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr ConvertToNative(object objSrc, IntPtr itfMT, IntPtr classMT, int flags);
@@ -575,8 +522,8 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags);
 
-        [DllImport(RuntimeHelpers.QCall)]
-        internal static extern void ClearNative(IntPtr pUnk);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler__ClearNative")]
+        internal static partial void ClearNative(IntPtr pUnk);
     }  // class InterfaceMarshaler
 #endif // FEATURE_COMINTEROP
 
@@ -585,7 +532,7 @@ namespace System.StubHelpers
         // Needs to match exactly with MngdNativeArrayMarshaler in ilmarshalers.h
         internal struct MarshalerState
         {
-#pragma warning disable CA1823 // not used by managed code
+#pragma warning disable CA1823, IDE0044 // not used by managed code
             private IntPtr m_pElementMT;
             private IntPtr m_Array;
             private IntPtr m_pManagedNativeArrayMarshaler;
@@ -696,7 +643,7 @@ namespace System.StubHelpers
         }
 
         // Pointer to MngdNativeArrayMarshaler, ownership not assumed.
-        private IntPtr pvArrayMarshaler;
+        private readonly IntPtr pvArrayMarshaler;
 
         // Type of action to perform after the CLR-to-unmanaged call.
         private BackPropAction backPropAction;
@@ -739,7 +686,7 @@ namespace System.StubHelpers
         private unsafe IntPtr ConvertArrayToNative(object pManagedHome, int dwFlags)
         {
             Type elementType = pManagedHome.GetType().GetElementType()!;
-            VarEnum vt = VarEnum.VT_EMPTY;
+            VarEnum vt;
 
             switch (Type.GetTypeCode(elementType))
             {
@@ -1127,7 +1074,7 @@ namespace System.StubHelpers
             m_obj = obj;
         }
 
-        private object m_obj;
+        private readonly object m_obj;
 
         protected override void DestroyCore()
         {
@@ -1145,7 +1092,7 @@ namespace System.StubHelpers
             m_handle = handle;
         }
 
-        private SafeHandle m_handle;
+        private readonly SafeHandle m_handle;
 
         // This field is passed by-ref to SafeHandle.DangerousAddRef.
         // DestroyCore ignores this element if m_owned is not set to true.
@@ -1167,13 +1114,7 @@ namespace System.StubHelpers
     internal static class StubHelpers
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void InitDeclaringType(IntPtr pMD);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetNDirectTarget(IntPtr pMD);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetDelegateTarget(Delegate pThis, ref IntPtr pStubArg);
+        internal static extern IntPtr GetDelegateTarget(Delegate pThis);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ClearLastError();
@@ -1228,6 +1169,26 @@ namespace System.StubHelpers
         internal static extern Exception InternalGetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object? pThis);
 
 #endif // FEATURE_COMINTEROP
+
+        [ThreadStatic]
+        private static Exception? s_pendingExceptionObject;
+
+        internal static Exception? GetPendingExceptionObject()
+        {
+            Exception? ex = s_pendingExceptionObject;
+            if (ex != null)
+            {
+                ex.InternalPreserveStackTrace();
+                s_pendingExceptionObject = null;
+            }
+
+            return ex;
+        }
+
+        internal static void SetPendingExceptionObject(Exception? exception)
+        {
+            s_pendingExceptionObject = exception;
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr CreateCustomMarshalerHelper(IntPtr pMD, int paramToken, IntPtr hndManagedType);
@@ -1322,11 +1283,6 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetStubContext();
 
-#if TARGET_64BIT
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetStubContextAddr();
-#endif // TARGET_64BIT
-
 #if FEATURE_ARRAYSTUB_AS_IL
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ArrayTypeCheck(object o, object[] arr);
@@ -1337,6 +1293,7 @@ namespace System.StubHelpers
         internal static extern void MulticastDebuggerTraceHelper(object o, int count);
 #endif
 
+        [Intrinsic]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern IntPtr NextCallReturnAddress();
     }  // class StubHelpers

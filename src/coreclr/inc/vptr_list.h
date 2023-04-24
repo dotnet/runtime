@@ -6,9 +6,6 @@
 
 VPTR_CLASS(EEJitManager)
 
-#ifdef FEATURE_PREJIT
-VPTR_CLASS(NativeImageJitManager)
-#endif // FEATURE_PREJIT
 #ifdef FEATURE_READYTORUN
 VPTR_CLASS(ReadyToRunJitManager)
 #endif
@@ -16,6 +13,7 @@ VPTR_CLASS(EECodeManager)
 
 VPTR_CLASS(RangeList)
 VPTR_CLASS(LockedRangeList)
+VPTR_CLASS(CodeRangeMapRangeList)
 
 #ifdef EnC_SUPPORTED
 VPTR_CLASS(EditAndContinueModule)
@@ -26,7 +24,6 @@ VPTR_CLASS(ReflectionModule)
 VPTR_CLASS(AppDomain)
 VPTR_CLASS(SystemDomain)
 
-VPTR_CLASS(DomainAssembly)
 VPTR_CLASS(PrecodeStubManager)
 VPTR_CLASS(StubLinkStubManager)
 VPTR_CLASS(ThePreStubManager)
@@ -42,16 +39,12 @@ VPTR_CLASS(DelegateInvokeStubManager)
 VPTR_CLASS(TailCallStubManager)
 #endif
 VPTR_CLASS(CallCountingStubManager)
-VPTR_CLASS(PEFile)
-VPTR_CLASS(PEAssembly)
+
 VPTR_CLASS(PEImageLayout)
-VPTR_CLASS(RawImageLayout)
 VPTR_CLASS(ConvertedImageLayout)
-VPTR_CLASS(MappedImageLayout)
-#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
 VPTR_CLASS(LoadedImageLayout)
-#endif // !CROSSGEN_COMPILE && !TARGET_UNIX
 VPTR_CLASS(FlatImageLayout)
+
 #ifdef FEATURE_COMINTEROP
 VPTR_CLASS(ComMethodFrame)
 VPTR_CLASS(ComPlusMethodFrame)
@@ -90,9 +83,6 @@ VPTR_CLASS(CallCountingHelperFrame)
 VPTR_CLASS(ExternalMethodFrame)
 #ifdef FEATURE_READYTORUN
 VPTR_CLASS(DynamicHelperFrame)
-#endif
-#if defined(TARGET_X86)
-VPTR_CLASS(UMThkCallFrame)
 #endif
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 VPTR_CLASS(TailCallFrame)

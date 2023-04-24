@@ -7,6 +7,7 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 public class Value0
 {
@@ -762,14 +763,15 @@ public class MyData
     }
 }
 
-public class Test
+public class Test_threadstatic01
 {
 
     private int retVal = 0;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
-        Test staticsTest = new Test();
+        Test_threadstatic01 staticsTest = new Test_threadstatic01();
         staticsTest.RunTest();
         Console.WriteLine(100 == staticsTest.retVal ? "Test Passed":"Test Failed");
         return staticsTest.retVal;

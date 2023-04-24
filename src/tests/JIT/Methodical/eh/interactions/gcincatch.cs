@@ -4,13 +4,14 @@
 // GC.Collect in a handler might corrupt values in gc heap if gcinfo is not correct
 
 using System;
+using Xunit;
 
 namespace test2
 {
     /// <summary>
     /// Summary description for Class1.
     /// </summary>
-    class Class1
+    public class Class1
     {
         private static TestUtil.TestLog testLog;
 
@@ -40,7 +41,8 @@ namespace test2
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        public static int Main(String[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             int[] ar = new int[] { 1, 2, 3, 4, 5 };
 
@@ -49,13 +51,6 @@ namespace test2
 
             try
             {
-                if (args.Length > 0)
-                {
-                    for (int i = 0; i < ar.Length; i++)
-                    {
-                        Console.WriteLine("ar[" + i + "]=" + ar[i]);
-                    }
-                }
                 Console.WriteLine("In try");
                 GC.Collect();
                 GC.WaitForPendingFinalizers();

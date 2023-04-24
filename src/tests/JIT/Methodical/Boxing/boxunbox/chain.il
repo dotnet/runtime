@@ -8,11 +8,15 @@
   .ver 4:0:0:0
 }
 .assembly 'chain' { }
-.namespace JitTest {
-.class private auto ansi beforefieldinit Test extends [mscorlib]System.Object
+.assembly extern xunit.core {}
+.namespace JitTest_chain_boxunbox_il {
+.class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
 {
-.method private hidebysig static int32 Main() cil managed
+.method public hidebysig static int32 Main() cil managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack  32
 	ldc.i8 13

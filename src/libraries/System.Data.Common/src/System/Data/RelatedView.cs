@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -89,7 +90,7 @@ namespace System.Data
             Reset();
         }
 
-        public override bool Equals(DataView? dv)
+        public override bool Equals([NotNullWhen(true)] DataView? dv)
         {
             RelatedView? other = dv as RelatedView;
             if (other == null)
@@ -117,7 +118,7 @@ namespace System.Data
             }
         }
 
-        private bool CompareArray(object?[]? value1, object?[]? value2)
+        private static bool CompareArray(object?[]? value1, object?[]? value2)
         {
             if (value1 == null || value2 == null)
             {

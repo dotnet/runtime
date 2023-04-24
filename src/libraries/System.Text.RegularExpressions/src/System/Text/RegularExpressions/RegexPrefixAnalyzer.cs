@@ -3,698 +3,990 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Text.RegularExpressions
 {
     /// <summary>Detects various forms of prefixes in the regular expression that can help FindFirstChars optimize its search.</summary>
-    internal ref struct RegexPrefixAnalyzer
+    internal static class RegexPrefixAnalyzer
     {
-        private const int StackBufferSize = 32;
-        private const int BeforeChild = 64;
-        private const int AfterChild = 128;
-
-        // where the regex can be pegged
-        public const int Beginning = 0x0001;
-        public const int Bol = 0x0002;
-        public const int Start = 0x0004;
-        public const int Eol = 0x0008;
-        public const int EndZ = 0x0010;
-        public const int End = 0x0020;
-        public const int Boundary = 0x0040;
-        public const int ECMABoundary = 0x0080;
-
-        private readonly List<RegexFC> _fcStack;
-        private ValueListBuilder<int> _intStack;    // must not be readonly
-        private bool _skipAllChildren;              // don't process any more children at the current level
-        private bool _skipchild;                    // don't process the current child.
-        private bool _failed;
-
-        private RegexPrefixAnalyzer(Span<int> intStack)
+        /// <summary>Computes the leading substring in <paramref name="node"/>; may be empty.</summary>
+        public static string FindPrefix(RegexNode node)
         {
-            _fcStack = new List<RegexFC>(StackBufferSize);
-            _intStack = new ValueListBuilder<int>(intStack);
-            _failed = false;
-            _skipchild = false;
-            _skipAllChildren = false;
-        }
+            var vsb = new ValueStringBuilder(stackalloc char[64]);
+            Process(node, ref vsb);
+            return vsb.ToString();
 
-        /// <summary>Computes the leading substring in <paramref name="tree"/>.</summary>
-        /// <remarks>It's quite trivial and gives up easily, in which case an empty string is returned.</remarks>
-        public static (string Prefix, bool CaseInsensitive) ComputeLeadingSubstring(RegexTree tree)
-        {
-            RegexNode curNode = tree.Root;
-            RegexNode? concatNode = null;
-            int nextChild = 0;
-
-            while (true)
+            // Processes the node, adding any prefix text to the builder.
+            // Returns whether processing should continue with subsequent nodes.
+            static bool Process(RegexNode node, ref ValueStringBuilder vsb)
             {
-                switch (curNode.Type)
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
-                    case RegexNode.Concatenate:
-                        if (curNode.ChildCount() > 0)
-                        {
-                            concatNode = curNode;
-                            nextChild = 0;
-                        }
-                        break;
-
-                    case RegexNode.Atomic:
-                    case RegexNode.Capture:
-                        curNode = curNode.Child(0);
-                        concatNode = null;
-                        continue;
-
-                    case RegexNode.Oneloop:
-                    case RegexNode.Oneloopatomic:
-                    case RegexNode.Onelazy:
-
-                        // In release, cutoff at a length to which we can still reasonably construct a string and Boyer-Moore search.
-                        // In debug, use a smaller cutoff to exercise the cutoff path in tests
-                        const int Cutoff =
-#if DEBUG
-                            50;
-#else
-                            RegexBoyerMoore.MaxLimit;
-#endif
-
-                        if (curNode.M > 0 && curNode.M < Cutoff)
-                        {
-                            return (new string(curNode.Ch, curNode.M), (curNode.Options & RegexOptions.IgnoreCase) != 0);
-                        }
-
-                        return (string.Empty, false);
-
-                    case RegexNode.One:
-                        return (curNode.Ch.ToString(), (curNode.Options & RegexOptions.IgnoreCase) != 0);
-
-                    case RegexNode.Multi:
-                        return (curNode.Str!, (curNode.Options & RegexOptions.IgnoreCase) != 0);
-
-                    case RegexNode.Bol:
-                    case RegexNode.Eol:
-                    case RegexNode.Boundary:
-                    case RegexNode.ECMABoundary:
-                    case RegexNode.Beginning:
-                    case RegexNode.Start:
-                    case RegexNode.EndZ:
-                    case RegexNode.End:
-                    case RegexNode.Empty:
-                    case RegexNode.Require:
-                    case RegexNode.Prevent:
-                        break;
-
-                    default:
-                        return (string.Empty, false);
+                    // If we're too deep on the stack, just give up finding any more prefix.
+                    return false;
                 }
 
-                if (concatNode == null || nextChild >= concatNode.ChildCount())
+                // We don't bother to handle reversed input, so process at most one node
+                // when handling RightToLeft.
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+
+                switch (node.Kind)
                 {
-                    return (string.Empty, false);
-                }
-
-                curNode = concatNode.Child(nextChild++);
-            }
-        }
-
-        /// <summary>Computes a character class for the first character in <paramref name="tree"/>.</summary>
-        /// <remarks>true if a character class could be computed; otherwise, false.</remarks>
-        public static (string CharClass, bool CaseInsensitive)[]? ComputeFirstCharClass(RegexTree tree)
-        {
-            var s = new RegexPrefixAnalyzer(stackalloc int[StackBufferSize]);
-            RegexFC? fc = s.RegexFCFromRegexTree(tree);
-            s.Dispose();
-
-            if (fc == null || fc._nullable)
-            {
-                return null;
-            }
-
-            if (fc.CaseInsensitive)
-            {
-                fc.AddLowercase(((tree.Options & RegexOptions.CultureInvariant) != 0) ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
-            }
-
-            return new[] { (fc.GetFirstChars(), fc.CaseInsensitive) };
-        }
-
-        /// <summary>Computes character classes for the first <paramref name="maxChars"/> characters in <paramref name="tree"/>.</summary>
-        /// <remarks>
-        /// For example, given "hello|world" and a <paramref name="maxChars"/> of 3, this will compute the sets [hw], [eo], and [lr].
-        /// As with some of the other computations, it's quite trivial and gives up easily; for example, we could in
-        /// theory handle nodes in a concatenation after an alternation, but we look only at the branches of the
-        /// alternation itself.  As this computation is intended primarily to handle global alternations, it's currently
-        /// a reasonable tradeoff between simplicity, performance, and the fullness of potential optimizations.
-        /// </remarks>
-        public static (string CharClass, bool CaseInsensitive)[]? ComputeMultipleCharClasses(RegexTree tree, int maxChars)
-        {
-            Debug.Assert(maxChars > 1);
-
-            if ((tree.Options & RegexOptions.RightToLeft) != 0)
-            {
-                // We don't bother for RightToLeft.  It's rare and adds non-trivial complication.
-                return null;
-            }
-
-            // The known minimum required length will have already factored in knowledge about alternations.
-            // If the known min length is less than the maximum number of chars requested, we can
-            // cut this short.  If it's zero, there's nothing to be found.  If it's one, we won't do
-            // any better than ComputeFirstCharClass (and likely worse).  Otherwise, don't bother looking for more
-            // the min of the min length and the max requested chars.
-            maxChars = Math.Min(tree.MinRequiredLength, maxChars);
-            if (maxChars <= 1)
-            {
-                return null;
-            }
-
-            // Find an alternation on the path to the first node.  If we can't, bail.
-            RegexNode node = tree.Root;
-            while (node.Type != RegexNode.Alternate)
-            {
-                switch (node.Type)
-                {
-                    case RegexNode.Atomic:
-                    case RegexNode.Capture:
-                    case RegexNode.Concatenate:
-                        node = node.Child(0);
-                        break;
-
-                    default:
-                        return null;
-                }
-            }
-            Debug.Assert(node.Type == RegexNode.Alternate);
-
-            // Create RegexCharClasses to store the built-up sets.  We may end up returning fewer
-            // than this if we find we can't easily fill this number of sets with 100% confidence.
-            var classes = new RegexCharClass?[maxChars];
-            bool caseInsensitive = false;
-
-            int branches = node.ChildCount();
-            Debug.Assert(branches >= 2);
-            for (int branchNum = 0; branchNum < branches; branchNum++)
-            {
-                RegexNode alternateBranch = node.Child(branchNum);
-                caseInsensitive |= (alternateBranch.Options & RegexOptions.IgnoreCase) != 0;
-
-                switch (alternateBranch.Type)
-                {
-                    case RegexNode.Multi:
-                        maxChars = Math.Min(maxChars, alternateBranch.Str!.Length);
-                        for (int i = 0; i < maxChars; i++)
+                    // Concatenation
+                    case RegexNodeKind.Concatenate:
                         {
-                            (classes[i] ??= new RegexCharClass()).AddChar(alternateBranch.Str[i]);
-                        }
-                        continue;
-
-                    case RegexNode.Concatenate:
-                        {
-                            int classPos = 0;
-                            int concatChildren = alternateBranch.ChildCount();
-                            for (int i = 0; i < concatChildren && classPos < classes.Length; i++)
+                            int childCount = node.ChildCount();
+                            for (int i = 0; i < childCount; i++)
                             {
-                                RegexNode concatChild = alternateBranch.Child(i);
-                                caseInsensitive |= (concatChild.Options & RegexOptions.IgnoreCase) != 0;
-
-                                switch (concatChild.Type)
+                                if (!Process(node.Child(i), ref vsb))
                                 {
-                                    case RegexNode.One:
-                                        (classes[classPos++] ??= new RegexCharClass()).AddChar(concatChild.Ch);
-                                        break;
-                                    case RegexNode.Set:
-                                        (classes[classPos++] ??= new RegexCharClass()).AddCharClass(RegexCharClass.Parse(concatChild.Str!));
-                                        break;
-                                    case RegexNode.Multi:
-                                        for (int c = 0; c < concatChild.Str!.Length && classPos < classes.Length; c++)
-                                        {
-                                            (classes[classPos++] ??= new RegexCharClass()).AddChar(concatChild.Str[c]);
-                                        }
-                                        break;
+                                    return false;
+                                }
+                            }
+                            return !rtl;
+                        }
 
-                                    default: // nothing else supported
-                                        i = concatChildren; // stop looking at additional nodes
-                                        break;
+                    // Alternation: find a string that's a shared prefix of all branches
+                    case RegexNodeKind.Alternate:
+                        {
+                            int childCount = node.ChildCount();
+
+                            // Store the initial branch into the target builder, keeping track
+                            // of how much was appended. Any of this contents that doesn't overlap
+                            // will every other branch will be removed before returning.
+                            int initialLength = vsb.Length;
+                            Process(node.Child(0), ref vsb);
+                            int addedLength = vsb.Length - initialLength;
+
+                            // Then explore the rest of the branches, finding the length
+                            // of prefix they all share in common with the initial branch.
+                            if (addedLength != 0)
+                            {
+                                var alternateSb = new ValueStringBuilder(64);
+
+                                // Process each branch.  If we reach a point where we've proven there's
+                                // no overlap, we can bail early.
+                                for (int i = 1; i < childCount && addedLength != 0; i++)
+                                {
+                                    alternateSb.Length = 0;
+
+                                    // Process the branch into a temporary builder.
+                                    Process(node.Child(i), ref alternateSb);
+
+                                    // Find how much overlap there is between this branch's prefix
+                                    // and the smallest amount of prefix that overlapped with all
+                                    // the previously seen branches.
+                                    addedLength = vsb.AsSpan(initialLength, addedLength).CommonPrefixLength(alternateSb.AsSpan());
+                                }
+
+                                alternateSb.Dispose();
+
+                                // Then cull back on what was added based on the other branches.
+                                vsb.Length = initialLength + addedLength;
+                            }
+
+                            // Don't explore anything after the alternation.  We could make this work if desirable,
+                            // but it's currently not worth the extra complication.  The entire contents of every
+                            // branch would need to be identical other than zero-width anchors/assertions.
+                            return false;
+                        }
+
+                    // One character
+                    case RegexNodeKind.One:
+                        vsb.Append(node.Ch);
+                        return !rtl;
+
+                    // Multiple characters
+                    case RegexNodeKind.Multi:
+                        vsb.Append(node.Str);
+                        return !rtl;
+
+                    // Loop of one character
+                    case RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic or RegexNodeKind.Onelazy when node.M > 0:
+                        const int SingleCharIterationLimit = 32; // arbitrary cut-off to avoid creating super long strings unnecessarily
+                        int count = Math.Min(node.M, SingleCharIterationLimit);
+                        vsb.Append(node.Ch, count);
+                        return count == node.N && !rtl;
+
+                    // Loop of a node
+                    case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M > 0:
+                        {
+                            const int NodeIterationLimit = 4; // arbitrary cut-off to avoid creating super long strings unnecessarily
+                            int limit = Math.Min(node.M, NodeIterationLimit);
+                            for (int i = 0; i < limit; i++)
+                            {
+                                if (!Process(node.Child(0), ref vsb))
+                                {
+                                    return false;
+                                }
+                            }
+                            return limit == node.N && !rtl;
+                        }
+
+                    // Grouping nodes for which we only care about their single child
+                    case RegexNodeKind.Atomic:
+                    case RegexNodeKind.Capture:
+                        return Process(node.Child(0), ref vsb);
+
+                    // Zero-width anchors and assertions
+                    case RegexNodeKind.Bol:
+                    case RegexNodeKind.Eol:
+                    case RegexNodeKind.Boundary:
+                    case RegexNodeKind.ECMABoundary:
+                    case RegexNodeKind.NonBoundary:
+                    case RegexNodeKind.NonECMABoundary:
+                    case RegexNodeKind.Beginning:
+                    case RegexNodeKind.Start:
+                    case RegexNodeKind.EndZ:
+                    case RegexNodeKind.End:
+                    case RegexNodeKind.Empty:
+                    case RegexNodeKind.UpdateBumpalong:
+                    case RegexNodeKind.PositiveLookaround:
+                    case RegexNodeKind.NegativeLookaround:
+                        return true;
+
+                    // Give up for anything else
+                    default:
+                        return false;
+                }
+            }
+        }
+
+        /// <summary>Finds sets at fixed-offsets from the beginning of the pattern/</summary>
+        /// <param name="root">The RegexNode tree root.</param>
+        /// <param name="thorough">true to spend more time finding sets (e.g. through alternations); false to do a faster analysis that's potentially more incomplete.</param>
+        /// <returns>The array of found sets, or null if there aren't any.</returns>
+        public static List<RegexFindOptimizations.FixedDistanceSet>? FindFixedDistanceSets(RegexNode root, bool thorough)
+        {
+            const int MaxLoopExpansion = 20; // arbitrary cut-off to avoid loops adding significant overhead to processing
+            const int MaxFixedResults = 50; // arbitrary cut-off to avoid generating lots of sets unnecessarily
+
+            // Find all fixed-distance sets.
+            var results = new List<RegexFindOptimizations.FixedDistanceSet>();
+            int distance = 0;
+            TryFindFixedSets(root, results, ref distance, thorough);
+
+            // Remove any sets that match everything; they're not helpful.  (This check exists primarily to weed
+            // out use of . in Singleline mode, but also filters out explicit sets like [\s\S].)
+            for (int i = 0; i < results.Count; i++)
+            {
+                if (results[i].Set == RegexCharClass.AnyClass)
+                {
+                    results.RemoveAll(s => s.Set == RegexCharClass.AnyClass);
+                    break;
+                }
+            }
+
+            // If we don't have any results, try harder to compute one for the starting character.
+            // This is a more involved computation that can find things the fixed-distance investigation
+            // doesn't.
+            if (results.Count == 0)
+            {
+                if (FindFirstCharClass(root) is not string charClass ||
+                    charClass == RegexCharClass.AnyClass) // weed out match-all, same as above
+                {
+                    return null;
+                }
+
+                results.Add(new RegexFindOptimizations.FixedDistanceSet(null, charClass, 0));
+            }
+
+            // For every entry, try to get the chars that make up the set, if there are few enough.
+            // For any for which we couldn't get the small chars list, see if we can get other useful info.
+            Span<char> scratch = stackalloc char[5]; // max optimized by IndexOfAny today
+            for (int i = 0; i < results.Count; i++)
+            {
+                RegexFindOptimizations.FixedDistanceSet result = results[i];
+                result.Negated = RegexCharClass.IsNegated(result.Set);
+
+                int count = RegexCharClass.GetSetChars(result.Set, scratch);
+
+                if (!result.Negated && count > 0)
+                {
+                    result.Chars = scratch.Slice(0, count).ToArray();
+                }
+
+                if (thorough)
+                {
+                    // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
+                    if ((result.Chars is null || count > 2) && RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
+                    {
+                        result.Chars = null;
+                        result.Range = (lowInclusive, highInclusive);
+                    }
+                    else if (result.Chars is null && !result.Negated && RegexCharClass.TryGetAsciiSetChars(result.Set, out char[]? asciiChars))
+                    {
+                        result.AsciiSet = asciiChars;
+                    }
+                }
+
+                results[i] = result;
+            }
+
+            return results;
+
+            // Starting from the specified root node, populates results with any characters at a fixed distance
+            // from the node's starting position.  The function returns true if the entire contents of the node
+            // is at a fixed distance, in which case distance will have been updated to include the full length
+            // of the node.  If it returns false, the node isn't entirely fixed, in which case subsequent nodes
+            // shouldn't be examined and distance should no longer be trusted.  However, regardless of whether it
+            // returns true or false, it may have populated results, and all populated results are valid.
+            static bool TryFindFixedSets(RegexNode node, List<RegexFindOptimizations.FixedDistanceSet> results, ref int distance, bool thorough)
+            {
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
+                {
+                    return false;
+                }
+
+                if ((node.Options & RegexOptions.RightToLeft) != 0)
+                {
+                    return false;
+                }
+
+                switch (node.Kind)
+                {
+                    case RegexNodeKind.One:
+                        if (results.Count < MaxFixedResults)
+                        {
+                            string setString = RegexCharClass.OneToStringClass(node.Ch);
+                            results.Add(new RegexFindOptimizations.FixedDistanceSet(null, setString, distance++));
+                            return true;
+                        }
+                        return false;
+
+                    case RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic when node.M > 0:
+                        {
+                            string setString = RegexCharClass.OneToStringClass(node.Ch);
+                            int minIterations = Math.Min(node.M, MaxLoopExpansion);
+                            int i = 0;
+                            for (; i < minIterations && results.Count < MaxFixedResults; i++)
+                            {
+                                results.Add(new RegexFindOptimizations.FixedDistanceSet(null, setString, distance++));
+                            }
+                            return i == node.M && i == node.N;
+                        }
+
+                    case RegexNodeKind.Multi:
+                        {
+                            string s = node.Str!;
+                            int i = 0;
+                            for (; i < s.Length && results.Count < MaxFixedResults; i++)
+                            {
+                                string setString = RegexCharClass.OneToStringClass(s[i]);
+                                results.Add(new RegexFindOptimizations.FixedDistanceSet(null, setString, distance++));
+                            }
+                            return i == s.Length;
+                        }
+
+                    case RegexNodeKind.Set:
+                        if (results.Count < MaxFixedResults)
+                        {
+                            results.Add(new RegexFindOptimizations.FixedDistanceSet(null, node.Str!, distance++));
+                            return true;
+                        }
+                        return false;
+
+                    case RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic when node.M > 0:
+                        {
+                            int minIterations = Math.Min(node.M, MaxLoopExpansion);
+                            int i = 0;
+                            for (; i < minIterations && results.Count < MaxFixedResults; i++)
+                            {
+                                results.Add(new RegexFindOptimizations.FixedDistanceSet(null, node.Str!, distance++));
+                            }
+                            return i == node.M && i == node.N;
+                        }
+
+                    case RegexNodeKind.Notone:
+                        // We could create a set out of Notone, but it will be of little value in helping to improve
+                        // the speed of finding the first place to match, as almost every character will match it.
+                        distance++;
+                        return true;
+
+                    case RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic when node.M == node.N:
+                        distance += node.M;
+                        return true;
+
+                    case RegexNodeKind.Beginning:
+                    case RegexNodeKind.Bol:
+                    case RegexNodeKind.Boundary:
+                    case RegexNodeKind.ECMABoundary:
+                    case RegexNodeKind.Empty:
+                    case RegexNodeKind.End:
+                    case RegexNodeKind.EndZ:
+                    case RegexNodeKind.Eol:
+                    case RegexNodeKind.NonBoundary:
+                    case RegexNodeKind.NonECMABoundary:
+                    case RegexNodeKind.UpdateBumpalong:
+                    case RegexNodeKind.Start:
+                    case RegexNodeKind.NegativeLookaround:
+                    case RegexNodeKind.PositiveLookaround:
+                        // Zero-width anchors and assertions.  In theory, for PositiveLookaround and NegativeLookaround we could also
+                        // investigate them and use the learned knowledge to impact the generated sets, at least for lookaheads.
+                        // For now, we don't bother.
+                        return true;
+
+                    case RegexNodeKind.Atomic:
+                    case RegexNodeKind.Group:
+                    case RegexNodeKind.Capture:
+                        return TryFindFixedSets(node.Child(0), results, ref distance, thorough);
+
+                    case RegexNodeKind.Lazyloop or RegexNodeKind.Loop when node.M > 0:
+                        // This effectively only iterates the loop once.  If deemed valuable,
+                        // it could be updated in the future to duplicate the found results
+                        // (updated to incorporate distance from previous iterations) and
+                        // summed distance for all node.M iterations.  If node.M == node.N,
+                        // this would then also allow continued evaluation of the rest of the
+                        // expression after the loop.
+                        TryFindFixedSets(node.Child(0), results, ref distance, thorough);
+                        return false;
+
+                    case RegexNodeKind.Concatenate:
+                        {
+                            int childCount = node.ChildCount();
+                            for (int i = 0; i < childCount; i++)
+                            {
+                                if (!TryFindFixedSets(node.Child(i), results, ref distance, thorough))
+                                {
+                                    return false;
+                                }
+                            }
+                            return true;
+                        }
+
+                    case RegexNodeKind.Alternate when thorough:
+                        {
+                            int childCount = node.ChildCount();
+                            bool allSameSize = true;
+                            int? sameDistance = null;
+                            var combined = new Dictionary<int, (RegexCharClass Set, int Count)>();
+
+                            var localResults = new List<RegexFindOptimizations.FixedDistanceSet> ();
+                            for (int i = 0; i < childCount; i++)
+                            {
+                                localResults.Clear();
+                                int localDistance = 0;
+                                allSameSize &= TryFindFixedSets(node.Child(i), localResults, ref localDistance, thorough);
+
+                                if (localResults.Count == 0)
+                                {
+                                    return false;
+                                }
+
+                                if (allSameSize)
+                                {
+                                    if (sameDistance is null)
+                                    {
+                                        sameDistance = localDistance;
+                                    }
+                                    else if (sameDistance.Value != localDistance)
+                                    {
+                                        allSameSize = false;
+                                    }
+                                }
+
+                                foreach (RegexFindOptimizations.FixedDistanceSet fixedSet in localResults)
+                                {
+                                    if (combined.TryGetValue(fixedSet.Distance, out (RegexCharClass Set, int Count) value))
+                                    {
+                                        if (value.Set.TryAddCharClass(RegexCharClass.Parse(fixedSet.Set)))
+                                        {
+                                            value.Count++;
+                                            combined[fixedSet.Distance] = value;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        combined[fixedSet.Distance] = (RegexCharClass.Parse(fixedSet.Set), 1);
+                                    }
                                 }
                             }
 
-                            maxChars = Math.Min(maxChars, classPos);
+                            foreach (KeyValuePair<int, (RegexCharClass Set, int Count)> pair in combined)
+                            {
+                                if (results.Count >= MaxFixedResults)
+                                {
+                                    allSameSize = false;
+                                    break;
+                                }
+
+                                if (pair.Value.Count == childCount)
+                                {
+                                    results.Add(new RegexFindOptimizations.FixedDistanceSet(null, pair.Value.Set.ToStringClass(), pair.Key + distance));
+                                }
+                            }
+
+                            if (allSameSize)
+                            {
+                                Debug.Assert(sameDistance.HasValue);
+                                distance += sameDistance.Value;
+                                return true;
+                            }
+
+                            return false;
                         }
-                        continue;
 
                     default:
-                        // Any other node type as a branch in the alternation and we give up.  Note that we don't special-case One/Notone/Set
-                        // because that would mean the whole branch was a single char, in which case this computation provides
-                        // zero benefit over the ComputeFirstCharClass computation.
-                        return null;
+                        return false;
                 }
             }
-
-            // We've now examined all of the alternate branches and were able to successfully process them.
-            // Determine how many we can actually return.
-            for (int i = 0; i < maxChars; i++)
-            {
-                if (classes[i] is null)
-                {
-                    maxChars = i;
-                    break;
-                }
-            }
-
-            // Make sure we got something.
-            if (maxChars == 0)
-            {
-                return null;
-            }
-
-            // Create and return the RegexPrefix objects.
-            var prefixes = new (string CharClass, bool CaseInsensitive)[maxChars];
-
-            CultureInfo? ci = null;
-            if (caseInsensitive)
-            {
-                ci = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
-            }
-
-            for (int i = 0; i < prefixes.Length; i++)
-            {
-                if (caseInsensitive)
-                {
-                    classes[i]!.AddLowercase(ci!);
-                }
-                prefixes[i] = (classes[i]!.ToStringClass(), caseInsensitive);
-            }
-
-            return prefixes;
         }
 
-        /// <summary>Takes a RegexTree and computes the leading anchor that it encounters.</summary>
-        public static int FindLeadingAnchor(RegexTree tree)
-        {
-            RegexNode curNode = tree.Root;
-            RegexNode? concatNode = null;
-            int nextChild = 0;
-
-            while (true)
+        /// <summary>Sorts a set of fixed-distance set results from best to worst quality.</summary>
+        public static void SortFixedDistanceSetsByQuality(List<RegexFindOptimizations.FixedDistanceSet> results) =>
+            // Finally, try to move the "best" results to be earlier.  "best" here are ones we're able to search
+            // for the fastest and that have the best chance of matching as few false positives as possible.
+            results.Sort(static (s1, s2) =>
             {
-                switch (curNode.Type)
+                char[]? s1Chars = s1.Chars ?? s1.AsciiSet;
+                char[]? s2Chars = s2.Chars ?? s2.AsciiSet;
+                int s1CharsLength = s1Chars?.Length ?? 0;
+                int s2CharsLength = s2Chars?.Length ?? 0;
+                bool s1Negated = s1.Negated;
+                bool s2Negated = s2.Negated;
+                int s1RangeLength = s1.Range is not null ? GetRangeLength(s1.Range.Value, s1Negated) : 0;
+                int s2RangeLength = s2.Range is not null ? GetRangeLength(s2.Range.Value, s2Negated) : 0;
+
+                Debug.Assert(!s1Negated || s1Chars is null);
+                Debug.Assert(!s2Negated || s2Chars is null);
+
+                // If both have chars, prioritize the one with the smaller frequency for those chars.
+                if (s1Chars is not null && s2Chars is not null)
                 {
-                    case RegexNode.Bol:
-                        return Bol;
+                    // Prefer sets with less frequent values.  The frequency is only an approximation,
+                    // used as a tie-breaker when we'd otherwise effectively be picking randomly.
+                    // True frequencies will vary widely based on the actual data being searched, the language of the data, etc.
+                    float s1Frequency = SumFrequencies(s1Chars);
+                    float s2Frequency = SumFrequencies(s2Chars);
 
-                    case RegexNode.Eol:
-                        return Eol;
+                    if (s1Frequency != s2Frequency)
+                    {
+                        return s1Frequency.CompareTo(s2Frequency);
+                    }
 
-                    case RegexNode.Boundary:
-                        return Boundary;
+                    if (!RegexCharClass.IsAscii(s1Chars) && !RegexCharClass.IsAscii(s2Chars))
+                    {
+                        // Prefer the set with fewer values.
+                        return s1CharsLength.CompareTo(s2CharsLength);
+                    }
 
-                    case RegexNode.ECMABoundary:
-                        return ECMABoundary;
-
-                    case RegexNode.Beginning:
-                        return Beginning;
-
-                    case RegexNode.Start:
-                        return Start;
-
-                    case RegexNode.EndZ:
-                        return EndZ;
-
-                    case RegexNode.End:
-                        return End;
-
-                    case RegexNode.Concatenate:
-                        if (curNode.ChildCount() > 0)
+                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                    static float SumFrequencies(char[] chars)
+                    {
+                        float sum = 0;
+                        foreach (char c in chars)
                         {
-                            concatNode = curNode;
-                            nextChild = 0;
+                            // Lookup each character in the table.  Values >= 128 are ignored
+                            // and thus we'll get skew in the data.  It's already a gross approximation, though,
+                            // and it is primarily meant for disambiguation of ASCII letters.
+                            if (c < 128)
+                            {
+                                sum += Frequency[c];
+                            }
                         }
-                        break;
-
-                    case RegexNode.Atomic:
-                    case RegexNode.Capture:
-                        curNode = curNode.Child(0);
-                        concatNode = null;
-                        continue;
-
-                    case RegexNode.Empty:
-                    case RegexNode.Require:
-                    case RegexNode.Prevent:
-                        break;
-
-                    default:
-                        return 0;
-                }
-
-                if (concatNode == null || nextChild >= concatNode.ChildCount())
-                {
-                    return 0;
-                }
-
-                curNode = concatNode.Child(nextChild++);
-            }
-        }
-
-#if DEBUG
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        public static string AnchorDescription(int anchors)
-        {
-            var sb = new StringBuilder();
-
-            if ((anchors & Beginning) != 0) sb.Append(", Beginning");
-            if ((anchors & Start) != 0) sb.Append(", Start");
-            if ((anchors & Bol) != 0) sb.Append(", Bol");
-            if ((anchors & Boundary) != 0) sb.Append(", Boundary");
-            if ((anchors & ECMABoundary) != 0) sb.Append(", ECMABoundary");
-            if ((anchors & Eol) != 0) sb.Append(", Eol");
-            if ((anchors & End) != 0) sb.Append(", End");
-            if ((anchors & EndZ) != 0) sb.Append(", EndZ");
-
-            return sb.Length >= 2 ?
-                sb.ToString(2, sb.Length - 2) :
-                "None";
-        }
-#endif
-
-        /// <summary>
-        /// To avoid recursion, we use a simple integer stack.
-        /// </summary>
-        private void PushInt(int i) => _intStack.Append(i);
-
-        private bool IntIsEmpty() => _intStack.Length == 0;
-
-        private int PopInt() => _intStack.Pop();
-
-        /// <summary>
-        /// We also use a stack of RegexFC objects.
-        /// </summary>
-        private void PushFC(RegexFC fc) => _fcStack.Add(fc);
-
-        private bool FCIsEmpty() => _fcStack.Count == 0;
-
-        private RegexFC PopFC()
-        {
-            RegexFC item = TopFC();
-            _fcStack.RemoveAt(_fcStack.Count - 1);
-            return item;
-        }
-
-        private RegexFC TopFC() => _fcStack[_fcStack.Count - 1];
-
-        /// <summary>
-        /// Return rented buffers.
-        /// </summary>
-        public void Dispose() => _intStack.Dispose();
-
-        /// <summary>
-        /// The main FC computation. It does a shortcutted depth-first walk
-        /// through the tree and calls CalculateFC to emits code before
-        /// and after each child of an interior node, and at each leaf.
-        /// </summary>
-        private RegexFC? RegexFCFromRegexTree(RegexTree tree)
-        {
-            RegexNode? curNode = tree.Root;
-            int curChild = 0;
-
-            while (true)
-            {
-                int curNodeChildCount = curNode.ChildCount();
-                if (curNodeChildCount == 0)
-                {
-                    // This is a leaf node
-                    CalculateFC(curNode.Type, curNode, 0);
-                }
-                else if (curChild < curNodeChildCount && !_skipAllChildren)
-                {
-                    // This is an interior node, and we have more children to analyze
-                    CalculateFC(curNode.Type | BeforeChild, curNode, curChild);
-
-                    if (!_skipchild)
-                    {
-                        curNode = curNode.Child(curChild);
-                        // this stack is how we get a depth first walk of the tree.
-                        PushInt(curChild);
-                        curChild = 0;
+                        return sum;
                     }
-                    else
-                    {
-                        curChild++;
-                        _skipchild = false;
-                    }
-                    continue;
                 }
 
-                // This is an interior node where we've finished analyzing all the children, or
-                // the end of a leaf node.
-                _skipAllChildren = false;
-
-                if (IntIsEmpty())
-                    break;
-
-                curChild = PopInt();
-                curNode = curNode.Next;
-
-                CalculateFC(curNode!.Type | AfterChild, curNode, curChild);
-                if (_failed)
-                    return null;
-
-                curChild++;
-            }
-
-            if (FCIsEmpty())
-                return null;
-
-            return PopFC();
-        }
-
-        /// <summary>
-        /// Called in Beforechild to prevent further processing of the current child
-        /// </summary>
-        private void SkipChild() => _skipchild = true;
-
-        /// <summary>
-        /// FC computation and shortcut cases for each node type
-        /// </summary>
-        private void CalculateFC(int NodeType, RegexNode node, int CurIndex)
-        {
-            bool ci = (node.Options & RegexOptions.IgnoreCase) != 0;
-            bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
-
-            switch (NodeType)
-            {
-                case RegexNode.Concatenate | BeforeChild:
-                case RegexNode.Alternate | BeforeChild:
-                case RegexNode.Testref | BeforeChild:
-                case RegexNode.Loop | BeforeChild:
-                case RegexNode.Lazyloop | BeforeChild:
-                    break;
-
-                case RegexNode.Testgroup | BeforeChild:
-                    if (CurIndex == 0)
-                        SkipChild();
-                    break;
-
-                case RegexNode.Empty:
-                    PushFC(new RegexFC(true));
-                    break;
-
-                case RegexNode.Concatenate | AfterChild:
-                    if (CurIndex != 0)
+                // If one has chars and the other has a range, prefer the shorter set.
+                if ((s1CharsLength > 0 && s2RangeLength > 0) || (s1RangeLength > 0 && s2CharsLength > 0))
+                {
+                    int c = Math.Max(s1CharsLength, s1RangeLength).CompareTo(Math.Max(s2CharsLength, s2RangeLength));
+                    if (c != 0)
                     {
-                        RegexFC child = PopFC();
-                        RegexFC cumul = TopFC();
-
-                        _failed = !cumul.AddFC(child, true);
+                        return c;
                     }
 
-                    if (!TopFC()._nullable)
-                        _skipAllChildren = true;
-                    break;
-
-                case RegexNode.Testgroup | AfterChild:
-                    if (CurIndex > 1)
-                    {
-                        RegexFC child = PopFC();
-                        RegexFC cumul = TopFC();
-
-                        _failed = !cumul.AddFC(child, false);
-                    }
-                    break;
-
-                case RegexNode.Alternate | AfterChild:
-                case RegexNode.Testref | AfterChild:
-                    if (CurIndex != 0)
-                    {
-                        RegexFC child = PopFC();
-                        RegexFC cumul = TopFC();
-
-                        _failed = !cumul.AddFC(child, false);
-                    }
-                    break;
-
-                case RegexNode.Loop | AfterChild:
-                case RegexNode.Lazyloop | AfterChild:
-                    if (node.M == 0)
-                        TopFC()._nullable = true;
-                    break;
-
-                case RegexNode.Group | BeforeChild:
-                case RegexNode.Group | AfterChild:
-                case RegexNode.Capture | BeforeChild:
-                case RegexNode.Capture | AfterChild:
-                case RegexNode.Atomic | BeforeChild:
-                case RegexNode.Atomic | AfterChild:
-                    break;
-
-                case RegexNode.Require | BeforeChild:
-                case RegexNode.Prevent | BeforeChild:
-                    SkipChild();
-                    PushFC(new RegexFC(true));
-                    break;
-
-                case RegexNode.Require | AfterChild:
-                case RegexNode.Prevent | AfterChild:
-                    break;
-
-                case RegexNode.One:
-                case RegexNode.Notone:
-                    PushFC(new RegexFC(node.Ch, NodeType == RegexNode.Notone, false, ci));
-                    break;
-
-                case RegexNode.Oneloop:
-                case RegexNode.Oneloopatomic:
-                case RegexNode.Onelazy:
-                    PushFC(new RegexFC(node.Ch, false, node.M == 0, ci));
-                    break;
-
-                case RegexNode.Notoneloop:
-                case RegexNode.Notoneloopatomic:
-                case RegexNode.Notonelazy:
-                    PushFC(new RegexFC(node.Ch, true, node.M == 0, ci));
-                    break;
-
-                case RegexNode.Multi:
-                    if (node.Str!.Length == 0)
-                        PushFC(new RegexFC(true));
-                    else if (!rtl)
-                        PushFC(new RegexFC(node.Str[0], false, false, ci));
-                    else
-                        PushFC(new RegexFC(node.Str[node.Str.Length - 1], false, false, ci));
-                    break;
-
-                case RegexNode.Set:
-                    PushFC(new RegexFC(node.Str!, false, ci));
-                    break;
-
-                case RegexNode.Setloop:
-                case RegexNode.Setloopatomic:
-                case RegexNode.Setlazy:
-                    PushFC(new RegexFC(node.Str!, node.M == 0, ci));
-                    break;
-
-                case RegexNode.Ref:
-                    PushFC(new RegexFC(RegexCharClass.AnyClass, true, false));
-                    break;
-
-                case RegexNode.Nothing:
-                case RegexNode.Bol:
-                case RegexNode.Eol:
-                case RegexNode.Boundary:
-                case RegexNode.NonBoundary:
-                case RegexNode.ECMABoundary:
-                case RegexNode.NonECMABoundary:
-                case RegexNode.Beginning:
-                case RegexNode.Start:
-                case RegexNode.EndZ:
-                case RegexNode.End:
-                case RegexNode.UpdateBumpalong:
-                    PushFC(new RegexFC(true));
-                    break;
-
-                default:
-                    throw new ArgumentException(SR.Format(SR.UnexpectedOpcode, NodeType.ToString(CultureInfo.CurrentCulture)));
-            }
-        }
-    }
-
-    internal sealed class RegexFC
-    {
-        private readonly RegexCharClass _cc;
-        public bool _nullable;
-
-        public RegexFC(bool nullable)
-        {
-            _cc = new RegexCharClass();
-            _nullable = nullable;
-        }
-
-        public RegexFC(char ch, bool not, bool nullable, bool caseInsensitive)
-        {
-            _cc = new RegexCharClass();
-
-            if (not)
-            {
-                if (ch > 0)
-                {
-                    _cc.AddRange('\0', (char)(ch - 1));
+                    // If lengths are the same, prefer the chars.
+                    return s1CharsLength > 0 ? -1 : 1;
                 }
 
-                if (ch < 0xFFFF)
+                // If one has chars and the other doesn't, prioritize the one with chars.
+                if ((s1CharsLength > 0) != (s2CharsLength > 0))
                 {
-                    _cc.AddRange((char)(ch + 1), '\uFFFF');
+                    return s1CharsLength > 0 ? -1 : 1;
                 }
-            }
-            else
-            {
-                _cc.AddRange(ch, ch);
-            }
 
-            CaseInsensitive = caseInsensitive;
-            _nullable = nullable;
-        }
+                // If one has a range and the other doesn't, prioritize the one with a range.
+                if ((s1RangeLength > 0) != (s2RangeLength > 0))
+                {
+                    return s1RangeLength > 0 ? -1 : 1;
+                }
 
-        public RegexFC(string charClass, bool nullable, bool caseInsensitive)
+                // If both have ranges, prefer the one that includes fewer characters.
+                if (s1RangeLength > 0)
+                {
+                    return s1RangeLength.CompareTo(s2RangeLength);
+                }
+
+                // As a tiebreaker, prioritize the earlier one.
+                return s1.Distance.CompareTo(s2.Distance);
+
+                static int GetRangeLength((char LowInclusive, char HighInclusive) range, bool negated)
+                {
+                    int length = range.HighInclusive - range.LowInclusive + 1;
+                    return negated ?
+                        char.MaxValue + 1 - length :
+                        length;
+                }
+            });
+
+        /// <summary>
+        /// Computes a character class for the first character in tree.  This uses a more robust algorithm
+        /// than is used by TryFindFixedLiterals and thus can find starting sets it couldn't.  For example,
+        /// fixed literals won't find the starting set for a*b, as the a isn't guaranteed and the b is at a
+        /// variable position, but this will find [ab] as it's instead looking for anything that under any
+        /// circumstance could possibly start a match.
+        /// </summary>
+        public static string? FindFirstCharClass(RegexNode root)
         {
-            _cc = RegexCharClass.Parse(charClass);
+            // Explore the graph, adding found chars into a result set, which is lazily initialized so that
+            // we can initialize it to a parsed set if we discover one first (this is helpful not just for allocation
+            // but because it enables supporting starting negated sets, which wouldn't work if they had to be merged
+            // into a non-negated default set). If the operation returns true, we successfully explore all relevant nodes
+            // in the graph.  If it returns false, we were unable to successfully explore all relevant nodes, typically
+            // due to conflicts when trying to add characters into the result set, e.g. we may have read a negated set
+            // and were then unable to merge into that a subsequent non-negated set.  If it returns null, it means the
+            // whole pattern was nullable such that it could match an empty string, in which case we
+            // can't make any statements about what begins a match.
+            RegexCharClass? cc = null;
+            return TryFindFirstCharClass(root, ref cc) == true ?
+                cc!.ToStringClass() :
+                null;
 
-            _nullable = nullable;
-            CaseInsensitive = caseInsensitive;
-        }
-
-        public bool AddFC(RegexFC fc, bool concatenate)
-        {
-            if (!_cc.CanMerge || !fc._cc.CanMerge)
+            // Walks the nodes of the expression looking for any node that could possibly match the first
+            // character of a match, e.g. in `a*b*c+d`, we'd find [abc], or in `(abc|d*e)?[fgh]`, we'd find
+            // [adefgh].  The function is called for each node, recurring into children where appropriate,
+            // and returns:
+            // - true if the child was successfully processed and represents a stopping point, e.g. a single
+            //   char loop with a minimum bound greater than 0 such that nothing after that node in a
+            //   concatenation could possibly match the first character.
+            // - false if the child failed to be processed but needed to be, such that the results can't
+            //   be trusted.  If any node returns false, the whole operation fails.
+            // - null if the child was successfully processed but doesn't represent a stopping point, i.e.
+            //   it's zero-width (e.g. empty, a lookaround, an anchor, etc.) or it could be zero-width
+            //   (e.g. a loop with a min bound of 0).  A concatenation processing a child that returns
+            //   null needs to keep processing the next child.
+            static bool? TryFindFirstCharClass(RegexNode node, ref RegexCharClass? cc)
             {
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
+                {
+                    // If we're too deep on the stack, give up.
+                    return false;
+                }
+
+                switch (node.Kind)
+                {
+                    // Base cases where we have results to add to the result set. Add the values into the result set, if possible.
+                    // If this is a loop and it has a lower bound of 0, then it's zero-width, so return null.
+                    case RegexNodeKind.One or RegexNodeKind.Oneloop or RegexNodeKind.Onelazy or RegexNodeKind.Oneloopatomic:
+                        if (cc is null || cc.CanMerge)
+                        {
+                            cc ??= new RegexCharClass();
+                            cc.AddChar(node.Ch);
+                            return node.Kind is RegexNodeKind.One || node.M > 0 ? true : null;
+                        }
+                        return false;
+
+                    case RegexNodeKind.Notone or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy:
+                        if (cc is null || cc.CanMerge)
+                        {
+                            cc ??= new RegexCharClass();
+                            if (node.Ch > 0)
+                            {
+                                // Add the range before the excluded char.
+                                cc.AddRange((char)0, (char)(node.Ch - 1));
+                            }
+                            if (node.Ch < char.MaxValue)
+                            {
+                                // Add the range after the excluded char.
+                                cc.AddRange((char)(node.Ch + 1), char.MaxValue);
+                            }
+                            return node.Kind is RegexNodeKind.Notone || node.M > 0 ? true : null;
+                        }
+                        return false;
+
+                    case RegexNodeKind.Set or RegexNodeKind.Setloop or RegexNodeKind.Setlazy or RegexNodeKind.Setloopatomic:
+                        {
+                            bool setSuccess = false;
+                            if (cc is null)
+                            {
+                                cc = RegexCharClass.Parse(node.Str!);
+                                setSuccess = true;
+                            }
+                            else if (cc.CanMerge && RegexCharClass.Parse(node.Str!) is { CanMerge: true } setCc)
+                            {
+                                cc.AddCharClass(setCc);
+                                setSuccess = true;
+                            }
+                            return
+                                !setSuccess ? false :
+                                node.Kind is RegexNodeKind.Set || node.M > 0 ? true :
+                                null;
+                        }
+
+                    case RegexNodeKind.Multi:
+                        if (cc is null || cc.CanMerge)
+                        {
+                            cc ??= new RegexCharClass();
+                            cc.AddChar(node.Str![(node.Options & RegexOptions.RightToLeft) != 0 ? node.Str.Length - 1 : 0]);
+                            return true;
+                        }
+                        return false;
+
+                    // Zero-width elements.  These don't contribute to the starting set, so return null to indicate a caller
+                    // should keep looking past them.
+                    case RegexNodeKind.Empty:
+                    case RegexNodeKind.Nothing:
+                    case RegexNodeKind.Bol:
+                    case RegexNodeKind.Eol:
+                    case RegexNodeKind.Boundary:
+                    case RegexNodeKind.NonBoundary:
+                    case RegexNodeKind.ECMABoundary:
+                    case RegexNodeKind.NonECMABoundary:
+                    case RegexNodeKind.Beginning:
+                    case RegexNodeKind.Start:
+                    case RegexNodeKind.EndZ:
+                    case RegexNodeKind.End:
+                    case RegexNodeKind.UpdateBumpalong:
+                    case RegexNodeKind.PositiveLookaround:
+                    case RegexNodeKind.NegativeLookaround:
+                        return null;
+
+                    // Groups.  These don't contribute anything of their own, and are just pass-throughs to their children.
+                    case RegexNodeKind.Atomic:
+                    case RegexNodeKind.Capture:
+                        return TryFindFirstCharClass(node.Child(0), ref cc);
+
+                    // Loops.  Like groups, these are mostly pass-through: if the child fails, then the whole operation needs
+                    // to fail, and if the child is nullable, then the loop is as well.  However, if the child succeeds but
+                    // the loop has a lower bound of 0, then the loop is still nullable.
+                    case RegexNodeKind.Loop:
+                    case RegexNodeKind.Lazyloop:
+                        return TryFindFirstCharClass(node.Child(0), ref cc) switch
+                        {
+                            false => false,
+                            null => null,
+                            _ => node.M == 0 ? null : true,
+                        };
+
+                    // Concatenation.  Loop through the children as long as they're nullable.  The moment a child returns true,
+                    // we don't need or want to look further, as that child represents non-zero-width and nothing beyond it can
+                    // contribute to the starting character set.  The moment a child returns false, we need to fail the whole thing.
+                    // If every child is nullable, then the concatenation is also nullable.
+                    case RegexNodeKind.Concatenate:
+                        {
+                            int childCount = node.ChildCount();
+                            for (int i = 0; i < childCount; i++)
+                            {
+                                bool? childResult = TryFindFirstCharClass(node.Child(i), ref cc);
+                                if (childResult != null)
+                                {
+                                    return childResult;
+                                }
+                            }
+                            return null;
+                        }
+
+                    // Alternation. Every child is its own fork/branch and contributes to the starting set.  As with concatenation,
+                    // the moment any child fails, fail.  And if any child is nullable, the alternation is also nullable (since that
+                    // zero-width path could be taken).  Otherwise, if every branch returns true, so too does the alternation.
+                    case RegexNodeKind.Alternate:
+                        {
+                            int childCount = node.ChildCount();
+                            bool anyChildWasNull = false;
+                            for (int i = 0; i < childCount; i++)
+                            {
+                                bool? childResult = TryFindFirstCharClass(node.Child(i), ref cc);
+                                if (childResult is null)
+                                {
+                                    anyChildWasNull = true;
+                                }
+                                else if (childResult == false)
+                                {
+                                    return false;
+                                }
+                            }
+                            return anyChildWasNull ? null : true;
+                        }
+
+                    // Conditionals.  Just like alternation for their "yes"/"no" child branches.  If either returns false, return false.
+                    // If either is nullable, this is nullable. If both return true, return true.
+                    case RegexNodeKind.BackreferenceConditional:
+                    case RegexNodeKind.ExpressionConditional:
+                        int branchStart = node.Kind is RegexNodeKind.BackreferenceConditional ? 0 : 1;
+                        return (TryFindFirstCharClass(node.Child(branchStart), ref cc), TryFindFirstCharClass(node.Child(branchStart + 1), ref cc)) switch
+                        {
+                            (false, _) or (_, false) => false,
+                            (null, _) or (_, null) => null,
+                            _ => true,
+                        };
+
+                    // Backreferences.  We can't easily make any claims about what content they might match, so just give up.
+                    case RegexNodeKind.Backreference:
+                        return false;
+                }
+
+                // Unknown node.
+                Debug.Fail($"Unexpected node {node.Kind}");
                 return false;
             }
-
-            if (concatenate)
-            {
-                if (!_nullable)
-                    return true;
-
-                if (!fc._nullable)
-                    _nullable = false;
-            }
-            else
-            {
-                if (fc._nullable)
-                    _nullable = true;
-            }
-
-            CaseInsensitive |= fc.CaseInsensitive;
-            _cc.AddCharClass(fc._cc);
-            return true;
         }
 
-        public bool CaseInsensitive { get; private set; }
-
-        public void AddLowercase(CultureInfo culture)
+        /// <summary>
+        /// Analyzes the pattern for a leading set loop followed by a non-overlapping literal. If such a pattern is found, an implementation
+        /// can search for the literal and then walk backward through all matches for the loop until the beginning is found.
+        /// </summary>
+        public static (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? FindLiteralFollowingLeadingLoop(RegexNode node)
         {
-            Debug.Assert(CaseInsensitive);
-            _cc.AddLowercase(culture);
+            if ((node.Options & RegexOptions.RightToLeft) != 0)
+            {
+                // As a simplification, ignore RightToLeft.
+                return null;
+            }
+
+            // Find the first concatenation.  We traverse through atomic and capture nodes as they don't effect flow control.  (We don't
+            // want to explore loops, even if they have a guaranteed iteration, because we may use information about the node to then
+            // skip the node's execution in the matching algorithm, and we would need to special-case only skipping the first iteration.)
+            while (node.Kind is RegexNodeKind.Atomic or RegexNodeKind.Capture)
+            {
+                node = node.Child(0);
+            }
+            if (node.Kind != RegexNodeKind.Concatenate)
+            {
+                return null;
+            }
+
+            // Bail if the first node isn't a set loop.  We treat any kind of set loop (Setloop, Setloopatomic, and Setlazy)
+            // the same because of two important constraints: the loop must not have an upper bound, and the literal we look
+            // for immediately following it must not overlap.  With those constraints, all three of these kinds of loops will
+            // end up having the same semantics; in fact, if atomic optimizations are used, we will have converted Setloop
+            // into a Setloopatomic (but those optimizations are disabled for NonBacktracking in general). This
+            // could also be made to support Oneloopatomic and Notoneloopatomic, but the scenarios for that are rare.
+            Debug.Assert(node.ChildCount() >= 2);
+            RegexNode firstChild = node.Child(0);
+            if (firstChild.Kind is not (RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic or RegexNodeKind.Setlazy) || firstChild.N != int.MaxValue)
+            {
+                return null;
+            }
+
+            // Get the subsequent node.  An UpdateBumpalong may have been added as an optimization, but it doesn't have an
+            // impact on semantics and we can skip it.
+            RegexNode nextChild = node.Child(1);
+            if (nextChild.Kind == RegexNodeKind.UpdateBumpalong)
+            {
+                if (node.ChildCount() == 2)
+                {
+                    return null;
+                }
+                nextChild = node.Child(2);
+            }
+
+            // If the subsequent node is a literal, we need to ensure it doesn't overlap with the prior set.
+            // If there's no overlap, we have a winner.
+            switch (nextChild.Kind)
+            {
+                case RegexNodeKind.One when !RegexCharClass.CharInClass(nextChild.Ch, firstChild.Str!):
+                    return (firstChild, (nextChild.Ch, null, null));
+
+                case RegexNodeKind.Multi when !RegexCharClass.CharInClass(nextChild.Str![0], firstChild.Str!):
+                    return (firstChild, ('\0', nextChild.Str, null));
+
+                case RegexNodeKind.Set when !RegexCharClass.IsNegated(nextChild.Str!):
+                    Span<char> chars = stackalloc char[5]; // maximum number of chars optimized by IndexOfAny
+                    chars = chars.Slice(0, RegexCharClass.GetSetChars(nextChild.Str!, chars));
+                    if (!chars.IsEmpty)
+                    {
+                        foreach (char c in chars)
+                        {
+                            if (RegexCharClass.CharInClass(c, firstChild.Str!))
+                            {
+                                return null;
+                            }
+                        }
+
+                        return (firstChild, ('\0', null, chars.ToArray()));
+                    }
+                    break;
+            }
+
+            // Otherwise, we couldn't find the pattern of an atomic set loop followed by a literal.
+            return null;
         }
 
-        public string GetFirstChars() => _cc.ToStringClass();
+        /// <summary>Computes the leading anchor of a node.</summary>
+        public static RegexNodeKind FindLeadingAnchor(RegexNode node) =>
+            FindLeadingOrTrailingAnchor(node, leading: true);
+
+        /// <summary>Computes the leading anchor of a node.</summary>
+        public static RegexNodeKind FindTrailingAnchor(RegexNode node) =>
+            FindLeadingOrTrailingAnchor(node, leading: false);
+
+        /// <summary>Computes the leading or trailing anchor of a node.</summary>
+        private static RegexNodeKind FindLeadingOrTrailingAnchor(RegexNode node, bool leading)
+        {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                // We only recur for alternations, but with a really deep nesting of alternations we could potentially overflow.
+                // In such a case, simply stop searching for an anchor.
+                return RegexNodeKind.Unknown;
+            }
+
+            while (true)
+            {
+                switch (node.Kind)
+                {
+                    case RegexNodeKind.Bol:
+                    case RegexNodeKind.Eol:
+                    case RegexNodeKind.Beginning:
+                    case RegexNodeKind.Start:
+                    case RegexNodeKind.EndZ:
+                    case RegexNodeKind.End:
+                    case RegexNodeKind.Boundary:
+                    case RegexNodeKind.ECMABoundary:
+                        // Return any anchor found.
+                        return node.Kind;
+
+                    case RegexNodeKind.Atomic:
+                    case RegexNodeKind.Capture:
+                        // For groups, continue exploring the sole child.
+                        node = node.Child(0);
+                        continue;
+
+                    case RegexNodeKind.Concatenate:
+                        // For concatenations, we expect primarily to explore its first (for leading) or last (for trailing) child,
+                        // but we can also skip over certain kinds of nodes (e.g. Empty), and thus iterate through its children backward
+                        // looking for the last we shouldn't skip.
+                        {
+                            int childCount = node.ChildCount();
+                            RegexNode? child = null;
+                            if (leading)
+                            {
+                                for (int i = 0; i < childCount; i++)
+                                {
+                                    if (node.Child(i).Kind is not (RegexNodeKind.Empty or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround))
+                                    {
+                                        child = node.Child(i);
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                for (int i = childCount - 1; i >= 0; i--)
+                                {
+                                    if (node.Child(i).Kind is not (RegexNodeKind.Empty or RegexNodeKind.PositiveLookaround or RegexNodeKind.NegativeLookaround))
+                                    {
+                                        child = node.Child(i);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (child is not null)
+                            {
+                                node = child;
+                                continue;
+                            }
+
+                            goto default;
+                        }
+
+                    case RegexNodeKind.Alternate:
+                        // For alternations, every branch needs to lead or trail with the same anchor.
+                        {
+                            // Get the leading/trailing anchor of the first branch.  If there isn't one, bail.
+                            RegexNodeKind anchor = FindLeadingOrTrailingAnchor(node.Child(0), leading);
+                            if (anchor == RegexNodeKind.Unknown)
+                            {
+                                return RegexNodeKind.Unknown;
+                            }
+
+                            // Look at each subsequent branch and validate it has the same leading or trailing
+                            // anchor.  If any doesn't, bail.
+                            int childCount = node.ChildCount();
+                            for (int i = 1; i < childCount; i++)
+                            {
+                                if (FindLeadingOrTrailingAnchor(node.Child(i), leading) != anchor)
+                                {
+                                    return RegexNodeKind.Unknown;
+                                }
+                            }
+
+                            // All branches have the same leading/trailing anchor.  Return it.
+                            return anchor;
+                        }
+
+                    default:
+                        // For everything else, we couldn't find an anchor.
+                        return RegexNodeKind.Unknown;
+                }
+            }
+        }
+
+        /// <summary>Percent occurrences in source text (100 * char count / total count).</summary>
+        private static ReadOnlySpan<float> Frequency => new float[]
+        {
+            0.000f /* '\x00' */, 0.000f /* '\x01' */, 0.000f /* '\x02' */, 0.000f /* '\x03' */, 0.000f /* '\x04' */, 0.000f /* '\x05' */, 0.000f /* '\x06' */, 0.000f /* '\x07' */,
+            0.000f /* '\x08' */, 0.001f /* '\x09' */, 0.000f /* '\x0A' */, 0.000f /* '\x0B' */, 0.000f /* '\x0C' */, 0.000f /* '\x0D' */, 0.000f /* '\x0E' */, 0.000f /* '\x0F' */,
+            0.000f /* '\x10' */, 0.000f /* '\x11' */, 0.000f /* '\x12' */, 0.000f /* '\x13' */, 0.003f /* '\x14' */, 0.000f /* '\x15' */, 0.000f /* '\x16' */, 0.000f /* '\x17' */,
+            0.000f /* '\x18' */, 0.004f /* '\x19' */, 0.000f /* '\x1A' */, 0.000f /* '\x1B' */, 0.006f /* '\x1C' */, 0.006f /* '\x1D' */, 0.000f /* '\x1E' */, 0.000f /* '\x1F' */,
+            8.952f /* '    ' */, 0.065f /* '   !' */, 0.420f /* '   "' */, 0.010f /* '   #' */, 0.011f /* '   $' */, 0.005f /* '   %' */, 0.070f /* '   &' */, 0.050f /* '   '' */,
+            3.911f /* '   (' */, 3.910f /* '   )' */, 0.356f /* '   *' */, 2.775f /* '   +' */, 1.411f /* '   ,' */, 0.173f /* '   -' */, 2.054f /* '   .' */, 0.677f /* '   /' */,
+            1.199f /* '   0' */, 0.870f /* '   1' */, 0.729f /* '   2' */, 0.491f /* '   3' */, 0.335f /* '   4' */, 0.269f /* '   5' */, 0.435f /* '   6' */, 0.240f /* '   7' */,
+            0.234f /* '   8' */, 0.196f /* '   9' */, 0.144f /* '   :' */, 0.983f /* '   ;' */, 0.357f /* '   <' */, 0.661f /* '   =' */, 0.371f /* '   >' */, 0.088f /* '   ?' */,
+            0.007f /* '   @' */, 0.763f /* '   A' */, 0.229f /* '   B' */, 0.551f /* '   C' */, 0.306f /* '   D' */, 0.449f /* '   E' */, 0.337f /* '   F' */, 0.162f /* '   G' */,
+            0.131f /* '   H' */, 0.489f /* '   I' */, 0.031f /* '   J' */, 0.035f /* '   K' */, 0.301f /* '   L' */, 0.205f /* '   M' */, 0.253f /* '   N' */, 0.228f /* '   O' */,
+            0.288f /* '   P' */, 0.034f /* '   Q' */, 0.380f /* '   R' */, 0.730f /* '   S' */, 0.675f /* '   T' */, 0.265f /* '   U' */, 0.309f /* '   V' */, 0.137f /* '   W' */,
+            0.084f /* '   X' */, 0.023f /* '   Y' */, 0.023f /* '   Z' */, 0.591f /* '   [' */, 0.085f /* '   \' */, 0.590f /* '   ]' */, 0.013f /* '   ^' */, 0.797f /* '   _' */,
+            0.001f /* '   `' */, 4.596f /* '   a' */, 1.296f /* '   b' */, 2.081f /* '   c' */, 2.005f /* '   d' */, 6.903f /* '   e' */, 1.494f /* '   f' */, 1.019f /* '   g' */,
+            1.024f /* '   h' */, 3.750f /* '   i' */, 0.286f /* '   j' */, 0.439f /* '   k' */, 2.913f /* '   l' */, 1.459f /* '   m' */, 3.908f /* '   n' */, 3.230f /* '   o' */,
+            1.444f /* '   p' */, 0.231f /* '   q' */, 4.220f /* '   r' */, 3.924f /* '   s' */, 5.312f /* '   t' */, 2.112f /* '   u' */, 0.737f /* '   v' */, 0.573f /* '   w' */,
+            0.992f /* '   x' */, 1.067f /* '   y' */, 0.181f /* '   z' */, 0.391f /* '   {' */, 0.056f /* '   |' */, 0.391f /* '   }' */, 0.002f /* '   ~' */, 0.000f /* '\x7F' */,
+        };
+
+        // The above table was generated programmatically with the following.  This can be augmented to incorporate additional data sources,
+        // though it is only intended to be a rough approximation use when tie-breaking and we'd otherwise be picking randomly, so, it's something.
+        // The frequencies may be wildly inaccurate when used with data sources different in nature than the training set, in which case we shouldn't
+        // be much worse off than just picking randomly:
+        //
+        // using System.Runtime.InteropServices;
+        //
+        // var counts = new Dictionary<byte, long>();
+        //
+        // (string, string)[] rootsAndExtensions = new[]
+        // {
+        //     (@"d:\repos\runtime\src\", "*.cs"),   // C# files in dotnet/runtime
+        //     (@"d:\Top25GutenbergBooks", "*.txt"), // Top 25 most popular books on Project Gutenberg
+        // };
+        //
+        // foreach ((string root, string ext) in rootsAndExtensions)
+        //     foreach (string path in Directory.EnumerateFiles(root, ext, SearchOption.AllDirectories))
+        //         foreach (string line in File.ReadLines(path))
+        //             foreach (char c in line.AsSpan().Trim())
+        //                 CollectionsMarshal.GetValueRefOrAddDefault(counts, (byte)c, out _)++;
+        //
+        // long total = counts.Sum(i => i.Value);
+        //
+        // Console.WriteLine("/// <summary>Percent occurrences in source text (100 * char count / total count).</summary>");
+        // Console.WriteLine("private static ReadOnlySpan<float> Frequency => new float[]");
+        // Console.WriteLine("{");
+        // int i = 0;
+        // for (int row = 0; row < 16; row++)
+        // {
+        //     Console.Write("   ");
+        //     for (int col = 0; col < 8; col++)
+        //     {
+        //         counts.TryGetValue((byte)i, out long charCount);
+        //         float frequency = (float)(charCount / (double)total) * 100;
+        //         Console.Write($" {frequency:N3}f /* '{(i >= 32 && i < 127 ? $"   {(char)i}" : $"\\x{i:X2}")}' */,");
+        //         i++;
+        //     }
+        //     Console.WriteLine();
+        // }
+        // Console.WriteLine("};");
     }
 }

@@ -18,13 +18,10 @@ namespace System.ComponentModel
             string propertyName,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type receiverType)
         {
-            if (receiverType == null)
-            {
-                throw new ArgumentNullException(nameof(receiverType));
-            }
+            ArgumentNullException.ThrowIfNull(receiverType);
 
             PropertyName = propertyName;
-            ReceiverTypeName = receiverType.AssemblyQualifiedName;
+            ReceiverTypeName = receiverType.AssemblyQualifiedName!;
         }
 
         /// <summary>
@@ -50,7 +47,7 @@ namespace System.ComponentModel
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public string ReceiverTypeName { get; }
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == this)
             {

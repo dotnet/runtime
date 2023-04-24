@@ -63,10 +63,10 @@ DbsX64StackUnwinder::s_UnwindOpSlotTable[] =
 
 HRESULT
 DbsX64StackUnwinder::UnwindPrologue(
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __in ULONG64 FrameBase,
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _In_ ULONG64 FrameBase,
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
     __inout PAMD64_CONTEXT ContextRecord
     )
 
@@ -127,10 +127,10 @@ Arguments:
     MachineFrame = FALSE;
     PrologOffset = (ULONG)(ControlPc - (FunctionEntry->BeginAddress + ImageBase));
 
-    m_Services->Status(1, "Prol: RIP %I64X, 0x%X bytes in function at %I64X\n",
+    m_Services->Status(1, "Prol: RIP %llX, 0x%X bytes in function at %llX\n",
                        ControlPc, PrologOffset,
                        FunctionEntry->BeginAddress + ImageBase);
-    m_Services->Status(1, "Prol: Read unwind info at %I64X\n",
+    m_Services->Status(1, "Prol: Read unwind info at %llX\n",
                        FunctionEntry->UnwindInfoAddress + ImageBase);
 
     if ((Status =
@@ -147,7 +147,7 @@ Arguments:
 
     while (Index < UnwindInfo->CountOfCodes) {
 
-        m_Services->Status(1, "  %02X: Code %X offs %03X, RSP %I64X\n",
+        m_Services->Status(1, "  %02X: Code %X offs %03X, RSP %llX\n",
              Index, UnwindInfo->UnwindCode[Index].UnwindOp,
              UnwindInfo->UnwindCode[Index].CodeOffset,
              ContextRecord->Rsp);
@@ -182,7 +182,7 @@ Arguments:
                                    &IntegerRegister[OpInfo],
                                    sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory "
-                                       "read failed at %I64X\n",
+                                       "read failed at %llX\n",
                                        UnwindOp, IntegerAddress);
                     goto Fail;
                 }
@@ -223,7 +223,7 @@ Arguments:
                 break;
 
                 //
-                // Establish the the frame pointer register.
+                // Establish the frame pointer register.
                 //
                 // The operation information is not used.
                 //
@@ -235,7 +235,7 @@ Arguments:
 
                 //
                 // Save nonvolatile integer register on the stack using a
-                // 16-bit displacment.
+                // 16-bit displacement.
                 //
                 // The operation information is the register number.
                 //
@@ -249,7 +249,7 @@ Arguments:
                                   &IntegerRegister[OpInfo],
                                   sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory read "
-                                       "failed at %I64X\n",
+                                       "failed at %llX\n",
                                        UnwindOp, IntegerAddress);
                     goto Fail;
                 }
@@ -257,7 +257,7 @@ Arguments:
 
                 //
                 // Save nonvolatile integer register on the stack using a
-                // 32-bit displacment.
+                // 32-bit displacement.
                 //
                 // The operation information is the register number.
                 //
@@ -272,7 +272,7 @@ Arguments:
                                    &IntegerRegister[OpInfo],
                                    sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory read "
-                                       "failed at %I64X\n",
+                                       "failed at %llX\n",
                                        UnwindOp, IntegerAddress);
                     goto Fail;
                 }
@@ -295,7 +295,7 @@ Arguments:
                                    &FloatingRegister[OpInfo].Low,
                                    sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory read "
-                                       "failed at %I64X\n",
+                                       "failed at %llX\n",
                                        UnwindOp, FloatingAddress);
                     goto Fail;
                 }
@@ -319,7 +319,7 @@ Arguments:
                                    &FloatingRegister[OpInfo].Low,
                                    sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory read "
-                                       "failed at %I64X\n",
+                                       "failed at %llX\n",
                                        UnwindOp, FloatingAddress);
                     goto Fail;
                 }
@@ -341,7 +341,7 @@ Arguments:
                                    &FloatingRegister[OpInfo],
                                    sizeof(AMD64_M128))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory read "
-                                       "failed at %I64X\n",
+                                       "failed at %llX\n",
                                        UnwindOp, FloatingAddress);
                     goto Fail;
                 }
@@ -364,7 +364,7 @@ Arguments:
                                    &FloatingRegister[OpInfo],
                                    sizeof(AMD64_M128))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory read "
-                                       "failed at %I64X\n",
+                                       "failed at %llX\n",
                                        UnwindOp, FloatingAddress);
                     goto Fail;
                 }
@@ -388,14 +388,14 @@ Arguments:
 
                 m_RestartFrame = true;
                 m_TrapAddr = ReturnAddress -
-                    FIELD_OFFSET(AMD64_KTRAP_FRAME, Rip);
+                    offsetof(AMD64_KTRAP_FRAME, Rip);
 
                 if ((Status = m_Services->
                      ReadAllMemory(ReturnAddress,
                                    &ContextRecord->Rip,
                                    sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory "
-                                       "read 1 failed at %I64X\n",
+                                       "read 1 failed at %llX\n",
                                        UnwindOp, ReturnAddress);
                     goto Fail;
                 }
@@ -404,7 +404,7 @@ Arguments:
                                    &ContextRecord->Rsp,
                                    sizeof(ULONG64))) != S_OK) {
                     m_Services->Status(1, "Prol: Op %X memory "
-                                       "read 2 failed at %I64X\n",
+                                       "read 2 failed at %llX\n",
                                        UnwindOp, StackAddress);
                     goto Fail;
                 }
@@ -480,7 +480,7 @@ Arguments:
         ChainEntry = (_PIMAGE_RUNTIME_FUNCTION_ENTRY)
             &UnwindInfo->UnwindCode[Index];
 
-        m_Services->Status(1, "  Chain with entry at %I64X\n",
+        m_Services->Status(1, "  Chain with entry at %llX\n",
              FunctionEntry->UnwindInfoAddress + ImageBase +
              (ULONG64)((PUCHAR)&UnwindInfo->UnwindCode[Index] -
                        (PUCHAR)UnwindInfo));
@@ -507,7 +507,7 @@ Arguments:
             ContextRecord->Rsp += 8;
         }
 
-        m_Services->Status(1, "Prol: Returning with RIP %I64X, RSP %I64X\n",
+        m_Services->Status(1, "Prol: Returning with RIP %llX, RSP %llX\n",
                            ContextRecord->Rip, ContextRecord->Rsp);
         return S_OK;
     }
@@ -520,11 +520,11 @@ Arguments:
 
 HRESULT
 DbsX64StackUnwinder::VirtualUnwind(
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
     __inout PAMD64_CONTEXT ContextRecord,
-    __out PULONG64 EstablisherFrame
+    _Out_ PULONG64 EstablisherFrame
     )
 
 /*++
@@ -660,7 +660,7 @@ Arguments:
     if ((Status = m_Services->
          ReadMemory(ControlPc, InstrBuffer, sizeof(InstrBuffer),
                     &InstrBytes)) != S_OK) {
-        m_Services->Status(1, "Unable to read instruction stream at %I64X\n",
+        m_Services->Status(1, "Unable to read instruction stream at %llX\n",
                            ControlPc);
 
         // We need the code to look for epilogue ops.
@@ -966,7 +966,7 @@ Arguments:
                     ReadAllMemory(ContextRecord->Rsp,
                                   &IntegerRegister[RegisterNumber],
                                   sizeof(ULONG64))) != S_OK) {
-                    m_Services->Status(1, "Unable to read stack at %I64X\n",
+                    m_Services->Status(1, "Unable to read stack at %llX\n",
                          ContextRecord->Rsp);
                     return Status;
                 }
@@ -987,7 +987,7 @@ Arguments:
                      ReadAllMemory(ContextRecord->Rsp,
                                    &IntegerRegister[RegisterNumber],
                                    sizeof(ULONG64))) != S_OK) {
-                    m_Services->Status(1, "Unable to read stack at %I64X\n",
+                    m_Services->Status(1, "Unable to read stack at %llX\n",
                          ContextRecord->Rsp);
                     return Status;
                 }
@@ -1011,7 +1011,7 @@ Arguments:
             ReadAllMemory(ContextRecord->Rsp,
                           &ContextRecord->Rip,
                           sizeof(ULONG64))) != S_OK) {
-            m_Services->Status(1, "Unable to read stack at %I64X\n",
+            m_Services->Status(1, "Unable to read stack at %llX\n",
                  ContextRecord->Rsp);
             return Status;
         }
@@ -1033,9 +1033,9 @@ Arguments:
 
 ULONG64
 DbsX64StackUnwinder::LookupPrimaryUnwindInfo(
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-    __in ULONG64 ImageBase,
-    __out _PIMAGE_RUNTIME_FUNCTION_ENTRY PrimaryEntry
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _Out_ _PIMAGE_RUNTIME_FUNCTION_ENTRY PrimaryEntry
     )
 
 /*++
@@ -1114,10 +1114,10 @@ Return Value:
 
 _PIMAGE_RUNTIME_FUNCTION_ENTRY
 DbsX64StackUnwinder::SameFunction(
-    __in _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
-    __in ULONG64 ImageBase,
-    __in ULONG64 ControlPc,
-    __out _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionReturnBuffer
+    _In_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionEntry,
+    _In_ ULONG64 ImageBase,
+    _In_ ULONG64 ControlPc,
+    _Out_ _PIMAGE_RUNTIME_FUNCTION_ENTRY FunctionReturnBuffer
     )
 
 /*++
@@ -1213,7 +1213,7 @@ Return Value:
      (((_DbhFrame)->Reserved[2]) & ~DBHX64_IS_RESTART_FLAG) | \
       ((_IsRestart) ? DBHX64_IS_RESTART_FLAG : 0))
 
-DbsX64StackUnwinder::DbsX64StackUnwinder(__in_opt DbsStackServices* Services)
+DbsX64StackUnwinder::DbsX64StackUnwinder(_In_opt_ DbsStackServices* Services)
     : DbsStackUnwinder(Services, "x64", IMAGE_FILE_MACHINE_AMD64,
                        sizeof(m_Context),
                        sizeof(_IMAGE_RUNTIME_FUNCTION_ENTRY),
@@ -1265,11 +1265,11 @@ DbsX64StackUnwinder::Unwind(void)
 
 DWORD
 DbsX64StackUnwinder::
-GetFullUnwindInfoSize(__in PVOID InfoHeader)
+GetFullUnwindInfoSize(_In_ PVOID InfoHeader)
 {
     PAMD64_UNWIND_INFO UnwindInfo = (PAMD64_UNWIND_INFO)InfoHeader;
 
-    DWORD UnwindInfoSize = FIELD_OFFSET(AMD64_UNWIND_INFO, UnwindCode) +
+    DWORD UnwindInfoSize = offsetof(AMD64_UNWIND_INFO, UnwindCode) +
         UnwindInfo->CountOfCodes * sizeof(AMD64_UNWIND_CODE);
 
     // An extra alignment code and function entry may be added on to handle
@@ -1289,9 +1289,9 @@ GetFullUnwindInfoSize(__in PVOID InfoHeader)
 
 HRESULT
 DbsX64StackUnwinder::DbhStart(__inout LPSTACKFRAME64 StackFrame,
-                              __in DWORD DbhVersion,
-                              __in_bcount(DbhStorageBytes) PVOID DbhStorage,
-                              __in DWORD DbhStorageBytes,
+                              _In_ DWORD DbhVersion,
+                              _In_reads_bytes_(DbhStorageBytes) PVOID DbhStorage,
+                              _In_ DWORD DbhStorageBytes,
                               __inout PVOID Context)
 {
     HRESULT Status;
@@ -1343,9 +1343,9 @@ DbsX64StackUnwinder::DbhStart(__inout LPSTACKFRAME64 StackFrame,
 HRESULT
 DbsX64StackUnwinder::
 DbhContinue(__inout LPSTACKFRAME64 StackFrame,
-            __in DWORD DbhVersion,
-            __in_bcount(DbhStorageBytes) PVOID DbhStorage,
-            __in DWORD DbhStorageBytes,
+            _In_ DWORD DbhVersion,
+            _In_reads_bytes_(DbhStorageBytes) PVOID DbhStorage,
+            _In_ DWORD DbhStorageBytes,
             __inout PVOID Context)
 {
     HRESULT Status;
@@ -1385,7 +1385,7 @@ DbsX64StackUnwinder::DbhUpdatePreUnwind(__inout LPSTACKFRAME64 StackFrame)
 
 HRESULT
 DbsX64StackUnwinder::DbhUpdatePostUnwind(__inout LPSTACKFRAME64 StackFrame,
-                                         __in HRESULT UnwindStatus)
+                                         _In_ HRESULT UnwindStatus)
 {
     HRESULT Status;
 
@@ -1467,7 +1467,7 @@ DbsX64StackUnwinder::BaseUnwind(void)
         // directly to the return address.
         //
 
-        m_Services->Status(1, "Leaf %I64X RSP %I64X\n",
+        m_Services->Status(1, "Leaf %llX RSP %llX\n",
                            m_Context.Rip, m_Context.Rsp);
 
         if ((Status = m_Services->

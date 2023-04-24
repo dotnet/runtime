@@ -1,11 +1,79 @@
 <Project DefaultTargets="RunInParallelForEachScenario">
 
   <!-- This project uses the helix SDK, documented at
-       https://github.com/dotnet/arcade/tree/master/src/Microsoft.DotNet.Helix/Sdk,
+       https://github.com/dotnet/arcade/tree/main/src/Microsoft.DotNet.Helix/Sdk
        to send test jobs to helix. -->
+
+  <!--
+    The code below is useful for local testing to print the produced Helix items.
+    To use this when you are changing how items are produced, uncomment the PropertyGroup and Target
+    and replace the recursive invocation (below) of:
+
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="Test" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
+
+    to target "printItems" instead, as so:
+
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="printItems" BuildInParallel="$(_BuildInParallel)" StopOnFirstFailure="false" Properties="UsesHelixSdk=true" />
+
+    Once you've done that you can run this to see the results:
+
+      dotnet msbuild .\helixpublishwitharcade.proj /v:n /p:TargetArchitecture=x64 /p:TargetOS=windows /p:TargetOSSubgroup= /p:Configuration=Checked
+
+    ============================================
+
+  <PropertyGroup>
+    <BUILD_SOURCESDIRECTORY>c:\gh\runtime</BUILD_SOURCESDIRECTORY>
+    <CorrelationPayloadDirectory>c:\bugs\spmicollect3\payload\correlation</CorrelationPayloadDirectory>
+    <WorkItemDirectory>c:\bugs\spmicollect3\payload\workitem</WorkItemDirectory>
+    <_Scenarios>normal</_Scenarios>
+    <_Creator></_Creator>
+    <_HelixAccessToken></_HelixAccessToken>
+    <_HelixBuild></_HelixBuild>
+    <_HelixSource></_HelixSource>
+    <_HelixTargetQueues>Windows.10.Amd64.Open</_HelixTargetQueues>
+    <_HelixType>test/stuff</_HelixType>
+    <_PublishTestResults>false</_PublishTestResults>
+    <_RunCrossGen>false</_RunCrossGen>
+    <_RunCrossGen2>false</_RunCrossGen2>
+    <_CompositeBuildMode>false</_CompositeBuildMode>
+    <_LongRunningGCTests>false</_LongRunningGCTests>
+    <_GcSimulatorTests>false</_GcSimulatorTests>
+    <_RunInUnloadableContext>false</_RunInUnloadableContext>
+    <_TieringTest>false</_TieringTest>
+    <_NativeAotTest>false</_NativeAotTest>
+    <_TimeoutPerTestCollectionInMinutes>123</_TimeoutPerTestCollectionInMinutes>
+    <_TimeoutPerTestInMinutes>234</_TimeoutPerTestInMinutes>
+    <_RuntimeVariant></_RuntimeVariant>
+    <BundledNETCoreAppPackageVersion>BundledNETCoreAppPackageVersion</BundledNETCoreAppPackageVersion>
+    <HelixRuntimeRid></HelixRuntimeRid>
+    <_PALTestsDir></_PALTestsDir>
+    <_SuperPmiCollect>true</_SuperPmiCollect>
+  </PropertyGroup>
+  <Target Name="printItems">
+    <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
+    dir: %(HelixWorkItem.PayloadDirectory)
+    archive: %(HelixWorkItem.PayloadArchive)
+    pre: $(HelixPreCommands)
+    command: %(HelixWorkItem.Command)
+    post: $(HelixPostCommands)
+    timeout: %(HelixWorkItem.Timeout)  '"/>
+  </Target>
+
+  -->
 
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' == 'true' " />
   <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.props" Condition=" '$(UsesHelixSdk)' != 'true' " />
+
+  <PropertyGroup>
+    <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
+    <CoreRootDirectory>$([MSBuild]::NormalizeDirectory($(CoreRootDirectory)))</CoreRootDirectory>
+    <XUnitLogCheckerDirectory>$(TestBinDir)Common\XUnitLogChecker\</XUnitLogCheckerDirectory>
+    <XUnitLogCheckerDirectory>$([MSBuild]::NormalizeDirectory($(XUnitLogCheckerDirectory)))</XUnitLogCheckerDirectory>
+    <LegacyPayloadsRootDirectory>$(TestBinDir)LegacyPayloads\</LegacyPayloadsRootDirectory>
+    <LegacyPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(LegacyPayloadsRootDirectory)))</LegacyPayloadsRootDirectory>
+    <MergedPayloadsRootDirectory>$(TestBinDir)MergedPayloads\</MergedPayloadsRootDirectory>
+    <MergedPayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(MergedPayloadsRootDirectory)))</MergedPayloadsRootDirectory>
+  </PropertyGroup>
 
   <!-- This target runs once and creates several instances of this project (one for each scenario)
        that will run in parallel. -->
@@ -25,36 +93,45 @@
         HelixTargetQueues=$(_HelixTargetQueues);
         HelixType=$(_HelixType);
         PublishTestResults=$(_PublishTestResults);
-        RunCrossGen=$(_RunCrossGen);
         RunCrossGen2=$(_RunCrossGen2);
         CompositeBuildMode=$(_CompositeBuildMode);
         LongRunningGCTests=$(_LongRunningGCTests);
         GcSimulatorTests=$(_GcSimulatorTests);
         RunInUnloadableContext=$(_RunInUnloadableContext);
+        TieringTest=$(_TieringTest);
+        NativeAotTest=$(_NativeAotTest);
         TimeoutPerTestCollectionInMinutes=$(_TimeoutPerTestCollectionInMinutes);
         TimeoutPerTestInMinutes=$(_TimeoutPerTestInMinutes);
         RuntimeVariant=$(_RuntimeVariant);
         BundledNETCoreAppPackageVersion=$(BundledNETCoreAppPackageVersion);
         HelixRuntimeRid=$(HelixRuntimeRid);
-        PALTestsDir=$(_PALTestsDir)
+        PALTestsDir=$(_PALTestsDir);
+        SuperPmiCollect=$(_SuperPmiCollect)
       </_PropertiesToPass>
 
-      
-      <_PropertiesToPass Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
+      <_PropertiesToPass Condition="'$(TargetOS)' == 'browser' Or '$(TargetsAndroid)' == 'true' Or '$(TargetsiOS)' == 'true' Or '$(TargetsiOSSimulator)' == 'true' Or '$(TargetstvOS)' == 'true' Or '$(TargetstvOSSimulator)' == 'true'">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
         DotNetCliRuntime=$(DotNetCliRuntime);
         DotNetCliPackageType=$(DotNetCliPackageType);
         DotNetCliVersion=$(DotNetCliVersion)
       </_PropertiesToPass>
-    </PropertyGroup>  
+    </PropertyGroup>
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
     <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
     <Message Text="HelixRuntimeRid: $(HelixRuntimeRid)" Importance="High" />
+    <Message Importance="High" Text="TimeoutPerTestInMinutes: $(TimeoutPerTestInMinutes)" />
     <Error Condition="'$(_Scenarios)' == ''" Text="_Scenarios not set" />
 
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" />
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadsDirectories" Properties="Scenarios=$(_Scenarios)" StopOnFirstFailure="true" />
+    <ItemGroup>
+      <CleanPreexistingPayloads Include="$(LegacyPayloadsRootDirectory)**" />
+      <CleanPreexistingPayloads Include="$(MergedPayloadsRootDirectory)**" />
+    </ItemGroup>
+
+    <Delete Files="@(CleanPreexistingPayloads)" />
+
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" Properties="$(_PropertiesToPass)" />
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadDirectories" Properties="$(_PropertiesToPass)" StopOnFirstFailure="true" />
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePALTestArchive" Properties="$(_PropertiesToPass)" StopOnFirstFailure="true" />
 
     <ItemGroup>
@@ -78,42 +155,57 @@
   <PropertyGroup Condition="'$(HelixRuntimeRid)' == ''">
     <TargetOSSpec>$(TargetOS)$(TargetOSSubgroup)</TargetOSSpec>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'windows'">win-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Browser'">browser-wasm</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Android'">android-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'osx'">osx-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'browser'">browser-wasm</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'android'">android-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'iossimulator'">iossimulator-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'ios'">ios-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'tvossimulator'">tvossimulator-$(TargetArchitecture)</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'tvos'">tvos-$(TargetArchitecture)</HelixRuntimeRid>
   </PropertyGroup>
 
   <PropertyGroup>
-    <CoreRootDirectory>$(TestBinDir)Tests\Core_Root\</CoreRootDirectory>
-    <PayloadsRootDirectory>$(TestBinDir)Payloads\</PayloadsRootDirectory>
-    <PayloadsRootDirectory>$([MSBuild]::NormalizeDirectory($(PayloadsRootDirectory)))</PayloadsRootDirectory>
+    <TargetHasHelixXHarnessSdkSupport>false</TargetHasHelixXHarnessSdkSupport>
+    <TargetHasHelixXHarnessSdkSupport Condition="'$(TargetsMobile)' == 'true' and '$(TargetsBrowser)' != 'true'">true</TargetHasHelixXHarnessSdkSupport>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <TestEnvFileName Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">SetStressModes_$(Scenario).cmd</TestEnvFileName>
     <TestEnvFileName Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">SetStressModes_$(Scenario).sh</TestEnvFileName>
 
     <IncludeDotNetCli>true</IncludeDotNetCli>
     <DotNetCliPackageType>runtime</DotNetCliPackageType>
     <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
-    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime> 
+    <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' Or '$(TargetsAndroid)' == 'true'">
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
-    <!-- wasm and Android needs to use the host OS DotnetCliRuntime -->
+    <!-- wasm and Android need to use the host OS DotnetCliRuntime -->
     <DotNetCliRuntime>linux-x64</DotNetCliRuntime>
     <DotNetCliRuntime Condition=" '$(TargetArchitecture)' == 'arm64' ">win-x64</DotNetCliRuntime>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+    <DotNetCliPackageType>sdk</DotNetCliPackageType>
+    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
+    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
+    <!-- Apple mobile test runs need to use the host OS DotnetCliRuntime -->
+    <DotNetCliRuntime>osx-x64</DotNetCliRuntime>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />
 
-  <Target Name="DiscoverAllXUnitWrappers">
+  <Target Name="DiscoverLegacyXUnitWrappers">
     <ItemGroup>
       <_XUnitWrapperDll Include="%(TestGrouping.XUnitWrapperDll)" Condition="Exists('%(XUnitWrapperDll)')">
         <PayloadGroup>%(TestGroup)</PayloadGroup>
@@ -121,9 +213,9 @@
       <_XUnitWrapperDll Include="@(XUnitWrapperGrouping)" />
 
       <!-- This adds the remaining *.XUnitWrapper.dll files in TestBinDir unless
-           1) they are in PayloadsRootDirectory or
+           1) they are in LegacyPayloadsRootDirectory or
            2) they are grouped by XUnitWrapperGrouping. -->
-      <_XUnitWrapperDll Include="$(TestBinDir)**\*.XUnitWrapper.dll" Exclude="$(PayloadsRootDirectory)**\*.XUnitWrapper.dll;@(XUnitWrapperGrouping->Metadata('FullPath'))">
+      <_XUnitWrapperDll Include="$(TestBinDir)**\*.XUnitWrapper.dll" Exclude="$(LegacyPayloadsRootDirectory)**\*.XUnitWrapper.dll;@(XUnitWrapperGrouping->Metadata('FullPath'))">
          <!-- Set PayloadGroup to empty string, so we can update _XUnitWrapperDll items with no PayloadGroup to default value. Unfortunatelly, we can't do this right here. -->
          <PayloadGroup></PayloadGroup>
       </_XUnitWrapperDll>
@@ -135,7 +227,9 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="PreparePayloadDirectory" Outputs="%(_XUnitWrapperDll.FileName)%(PayloadGroup)" DependsOnTargets="DiscoverAllXUnitWrappers">
+  <Target Name="PrepareLegacyPayloadDirectory"
+      Outputs="%(_XUnitWrapperDll.FileName)%(PayloadGroup)"
+      DependsOnTargets="DiscoverLegacyXUnitWrappers">
     <PropertyGroup>
       <_FileDirectory>%(_XUnitWrapperDll.RootDir)%(Directory)</_FileDirectory>
       <_PayloadGroup>%(_XUnitWrapperDll.PayloadGroup)</_PayloadGroup>
@@ -150,30 +244,44 @@
       <_TestGroupingExists>@(_TestGroupingRelevant->AnyHaveMetadataValue('TestGroup','$(_PayloadGroup)'))</_TestGroupingExists>
     </PropertyGroup>
 
-    <ItemGroup>
+    <ItemGroup Condition="'$(_FileDirectory)' != ''">
       <!-- If no TestGrouping is defined, all the files under $(_FileDirectory) and its subdirectories goes to the PayloadDirectory. -->
-      <_PayloadFiles Include="$(_FileDirectory)**" Exclude="@(_TestGroupingRelevant)" Condition="'$(_TestGroupingExists)' != 'true'" />
+      <_LegacyPayloadFiles Include="$(_FileDirectory)**" Exclude="@(_TestGroupingRelevant)" Condition="'$(_TestGroupingExists)' != 'true'" />
       <!-- If there is a TestGrouping, then take only the files that belong to the TestGroup == $(_PayloadGroup). -->
-      <_PayloadFiles Include="@(_TestGroupingRelevant->WithMetadataValue('TestGroup','$(_PayloadGroup)')->DistinctWithCase())" Condition="'$(_TestGroupingExists)' == 'true'" />
-      <_PayloadFiles Include="$(_FileDirectory)*" Condition="'$(_TestGroupingExists)' == 'true'" />
+      <_LegacyPayloadFiles Include="@(_TestGroupingRelevant->WithMetadataValue('TestGroup','$(_PayloadGroup)')->DistinctWithCase())" Condition="'$(_TestGroupingExists)' == 'true'" />
+      <_LegacyPayloadFiles Include="$(_FileDirectory)*" Condition="'$(_TestGroupingExists)' == 'true'" />
+      <_LegacyPayloadFiles Include="$(_FileDirectory)/*.app" Condition="'$(_TestGroupingExists)' == 'true'" />
+      <_LegacyPayloadFiles Include="$(_FileDirectory)/*.app/**" Condition="'$(_TestGroupingExists)' == 'true'" />
 
-      <_PayloadFiles Update="@(_PayloadFiles)">
+      <_LegacyPayloadFiles Update="@(_LegacyPayloadFiles)">
         <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
              MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
         <FileRelativeToPayloadsRootDirectory>$(_PayloadGroup)\$([System.IO.Path]::GetRelativePath($(TestBinDir), %(FullPath)))</FileRelativeToPayloadsRootDirectory>
-      </_PayloadFiles>
+      </_LegacyPayloadFiles>
     </ItemGroup>
 
     <ItemGroup>
       <!-- Remove the managed pdbs from our payloads.
            This is for performance reasons to reduce our helix payload size  -->
-      <ReducedPayloadFiles Include="@(_PayloadFiles)" Condition=" '%(Extension)' != '.pdb' " />
-      
-      <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TestWrapperTargetsWindows)' == 'true' "/>
-      <ReducedPayloadFilesFinal Include="@(ReducedPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TestWrapperTargetsWindows)' != 'true' "/>
+      <ReducedLegacyPayloadFiles Include="@(_LegacyPayloadFiles)" Condition=" '%(Extension)' != '.pdb' " />
+
+      <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.sh' and '$(TestWrapperTargetsWindows)' == 'true' "/>
+      <ReducedLegacyPayloadFilesFinal Include="@(ReducedLegacyPayloadFiles)" Condition=" '%(Extension)' != '.cmd' and '$(TestWrapperTargetsWindows)' != 'true' "/>
+      <!-- Don't include the new merged wrappers in the legacy builds -->
+      <ReducedLegacyPayloadFilesFinal Remove="@(_MergedWrapperRunScript)" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(ReducedPayloadFilesFinal)" DestinationFiles="@(ReducedPayloadFilesFinal->'$(PayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
+    <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
+      <!-- When targeting mobile or browser runs, we publish self-contained builds and build mobile/wasm apps, so we want to exclude these files from the legacy payloads as well -->
+      <PublishedMergedPayloadsToExclude>@(_MergedWrapperRunScript->'%(RootDir)%(Directory)publish/*')</PublishedMergedPayloadsToExclude>
+      <PublishedMergedPayloadsToExclude>$(PublishedMergedPayloadsToExclude);@(_MergedWrapperRunScript->'%(RootDir)%(Directory)AppBundle/**')</PublishedMergedPayloadsToExclude>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ReducedLegacyPayloadFilesFinal Remove="$(PublishedMergedPayloadsToExclude)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(ReducedLegacyPayloadFilesFinal)" DestinationFiles="@(ReducedLegacyPayloadFilesFinal->'$(LegacyPayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
   </Target>
 
   <Target Name="PrepareCorrelationPayloadDirectory">
@@ -186,15 +294,29 @@
     <Copy SourceFiles="@(_XUnitConsoleRunnerFiles)" DestinationFolder="$(CoreRootDirectory)\xunit" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\runincontext.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(_RunInUnloadableContext)' == 'true'" />
     <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/runincontext.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(_RunInUnloadableContext)' == 'true'" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\tieringtest.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(_TieringTest)' == 'true'" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/tieringtest.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(_TieringTest)' == 'true'" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts\nativeaottest.cmd" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(_NativeAotTest)' == 'true'" />
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)scripts/nativeaottest.sh" DestinationFolder="$(CoreRootDirectory)" Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(_NativeAotTest)' == 'true'" />
+
+    <ItemGroup Condition=" '$(SuperPmiCollect)' == 'true' ">
+      <!-- We need superpmi.py and its dependencies; this is an over-approximation. The HelixCorrelationPayload directory is CoreRootDirectory, so copy the scripts there. -->
+      <_SuperPmiScriptsFiles Include="$(RepoRoot)src\coreclr\scripts\*.py" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_SuperPmiScriptsFiles)" DestinationFolder="$(CoreRootDirectory)\superpmi_scripts" Condition=" '$(SuperPmiCollect)' == 'true' "/>
   </Target>
 
-  <Target Name="CreateTestEnvFiles">
+  <Target Name="CreateTestEnvFiles" Condition="'$(PayloadGroups)' != ''">
     <!-- This target creates one __TestEnv file for each combination of %(_PayloadGroups.Identity) and $(Scenario). -->
 
     <ItemGroup>
       <_PayloadGroups Include="$(PayloadGroups)" />
-      <_ProjectsToBuild Include="testenvironment.proj">
-        <Properties>Scenario=$(Scenario);TestEnvFileName=$(PayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows)</Properties>
+      <_ProjectsToBuild Include="testenvironment.proj" Condition="!$(IsMergedTestWrapper)">
+        <Properties>Scenario=$(Scenario);TestEnvFileName=$(LegacyPayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows);RuntimeVariant=$(_RuntimeVariant)</Properties>
+      </_ProjectsToBuild>
+      <_ProjectsToBuild Include="testenvironment.proj" Condition="$(IsMergedTestWrapper)">
+        <Properties>Scenario=$(Scenario);TestEnvFileName=$(MergedPayloadsRootDirectory)%(_PayloadGroups.Identity)\$(TestEnvFileName);TargetsWindows=$(TestWrapperTargetsWindows);RuntimeVariant=$(_RuntimeVariant)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -202,25 +324,260 @@
   </Target>
 
   <Target Name="PreparePALTestArchive">
-    <Exec Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'" 
+    <Exec Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'"
           WorkingDirectory="$(PALTestsDir)"
-          Command="tar -czvf $(PayloadsRootDirectory)paltests.tar.gz `ls -A`"/>
+          Command="tar -czvf $(LegacyPayloadsRootDirectory)paltests.tar.gz `ls -A`"/>
   </Target>
 
-  <Target Name="PreparePayloadsDirectories" DependsOnTargets="PreparePayloadDirectory">
-    <PropertyGroup>
-      <_PayloadGroups>@(_XUnitWrapperDll->Metadata('PayloadGroup')->DistinctWithCase())</_PayloadGroups>
-    </PropertyGroup>
+  <Target Name="PreparePayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectories;PrepareLegacyPayloadDirectories" />
 
+  <Target Name="PrepareLegacyPayloadDirectories" DependsOnTargets="PrepareLegacyPayloadDirectory">
     <ItemGroup>
+      <_LegacyPayloadGroups Include="@(_XUnitWrapperDll->Metadata('PayloadGroup')->DistinctWithCase())" />
       <_Scenario Include="$(_Scenarios.Split(','))" />
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=$(_PayloadGroups)</AdditionalProperties>
+        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_LegacyPayloadGroups);IsMergedTestWrapper=false</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
   </Target>
+
+  <Target Name="PrepareMergedTestPayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectory">
+    <ItemGroup>
+      <_Scenario Include="$(_Scenarios.Split(','))" />
+      <_ProjectsToBuild Include="$(MSBuildProjectFile)">
+        <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedPayloadGroups);IsMergedTestWrapper=true</AdditionalProperties>
+      </_ProjectsToBuild>
+    </ItemGroup>
+
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
+  </Target>
+
+  <Target Name="DiscoverMergedTestWrappers">
+    <ItemGroup>
+      <!-- Exclude WASM support files. They can interfere with our discovery process and create extra work items that don't work. -->
+      <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PrepareMergedTestPayloadDirectoryForDesktop"
+      Condition="'$(TargetsMobile)' != 'true'"
+      Outputs="%(_MergedWrapperMarker.FileName)"
+      DependsOnTargets="DiscoverMergedTestWrappers">
+    <ItemGroup>
+      <_MergedWrapperRunScript Include="$([System.IO.Path]::ChangeExtension('%(_MergedWrapperMarker.Identity)', '.$(TestScriptExtension)'))" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'@(_MergedWrapperMarker)' != ''" >
+      <_MergedWrapperDirectory>$([System.IO.Path]::GetDirectoryName('%(_MergedWrapperRunScript.Identity)'))</_MergedWrapperDirectory>
+      <_MergedWrapperParentDirectory>$([System.IO.Path]::GetDirectoryName('$(_MergedWrapperDirectory)'))</_MergedWrapperParentDirectory>
+      <_MergedWrapperName>%(_MergedWrapperRunScript.FileName)</_MergedWrapperName>
+
+      <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath($(TestBinDir), %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
+      <_MergedWrapperRunScriptDirectoryRelative Condition="'$(_MergedWrapperRunScriptRelative)' != ''">$([System.IO.Path]::GetDirectoryName($(_MergedWrapperRunScriptRelative)))</_MergedWrapperRunScriptDirectoryRelative>
+
+      <!-- On Windows, you need to "call" a script or else the cmd.exe instance it is running in will exit, and the HelixPostCommands will not execute. -->
+      <_MergedWrapperRunScriptPrefix Condition="'$(TestWrapperTargetsWindows)' == 'true'">call </_MergedWrapperRunScriptPrefix>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'@(_MergedWrapperMarker)' != ''" >
+      <_MergedWrapperOutOfProcessTestMarkers Include="$(_MergedWrapperParentDirectory)/**/*.OutOfProcessTest" />
+      <_MergedWrapperOutOfProcessTestFiles
+        Include="%(_MergedWrapperOutOfProcessTestMarkers.RootDir)%(_MergedWrapperOutOfProcessTestMarkers.Directory)/**"
+        Condition="'@(_MergedWrapperOutOfProcessTestMarkers)' != ''" />
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)/**" />
+      <_MergedPayloadFiles Include="@(_MergedWrapperOutOfProcessTestFiles)" />
+      <_MergedPayloadFiles Update="@(_MergedPayloadFiles)" Condition="'@(_MergedPayloadFiles)' != ''" >
+        <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
+             MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath($(TestBinDir), %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+      </_MergedPayloadFiles>
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(_MergedPayloadFiles)' != ''" >
+      <!-- Remove the managed pdbs from our payloads.
+           This is for performance reasons to reduce our helix payload size  -->
+      <ReducedMergedPayloadFilesFinal Include="@(_MergedPayloadFiles)" Condition=" '%(Extension)' != '.pdb' and '%(Extension)' != '.OutOfProcessTest'" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <XUnitLogCheckerHelixPath Condition="'$(TestWrapperTargetsWindows)' != 'true'">%24HELIX_CORRELATION_PAYLOAD/</XUnitLogCheckerHelixPath>
+      <XUnitLogCheckerHelixPath Condition="'$(TestWrapperTargetsWindows)' == 'true'">%25HELIX_CORRELATION_PAYLOAD%25/</XUnitLogCheckerHelixPath>
+      <XUnitLogCheckerHelixPath>$(XUnitLogCheckerHelixPath)XUnitLogChecker/</XUnitLogCheckerHelixPath>
+
+      <XUnitLogCheckerArgs>$(_MergedWrapperRunScriptDirectoryRelative) $(_MergedWrapperName)</XUnitLogCheckerArgs>
+      <XUnitLogCheckerArgs Condition="'$(TestWrapperTargetsWindows)' != 'true'">$(XUnitLogCheckerArgs) %24HELIX_DUMP_FOLDER</XUnitLogCheckerArgs>
+      <XUnitLogCheckerArgs Condition="'$(TestWrapperTargetsWindows)' == 'true'">$(XUnitLogCheckerArgs) %25HELIX_DUMP_FOLDER%25</XUnitLogCheckerArgs>
+      <XUnitLogCheckerCommand>dotnet $(XUnitLogCheckerHelixPath)XUnitLogChecker.dll $(XUnitLogCheckerArgs)</XUnitLogCheckerCommand>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- We need to ensure that the test run script is marked as executable. -->
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
+      <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
+      <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher --aot-lazy-assembly-load" />
+      <HelixCommandLines Condition="'$(RuntimeVariant)' != 'llvmfullaot'" Include="$(_MergedWrapperRunScriptPrefix)$(_MergedWrapperRunScriptRelative) -usewatcher" />
+      <HelixCommandLines Include="$(XUnitLogCheckerCommand)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(ReducedMergedPayloadFilesFinal)" DestinationFiles="@(ReducedMergedPayloadFilesFinal->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" Condition="'@(ReducedMergedPayloadFilesFinal)' != ''" />
+    <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
+  </Target>
+
+  <Target Name="GetTestExclusionList" Returns="@(FilteredTestExclusionList)" Condition="'$(TargetsMobile)' == 'true'">
+    <ItemGroup>
+      <_ExcludeListProject Include="$(RepoRoot)src/tests/issues.targets">
+        <AdditionalProperties>XunitTestBinBase=$(TestBinDir);$(_PropertiesToPass)</AdditionalProperties>
+      </_ExcludeListProject>
+    </ItemGroup>
+    <MSBuild Projects="@(_ExcludeListProject)"
+             Targets="GetFilteredExcludeList">
+      <Output TaskParameter="TargetOutputs" ItemName="FilteredTestExclusionList" />
+    </MSBuild>
+  </Target>
+
+  <UsingTask TaskName="PatchExclusionListInApks" AssemblyFile="$(TestExclusionListTasksAssemblyPath)" />
+
+  <Target Name="PrepareMergedTestPayloadDirectoryForAndroid"
+      Condition="'$(TargetsAndroid)' == 'true'"
+      Outputs="%(_MergedWrapperMarker.FileName)"
+      DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
+    <PropertyGroup>
+      <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
+      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
+      <_MergedPayloadFiles Include="@(_MergedPayloadGroups->'$(_MergedWrapperDirectory)AppBundle/bin/%(Identity).apk')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')" />
+    <PatchExclusionListInApks
+      ApkPaths="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileName)%(Extension)')"
+      ExcludedTests="@(FilteredTestExclusionList)" />
+  </Target>
+
+  <Target Name="PrepareMergedTestPayloadDirectoryForWasm"
+      Condition="'$(TargetsBrowser)' == 'true'"
+      Outputs="%(_MergedWrapperMarker.FileName)"
+      DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
+    <ItemGroup>
+      <_MergedWrapperRunScript Include="@(_MergedWrapperMarker->'%(RootDir)%(Directory)AppBundle/RunTests.$(TestScriptExtension)')" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
+      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+
+      <_MergedWrapperRunScriptRelative Condition="'%(_MergedWrapperRunScript.Identity)' != ''">$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle', %(_MergedWrapperRunScript.FullPath)))</_MergedWrapperRunScriptRelative>
+      <_MergedWrapperRunScriptRelative Condition="'$(TestWrapperTargetsWindows)' != 'true'">./$(_MergedWrapperRunScriptRelative)</_MergedWrapperRunScriptRelative>
+      <_MergedWrapperRunScriptDirectoryRelative Condition="'$(_MergedWrapperRunScriptRelative)' != ''">$([System.IO.Path]::GetDirectoryName($(_MergedWrapperRunScriptRelative)))</_MergedWrapperRunScriptDirectoryRelative>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/**" />
+      <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
+        <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
+             MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+      </_MergedPayloadFiles>
+      <!-- Remove the placeholder test exclusion list here -->
+      <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
+      <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export WasmTestAppArgs=&quot;$WasmTestAppArgs --exclusion-list=TestExclusionList.txt&quot;" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set WasmTestAppArgs=%WasmTestAppArgs% --exclusion-list=TestExclusionList.txt" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
+      <HelixCommandLines Include="$(_MergedWrapperRunScriptRelative)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
+    <WriteLinesToFile File="$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\HelixCommand.txt" Lines="@(HelixCommandLines)" />
+    <!-- Write the real test exclusion list instead of the placeholder. -->
+    <WriteLinesToFile File="@(_TestExclusionListPlaceholder->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')"
+                      Lines="@(FilteredTestExclusionList)"
+                      Condition="'@(_TestExclusionListPlaceholder)' != ''" />
+  </Target>
+
+  <Target Name="PrepareMergedTestPayloadDirectoryForAppleMobile"
+      Condition="'$(TargetsAppleMobile)' == 'true'"
+      Outputs="%(_MergedWrapperMarker.FileName)"
+      DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
+
+    <PropertyGroup>
+      <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
+      <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <XCodeSdk Condition="'$(TargetsiOS)' == 'true'">iphone</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetsiOSSimulator)' == 'true'">iphonesimulator</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetstvOS)' == 'true'">appletvos</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetstvOSSimulator)' == 'true'">appletvsimulator</XCodeSdk>
+      <XCodeSdk Condition="'$(TargetsMacCatalyst)' == 'true'">maccatalyst</XCodeSdk>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_MergedPayloadGroups Include="$(_MergedWrapperName)" />
+    </ItemGroup>
+    <ItemGroup>
+      <_MergedPayloadFiles Include="$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)/$(_MergedWrapperName).app/**" />
+      <_MergedPayloadFiles Update="@(_MergedPayloadFiles)">
+        <!-- Never use [MSBuild]::MakeRelative here! We have some files containing Unicode characters in their %(FullPath) and
+             MakeRelative function calls Escape function internally that replaces all the Unicode characters with %<xx>. -->
+        <FileRelativeToPayloadsRootDirectory>$([System.IO.Path]::GetRelativePath('$(_MergedWrapperDirectory)AppBundle/$(_MergedWrapperName)/$(Configuration)-$(XCodeSdk)', %(FullPath)))</FileRelativeToPayloadsRootDirectory>
+      </_MergedPayloadFiles>
+      <!-- Remove the placeholder test exclusion list here -->
+      <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
+      <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
+    <!-- Write the real test exclusion list instead of the placeholder. -->
+    <WriteLinesToFile File="@(_TestExclusionListPlaceholder->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')"
+      Lines="@(FilteredTestExclusionList)"
+      Condition="'@(_TestExclusionListPlaceholder)' != ''" />
+    </Target>
+
+  <Target Name="PrepareMergedTestPayloadDirectory" DependsOnTargets="DiscoverMergedTestWrappers;PrepareMergedTestPayloadDirectoryForDesktop;PrepareMergedTestPayloadDirectoryForAndroid;PrepareMergedTestPayloadDirectoryForWasm;PrepareMergedTestPayloadDirectoryForAppleMobile" />
+
+  <Target Name="ZipLegacyPayloadDirectory" AfterTargets="PrepareLegacyPayloadDirectories" Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
+    <ItemGroup>
+      <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
+      <LegacyPayloads Update="@(LegacyPayloads)">
+        <PayloadGroup>$([MSBuild]::MakeRelative($(LegacyPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
+        <PayloadDirectory>%(FullPath)</PayloadDirectory>
+      </LegacyPayloads>
+    </ItemGroup>
+
+    <ZipDirectory
+      Condition="'@(LegacyPayloads)' != ''"
+      SourceDirectory="@(LegacyPayloads->Metadata('PayloadDirectory'))"
+      DestinationFile="$(LegacyPayloadsRootDirectory)\%(LegacyPayloads.PayloadGroup).zip" />
+  </Target>
+
+  <Target Name="ZipMergedPayloadDirectory" AfterTargets="PrepareMergedTestPayloadDirectories" Condition="'$(TargetsBrowser)' == 'true'">
+    <ItemGroup>
+      <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
+      <MergedPayloads Update="@(MergedPayloads)">
+        <PayloadGroup>$([MSBuild]::MakeRelative($(MergedPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
+        <PayloadDirectory>%(FullPath)</PayloadDirectory>
+      </MergedPayloads>
+    </ItemGroup>
+
+    <ZipDirectory
+      Condition="'@(MergedPayloads)' != ''"
+      SourceDirectory="@(MergedPayloads->Metadata('PayloadDirectory'))"
+      DestinationFile="$(MergedPayloadsRootDirectory)\%(MergedPayloads.PayloadGroup).zip" />
+  </Target>
+
 
   <PropertyGroup>
     <EnableAzurePipelinesReporter>$(PublishTestResults)</EnableAzurePipelinesReporter>
@@ -230,66 +587,149 @@
     <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
     <HelixConfiguration Condition=" '$(Scenario)' == 'normal' ">$(Configuration)</HelixConfiguration>
     <HelixConfiguration Condition=" '$(Scenario)' != 'normal' ">$(Configuration)-$(Scenario)</HelixConfiguration>
-    <RunCrossGen Condition=" '$(RunCrossGen)' != 'true' ">false</RunCrossGen>
     <RunCrossGen2 Condition=" '$(RunCrossGen2)' != 'true' ">false</RunCrossGen2>
     <LongRunningGCTests Condition=" '$(LongRunningGCTests)' != 'true' ">false</LongRunningGCTests>
     <GcSimulatorTests Condition=" '$(GcSimulatorTests)' != 'true' ">false</GcSimulatorTests>
-    <TestRunNamePrefix Condition="'$(RuntimeFlavorDisplayName)' != ''">$(RuntimeFlavorDisplayName) </TestRunNamePrefix> 
-    <TestRunNamePrefix Condition=" '$(RunCrossGen)' == 'true' ">R2R </TestRunNamePrefix>
+    <TestRunNamePrefix Condition="'$(RuntimeFlavor)' != ''">$(RuntimeFlavor) </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(RunCrossGen2)' == 'true' ">R2R-CG2 </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(TargetArchitecture) $(Configuration) @ </TestRunNamePrefix>
     <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(TestRunNamePrefix)$(TargetOS) $(TargetArchitecture) $(Configuration) $(Scenario) @ </TestRunNamePrefix>
     <TimeoutPerTestInMilliseconds Condition=" '$(TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
     <_XUnitParallelMode>collections</_XUnitParallelMode>
-    <_XUnitParallelMode Condition=" '$(TargetOS)' == 'Android' ">none</_XUnitParallelMode>
+    <_XUnitParallelMode Condition=" '$(TargetsAndroid)' == 'true' or '$(TargetsiOSSimulator)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOSSimulator)' == 'true' or '$(TargetstvOS)' == 'true'">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(LongRunningGCTests)' == 'true' ">none</_XUnitParallelMode>
     <_XUnitParallelMode Condition=" '$(GcSimulatorTests)' == 'true' ">none</_XUnitParallelMode>
     <XUnitRunnerArgs>-parallel $(_XUnitParallelMode) -nocolor -noshadow -xml testResults.xml</XUnitRunnerArgs>
+    <SuperPmiCollect Condition=" '$(SuperPmiCollect)' != 'true' ">false</SuperPmiCollect>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(SuperPmiCollect)' == 'true' ">
+    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(SuperPmiCollect)' == 'true' ">
+    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)/artifacts/helixresults</HelixResultsDestinationDir>
   </PropertyGroup>
 
   <!-- WARNING: HelixPreCommand ItemGroup is intentionally minimal and should be kept that way. -->
 
+  <!--
+    ================== Windows pre- and post-commands ==================
+  -->
+
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
+    <HelixPreCommand Include="taskkill.exe /f /im corerun.exe" />
     <HelixPreCommand Include="set CORE_ROOT=%HELIX_CORRELATION_PAYLOAD%" />
     <!-- Set _NT_SYMBOL_PATH so VM _ASSERTE() asserts can find the symbol files when doing stack walks -->
     <HelixPreCommand Include="set _NT_SYMBOL_PATH=%HELIX_CORRELATION_PAYLOAD%\PDB" />
-    <HelixPreCommand Include="set RunCrossGen=1" Condition=" '$(RunCrossGen)' == 'true' " />
     <HelixPreCommand Include="set RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
     <HelixPreCommand Include="set CompositeBuildMode=1" Condition=" '$(CompositeBuildMode)' == 'true' " />
     <HelixPreCommand Include="set RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
     <HelixPreCommand Include="set RunningGCSimulatorTests=1" Condition=" '$(GcSimulatorTests)' == 'true' " />
     <HelixPreCommand Include="set RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />
+    <HelixPreCommand Include="set RunTieringTest=1" Condition=" '$(TieringTest)' == 'true' " />
     <HelixPreCommand Include="set CLRCustomTestLauncher=%HELIX_CORRELATION_PAYLOAD%\runincontext.cmd" Condition=" '$(RunInUnloadableContext)' == 'true' " />
+    <HelixPreCommand Include="set CLRCustomTestLauncher=%HELIX_CORRELATION_PAYLOAD%\tieringtest.cmd" Condition=" '$(TieringTest)' == 'true' " />
+    <HelixPreCommand Include="set CLRCustomTestLauncher=%HELIX_CORRELATION_PAYLOAD%\nativeaottest.cmd" Condition=" '$(NativeAotTest)' == 'true' " />
     <HelixPreCommand Include="set __TestEnv=%HELIX_WORKITEM_PAYLOAD%\$(TestEnvFileName)" />
     <HelixPreCommand Include="set __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
+    <HelixPreCommand Include="set __TestCollectionTimeoutMins=$(TimeoutPerTestCollectionInMinutes)" Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' " />
     <HelixPreCommand Include="set __CollectDumps=1" />
     <HelixPreCommand Include="set __CrashDumpFolder=%HELIX_DUMP_FOLDER%" />
+    <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
     <HelixPreCommand Include="type %__TestEnv%" />
   </ItemGroup>
 
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(SuperPmiCollect)' == 'true' ">
+    <!-- Set variables needed by the test wrapper scripts to do SuperPMI collection -->
+    <HelixPreCommand Include="set spmi_enable_collection=1" />
+    <!-- spmi_collect_dir can point to any temporary directory. We choose %HELIX_WORKITEM_PAYLOAD%\spmi_collect for convenience, and
+         because we know it can be used, but %TEMP%\spmi_collect might be better. -->
+    <HelixPreCommand Include="set spmi_collect_dir=%HELIX_WORKITEM_PAYLOAD%\spmi_collect" />
+    <HelixPreCommand Include="if not exist %spmi_collect_dir% mkdir %spmi_collect_dir%" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
+    <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' and '$(SuperPmiCollect)' == 'true' ">
+    <!-- Merge all the per-test generted .MC files as a post-step -->
+    <HelixPostCommand Include="set spmi_collection_name=coreclr_tests" />
+    <HelixPostCommand Include="set spmi_collection_type=run" />
+    <HelixPostCommand Include="set spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
+    <HelixPostCommand Include="set spmi_superpmi_py=%HELIX_CORRELATION_PAYLOAD%\superpmi_scripts\superpmi.py" />
+    <HelixPostCommand Include="set spmi_upload_dir=%HELIX_WORKITEM_UPLOAD_ROOT%" />
+    <HelixPostCommand Include="if not exist %spmi_upload_dir% mkdir %spmi_upload_dir%" />
+    <HelixPostCommand Include="set spmi_output_base_name=%spmi_collection_name%.%spmi_collection_type%.%spmi_collection_mch_file_tag%" />
+    <HelixPostCommand Include="set spmi_finalmch=%spmi_upload_dir%\%spmi_output_base_name%.mch" />
+    <HelixPostCommand Include="set spmi_log_file=%spmi_upload_dir%\%spmi_output_base_name%.log" />
+    <HelixPostCommand Include="%HELIX_PYTHONPATH% %spmi_superpmi_py% collect -log_level DEBUG -core_root %CORE_ROOT% --skip_cleanup --clean --ci --skip_collection_step --skip_toc_step -temp_dir %spmi_collect_dir% -output_mch_path %spmi_finalmch% -log_file %spmi_log_file%" />
+  </ItemGroup>
+
+  <!--
+    ================== Non-Windows pre- and post-commands ==================
+  -->
+
   <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">
     <HelixPreCommand Include="export CORE_ROOT=$HELIX_CORRELATION_PAYLOAD" />
-    <HelixPreCommand Include="export RunCrossGen=1" Condition=" '$(RunCrossGen)' == 'true' " />
     <HelixPreCommand Include="export RunCrossGen2=1" Condition=" '$(RunCrossGen2)' == 'true' " />
     <HelixPreCommand Include="export CompositeBuildMode=1" Condition=" '$(CompositeBuildMode)' == 'true' " />
     <HelixPreCommand Include="export RunningLongGCTests=1" Condition=" '$(LongRunningGCTests)' == 'true' " />
     <HelixPreCommand Include="export RunningGCSimulatorTests=1" Condition=" '$(GcSimulatorTests)' == 'true' " />
     <HelixPreCommand Include="export RunInUnloadableContext=1" Condition=" '$(RunInUnloadableContext)' == 'true' " />
+    <HelixPreCommand Include="export RunTieringTest=1" Condition=" '$(TieringTest)' == 'true' " />
     <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/runincontext.sh" Condition=" '$(RunInUnloadableContext)' == 'true' " />
+    <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/tieringtest.sh" Condition=" '$(TieringTest)' == 'true' " />
+    <HelixPreCommand Include="export CLRCustomTestLauncher=$HELIX_CORRELATION_PAYLOAD/nativeaottest.sh" Condition=" '$(NativeAotTest)' == 'true' " />
     <HelixPreCommand Include="export __TestEnv=$HELIX_WORKITEM_PAYLOAD/$(TestEnvFileName)" />
     <HelixPreCommand Include="export __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
+    <HelixPreCommand Include="export __TestCollectionTimeoutMins=$(TimeoutPerTestCollectionInMinutes)" Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' " />
     <HelixPreCommand Include="export __CollectDumps=1" />
     <HelixPreCommand Include="export __CrashDumpFolder=$HELIX_DUMP_FOLDER" />
+    <HelixPreCommand Include="set __TestArchitecture=$(TargetArchitecture)" />
     <HelixPreCommand Include="cat $__TestEnv" />
+
+    <HelixPostCommand Include="find $HELIX_WORKITEM_PAYLOAD -name '*testResults.xml' -exec cp {} $HELIX_DUMP_FOLDER\; " />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(SuperPmiCollect)' == 'true' ">
+    <!-- Set variables needed by the test wrapper scripts to do SuperPMI collection -->
+    <HelixPreCommand Include="export spmi_enable_collection=1" />
+    <HelixPreCommand Include="export spmi_collect_dir=$HELIX_WORKITEM_PAYLOAD/spmi_collect" />
+    <HelixPreCommand Include="mkdir -p $spmi_collect_dir" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' and '$(SuperPmiCollect)' == 'true' ">
+    <!-- Merge all the per-test generted .MC files as a post-step -->
+    <HelixPostCommand Include="export spmi_collection_name=coreclr_tests" />
+    <HelixPostCommand Include="export spmi_collection_type=run" />
+    <HelixPostCommand Include="export spmi_collection_mch_file_tag=$(TargetOS).$(TargetArchitecture).$(Configuration)" />
+    <HelixPostCommand Include="export spmi_superpmi_py=$HELIX_CORRELATION_PAYLOAD/superpmi_scripts/superpmi.py" />
+    <HelixPostCommand Include="export spmi_upload_dir=$HELIX_WORKITEM_UPLOAD_ROOT" />
+    <HelixPostCommand Include="mkdir -p $spmi_upload_dir" />
+    <HelixPostCommand Include="export spmi_output_base_name=$spmi_collection_name.$spmi_collection_type.$spmi_collection_mch_file_tag" />
+    <HelixPostCommand Include="export spmi_finalmch=$spmi_upload_dir/$spmi_output_base_name.mch" />
+    <HelixPostCommand Include="export spmi_log_file=$spmi_upload_dir/$spmi_output_base_name.log" />
+    <HelixPostCommand Include="$HELIX_PYTHONPATH $spmi_superpmi_py collect -log_level DEBUG -core_root $CORE_ROOT --skip_cleanup --clean --ci --skip_collection_step --skip_toc_step -temp_dir $spmi_collect_dir -output_mch_path $spmi_finalmch -log_file $spmi_log_file" />
+  </ItemGroup>
+
+  <!-- create dummy console app to workaround NuGet-Migrations issue: https://github.com/dotnet/runtime/issues/80619 -->
+  <ItemGroup Condition="'$(IncludeDotNetCli)' == 'true' and '$(DotNetCliPackageType)' == 'sdk' and '$(TestWrapperTargetsWindows)' != 'true'">
+    <HelixPreCommand Include="(CONSOLE_TEMP_DIR=&quot;%24(mktemp -d)&quot; %3B &quot;$DOTNET_ROOT/dotnet&quot; new console -o &quot;$CONSOLE_TEMP_DIR&quot; %3B rm -rf &quot;$CONSOLE_TEMP_DIR&quot;) || true" />
   </ItemGroup>
 
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
+    <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
-    <XUnitRunnerDll>%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
+    <!-- When the target has XHarness support in the Helix SDK, the script runs in a powershell context. Otherwise it runs in a Batch context. -->
+    <XUnitRunnerDll Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">$Env:CORE_ROOT\xunit\xunit.console.dll</XUnitRunnerDll>
+    <XUnitRunnerDll Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">
@@ -299,28 +739,159 @@
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
 
-    <Payloads Include="$([System.IO.Directory]::GetDirectories($(PayloadsRootDirectory)))" Condition="Exists('$(PayloadsRootDirectory)')" />
-    <Payloads Update="@(Payloads)">
-      <PayloadGroup>$([MSBuild]::MakeRelative($(PayloadsRootDirectory), %(FullPath)))</PayloadGroup>
+    <!-- Browser-Wasm and iOS platforms follow a very different workflow, which is currently out of scope of the Log Checker. It's not useful on any platform that uses xharness. -->
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsiOSSimulator)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetstvOSSimulator)' != 'true'" />
+    <HelixCorrelationPayload Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="dotnet-sos">
+      <Destination>sos</Destination>
+      <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>
+    </HelixCorrelationPayload>
+
+    <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
+    <LegacyPayloads Update="@(LegacyPayloads)">
+      <PayloadGroup>$([MSBuild]::MakeRelative($(LegacyPayloadsRootDirectory), %(FullPath)))</PayloadGroup>
       <PayloadDirectory>%(FullPath)</PayloadDirectory>
       <XUnitWrapperDlls>$([System.String]::Join(' ', $([System.IO.Directory]::GetFiles(%(FullPath), '*.XUnitWrapper.dll', SearchOption.AllDirectories))).Replace($([MSBuild]::EnsureTrailingSlash(%(FullPath))),''))</XUnitWrapperDlls>
-    </Payloads>
-
-    <Payloads Update="@(Payloads)">
+    </LegacyPayloads>
+    <LegacyPayloads Update="@(LegacyPayloads)">
+      <!-- Specify the test group from the payload name. For explicitly named groups, PayloadGroup specifies the subset of tests we want to run in this Helix Work Item -->
       <TestGroup>%(PayloadGroup)</TestGroup>
-      <!-- When Payload contains more than one *.XUnitWrapper.dll TestGroup should not be specified. -->
+      <!-- When Payload contains more than one *.XUnitWrapper.dll TestGroup should not be specified. When we specify multiple assemblies, we aren't trying to run only a subset of tests within one assembly. -->
       <TestGroup Condition=" $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').IndexOf('.XUnitWrapper.dll')) != $([MSBuild]::ValueOrDefault(%(XUnitWrapperDlls), '').LastIndexOf('.XUnitWrapper.dll')) "></TestGroup>
-    </Payloads>
+      <!--
+        PayloadGroup0 is just a synthesized name for a bundle of multiple test assemblies that we send as one payload.
+        Normally the condition above catches this case; however, when we're only sending one assembly, passing PayloadGroup0 to Helix means that no tests will be run.
+      -->
+      <TestGroup Condition="'%(PayloadGroup)' == 'PayloadGroup0'"></TestGroup>
+      <PayloadZipFile>$(LegacyPayloadsRootDirectory)\%(PayloadGroup).zip</PayloadZipFile>
+    </LegacyPayloads>
+  </ItemGroup>
 
-    <HelixWorkItem Include="@(Payloads->Metadata('PayloadGroup'))">
+  <ItemGroup>
+    <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
+
+    <MergedPayloads Update="@(MergedPayloads)">
+      <PayloadDirectory>%(FullPath)</PayloadDirectory>
+    </MergedPayloads>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
+    <MergedPayloads Update="@(MergedPayloads)">
+      <PayloadHelixCommandFile>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)\HelixCommand.txt</PayloadHelixCommandFile>
+      <MergedTestHelixCommand>$([System.IO.File]::ReadAllText('%(PayloadHelixCommandFile)'))</MergedTestHelixCommand>
+      <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
+      <PayloadZipFile>$(MergedPayloadsRootDirectory)%(PayloadGroup).zip</PayloadZipFile>
+    </MergedPayloads>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
+    <MergedPayloads Update="@(MergedPayloads)">
+      <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
+      <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).apk</ApkPath>
+      <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
+    </MergedPayloads>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Enable stress work item striping on GCstress only -->
+    <StripeMergedStressWorkItems Condition="$(Scenario.Contains('gcstress'))">true</StripeMergedStressWorkItems>
+    <!-- Striping is only enabled for the desktop version of the test harness, disable it regardless of scenario on
+         other systems. -->
+    <StripeMergedStressWorkItems Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true' or '$(TargetsMobile)' == 'true'">false</StripeMergedStressWorkItems>
+  </PropertyGroup>
+
+  <Target Name="FindStressMarkers" BeforeTargets="PrepareMergedStressHelixWorkItems">
+    <ItemGroup>
+      <_MergedStressWrapperMarker Condition="'$(StripeMergedStressWorkItems)'=='true'" Include="$(TestBinDir)**\*.MergedTestAssemblyForStress"/>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PrepareMergedStressHelixWorkItems"
+          BeforeTargets="PrepareMergedHelixWorkItems"
+          Condition="'$(StripeMergedStressWorkItems)'=='true'"
+          Outputs="%(_MergedStressWrapperMarker.Identity).dummy">
+    <PropertyGroup>
+      <WithoutFinalExt>%(_MergedStressWrapperMarker.Filename)</WithoutFinalExt>
+      <TotalStripes>$([System.IO.Path]::GetExtension('$(WithoutFinalExt)'))</TotalStripes>
+      <WithoutFinalExt2>$([System.IO.Path]::GetFilenameWithoutExtension('$(WithoutFinalExt)'))</WithoutFinalExt2>
+      <ActiveStripe>$([System.IO.Path]::GetExtension('$(WithoutFinalExt2)'))</ActiveStripe>
+      <WithoutFinalExt3>$([System.IO.Path]::GetFilenameWithoutExtension('$(WithoutFinalExt2)'))</WithoutFinalExt3>
+      <MergedWrapperPayloadGroup>$([System.IO.Path]::GetFilenameWithoutExtension('$(WithoutFinalExt3)'))</MergedWrapperPayloadGroup>
+      <StripePayloadGroup>$(MergedWrapperPayloadGroup)$(ActiveStripe)$(TotalStripes)</StripePayloadGroup>
+      <FullName>%(_MergedStressWrapperMarker.Identity)</FullName>
+    </PropertyGroup>
+    <ItemGroup>
+      <HelixWorkItem Include="$(StripePayloadGroup)" Condition="'%(MergedPayloads.PayloadGroup)'=='$(MergedWrapperPayloadGroup)' and ! $(FullName.Contains('MergedPayloads'))">
+        <PayloadDirectory>%(MergedPayloads.PayloadDirectory)</PayloadDirectory>
+        <Command>$([System.String]::Copy('%(MergedPayloads.MergedTestHelixCommand)').Replace('TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1','TEST_HARNESS_STRIPE_TO_EXECUTE=$(ActiveStripe)$(TotalStripes)'))</Command>
+        <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+        <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PrepareMergedHelixWorkItems" BeforeTargets="CoreTest">
+    <ItemGroup>
+      <HelixWorkItem Include="%(MergedPayloads.PayloadGroup)" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true' and '$(StripeMergedStressWorkItems)'!= 'true'">
+        <PayloadDirectory>%(MergedPayloads.PayloadDirectory)</PayloadDirectory>
+        <Command>%(MergedPayloads.MergedTestHelixCommand)</Command>
+        <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+        <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup>
+    <SigningCommand Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
+    <![CDATA[
+      for APP_FILE in `find . -name *.app`; do cp embedded.mobileprovision $APP_FILE; sign $APP_FILE; done; ]]>
+    </SigningCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+    <AppleTestTarget Condition="'$(TargetOS)' == 'iossimulator'">ios-simulator-64</AppleTestTarget>
+    <AppleTestTarget Condition="'$(TargetOS)' == 'tvossimulator'">tvos-simulator</AppleTestTarget>
+    <AppleTestTarget Condition="'$(TargetOS)' == 'ios'">ios-device</AppleTestTarget>
+    <AppleTestTarget Condition="'$(TargetOS)' == 'tvos'">tvos-device</AppleTestTarget>
+    <AppleTestTarget Condition="'$(TargetOS)' == 'maccatalyst'">maccatalyst</AppleTestTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+      <DownloadFilesFromResults Condition=" '$(SuperPmiCollect)' == 'true' ">coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).mch;coreclr_tests.run.$(TargetOS).$(TargetArchitecture).$(Configuration).log</DownloadFilesFromResults>
     </HelixWorkItem>
 
+    <XHarnessApkToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAndroid)' == 'true'">
+      <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
+      <CustomCommands>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
+      <CustomCommands Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
+    </XHarnessApkToTest>
+
+    <XHarnessApkToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAndroid)' == 'true'">
+      <Arguments>--arg=env:TestExclusionListPath=TestExclusionList.txt</Arguments>
+      <AndroidPackageName>net.dot.%(PayloadGroup)</AndroidPackageName>
+      <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
+      <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
+    </XHarnessApkToTest>
+
+    <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAppleMobile)' == 'true'">
+      <TestTarget>$(AppleTestTarget)</TestTarget>
+      <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
+      <CustomCommands> $(SigningCommand) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
+      <CustomCommands Condition=" '%(TestGroup)' != '' ">$(SigningCommand) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
+    </XHarnessAppBundleToTest>
+
+    <XHarnessAppBundleToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAppleMobile)' == 'true'">
+      <Arguments>--set-env=TestExclusionListPath=TestExclusionList.txt</Arguments>
+      <TestTarget>$(AppleTestTarget)</TestTarget>
+      <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
+    </XHarnessAppBundleToTest>
+
     <HelixWorkItem Condition="'$(PALTestsDir)' != '' and '$(TestWrapperTargetsWindows)' != 'true'" Include="PALTests">
-      <PayloadArchive>$(PayloadsRootDirectory)paltests.tar.gz</PayloadArchive>
+      <PayloadArchive>$(LegacyPayloadsRootDirectory)paltests.tar.gz</PayloadArchive>
       <Command>./runpaltestshelix.sh</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
@@ -329,4 +900,10 @@
   <Import Sdk="Microsoft.DotNet.Helix.Sdk" Project="Sdk.targets" Condition=" '$(UsesHelixSdk)' == 'true' " />
   <Import Sdk="Microsoft.Build.NoTargets" Project="Sdk.targets" Condition=" '$(UsesHelixSdk)' != 'true' " />
 
+  <!-- This target needs to come after importing the Helix SDK as AfterTargets doesn't work for targets that have yet to be defined. -->
+  <Target Name="ConfigureSOS" AfterTargets="AddDotNetSdk" BeforeTargets="CoreTest" Condition="'$(TestWrapperTargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <PropertyGroup>
+      <HelixPreCommands>$(HelixPreCommands);dotnet %25HELIX_CORRELATION_PAYLOAD%25\sos\tools\net$(DotnetSosTargetFrameworkVersion)\any\dotnet-sos.dll install --architecture $(TargetArchitecture)</HelixPreCommands>
+    </PropertyGroup>
+  </Target>
 </Project>

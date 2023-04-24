@@ -260,7 +260,7 @@ namespace Microsoft.VisualBasic
 
         protected override string NullToken => "Nothing";
 
-        private void EnsureInDoubleQuotes(ref bool fInDoubleQuotes, StringBuilder b)
+        private static void EnsureInDoubleQuotes(ref bool fInDoubleQuotes, StringBuilder b)
         {
             if (fInDoubleQuotes)
             {
@@ -271,7 +271,7 @@ namespace Microsoft.VisualBasic
             fInDoubleQuotes = true;
         }
 
-        private void EnsureNotInDoubleQuotes(ref bool fInDoubleQuotes, StringBuilder b)
+        private static void EnsureNotInDoubleQuotes(ref bool fInDoubleQuotes, StringBuilder b)
         {
             if (!fInDoubleQuotes)
             {
@@ -865,7 +865,11 @@ namespace Microsoft.VisualBasic
                 string typeName = GetTypeOutput(e.CreateType);
                 Output.Write(typeName);
 
-                if (typeName.IndexOf('(') == -1) // string.Contains(char) is .NetCore2.1+ specific
+#if NETCOREAPP
+                if (!typeName.Contains('('))
+#else
+                if (typeName.IndexOf('(') == -1)
+#endif
                 {
                     Output.Write("()");
                 }
@@ -888,7 +892,11 @@ namespace Microsoft.VisualBasic
                 }
                 else
                 {
+#if NETCOREAPP
+                    Output.Write(typeName.AsSpan(0, index + 1));
+#else
                     Output.Write(typeName.Substring(0, index + 1));
+#endif
                 }
 
                 // The tricky thing is we need to declare the size - 1
@@ -909,7 +917,11 @@ namespace Microsoft.VisualBasic
                 }
                 else
                 {
+#if NETCOREAPP
+                    Output.Write(typeName.AsSpan(index + 1));
+#else
                     Output.Write(typeName.Substring(index + 1));
+#endif
                 }
 
                 Output.Write(" {}");
@@ -1188,7 +1200,7 @@ namespace Microsoft.VisualBasic
             Output.WriteLine();
         }
 
-        private bool IsDocComment(CodeCommentStatement comment)
+        private static bool IsDocComment(CodeCommentStatement comment)
         {
             return ((comment != null) && (comment.Comment != null) && comment.Comment.DocComment);
         }
@@ -1220,29 +1232,43 @@ namespace Microsoft.VisualBasic
         {
             string commentLineStart = e.DocComment ? "'''" : "'";
             Output.Write(commentLineStart);
+            bool isAfterCommentLineStart = true;
+
             string value = e.Text;
             for (int i = 0; i < value.Length; i++)
             {
+                if (isAfterCommentLineStart)
+                {
+                    if (value[i] == '\'' && (e.DocComment || (value.HasCharAt(i + 1, '\'') && !value.HasCharAt(i + 2, '\''))))
+                    {
+                        Output.Write(' ');
+                    }
+                    isAfterCommentLineStart = false;
+                }
+
                 Output.Write(value[i]);
 
                 if (value[i] == '\r')
                 {
-                    if (i < value.Length - 1 && value[i + 1] == '\n')
+                    if (value.HasCharAt(i + 1, '\n'))
                     { // if next char is '\n', skip it
                         Output.Write('\n');
                         i++;
                     }
                     ((ExposedTabStringIndentedTextWriter)Output).InternalOutputTabs();
                     Output.Write(commentLineStart);
+                    isAfterCommentLineStart = true;
                 }
                 else if (value[i] == '\n')
                 {
                     ((ExposedTabStringIndentedTextWriter)Output).InternalOutputTabs();
                     Output.Write(commentLineStart);
+                    isAfterCommentLineStart = true;
                 }
                 else if (value[i] == '\u2028' || value[i] == '\u2029' || value[i] == '\u0085')
                 {
                     Output.Write(commentLineStart);
+                    isAfterCommentLineStart = true;
                 }
             }
             Output.WriteLine();
@@ -1521,7 +1547,7 @@ namespace Microsoft.VisualBasic
             }
         }
 
-        private bool MethodIsOverloaded(CodeMemberMethod e, CodeTypeDeclaration c)
+        private static bool MethodIsOverloaded(CodeMemberMethod e, CodeTypeDeclaration c)
         {
             if ((e.Attributes & MemberAttributes.Overloaded) != 0)
             {
@@ -1683,7 +1709,7 @@ namespace Microsoft.VisualBasic
             Output.WriteLine("End Sub");
         }
 
-        private bool PropertyIsOverloaded(CodeMemberProperty e, CodeTypeDeclaration c)
+        private static bool PropertyIsOverloaded(CodeMemberProperty e, CodeTypeDeclaration c)
         {
             if ((e.Attributes & MemberAttributes.Overloaded) != 0)
             {
@@ -2042,7 +2068,7 @@ namespace Microsoft.VisualBasic
             Output.Write(')');
         }
 
-        // In VB, constraints are put right after the type paramater name.
+        // In VB, constraints are put right after the type parameter name.
         // In C#, there is a separate "where" statement
         private void OutputTypeParameterConstraints(CodeTypeParameter typeParameter)
         {
@@ -2141,7 +2167,7 @@ namespace Microsoft.VisualBasic
             GenerateNamespaceEnd(e);
         }
 
-        private bool AllowLateBound(CodeCompileUnit e)
+        private static bool AllowLateBound(CodeCompileUnit e)
         {
             object o = e.UserData["AllowLateBound"];
             if (o != null && o is bool)
@@ -2153,7 +2179,7 @@ namespace Microsoft.VisualBasic
             return true;
         }
 
-        private bool RequireVariableDeclaration(CodeCompileUnit e)
+        private static bool RequireVariableDeclaration(CodeCompileUnit e)
         {
             object o = e.UserData["RequireVariableDeclaration"];
             if (o != null && o is bool)
@@ -2163,7 +2189,7 @@ namespace Microsoft.VisualBasic
             return true;
         }
 
-        private bool GetUserData(CodeObject e, string property, bool defaultValue)
+        private static bool GetUserData(CodeObject e, string property, bool defaultValue)
         {
             object o = e.UserData[property];
             if (o != null && o is bool)
@@ -2269,7 +2295,7 @@ namespace Microsoft.VisualBasic
             {
                 foreach (byte b in checksumPragma.ChecksumData)
                 {
-                    Output.Write(b.ToString("X2", CultureInfo.InvariantCulture));
+                    Output.Write(b.ToString("X2"));
                 }
             }
             Output.WriteLine("\")");
@@ -2505,15 +2531,12 @@ namespace Microsoft.VisualBasic
 
         private string GetTypeOutputWithoutArrayPostFix(CodeTypeReference typeRef)
         {
-            StringBuilder sb = new StringBuilder();
-
             while (typeRef.ArrayElementType != null)
             {
                 typeRef = typeRef.ArrayElementType;
             }
 
-            sb.Append(GetBaseTypeOutput(typeRef));
-            return sb.ToString();
+            return GetBaseTypeOutput(typeRef);
         }
 
         private string GetTypeArgumentsOutput(CodeTypeReferenceCollection typeArguments)

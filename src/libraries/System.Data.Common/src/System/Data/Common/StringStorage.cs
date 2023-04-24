@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.Common
 {
@@ -32,7 +33,7 @@ namespace System.Data.Common
                     }
                     if (min >= 0)
                     {
-                        for (i = i + 1; i < recordNos.Length; i++)
+                        for (i++; i < recordNos.Length; i++)
                         {
                             if (IsNull(recordNos[i]))
                                 continue;
@@ -56,7 +57,7 @@ namespace System.Data.Common
                     }
                     if (max >= 0)
                     {
-                        for (i = i + 1; i < recordNos.Length; i++)
+                        for (i++; i < recordNos.Length; i++)
                         {
                             if (Compare(max, recordNos[i]) < 0)
                             {
@@ -186,11 +187,13 @@ namespace System.Data.Common
             _values = newValues;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override object ConvertXmlToObject(string s)
         {
             return s;
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public override string ConvertObjectToXml(object value)
         {
             return (string)value;

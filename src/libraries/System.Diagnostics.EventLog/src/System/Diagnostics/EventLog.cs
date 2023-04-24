@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -236,7 +237,7 @@ namespace System.Diagnostics
             CreateEventSource(new EventSourceCreationData(source, logName, "."));
         }
 
-        [Obsolete("This method has been deprecated.  Please use System.Diagnostics.EventLog.CreateEventSource(EventSourceCreationData sourceData) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("EventLog.CreateEventSource has been deprecated. Use System.Diagnostics.EventLog.CreateEventSource(EventSourceCreationData sourceData) instead.")]
         public static void CreateEventSource(string source, string logName, string machineName)
         {
             CreateEventSource(new EventSourceCreationData(source, logName, machineName));
@@ -244,8 +245,7 @@ namespace System.Diagnostics
 
         public static void CreateEventSource(EventSourceCreationData sourceData)
         {
-            if (sourceData == null)
-                throw new ArgumentNullException(nameof(sourceData));
+            ArgumentNullException.ThrowIfNull(sourceData);
 
             string logName = sourceData.LogName;
             string source = sourceData.Source;
@@ -320,7 +320,7 @@ namespace System.Diagnostics
                         }
 
                         logKey = eventKey.CreateSubKey(logName);
-                        SetSpecialLogRegValues(logKey, logName);
+                        SetSpecialLogRegValues(logKey);
                         // A source with the same name as the log has to be created
                         // by default. It is the behavior expected by EventLog API.
                         sourceLogKey = logKey.CreateSubKey(logName);
@@ -331,7 +331,7 @@ namespace System.Diagnostics
                     {
                         if (!createLogKey)
                         {
-                            SetSpecialLogRegValues(logKey, logName);
+                            SetSpecialLogRegValues(logKey);
                         }
 
                         sourceKey = logKey.CreateSubKey(source);
@@ -691,6 +691,8 @@ namespace System.Diagnostics
             return null;
         }
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "The code handles if the path is null by calling AppContext.BaseDirectory")]
         internal static string GetDllPath(string machineName)
         {
             string dllPath = Path.Combine(NetFrameworkUtils.GetLatestBuildDllDirectory(machineName), DllName);
@@ -766,7 +768,7 @@ namespace System.Diagnostics
             _underlyingEventLog.RegisterDisplayName(resourceFile, resourceId);
         }
 
-        private static void SetSpecialLogRegValues(RegistryKey logKey, string logName)
+        private static void SetSpecialLogRegValues(RegistryKey logKey)
         {
             // Set all the default values for this log.  AutoBackupLogfiles only makes sense in
             // Win2000 SP4, WinXP SP1, and Win2003, but it should alright elsewhere.
@@ -846,7 +848,7 @@ namespace System.Diagnostics
 
                         if (sb.Length > 0)
                         {
-                            int num = -1;
+                            int num;
                             if (int.TryParse(sb.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out num))
                             {
                                 largestNumber = Math.Max(largestNumber, num);
@@ -1051,8 +1053,7 @@ namespace System.Diagnostics
         // The EventLog.set_Source used to do some normalization and throw some exceptions.  We mimic that behavior here.
         private static string CheckAndNormalizeSourceName(string source)
         {
-            if (source == null)
-                source = string.Empty;
+            source ??= string.Empty;
 
             // this 254 limit is the max length of a registry key.
             if (source.Length + EventLogKey.Length > 254)

@@ -19,6 +19,20 @@ internal static partial class Interop
                 cbData = size;
                 pbData = handle;
             }
+
+            internal byte[] ToByteArray()
+            {
+                if (cbData == 0)
+                {
+                    return Array.Empty<byte>();
+                }
+
+                byte[] array = new byte[cbData];
+                Marshal.Copy(pbData, array, 0, (int)cbData);
+                return array;
+            }
+
+            internal unsafe ReadOnlySpan<byte> DangerousAsSpan() => new ReadOnlySpan<byte>((void*)pbData, (int)cbData);
         }
     }
 }

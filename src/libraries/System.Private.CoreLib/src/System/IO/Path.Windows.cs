@@ -3,19 +3,15 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
 
-#if MS_IO_REDIST
-using System;
-using System.IO;
-
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
-    public static partial class Path
+    public static unsafe partial class Path
     {
+        private static volatile delegate* unmanaged<int, char*, uint> s_GetTempPathWFunc;
+
         public static char[] GetInvalidFileNameChars() => new char[]
         {
             '\"', '<', '>', '|', '\0',
@@ -34,11 +30,20 @@ namespace System.IO
             (char)31
         };
 
+        private static bool ExistsCore(string fullPath, out bool isDirectory)
+        {
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            int errorCode = FileSystem.FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
+            bool result = (errorCode == Interop.Errors.ERROR_SUCCESS) && (data.dwFileAttributes != -1);
+            isDirectory = result && (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0;
+
+            return result;
+        }
+
         // Expands the given path to a fully qualified path.
         public static string GetFullPath(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            ArgumentNullException.ThrowIfNull(path);
 
             // If the path would normalize to string empty, we'll consider it empty
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
@@ -48,36 +53,24 @@ namespace System.IO
             // This is because the nulls will signal the end of the string to Win32 and therefore have
             // unpredictable results.
             if (path.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, nameof(path));
+                throw new ArgumentException(SR.Argument_NullCharInPath, nameof(path));
 
-            if (PathInternal.IsExtended(path.AsSpan()))
-            {
-                // \\?\ paths are considered normalized by definition. Windows doesn't normalize \\?\
-                // paths and neither should we. Even if we wanted to GetFullPathName does not work
-                // properly with device paths. If one wants to pass a \\?\ path through normalization
-                // one can chop off the prefix, pass it to GetFullPath and add it again.
-                return path;
-            }
-
-            return PathHelper.Normalize(path);
+            return GetFullPathInternal(path);
         }
 
         public static string GetFullPath(string path, string basePath)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (basePath == null)
-                throw new ArgumentNullException(nameof(basePath));
+            ArgumentNullException.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(basePath);
 
             if (!IsPathFullyQualified(basePath))
                 throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));
 
             if (basePath.Contains('\0') || path.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars);
+                throw new ArgumentException(SR.Argument_NullCharInPath);
 
             if (IsPathFullyQualified(path))
-                return GetFullPath(path);
+                return GetFullPathInternal(path);
 
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 return basePath;
@@ -129,7 +122,25 @@ namespace System.IO
 
             return PathInternal.IsDevice(combinedPath.AsSpan())
                 ? PathInternal.RemoveRelativeSegments(combinedPath, PathInternal.GetRootLength(combinedPath.AsSpan()))
-                : GetFullPath(combinedPath);
+                : GetFullPathInternal(combinedPath);
+        }
+
+        // Gets the full path without argument validation
+        private static string GetFullPathInternal(string path)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(path));
+            Debug.Assert(!path.Contains('\0'));
+
+            if (PathInternal.IsExtended(path.AsSpan()))
+            {
+                // \\?\ paths are considered normalized by definition. Windows doesn't normalize \\?\
+                // paths and neither should we. Even if we wanted to GetFullPathName does not work
+                // properly with device paths. If one wants to pass a \\?\ path through normalization
+                // one can chop off the prefix, pass it to GetFullPath and add it again.
+                return path;
+            }
+
+            return PathHelper.Normalize(path);
         }
 
         public static string GetTempPath()
@@ -143,10 +154,22 @@ namespace System.IO
             return path;
         }
 
-        private static void GetTempPath(ref ValueStringBuilder builder)
+        private static unsafe delegate* unmanaged<int, char*, uint> GetGetTempPathWFunc()
+        {
+            IntPtr kernel32 = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.Kernel32, 0, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+            if (!NativeLibrary.TryGetExport(kernel32, "GetTempPath2W", out IntPtr func))
+            {
+                func = NativeLibrary.GetExport(kernel32, "GetTempPathW");
+            }
+
+            return (delegate* unmanaged<int, char*, uint>)func;
+        }
+
+        internal static void GetTempPath(ref ValueStringBuilder builder)
         {
             uint result;
-            while ((result = Interop.Kernel32.GetTempPathW(builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)
+            while ((result = GetTempPathW(builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)
             {
                 // Reported size is greater than the buffer size. Increase the capacity.
                 builder.EnsureCapacity(checked((int)result));
@@ -156,31 +179,86 @@ namespace System.IO
                 throw Win32Marshal.GetExceptionForLastWin32Error();
 
             builder.Length = (int)result;
+
+            static uint GetTempPathW(int bufferLen, ref char buffer)
+            {
+                delegate* unmanaged<int, char*, uint> func = s_GetTempPathWFunc;
+#pragma warning disable IDE0074 // Use compound assignment
+                if (func == null)
+                {
+                    func = s_GetTempPathWFunc = GetGetTempPathWFunc();
+                }
+#pragma warning restore IDE0074
+
+                int lastError;
+                uint retVal;
+                fixed (char* ptr = &buffer)
+                {
+                    Marshal.SetLastSystemError(0);
+                    retVal = func(bufferLen, ptr);
+                    lastError = Marshal.GetLastSystemError();
+                }
+
+                Marshal.SetLastPInvokeError(lastError);
+                return retVal;
+            }
         }
 
         // Returns a unique temporary file name, and creates a 0-byte file by that
         // name on disk.
         public static string GetTempFileName()
         {
-            var tempPathBuilder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
+            // Avoid GetTempFileNameW because it is limited to 0xFFFF possibilities, which both
+            // means that it may have to make many attempts to create the file before
+            // finding an unused name, and also that if an app "leaks" such temp files,
+            // it can prevent GetTempFileNameW succeeding at all.
+            //
+            // To make this a little more robust, generate our own name with more
+            // entropy. We could use GetRandomFileName() here, but for consistency
+            // with Unix and to retain the ".tmp" extension we will use the "tmpXXXXXX.tmp" pattern.
+            // Using 32 characters for convenience, that gives us 32^^6 ~= 10^^9 possibilities,
+            // but we'll still loop to handle the unlikely case the file already exists.
 
-            GetTempPath(ref tempPathBuilder);
+            const int KeyLength = 4;
+            byte* bytes = stackalloc byte[KeyLength];
 
-            var builder = new ValueStringBuilder(stackalloc char[PathInternal.MaxShortPath]);
+            Span<char> span = stackalloc char[13]; // tmpXXXXXX.tmp
+            span[0] = span[10] = 't';
+            span[1] = span[11] = 'm';
+            span[2] = span[12] = 'p';
+            span[9] = '.';
 
-            uint result = Interop.Kernel32.GetTempFileNameW(
-                ref tempPathBuilder.GetPinnableReference(), "tmp", 0, ref builder.GetPinnableReference());
+            int i = 0;
+            while (true)
+            {
+                Interop.GetRandomBytes(bytes, KeyLength);  // 4 bytes = more than 6 x 5 bits
 
-            tempPathBuilder.Dispose();
+                byte b0 = bytes[0];
+                byte b1 = bytes[1];
+                byte b2 = bytes[2];
+                byte b3 = bytes[3];
 
-            if (result == 0)
-                throw Win32Marshal.GetExceptionForLastWin32Error();
+                span[3] = (char)Base32Char[b0 & 0b0001_1111];
+                span[4] = (char)Base32Char[b1 & 0b0001_1111];
+                span[5] = (char)Base32Char[b2 & 0b0001_1111];
+                span[6] = (char)Base32Char[b3 & 0b0001_1111];
+                span[7] = (char)Base32Char[((b0 & 0b1110_0000) >> 5) | ((b1 & 0b1100_0000) >> 3)];
+                span[8] = (char)Base32Char[((b2 & 0b1110_0000) >> 5) | ((b3 & 0b1100_0000) >> 3)];
 
-            builder.Length = builder.RawChars.IndexOf('\0');
+                string path = string.Concat(Path.GetTempPath(), span);
 
-            string path = PathHelper.Normalize(ref builder);
-            builder.Dispose();
-            return path;
+                try
+                {
+                    File.OpenHandle(path, FileMode.CreateNew, FileAccess.Write).Dispose();
+                }
+                catch (IOException ex) when (i < 100 && Win32Marshal.TryMakeWin32ErrorCodeFromHR(ex.HResult) == Interop.Errors.ERROR_FILE_EXISTS)
+                {
+                    i++; // Don't let unforeseen circumstances cause us to loop forever
+                    continue; // File already exists: very, very unlikely
+                }
+
+                return path;
+            }
         }
 
         // Tests if the given path contains a root. A path is considered rooted
@@ -229,9 +307,6 @@ namespace System.IO
             int pathRoot = PathInternal.GetRootLength(path);
             return pathRoot <= 0 ? ReadOnlySpan<char>.Empty : path.Slice(0, pathRoot);
         }
-
-        /// <summary>Gets whether the system is case-sensitive.</summary>
-        internal static bool IsCaseSensitive => false;
 
         /// <summary>
         /// Returns the volume name for dos, UNC and device paths.

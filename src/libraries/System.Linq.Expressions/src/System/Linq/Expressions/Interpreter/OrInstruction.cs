@@ -177,15 +177,15 @@ namespace System.Linq.Expressions.Interpreter
         {
             return type.GetNonNullableType().GetTypeCode() switch
             {
-                TypeCode.SByte => s_SByte ?? (s_SByte = new OrSByte()),
-                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new OrInt16()),
-                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new OrInt32()),
-                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new OrInt64()),
-                TypeCode.Byte => s_Byte ?? (s_Byte = new OrByte()),
-                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new OrUInt16()),
-                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new OrUInt32()),
-                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new OrUInt64()),
-                TypeCode.Boolean => s_Boolean ?? (s_Boolean = new OrBoolean()),
+                TypeCode.SByte => s_SByte ??= new OrSByte(),
+                TypeCode.Int16 => s_Int16 ??= new OrInt16(),
+                TypeCode.Int32 => s_Int32 ??= new OrInt32(),
+                TypeCode.Int64 => s_Int64 ??= new OrInt64(),
+                TypeCode.Byte => s_Byte ??= new OrByte(),
+                TypeCode.UInt16 => s_UInt16 ??= new OrUInt16(),
+                TypeCode.UInt32 => s_UInt32 ??= new OrUInt32(),
+                TypeCode.UInt64 => s_UInt64 ??= new OrUInt64(),
+                TypeCode.Boolean => s_Boolean ??= new OrBoolean(),
                 _ => throw ContractUtils.Unreachable,
             };
         }

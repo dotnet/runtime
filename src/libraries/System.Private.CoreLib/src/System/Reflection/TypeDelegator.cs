@@ -4,6 +4,10 @@
 // TypeDelegator
 //
 // This class wraps a Type object and delegates all methods to that Type.
+//
+// When changes are made here, also consider changing the ModifiedType class
+// in both the runtime and in MetadataLoadContext since those classes also
+// wrap Type.
 
 using System.Diagnostics.CodeAnalysis;
 using CultureInfo = System.Globalization.CultureInfo;
@@ -29,8 +33,7 @@ namespace System.Reflection
         // TypeDelegator. The only purpose of the annotation here is to avoid dataflow warnings _within_ this type.
         public TypeDelegator([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type delegatingType)
         {
-            if (delegatingType is null)
-                throw new ArgumentNullException(nameof(delegatingType));
+            ArgumentNullException.ThrowIfNull(delegatingType);
 
             typeImpl = delegatingType;
         }
@@ -85,8 +88,15 @@ namespace System.Reflection
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo[] GetFields(BindingFlags bindingAttr) => typeImpl.GetFields(bindingAttr);
 
+        public override Type[] GetFunctionPointerCallingConventions() => typeImpl.GetFunctionPointerCallingConventions();
+        public override Type[] GetFunctionPointerParameterTypes() => typeImpl.GetFunctionPointerParameterTypes();
+        public override Type GetFunctionPointerReturnType() => typeImpl.GetFunctionPointerReturnType();
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase) => typeImpl.GetInterface(name, ignoreCase);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type[] GetInterfaces() => typeImpl.GetInterfaces();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
@@ -123,6 +133,8 @@ namespace System.Reflection
         [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => typeImpl.GetMembers(bindingAttr);
 
+        public override MemberInfo GetMemberWithSameMetadataDefinitionAs(MemberInfo member) => typeImpl.GetMemberWithSameMetadataDefinitionAs(member);
+
         protected override TypeAttributes GetAttributeFlagsImpl() => typeImpl.Attributes;
 
         public override bool IsTypeDefinition => typeImpl.IsTypeDefinition;
@@ -142,6 +154,9 @@ namespace System.Reflection
 
         public override bool IsCollectible => typeImpl.IsCollectible;
 
+        public override bool IsFunctionPointer => typeImpl.IsFunctionPointer;
+        public override bool IsUnmanagedFunctionPointer => typeImpl.IsUnmanagedFunctionPointer;
+
         public override Type? GetElementType() => typeImpl.GetElementType();
         protected override bool HasElementTypeImpl() => typeImpl.HasElementType;
 
@@ -152,6 +167,6 @@ namespace System.Reflection
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) => typeImpl.GetCustomAttributes(attributeType, inherit);
 
         public override bool IsDefined(Type attributeType, bool inherit) => typeImpl.IsDefined(attributeType, inherit);
-        public override InterfaceMapping GetInterfaceMap(Type interfaceType) => typeImpl.GetInterfaceMap(interfaceType);
+        public override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType) => typeImpl.GetInterfaceMap(interfaceType);
     }
 }

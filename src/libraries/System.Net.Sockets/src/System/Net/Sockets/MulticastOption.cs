@@ -14,15 +14,8 @@ namespace System.Net.Sockets
         // group and local address.
         public MulticastOption(IPAddress group, IPAddress mcint)
         {
-            if (group == null)
-            {
-                throw new ArgumentNullException(nameof(group));
-            }
-
-            if (mcint == null)
-            {
-                throw new ArgumentNullException(nameof(mcint));
-            }
+            ArgumentNullException.ThrowIfNull(group);
+            ArgumentNullException.ThrowIfNull(mcint);
 
             _group = group;
             LocalAddress = mcint;
@@ -30,15 +23,10 @@ namespace System.Net.Sockets
 
         public MulticastOption(IPAddress group, int interfaceIndex)
         {
-            if (group == null)
-            {
-                throw new ArgumentNullException(nameof(group));
-            }
+            ArgumentNullException.ThrowIfNull(group);
 
-            if (interfaceIndex < 0 || interfaceIndex > 0x00FFFFFF)
-            {
-                throw new ArgumentOutOfRangeException(nameof(interfaceIndex));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(interfaceIndex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(interfaceIndex, 0x00FFFFFF);
 
             _group = group;
             _ifIndex = interfaceIndex;
@@ -47,10 +35,7 @@ namespace System.Net.Sockets
         // Creates a new version of the MulticastOption class for the specified group.
         public MulticastOption(IPAddress group)
         {
-            if (group == null)
-            {
-                throw new ArgumentNullException(nameof(group));
-            }
+            ArgumentNullException.ThrowIfNull(group);
 
             _group = group;
 
@@ -60,23 +45,18 @@ namespace System.Net.Sockets
         // Sets the IP address of a multicast group.
         public IPAddress Group
         {
-            get
-            {
-                return _group;
-            }
+            get => _group;
             set
             {
-                _group = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                _group = value;
             }
         }
 
         // Sets the local address of a multicast group.
         public IPAddress? LocalAddress
         {
-            get
-            {
-                return _localAddress;
-            }
+            get => _localAddress;
             set
             {
                 _ifIndex = 0;
@@ -86,16 +66,11 @@ namespace System.Net.Sockets
 
         public int InterfaceIndex
         {
-            get
-            {
-                return _ifIndex;
-            }
+            get => _ifIndex;
             set
             {
-                if (value < 0 || value > 0x00FFFFFF)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x00FFFFFF);
 
                 _localAddress = null;
                 _ifIndex = value;
@@ -113,15 +88,10 @@ namespace System.Net.Sockets
         // address group and local address.
         public IPv6MulticastOption(IPAddress group, long ifindex)
         {
-            if (group == null)
-            {
-                throw new ArgumentNullException(nameof(group));
-            }
+            ArgumentNullException.ThrowIfNull(group);
 
-            if (ifindex < 0 || ifindex > 0x00000000FFFFFFFF)
-            {
-                throw new ArgumentOutOfRangeException(nameof(ifindex));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(ifindex);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(ifindex, 0x00000000FFFFFFFF);
 
             _group = group;
             InterfaceIndex = ifindex;
@@ -131,10 +101,7 @@ namespace System.Net.Sockets
         // group.
         public IPv6MulticastOption(IPAddress group)
         {
-            if (group == null)
-            {
-                throw new ArgumentNullException(nameof(group));
-            }
+            ArgumentNullException.ThrowIfNull(group);
 
             _group = group;
             InterfaceIndex = 0;
@@ -143,29 +110,22 @@ namespace System.Net.Sockets
         // Sets the IP address of a multicast group.
         public IPAddress Group
         {
-            get
-            {
-                return _group;
-            }
+            get => _group;
             set
             {
-                _group = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                _group = value;
             }
         }
 
         // Sets the interface index.
         public long InterfaceIndex
         {
-            get
-            {
-                return _interface;
-            }
+            get => _interface;
             set
             {
-                if (value < 0 || value > 0x00000000FFFFFFFF)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0x00000000FFFFFFFF);
 
                 _interface = value;
             }

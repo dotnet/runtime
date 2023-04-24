@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    partial class RuntimeDeterminedType
+    public partial class RuntimeDeterminedType
     {
         public override string DiagnosticName
         {
@@ -17,7 +17,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return _rawCanonType.DiagnosticNamespace;
+                return string.Concat(_runtimeDeterminedDetailsType.DiagnosticName, "_", _rawCanonType.DiagnosticNamespace); ;
             }
         }
     }

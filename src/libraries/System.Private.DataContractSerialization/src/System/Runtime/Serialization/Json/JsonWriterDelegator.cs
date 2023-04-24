@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization.Json
                 return;
             }
 
-            ByteArrayHelperWithString.Instance.WriteArray(Writer, bytes, 0, bytes.Length);
+            ByteArrayHelperWithString.WriteArray(Writer, bytes, 0, bytes.Length);
         }
 
         internal override void WriteQName(XmlQualifiedName value)
@@ -191,7 +191,7 @@ namespace System.Runtime.Serialization.Json
                 long tickCount = value.Ticks;
                 if (lowBound > tickCount || highBound < tickCount) // We could potentially under/over flow
                 {
-                    tickCount = tickCount - TimeZoneInfo.Local.GetUtcOffset(value).Ticks;
+                    tickCount -= TimeZoneInfo.Local.GetUtcOffset(value).Ticks;
                     if ((tickCount > DateTime.MaxValue.Ticks) || (tickCount < DateTime.MinValue.Ticks))
                     {
                         throw XmlObjectSerializer.CreateSerializationException(SR.JsonDateTimeOutOfRange, new ArgumentOutOfRangeException(nameof(value)));
@@ -209,7 +209,7 @@ namespace System.Runtime.Serialization.Json
                     // +"zzzz";
                     //TimeSpan ts = TimeZone.CurrentTimeZone.GetUtcOffset(value.ToLocalTime());
                     TimeSpan ts = TimeZoneInfo.Local.GetUtcOffset(value.ToLocalTime());
-                    writer.WriteString(string.Format(CultureInfo.InvariantCulture, "{0:+00;-00}{1:00;00}", ts.Hours, ts.Minutes));
+                    writer.WriteString(string.Create(CultureInfo.InvariantCulture, $"{ts.Hours:+00;-00}{ts.Minutes:00;00}"));
                     break;
                 case DateTimeKind.Utc:
                     break;

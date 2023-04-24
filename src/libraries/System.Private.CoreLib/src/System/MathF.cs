@@ -31,7 +31,7 @@ namespace System
         private const int maxRoundingDigits = 6;
 
         // This table is required for the Round function which can specify the number of digits to round to
-        private static readonly float[] roundPower10Single = new float[] {
+        private static ReadOnlySpan<float> RoundPower10Single => new float[] {
             1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f
         };
 
@@ -42,6 +42,10 @@ namespace System
         private const float SCALEB_C2 = 1.1754944E-38f; // 0x1p-126f
 
         private const float SCALEB_C3 = 16777216f; // 0x1p24f
+
+        private const int ILogB_NaN = 0x7fffffff;
+
+        private const int ILogB_Zero = (-1 - 0x7fffffff);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(float x)
@@ -180,6 +184,38 @@ namespace System
             }
         }
 
+        public static int ILogB(float x)
+        {
+            // Implementation based on https://git.musl-libc.org/cgit/musl/tree/src/math/ilogbf.c
+
+            if (float.IsNaN(x))
+            {
+                return ILogB_NaN;
+            }
+
+            uint i = BitConverter.SingleToUInt32Bits(x);
+            int e = (int)((i >> 23) & 0xFF);
+
+            if (e == 0)
+            {
+                i <<= 9;
+                if (i == 0)
+                {
+                    return ILogB_Zero;
+                }
+
+                for (e = -0x7F; (i >> 31) == 0; e--, i <<= 1) ;
+                return e;
+            }
+
+            if (e == 0xFF)
+            {
+                return i << 9 != 0 ? ILogB_Zero : int.MaxValue;
+            }
+
+            return e - 0x7F;
+        }
+
         public static float Log(float x, float y)
         {
             if (float.IsNaN(x))
@@ -216,8 +252,8 @@ namespace System
             // This matches the IEEE 754:2019 `maximumMagnitude` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // otherwise returns the input with a greater magnitude.
+            // It treats +0 as greater than -0 as per the specification.
 
             float ax = Abs(x);
             float ay = Abs(y);
@@ -246,8 +282,8 @@ namespace System
             // This matches the IEEE 754:2019 `minimumMagnitude` function
             //
             // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // otherwise returns the input with a lesser magnitude.
+            // It treats +0 as lesser than -0 as per the specification.
 
             float ax = Abs(x);
             float ay = Abs(y);
@@ -325,10 +361,10 @@ namespace System
 
             // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
 
-            uint bits = (uint)BitConverter.SingleToInt32Bits(x);
-            int exponent = float.ExtractExponentFromBits(bits);
+            uint bits = BitConverter.SingleToUInt32Bits(x);
+            byte biasedExponent = float.ExtractBiasedExponentFromBits(bits);
 
-            if (exponent <= 0x7E)
+            if (biasedExponent <= 0x7E)
             {
                 if ((bits << 1) == 0)
                 {
@@ -340,11 +376,11 @@ namespace System
                 // and any value greater than 0.5 will always round to exactly one. However,
                 // we need to preserve the original sign for IEEE compliance.
 
-                float result = ((exponent == 0x7E) && (float.ExtractSignificandFromBits(bits) != 0)) ? 1.0f : 0.0f;
+                float result = ((biasedExponent == 0x7E) && (float.ExtractTrailingSignificandFromBits(bits) != 0)) ? 1.0f : 0.0f;
                 return CopySign(result, x);
             }
 
-            if (exponent >= 0x96)
+            if (biasedExponent >= 0x96)
             {
                 // Any value greater than or equal to 2^23 cannot have a fractional part,
                 // So it will always round to exactly itself.
@@ -353,12 +389,12 @@ namespace System
             }
 
             // The absolute value should be greater than or equal to 1.0 and less than 2^23
-            Debug.Assert((0x7F <= exponent) && (exponent <= 0x95));
+            Debug.Assert((0x7F <= biasedExponent) && (biasedExponent <= 0x95));
 
             // Determine the last bit that represents the integral portion of the value
             // and the bits representing the fractional portion
 
-            uint lastBitMask = 1U << (0x96 - exponent);
+            uint lastBitMask = 1U << (0x96 - biasedExponent);
             uint roundBitsMask = lastBitMask - 1;
 
             // Increment the first fractional bit, which represents the midpoint between
@@ -381,7 +417,7 @@ namespace System
                 bits &= ~roundBitsMask;
             }
 
-            return BitConverter.Int32BitsToSingle((int)bits);
+            return BitConverter.UInt32BitsToSingle(bits);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -393,6 +429,23 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Round(float x, MidpointRounding mode)
         {
+            // Inline single-instruction modes
+            if (RuntimeHelpers.IsKnownConstant((int)mode))
+            {
+                if (mode == MidpointRounding.ToEven)
+                    return Round(x);
+
+                // For ARM/ARM64 we can lower it down to a single instruction FRINTA
+                // For other platforms we use a fast managed implementation
+                if (mode == MidpointRounding.AwayFromZero)
+                {
+                    if (AdvSimd.IsSupported)
+                        return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalarUnsafe(x)).ToScalar();
+                    // manually fold BitDecrement(0.5f)
+                    return Truncate(x + CopySign(0.49999997f, x));
+                }
+            }
+
             return Round(x, 0, mode);
         }
 
@@ -410,7 +463,7 @@ namespace System
 
             if (Abs(x) < singleRoundLimit)
             {
-                float power10 = roundPower10Single[digits];
+                float power10 = RoundPower10Single[digits];
 
                 x *= power10;
 
@@ -427,13 +480,8 @@ namespace System
                     // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
                     case MidpointRounding.AwayFromZero:
                     {
-                        float fraction = ModF(x, &x);
-
-                        if (Abs(fraction) >= 0.5f)
-                        {
-                            x += Sign(fraction);
-                        }
-
+                        // manually fold BitDecrement(0.5f)
+                        x = Truncate(x + CopySign(0.49999997f, x));
                         break;
                     }
                     // Directed rounding: Round to the nearest value, toward to zero
@@ -472,6 +520,7 @@ namespace System
             return Math.Sign(x);
         }
 
+        [Intrinsic]
         public static unsafe float Truncate(float x)
         {
             ModF(x, &x);

@@ -18,6 +18,8 @@
 #include "interpreter.h"
 #endif // FEATURE_INTERPRETER
 
+#include "gcinfodecoder.h"
+
 #ifdef FEATURE_EH_FUNCLETS
 #define PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 #endif
@@ -301,7 +303,7 @@ bool CrawlFrame::IsGcSafe()
     return GetCodeManager()->IsGcSafe(&codeInfo, GetRelOffset());
 }
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 bool CrawlFrame::HasTailCalls()
 {
     CONTRACTL {
@@ -312,7 +314,7 @@ bool CrawlFrame::HasTailCalls()
 
     return GetCodeManager()->HasTailCalls(&codeInfo);
 }
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 inline void CrawlFrame::GotoNextFrame()
 {
@@ -633,10 +635,20 @@ PCODE Thread::VirtualUnwindLeafCallFrame(T_CONTEXT* pContext)
 
     uControlPc = *(ULONGLONG*)pContext->Rsp;
     pContext->Rsp += sizeof(ULONGLONG);
+#ifdef TARGET_WINDOWS
+    DWORD64 ssp = GetSSP(pContext);
+    if (ssp != 0)
+    {
+        SetSSP(pContext, ssp + sizeof(ULONGLONG));
+    }
+#endif // TARGET_WINDOWS
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64)
 
     uControlPc = TADDR(pContext->Lr);
+
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    uControlPc = TADDR(pContext->Ra);
 
 #else
     PORTABILITY_ASSERT("Thread::VirtualUnwindLeafCallFrame");
@@ -697,6 +709,8 @@ PCODE Thread::VirtualUnwindNonLeafCallFrame(T_CONTEXT* pContext, KNONVOLATILE_CO
     return uControlPc;
 }
 
+extern void* g_hostingApiReturnAddress;
+
 // static
 UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
 {
@@ -713,14 +727,12 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
     // get our caller's PSP, or our caller's caller's SP.
     while (!ExecutionManager::IsManagedCode(uControlPc))
     {
-#ifdef FEATURE_WRITEBARRIER_COPY
         if (IsIPInWriteBarrierCodeCopy(uControlPc))
         {
             // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
             uControlPc = AdjustWriteBarrierIP(uControlPc);
             SetIP(pContext, uControlPc);
         }
-#endif // FEATURE_WRITEBARRIER_COPY
 
 #ifndef TARGET_UNIX
         uControlPc = VirtualUnwindCallFrame(pContext);
@@ -741,8 +753,9 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
 
         uControlPc = GetIP(pContext);
 
-        if (uControlPc == 0)
+        if ((uControlPc == 0) || (uControlPc == (PCODE)g_hostingApiReturnAddress))
         {
+            uControlPc = 0;
             break;
         }
 #endif // !TARGET_UNIX
@@ -755,7 +768,7 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef _DEBUG
-void Thread::DebugLogStackWalkInfo(CrawlFrame* pCF, __in_z LPCSTR pszTag, UINT32 uFramesProcessed)
+void Thread::DebugLogStackWalkInfo(CrawlFrame* pCF, _In_z_ LPCSTR pszTag, UINT32 uFramesProcessed)
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -1286,7 +1299,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
     PCODE curPc = GetControlPC(pRegDisp);
     ProcessIp(curPc);
 
-    // loop the frame chain to find the closet explicit frame which is lower than the specificed REGDISPLAY
+    // loop the frame chain to find the closet explicit frame which is lower than the specified REGDISPLAY
     // (stack grows up towards lower address)
     if (m_crawl.pFrame != FRAME_TOP)
     {
@@ -1691,7 +1704,7 @@ ProcessFuncletsForGCReporting:
                         // and so we can detect it just from walking the stack.
                         // The filter funclet frames are different, they behave the same way on Windows and Unix. They can be present
                         // on the stack when we reach their parent frame if the filter hasn't finished running yet or they can be
-                        // gone if the filter completed running, either succesfully or with unhandled exception.
+                        // gone if the filter completed running, either successfully or with unhandled exception.
                         // So the special handling below ignores trackers belonging to filter clauses.
                         bool fProcessingFilterFunclet = !m_sfFuncletParent.IsNull() && !(m_fProcessNonFilterFunclet || m_fProcessIntermediaryNonFilterFunclet);
                         if (!fRecheckCurrentFrame && !fSkippingFunclet && (pTracker != NULL) && !fProcessingFilterFunclet)
@@ -2829,7 +2842,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
                 //
                 // However, just comparing EBP is not enough.  The OS exception handler
                 // (KiUserExceptionDispatcher()) does not use an EBP frame.  So if we just compare the EBP
-                // we will think that the OS excpetion handler is the one we want to claim.  Instead,
+                // we will think that the OS exception handler is the one we want to claim.  Instead,
                 // we should also check the current IP, which because of the way unwinding work and
                 // how the OS exception handler behaves is actually going to be the stack limit of the
                 // current thread.  This is of course a workaround and is dependent on the OS behaviour.
@@ -3137,6 +3150,12 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
     m_exInfoWalk.WalkToPosition(GetRegdisplaySP(m_crawl.pRD), (m_flags & POPFRAMES));
 #endif // ELIMINATE_FEF
 
+#ifdef TARGET_X86
+    hdrInfo gcHdrInfo;
+    DecodeGCHdrInfo(m_crawl.codeInfo.GetGCInfoToken(), 0, &gcHdrInfo);
+    bool hasReversePInvoke = gcHdrInfo.revPInvokeOffset != INVALID_REV_PINVOKE_OFFSET;
+#endif // TARGET_X86
+
     ProcessIp(GetControlPC(m_crawl.pRD));
 
     // if we have unwound to a native stack frame, stop and set the frame state accordingly
@@ -3145,6 +3164,18 @@ void StackFrameIterator::PostProcessingForManagedFrames(void)
         m_frameState = SFITER_NATIVE_MARKER_FRAME;
         m_crawl.isNativeMarker = true;
     }
+#ifdef TARGET_X86
+    else if (hasReversePInvoke)
+    {
+        // The managed frame we've unwound from had reverse PInvoke frame. Since we are on a frameless
+        // frame, that means that the method was called from managed code without any native frames in between.
+        // On x86, the InlinedCallFrame of the pinvoke would get skipped as we've just unwound to the pinvoke IL stub and
+        // for this architecture, the inlined call frames are supposed to be processed before the managed frame they are stored in.
+        // So we force the stack frame iterator to process the InlinedCallFrame before the IL stub.
+        _ASSERTE(InlinedCallFrame::FrameHasActiveCall(m_crawl.pFrame));
+        m_crawl.isFrameless = false;
+    }
+#endif
 } // StackFrameIterator::PostProcessingForManagedFrames()
 
 //---------------------------------------------------------------------------------------

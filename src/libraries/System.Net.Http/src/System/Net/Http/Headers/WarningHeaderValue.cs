@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -14,27 +13,16 @@ namespace System.Net.Http.Headers
         private readonly int _code;
         private readonly string _agent;
         private readonly string _text;
-        private readonly DateTimeOffset? _date;
+        private readonly DateTimeOffset _date;
+        private readonly bool _dateHasValue;
 
-        public int Code
-        {
-            get { return _code; }
-        }
+        public int Code => _code;
 
-        public string Agent
-        {
-            get { return _agent; }
-        }
+        public string Agent => _agent;
 
-        public string Text
-        {
-            get { return _text; }
-        }
+        public string Text => _text;
 
-        public DateTimeOffset? Date
-        {
-            get { return _date; }
-        }
+        public DateTimeOffset? Date => _dateHasValue ? _date : null;
 
         public WarningHeaderValue(int code, string agent, string text)
         {
@@ -57,6 +45,7 @@ namespace System.Net.Http.Headers
             _agent = agent;
             _text = text;
             _date = date;
+            _dateHasValue = true;
         }
 
         private WarningHeaderValue(WarningHeaderValue source)
@@ -67,72 +56,50 @@ namespace System.Net.Http.Headers
             _agent = source._agent;
             _text = source._text;
             _date = source._date;
+            _dateHasValue = source._dateHasValue;
         }
 
         public override string ToString()
         {
-            StringBuilder sb = StringBuilderCache.Acquire();
+            var sb = new ValueStringBuilder(stackalloc char[256]);
 
             // Warning codes are always 3 digits according to RFC2616
-            sb.Append(_code.ToString("000", NumberFormatInfo.InvariantInfo));
+            sb.AppendSpanFormattable(_code, "000", NumberFormatInfo.InvariantInfo);
 
             sb.Append(' ');
             sb.Append(_agent);
             sb.Append(' ');
             sb.Append(_text);
 
-            if (_date.HasValue)
+            if (_dateHasValue)
             {
                 sb.Append(" \"");
-                sb.Append(HttpDateParser.DateToString(_date.Value));
+                sb.AppendSpanFormattable(_date, "r");
                 sb.Append('\"');
             }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return sb.ToString();
         }
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            WarningHeaderValue? other = obj as WarningHeaderValue;
-
-            if (other == null)
-            {
-                return false;
-            }
-
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is WarningHeaderValue other &&
+            _code == other._code &&
             // 'agent' is a host/token, i.e. use case-insensitive comparison. Use case-sensitive comparison for 'text'
             // since it is a quoted string.
-            if ((_code != other._code) || (!string.Equals(_agent, other._agent, StringComparison.OrdinalIgnoreCase)) ||
-                (!string.Equals(_text, other._text, StringComparison.Ordinal)))
-            {
-                return false;
-            }
+            string.Equals(_agent, other._agent, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(_text, other._text, StringComparison.Ordinal) &&
+            _dateHasValue == other._dateHasValue &&
+            _date == other._date;
 
-            // We have a date set. Verify 'other' has also a date that matches our value.
-            if (_date.HasValue)
-            {
-                return other._date.HasValue && (_date.Value == other._date.Value);
-            }
+        public override int GetHashCode() =>
+            HashCode.Combine(
+                _code,
+                StringComparer.OrdinalIgnoreCase.GetHashCode(_agent),
+                _text,
+                _dateHasValue,
+                _date);
 
-            // We don't have a date. If 'other' has a date, we're not equal.
-            return !other._date.HasValue;
-        }
-
-        public override int GetHashCode()
-        {
-            int result = _code.GetHashCode() ^
-                StringComparer.OrdinalIgnoreCase.GetHashCode(_agent) ^
-                _text.GetHashCode();
-
-            if (_date.HasValue)
-            {
-                result = result ^ _date.Value.GetHashCode();
-            }
-
-            return result;
-        }
-
-        public static WarningHeaderValue Parse(string? input)
+        public static WarningHeaderValue Parse(string input)
         {
             int index = 0;
             return (WarningHeaderValue)GenericHeaderParser.SingleValueWarningParser.ParseValue(input, null, ref index);
@@ -172,13 +139,13 @@ namespace System.Net.Http.Headers
             }
 
             // Read <agent> in '<code> <agent> <text> ["<date>"]'
-            if (!TryReadAgent(input, current, ref current, out string? agent))
+            if (!TryReadAgent(input, ref current, out string? agent))
             {
                 return 0;
             }
 
             // Read <text> in '<code> <agent> <text> ["<date>"]'
-            int textLength = 0;
+            int textLength;
             int textStartIndex = current;
             if (HttpRuleParser.GetQuotedStringLength(input, current, out textLength) != HttpParseResult.Parsed)
             {
@@ -187,10 +154,10 @@ namespace System.Net.Http.Headers
 
             string text = input.Substring(textStartIndex, textLength);
 
-            current = current + textLength;
+            current += textLength;
 
             // Read <date> in '<code> <agent> <text> ["<date>"]'
-            DateTimeOffset? date = null;
+            DateTimeOffset? date;
             if (!TryReadDate(input, ref current, out date))
             {
                 return 0;
@@ -203,18 +170,21 @@ namespace System.Net.Http.Headers
             return current - startIndex;
         }
 
-        private static bool TryReadAgent(string input, int startIndex, ref int current, [NotNullWhen(true)] out string? agent)
+        private static bool TryReadAgent(string input, ref int current, [NotNullWhen(true)] out string? agent)
         {
-            int agentLength = HttpRuleParser.GetHostLength(input, startIndex, true, out agent!);
+            agent = null;
 
+            int agentLength = HttpRuleParser.GetHostLength(input, current, true);
             if (agentLength == 0)
             {
                 return false;
             }
 
-            current = current + agentLength;
+            agent = input.Substring(current, agentLength);
+            current += agentLength;
+
             int whitespaceLength = HttpRuleParser.GetWhitespaceLength(input, current);
-            current = current + whitespaceLength;
+            current += whitespaceLength;
 
             // At least one whitespace required after <agent>. Also make sure we have characters left for <text>
             if ((whitespaceLength == 0) || (current == input.Length))
@@ -243,10 +213,10 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            current = current + codeLength;
+            current += codeLength;
 
             int whitespaceLength = HttpRuleParser.GetWhitespaceLength(input, current);
-            current = current + whitespaceLength;
+            current += whitespaceLength;
 
             // Make sure the number is followed by at least one whitespace and that we have characters left to parse.
             if ((whitespaceLength == 0) || (current == input.Length))
@@ -263,7 +233,7 @@ namespace System.Net.Http.Headers
 
             // Make sure we have at least one whitespace between <text> and <date> (if we have <date>)
             int whitespaceLength = HttpRuleParser.GetWhitespaceLength(input, current);
-            current = current + whitespaceLength;
+            current += whitespaceLength;
 
             // Read <date> in '<code> <agent> <text> ["<date>"]'
             if ((current < input.Length) && (input[current] == '"'))
@@ -277,19 +247,12 @@ namespace System.Net.Http.Headers
 
                 // Find the closing '"'
                 int dateStartIndex = current;
-                while (current < input.Length)
+                int quote = input.AsSpan(current).IndexOf('"');
+                if (quote <= 0) // no quote was found or it was the first character (meaning an empty quoted string)
                 {
-                    if (input[current] == '"')
-                    {
-                        break;
-                    }
-                    current++;
+                    return false;
                 }
-
-                if ((current == input.Length) || (current == dateStartIndex))
-                {
-                    return false; // we couldn't find the closing '"' or we have an empty quoted string.
-                }
+                current += quote;
 
                 DateTimeOffset temp;
                 if (!HttpDateParser.TryParse(input.AsSpan(dateStartIndex, current - dateStartIndex), out temp))
@@ -300,7 +263,7 @@ namespace System.Net.Http.Headers
                 date = temp;
 
                 current++; // skip closing '"'
-                current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                current += HttpRuleParser.GetWhitespaceLength(input, current);
             }
 
             return true;
@@ -313,10 +276,8 @@ namespace System.Net.Http.Headers
 
         private static void CheckCode(int code)
         {
-            if ((code < 0) || (code > 999))
-            {
-                throw new ArgumentOutOfRangeException(nameof(code));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(code);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(code, 999);
         }
 
         private static void CheckAgent(string agent)
@@ -328,9 +289,9 @@ namespace System.Net.Http.Headers
 
             // 'receivedBy' can either be a host or a token. Since a token is a valid host, we only verify if the value
             // is a valid host.
-             if (HttpRuleParser.GetHostLength(agent, 0, true, out string? host) != agent.Length)
+            if (HttpRuleParser.GetHostLength(agent, 0, true) != agent.Length)
             {
-                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, agent));
+                throw new FormatException(SR.Format(SR.net_http_headers_invalid_value, agent));
             }
         }
     }

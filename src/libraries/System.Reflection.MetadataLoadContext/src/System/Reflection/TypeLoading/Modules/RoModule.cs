@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Serialization;
 
@@ -15,7 +17,7 @@ namespace System.Reflection.TypeLoading
     {
         private readonly string _fullyQualifiedName;
 
-        internal const string FullyQualifiedNameForModulesLoadedFromByteArrays = "<unknown>";
+        internal const string FullyQualifiedNameForModulesLoadedFromByteArrays = "<Unknown>";
 
         internal RoModule(string fullyQualifiedName)
             : base()
@@ -30,11 +32,19 @@ namespace System.Reflection.TypeLoading
         public sealed override Assembly Assembly => GetRoAssembly();
         internal abstract RoAssembly GetRoAssembly();
 
+        internal const string UnknownStringMessageInRAF = "Returns <Unknown> for modules with no file path";
+
+#if NETCOREAPP
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
+#endif
         public sealed override string FullyQualifiedName => _fullyQualifiedName;
         public abstract override int MDStreamVersion { get; }
         public abstract override int MetadataToken { get; }
         public abstract override Guid ModuleVersionId { get; }
 
+#if NETCOREAPP
+        [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
+#endif
         public sealed override string Name
         {
             get
@@ -62,6 +72,10 @@ namespace System.Reflection.TypeLoading
         public abstract override MethodInfo[] GetMethods(BindingFlags bindingFlags);
         protected abstract override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers);
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public sealed override void GetObjectData(SerializationInfo info, StreamingContext context) => throw new NotSupportedException();
         public abstract override void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine);
 

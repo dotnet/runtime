@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
+#pragma warning disable SYSLIB0050 // The SerializationInfo type is part of the obsolete legacy serialization framework
+
 namespace System.Runtime.Serialization
 {
     /// <summary>The structure for holding all of the data needed for object serialization and deserialization.</summary>
@@ -24,17 +26,11 @@ namespace System.Runtime.Serialization
         private Type _rootType;
 
         [CLSCompliant(false)]
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public SerializationInfo(Type type, IFormatterConverter converter)
         {
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (converter == null)
-            {
-                throw new ArgumentNullException(nameof(converter));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(converter);
 
             _rootType = type;
             _rootTypeName = type.FullName!;
@@ -50,6 +46,7 @@ namespace System.Runtime.Serialization
         }
 
         [CLSCompliant(false)]
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public SerializationInfo(Type type, IFormatterConverter converter, bool requireSameTokenInPartialTrust)
             : this(type, converter)
         {
@@ -61,11 +58,7 @@ namespace System.Runtime.Serialization
             get => _rootTypeName;
             set
             {
-                if (null == value)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
+                ArgumentNullException.ThrowIfNull(value);
                 _rootTypeName = value;
                 IsFullTypeNameSetExplicit = true;
             }
@@ -76,10 +69,7 @@ namespace System.Runtime.Serialization
             get => _rootTypeAssemblyName;
             set
             {
-                if (null == value)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 _rootTypeAssemblyName = value;
                 IsAssemblyNameSetExplicit = true;
             }
@@ -91,10 +81,7 @@ namespace System.Runtime.Serialization
 
         public void SetType(Type type)
         {
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             if (!ReferenceEquals(_rootType, type))
             {
@@ -145,15 +132,8 @@ namespace System.Runtime.Serialization
 
         public void AddValue(string name, object? value, Type type)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(type);
 
             AddValueInternal(name, value, type);
         }
@@ -282,7 +262,7 @@ namespace System.Runtime.Serialization
         /// <param name="name"> The name of the data to be updated.</param>
         /// <param name="value"> The new value.</param>
         /// <param name="type"> The type of the data being added.</param>
-        public void UpdateValue(string name, object value, Type type)
+        internal void UpdateValue(string name, object value, Type type)
         {
             Debug.Assert(null != name, "[SerializationInfo.UpdateValue]name!=null");
             Debug.Assert(null != value, "[SerializationInfo.UpdateValue]value!=null");
@@ -302,10 +282,8 @@ namespace System.Runtime.Serialization
 
         private int FindElement(string name)
         {
-            if (null == name)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
+
             if (_nameToIndex.TryGetValue(name, out int index))
             {
                 return index;
@@ -356,12 +334,9 @@ namespace System.Runtime.Serialization
 
         public object? GetValue(string name, Type type)
         {
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
-            if (!type.IsRuntimeImplemented())
+            if (type is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
             object? value = GetElement(name, out Type foundType);
@@ -378,7 +353,7 @@ namespace System.Runtime.Serialization
         internal object? GetValueNoThrow(string name, Type type)
         {
             Debug.Assert(type is not null, "[SerializationInfo.GetValue]type ==null");
-            Debug.Assert(type.IsRuntimeImplemented(), "[SerializationInfo.GetValue]type is not a runtime type");
+            Debug.Assert(type is RuntimeType, "[SerializationInfo.GetValue]type is not a runtime type");
 
             object? value = GetElementNoThrow(name, out Type? foundType);
             if (value == null)

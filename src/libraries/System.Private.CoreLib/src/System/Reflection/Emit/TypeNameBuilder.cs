@@ -15,13 +15,13 @@ namespace System.Reflection.Emit
 {
     internal sealed class TypeNameBuilder
     {
-        private StringBuilder _str = new StringBuilder();
+        private readonly StringBuilder _str = new StringBuilder();
         private int _instNesting;
         private bool _firstInstArg;
         private bool _nestedName;
         private bool _hasAssemblySpec;
         private bool _useAngleBracketsForGenerics;
-        private List<int> _stack = new List<int>();
+        private readonly List<int> _stack = new List<int>();
         private int _stackIdx;
 
         private TypeNameBuilder()
@@ -246,11 +246,14 @@ namespace System.Reflection.Emit
 
         private void Append(string pStr)
         {
-            foreach (char c in pStr)
+            int i = pStr.IndexOf('\0');
+            if (i < 0)
             {
-                if (c == '\0')
-                    break;
-                _str.Append(c);
+                _str.Append(pStr);
+            }
+            else if (i > 0)
+            {
+                _str.Append(pStr.AsSpan(0, i));
             }
         }
 

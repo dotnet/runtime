@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
+using Internal.Cryptography;
 
 namespace Internal.Cryptography.Pal.AnyOS
 {
@@ -33,16 +34,12 @@ namespace Internal.Cryptography.Pal.AnyOS
         {
             Debug.Assert(certificate != null);
 
-            X509Extension? extension = certificate.Extensions[Oids.SubjectKeyIdentifier];
-
-            if (extension == null)
-            {
-                // Construct the value from the public key info.
-                extension = new X509SubjectKeyIdentifierExtension(
+            X509Extension extension =
+                certificate.Extensions[Oids.SubjectKeyIdentifier] ??
+                new X509SubjectKeyIdentifierExtension( // Construct the value from the public key info.
                     certificate.PublicKey,
                     X509SubjectKeyIdentifierHashAlgorithm.CapiSha1,
                     false);
-            }
 
             try
             {
@@ -77,14 +74,14 @@ namespace Internal.Cryptography.Pal.AnyOS
             return GetPrivateKey<T>(certificate);
         }
 
-        private T? GetPrivateKey<T>(X509Certificate2 certificate) where T : AsymmetricAlgorithm
+        private static T? GetPrivateKey<T>(X509Certificate2 certificate) where T : AsymmetricAlgorithm
         {
             if (typeof(T) == typeof(RSA))
                 return (T?)(object?)certificate.GetRSAPrivateKey();
             if (typeof(T) == typeof(ECDsa))
                 return (T?)(object?)certificate.GetECDsaPrivateKey();
 #if NETCOREAPP || NETSTANDARD2_1
-            if (typeof(T) == typeof(DSA))
+            if (typeof(T) == typeof(DSA) && Internal.Cryptography.Helpers.IsDSASupported)
                 return (T?)(object?)certificate.GetDSAPrivateKey();
 #endif
 
@@ -166,6 +163,10 @@ namespace Internal.Cryptography.Pal.AnyOS
             switch (algorithmIdentifier)
             {
                 case Oids.Rc2Cbc:
+                    if (!Helpers.IsRC2Supported)
+                    {
+                        throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RC2)));
+                    }
 #pragma warning disable CA5351
                     alg = RC2.Create();
 #pragma warning restore CA5351

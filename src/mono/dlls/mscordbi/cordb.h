@@ -12,7 +12,7 @@
 #include "corhdr.h"
 #include "xcordebug.h"
 
-#include <mono/mini/debugger-protocol.h>
+#include <mono/component/debugger-protocol.h>
 #include <mono/utils/mono-publib.h>
 
 #include "arraylist.h"
@@ -23,6 +23,9 @@
 #ifdef HOST_WIN32
 #include <windows.h>
 #include <ws2tcpip.h>
+#define DIR_SEPARATOR '\\'
+#else
+#define DIR_SEPARATOR '/'
 #endif
 
 #define return_if_nok(error)                                                                                           \
@@ -40,6 +43,13 @@ static UTSemReadWrite* m_pSemReadWrite;
 #ifdef _DEBUG
 #define LOGGING
 #endif
+
+#ifdef TARGET_AMD64
+#define POS_RSP 0x98
+#else
+#define POS_RSP 0 //TODO fix for other platforms
+#endif
+
 
 #define CreateProcess CreateProcessW
 

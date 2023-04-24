@@ -22,7 +22,7 @@ void EEContract::Disable()
     BaseContract::Disable();
 }
 
-void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z const char *szFile, int lineNum)
+void EEContract::DoChecks(UINT testmask, _In_z_ const char *szFunction, _In_z_ const char *szFile, int lineNum)
 {
     SCAN_IGNORE_THROW;      // Tell the static contract analyzer to ignore contract violations
     SCAN_IGNORE_FAULT;      // due to the contract checking logic itself.
@@ -49,7 +49,7 @@ void EEContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z c
             {
                 //
                 // Check if this is the debugger helper thread and has the runtime
-                // stoppped.  If both of these things are true, then we do not care
+                // stopped.  If both of these things are true, then we do not care
                 // whether we are in COOP mode or not.
                 //
                 if ((g_pDebugInterface != NULL) &&

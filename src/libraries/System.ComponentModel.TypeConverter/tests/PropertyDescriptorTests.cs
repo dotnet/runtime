@@ -145,6 +145,17 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
+        public void ShouldSerializeValueHandlesEnumWithBackingTypeDefaultValue()
+        {
+            var component = new DescriptorTestComponent();
+            component.EnumProperty = DescriptorTestEnum.Value1;
+            var properties = TypeDescriptor.GetProperties(component.GetType());
+            PropertyDescriptor propertyDescriptor = properties.Find(nameof(component.EnumProperty), false);
+
+            Assert.True(propertyDescriptor.ShouldSerializeValue(component));
+        }
+
+        [Fact]
         public static void ReadOnlyPropertyReturnsTrue()
         {
             var foo = new ReadOnlyPropertyTestClass();

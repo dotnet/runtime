@@ -25,7 +25,7 @@
   .hash algorithm 0x00008004
   .ver 4:0:30513:0
 }
-.module ReflectOnField.exe
+.assembly extern xunit.core {}
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
@@ -40,11 +40,14 @@
   .field public static int32 StaticField
 } // end of class ReflectOnField.Container`1
 
-.class private abstract auto ansi sealed beforefieldinit ReflectOnField.App
+.class public abstract auto ansi sealed beforefieldinit ReflectOnField.App
        extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32  Main() cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  3
     .locals init (class [mscorlib]System.Reflection.FieldInfo[] V_0)

@@ -38,8 +38,7 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void PassingEqualityComparers()
         {
-            var eqComp = new CaseInsensitiveEqualityComparer();
-            var d1 = new OrderedDictionary(eqComp);
+            var d1 = new OrderedDictionary(StringComparer.InvariantCultureIgnoreCase);
             d1.Add("foo", "bar");
             AssertExtensions.Throws<ArgumentException>(null, () => d1.Add("FOO", "bar"));
 
@@ -59,12 +58,11 @@ namespace System.Collections.Specialized.Tests
         [Fact]
         public void PassingCapacityAndIEqualityComparer()
         {
-            var eqComp = new CaseInsensitiveEqualityComparer();
-            var d1 = new OrderedDictionary(-1000, eqComp);
-            var d2 = new OrderedDictionary(-1, eqComp);
-            var d3 = new OrderedDictionary(0, eqComp);
-            var d4 = new OrderedDictionary(1, eqComp);
-            var d5 = new OrderedDictionary(1000, eqComp);
+            var d1 = new OrderedDictionary(-1000, StringComparer.InvariantCultureIgnoreCase);
+            var d2 = new OrderedDictionary(-1, StringComparer.InvariantCultureIgnoreCase);
+            var d3 = new OrderedDictionary(0, StringComparer.InvariantCultureIgnoreCase);
+            var d4 = new OrderedDictionary(1, StringComparer.InvariantCultureIgnoreCase);
+            var d5 = new OrderedDictionary(1000, StringComparer.InvariantCultureIgnoreCase);
             Assert.Throws<ArgumentOutOfRangeException>(() => d1.Add("foo", "bar"));
             Assert.Throws<ArgumentOutOfRangeException>(() => d2.Add("foo", "bar"));
             d3.Add("foo", "bar");
@@ -562,6 +560,81 @@ namespace System.Collections.Specialized.Tests
                 d.RemoveAt(0);
                 Assert.Equal(1000 - i - 1, d.Count);
             }
+        }
+
+        // (IList)Keys { get; }
+        // (IList)Values { get; }
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void KeysAndValuesPropertiesImplementIList(bool testKeysProperty)
+        {
+            var orderedDictionary = new OrderedDictionary();
+            var itemCount = 1000;
+            string prefix = testKeysProperty ? "k" : "v";
+            for (int i = 0; i < itemCount; i++)
+            {
+                string item = prefix + i;
+                orderedDictionary.Add(item, item);
+            }
+
+            IList list = Assert.IsAssignableFrom<IList>(testKeysProperty ? orderedDictionary.Keys : orderedDictionary.Values);
+
+            Assert.True(list.IsFixedSize);
+            Assert.True(list.IsReadOnly);
+
+            for (int i = 0; i < itemCount; i++)
+            {
+                string item = prefix + i;
+                Assert.Equal(item, list[i]);
+                Assert.True(list.Contains(item));
+                Assert.Equal(i, list.IndexOf(item));
+            }
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => list[-1]);
+            Assert.Throws<ArgumentOutOfRangeException>(() => list[itemCount]);
+            Assert.False(list.Contains(prefix + itemCount));
+            Assert.False(list.Contains(null));
+            Assert.Equal(-1, list.IndexOf(prefix + itemCount));
+            Assert.Equal(-1, list.IndexOf(null));
+
+            if (!testKeysProperty)
+            {
+                orderedDictionary.Add(prefix + itemCount, null);
+                Assert.True(list.Contains(null));
+                Assert.Equal(itemCount, list.IndexOf(null));
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void KeysAndValuesPropertiesNotSupportWritableIList(bool testKeysProperty)
+        {
+            var orderedDictionary = new OrderedDictionary();
+            orderedDictionary.Add("foo", "bar");
+            IList list = Assert.IsAssignableFrom<IList>(testKeysProperty ? orderedDictionary.Keys : orderedDictionary.Values);
+
+            Assert.Throws<NotSupportedException>(() =>
+            {
+                list[0] = "a";
+            });
+            Assert.Throws<NotSupportedException>(() => list.Add("a"));
+            Assert.Throws<NotSupportedException>(() => list.Clear());
+            Assert.Throws<NotSupportedException>(() => list.Insert(0, "a"));
+            Assert.Throws<NotSupportedException>(() => list.Remove("a"));
+            Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
+        }
+
+        [Fact]
+        public void IListedKeysPropertyCanUseCustomEqualityComparer()
+        {
+            var orderedDictionary = new OrderedDictionary(StringComparer.InvariantCultureIgnoreCase);
+            orderedDictionary.Add("KeY", null);
+
+            IList list = (IList)orderedDictionary.Keys;
+            Assert.True(list.Contains("key"));
+            Assert.Equal(0, list.IndexOf("key"));
         }
     }
 }

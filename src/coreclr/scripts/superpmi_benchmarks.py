@@ -14,14 +14,13 @@
 import argparse
 import re
 import sys
-
 import stat
-from os import path
-from os.path import isfile
+import os
+import time
+
 from shutil import copyfile
 from coreclr_arguments import *
-from superpmi import ChangeDir, TempDir
-from superpmi_setup import run_command
+from jitutil import run_command, ChangeDir, TempDir
 
 # Start of parser object creation.
 is_windows = platform.system() == "Windows"
@@ -35,7 +34,8 @@ parser.add_argument("-log_file", help="Name of the log file")
 parser.add_argument("-partition_count", help="Total number of partitions")
 parser.add_argument("-partition_index", help="Partition index to do the collection for")
 parser.add_argument("-arch", help="Architecture")
-
+parser.add_argument("--tiered_compilation", action="store_true", help="Sets DOTNET_TieredCompilation=1 when doing collections.")
+parser.add_argument("--tiered_pgo", action="store_true", help="Sets DOTNET_TieredCompilation=1 and DOTNET_TieredPGO=1 when doing collections.")
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -90,6 +90,16 @@ def setup_args(args):
                         lambda arch: arch.lower() in ["x86", "x64", "arm", "arm64"],
                         "Unable to set arch")
 
+    coreclr_args.verify(args,
+                        "tiered_compilation",
+                        lambda unused: True,
+                        "Unable to set tiered_compilation")
+
+    coreclr_args.verify(args,
+                        "tiered_pgo",
+                        lambda unused: True,
+                        "Unable to set tiered_pgo")
+
     return coreclr_args
 
 
@@ -134,8 +144,11 @@ def build_and_run(coreclr_args, output_mch_name):
 
     artifacts_directory = os.path.join(performance_directory, "artifacts")
     artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
-    project_file = path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
-    benchmarks_dll = path.join(artifacts_directory, "MicroBenchmarks.dll")
+    project_file = os.path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
+    benchmarks_dll = os.path.join(artifacts_directory, "MicroBenchmarks.dll")
+
+    # Workaround https://github.com/dotnet/sdk/issues/23430
+    project_file = os.path.realpath(project_file)
 
     if is_windows:
         shim_name = "%JitName%"
@@ -148,34 +161,56 @@ def build_and_run(coreclr_args, output_mch_name):
 
     make_executable(dotnet_exe)
 
-    run_command(
-        [dotnet_exe, "restore", project_file, "--packages",
-         artifacts_packages_directory], _exit_on_fail=True)
+    # Start with a "dotnet --info" to see what we've got.
+    run_command([dotnet_exe, "--info"])
+
+    env_copy = os.environ.copy()
+    if is_windows:
+        # Try to work around problem with random NuGet failures in "dotnet restore":
+        #   error NU3037: Package 'System.Runtime 4.1.0' from source 'https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-public/nuget/v3/index.json':
+        #     The repository primary signature validity period has expired. [C:\h\w\A3B008C0\w\B581097F\u\performance\src\benchmarks\micro\MicroBenchmarks.csproj]
+        # Using environment variable specified in https://github.com/NuGet/NuGet.Client/pull/4259.
+        env_copy["NUGET_EXPERIMENTAL_CHAIN_BUILD_RETRY_POLICY"] = "9,2000"
+
+    # If `dotnet restore` fails, retry.
+    num_tries = 3
+    for try_num in range(num_tries):
+        # On the last try, exit on fail
+        exit_on_fail = try_num + 1 == num_tries
+        (_, _, return_code) = run_command(
+            [dotnet_exe, "restore", project_file, "--packages", artifacts_packages_directory],
+            _exit_on_fail=exit_on_fail, _env=env_copy)
+        if return_code == 0:
+            # It succeeded!
+            break
+        print("Try {} of {} failed with error code {}: trying again".format(try_num + 1, num_tries, return_code))
+        # Sleep 5 seconds before trying again
+        time.sleep(5)
 
     run_command(
         [dotnet_exe, "build", project_file, "--configuration", "Release",
-         "--framework", "net6.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
+         "--framework", "net8.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
          "-o", artifacts_directory], _exit_on_fail=True)
 
     # Disable ReadyToRun so we always JIT R2R methods and collect them
-    collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
-                         f"--partition-index {partition_index} --envVars COMPlus_JitName:{shim_name} " \
-                         " COMPlus_ZapDisable:1  COMPlus_ReadyToRun:0 " \
-                         "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart"
+    collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {os.path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
+                         f"--partition-index {partition_index} --envVars DOTNET_JitName:{shim_name} " \
+                         " DOTNET_ZapDisable:1  DOTNET_ReadyToRun:0 " \
+                         "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --logBuildOutput"
 
     # Generate the execution script in Temp location
     with TempDir() as temp_location:
-        script_name = path.join(temp_location, script_name)
+        script_name = os.path.join(temp_location, script_name)
 
         contents = []
         # Unset the JitName so dotnet process will not fail
         if is_windows:
-            contents.append("set JitName=%COMPlus_JitName%")
-            contents.append("set COMPlus_JitName=")
+            contents.append("set JitName=%DOTNET_JitName%")
+            contents.append("set DOTNET_JitName=")
         else:
             contents.append("#!/bin/bash")
-            contents.append("export JitName=$COMPlus_JitName")
-            contents.append("unset COMPlus_JitName")
+            contents.append("export JitName=$DOTNET_JitName")
+            contents.append("unset DOTNET_JitName")
         contents.append(f"pushd {performance_directory}")
         contents.append(collection_command)
 
@@ -190,10 +225,23 @@ def build_and_run(coreclr_args, output_mch_name):
 
         make_executable(script_name)
 
-        run_command([
-            python_path, path.join(superpmi_directory, "superpmi.py"), "collect", "-core_root", core_root,
-            "-output_mch_path", output_mch_name, "-log_file", log_file, "-log_level", "debug",
-            script_name], _exit_on_fail=True)
+        script_args = [python_path,
+                       os.path.join(superpmi_directory, "superpmi.py"),
+                       "collect",
+                       "--clean",
+                       "-core_root", core_root,
+                       "-log_file", log_file,
+                       "-output_mch_path", output_mch_name,
+                       "-log_level", "debug"]
+
+        if coreclr_args.tiered_compilation:
+            script_args.append("--tiered_compilation");
+        elif coreclr_args.tiered_pgo:
+            script_args.append("--tiered_pgo");
+
+        script_args.append(script_name);
+
+        run_command(script_args, _exit_on_fail=True)
 
 
 def strip_unrelated_mc(coreclr_args, old_mch_filename, new_mch_filename):
@@ -207,9 +255,9 @@ def strip_unrelated_mc(coreclr_args, old_mch_filename, new_mch_filename):
     """
     performance_directory = coreclr_args.performance_directory
     core_root = coreclr_args.core_root
-    methods_to_strip_list = path.join(performance_directory, "methods_to_strip.mcl")
+    methods_to_strip_list = os.path.join(performance_directory, "methods_to_strip.mcl")
 
-    mcs_exe = path.join(core_root, "mcs")
+    mcs_exe = os.path.join(core_root, "mcs")
     mcs_command = [mcs_exe, "-dumpMap", old_mch_filename]
 
     # Gather method list to strip
@@ -256,7 +304,10 @@ def main(main_args):
     """
     coreclr_args = setup_args(main_args)
 
-    all_output_mch_name = path.join(coreclr_args.output_mch_path + "_all.mch")
+    if coreclr_args.tiered_compilation and coreclr_args.tiered_pgo:
+        raise RuntimeError("Pass only one tiering option.")
+
+    all_output_mch_name = os.path.join(coreclr_args.output_mch_path + "_all.mch")
     build_and_run(coreclr_args, all_output_mch_name)
     if os.path.isfile(all_output_mch_name):
         pass

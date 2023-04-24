@@ -31,21 +31,32 @@ namespace System.Net.Sockets
 #endif
         private int _ownClose;
 
+        /// <summary>
+        /// Creates a <see cref="T:System.Net.Sockets.SafeSocketHandle" />.
+        /// </summary>
+        public SafeSocketHandle() : base(ownsHandle: true) => OwnsHandle = true;
+
+        /// <summary>
+        /// Creates a <see cref="T:System.Net.Sockets.SafeSocketHandle" /> around a socket handle.
+        /// </summary>
+        /// <param name="preexistingHandle">Handle to wrap</param>
+        /// <param name="ownsHandle">Whether to control the handle lifetime</param>
         public SafeSocketHandle(IntPtr preexistingHandle, bool ownsHandle)
-            : base(ownsHandle)
+            : base(ownsHandle: true) // To support canceling on-going operations we need to detect
+                                     // there are no more on-going operations.
+                                     // For that the base-SafeHandle needs to be owning even
+                                     // when the SafeSocketHandle is not.
         {
-            OwnsHandle = ownsHandle;
+            OwnsHandle = ownsHandle; // Track if the SafesocketHandle is owning.
             SetHandleAndValid(preexistingHandle);
         }
 
-        public SafeSocketHandle() : base(ownsHandle: true) => OwnsHandle = true;
-
         internal bool OwnsHandle { get; }
 
+        internal bool HasShutdownSend => _hasShutdownSend;
+
         private bool TryOwnClose()
-        {
-            return OwnsHandle && Interlocked.CompareExchange(ref _ownClose, 1, 0) == 0;
-        }
+            => Interlocked.CompareExchange(ref _ownClose, 1, 0) == 0;
 
         private volatile bool _released;
         private bool _hasShutdownSend;
@@ -59,13 +70,9 @@ namespace System.Net.Sockets
             }
         }
 
-        public override bool IsInvalid
-        {
-            get
-            {
-                return IsClosed || base.IsInvalid;
-            }
-        }
+        /// <summary>Gets a value indicating whether the handle value is invalid.</summary>
+        /// <value><see langword="true"/> if the handle value is invalid; otherwise, <see langword="false"/>.</value>
+        public override bool IsInvalid => IsClosed || base.IsInvalid;
 
         protected override bool ReleaseHandle()
         {
@@ -93,7 +100,7 @@ namespace System.Net.Sockets
 #endif
                 bool shouldClose = TryOwnClose();
 
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"shouldClose={shouldClose}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"abortive={abortive}, shouldClose ={shouldClose}");
 
                 Dispose();
 
@@ -144,8 +151,8 @@ namespace System.Net.Sockets
                     abortive = true;
                 }
 
-                SocketError errorCode = DoCloseHandle(abortive);
-                return ret = errorCode == SocketError.Success;
+                ret = !OwnsHandle || DoCloseHandle(abortive) == SocketError.Success;
+                return ret;
 #if DEBUG
             }
             catch (Exception exception)

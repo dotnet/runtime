@@ -40,7 +40,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            long result = 0;
+            long result;
             if (!HeaderUtilities.TryParseInt64(value, startIndex, numberLength, out result))
             {
                 return 0;

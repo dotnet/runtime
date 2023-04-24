@@ -14,6 +14,7 @@
 #define _ARRAYNATIVE_H_
 
 #include "fcall.h"
+#include "runtimehandles.h"
 
 struct FCALLRuntimeFieldHandle
 {
@@ -26,24 +27,21 @@ class ArrayNative
 public:
     static FCDECL1(INT32, GetCorElementTypeOfElementType, ArrayBase* arrayUNSAFE);
 
-    static FCDECL1(void, Initialize, ArrayBase* pArray);
-
     static FCDECL2(FC_BOOL_RET, IsSimpleCopy, ArrayBase* pSrc, ArrayBase* pDst);
     static FCDECL5(void, CopySlow, ArrayBase* pSrc, INT32 iSrcIndex, ArrayBase* pDst, INT32 iDstIndex, INT32 iLength);
 
-    // This method will create a new array of type type, with zero lower
-    // bounds and rank.
-    static FCDECL4(Object*, CreateInstance, void* elementTypeHandle, INT32 rank, INT32* pLengths, INT32* pBounds);
-
-    // This method will return a TypedReference to the array element
-    static FCDECL4(void, GetReference, ArrayBase* refThisUNSAFE, TypedByRef* elemRef, INT32 rank, INT32* pIndices);
+    static FCDECL4(Object*, CreateInstance, ReflectClassBaseObject* pElementTypeUNSAFE, INT32 rank, INT32* pLengths, INT32* pBounds);
 
     // This set of methods will set a value in an array
-    static FCDECL2(void, SetValue, TypedByRef* target, Object* objUNSAFE);
+    static FCDECL3(void, SetValue, ArrayBase* refThisUNSAFE, Object* objUNSAFE, INT_PTR flattenedIndex);
 
     // This method will initialize an array from a TypeHandle
     // to a field.
     static FCDECL2_IV(void, InitializeArray, ArrayBase* vArrayRef, FCALLRuntimeFieldHandle structField);
+
+    // This method will acquire data to create a span from a TypeHandle
+    // to a field.
+    static FCDECL3_VVI(void*, GetSpanDataFrom, FCALLRuntimeFieldHandle structField, FCALLRuntimeTypeHandle targetTypeUnsafe, INT32* count);
 
 private:
     // Helper for CreateInstance
@@ -67,5 +65,7 @@ private:
     static void PrimitiveWiden(BASEARRAYREF pSrc, unsigned int srcIndex, BASEARRAYREF pDest, unsigned int destIndex, unsigned int length);
 
 };
+
+extern "C" PCODE QCALLTYPE Array_GetElementConstructorEntrypoint(QCall::TypeHandle pArrayTypeHnd);
 
 #endif // _ARRAYNATIVE_H_

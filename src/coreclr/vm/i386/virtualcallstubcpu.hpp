@@ -84,7 +84,7 @@ struct LookupHolder
 {
     static void InitializeStatic();
 
-    void  Initialize(PCODE resolveWorkerTarget, size_t dispatchToken);
+    void  Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorkerTarget, size_t dispatchToken);
 
     LookupStub*    stub()               { LIMITED_METHOD_CONTRACT;  return &_stub;    }
 
@@ -115,8 +115,8 @@ struct DispatchHolder;
 Monomorphic and mostly monomorphic call sites eventually point to DispatchStubs.
 A dispatch stub has an expected type (expectedMT), target address (target) and fail address (failure).
 If the calling frame does in fact have the <this> type be of the expected type, then
-control is transfered to the target address, the method implementation.  If not,
-then control is transfered to the fail address, a fail stub (see below) where a polymorphic
+control is transferred to the target address, the method implementation.  If not,
+then control is transferred to the fail address, a fail stub (see below) where a polymorphic
 lookup is done to find the correct address to go to.
 
 implementation note: Order, choice of instructions, and branch directions
@@ -125,7 +125,7 @@ attention needs to be paid to the effects on the BTB and branch prediction, both
 and in the large, i.e. it needs to run well in the face of BTB overflow--using static predictions.
 Note that since this stub is only used for mostly monomorphic callsites (ones that are not, get patched
 to something else), therefore the conditional jump "jne failure" is mostly not taken, and hence it is important
-that the branch prediction staticly predict this, which means it must be a forward jump.  The alternative
+that the branch prediction statically predict this, which means it must be a forward jump.  The alternative
 is to reverse the order of the jumps and make sure that the resulting conditional jump "je implTarget"
 is statically predicted as taken, i.e a backward jump. The current choice was taken since it was easier
 to control the placement of the stubs than control the placement of the jitted code and the stubs. */
@@ -198,7 +198,7 @@ struct DispatchHolder
 {
     static void InitializeStatic();
 
-    void  Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT);
+    void  Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT);
 
     DispatchStub* stub()      { LIMITED_METHOD_CONTRACT;  return &_stub; }
 
@@ -233,7 +233,7 @@ transfers to the resolve piece (see ResolveStub).  The failEntryPoint decrements
 every time it is entered.  The ee at various times will add a large chunk to the counter.
 
 ResolveEntry - does a lookup via in a cache by hashing the actual type of the calling frame s
-<this> and the token identifying the (contract,method) pair desired.  If found, control is transfered
+<this> and the token identifying the (contract,method) pair desired.  If found, control is transferred
 to the method implementation.  If not found in the cache, the token is pushed and the ee is entered via
 the ResolveWorkerStub to do a full lookup and eventual transfer to the correct method implementation.  Since
 there is a different resolve stub for every token, the token can be inlined and the token can be pre-hashed.
@@ -347,7 +347,8 @@ struct ResolveHolder
 {
     static void  InitializeStatic();
 
-    void  Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
+    void  Initialize(ResolveHolder* pResolveHolderRX,
+                     PCODE resolveWorkerTarget, PCODE patcherTarget,
                      size_t dispatchToken, UINT32 hashedToken,
                      void * cacheAddr, INT32 * counterAddr
 #ifndef UNIX_X86_ABI
@@ -428,7 +429,7 @@ struct VTableCallHolder
         return 2 + (offsetOfIndirection >= 0x80 ? 6 : 3) + (offsetAfterIndirection >= 0x80 ? 6 : 3) + 4;
     }
 
-    static VTableCallHolder* VTableCallHolder::FromVTableCallEntry(PCODE entry) { LIMITED_METHOD_CONTRACT; return (VTableCallHolder*)entry; }
+    static VTableCallHolder* FromVTableCallEntry(PCODE entry) { LIMITED_METHOD_CONTRACT; return (VTableCallHolder*)entry; }
 
 private:
     // VTableCallStub follows here. It is dynamically sized on allocation because it could
@@ -741,14 +742,14 @@ void LookupHolder::InitializeStatic()
     lookupInit._resolveWorkerDispl = 0xcccccccc;
 }
 
-void  LookupHolder::Initialize(PCODE resolveWorkerTarget, size_t dispatchToken)
+void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorkerTarget, size_t dispatchToken)
 {
     _stub = lookupInit;
 
     //fill in the stub specific fields
     //@TODO: Get rid of this duplication of data.
     _stub._token              = dispatchToken;
-    _stub._resolveWorkerDispl = resolveWorkerTarget - ((PCODE) &_stub._resolveWorkerDispl + sizeof(DISPL));
+    _stub._resolveWorkerDispl = resolveWorkerTarget - ((PCODE) &pLookupHolderRX->_stub._resolveWorkerDispl + sizeof(DISPL));
 }
 
 LookupHolder* LookupHolder::FromLookupEntry(PCODE lookupEntry)
@@ -811,14 +812,14 @@ void DispatchHolder::InitializeStatic()
 #endif //STUB_LOGGING
 };
 
-void  DispatchHolder::Initialize(PCODE implTarget, PCODE failTarget, size_t expectedMT)
+void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTarget, PCODE failTarget, size_t expectedMT)
 {
     _stub = dispatchInit;
 
     //fill in the stub specific fields
     _stub._expectedMT  = (size_t) expectedMT;
-    _stub._failDispl   = failTarget - ((PCODE) &_stub._failDispl + sizeof(DISPL));
-    _stub._implDispl   = implTarget - ((PCODE) &_stub._implDispl + sizeof(DISPL));
+    _stub._failDispl   = failTarget - ((PCODE) &pDispatchHolderRX->_stub._failDispl + sizeof(DISPL));
+    _stub._implDispl   = implTarget - ((PCODE) &pDispatchHolderRX->_stub._implDispl + sizeof(DISPL));
 }
 
 DispatchHolder* DispatchHolder::FromDispatchEntry(PCODE dispatchEntry)
@@ -943,7 +944,8 @@ void ResolveHolder::InitializeStatic()
     resolveInit.toResolveStub          = (offsetof(ResolveStub, _resolveEntryPoint) - (offsetof(ResolveStub, toResolveStub) + 1)) & 0xFF;
 };
 
-void  ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
+void  ResolveHolder::Initialize(ResolveHolder* pResolveHolderRX,
+                                PCODE resolveWorkerTarget, PCODE patcherTarget,
                                 size_t dispatchToken, UINT32 hashedToken,
                                 void * cacheAddr, INT32 * counterAddr
 #ifndef UNIX_X86_ABI
@@ -960,8 +962,8 @@ void  ResolveHolder::Initialize(PCODE resolveWorkerTarget, PCODE patcherTarget,
     _stub._token              = dispatchToken;
 //    _stub._hashedTokenMov     = hashedToken;
     _stub._tokenPush          = dispatchToken;
-    _stub._resolveWorkerDispl = resolveWorkerTarget - ((PCODE) &_stub._resolveWorkerDispl + sizeof(DISPL));
-    _stub._backpatcherDispl   = patcherTarget       - ((PCODE) &_stub._backpatcherDispl   + sizeof(DISPL));
+    _stub._resolveWorkerDispl = resolveWorkerTarget - ((PCODE) &pResolveHolderRX->_stub._resolveWorkerDispl + sizeof(DISPL));
+    _stub._backpatcherDispl   = patcherTarget       - ((PCODE) &pResolveHolderRX->_stub._backpatcherDispl   + sizeof(DISPL));
 #ifndef UNIX_X86_ABI
     _stub._stackArgumentsSize = stackArgumentsSize;
 #endif
@@ -987,7 +989,6 @@ void VTableCallHolder::Initialize(unsigned slot)
 {
     unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
     unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
-    _ASSERTE(MethodTable::VTableIndir_t::isRelative == false /* TODO: NYI */);
 
     VTableCallStub* pStub = stub();
     BYTE* p = (BYTE*)pStub->entryPoint();
@@ -1027,68 +1028,6 @@ void VTableCallHolder::Initialize(unsigned slot)
 }
 
 #endif // DACCESS_COMPILE
-
-VirtualCallStubManager::StubKind VirtualCallStubManager::predictStubKind(PCODE stubStartAddress)
-{
-    SUPPORTS_DAC;
-#ifdef DACCESS_COMPILE
-
-    return SK_BREAKPOINT;  // Dac always uses the slower lookup
-
-#else
-
-    StubKind stubKind = SK_UNKNOWN;
-
-    EX_TRY
-    {
-        // If stubStartAddress is completely bogus, then this might AV,
-        // so we protect it with SEH. An AV here is OK.
-        AVInRuntimeImplOkayHolder AVOkay;
-
-        WORD firstWord = *((WORD*) stubStartAddress);
-
-#ifndef STUB_LOGGING
-        if (firstWord == 0x3981)
-#else //STUB_LOGGING
-        if (firstWord == 0x05ff)
-#endif
-        {
-            stubKind = SK_DISPATCH;
-        }
-        else if (firstWord == 0x6850)
-        {
-            stubKind = SK_LOOKUP;
-        }
-        else if (firstWord == 0x8b50)
-        {
-            stubKind = SK_RESOLVE;
-        }
-        else if (firstWord == 0x018b)
-        {
-            stubKind = SK_VTABLECALL;
-        }
-        else
-        {
-            BYTE firstByte  = ((BYTE*) stubStartAddress)[0];
-            BYTE secondByte = ((BYTE*) stubStartAddress)[1];
-
-            if ((firstByte  == X86_INSTR_INT3) ||
-                (secondByte == X86_INSTR_INT3))
-            {
-                stubKind = SK_BREAKPOINT;
-            }
-        }
-    }
-    EX_CATCH
-    {
-        stubKind = SK_UNKNOWN;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    return stubKind;
-
-#endif // DACCESS_COMPILE
-}
 
 #endif //DECLARE_DATA
 

@@ -126,14 +126,8 @@
   <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
     <value>Enum value was out of legal range.</value>
   </data>
-  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
-    <value>Cannot access a closed stream.</value>
-  </data>
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>
-  </data>
-  <data name="InvalidArgumentOffsetCount" xml:space="preserve">
-    <value>Offset plus count is larger than the length of target array.</value>
   </data>
   <data name="InvalidBeginCall" xml:space="preserve">
     <value>Only one asynchronous reader or writer is allowed time at one time.</value>
@@ -177,6 +171,9 @@
   </data>
   <data name="BrotliStream_Decompress_InvalidStream" xml:space="preserve">
     <value>BrotliStream.BaseStream returned more bytes than requested in Read.</value>
+  </data>
+  <data name="BrotliStream_Decompress_TruncatedData" xml:space="preserve">
+    <value>Found truncated data while decoding.</value>
   </data>
   <data name="IOCompressionBrotli_PlatformNotSupported" xml:space="preserve">
     <value>System.IO.Compression.Brotli is not supported on this platform.</value>

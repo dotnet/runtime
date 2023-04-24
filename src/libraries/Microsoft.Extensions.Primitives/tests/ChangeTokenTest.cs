@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using Xunit;
 
@@ -181,6 +180,28 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        public void DisposingChangeTokenRegistrationDoesNotRaiseConsumerIfTokenProviderReturnsCancelledToken()
+        {
+            var provider = new ResettableChangeTokenProvider();
+            Func<Func<IChangeToken>> changeTokenProviderFactory = () =>
+            {
+                int n = 0;
+                return () =>
+                {
+                    var token = provider.GetChangeToken();
+                    if (n++ is 0) provider.Changed();
+                    return token;
+                };
+            };
+            int count = 0;
+            var reg = ChangeToken.OnChange(changeTokenProviderFactory(), () => count++);
+            reg.Dispose();
+            provider.Changed();
+
+            Assert.Equal(1, count);
+        }
+
+        [Fact]
         public void DisposingChangeTokenRegistrationDuringCallbackWorks()
         {
             var provider = new ResettableChangeTokenProvider();
@@ -232,6 +253,12 @@ namespace Microsoft.Extensions.Primitives
             Assert.Equal(1, count);
             Assert.Equal(2, provider.RegistrationCalls);
             Assert.Equal(2, provider.DisposeCalls);
+        }
+
+        [Fact]
+        public void NullTokenDisposeShouldNotThrow()
+        {
+            ChangeToken.OnChange(() => null, () => Assert.True(false)).Dispose();
         }
 
         public class TrackableChangeTokenProvider

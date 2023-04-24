@@ -1,19 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Net.Http.Headers;
 using Xunit;
-using Xunit.Sdk;
 
 namespace System.Net.Http.Tests
 {
     public class AltSvcHeaderParserTest
     {
+        [Fact]
+        public void TryParse_InvalidValueString_ReturnsFalse()
+        {
+            HttpHeaderParser parser = AltSvcHeaderParser.Parser;
+            string invalidInput = "a=";
+            int startIndex = 0;
+
+            Assert.False(parser.TryParseValue(invalidInput, null, ref startIndex, out var _));
+        }
+
         [Theory]
         [MemberData(nameof(SuccessfulParseData))]
         public void TryParse_Success(string value, object[] expectedServicesObj)
