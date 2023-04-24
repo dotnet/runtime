@@ -325,9 +325,9 @@ CONFIG_INTEGER(EnableAVX512DQ,              W("EnableAVX512DQ"),            1) /
 CONFIG_INTEGER(EnableAVX512DQ_VL,           W("EnableAVX512DQ_VL"),         1) // Allows AVX512DQ+ AVX512VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512F,               W("EnableAVX512F"),             1) // Allows AVX512F+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX512F_VL,            W("EnableAVX512F_VL"),          1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX512_VBMI,           W("EnableAVX512_VBMI"),         1) // Allows AVX512_VBMI+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVX512_VBMI_VL,        W("EnableAVX512_VBMI_VL"),      1) // Allows AVX512_VBMI_VL+ hardware intrinsics to be disabled
-CONFIG_INTEGER(EnableAVXVNNI,               W("EnableAVXVNNI"),             1) // Allows AVX VNNI+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512VBMI,            W("EnableAVX512VBMI"),          1) // Allows AVX512VBMI+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512VBMI_VL,         W("EnableAVX512VBMI_VL"),       1) // Allows AVX512VBMI_VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVXVNNI,               W("EnableAVXVNNI"),             1) // Allows AVXVNNI+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableBMI1,                  W("EnableBMI1"),                1) // Allows BMI1+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableBMI2,                  W("EnableBMI2"),                1) // Allows BMI2+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableFMA,                   W("EnableFMA"),                 1) // Allows FMA+ hardware intrinsics to be disabled

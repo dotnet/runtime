@@ -691,7 +691,7 @@ INST3(vpmovm2q,         "pmovm2q",          IUM_WR, BAD_CODE,               BAD_
 INST3(vpmovq2m,         "pmovq2m",          IUM_WR, BAD_CODE,               BAD_CODE,     PSSE38(0xF3, 0x39),            INS_TT_NONE,                         Input_64Bit    | REX_W1_EVEX                  | Encoding_EVEX)
 INST3(vpmullq,          "pmullq",           IUM_WR, BAD_CODE,               BAD_CODE,     SSE38(0x40),                   INS_TT_FULL,                         Input_64Bit    | REX_W1_EVEX                  | Encoding_EVEX  | INS_Flags_IsDstDstSrcAVXInstruction)                                                                                           // Packed multiply 64 bit unsigned integers and store lower 64 bits of each result
 
-// AVX512_VBMI
+// AVX512VBMI
 INST3(vpermb,           "permb",            IUM_WR, BAD_CODE,               BAD_CODE,     SSE38(0x8D),                   INS_TT_FULL_MEM,                     Input_8Bit     | REX_W0_EVEX                  | Encoding_EVEX  | INS_Flags_IsDstSrcSrcAVXInstruction)                                                                                           // Permute Packed Byte Elements
 
 INST3(LAST_AVX512_INSTRUCTION, "LAST_AVX512_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)

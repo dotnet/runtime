@@ -1433,6 +1433,9 @@ void EEJitManager::SetCpuInfo()
     //   CORJIT_FLAG_USE_AVX_512DQ_VL if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
     //      CORJIT_FLAG_USE_AVX512F_VL
     //      CORJIT_FLAG_USE_AVX_512DQ
+    //   CORJIT_FLAG_USE_AVX_512VBMI if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
+    //      CORJIT_FLAG_USE_AVX512F
+    //      AVX512VBMI - ECX bit 1
     //   CORJIT_FLAG_USE_BMI1 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
     //      BMI1 - EBX bit 3
     //   CORJIT_FLAG_USE_BMI2 if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
@@ -1555,12 +1558,12 @@ void EEJitManager::SetCpuInfo()
                                                         }
                                                     }
 
-                                                    if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                  // AVX512_VBMI
+                                                    if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                  // AVX512VBMI
                                                     {
-                                                        CPUCompileFlags.Set(InstructionSet_AVX512_VBMI);
-                                                        if (isAVX512_VLSupported)                          // AVX512_VBMI_VL
+                                                        CPUCompileFlags.Set(InstructionSet_AVX512VBMI);
+                                                        if (isAVX512_VLSupported)                          // AVX512VBMI_VL
                                                         {
-                                                            CPUCompileFlags.Set(InstructionSet_AVX512_VBMI_VL);
+                                                            CPUCompileFlags.Set(InstructionSet_AVX512VBMI_VL);
                                                         }
                                                     }
                                                 }
@@ -1771,14 +1774,14 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Clear(InstructionSet_AVX512DQ_VL);
     }
 
-    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512_VBMI))
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI))
     {
-        CPUCompileFlags.Clear(InstructionSet_AVX512_VBMI);
+        CPUCompileFlags.Clear(InstructionSet_AVX512VBMI);
     }
 
-    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512_VBMI_VL))
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX512VBMI_VL))
     {
-        CPUCompileFlags.Clear(InstructionSet_AVX512_VBMI_VL);
+        CPUCompileFlags.Clear(InstructionSet_AVX512VBMI_VL);
     }
 
     if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVXVNNI))

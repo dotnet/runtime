@@ -300,12 +300,12 @@ bool DetectCPUFeatures()
                                                         }
                                                     }
 
-                                                    if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                  // AVX512_VBMI
+                                                    if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                  // AVX512VBMI
                                                     {
-                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512_vbmi;
+                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512Vbmi;
                                                         if (isAVX512_VLSupported)
                                                         {
-                                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx512_vbmi_vl;
+                                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx512Vbmi_vl;
                                                         }
                                                     }
                                                 }
