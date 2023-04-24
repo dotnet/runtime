@@ -106,14 +106,15 @@ public class ComputeWasmBuildAssets : Task
                     continue;
                 }
 
-                if (candidate.GetMetadata("FileName") == "dotnet" && candidate.GetMetadata("Extension") == ".js")
+                string candidateFileName = candidate.GetMetadata("FileName");
+                if ((candidateFileName == "dotnet" || candidateFileName == "dotnet.worker") && candidate.GetMetadata("Extension") == ".js")
                 {
                     string newDotnetJSFileName = null;
                     string newDotNetJSFullPath = null;
                     if (FingerprintDotNetJs)
                     {
                         var itemHash = FileHasher.GetFileHash(candidate.ItemSpec);
-                        newDotnetJSFileName = $"dotnet.{candidate.GetMetadata("NuGetPackageVersion")}.{itemHash}.js";
+                        newDotnetJSFileName = $"{candidateFileName}.{candidate.GetMetadata("NuGetPackageVersion")}.{itemHash}.js";
 
                         var originalFileFullPath = Path.GetFullPath(candidate.ItemSpec);
                         var originalFileDirectory = Path.GetDirectoryName(originalFileFullPath);
@@ -136,17 +137,6 @@ public class ComputeWasmBuildAssets : Task
                     newDotNetJs.SetMetadata("AssetTraitValue", "native");
 
                     assetCandidates.Add(newDotNetJs);
-                    continue;
-                }
-                else if (candidate.GetMetadata("FileName") == "dotnet.worker" && candidate.GetMetadata("Extension") == ".js")
-                {
-                    var dotnetWorker = new TaskItem(candidate.ItemSpec, candidate.CloneCustomMetadata());
-                    dotnetWorker.SetMetadata("OriginalItemSpec", candidate.ItemSpec);
-
-                    dotnetWorker.SetMetadata("AssetTraitName", "WasmResource");
-                    dotnetWorker.SetMetadata("AssetTraitValue", "native");
-
-                    assetCandidates.Add(dotnetWorker);
                     continue;
                 }
                 else

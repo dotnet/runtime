@@ -12,6 +12,12 @@ namespace Microsoft.NET.Sdk.WebAssembly;
 
 public class AssetsComputingHelper
 {
+    private static readonly string[] monoPackageIds = new[]
+    {
+        "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
+        "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm"
+    };
+
     public static bool ShouldFilterCandidate(
         ITaskItem candidate,
         bool timezoneSupport,
@@ -24,10 +30,7 @@ public class AssetsComputingHelper
         var extension = candidate.GetMetadata("Extension");
         var fileName = candidate.GetMetadata("FileName");
         var assetType = candidate.GetMetadata("AssetType");
-        var fromMonoPackage = string.Equals(
-            candidate.GetMetadata("NuGetPackageId"),
-            "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
-            StringComparison.Ordinal);
+        bool fromMonoPackage = IsFromMonoPackage(candidate);
 
         reason = extension switch
         {
@@ -53,6 +56,12 @@ public class AssetsComputingHelper
         };
 
         return reason != null;
+    }
+
+    private static bool IsFromMonoPackage(ITaskItem candidate)
+    {
+        string packageId = candidate.GetMetadata("NuGetPackageId");
+        return monoPackageIds.Contains(packageId, StringComparer.Ordinal);
     }
 
     public static string GetCandidateRelativePath(ITaskItem candidate)
