@@ -12463,24 +12463,6 @@ void Compiler::verResetCurrentState(BasicBlock* block, EntryState* destState)
     }
 }
 
-unsigned BasicBlock::bbStackDepthOnEntry() const
-{
-    return (bbEntryState ? bbEntryState->esStackDepth : 0);
-}
-
-void BasicBlock::bbSetStack(void* stackBuffer)
-{
-    assert(bbEntryState);
-    assert(stackBuffer);
-    bbEntryState->esStack = (StackEntry*)stackBuffer;
-}
-
-StackEntry* BasicBlock::bbStackOnEntry() const
-{
-    assert(bbEntryState);
-    return bbEntryState->esStack;
-}
-
 void Compiler::verInitCurrentState()
 {
     // initialize stack info
