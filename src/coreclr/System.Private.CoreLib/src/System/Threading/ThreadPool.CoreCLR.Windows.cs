@@ -186,7 +186,7 @@ namespace System.Threading
 
         internal static void ReportThreadStatus(bool isWorking)
         {
-            Debug.Assert(!ThreadPool.UseWindowsThreadPool);
+            // Debug.Assert(!ThreadPool.UseWindowsThreadPool);
             PortableThreadPool.ThreadPoolInstance.ReportThreadStatus(isWorking);
         }
     }

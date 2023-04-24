@@ -31,10 +31,8 @@ namespace System.Threading
         internal unsafe RegisteredWaitHandle(SafeWaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             uint millisecondsTimeout, bool repeating)
         {
-            if (!ThreadPool.UseWindowsThreadPool)
-            {
-                GC.SuppressFinalize(this);
-            }
+            Debug.Assert(ThreadPool.UseWindowsThreadPool);
+
             _lock = new object();
 
             // Protect the handle from closing while we are waiting on it (VSWhidbey 285642)
@@ -60,6 +58,9 @@ namespace System.Threading
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             int millisecondsTimeout, bool repeating)
         {
+            Debug.Assert(!ThreadPool.UseWindowsThreadPool);
+            GC.SuppressFinalize(this);
+
             Thread.ThrowIfNoThreadStart();
             Handle = waitHandle.SafeWaitHandle;
             Callback = callbackHelper;
@@ -137,9 +138,12 @@ namespace System.Threading
         internal static void RegisteredWaitCallback(IntPtr instance, IntPtr context, IntPtr wait, uint waitResult) =>
             RegisteredWaitCallbackCore(instance, context, wait, waitResult);
 
-        internal unsafe void RestartWait() => RestartWaitCore();
-
-        public bool Unregister(WaitHandle waitObject) => UnregisterCore(waitObject);
+        internal unsafe void RestartWait()
+        {
+            Debug.Assert(ThreadPool.UseWindowsThreadPool);
+            RestartWaitCore();
+        }
+        public bool Unregister(WaitHandle waitObject) => ThreadPool.UseWindowsThreadPool ? UnregisterCore(waitObject) : UnregisterPortableCore(waitObject);
 
         internal void PerformCallback(bool timedOut)
         {
