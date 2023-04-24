@@ -22,6 +22,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(ControlFlowGuard)' == 'Guard'">Runtime.ServerGC</FullRuntimeName>
     <BootstrapperName>bootstrapper</BootstrapperName>
     <BootstrapperName Condition="'$(NativeLib)' != '' or '$(CustomNativeMain)' == 'true'">bootstrapperdll</BootstrapperName>
+    <VxSortSupportName>Runtime.VxsortEnabled</VxSortSupportName>
+    <VxSortSupportName Condition="'$(ControlFlowGuard)' != 'Guard' and ('$(OptimizationPreference)' == 'Size' or '$(IlcDisableVxsort)' == 'true')">Runtime.VxsortDisabled</VxSortSupportName>
     <EntryPointSymbol Condition="'$(EntryPointSymbol)' == ''">wmainCRTStartup</EntryPointSymbol>
     <LinkerSubsystem Condition="'$(OutputType)' == 'WinExe' and '$(LinkerSubsystem)' == ''">WINDOWS</LinkerSubsystem>
     <LinkerSubsystem Condition="'$(OutputType)' == 'Exe' and '$(LinkerSubsystem)' == ''">CONSOLE</LinkerSubsystem>
@@ -36,6 +38,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Include="$(IlcSdkPath)$(BootstrapperName)$(LibrarySuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName)$(LibrarySuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibrarySuffix)" />
+      <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibrarySuffix)" />
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
     </ItemGroup>
 

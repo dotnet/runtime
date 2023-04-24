@@ -101,6 +101,8 @@ let linked_functions = [
     "mono_wasm_change_case_invariant",
     "mono_wasm_change_case",
     "mono_wasm_compare_string",
+    "mono_wasm_starts_with",
+    "mono_wasm_ends_with",
 
     "icudt68_dat",
 ];
@@ -109,6 +111,8 @@ if (monoWasmThreads) {
     linked_functions = [...linked_functions,
         /// mono-threads-wasm.c
         "mono_wasm_pthread_on_pthread_attached",
+        // threads.c
+        "mono_wasm_eventloop_has_unsettled_interop_promises",
         // diagnostics_server.c
         "mono_wasm_diagnostic_server_on_server_thread_created",
         "mono_wasm_diagnostic_server_on_runtime_server_init",

@@ -639,6 +639,7 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 Debug.Assert(IsConfigured);
+                Debug.Assert(Type != typeof(object));
 
                 if (!_isAncestorPolymorphicTypeResolved)
                 {
@@ -909,7 +910,6 @@ namespace System.Text.Json.Serialization.Metadata
         internal abstract object? DeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state);
         internal abstract ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken);
         internal abstract object? DeserializeAsObject(Stream utf8Json);
-        internal abstract IAsyncEnumerable<object?> DeserializeAsyncEnumerableAsObject(Stream utf8Json, CancellationToken cancellationToken);
 
         /// <summary>
         /// Used by the built-in resolvers to add property metadata applying conflict resolution.

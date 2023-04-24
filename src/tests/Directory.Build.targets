@@ -531,7 +531,7 @@
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
-    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
 
     <LinkerFlavor Condition="'$(TargetOS)' == 'linux'">lld</LinkerFlavor>
     <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>

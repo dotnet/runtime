@@ -1814,7 +1814,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     else
     {
         GenTree* copyBlkDst = CreateAddressNodeForSimdHWIntrinsicCreate(originalLHS, TYP_FLOAT, simdSize);
-        dstNode             = gtNewOperNode(GT_IND, simdType, copyBlkDst);
+        dstNode             = gtNewIndir(simdType, copyBlkDst);
     }
 
     JITDUMP("\n" FMT_BB " " FMT_STMT " (before):\n", block->bbNum, stmt->GetID());
