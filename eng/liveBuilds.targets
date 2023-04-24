@@ -77,7 +77,14 @@
       <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)'))</MonoArtifactsPath>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
+    <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
+      <_nativeAotRuntimeFiles Include="$(CoreCLRAotSdkDir)*" />
+      <RuntimeFiles Include="@(_nativeAotRuntimeFiles)" Condition="'%(Extension)' != '.xml'">
+        <IsNative>true</IsNative>
+      </RuntimeFiles>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(BuildNativeAOTRuntimePack)' != 'true'">
       <RuntimeFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
       <RuntimeFiles Condition="'$(PgoInstrument)' == 'true'" Include="$(CoreCLRSharedFrameworkDir)PGD/*" />
       <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''" Include="$(CoreCLRCrossTargetComponentDir)*.*" IsNative="true" />

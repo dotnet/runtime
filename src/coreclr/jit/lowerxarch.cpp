@@ -1123,6 +1123,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             intrinsicId = NI_AVX512F_ExtractVector256;
 
+            if ((genTypeSize(simdBaseType) == 4) && !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+            {
+                intrinsicId = NI_AVX512DQ_ExtractVector256;
+            }
+
             GenTree* op1 = node->Op(1);
 
             GenTree* op2 = comp->gtNewIconNode(1);
@@ -1175,6 +1180,11 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             int       index        = (intrinsicId == NI_Vector512_WithUpper) ? 1 : 0;
 
             intrinsicId = NI_AVX512F_InsertVector256;
+
+            if ((genTypeSize(simdBaseType) == 4) && !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+            {
+                intrinsicId = NI_AVX512DQ_InsertVector256;
+            }
 
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
@@ -3397,8 +3407,14 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             BlockRange().InsertBefore(node, idx);
             LowerNode(idx);
 
-            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, idx, NI_AVX512F_ExtractVector128, simdBaseJitType,
-                                                  simdSize);
+            NamedIntrinsic extractIntrinsicId = NI_AVX512F_ExtractVector128;
+
+            if ((genTypeSize(simdBaseType) == 8) && !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+            {
+                extractIntrinsicId = NI_AVX512DQ_ExtractVector128;
+            }
+
+            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, idx, extractIntrinsicId, simdBaseJitType, simdSize);
             BlockRange().InsertBefore(node, tmp1);
             LowerNode(tmp1);
         }
@@ -3683,8 +3699,14 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
             BlockRange().InsertAfter(op1, idx);
             LowerNode(idx);
 
-            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, idx, NI_AVX512F_ExtractVector128, simdBaseJitType,
-                                                  simdSize);
+            NamedIntrinsic extractIntrinsicId = NI_AVX512F_ExtractVector128;
+
+            if ((genTypeSize(simdBaseType) == 8) && !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+            {
+                extractIntrinsicId = NI_AVX512DQ_ExtractVector128;
+            }
+
+            tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, idx, extractIntrinsicId, simdBaseJitType, simdSize);
             BlockRange().InsertAfter(idx, tmp1);
             LowerNode(tmp1);
         }
@@ -3697,7 +3719,14 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
         BlockRange().InsertBefore(node, idx);
         LowerNode(idx);
 
-        node->ResetHWIntrinsicId(NI_AVX512F_InsertVector128, comp, tmp64, result, idx);
+        NamedIntrinsic insertIntrinsicId = NI_AVX512F_InsertVector128;
+
+        if ((genTypeSize(simdBaseType) == 8) && !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+        {
+            insertIntrinsicId = NI_AVX512DQ_InsertVector128;
+        }
+
+        node->ResetHWIntrinsicId(insertIntrinsicId, comp, tmp64, result, idx);
     }
     else if (intrinsicId == NI_Vector256_WithElement)
     {
@@ -3976,7 +4005,8 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
         // Now that we have finalized the shape of the tree, lower the insertion node as well.
 
         assert((node->GetHWIntrinsicId() == NI_Vector512_GetLower128) ||
-               (node->GetHWIntrinsicId() == NI_AVX512F_ExtractVector128));
+               (node->GetHWIntrinsicId() == NI_AVX512F_ExtractVector128) ||
+               (node->GetHWIntrinsicId() == NI_AVX512DQ_ExtractVector128));
         assert(node != result);
 
         nextNode = LowerNode(node);
@@ -5799,6 +5829,8 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                 case NI_AVX2_ExtractVector128:
                 case NI_AVX512F_ExtractVector128:
                 case NI_AVX512F_ExtractVector256:
+                case NI_AVX512DQ_ExtractVector128:
+                case NI_AVX512DQ_ExtractVector256:
                 {
                     // These intrinsics are "ins reg/mem, xmm, imm8"
 
@@ -6936,6 +6968,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
                 case NI_AVX_InsertVector128:
                 case NI_AVX2_InsertVector128:
+                case NI_AVX512F_InsertVector128:
+                case NI_AVX512DQ_InsertVector128:
                 {
                     // InsertVector128 is special in that it returns a TYP_SIMD32 but takes a TYP_SIMD16.
                     assert(!supportsSIMDScalarLoads);
@@ -6950,6 +6984,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 }
 
                 case NI_AVX512F_InsertVector256:
+                case NI_AVX512DQ_InsertVector256:
                 {
                     // InsertVector256 is special in that it returns a TYP_SIMD64 but takes a TYP_SIMD32.
                     assert(!supportsSIMDScalarLoads);
@@ -7263,6 +7298,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX512BW_ConvertToVector128SByte:
         case NI_AVX512BW_ConvertToVector256Byte:
         case NI_AVX512BW_ConvertToVector256SByte:
+        case NI_AVX512DQ_ExtractVector128:
+        case NI_AVX512DQ_ExtractVector256:
         {
             // These are only containable as part of a store
             return false;
@@ -7588,6 +7625,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_ExtractVector128:
                         case NI_AVX512F_ExtractVector128:
                         case NI_AVX512F_ExtractVector256:
+                        case NI_AVX512DQ_ExtractVector128:
+                        case NI_AVX512DQ_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8" and get
                             // contained by the relevant store operation instead.
@@ -7838,7 +7877,16 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 case HW_Category_SIMDScalar:
                 case HW_Category_Scalar:
                 {
-                    if ((intrinsicId >= NI_FMA_MultiplyAdd) && (intrinsicId <= NI_FMA_MultiplySubtractNegatedScalar))
+                    bool isFmaIntrinsic =
+                        (intrinsicId >= NI_FMA_MultiplyAdd) && (intrinsicId <= NI_FMA_MultiplySubtractNegatedScalar);
+
+                    if (!isFmaIntrinsic)
+                    {
+                        isFmaIntrinsic = (intrinsicId >= NI_AVX512F_FusedMultiplyAdd) &&
+                                         (intrinsicId <= NI_AVX512F_FusedMultiplySubtractNegated);
+                    }
+
+                    if (isFmaIntrinsic)
                     {
                         bool     supportsOp1RegOptional = false;
                         bool     supportsOp2RegOptional = false;
@@ -7993,9 +8041,12 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX2_InsertVector128:
                         case NI_AVX2_MultipleSumAbsoluteDifferences:
                         case NI_AVX2_Permute2x128:
+                        case NI_AVX512F_InsertVector128:
                         case NI_AVX512F_InsertVector256:
                         case NI_AVX512F_Shuffle:
                         case NI_AVX512BW_AlignRight:
+                        case NI_AVX512DQ_InsertVector128:
+                        case NI_AVX512DQ_InsertVector256:
                         case NI_PCLMULQDQ_CarrylessMultiply:
                         {
                             if (!isContainedImm)

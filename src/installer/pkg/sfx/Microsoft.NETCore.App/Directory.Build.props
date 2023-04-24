@@ -174,6 +174,18 @@
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.amd64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
+    <!-- NativeAOT specific files -->
+    <PlatformManifestFileEntry Include="libbootstrapper.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbootstrapperdll.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libeventpipe-disabled.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libeventpipe-enabled.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libRuntime.ServerGC.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libRuntime.WorkstationGC.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="System.Private.DisabledReflection.dll" />
+    <PlatformManifestFileEntry Include="System.Private.Reflection.Execution.dll" />
+    <PlatformManifestFileEntry Include="System.Private.StackTraceMetadata.dll" />
+    <PlatformManifestFileEntry Include="System.Private.TypeLoader.dll" />
     <!-- Mono-specific files -->
     <PlatformManifestFileEntry Include="monosgen-2.0.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmonosgen-2.0.a" IsNative="true" />

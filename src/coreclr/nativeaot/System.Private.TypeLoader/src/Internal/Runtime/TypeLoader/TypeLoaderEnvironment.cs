@@ -360,14 +360,6 @@ namespace Internal.Runtime.TypeLoader
             return TryGetStaticFunctionPointerTypeForComponents(returnTypeHandle, parameterHandles, isUnmanaged, out runtimeTypeHandle);
         }
 
-        public void GetFunctionPointerTypeComponents(RuntimeTypeHandle functionPointerHandle, out RuntimeTypeHandle returnTypeHandle, out RuntimeTypeHandle[] parameterHandles, out bool isUnmanaged)
-        {
-            if (RuntimeAugments.IsDynamicType(functionPointerHandle))
-                throw new NotImplementedException();
-
-            GetStaticFunctionPointerTypeComponents(functionPointerHandle, out returnTypeHandle, out parameterHandles, out isUnmanaged);
-        }
-
         // Get an array RuntimeTypeHandle given an element's RuntimeTypeHandle and rank. Pass false for isMdArray, and rank == -1 for SzArrays
         public bool TryGetArrayTypeForElementType(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {

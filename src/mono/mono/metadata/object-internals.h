@@ -1463,8 +1463,10 @@ MonoMethodSignature * mono_reflection_lookup_signature (MonoImage *image, MonoMe
 
 MonoArrayHandle mono_param_get_objects_internal  (MonoMethod *method, MonoClass *refclass, MonoError *error);
 
+MONO_COMPONENT_API
 MonoClass*
 mono_class_bind_generic_parameters (MonoClass *klass, int type_argc, MonoType **types, gboolean is_dynamic);
+
 MonoType*
 mono_reflection_bind_generic_parameters (MonoReflectionTypeHandle type, int type_argc, MonoType **types, MonoError *error);
 void
