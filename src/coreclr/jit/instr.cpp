@@ -1485,6 +1485,9 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
 #elif defined(TARGET_ARM)
     assert(!varTypeIsSIMD(srcType));
     return INS_vmov;
+#elif defined(TARGET_RISCV64)
+    NYI("ins_Move_Extend"); // not used for RISCV64
+    return INS_invalid;
 #else
     NYI("ins_Move_Extend");
 #endif
