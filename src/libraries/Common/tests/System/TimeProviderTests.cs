@@ -140,7 +140,7 @@ namespace Tests.System
                             state,
                             TimeSpan.FromMilliseconds(state.Period), TimeSpan.FromMilliseconds(state.Period));
 
-            Assert.True(state.TokenSource.Token.WaitHandle.WaitOne(Timeout.InfiniteTimeSpan));
+            state.TokenSource.Token.WaitHandle.WaitOne(Timeout.InfiniteTimeSpan);
             state.TokenSource.Dispose();
 
             Assert.Equal(4, state.Counter);
