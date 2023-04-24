@@ -73,11 +73,13 @@ jobs:
 
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
-          value: /p:RuntimeOS=linux-bionic
+          value: -os linux-bionic
 
-      # Do not rename as it clashes with MSBuild property in libraries/build-native.proj
-      - name: _crossBuildPropertyArg
-        value: /p:CrossBuild=${{ parameters.crossBuild }}
+      - name: crossArg
+        value: ''
+      - ${{ if eq(parameters.crossBuild, true) }}:
+        - name: crossArg
+          value: '-cross'
 
       - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
         # This is only required for cross builds.
@@ -163,7 +165,6 @@ jobs:
             buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
             nonPortable: ${{ parameters.isNonPortableSourceBuild }}
             targetRID: ${{ parameters.targetRid }}
-            runtimeOS: linux
             name: ${{ parameters.platform }}
 
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
@@ -188,7 +189,7 @@ jobs:
         - task: CodeQL3000Init@0
           displayName: Initialize CodeQL (manually-injected)
 
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) $(crossArg) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_cxx11Parameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
         displayName: Build product
         ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
           continueOnError: ${{ parameters.shouldContinueOnError }}

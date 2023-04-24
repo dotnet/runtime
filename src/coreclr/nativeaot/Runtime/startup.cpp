@@ -51,7 +51,6 @@ extern RhConfig * g_pRhConfig;
 EXTERN_C bool g_fHasFastFxsave;
 bool g_fHasFastFxsave = false;
 
-CrstStatic g_CastCacheLock;
 CrstStatic g_ThunkPoolLock;
 
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
@@ -170,10 +169,7 @@ static bool InitDLL(HANDLE hPalInstance)
         return false;
 #endif
 
-    if (!g_CastCacheLock.InitNoThrow(CrstType::CrstCastCache))
-        return false;
-
-    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstCastCache))
+    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstThunkPool))
         return false;
 
     return true;

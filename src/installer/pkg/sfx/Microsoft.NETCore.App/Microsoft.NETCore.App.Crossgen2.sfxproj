@@ -18,12 +18,10 @@
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
     <!-- Publishing as single-file or NativeAOT means we can't examine the interior DLLs -->
     <ShouldVerifyClosure>false</ShouldVerifyClosure>
-    <!-- Publish crossgen2 as a single-file app on cross-OS builds. Cross-OS NativeAOT compilation is not supported yet -->
+    <!-- Publish crossgen2 as a single-file app on native-OS builds. Cross-OS NativeAOT compilation is not supported yet -->
     <NativeAotSupported Condition="'$(CrossBuild)' == 'true' and '$(TargetOS)' != '$(HostOS)'">false</NativeAotSupported>
     <!-- Can't use NativeAOT in source build yet https://github.com/dotnet/runtime/issues/66859 -->
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeAotSupported>
-    <ObjCopyName Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(CrossBuild)' == 'true' and '$(RuntimeIdentifier)' == 'linux-musl-arm64'">llvm-objcopy-15</ObjCopyName>
-    <ObjCopyName Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(CrossBuild)' == 'true' and '$(RuntimeIdentifier)' == 'linux-arm64'">aarch64-linux-gnu-objcopy</ObjCopyName>
   </PropertyGroup>
 
   <Target Name="PublishCrossgen"
@@ -50,7 +48,6 @@
               ;RuntimeIdentifier=$(PackageRID)
               ;NativeAotSupported=$(NativeAotSupported)
               ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;StripSymbols=true
               ;ObjCopyName=$(ObjCopyName)
               ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets">
       <Output TaskParameter="TargetOutputs"
@@ -75,7 +72,7 @@
   </Target>
 
   <Target Name="RunPublishedCrossgen" AfterTargets="PublishCrossgen"
-          Condition="'$(TargetOS)' == '$(HostOS)' and '$(TargetArchitecture)' == '$(BuildArchitecture)'">
+          Condition="'$(TargetOS)' == '$(HostOS)' and '$(TargetArchitecture)' == '$(BuildArchitecture)' and '$(CrossBuild)' != 'true'">
     <!-- Run the published crossgen if we're not cross-compiling -->
     <Exec Command="@(FilesToPackage) $(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll --out $(IntermediateOutputPath)S.P.C.tmp" Condition="'%(FileName)%(Extension)' == 'crossgen2$(ExeSuffix)'">
       <Output TaskParameter="ExitCode" PropertyName="CrossgenExitCode" />

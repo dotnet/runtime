@@ -39,6 +39,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			KeepFieldOnAttribute ();
 			AttributeParametersAndProperties.Test ();
 			MembersOnClassWithRequires<int>.Test ();
+			ConstFieldsOnClassWithRequires.Test ();
 		}
 
 		[RequiresUnreferencedCode ("Message for --ClassWithRequires--")]
@@ -1061,11 +1062,18 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 		}
 
-		// https://github.com/dotnet/runtime/issues/82447
 		[AttributeWithRequires (PropertyOnAttribute = 42)]
-		[ExpectedWarning ("IL2026", "AttributeWithRequires.AttributeWithRequires()", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
-		[ExpectedWarning ("IL3050", "AttributeWithRequires.AttributeWithRequires()", ProducedBy = Tool.Analyzer)]
-		static void KeepFieldOnAttribute () { }
+		[ExpectedWarning ("IL2026", "AttributeWithRequires.AttributeWithRequires()")]
+		[ExpectedWarning ("IL3050", "AttributeWithRequires.AttributeWithRequires()", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		static void KeepFieldOnAttributeInner () { }
+
+		static void KeepFieldOnAttribute ()
+		{
+			KeepFieldOnAttributeInner ();
+
+			// NativeAOT only considers attribute on reflection visible members
+			typeof (RequiresOnClass).GetMethod (nameof (KeepFieldOnAttributeInner), BindingFlags.NonPublic | BindingFlags.Static).Invoke (null, new object[] { });
+		}
 
 		public class AttributeParametersAndProperties
 		{
@@ -1166,9 +1174,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					}
 				}
 
-				// https://github.com/dotnet/runtime/issues/82447
 				// NOTE: The enclosing RUC does not apply to nested types.
-				[ExpectedWarning ("IL2026", "--RequiresOnCtorAttribute--", ProducedBy = Tool.Trimmer | Tool.Analyzer)]
+				[ExpectedWarning ("IL2026", "--RequiresOnCtorAttribute--")]
 				[RequiresOnCtor]
 				public class ClassWithAttribute
 				{
@@ -1221,6 +1228,51 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				var g = new GenericClassWithWarningWithRequires<int> ();
 				var h = new ClassWithWarningWithRequires ();
 				var j = new GenericAnnotatedWithWarningWithRequires<int> ();
+			}
+		}
+
+		class ConstFieldsOnClassWithRequires
+		{
+			[RequiresUnreferencedCode ("--ConstClassWithRequires--")]
+			[RequiresDynamicCode ("--ConstClassWithRequires--")]
+			class ConstClassWithRequires
+			{
+				public const string Message = "Message";
+				public const int Number = 42;
+
+				public static void Method () { }
+			}
+
+			[ExpectedWarning ("IL2026", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Method))]
+			[ExpectedWarning ("IL3050", "--ConstClassWithRequires--", nameof (ConstClassWithRequires.Method), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestClassWithRequires ()
+			{
+				var a = ConstClassWithRequires.Message;
+				var b = ConstClassWithRequires.Number;
+
+				ConstClassWithRequires.Method ();
+			}
+
+			[RequiresUnreferencedCode (ConstClassWithRequiresUsingField.Message)]
+			[RequiresDynamicCode (ConstClassWithRequiresUsingField.Message)]
+			class ConstClassWithRequiresUsingField
+			{
+				public const string Message = "--ConstClassWithRequiresUsingField--";
+
+				public static void Method () { }
+			}
+
+			[ExpectedWarning ("IL2026", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Method))]
+			[ExpectedWarning ("IL3050", "--ConstClassWithRequiresUsingField--", nameof (ConstClassWithRequiresUsingField.Method), ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestClassUsingFieldInAttribute ()
+			{
+				ConstClassWithRequiresUsingField.Method ();
+			}
+
+			public static void Test ()
+			{
+				TestClassWithRequires ();
+				TestClassUsingFieldInAttribute ();
 			}
 		}
 	}

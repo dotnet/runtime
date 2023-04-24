@@ -92,7 +92,11 @@
   #define RBM_ALLFLOAT            (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM3 | RBM_XMM4 | RBM_XMM5 | RBM_XMM6 | RBM_XMM7)
   #define RBM_ALLDOUBLE            RBM_ALLFLOAT
 
-  #define RBM_ALLMASK              REG_K1
+#if !defined(UNIX_X86_ABI)
+  #define RBM_ALLMASK              RBM_K1
+#else
+  #define RBM_ALLMASK              (0)
+#endif
 
   #define CNT_HIGHFLOAT           0
 
@@ -105,9 +109,14 @@
   #define REG_FLT_CALLEE_SAVED_FIRST   REG_XMM6
   #define REG_FLT_CALLEE_SAVED_LAST    REG_XMM7
 
+  #define RBM_MSK_CALLEE_SAVED    (0)
+  #define RBM_MSK_CALLEE_TRASH    RBM_ALLMASK
+
   #define XMM_REGSIZE_BYTES        16      // XMM register size in bytes
   #define YMM_REGSIZE_BYTES        32      // YMM register size in bytes
   #define ZMM_REGSIZE_BYTES        64      // ZMM register size in bytes
+
+  #define ZMM_RECOMMENDED_THRESHOLD 128    // A general recommendation to use ZMM for data starting from this size in bytes
 
   #define REGNUM_BITS              6       // number of bits in a REG_*
 
@@ -126,6 +135,7 @@
   #define RBM_INT_CALLEE_SAVED    (RBM_EBX|RBM_ESI|RBM_EDI)
   #define RBM_INT_CALLEE_TRASH    (RBM_EAX|RBM_ECX|RBM_EDX)
 
+  // TODO-AVX512: Add RBM_MSK_CALLEE_*
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
   #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
 

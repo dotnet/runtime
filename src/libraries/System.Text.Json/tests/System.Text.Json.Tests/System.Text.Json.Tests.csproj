@@ -5,6 +5,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
     <NoWarn>$(NoWarn);SYSLIB0020</NoWarn>
+    <!-- SYSLIB0049: JsonSerializerOptions.AddContext is obsolete -->
+    <NoWarn>$(NoWarn);SYSLIB0049</NoWarn>
     <!-- Disable analyzers warnings about JSON being misformatted in string literals -->
     <NoWarn>$(NoWarn);JSON001</NoWarn>
 
@@ -13,7 +15,7 @@
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
     <!-- Needed for JsonSerializerOptionsUpdateHandler tests -->
     <MetadataUpdaterSupport Condition="'$(MetadataUpdaterSupport)' == '' and '$(TargetOS)' == 'browser'">true</MetadataUpdaterSupport>
-    <WasmXHarnessArgs>$(WasmXHarnessArgs) --timeout=1800</WasmXHarnessArgs>
+    <WasmXHarnessTestsTimeout>00:45:00</WasmXHarnessTestsTimeout>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">

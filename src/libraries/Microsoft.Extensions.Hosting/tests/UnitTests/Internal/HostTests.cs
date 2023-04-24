@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Fakes;
 using Microsoft.Extensions.Hosting.Tests;
 using Microsoft.Extensions.Hosting.Tests.Fakes;
+using Microsoft.Extensions.Hosting.Unit.Tests;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -217,27 +217,54 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
         }
 
-        [Fact]
-        public async Task AppCrashesOnStartWhenFirstHostedServiceThrows()
+        [Theory]
+        [InlineData(1, true), InlineData(1, false)]
+        [InlineData(2, true), InlineData(2, false)]
+        [InlineData(10, true), InlineData(10, false)]
+        public async Task AppCrashesOnStartWhenFirstHostedServiceThrows(int eventCount, bool concurrentStartup)
         {
-            bool[] events1 = null;
-            bool[] events2 = null;
+            bool[][] events = new bool[eventCount][];
 
             using (var host = CreateBuilder()
-                .ConfigureServices((services) =>
+                .ConfigureServices(services =>
                 {
-                    events1 = RegisterCallbacksThatThrow(services);
-                    events2 = RegisterCallbacksThatThrow(services);
+                    services.Configure<HostOptions>(i => i.ServicesStartConcurrently = concurrentStartup);
+
+                    for (int i = 0; i < eventCount; i++)
+                    {
+                        events[i] = RegisterCallbacksThatThrow(services);
+                    }
                 })
                 .Build())
             {
-                await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
-                Assert.True(events1[0]);
-                Assert.False(events2[0]);
+                if (concurrentStartup && eventCount > 1)
+                {
+                    await Assert.ThrowsAsync<AggregateException>(() => host.StartAsync());
+                }
+                else
+                {
+                    await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
+                }
+
+                for (int i = 0; i < eventCount; i++)
+                {
+                    if (i == 0 || concurrentStartup)
+                    {
+                        Assert.True(events[i][0]);
+                    }
+                    else
+                    {
+                        Assert.False(events[i][0]);
+                    }
+                }
+
                 host.Dispose();
+
                 // Stopping
-                Assert.False(events1[1]);
-                Assert.False(events2[1]);
+                for (int i = 0; i < eventCount; i++)
+                {
+                    Assert.False(events[i][1]);
+                }
             }
         }
 
@@ -1108,32 +1135,60 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
         }
 
-        [Fact]
-        public async Task HostDoesNotNotifyIHostApplicationLifetimeCallbacksIfIHostedServicesThrow()
+        [Theory]
+        [InlineData(1, true), InlineData(1, false)]
+        [InlineData(2, true), InlineData(2, false)]
+        [InlineData(10, true), InlineData(10, false)]
+        public async Task HostDoesNotNotifyIHostApplicationLifetimeCallbacksIfIHostedServicesThrow(int eventCount, bool concurrentStartup)
         {
-            bool[] events1 = null;
-            bool[] events2 = null;
+            bool[][] events = new bool[eventCount][];
 
             using (var host = CreateBuilder()
                 .ConfigureServices((services) =>
                 {
-                    events1 = RegisterCallbacksThatThrow(services);
-                    events2 = RegisterCallbacksThatThrow(services);
+                    services.Configure<HostOptions>(i => i.ServicesStartConcurrently = concurrentStartup);
+
+                    for (int i = 0; i < eventCount; i++)
+                    {
+                        events[i] = RegisterCallbacksThatThrow(services);
+                    }
                 })
                 .Build())
             {
                 var applicationLifetime = host.Services.GetService<IHostApplicationLifetime>();
-
                 var started = RegisterCallbacksThatThrow(applicationLifetime.ApplicationStarted);
                 var stopping = RegisterCallbacksThatThrow(applicationLifetime.ApplicationStopping);
 
-                await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
-                Assert.True(events1[0]);
-                Assert.False(events2[0]);
+                if (concurrentStartup && eventCount > 1)
+                {
+                    await Assert.ThrowsAsync<AggregateException>(() => host.StartAsync());
+                }
+                else
+                {
+                    await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
+                }
+
+                for (int i = 0; i < eventCount; i++)
+                {
+                    if (i == 0 || concurrentStartup)
+                    {
+                        Assert.True(events[i][0]);
+                    }
+                    else
+                    {
+                        Assert.False(events[i][0]);
+                    }
+                }
+
                 Assert.False(started.All(s => s));
+
                 host.Dispose();
-                Assert.False(events1[1]);
-                Assert.False(events2[1]);
+
+                for (int i = 0; i < eventCount; i++)
+                {
+                    Assert.False(events[i][1]);
+                }
+
                 Assert.False(stopping.All(s => s));
             }
         }
@@ -1502,33 +1557,6 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 DisposeCalled = true;
             }
-        }
-
-        private class DelegateHostedService : IHostedService, IDisposable
-        {
-            private readonly Action _started;
-            private readonly Action _stopping;
-            private readonly Action _disposing;
-
-            public DelegateHostedService(Action started, Action stopping, Action disposing)
-            {
-                _started = started;
-                _stopping = stopping;
-                _disposing = disposing;
-            }
-
-            public Task StartAsync(CancellationToken token)
-            {
-                _started();
-                return Task.CompletedTask;
-            }
-            public Task StopAsync(CancellationToken token)
-            {
-                _stopping();
-                return Task.CompletedTask;
-            }
-
-            public void Dispose() => _disposing();
         }
 
         private class AsyncDisposableService : IAsyncDisposable

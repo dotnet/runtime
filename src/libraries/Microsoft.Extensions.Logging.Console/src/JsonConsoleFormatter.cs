@@ -55,12 +55,7 @@ namespace Microsoft.Extensions.Logging.Console
 
                     if (exception != null)
                     {
-                        string exceptionMessage = exception.ToString();
-                        if (!FormatterOptions.JsonWriterOptions.Indented)
-                        {
-                            exceptionMessage = exceptionMessage.Replace(Environment.NewLine, " ");
-                        }
-                        writer.WriteString(nameof(Exception), exceptionMessage);
+                        writer.WriteString(nameof(Exception), exception.ToString());
                     }
 
                     if (logEntry.State != null)

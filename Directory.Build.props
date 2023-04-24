@@ -104,9 +104,12 @@
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
 
     <NetFrameworkMinimum>net462</NetFrameworkMinimum>
+    <NetFrameworkCurrent>net48</NetFrameworkCurrent>
     <NetFrameworkToolCurrent>net472</NetFrameworkToolCurrent>
     <!-- Don't build for NETFramework during source-build. -->
+    <NetFrameworkMinimum Condition="'$(DotNetBuildFromSource)' == 'true'" />
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
+    <NetFrameworkCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
 
     <TargetFrameworkForNETFrameworkTasks>$(NetFrameworkToolCurrent)</TargetFrameworkForNETFrameworkTasks>
     <!-- Don't build for NETFramework during source-build. -->
@@ -174,10 +177,65 @@
     <InstallWasmtimeForTests Condition="'$(InstallWasmtimeForTests)' == '' and !Exists($(WasmtimeDir))">true</InstallWasmtimeForTests>
   </PropertyGroup>
 
-  <PropertyGroup Label="CalculateOS">
-    <!-- Default to portable build if not explicitly set -->
+  <PropertyGroup Label="CalculatePortableBuild">
     <PortableBuild Condition="'$(PortableBuild)' == '' and '$(DotNetBuildFromSource)' == 'true'">false</PortableBuild>
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
+  </PropertyGroup>
+
+  <!-- _portableOS is the portable rid-OS corresponding to the target platform. -->
+  <PropertyGroup Label="CalculatePortableOS">
+    <!-- To determine _portableOS we use TargetOS.
+         TargetOS is not a rid-OS. For example: for Windows it is 'windows' instead of 'win'.
+         And, for flavors of Linux, like 'linux-musl' and 'linux-bionic', TargetOS is 'linux'. -->
+
+    <_portableOS>$(TargetOS.ToLowerInvariant())</_portableOS>
+    <_portableOS Condition="'$(_portableOS)' == 'windows'">win</_portableOS>
+
+    <!-- TargetOS=AnyOS is a sentinel value used by tests, ignore it.  -->
+    <_portableOS Condition="'$(_portableOS)' == 'anyos'">$(__PortableTargetOS)</_portableOS>
+
+    <!-- Detect linux flavors using __PortableTargetOS from the native script. -->
+    <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableTargetOS)' == 'linux-musl'">linux-musl</_portableOS>
+    <_portableOS Condition="'$(_portableOS)' == 'linux' and '$(__PortableTargetOS)' == 'linux-bionic'">linux-bionic</_portableOS>
+  </PropertyGroup>
+
+  <!-- PackageRID is used for packages needed for the target. -->
+  <PropertyGroup Label="CalculatePackageRID">
+    <_packageOS>$(_portableOS)</_packageOS>
+
+    <_packageOS Condition="'$(CrossBuild)' == 'true' and '$(_portableOS)' != 'linux-musl' and '$(_portableOS)' != 'linux-bionic'">$(_hostOS)</_packageOS>
+
+    <!-- source-build sets PackageOS to build with non-portable rid packages that were source-built previously. -->
+    <PackageRID Condition="'$(PackageOS)' != ''">$(PackageOS)-$(TargetArchitecture)</PackageRID>
+    <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
+  </PropertyGroup>
+
+  <!-- ToolsRID is used for packages needed on the build host. -->
+  <PropertyGroup Label="CalculateToolsRID">
+    <!-- _portableHostOS is the portable rid-OS corresponding to the build host platform.
+
+         To determine _portableHostOS we use _hostOS, similar to how _portableOS is calculated from TargetOS.
+
+         When we're not cross-building we can detect linux flavors by looking at _portableOS
+         because the target platform and the build host platform are the same.
+         For cross-builds, we're currently unable to detect the flavors. -->
+    <_portableHostOS>$(_hostOS)</_portableHostOS>
+    <_portableHostOS Condition="'$(_portableHostOS)' == 'windows'">win</_portableHostOS>
+    <_portableHostOS Condition="'$(CrossBuild)' != 'true' and '$(_portableOS)' == 'linux-musl'">linux-musl</_portableHostOS>
+
+    <!-- source-build sets ToolsOS to build with non-portable rid packages that were source-built previously. -->
+    <ToolsRID Condition="'$(ToolsOS)' != ''">$(ToolsOS)-$(_hostArch)</ToolsRID>
+    <ToolsRID Condition="'$(ToolsRID)' == ''">$(_portableHostOS)-$(_hostArch)</ToolsRID>
+
+    <!-- Microsoft.NET.Sdk.IL SDK defaults to the portable host rid. Match it to ToolsRID (for source-build). -->
+    <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
+  </PropertyGroup>
+
+  <!-- OutputRID is used to name the target platform.
+       For portable builds, OutputRID matches _portableOS.
+       For non-portable builds, it uses __DistroRid (from the native build script), or falls back to RuntimeInformation.RuntimeIdentifier.
+       Source-build sets OutputRID directly. -->
+  <PropertyGroup Label="CalculateOutputRID">
 
     <_hostRid Condition="'$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_hostRid>
     <_hostRid Condition="'$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_hostRid>
@@ -186,77 +244,19 @@
     <_parseDistroRid Condition="'$(_parseDistroRid)' == ''">$(_hostRid)</_parseDistroRid>
     <_distroRidIndex>$(_parseDistroRid.LastIndexOf('-'))</_distroRidIndex>
 
-    <_runtimeOS>$(RuntimeOS)</_runtimeOS>
-    <_runtimeOS Condition="'$(_runtimeOS)' == ''">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</_runtimeOS>
+    <_outputOS>$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</_outputOS>
+    <_outputOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_outputOS>
 
-    <!-- _runtimeOS is calculated based on the build system OS, however if building for Browser/iOS/Android we need to let
-         the build system to use browser/ios/android as the _runtimeOS for produced package RIDs. -->
-    <_runtimeOS Condition="'$(TargetsMobile)' == 'true'">$(TargetOS.ToLowerInvariant())</_runtimeOS>
-
-    <_portableOS>linux</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'linux-musl' or $(_runtimeOS.StartsWith('alpine'))">linux-musl</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'linux-bionic'">linux-bionic</_portableOS>
-    <_portableOS Condition="'$(_hostOS)' == 'osx'">osx</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'win' or '$(TargetOS)' == 'windows'">win</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'freebsd' or '$(TargetOS)' == 'freebsd'">freebsd</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'illumos' or '$(TargetOS)' == 'illumos'">illumos</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'solaris' or '$(TargetOS)' == 'solaris'">solaris</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'browser'">browser</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'wasi'">wasi</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'maccatalyst'">maccatalyst</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'ios'">ios</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'iossimulator'">iossimulator</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'tvos'">tvos</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'tvossimulator'">tvossimulator</_portableOS>
-    <_portableOS Condition="'$(_runtimeOS)' == 'android'">android</_portableOS>
-
-    <_runtimeOS Condition="$(_runtimeOS.StartsWith('tizen'))">linux</_runtimeOS>
-    <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
-    <_runtimeOS Condition="'$(RuntimeOS)' == '' and '$(DotNetBuildFromSource)' == 'true'">$(_portableOS)</_runtimeOS>
-
-    <_packageLibc Condition="$(_runtimeOS.Contains('musl'))">-musl</_packageLibc>
-    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS)$(_packageLibc)</_packageOS>
-    <_packageOS Condition="'$(_packageOS)' == '' and '$(PortableBuild)' == 'true'">$(_portableOS)</_packageOS>
-    <_packageOS Condition="'$(_packageOS)' == ''">$(_runtimeOS)</_packageOS>
+    <OutputRID Condition="'$(OutputRID)' == ''">$(_outputOS)-$(TargetArchitecture)</OutputRID>
   </PropertyGroup>
 
-  <PropertyGroup Label="CalculateRID">
-    <_toolsRID Condition="'$(CrossBuild)' == 'true'">$(_hostOS)-$(_hostArch)</_toolsRID>
-    <_toolsRID Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(_runtimeOS)-x64</_toolsRID>
-    <_toolsRID Condition="'$(_toolsRID)' == ''">$(_runtimeOS)-$(_hostArch)</_toolsRID>
-
-    <!-- There are no WebAssembly tools, so use the default ones -->
-    <_toolsRID Condition="'$(_runtimeOS)' == 'browser' or '$(_runtimeOS)' == 'wasi'">linux-x64</_toolsRID>
-    <_toolsRID Condition="('$(_runtimeOS)' == 'browser' or '$(_runtimeOS)' == 'wasi') and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
-    <_toolsRID Condition="('$(_runtimeOS)' == 'browser' or '$(_runtimeOS)' == 'wasi') and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
-
-    <!-- There are no Android tools, so use the default ones -->
-    <_toolsRID Condition="'$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic'">linux-x64</_toolsRID>
-    <_toolsRID Condition="('$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic') and '$(HostOS)' == 'windows'">win-x64</_toolsRID>
-    <_toolsRID Condition="('$(_runtimeOS)' == 'android' or '$(_runtimeOS)' == 'linux-bionic') and '$(HostOS)' == 'osx'">osx-x64</_toolsRID>
-
-    <!-- There are no Mac Catalyst, iOS or tvOS tools and it can be built on OSX only, so use that -->
-    <_toolsRID Condition="'$(_runtimeOS)' == 'maccatalyst' or '$(_runtimeOS)' == 'ios' or '$(_runtimeOS)' == 'iossimulator' or '$(_runtimeOS)' == 'tvos' or '$(_runtimeOS)' == 'tvossimulator'">osx-x64</_toolsRID>
-
-    <!-- There are no non-portable builds for Ilasm, Ildasm, ILC etc. -->
-    <ToolsRID Condition="'$(PortableBuild)' != 'true' and '$(_portableOS)' == 'linux'">linux-$(_hostArch)</ToolsRID>
-    <ToolsRID Condition="'$(ToolsRID)' == ''">$(_toolsRID)</ToolsRID>
-    <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
-
-    <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
-
-    <OutputRid Condition="'$(OutputRid)' == '' and '$(DotNetBuildFromSource)' == 'true'">$(_hostRid)</OutputRid>
-    <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
-    <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</OutputRid>
-    <TargetsLinuxBionic Condition="$(OutputRid.StartsWith('linux-bionic'))">true</TargetsLinuxBionic>
-    <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
-  </PropertyGroup>
-
-  <PropertyGroup Label="CalculateTargetOSName" Condition="'$(SkipInferTargetOSName)' != 'true'">
+  <PropertyGroup Label="CalculateTargetOSName">
     <TargetsFreeBSD Condition="'$(TargetOS)' == 'freebsd'">true</TargetsFreeBSD>
     <Targetsillumos Condition="'$(TargetOS)' == 'illumos'">true</Targetsillumos>
     <TargetsSolaris Condition="'$(TargetOS)' == 'solaris'">true</TargetsSolaris>
     <TargetsLinux Condition="'$(TargetOS)' == 'linux' or '$(TargetOS)' == 'android'">true</TargetsLinux>
+    <TargetsLinuxBionic Condition="'$(_portableOS)' == 'linux-bionic'">true</TargetsLinuxBionic>
+    <TargetsLinuxMusl Condition="'$(_portableOS)' == 'linux-musl'">true</TargetsLinuxMusl>
     <TargetsNetBSD Condition="'$(TargetOS)' == 'netbsd'">true</TargetsNetBSD>
     <TargetsOSX Condition="'$(TargetOS)' == 'osx'">true</TargetsOSX>
     <TargetsMacCatalyst Condition="'$(TargetOS)' == 'maccatalyst'">true</TargetsMacCatalyst>
@@ -276,14 +276,14 @@
     <MicrosoftNetCoreAppRefPackRefDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'ref', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRefPackRefDir>
     <MicrosoftNetCoreAppRefPackDataDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRefPackDir)', 'data'))</MicrosoftNetCoreAppRefPackDataDir>
 
-    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(OutputRid)', '$(LibrariesConfiguration)'))</MicrosoftNetCoreAppRuntimePackDir>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(OutputRid)'))</MicrosoftNetCoreAppRuntimePackRidDir>
+    <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'microsoft.netcore.app.runtime.$(OutputRID)', '$(LibrariesConfiguration)'))</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(OutputRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
     <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'lib', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
   </PropertyGroup>
 
   <PropertyGroup>
-    <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(OutputRid).$(HostConfiguration)', 'corehost'))</DotNetHostBinDir>
+    <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(OutputRID).$(HostConfiguration)', 'corehost'))</DotNetHostBinDir>
   </PropertyGroup>
 
   <!--Feature switches -->
@@ -301,6 +301,8 @@
     <DisableSourceLink Condition="'$(DisableSourceLink)' == '' and
                                   '$(ContinuousIntegrationBuild)' != 'true' and
                                   '$(OfficialBuildId)' == ''">true</DisableSourceLink>
+    <!-- Runtime doesn't support Arcade-driven target framework filtering. -->
+    <NoTargetFrameworkFiltering>true</NoTargetFrameworkFiltering>
   </PropertyGroup>
 
   <!-- RepositoryEngineeringDir isn't set when Installer tests import this file. -->
@@ -440,8 +442,10 @@
 
   <!-- Warnings that should be disabled in our test projects. -->
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsPublishedAppTestProject)' == 'true'">
-    <!-- don't warn on usage of BinaryFormatter from test projects -->
-    <NoWarn>$(NoWarn);SYSLIB0011</NoWarn>
+    <!-- we need to re-enable BinaryFormatter within test projects since some tests exercise these code paths to ensure compat -->
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+    <!-- don't warn on usage of BinaryFormatter or legacy serialization infrastructure from test projects -->
+    <NoWarn>$(NoWarn);SYSLIB0011;SYSLIB0050;SYSLIB0051</NoWarn>
     <!-- don't warn about unnecessary trim warning suppressions. can be removed with preview 6. -->
     <NoWarn>$(NoWarn);IL2121</NoWarn>
     <!-- allow nullable annotated files to be incorporated into tests without warning -->
@@ -450,7 +454,6 @@
 
   <PropertyGroup>
     <CustomBeforeNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.BeforeTargets.targets</CustomBeforeNoTargets>
-    <CustomAfterNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.AfterTargets.targets</CustomAfterNoTargets>
     <CustomAfterTraversalTargets>$(RepositoryEngineeringDir)TraversalSdk.AfterTargets.targets</CustomAfterTraversalTargets>
   </PropertyGroup>
 </Project>

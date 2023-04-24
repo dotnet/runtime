@@ -181,8 +181,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported                         = comp->compSupportsHWIntrinsic(isa);
-    bool isBaselineVector512IsaUsedAndSupported = false;
+    bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
 
     bool isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
 #ifdef TARGET_XARCH
@@ -202,7 +201,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         }
         else if (strcmp(className, "Vector512") == 0)
         {
-            isBaselineVector512IsaUsedAndSupported = comp->IsBaselineVector512IsaSupported();
+            isa = InstructionSet_Vector512;
         }
     }
 #endif
@@ -237,7 +236,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
         if (isIsaSupported)
         {
-            if (comp->compExactlyDependsOn(isa) || isBaselineVector512IsaUsedAndSupported)
+            if (comp->compExactlyDependsOn(isa))
             {
                 return NI_IsSupported_True;
             }
@@ -454,12 +453,19 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
 
         if (newobjThis == nullptr)
         {
-            arg = impSIMDPopStack(argType, expectAddr);
-            assert(varTypeIsSIMD(arg->TypeGet()));
+            if (expectAddr)
+            {
+                arg = gtNewLoadValueNode(argType, impPopStack().val);
+            }
+            else
+            {
+                arg = impSIMDPopStack();
+            }
+            assert(varTypeIsSIMD(arg));
         }
         else
         {
-            assert(newobjThis->OperIs(GT_LCL_VAR_ADDR));
+            assert(newobjThis->IsLclVarAddr());
             arg = newobjThis;
 
             // push newobj result on type stack

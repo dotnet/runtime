@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public partial class CompareInfoTests
+    public class CompareInfoTests : CompareInfoTestsBase
     {
         [Theory]
         [InlineData("")]
@@ -60,7 +60,7 @@ namespace System.Globalization.Tests
             new object[] { "", CompareOptions.None, "\u200c", CompareOptions.None, true }, // see comment at bottom of SortKey_TestData
         };
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(GetHashCodeTestData))]
         public void GetHashCodeTest(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expected)
         {
@@ -97,19 +97,6 @@ namespace System.Globalization.Tests
             yield return new object[] { "tr-TR"  , 0x041f };
         }
 
-        // On NLS, hiragana characters sort after katakana.
-        // On ICU, it is the opposite
-        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsNlsGlobalization ? 1 : -1;
-
-        // On NLS, all halfwidth characters sort before fullwidth characters.
-        // On ICU, half and fullwidth characters that aren't in the "Halfwidth and fullwidth forms" block U+FF00-U+FFEF
-        // sort before the corresponding characters that are in the block U+FF00-U+FFEF
-        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsNlsGlobalization ? -1 : 1;
-
-        private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
-        private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
-        private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
-
         public static IEnumerable<object[]> SortKey_Kana_TestData()
         {
             CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
@@ -124,6 +111,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
             yield return new object[] { s_invariantCompare, "\u3060", "\uFF80\uFF9E", CompareOptions.None, s_expectedHiraganaToKatakanaCompare };
         }
+
         public static IEnumerable<object[]> SortKey_TestData()
         {
             CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
@@ -357,13 +345,48 @@ namespace System.Globalization.Tests
             Assert.Equal(lcid, ci.LCID);
         }
 
-        [ConditionalTheory(typeof(CompareInfoCompareTests), nameof(CompareInfoCompareTests.IsNotWindowsKanaRegressedVersion))]
+        [ConditionalTheory(typeof(CompareInfoTests), nameof(IsNotWindowsKanaRegressedVersionAndNotHybridGlobalizationOnWasm))]
         [MemberData(nameof(SortKey_Kana_TestData))]
         public void SortKeyKanaTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
         {
             SortKeyTest(compareInfo, string1, string2, options, expected);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
+        public void SortKeyTestNotSupported()
+        {
+            try
+            {
+                s_invariantCompare.GetSortKey("");
+                AssertNotReached();
+            }
+            catch(PlatformNotSupportedException pnse)
+            {
+                Assert.Equal(GetPNSEText("SortKey"), pnse.Message);
+            }
+            try
+            {
+                s_invariantCompare.GetSortKeyLength(ReadOnlySpan<char>.Empty);
+                AssertNotReached();
+            }
+            catch(PlatformNotSupportedException pnse)
+            {
+                Assert.Equal(GetPNSEText("SortKey"), pnse.Message);
+            }
+
+            try
+            {
+                s_invariantCompare.GetHashCode("", CompareOptions.None);
+                AssertNotReached();
+            }
+            catch(PlatformNotSupportedException pnse)
+            {
+                Assert.Equal(GetPNSEText("HashCode"), pnse.Message);
+            }
+
+            string GetPNSEText(string funcName) => $"{funcName} is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.";
+            void AssertNotReached() => Assert.True(false);
+        }
 
         [DllImport("kernel32", CharSet = CharSet.Unicode)]
         private static extern int CompareStringEx(string lpLocaleName, uint dwCmpFlags, string lpString1, int cchCount1, string lpString2, int cchCount2, IntPtr lpVersionInformation, IntPtr lpReserved, int lParam);
@@ -372,7 +395,7 @@ namespace System.Globalization.Tests
         private static bool WindowsVersionHasTheCompareStringRegression =>
                     PlatformDetection.IsNlsGlobalization && CompareStringEx("", NORM_LINGUISTIC_CASING, "", 0, "\u200C", 1, IntPtr.Zero, IntPtr.Zero, 0) != 2;
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(SortKey_TestData))]
         public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expectedSign)
         {
@@ -421,7 +444,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void SortKeyMiscTest()
         {
             CompareInfo ci = new CultureInfo("en-US").CompareInfo;
@@ -506,7 +529,7 @@ namespace System.Globalization.Tests
             Assert.NotEqual(sv1.SortId, sv2.SortId);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         [MemberData(nameof(GetHashCodeTestData))]
         public void GetHashCode_Span(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expectSameHashCode)
         {
@@ -523,7 +546,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expectSameHashCode, hashOfSource1AsSpan == hashOfSource2AsSpan);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void GetHashCode_NullAndEmptySpan()
         {
             // Ensure that null spans and non-null empty spans produce the same hash code.

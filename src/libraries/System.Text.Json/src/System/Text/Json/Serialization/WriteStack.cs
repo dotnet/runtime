@@ -17,7 +17,7 @@ namespace System.Text.Json
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct WriteStack
     {
-        public int CurrentDepth => _count;
+        public readonly int CurrentDepth => _count;
 
         /// <summary>
         /// Exposes the stackframe that is currently active.
@@ -91,13 +91,7 @@ namespace System.Text.Json
         /// <summary>
         /// Indicates that the state still contains suspended frames waiting re-entry.
         /// </summary>
-        public bool IsContinuation => _continuationCount != 0;
-
-        /// <summary>
-        /// Indicates that the root-level JsonTypeInfo is the result of
-        /// polymorphic dispatch from the internal System.Object converter.
-        /// </summary>
-        public bool IsPolymorphicRootValue;
+        public readonly bool IsContinuation => _continuationCount != 0;
 
         // The bag of preservable references.
         public ReferenceResolver ReferenceResolver;
@@ -123,9 +117,14 @@ namespace System.Text.Json
         public object? PolymorphicTypeDiscriminator;
 
         /// <summary>
+        /// The polymorphic type resolver used by the next converter.
+        /// </summary>
+        public PolymorphicTypeResolver? PolymorphicTypeResolver;
+
+        /// <summary>
         /// Whether the current frame needs to write out any metadata.
         /// </summary>
-        public bool CurrentContainsMetadata => NewReferenceId != null || PolymorphicTypeDiscriminator != null;
+        public readonly bool CurrentContainsMetadata => NewReferenceId != null || PolymorphicTypeDiscriminator != null;
 
         private void EnsurePushCapacity()
         {
@@ -142,7 +141,6 @@ namespace System.Text.Json
         internal void Initialize(
             JsonTypeInfo jsonTypeInfo,
             object? rootValueBoxed = null,
-            bool isPolymorphicRootValue = false,
             bool supportContinuation = false,
             bool supportAsync = false)
         {
@@ -153,7 +151,6 @@ namespace System.Text.Json
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
-            IsPolymorphicRootValue = isPolymorphicRootValue;
             SupportContinuation = supportContinuation;
             SupportAsync = supportAsync;
 
@@ -175,7 +172,7 @@ namespace System.Text.Json
         /// <summary>
         /// Gets the nested JsonTypeInfo before resolving any polymorphic converters
         /// </summary>
-        public JsonTypeInfo PeekNestedJsonTypeInfo()
+        public readonly JsonTypeInfo PeekNestedJsonTypeInfo()
         {
             Debug.Assert(Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted);
             return _count == 0 ? Current.JsonTypeInfo : Current.JsonPropertyInfo!.JsonTypeInfo;

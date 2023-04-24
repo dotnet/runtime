@@ -9,241 +9,6 @@
       "labelsAndMentions": [
         {
           "labels": [
-            "area-System.Security"
-          ],
-          "mentionees": [
-            "dotnet/area-system-security",
-            "vcsjones"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Diagnostics.Tracing"
-          ],
-          "mentionees": [
-            "tarekgh",
-            "tommcdon",
-            "pjanotti"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Linq.Parallel"
-          ],
-          "mentionees": [
-            "dotnet/area-system-linq-parallel"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Text.Encoding"
-          ],
-          "mentionees": [
-            "dotnet/area-system-text-encoding"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Text.Encodings.Web"
-          ],
-          "mentionees": [
-            "dotnet/area-system-text-encodings-web"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Threading.Channels"
-          ],
-          "mentionees": [
-            "dotnet/area-system-threading-channels"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Threading.Tasks"
-          ],
-          "mentionees": [
-            "dotnet/area-system-threading-tasks"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Text.RegularExpressions"
-          ],
-          "mentionees": [
-            "dotnet/area-system-text-regularexpressions"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Transactions"
-          ],
-          "mentionees": [
-            "roji"
-          ]
-        },
-        {
-          "labels": [
-            "area-GC-mono"
-          ],
-          "mentionees": [
-            "brzvlad"
-          ]
-        },
-        {
-          "labels": [
-            "area-Codegen-Interpreter-mono"
-          ],
-          "mentionees": [
-            "brzvlad",
-            "kotlarmilos"
-          ]
-        },
-        {
-          "labels": [
-            "area-Infrastructure-mono"
-          ],
-          "mentionees": [
-            "directhex"
-          ]
-        },
-        {
-          "labels": [
-            "area-AssemblyLoader-mono"
-          ],
-          "mentionees": []
-        },
-        {
-          "labels": [
-            "area-Debugger-mono"
-          ],
-          "mentionees": [
-            "thaystg"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Collections"
-          ],
-          "mentionees": [
-            "dotnet/area-system-collections"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Linq"
-          ],
-          "mentionees": [
-            "dotnet/area-system-linq"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Numerics.Tensors"
-          ],
-          "mentionees": [
-            "dotnet/area-system-numerics-tensors"
-          ]
-        },
-        {
-          "labels": [
-            "area-Host"
-          ],
-          "mentionees": [
-            "vitek-karas",
-            "agocke",
-            "vsadov"
-          ]
-        },
-        {
-          "labels": [
-            "area-HostModel"
-          ],
-          "mentionees": [
-            "vitek-karas",
-            "agocke"
-          ]
-        },
-        {
-          "labels": [
-            "area-Single-File"
-          ],
-          "mentionees": [
-            "agocke",
-            "vitek-karas",
-            "vsadov"
-          ]
-        },
-        {
-          "labels": [
-            "area-Tools-ILLink"
-          ],
-          "mentionees": [
-            "agocke",
-            "sbomer",
-            "vitek-karas"
-          ]
-        },
-        {
-          "labels": [
-            "area-NativeAOT-coreclr"
-          ],
-          "mentionees": [
-            "agocke",
-            "MichalStrehovsky",
-            "jkotas"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Buffers"
-          ],
-          "mentionees": [
-            "dotnet/area-system-buffers"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Numerics"
-          ],
-          "mentionees": [
-            "dotnet/area-system-numerics"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Runtime.Intrinsics"
-          ],
-          "mentionees": [
-            "dotnet/area-system-runtime-intrinsics"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Runtime.InteropServices"
-          ],
-          "mentionees": [
-            "dotnet/interop-contrib"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.CodeDom"
-          ],
-          "mentionees": [
-            "dotnet/area-system-codedom"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Xml"
-          ],
-          "mentionees": [
-            "dotnet/area-system-xml"
-          ]
-        },
-        {
-          "labels": [
             "area-AssemblyLoader-coreclr"
           ],
           "mentionees": [
@@ -254,196 +19,26 @@
         },
         {
           "labels": [
-            "area-System.Dynamic.Runtime"
+            "area-AssemblyLoader-mono"
+          ],
+          "mentionees": []
+        },
+        {
+          "labels": [
+            "area-CodeGen-coreclr"
           ],
           "mentionees": [
-            "cston"
+            "JulieLeeMSFT",
+            "jakobbotsch"
           ]
         },
         {
           "labels": [
-            "area-System.Linq.Expressions"
+            "area-Codegen-Interpreter-mono"
           ],
           "mentionees": [
-            "cston"
-          ]
-        },
-        {
-          "labels": [
-            "area-Microsoft.CSharp"
-          ],
-          "mentionees": [
-            "cston"
-          ]
-        },
-        {
-          "labels": [
-            "area-Microsoft.VisualBasic"
-          ],
-          "mentionees": [
-            "cston"
-          ]
-        },
-        {
-          "labels": [
-            "area-Infrastructure-libraries"
-          ],
-          "mentionees": [
-            "dotnet/area-infrastructure-libraries"
-          ]
-        },
-        {
-          "labels": [
-            "area-Infrastructure"
-          ],
-          "mentionees": [
-            "dotnet/runtime-infrastructure"
-          ]
-        },
-        {
-          "labels": [
-            "area-GC-coreclr"
-          ],
-          "mentionees": [
-            "dotnet/gc"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Net"
-          ],
-          "mentionees": [
-            "dotnet/ncl"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Net.Http"
-          ],
-          "mentionees": [
-            "dotnet/ncl"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Net.Security"
-          ],
-          "mentionees": [
-            "dotnet/ncl",
-            "vcsjones"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Net.Sockets"
-          ],
-          "mentionees": [
-            "dotnet/ncl"
-          ]
-        },
-        {
-          "labels": [
-            "area-Diagnostics-coreclr"
-          ],
-          "mentionees": [
-            "tommcdon"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Diagnostics"
-          ],
-          "mentionees": [
-            "tommcdon"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Data"
-          ],
-          "mentionees": [
-            "roji",
-            "ajcvickers"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Data.OleDB"
-          ],
-          "mentionees": [
-            "roji",
-            "ajcvickers"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Data.Odbc"
-          ],
-          "mentionees": [
-            "roji",
-            "ajcvickers"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Data.SqlClient"
-          ],
-          "mentionees": [
-            "davoudeshtehari",
-            "david-engel",
-            "jrahnama"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.ComponentModel.DataAnnotations"
-          ],
-          "mentionees": [
-            "ajcvickers",
-            "bricelam",
-            "roji"
-          ]
-        },
-        {
-          "labels": [
-            "area-Extensions-FileSystem"
-          ],
-          "mentionees": [
-            "dotnet/area-extensions-filesystem"
-          ]
-        },
-        {
-          "labels": [
-            "area-Extensions-HttpClientFactory"
-          ],
-          "mentionees": [
-            "dotnet/ncl"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Net.Quic"
-          ],
-          "mentionees": [
-            "dotnet/ncl"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Formats.Cbor"
-          ],
-          "mentionees": [
-            "dotnet/area-system-formats-cbor",
-            "vcsjones"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Formats.Asn1"
-          ],
-          "mentionees": [
-            "dotnet/area-system-formats-asn1",
-            "vcsjones"
+            "brzvlad",
+            "kotlarmilos"
           ]
         },
         {
@@ -476,135 +71,18 @@
         },
         {
           "labels": [
-            "area-System.Text.Json"
+            "area-System.DateTime"
           ],
           "mentionees": [
-            "dotnet/area-system-text-json",
-            "gregsdennis"
+            "dotnet/area-system-datetime"
           ]
         },
         {
           "labels": [
-            "area-System.Memory"
+            "area-Debugger-mono"
           ],
           "mentionees": [
-            "dotnet/area-system-memory"
-          ]
-        },
-        {
-          "labels": [
-            "area-Infrastructure-coreclr"
-          ],
-          "mentionees": [
-            "hoyosjs"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.IO"
-          ],
-          "mentionees": [
-            "dotnet/area-system-io"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.IO.Compression"
-          ],
-          "mentionees": [
-            "dotnet/area-system-io-compression"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Diagnostics.Process"
-          ],
-          "mentionees": [
-            "dotnet/area-system-diagnostics-process"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Console"
-          ],
-          "mentionees": [
-            "dotnet/area-system-console"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Runtime"
-          ],
-          "mentionees": [
-            "dotnet/area-system-runtime"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Threading"
-          ],
-          "mentionees": [
-            "mangod9"
-          ]
-        },
-        {
-          "labels": [
-            "area-vm-coreclr"
-          ],
-          "mentionees": [
-            "mangod9"
-          ]
-        },
-        {
-          "labels": [
-            "area-CodeGen-coreclr"
-          ],
-          "mentionees": [
-            "JulieLeeMSFT",
-            "jakobbotsch",
-            "kunalspathak"
-          ]
-        },
-        {
-          "labels": [
-            "area-ILTools-coreclr"
-          ],
-          "mentionees": [
-            "JulieLeeMSFT"
-          ]
-        },
-        {
-          "labels": [
-            "area-ILVerification"
-          ],
-          "mentionees": [
-            "JulieLeeMSFT"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.DirectoryServices"
-          ],
-          "mentionees": [
-            "dotnet/area-system-directoryservices",
-            "jay98014"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Speech"
-          ],
-          "mentionees": [
-            "ericstj",
-            "jeffhandley"
-          ]
-        },
-        {
-          "labels": [
-            "area-Meta"
-          ],
-          "mentionees": [
-            "dotnet/area-meta"
+            "thaystg"
           ]
         },
         {
@@ -613,6 +91,14 @@
           ],
           "mentionees": [
             "dotnet/area-dependencymodel"
+          ]
+        },
+        {
+          "labels": [
+            "area-Diagnostics-coreclr"
+          ],
+          "mentionees": [
+            "tommcdon"
           ]
         },
         {
@@ -641,10 +127,26 @@
         },
         {
           "labels": [
+            "area-Extensions-FileSystem"
+          ],
+          "mentionees": [
+            "dotnet/area-extensions-filesystem"
+          ]
+        },
+        {
+          "labels": [
             "area-Extensions-Hosting"
           ],
           "mentionees": [
             "dotnet/area-extensions-hosting"
+          ]
+        },
+        {
+          "labels": [
+            "area-Extensions-HttpClientFactory"
+          ],
+          "mentionees": [
+            "dotnet/ncl"
           ]
         },
         {
@@ -673,10 +175,169 @@
         },
         {
           "labels": [
+            "area-GC-coreclr"
+          ],
+          "mentionees": [
+            "dotnet/gc"
+          ]
+        },
+        {
+          "labels": [
+            "area-GC-mono"
+          ],
+          "mentionees": [
+            "brzvlad"
+          ]
+        },
+        {
+          "labels": [
+            "area-Host"
+          ],
+          "mentionees": [
+            "vitek-karas",
+            "agocke",
+            "vsadov"
+          ]
+        },
+        {
+          "labels": [
+            "area-HostModel"
+          ],
+          "mentionees": [
+            "vitek-karas",
+            "agocke"
+          ]
+        },
+        {
+          "labels": [
+            "area-ILTools-coreclr"
+          ],
+          "mentionees": [
+            "JulieLeeMSFT"
+          ]
+        },
+        {
+          "labels": [
+            "area-ILVerification"
+          ],
+          "mentionees": [
+            "JulieLeeMSFT"
+          ]
+        },
+        {
+          "labels": [
+            "area-Infrastructure"
+          ],
+          "mentionees": [
+            "dotnet/runtime-infrastructure"
+          ]
+        },
+        {
+          "labels": [
+            "area-Infrastructure-coreclr"
+          ],
+          "mentionees": [
+            "hoyosjs"
+          ]
+        },
+        {
+          "labels": [
+            "area-Infrastructure-libraries"
+          ],
+          "mentionees": [
+            "dotnet/area-infrastructure-libraries"
+          ]
+        },
+        {
+          "labels": [
+            "area-Infrastructure-mono"
+          ],
+          "mentionees": [
+            "directhex"
+          ]
+        },
+        {
+          "labels": [
+            "area-Meta"
+          ],
+          "mentionees": [
+            "dotnet/area-meta"
+          ]
+        },
+        {
+          "labels": [
+            "area-Microsoft.CSharp"
+          ],
+          "mentionees": [
+            "cston"
+          ]
+        },
+        {
+          "labels": [
             "area-Microsoft.Extensions"
           ],
           "mentionees": [
             "dotnet/area-microsoft-extensions"
+          ]
+        },
+        {
+          "labels": [
+            "area-Microsoft.VisualBasic"
+          ],
+          "mentionees": [
+            "cston"
+          ]
+        },
+        {
+          "labels": [
+            "area-Microsoft.Win32"
+          ],
+          "mentionees": [
+            "dotnet/area-microsoft-win32"
+          ]
+        },
+        {
+          "labels": [
+            "area-NativeAOT-coreclr"
+          ],
+          "mentionees": [
+            "agocke",
+            "MichalStrehovsky",
+            "jkotas"
+          ]
+        },
+        {
+          "labels": [
+            "area-Single-File"
+          ],
+          "mentionees": [
+            "agocke",
+            "vitek-karas",
+            "vsadov"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Buffers"
+          ],
+          "mentionees": [
+            "dotnet/area-system-buffers"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.CodeDom"
+          ],
+          "mentionees": [
+            "dotnet/area-system-codedom"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Collections"
+          ],
+          "mentionees": [
+            "dotnet/area-system-collections"
           ]
         },
         {
@@ -697,6 +358,14 @@
         },
         {
           "labels": [
+            "area-System.ComponentModel.DataAnnotations"
+          ],
+          "mentionees": [
+            "dotnet/area-system-componentmodel-dataannotations"
+          ]
+        },
+        {
+          "labels": [
             "area-System.Composition"
           ],
           "mentionees": [
@@ -705,26 +374,71 @@
         },
         {
           "labels": [
+            "area-System.Configuration"
+          ],
+          "mentionees": [
+            "dotnet/area-system-configuration"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Console"
+          ],
+          "mentionees": [
+            "dotnet/area-system-console"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Data"
+          ],
+          "mentionees": [
+            "roji",
+            "ajcvickers"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Data.Odbc"
+          ],
+          "mentionees": [
+            "roji",
+            "ajcvickers"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Data.OleDB"
+          ],
+          "mentionees": [
+            "roji",
+            "ajcvickers"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Data.SqlClient"
+          ],
+          "mentionees": [
+            "davoudeshtehari",
+            "david-engel",
+            "jrahnama"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Diagnostics"
+          ],
+          "mentionees": [
+            "tommcdon"
+          ]
+        },
+        {
+          "labels": [
             "area-System.Diagnostics.Activity"
           ],
           "mentionees": [
             "dotnet/area-system-diagnostics-activity"
-          ]
-        },
-        {
-          "labels": [
-            "area-System.Globalization"
-          ],
-          "mentionees": [
-            "dotnet/area-system-globalization"
-          ]
-        },
-        {
-          "labels": [
-            "area-Microsoft.Win32"
-          ],
-          "mentionees": [
-            "dotnet/area-microsoft-win32"
           ]
         },
         {
@@ -745,10 +459,37 @@
         },
         {
           "labels": [
+            "area-System.Diagnostics.Process"
+          ],
+          "mentionees": [
+            "dotnet/area-system-diagnostics-process"
+          ]
+        },
+        {
+          "labels": [
             "area-System.Diagnostics.TraceSource"
           ],
           "mentionees": [
             "dotnet/area-system-diagnostics-tracesource"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Diagnostics.Tracing"
+          ],
+          "mentionees": [
+            "tarekgh",
+            "tommcdon",
+            "pjanotti"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.DirectoryServices"
+          ],
+          "mentionees": [
+            "dotnet/area-system-directoryservices",
+            "jay98014"
           ]
         },
         {
@@ -761,6 +502,108 @@
         },
         {
           "labels": [
+            "area-System.Dynamic.Runtime"
+          ],
+          "mentionees": [
+            "cston"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Formats.Asn1"
+          ],
+          "mentionees": [
+            "dotnet/area-system-formats-asn1",
+            "bartonjs",
+            "vcsjones"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Formats.Cbor"
+          ],
+          "mentionees": [
+            "dotnet/area-system-formats-cbor",
+            "bartonjs",
+            "vcsjones"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Formats.Tar"
+          ],
+          "mentionees": [
+            "dotnet/area-system-formats-tar"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Globalization"
+          ],
+          "mentionees": [
+            "dotnet/area-system-globalization"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.IO"
+          ],
+          "mentionees": [
+            "dotnet/area-system-io"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.IO.Compression"
+          ],
+          "mentionees": [
+            "dotnet/area-system-io-compression"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.IO.Hashing"
+          ],
+          "mentionees": [
+            "dotnet/area-system-io-hashing",
+            "bartonjs",
+            "vcsjones"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.IO.Ports"
+          ],
+          "mentionees": [
+            "dotnet/area-system-io-ports"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Linq"
+          ],
+          "mentionees": [
+            "dotnet/area-system-linq"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Linq.Expressions"
+          ],
+          "mentionees": [
+            "cston"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Linq.Parallel"
+          ],
+          "mentionees": [
+            "dotnet/area-system-linq-parallel"
+          ]
+        },
+        {
+          "labels": [
             "area-System.Management"
           ],
           "mentionees": [
@@ -769,18 +612,68 @@
         },
         {
           "labels": [
-            "area-System.ServiceProcess"
+            "area-System.Memory"
           ],
           "mentionees": [
-            "dotnet/area-system-serviceprocess"
+            "dotnet/area-system-memory"
           ]
         },
         {
           "labels": [
-            "area-System.Configuration"
+            "area-System.Net"
           ],
           "mentionees": [
-            "dotnet/area-system-configuration"
+            "dotnet/ncl"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Net.Http"
+          ],
+          "mentionees": [
+            "dotnet/ncl"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Net.Quic"
+          ],
+          "mentionees": [
+            "dotnet/ncl"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Net.Security"
+          ],
+          "mentionees": [
+            "dotnet/ncl",
+            "bartonjs",
+            "vcsjones"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Net.Sockets"
+          ],
+          "mentionees": [
+            "dotnet/ncl"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Numerics"
+          ],
+          "mentionees": [
+            "dotnet/area-system-numerics"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Numerics.Tensors"
+          ],
+          "mentionees": [
+            "dotnet/area-system-numerics-tensors"
           ]
         },
         {
@@ -817,10 +710,152 @@
         },
         {
           "labels": [
+            "area-System.Runtime"
+          ],
+          "mentionees": [
+            "dotnet/area-system-runtime"
+          ]
+        },
+        {
+          "labels": [
             "area-System.Runtime.CompilerServices"
           ],
           "mentionees": [
             "dotnet/area-system-runtime-compilerservices"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Runtime.InteropServices"
+          ],
+          "mentionees": [
+            "dotnet/interop-contrib"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Runtime.Intrinsics"
+          ],
+          "mentionees": [
+            "dotnet/area-system-runtime-intrinsics"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Security"
+          ],
+          "mentionees": [
+            "dotnet/area-system-security",
+            "bartonjs",
+            "vcsjones"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.ServiceProcess"
+          ],
+          "mentionees": [
+            "dotnet/area-system-serviceprocess"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Speech"
+          ],
+          "mentionees": [
+            "dotnet/area-system-speech"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Text.Encoding"
+          ],
+          "mentionees": [
+            "dotnet/area-system-text-encoding"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Text.Encodings.Web"
+          ],
+          "mentionees": [
+            "dotnet/area-system-text-encodings-web"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Text.Json"
+          ],
+          "mentionees": [
+            "dotnet/area-system-text-json",
+            "gregsdennis"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Text.RegularExpressions"
+          ],
+          "mentionees": [
+            "dotnet/area-system-text-regularexpressions"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Threading"
+          ],
+          "mentionees": [
+            "mangod9"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Threading.Channels"
+          ],
+          "mentionees": [
+            "dotnet/area-system-threading-channels"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Threading.Tasks"
+          ],
+          "mentionees": [
+            "dotnet/area-system-threading-tasks"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Transactions"
+          ],
+          "mentionees": [
+            "roji",
+            "ajcvickers"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.Xml"
+          ],
+          "mentionees": [
+            "dotnet/area-system-xml"
+          ]
+        },
+        {
+          "labels": [
+            "area-Tools-ILLink"
+          ],
+          "mentionees": [
+            "agocke",
+            "sbomer",
+            "vitek-karas"
+          ]
+        },
+        {
+          "labels": [
+            "area-vm-coreclr"
+          ],
+          "mentionees": [
+            "mangod9"
           ]
         }
       ],
@@ -843,15 +878,6 @@
             "parameters": {
               "label": "breaking-change"
             }
-          },
-          {
-            "operator": "and",
-            "operands": [
-              {
-                "name": "",
-                "parameters": {}
-              }
-            ]
           }
         ]
       },
@@ -870,7 +896,7 @@
         {
           "name": "addReply",
           "parameters": {
-            "comment": "Added `needs-breaking-change-doc-created` label because this issue has the `breaking-change` label. \n\n1. [ ] Create and link to this issue a matching issue in the dotnet/docs repo using the [breaking change documentation template](https://github.com/dotnet/docs/issues/new?assignees=gewarren&labels=breaking-change%2CPri1%2Cdoc-idea&template=breaking-change.yml&title=%5BBreaking+change%5D%3A+), then remove this `needs-breaking-change-doc-created` label.\n\nTagging @dotnet/compat for awareness of the breaking change."
+            "comment": "Added `needs-breaking-change-doc-created` label because this issue has the `breaking-change` label. \n\n1. [ ] Create and link to this issue a matching issue in the dotnet/docs repo using the [breaking change documentation template](https://aka.ms/dotnet/docs/new-breaking-change-issue), then remove this `needs-breaking-change-doc-created` label.\n\nTagging @dotnet/compat for awareness of the breaking change."
           }
         }
       ],
@@ -911,7 +937,7 @@
         {
           "name": "addReply",
           "parameters": {
-            "comment": "Added `needs-breaking-change-doc-created` label because this PR has the `breaking-change` label. \n\nWhen you commit this breaking change:\n\n1. [ ] Create and link to this PR and the issue a matching issue in the dotnet/docs repo using the [breaking change documentation template](https://github.com/dotnet/docs/issues/new?assignees=gewarren&labels=breaking-change%2CPri1%2Cdoc-idea&template=breaking-change.yml&title=%5BBreaking+change%5D%3A+), then remove this `needs-breaking-change-doc-created` label.\n2. [ ] Ask a committer to mail the `.NET Breaking Change Notification` DL.\n\nTagging @dotnet/compat for awareness of the breaking change."
+            "comment": "Added `needs-breaking-change-doc-created` label because this PR has the `breaking-change` label. \n\nWhen you commit this breaking change:\n\n1. [ ] Create and link to this PR and the issue a matching issue in the dotnet/docs repo using the [breaking change documentation template](https://aka.ms/dotnet/docs/new-breaking-change-issue), then remove this `needs-breaking-change-doc-created` label.\n2. [ ] Ask a committer to mail the `.NET Breaking Change Notification` DL.\n\nTagging @dotnet/compat for awareness of the breaking change."
           }
         }
       ],
@@ -936,7 +962,8 @@
             "vitek-karas",
             "LakshanF",
             "sbomer",
-            "joperezr"
+            "joperezr",
+            "marek-safar"
           ]
         }
       ],
@@ -3705,12 +3732,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - Issue Triage] Moved to Another Area",
+      "taskName": "[Area Pod: Adam / David - Issue Triage] Moved to Another Area",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Adam / David - Issue Triage",
             "isOrgProject": true
           }
         }
@@ -3846,7 +3873,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+              "projectName": "Area Pod: Adam / David - Issue Triage",
               "isOrgProject": true
             }
           }
@@ -3861,19 +3888,19 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - Issue Triage] Needs Triage",
+      "taskName": "[Area Pod: Adam / David - Issue Triage] Needs Triage",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Adam / David - Issue Triage",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Adam / David - Issue Triage",
             "columnName": "Needs Triage",
             "isOrgProject": true
           }
@@ -4059,7 +4086,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+                      "projectName": "Area Pod: Adam / David - Issue Triage",
                       "isOrgProject": true
                     }
                   }
@@ -4068,7 +4095,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+                  "projectName": "Area Pod: Adam / David - Issue Triage",
                   "isOrgProject": true,
                   "columnName": "Triaged"
                 }
@@ -4086,19 +4113,19 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - Issue Triage] Needs Further Triage",
+      "taskName": "[Area Pod: Adam / David - Issue Triage] Needs Further Triage",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Adam / David - Issue Triage",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Adam / David - Issue Triage",
             "columnName": "Needs Triage",
             "isOrgProject": true
           }
@@ -4200,7 +4227,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+                      "projectName": "Area Pod: Adam / David - Issue Triage",
                       "isOrgProject": true
                     }
                   }
@@ -4209,7 +4236,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+                  "projectName": "Area Pod: Adam / David - Issue Triage",
                   "columnName": "Triaged",
                   "isOrgProject": true
                 }
@@ -4227,12 +4254,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - Issue Triage] Triaged",
+      "taskName": "[Area Pod: Adam / David - Issue Triage] Triaged",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Adam / David - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
           }
@@ -4254,7 +4281,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+              "projectName": "Area Pod: Adam / David - Issue Triage",
               "isOrgProject": true
             }
           },
@@ -4296,12 +4323,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - Issue Triage] Adam Updated Issue",
+      "taskName": "[Area Pod: Adam / David - Issue Triage] Adam Updated Issue",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Adam / David - Issue Triage",
             "columnName": "Triage: Adam",
             "isOrgProject": true
           }
@@ -4317,7 +4344,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+              "projectName": "Area Pod: Adam / David - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -4374,12 +4401,12 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - Issue Triage] Adam Commented",
+      "taskName": "[Area Pod: Adam / David - Issue Triage] Adam Commented",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Adam / David - Issue Triage",
             "columnName": "Triage: Adam",
             "isOrgProject": true
           }
@@ -4395,7 +4422,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+              "projectName": "Area Pod: Adam / David - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -4452,12 +4479,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - Issue Triage] David Updated Issue",
+      "taskName": "[Area Pod: Adam / David - Issue Triage] David Updated Issue",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Adam / David - Issue Triage",
             "columnName": "Triage: David",
             "isOrgProject": true
           }
@@ -4473,7 +4500,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+              "projectName": "Area Pod: Adam / David - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -4530,12 +4557,12 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - Issue Triage] David Commented",
+      "taskName": "[Area Pod: Adam / David - Issue Triage] David Commented",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Adam / David - Issue Triage",
             "columnName": "Triage: David",
             "isOrgProject": true
           }
@@ -4551,7 +4578,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
+              "projectName": "Area Pod: Adam / David - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -4560,162 +4587,6 @@
             "name": "isActivitySender",
             "parameters": {
               "user": "jozkee"
-            }
-          },
-          {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInMilestone",
-                "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "IssuesOnlyResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - Issue Triage] Jeremy Updated Issue",
-      "actions": [
-        {
-          "name": "moveToProjectColumn",
-          "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
-            "columnName": "Triage: Jeremy",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "issue",
-      "eventNames": [
-        "issues"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
-              "isOrgProject": true,
-              "columnName": "Needs Triage"
-            }
-          },
-          {
-            "name": "isActivitySender",
-            "parameters": {
-              "user": "bartonjs"
-            }
-          },
-          {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInMilestone",
-                "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "IssueCommentResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - Issue Triage] Jeremy Commented",
-      "actions": [
-        {
-          "name": "moveToProjectColumn",
-          "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
-            "columnName": "Triage: Jeremy",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "issue",
-      "eventNames": [
-        "issue_comment"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Adam / David / Jeremy - Issue Triage",
-              "isOrgProject": true,
-              "columnName": "Needs Triage"
-            }
-          },
-          {
-            "name": "isActivitySender",
-            "parameters": {
-              "user": "bartonjs"
             }
           },
           {
@@ -4764,12 +4635,12 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - PRs] Closed, Merged, or Moved",
+      "taskName": "[Area Pod: Adam / David - PRs] Closed, Merged, or Moved",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+            "projectName": "Area Pod: Adam / David - PRs",
             "columnName": "Done",
             "isOrgProject": true
           }
@@ -4785,7 +4656,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+              "projectName": "Area Pod: Adam / David - PRs",
               "isOrgProject": true
             }
           },
@@ -4795,7 +4666,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+                  "projectName": "Area Pod: Adam / David - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -4942,12 +4813,12 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - PRs] New PR Needs Champion",
+      "taskName": "[Area Pod: Adam / David - PRs] New PR Needs Champion",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+            "projectName": "Area Pod: Adam / David - PRs",
             "columnName": "Needs Champion",
             "isOrgProject": true
           }
@@ -5079,30 +4950,6 @@
                   }
                 ]
               }
-            ],
-            [
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isAssignedToUser",
-                    "parameters": {
-                      "user": "bartonjs"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isActivitySender",
-                    "parameters": {
-                      "user": "bartonjs"
-                    }
-                  }
-                ]
-              }
             ]
           ],
           {
@@ -5114,7 +4961,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+                      "projectName": "Area Pod: Adam / David - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -5123,7 +4970,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+                  "projectName": "Area Pod: Adam / David - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -5141,19 +4988,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - PRs] Updated PR Needs Champion",
+      "taskName": "[Area Pod: Adam / David - PRs] Updated PR Needs Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+            "projectName": "Area Pod: Adam / David - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+            "projectName": "Area Pod: Adam / David - PRs",
             "columnName": "Needs Champion",
             "isOrgProject": true
           }
@@ -5269,17 +5116,6 @@
             ]
           },
           {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isAssignedToUser",
-                "parameters": {
-                  "user": "bartonjs"
-                }
-              }
-            ]
-          },
-          {
             "operator": "or",
             "operands": [
               {
@@ -5288,7 +5124,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+                      "projectName": "Area Pod: Adam / David - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -5297,7 +5133,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+                  "projectName": "Area Pod: Adam / David - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -5315,19 +5151,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - PRs] Adam Assigned as Champion",
+      "taskName": "[Area Pod: Adam / David - PRs] Adam Assigned as Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+            "projectName": "Area Pod: Adam / David - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+            "projectName": "Area Pod: Adam / David - PRs",
             "columnName": "Champion: Adam",
             "isOrgProject": true
           }
@@ -5446,7 +5282,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+                      "projectName": "Area Pod: Adam / David - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -5455,7 +5291,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+                  "projectName": "Area Pod: Adam / David - PRs",
                   "columnName": "Needs Champion",
                   "isOrgProject": true
                 }
@@ -5463,7 +5299,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+                  "projectName": "Area Pod: Adam / David - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -5481,19 +5317,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - PRs] David Assigned as Champion",
+      "taskName": "[Area Pod: Adam / David - PRs] David Assigned as Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+            "projectName": "Area Pod: Adam / David - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+            "projectName": "Area Pod: Adam / David - PRs",
             "columnName": "Champion: David",
             "isOrgProject": true
           }
@@ -5612,7 +5448,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+                      "projectName": "Area Pod: Adam / David - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -5621,7 +5457,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+                  "projectName": "Area Pod: Adam / David - PRs",
                   "columnName": "Needs Champion",
                   "isOrgProject": true
                 }
@@ -5629,173 +5465,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Adam / David / Jeremy - PRs",
-                  "columnName": "Done",
-                  "isOrgProject": true
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "PullRequestResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Adam / David / Jeremy - PRs] Jeremy Assigned as Champion",
-      "actions": [
-        {
-          "name": "removeFromProject",
-          "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - PRs",
-            "isOrgProject": true
-          }
-        },
-        {
-          "name": "addToProject",
-          "parameters": {
-            "projectName": "Area Pod: Adam / David / Jeremy - PRs",
-            "columnName": "Champion: Jeremy",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "pull_request",
-      "eventNames": [
-        "pull_request"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-Extensions-Caching"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-Extensions-FileSystem"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Console"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Diagnostics.Process"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Formats.Asn1"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Formats.Cbor"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.IO"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.IO.Hashing"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Linq.Parallel"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Security"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "name": "isAssignedToUser",
-                "parameters": {
-                  "user": "bartonjs"
-                }
-              },
-              {
-                "operator": "and",
-                "operands": [
-                  {
-                    "name": "isAction",
-                    "parameters": {
-                      "action": "opened"
-                    }
-                  },
-                  {
-                    "name": "isActivitySender",
-                    "parameters": {
-                      "user": "bartonjs"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isInProject",
-                    "parameters": {
-                      "projectName": "Area Pod: Adam / David / Jeremy - PRs",
-                      "isOrgProject": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Adam / David / Jeremy - PRs",
-                  "columnName": "Needs Champion",
-                  "isOrgProject": true
-                }
-              },
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Adam / David / Jeremy - PRs",
+                  "projectName": "Area Pod: Adam / David - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -7756,12 +7426,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Moved to Another Area",
+      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Moved to Another Area",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "isOrgProject": true
           }
         }
@@ -7908,7 +7578,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
               "isOrgProject": true
             }
           }
@@ -7923,19 +7593,19 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Needs Triage",
+      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Needs Triage",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "columnName": "Needs Triage",
             "isOrgProject": true
           }
@@ -8133,7 +7803,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+                      "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
                       "isOrgProject": true
                     }
                   }
@@ -8142,7 +7812,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+                  "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
                   "isOrgProject": true,
                   "columnName": "Triaged"
                 }
@@ -8160,19 +7830,19 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Needs Further Triage",
+      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Needs Further Triage",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "columnName": "Needs Triage",
             "isOrgProject": true
           }
@@ -8280,7 +7950,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+                      "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
                       "isOrgProject": true
                     }
                   }
@@ -8289,7 +7959,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+                  "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
                   "columnName": "Triaged",
                   "isOrgProject": true
                 }
@@ -8307,12 +7977,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Triaged",
+      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Triaged",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
           }
@@ -8334,7 +8004,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
               "isOrgProject": true
             }
           },
@@ -8376,168 +8046,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Akhil Updated Issue",
+      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Carlos Updated Issue",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
-            "columnName": "Triage: Akhil",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "issue",
-      "eventNames": [
-        "issues"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
-              "isOrgProject": true,
-              "columnName": "Needs Triage"
-            }
-          },
-          {
-            "name": "isActivitySender",
-            "parameters": {
-              "user": "smasher164"
-            }
-          },
-          {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInMilestone",
-                "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "IssueCommentResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Akhil Commented",
-      "actions": [
-        {
-          "name": "moveToProjectColumn",
-          "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
-            "columnName": "Triage: Akhil",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "issue",
-      "eventNames": [
-        "issue_comment"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
-              "isOrgProject": true,
-              "columnName": "Needs Triage"
-            }
-          },
-          {
-            "name": "isActivitySender",
-            "parameters": {
-              "user": "smasher164"
-            }
-          },
-          {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInMilestone",
-                "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "IssuesOnlyResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Carlos Updated Issue",
-      "actions": [
-        {
-          "name": "moveToProjectColumn",
-          "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "columnName": "Triage: Carlos",
             "isOrgProject": true
           }
@@ -8553,7 +8067,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -8610,12 +8124,12 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Carlos Commented",
+      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Carlos Commented",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "columnName": "Triage: Carlos",
             "isOrgProject": true
           }
@@ -8631,7 +8145,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -8688,12 +8202,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Viktor Updated Issue",
+      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Viktor Updated Issue",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "columnName": "Triage: Viktor",
             "isOrgProject": true
           }
@@ -8709,7 +8223,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -8766,12 +8280,12 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - Issue Triage] Viktor Commented",
+      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Viktor Commented",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "columnName": "Triage: Viktor",
             "isOrgProject": true
           }
@@ -8787,7 +8301,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Akhil / Carlos / Viktor - Issue Triage",
+              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -8844,12 +8358,12 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - PRs] Closed, Merged, or Moved",
+      "taskName": "[Area Pod: Carlos / Viktor - PRs] Closed, Merged, or Moved",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Carlos / Viktor - PRs",
             "columnName": "Done",
             "isOrgProject": true
           }
@@ -8865,7 +8379,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+              "projectName": "Area Pod: Carlos / Viktor - PRs",
               "isOrgProject": true
             }
           },
@@ -8875,7 +8389,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Carlos / Viktor - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -9033,12 +8547,12 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - PRs] New PR Needs Champion",
+      "taskName": "[Area Pod: Carlos / Viktor - PRs] New PR Needs Champion",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Carlos / Viktor - PRs",
             "columnName": "Needs Champion",
             "isOrgProject": true
           }
@@ -9136,30 +8650,6 @@
                   {
                     "name": "isAssignedToUser",
                     "parameters": {
-                      "user": "smasher164"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isActivitySender",
-                    "parameters": {
-                      "user": "smasher164"
-                    }
-                  }
-                ]
-              }
-            ],
-            [
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isAssignedToUser",
-                    "parameters": {
                       "user": "carlossanlop"
                     }
                   }
@@ -9211,7 +8701,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                      "projectName": "Area Pod: Carlos / Viktor - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -9220,7 +8710,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Carlos / Viktor - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -9238,19 +8728,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - PRs] Updated PR Needs Champion",
+      "taskName": "[Area Pod: Carlos / Viktor - PRs] Updated PR Needs Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Carlos / Viktor - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Carlos / Viktor - PRs",
             "columnName": "Needs Champion",
             "isOrgProject": true
           }
@@ -9355,17 +8845,6 @@
               {
                 "name": "isAssignedToUser",
                 "parameters": {
-                  "user": "smasher164"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isAssignedToUser",
-                "parameters": {
                   "user": "carlossanlop"
                 }
               }
@@ -9391,7 +8870,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                      "projectName": "Area Pod: Carlos / Viktor - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -9400,7 +8879,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Carlos / Viktor - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -9418,191 +8897,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - PRs] Akhil Assigned as Champion",
+      "taskName": "[Area Pod: Carlos / Viktor - PRs] Carlos Assigned as Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Carlos / Viktor - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
-            "columnName": "Champion: Akhil",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "pull_request",
-      "eventNames": [
-        "pull_request"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-DependencyModel"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-Infrastructure-libraries"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-Microsoft.Win32"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Diagnostics.EventLog"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Diagnostics.PerformanceCounter"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Diagnostics.TraceSource"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Drawing"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Formats.Tar"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.IO.Compression"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Management"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.ServiceProcess"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "name": "isAssignedToUser",
-                "parameters": {
-                  "user": "smasher164"
-                }
-              },
-              {
-                "operator": "and",
-                "operands": [
-                  {
-                    "name": "isAction",
-                    "parameters": {
-                      "action": "opened"
-                    }
-                  },
-                  {
-                    "name": "isActivitySender",
-                    "parameters": {
-                      "user": "smasher164"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isInProject",
-                    "parameters": {
-                      "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
-                      "isOrgProject": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
-                  "columnName": "Needs Champion",
-                  "isOrgProject": true
-                }
-              },
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
-                  "columnName": "Done",
-                  "isOrgProject": true
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "PullRequestResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - PRs] Carlos Assigned as Champion",
-      "actions": [
-        {
-          "name": "removeFromProject",
-          "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
-            "isOrgProject": true
-          }
-        },
-        {
-          "name": "addToProject",
-          "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Carlos / Viktor - PRs",
             "columnName": "Champion: Carlos",
             "isOrgProject": true
           }
@@ -9727,7 +9034,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                      "projectName": "Area Pod: Carlos / Viktor - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -9736,7 +9043,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Carlos / Viktor - PRs",
                   "columnName": "Needs Champion",
                   "isOrgProject": true
                 }
@@ -9744,7 +9051,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Carlos / Viktor - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -9762,19 +9069,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Akhil / Carlos / Viktor - PRs] Viktor Assigned as Champion",
+      "taskName": "[Area Pod: Carlos / Viktor - PRs] Viktor Assigned as Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Carlos / Viktor - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+            "projectName": "Area Pod: Carlos / Viktor - PRs",
             "columnName": "Champion: Viktor",
             "isOrgProject": true
           }
@@ -9899,7 +9206,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                      "projectName": "Area Pod: Carlos / Viktor - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -9908,7 +9215,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Carlos / Viktor - PRs",
                   "columnName": "Needs Champion",
                   "isOrgProject": true
                 }
@@ -9916,7 +9223,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Akhil / Carlos / Viktor - PRs",
+                  "projectName": "Area Pod: Carlos / Viktor - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -9934,12 +9241,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - Issue Triage] Moved to Another Area",
+      "taskName": "[Area Pod: Michael / Tanner - Issue Triage] Moved to Another Area",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+            "projectName": "Area Pod: Michael / Tanner - Issue Triage",
             "isOrgProject": true
           }
         }
@@ -10064,7 +9371,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+              "projectName": "Area Pod: Michael / Tanner - Issue Triage",
               "isOrgProject": true
             }
           }
@@ -10079,19 +9386,19 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - Issue Triage] Needs Triage",
+      "taskName": "[Area Pod: Michael / Tanner - Issue Triage] Needs Triage",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+            "projectName": "Area Pod: Michael / Tanner - Issue Triage",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+            "projectName": "Area Pod: Michael / Tanner - Issue Triage",
             "columnName": "Needs Triage",
             "isOrgProject": true
           }
@@ -10265,7 +9572,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+                      "projectName": "Area Pod: Michael / Tanner - Issue Triage",
                       "isOrgProject": true
                     }
                   }
@@ -10274,7 +9581,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+                  "projectName": "Area Pod: Michael / Tanner - Issue Triage",
                   "isOrgProject": true,
                   "columnName": "Triaged"
                 }
@@ -10292,19 +9599,19 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - Issue Triage] Needs Further Triage",
+      "taskName": "[Area Pod: Michael / Tanner - Issue Triage] Needs Further Triage",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+            "projectName": "Area Pod: Michael / Tanner - Issue Triage",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+            "projectName": "Area Pod: Michael / Tanner - Issue Triage",
             "columnName": "Needs Triage",
             "isOrgProject": true
           }
@@ -10400,7 +9707,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+                      "projectName": "Area Pod: Michael / Tanner - Issue Triage",
                       "isOrgProject": true
                     }
                   }
@@ -10409,7 +9716,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+                  "projectName": "Area Pod: Michael / Tanner - Issue Triage",
                   "columnName": "Triaged",
                   "isOrgProject": true
                 }
@@ -10427,12 +9734,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - Issue Triage] Triaged",
+      "taskName": "[Area Pod: Michael / Tanner - Issue Triage] Triaged",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+            "projectName": "Area Pod: Michael / Tanner - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
           }
@@ -10454,7 +9761,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+              "projectName": "Area Pod: Michael / Tanner - Issue Triage",
               "isOrgProject": true
             }
           },
@@ -10496,168 +9803,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - Issue Triage] Drew Updated Issue",
+      "taskName": "[Area Pod: Michael / Tanner - Issue Triage] Michael Updated Issue",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
-            "columnName": "Triage: Drew",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "issue",
-      "eventNames": [
-        "issues"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
-              "isOrgProject": true,
-              "columnName": "Needs Triage"
-            }
-          },
-          {
-            "name": "isActivitySender",
-            "parameters": {
-              "user": "dakersnar"
-            }
-          },
-          {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInMilestone",
-                "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "IssueCommentResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - Issue Triage] Drew Commented",
-      "actions": [
-        {
-          "name": "moveToProjectColumn",
-          "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
-            "columnName": "Triage: Drew",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "issue",
-      "eventNames": [
-        "issue_comment"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isInProjectColumn",
-            "parameters": {
-              "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
-              "isOrgProject": true,
-              "columnName": "Needs Triage"
-            }
-          },
-          {
-            "name": "isActivitySender",
-            "parameters": {
-              "user": "dakersnar"
-            }
-          },
-          {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isInMilestone",
-                "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "IssuesOnlyResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - Issue Triage] Michael Updated Issue",
-      "actions": [
-        {
-          "name": "moveToProjectColumn",
-          "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+            "projectName": "Area Pod: Michael / Tanner - Issue Triage",
             "columnName": "Triage: Michael",
             "isOrgProject": true
           }
@@ -10673,7 +9824,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+              "projectName": "Area Pod: Michael / Tanner - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -10730,12 +9881,12 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - Issue Triage] Michael Commented",
+      "taskName": "[Area Pod: Michael / Tanner - Issue Triage] Michael Commented",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+            "projectName": "Area Pod: Michael / Tanner - Issue Triage",
             "columnName": "Triage: Michael",
             "isOrgProject": true
           }
@@ -10751,7 +9902,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+              "projectName": "Area Pod: Michael / Tanner - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -10808,12 +9959,12 @@
     "subCapability": "IssuesOnlyResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - Issue Triage] Tanner Updated Issue",
+      "taskName": "[Area Pod: Michael / Tanner - Issue Triage] Tanner Updated Issue",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+            "projectName": "Area Pod: Michael / Tanner - Issue Triage",
             "columnName": "Triage: Tanner",
             "isOrgProject": true
           }
@@ -10829,7 +9980,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+              "projectName": "Area Pod: Michael / Tanner - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -10886,12 +10037,12 @@
     "subCapability": "IssueCommentResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - Issue Triage] Tanner Commented",
+      "taskName": "[Area Pod: Michael / Tanner - Issue Triage] Tanner Commented",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+            "projectName": "Area Pod: Michael / Tanner - Issue Triage",
             "columnName": "Triage: Tanner",
             "isOrgProject": true
           }
@@ -10907,7 +10058,7 @@
           {
             "name": "isInProjectColumn",
             "parameters": {
-              "projectName": "Area Pod: Drew / Michael / Tanner - Issue Triage",
+              "projectName": "Area Pod: Michael / Tanner - Issue Triage",
               "isOrgProject": true,
               "columnName": "Needs Triage"
             }
@@ -10964,12 +10115,12 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - PRs] Closed, Merged, or Moved",
+      "taskName": "[Area Pod: Michael / Tanner - PRs] Closed, Merged, or Moved",
       "actions": [
         {
           "name": "moveToProjectColumn",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+            "projectName": "Area Pod: Michael / Tanner - PRs",
             "columnName": "Done",
             "isOrgProject": true
           }
@@ -10985,7 +10136,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+              "projectName": "Area Pod: Michael / Tanner - PRs",
               "isOrgProject": true
             }
           },
@@ -10995,7 +10146,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+                  "projectName": "Area Pod: Michael / Tanner - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -11131,12 +10282,12 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - PRs] New PR Needs Champion",
+      "taskName": "[Area Pod: Michael / Tanner - PRs] New PR Needs Champion",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+            "projectName": "Area Pod: Michael / Tanner - PRs",
             "columnName": "Needs Champion",
             "isOrgProject": true
           }
@@ -11222,30 +10373,6 @@
                   {
                     "name": "isAssignedToUser",
                     "parameters": {
-                      "user": "dakersnar"
-                    }
-                  }
-                ]
-              },
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isActivitySender",
-                    "parameters": {
-                      "user": "dakersnar"
-                    }
-                  }
-                ]
-              }
-            ],
-            [
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isAssignedToUser",
-                    "parameters": {
                       "user": "michaelgsharp"
                     }
                   }
@@ -11297,7 +10424,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+                      "projectName": "Area Pod: Michael / Tanner - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -11306,7 +10433,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+                  "projectName": "Area Pod: Michael / Tanner - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -11324,19 +10451,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - PRs] Updated PR Needs Champion",
+      "taskName": "[Area Pod: Michael / Tanner - PRs] Updated PR Needs Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+            "projectName": "Area Pod: Michael / Tanner - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+            "projectName": "Area Pod: Michael / Tanner - PRs",
             "columnName": "Needs Champion",
             "isOrgProject": true
           }
@@ -11429,17 +10556,6 @@
               {
                 "name": "isAssignedToUser",
                 "parameters": {
-                  "user": "dakersnar"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "isAssignedToUser",
-                "parameters": {
                   "user": "michaelgsharp"
                 }
               }
@@ -11465,7 +10581,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+                      "projectName": "Area Pod: Michael / Tanner - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -11474,7 +10590,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+                  "projectName": "Area Pod: Michael / Tanner - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -11492,179 +10608,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - PRs] Drew Assigned as Champion",
+      "taskName": "[Area Pod: Michael / Tanner - PRs] Michael Assigned as Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+            "projectName": "Area Pod: Michael / Tanner - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
-            "columnName": "Champion: Drew",
-            "isOrgProject": true
-          }
-        }
-      ],
-      "eventType": "pull_request",
-      "eventNames": [
-        "pull_request"
-      ],
-      "conditions": {
-        "operator": "and",
-        "operands": [
-          {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Buffers"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Memory"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Numerics"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Numerics.Tensors"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Runtime"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Runtime.CompilerServices"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Runtime.Intrinsics"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Threading.Channels"
-                }
-              },
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "area-System.Threading.Tasks"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "name": "isAssignedToUser",
-                "parameters": {
-                  "user": "dakersnar"
-                }
-              },
-              {
-                "operator": "and",
-                "operands": [
-                  {
-                    "name": "isAction",
-                    "parameters": {
-                      "action": "opened"
-                    }
-                  },
-                  {
-                    "name": "isActivitySender",
-                    "parameters": {
-                      "user": "dakersnar"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "operator": "or",
-            "operands": [
-              {
-                "operator": "not",
-                "operands": [
-                  {
-                    "name": "isInProject",
-                    "parameters": {
-                      "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
-                      "isOrgProject": true
-                    }
-                  }
-                ]
-              },
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
-                  "columnName": "Needs Champion",
-                  "isOrgProject": true
-                }
-              },
-              {
-                "name": "isInProjectColumn",
-                "parameters": {
-                  "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
-                  "columnName": "Done",
-                  "isOrgProject": true
-                }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  },
-  {
-    "taskSource": "fabricbot-config",
-    "taskType": "trigger",
-    "capabilityId": "IssueResponder",
-    "subCapability": "PullRequestResponder",
-    "version": "1.0",
-    "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - PRs] Michael Assigned as Champion",
-      "actions": [
-        {
-          "name": "removeFromProject",
-          "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
-            "isOrgProject": true
-          }
-        },
-        {
-          "name": "addToProject",
-          "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+            "projectName": "Area Pod: Michael / Tanner - PRs",
             "columnName": "Champion: Michael",
             "isOrgProject": true
           }
@@ -11777,7 +10733,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+                      "projectName": "Area Pod: Michael / Tanner - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -11786,7 +10742,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+                  "projectName": "Area Pod: Michael / Tanner - PRs",
                   "columnName": "Needs Champion",
                   "isOrgProject": true
                 }
@@ -11794,7 +10750,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+                  "projectName": "Area Pod: Michael / Tanner - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -11812,19 +10768,19 @@
     "subCapability": "PullRequestResponder",
     "version": "1.0",
     "config": {
-      "taskName": "[Area Pod: Drew / Michael / Tanner - PRs] Tanner Assigned as Champion",
+      "taskName": "[Area Pod: Michael / Tanner - PRs] Tanner Assigned as Champion",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+            "projectName": "Area Pod: Michael / Tanner - PRs",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+            "projectName": "Area Pod: Michael / Tanner - PRs",
             "columnName": "Champion: Tanner",
             "isOrgProject": true
           }
@@ -11937,7 +10893,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+                      "projectName": "Area Pod: Michael / Tanner - PRs",
                       "isOrgProject": true
                     }
                   }
@@ -11946,7 +10902,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+                  "projectName": "Area Pod: Michael / Tanner - PRs",
                   "columnName": "Needs Champion",
                   "isOrgProject": true
                 }
@@ -11954,7 +10910,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Drew / Michael / Tanner - PRs",
+                  "projectName": "Area Pod: Michael / Tanner - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -12456,6 +11412,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -12627,6 +11654,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -12741,37 +11839,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -12819,37 +11922,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -12897,37 +12005,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -12975,37 +12088,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -13053,37 +12171,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -13131,37 +12254,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -13209,37 +12337,42 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "needs-author-action"
-                }
-              }
-            ]
-          },
-          {
-            "operator": "not",
-            "operands": [
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
               {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -13287,39 +12420,331 @@
             }
           },
           {
-            "name": "isOpen",
-            "parameters": {}
-          },
-          {
-            "operator": "not",
+            "operator": "and",
             "operands": [
               {
-                "name": "isInMilestone",
+                "name": "isOpen",
                 "parameters": {}
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "isInMilestone",
+                    "parameters": {}
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "needs-author-action"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "api-ready-for-review"
+                    }
+                  }
+                ]
               }
             ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage] Excluded",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "issue",
+      "eventNames": [
+        "issues"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - Issue Triage",
+              "isOrgProject": true
+            }
           },
           {
-            "operator": "not",
+            "operator": "or",
             "operands": [
               {
                 "name": "hasLabel",
                 "parameters": {
-                  "label": "needs-author-action"
+                  "label": "os-android"
                 }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "arch-wasm"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "IssuesOnlyResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs] Moved to Another Area",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Configuration"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Logging"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Options"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-Extensions-Primitives"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Diagnostics.Activity"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Globalization"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Collections"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.ComponentModel.DataAnnotations"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.DateTime"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.IO.Ports"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Linq"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Text.Encoding"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Text.Encodings.Web"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Text.Json"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "area-System.Xml"
+                    }
+                  }
+                ]
               }
             ]
           },
           {
-            "operator": "not",
-            "operands": [
-              {
-                "name": "hasLabel",
-                "parameters": {
-                  "label": "api-ready-for-review"
-                }
-              }
-            ]
+            "name": "isAction",
+            "parameters": {
+              "action": "unlabeled"
+            }
+          },
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+              "isOrgProject": true
+            }
           }
         ]
       }
@@ -13806,6 +13231,77 @@
                 }
               }
             ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
@@ -14019,6 +13515,77 @@
                   "columnName": "Done",
                   "isOrgProject": true
                 }
+              }
+            ]
+          },
+          {
+            "operator": "and",
+            "operands": [
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-android"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-maccatalyst"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-ios"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tizen"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "os-tvos"
+                    }
+                  }
+                ]
+              },
+              {
+                "operator": "not",
+                "operands": [
+                  {
+                    "name": "hasLabel",
+                    "parameters": {
+                      "label": "arch-wasm"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -14802,6 +14369,95 @@
                   "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "taskSource": "fabricbot-config",
+    "taskType": "trigger",
+    "capabilityId": "IssueResponder",
+    "subCapability": "PullRequestResponder",
+    "version": "1.0",
+    "config": {
+      "taskName": "[Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs] Excluded",
+      "actions": [
+        {
+          "name": "removeFromProject",
+          "parameters": {
+            "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+            "isOrgProject": true
+          }
+        }
+      ],
+      "eventType": "pull_request",
+      "eventNames": [
+        "pull_request"
+      ],
+      "conditions": {
+        "operator": "and",
+        "operands": [
+          {
+            "name": "isInProject",
+            "parameters": {
+              "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+              "isOrgProject": true
+            }
+          },
+          {
+            "operator": "not",
+            "operands": [
+              {
+                "name": "isInProjectColumn",
+                "parameters": {
+                  "projectName": "Area Pod: Eirik / Krzysztof / Layomi / Tarek - PRs",
+                  "columnName": "Done",
+                  "isOrgProject": true
+                }
+              }
+            ]
+          },
+          {
+            "operator": "or",
+            "operands": [
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-android"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-maccatalyst"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-ios"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tizen"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "os-tvos"
+                }
+              },
+              {
+                "name": "hasLabel",
+                "parameters": {
+                  "label": "arch-wasm"
                 }
               }
             ]

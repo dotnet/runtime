@@ -21,7 +21,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <CppLibCreator>ar</CppLibCreator>
     <DsymUtilOptions Condition="'$(_IsApplePlatform)' == 'true'">--flat</DsymUtilOptions>
     <_SymbolPrefix Condition="'$(_IsApplePlatform)' == 'true'">_</_SymbolPrefix>
-    <UseLLVMLinker Condition="'$(UseLLVMLinker)' == '' and '$(_targetOS)' == 'freebsd'">true</UseLLVMLinker>
+    <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'freebsd'">lld</LinkerFlavor>
+    <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
@@ -57,8 +58,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName).a" />
       <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibFileExt)" />
       <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
-      <NativeLibrary Condition="'$(StaticNumaLinking)' == 'true'" Include="$(IlcSdkPath)libnumasupportstatic.a" />
-      <NativeLibrary Condition="'$(StaticNumaLinking)' != 'true'" Include="$(IlcSdkPath)libnumasupportdynamic.a" />
     </ItemGroup>
 
     <ItemGroup>
@@ -78,12 +77,6 @@ The .NET Foundation licenses this file to you under the MIT license.
         <EscapedPath>$(IlcFrameworkNativePath)lib%(Identity).a</EscapedPath>
       </NetCoreAppNativeLibrary>
       <NativeLibrary Include="@(NetCoreAppNativeLibrary->'%(EscapedPath)')" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(StaticNumaLinking)' == 'true' and '$(NativeLib)' != 'Static'">
-      <StaticNumaLibs Include="-Wl,-Bstatic" Condition="'$(StaticExecutable)' != 'true'" />
-      <StaticNumaLibs Include="-lnuma" />
-      <StaticNumaLibs Include="-Wl,-Bdynamic" Condition="'$(StaticExecutable)' != 'true'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(StaticICULinking)' == 'true' and '$(NativeLib)' != 'Static'">
@@ -112,7 +105,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <ItemGroup>
-      <LinkerArg Include="-fuse-ld=lld" Condition="'$(UseLLVMLinker)' == 'true'" />
+      <LinkerArg Include="-fuse-ld=$(LinkerFlavor)" Condition="'$(LinkerFlavor)' != ''" />
       <LinkerArg Include="@(NativeLibrary)" />
       <LinkerArg Include="--sysroot=$(SysRoot)" Condition="'$(SysRoot)' != ''" />
       <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(_IsApplePlatform)' != 'true' and '$(TargetTriple)' != ''" />
@@ -133,7 +126,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-lrt" Condition="'$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="-licucore" Condition="'$(_IsApplePlatform)' == 'true'" />
       <LinkerArg Include="-L/usr/lib/swift" Condition="'$(_IsApplePlatform)' == 'true'" />
-      <LinkerArg Include="@(StaticNumaLibs)" Condition="'$(StaticNumaLinking)' == 'true'" />
       <LinkerArg Include="@(StaticICULibs)" Condition="'$(StaticICULinking)' == 'true'" />
       <LinkerArg Include="@(StaticSslLibs)" Condition="'$(StaticOpenSslLinking)' == 'true'" />
       <LinkerArg Include="-lm" />
@@ -148,8 +140,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-Wl,-z,relro" Condition="'$(_IsApplePlatform)' != 'true'" />
       <!-- binskim warning BA3011 The BIND_NOW flag is missing -->
       <LinkerArg Include="-Wl,-z,now" Condition="'$(_IsApplePlatform)' != 'true'" />
-      <LinkerArg Include="-Wl,-u,$(_SymbolPrefix)NativeAOT_StaticInitialization" Condition="('$(UseLLVMLinker)' == 'true' or '$(_IsApplePlatform)' == 'true' or '$(_targetOS)' == 'freebsd') and ('$(NativeLib)' == 'Shared' or '$(CustomNativeMain)' == 'true')" />
-      <LinkerArg Include="-Wl,--require-defined,NativeAOT_StaticInitialization" Condition="'$(UseLLVMLinker)' != 'true' and '$(_targetOS)' == 'linux' and ('$(NativeLib)' == 'Shared' or '$(CustomNativeMain)' == 'true')" />
+      <LinkerArg Include="-Wl,-u,$(_SymbolPrefix)NativeAOT_StaticInitialization" Condition="'$(NativeLib)' == 'Shared' or '$(CustomNativeMain)' == 'true'" />
       <!-- this workaround can be deleted once the minimum supported glibc version
            (runtime's official build machine's glibc version) is at least 2.33
            see https://github.com/bminor/glibc/commit/99468ed45f5a58f584bab60364af937eb6f8afda -->
@@ -159,8 +150,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <!-- FreeBSD's inotify is an installed package and not found in default libraries  -->
       <LinkerArg Include="-L/usr/local/lib -linotify" Condition="'$(_targetOS)' == 'freebsd'" />
       <LinkerArg Include="-Wl,-segprot,__THUNKS,rx,rx" Condition="'$(_IsiOSLikePlatform)' == 'true'" />
-
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(_IsApplePlatform)' == 'true'" />
+      <LinkerArg Include="-Wl,--eh-frame-hdr" Condition="'$(_IsApplePlatform)' != 'true'" />
     </ItemGroup>
 
     <Exec Command="command -v &quot;$(CppLinker)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low">
@@ -190,6 +181,15 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(_IsApplePlatform)' != 'true'"
       Text="Requested linker ('$(CppLinker)') not found in PATH." />
 
+    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="'$(LinkerFlavor)' == 'lld'" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
+      <Output TaskParameter="ExitCode" PropertyName="_LinkerVersionStringExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="_LinkerVersionString" />
+    </Exec>
+
+    <PropertyGroup Condition="'$(_LinkerVersionStringExitCode)' == '0' and '$(_LinkerVersionString)' != ''">
+      <_LinkerVersion>$([System.Text.RegularExpressions.Regex]::Match($(_LinkerVersionString), '[1-9]\d*'))</_LinkerVersion>
+    </PropertyGroup>
+
     <Exec Command="command -v &quot;$(ObjCopyName)&quot;" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsApplePlatform)' != 'true' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripper" />
     </Exec>
@@ -204,15 +204,15 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(ObjCopyNameAlternative)' != ''"
-      Text="Symbol stripping tool ('$(ObjCopyName)' or '$(ObjCopyNameAlternative)') not found in PATH. Try installing appropriate package for $(ObjCopyName) or $(ObjCopyNameAlternative) to resolve the problem." />
+      Text="Symbol stripping tool ('$(ObjCopyName)' or '$(ObjCopyNameAlternative)') not found in PATH. Try installing appropriate package for $(ObjCopyName) or $(ObjCopyNameAlternative) to resolve the problem or set the StripSymbols property to false to disable symbol stripping." />
     <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' != 'true'"
-      Text="Symbol stripping tool ('$(ObjCopyName)') not found in PATH. Make sure '$(ObjCopyName)' is available in PATH" />
+      Text="Symbol stripping tool ('$(ObjCopyName)') not found in PATH. Make sure '$(ObjCopyName)' is available in PATH or set the StripSymbols property to false to disable symbol stripping." />
 
     <Exec Command="command -v dsymutil &amp;&amp; command -v strip" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsApplePlatform)' == 'true' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_WhereSymbolStripper" />
     </Exec>
     <Error Condition="'$(_WhereSymbolStripper)' != '0' and '$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' != 'true'"
-      Text="Symbol stripping tools ('dsymutil' and 'strip') not found in PATH. Make sure 'dsymutil' and 'strip' are available in PATH" />
+      Text="Symbol stripping tools ('dsymutil' and 'strip') not found in PATH. Make sure 'dsymutil' and 'strip' are available in PATH or set the StripSymbols property to false to disable symbol stripping." />
 
     <Exec Command="dsymutil --help" IgnoreExitCode="true" StandardOutputImportance="Low" Condition="'$(_IsApplePlatform)' == 'true' and '$(StripSymbols)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_DsymUtilOutput" />

@@ -20,6 +20,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_BitConverter_Int64BitsToDouble,
     NI_System_BitConverter_SingleToInt32Bits,
 
+    NI_System_Buffer_Memmove,
+
     NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,
     NI_System_Math_Acos,
@@ -102,6 +104,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_String_StartsWith,
     NI_System_Span_get_Item,
     NI_System_Span_get_Length,
+    NI_System_SpanHelpers_SequenceEqual,
     NI_System_ReadOnlySpan_get_Item,
     NI_System_ReadOnlySpan_get_Length,
 
