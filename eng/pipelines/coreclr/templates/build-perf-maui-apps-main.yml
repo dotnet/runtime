@@ -92,6 +92,10 @@ steps:
 
       $benchmarksDroidConfigFileContent = Get-Content .\maui\src\Core\tests\Benchmarks.Droid\Benchmarks.Droid.csproj
      
+      $propertyGroupLine = $benchmarksDroidConfigFileContent | Select-String -Pattern '<PropertyGroup>'
+      $lineNumber = $propertyGroupLine.LineNumber
+      $benchmarksDroidConfigFileContent[$lineNumber-1] += "<DefineConstants>`$(DefineConstants);PERFLAB_INLAB</DefineConstants>"
+
       $projectReferenceLine = $benchmarksDroidConfigFileContent | Select-String -Pattern '<ProjectReference Include="..\\..\\src\\Core.csproj" />'
       $lineNumber = $projectReferenceLine.LineNumber
       $benchmarksDroidConfigFileContent[$lineNumber-1] += "<ProjectReference Include=`"..\..\..\..\..\performance\src\harness\BenchmarkDotnet.Extensions\BenchmarkDotnet.Extensions.csproj`" />"
@@ -130,7 +134,7 @@ steps:
 
 # Remove the embed assemblies from source
   - script: |
-      ../dotnet build ./src/Core/tests/Benchmarks.Droid/Benchmarks.Droid.csproj --configuration Release -bl:BenchmarksDroid.binlog /p:TF_Build=False /p:DefineConstants=PERFLAB_INLAB
+      ../dotnet build ./src/Core/tests/Benchmarks.Droid/Benchmarks.Droid.csproj --configuration Release -bl:BenchmarksDroid.binlog /p:TF_Build=False
       mv ./src/Core/tests/Benchmarks.Droid/bin/Release/net8.0-android/android-arm64/com.microsoft.maui.benchmarks-Signed.apk ./MonoBenchmarksDroid.apk
     displayName:  Build BDN Android App
     workingDirectory: $(Build.SourcesDirectory)/maui
