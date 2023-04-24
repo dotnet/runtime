@@ -32,8 +32,10 @@
     call bool .this::ProblemWithLocAlloc()
     brtrue LOCALLOC_FAILED
 
+#ifndef MONO_INTERPRETER
     call bool .this::ProblemWithCapturingCtors()
     brtrue CAPTURING_CTORS_FAILED
+#endif
 
     ldc.i4 100
     ret

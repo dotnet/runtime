@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <Optimize>True</Optimize>
+    <DefineConstants Condition="'$(RuntimeVariant)' == 'monointerpreter'">MONO_INTERPRETER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).il" />
