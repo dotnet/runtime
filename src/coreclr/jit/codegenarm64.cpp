@@ -2626,31 +2626,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
             }
         }
 
-        switch (op2->gtOper)
-        {
-            case GT_LSH:
-            {
-                opt = INS_OPTS_LSL;
-                break;
-            }
-
-            case GT_RSH:
-            {
-                opt = INS_OPTS_ASR;
-                break;
-            }
-
-            case GT_RSZ:
-            {
-                opt = INS_OPTS_LSR;
-                break;
-            }
-
-            default:
-            {
-                unreached();
-            }
-        }
+        opt = ShiftOpToInsOpts(op2->gtOper);
 
         emit->emitIns_R_R_R_I(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(),
                               c->AsIntConCommon()->IconValue(), opt);
@@ -2964,7 +2940,17 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         else // store into register (i.e move into register)
         {
             // Assign into targetReg when dataReg (from op1) is not the same register
-            inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
+            // Only zero/sign extend if we are using general registers.
+            if (varTypeIsIntegral(targetType) && emit->isGeneralRegister(targetReg) && emit->isGeneralRegister(dataReg))
+            {
+                // We use 'emitActualTypeSize' as the instructions require 8BYTE or 4BYTE.
+                inst_Mov_Extend(targetType, /* srcInReg */ true, targetReg, dataReg, /* canSkip */ true,
+                                emitActualTypeSize(targetType));
+            }
+            else
+            {
+                inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
+            }
         }
         genUpdateLifeStore(lclNode, targetReg, varDsc);
     }
@@ -3383,13 +3369,40 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     // The src must be a register.
     if (tree->OperIs(GT_NEG) && operand->isContained())
     {
-        ins          = INS_mneg;
-        GenTree* op1 = tree->gtGetOp1();
-        GenTree* a   = op1->gtGetOp1();
-        GenTree* b   = op1->gtGetOp2();
-        genConsumeRegs(op1);
-        assert(op1->OperGet() == GT_MUL);
-        GetEmitter()->emitIns_R_R_R(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum());
+        genTreeOps oper = operand->OperGet();
+        switch (oper)
+        {
+            case GT_MUL:
+            {
+                ins          = INS_mneg;
+                GenTree* op1 = tree->gtGetOp1();
+                GenTree* a   = op1->gtGetOp1();
+                GenTree* b   = op1->gtGetOp2();
+                genConsumeRegs(op1);
+                GetEmitter()->emitIns_R_R_R(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum());
+            }
+            break;
+
+            case GT_LSH:
+            case GT_RSH:
+            case GT_RSZ:
+            {
+                assert(ins == INS_neg || ins == INS_negs);
+                assert(operand->gtGetOp2()->IsCnsIntOrI());
+                assert(operand->gtGetOp2()->isContained());
+
+                GenTree* op1 = tree->gtGetOp1();
+                GenTree* a   = op1->gtGetOp1();
+                GenTree* b   = op1->gtGetOp2();
+                genConsumeRegs(op1);
+                GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(),
+                                            b->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(oper));
+            }
+            break;
+
+            default:
+                unreached();
+        }
     }
     else
     {
@@ -4545,6 +4558,56 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             }
 
             emit->emitIns_R_I(ins, cmpSize, op1Reg, intConst->IconValue());
+        }
+        else if (op2->isContained())
+        {
+            genTreeOps oper = op2->OperGet();
+            switch (oper)
+            {
+                case GT_NEG:
+                    assert(ins == INS_cmp);
+
+                    ins  = INS_cmn;
+                    oper = op2->gtGetOp1()->OperGet();
+                    switch (oper)
+                    {
+                        case GT_LSH:
+                        case GT_RSH:
+                        case GT_RSZ:
+                        {
+                            GenTree* shiftOp1 = op2->gtGetOp1()->gtGetOp1();
+                            GenTree* shiftOp2 = op2->gtGetOp1()->gtGetOp2();
+
+                            assert(op2->gtGetOp1()->isContained());
+                            assert(shiftOp2->IsCnsIntOrI());
+                            assert(shiftOp2->isContained());
+
+                            emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), shiftOp1->GetRegNum(),
+                                                shiftOp2->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(oper));
+                        }
+                        break;
+
+                        default:
+                            assert(!op2->gtGetOp1()->isContained());
+
+                            emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum());
+                            break;
+                    }
+                    break;
+
+                case GT_LSH:
+                case GT_RSH:
+                case GT_RSZ:
+                    assert(op2->gtGetOp2()->IsCnsIntOrI());
+                    assert(op2->gtGetOp2()->isContained());
+
+                    emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum(),
+                                        op2->gtGetOp2()->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(oper));
+                    break;
+
+                default:
+                    unreached();
+            }
         }
         else
         {
@@ -10386,6 +10449,31 @@ insCond CodeGen::JumpKindToInsCond(emitJumpKind condition)
         default:
             NO_WAY("unexpected condition type");
             return INS_COND_EQ;
+    }
+}
+
+//------------------------------------------------------------------------
+// ShiftOpToInsOpts: Convert a shift-op to a insOpts.
+//
+// Arguments:
+//    shiftOp - the shift-op
+//
+insOpts CodeGen::ShiftOpToInsOpts(genTreeOps shiftOp)
+{
+    switch (shiftOp)
+    {
+        case GT_LSH:
+            return INS_OPTS_LSL;
+
+        case GT_RSH:
+            return INS_OPTS_ASR;
+
+        case GT_RSZ:
+            return INS_OPTS_LSR;
+
+        default:
+            NO_WAY("expected a shift-op");
+            return INS_OPTS_NONE;
     }
 }
 

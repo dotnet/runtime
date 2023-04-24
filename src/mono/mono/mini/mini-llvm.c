@@ -4756,7 +4756,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			mono_llvm_add_instr_byval_attr (lcall, 1 + ainfo->pindex, LLVMGetElementType (param_types [ainfo->pindex]));
 	}
 
-	gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
+	MonoClass *retclass = mono_class_from_mono_type_internal (sig->ret);
+	gboolean is_simd = MONO_CLASS_IS_SIMD (ctx->cfg, retclass);
 	gboolean should_promote_to_value = FALSE;
 	const char *load_name = NULL;
 	/*
@@ -4821,11 +4822,17 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	case LLVMArgGsharedvtFixedVtype:
 		values [ins->dreg] = LLVMBuildLoad2 (builder, rtype, convert_full (ctx, addresses [call->inst.dreg]->value, pointer_type (rtype), FALSE), "");
 		break;
-	case LLVMArgWasmVtypeAsScalar:
+	case LLVMArgWasmVtypeAsScalar: {
+		/*
+		 * If the vtype contains references, making the store volatile ensures there is a reference
+		 * on the stack.
+		 */
+		gboolean is_volatile = m_class_has_references (retclass);
 		if (!addresses [call->inst.dreg])
 			addresses [call->inst.dreg] = build_alloca_address (ctx, sig->ret);
-		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg]->value, pointer_type (LLVMTypeOf (lcall)), FALSE));
+		emit_store (builder, lcall, convert_full (ctx, addresses [call->inst.dreg]->value, pointer_type (LLVMTypeOf (lcall)), FALSE), is_volatile);
 		break;
+	}
 	default:
 		if (sig->ret->type != MONO_TYPE_VOID)
 			/* If the method returns an unsigned value, need to zext it */
@@ -5178,15 +5185,28 @@ bitcast_to_integral (EmitContext *ctx, LLVMValueRef vec)
 }
 
 static LLVMValueRef
-extract_high_elements (EmitContext *ctx, LLVMValueRef src_vec)
+extract_half_elements (EmitContext *ctx, LLVMValueRef src_vec, gboolean high)
 {
 	LLVMTypeRef src_t = LLVMTypeOf (src_vec);
 	unsigned int src_elems = LLVMGetVectorSize (src_t);
 	unsigned int dst_elems = src_elems / 2;
+	unsigned int offset = high ? dst_elems : 0;
 	int mask [MAX_VECTOR_ELEMS] = { 0 };
 	for (guint i = 0; i < dst_elems; ++i)
-		mask [i] = dst_elems + i;
-	return LLVMBuildShuffleVector (ctx->builder, src_vec, LLVMGetUndef (src_t), create_const_vector_i32 (mask, dst_elems), "extract_high");
+		mask [i] = offset + i;
+	return LLVMBuildShuffleVector (ctx->builder, src_vec, LLVMGetUndef (src_t), create_const_vector_i32 (mask, dst_elems), high ? "extract_high" : "extract_low");
+}
+
+static LLVMValueRef
+extract_high_elements (EmitContext *ctx, LLVMValueRef src_vec)
+{
+	return extract_half_elements (ctx, src_vec, TRUE);
+}
+
+static LLVMValueRef
+extract_low_elements (EmitContext *ctx, LLVMValueRef src_vec)
+{
+	return extract_half_elements (ctx, src_vec, FALSE);
 }
 
 static LLVMValueRef
@@ -9972,6 +9992,25 @@ MONO_RESTORE_WARNING
 
 			LLVMValueRef shuffle = LLVMBuildShuffleVector (builder, LLVMBuildBitCast (builder, lhs, LLVMVectorType (i1_t, 16), ""), LLVMBuildBitCast (builder, rhs, LLVMVectorType (i1_t, 16), ""), mask, "");
 			values [ins->dreg] = LLVMBuildBitCast (builder, shuffle, LLVMVectorType (itype, nelems * 2), "");
+			break;
+		}
+		case OP_WASM_EXTMUL_LOWER_U:
+		case OP_WASM_EXTMUL_UPPER_U:
+		case OP_WASM_EXTMUL_LOWER:
+		case OP_WASM_EXTMUL_UPPER: {
+			LLVMTypeRef src_t = LLVMTypeOf (lhs);
+			int nelems = LLVMGetVectorSize (src_t) / 2;
+			unsigned int width = mono_llvm_get_prim_size_bits (LLVMGetElementType(src_t));
+			LLVMTypeRef int_t = LLVMIntType (width * 2);
+			LLVMTypeRef ret_t = LLVMVectorType (int_t, nelems);
+			int lower = ins->opcode == OP_WASM_EXTMUL_LOWER || ins->opcode == OP_WASM_EXTMUL_LOWER_U;
+			gboolean is_unsigned = ins->opcode == OP_WASM_EXTMUL_LOWER_U || ins->opcode == OP_WASM_EXTMUL_UPPER_U;
+			LLVMValueRef part1 = lower ? extract_low_elements (ctx, lhs) : extract_high_elements(ctx, lhs);
+			LLVMValueRef part2 = lower ? extract_low_elements (ctx, rhs) : extract_high_elements(ctx, rhs);
+			LLVMValueRef ext1 = is_unsigned ? LLVMBuildZExt (builder, part1, ret_t, "") : LLVMBuildSExt (builder, part1, ret_t, "");
+			LLVMValueRef ext2 = is_unsigned ? LLVMBuildZExt (builder, part2, ret_t, "") : LLVMBuildSExt (builder, part2, ret_t, "");
+			values [ins->dreg] = LLVMBuildMul (builder, ext1, ext2, "");
+
 			break;
 		}
 #endif

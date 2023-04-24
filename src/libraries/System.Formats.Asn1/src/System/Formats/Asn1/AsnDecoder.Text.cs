@@ -390,16 +390,19 @@ namespace System.Formats.Asn1
             Text.Encoding encoding,
             out int charsWritten)
         {
-            if (source.Length == 0)
+            try
             {
-                charsWritten = 0;
-                return true;
-            }
+#if NET8_0_OR_GREATER
+                return encoding.TryGetChars(source, destination, out charsWritten);
+#else
+                if (source.Length == 0)
+                {
+                    charsWritten = 0;
+                    return true;
+                }
 
-            fixed (byte* bytePtr = &MemoryMarshal.GetReference(source))
-            fixed (char* charPtr = &MemoryMarshal.GetReference(destination))
-            {
-                try
+                fixed (byte* bytePtr = &MemoryMarshal.GetReference(source))
+                fixed (char* charPtr = &MemoryMarshal.GetReference(destination))
                 {
                     int charCount = encoding.GetCharCount(bytePtr, source.Length);
 
@@ -411,13 +414,14 @@ namespace System.Formats.Asn1
 
                     charsWritten = encoding.GetChars(bytePtr, source.Length, charPtr, destination.Length);
                     Debug.Assert(charCount == charsWritten);
-                }
-                catch (DecoderFallbackException e)
-                {
-                    throw new AsnContentException(SR.ContentException_DefaultMessage, e);
-                }
 
-                return true;
+                    return true;
+                }
+#endif
+            }
+            catch (DecoderFallbackException e)
+            {
+                throw new AsnContentException(SR.ContentException_DefaultMessage, e);
             }
         }
 
