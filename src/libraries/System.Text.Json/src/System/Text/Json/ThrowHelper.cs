@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
@@ -12,12 +11,6 @@ namespace System.Text.Json
     {
         // If the exception source is this value, the serializer will re-throw as JsonException.
         public const string ExceptionSourceValueToRethrowAsJsonException = "System.Text.Json.Rethrowable";
-
-        [DoesNotReturn]
-        public static void ThrowArgumentNullException(string parameterName)
-        {
-            throw new ArgumentNullException(parameterName);
-        }
 
         [DoesNotReturn]
         public static void ThrowArgumentOutOfRangeException_MaxDepthMustBePositive(string parameterName)

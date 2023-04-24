@@ -126,7 +126,9 @@ endif()
 #----------------------------------------------------
 # Build the test watchdog alongside the CLR
 #----------------------------------------------------
-add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
+if(NOT CLR_CMAKE_HOST_MACCATALYST AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+  add_subdirectory("${CLR_SRC_NATIVE_DIR}/watchdog" test-watchdog)
+endif()
 
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(pal/prebuilt/inc)

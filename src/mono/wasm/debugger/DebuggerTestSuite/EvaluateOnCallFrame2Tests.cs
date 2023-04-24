@@ -12,9 +12,9 @@ using Xunit.Abstractions;
 namespace DebuggerTests
 {
     // TODO: static async, static method args
-    public class EvaluateOnCallFrameTests2 : DebuggerTests
+    public class EvaluateOnCallFrame2Tests : DebuggerTests
     {
-        public EvaluateOnCallFrameTests2(ITestOutputHelper testOutput) : base(testOutput)
+        public EvaluateOnCallFrame2Tests(ITestOutputHelper testOutput) : base(testOutput)
         {}
 
         public static IEnumerable<object[]> InstanceMethodsTestData(string type_name)
