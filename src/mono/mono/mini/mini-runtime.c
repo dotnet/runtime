@@ -2070,16 +2070,16 @@ typedef struct
         guint32 line;
         guint32 discrim;
         char name[];
-}DebugEntry;
+} DebugEntry;
 typedef struct
 {
         RecordHeader header;
         guint64 code_addr;
         guint64 nr_entry;
         DebugEntry debug_entry[];
-}JitCodeDebug;
+} JitCodeDebug;
 
-static void add_basic_JitCodeDebug_info(JitCodeDebug *record);
+static void add_basic_JitCodeDebug_info (JitCodeDebug *record);
 static void add_file_header_info (FileHeader *header);
 static void add_basic_JitCodeLoadRecord_info (JitCodeLoadRecord *record);
 
