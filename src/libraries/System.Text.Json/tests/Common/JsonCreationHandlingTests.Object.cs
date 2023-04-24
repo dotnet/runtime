@@ -12,7 +12,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateReadOnlyProperty_SimpleClass()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":{"StringValue":"NewValue"}}""";
 
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty_SimpleClass>(json, options);
@@ -25,7 +25,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateReadOnlyProperty_SimpleClass_PropertyOccurredMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":{"StringValue":"NewValue"}, "Property":{}}""";
 
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty_SimpleClass>(json, options);
@@ -45,7 +45,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_PopulateReadOnlyProperty_SimpleClass_DeserializingNull()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":null}""";
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty_SimpleClass>(json, options));
     }
@@ -53,7 +53,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_PopulateWritableProperty_SimpleClass_DeserializingNull()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":null}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty_SimpleClass>(json, options);
         Assert.Null(obj.Property);
@@ -80,7 +80,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingEffectCancelledWithModifier_ClassWithReadOnlyProperty_SimpleClass()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyProperty_SimpleClass))
             {
@@ -100,7 +100,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingEffectCancelledWithModifier_ClassWithWritableProperty_SimpleClass()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithWritableProperty_SimpleClass))
             {
@@ -153,7 +153,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateWritableProperty_SimpleStruct()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":{"StringValue":"NewValue"}}""";
 
         var obj = await Serializer.DeserializeWrapper<StructWithWritableProperty_SimpleStruct>(json, options);
@@ -164,7 +164,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateWritableProperty_SimpleStruct_PropertyOccurredMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":{"StringValue":"NewValue"}, "Property":{}}""";
 
         var obj = await Serializer.DeserializeWrapper<StructWithWritableProperty_SimpleStruct>(json, options);
@@ -180,7 +180,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_PopulateWritableProperty_SimpleStruct_DeserializingNull()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":null}""";
         await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<StructWithWritableProperty_SimpleStruct>(json, options));
 
@@ -223,7 +223,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateReadOnlyProperty_SimpleClassWithSmallParametrizedCtor()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":{"StringValue":"NewValue"}}""";
 
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty_SimpleClassWithSmallParametrizedCtor>(json, options);
@@ -236,7 +236,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateReadOnlyProperty_SimpleClassWithSmallParametrizedCtor_PropertyOccurredMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":{"StringValue":"NewValue"}, "Property":{}}""";
 
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty_SimpleClassWithSmallParametrizedCtor>(json, options);
@@ -256,7 +256,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_PopulateReadOnlyProperty_SimpleClassWithSmallParametrizedCtor_DeserializingNull()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":null}""";
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty_SimpleClassWithSmallParametrizedCtor>(json, options));
     }
@@ -264,7 +264,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_PopulateWritableProperty_SimpleClassWithSmallParametrizedCtor_DeserializingNull()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":null}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty_SimpleClassWithSmallParametrizedCtor>(json, options);
         Assert.Null(obj.Property);
@@ -315,7 +315,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateReadOnlyProperty_SimpleClassWithLargeParametrizedCtor()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":{"A":"NewValue"}}""";
 
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty_SimpleClassWithLargeParametrizedCtor>(json, options);
@@ -333,7 +333,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateReadOnlyProperty_SimpleClassWithLargeParametrizedCtor_PropertyOccurredMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":{"A":"NewValue"}, "Property":{}}""";
 
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty_SimpleClassWithLargeParametrizedCtor>(json, options);
@@ -363,7 +363,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_PopulateReadOnlyProperty_SimpleClassWithLargeParametrizedCtor_DeserializingNull()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":null}""";
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty_SimpleClassWithLargeParametrizedCtor>(json, options));
     }
@@ -371,7 +371,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_PopulateWritableProperty_SimpleClassWithLargeParametrizedCtor_DeserializingNull()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":null}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty_SimpleClassWithLargeParametrizedCtor>(json, options);
         Assert.Null(obj.Property);
@@ -450,7 +450,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateAndSerialize_ClassWithEnabledPolymorphismOnSerialization()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         ClassWithProperty_BaseClassWithPolymorphismOnSerializationOnly obj = new();
         string json = await Serializer.SerializeWrapper(obj, options);
         Assert.Equal("""{"Property":{"DerivedClassProp":"derived","BaseClassProp":"base"}}""", json);
@@ -497,7 +497,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CannotPopulateOrSerialize_ClassWithEnabledPolymorphismOnBothSerializationAndDeserialization()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         ClassWithProperty_BaseClassWithPolymorphism obj = new();
         await Assert.ThrowsAsync<InvalidOperationException>(
             async () => await Serializer.SerializeWrapper(obj, options));
@@ -534,7 +534,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     {
         // Verifies that polymorphism check doesn't have ordering issue during Configure.
         // This may happen if polymorphism is setup after properties are configured.
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         BaseClassRecursive obj = new();
         await Assert.ThrowsAsync<InvalidOperationException>(
             async () => await Serializer.SerializeWrapper(obj, options));
@@ -566,7 +566,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CannotPopulateOrSerialize_ClassWithReadOnlyPropertyAndIgnoreReadOnlyProperties()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.IgnoreReadOnlyProperties = true;
         });
@@ -582,7 +582,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateOrSerialize_ClassWithReadOnlyFieldAndIgnoreReadOnlyProperties()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true, configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true, configure: (opt) =>
         {
             opt.IgnoreReadOnlyProperties = true;
         });
@@ -600,7 +600,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateOrSerialize_ClassWithWritablePropertyAndIgnoreReadOnlyProperties()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.IgnoreReadOnlyProperties = true;
         });
@@ -618,7 +618,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateOrSerialize_ClassWithReadOnlyPropertyAndIgnoreReadOnlyFields()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.IgnoreReadOnlyFields = true;
         });
@@ -636,7 +636,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CannotPopulateOrSerialize_ClassWithReadOnlyFieldAndIgnoreReadOnlyFields()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true, configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true, configure: (opt) =>
         {
             opt.IgnoreReadOnlyFields = true;
         });
@@ -652,7 +652,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateOrSerialize_ClassWithFieldAndIgnoreReadOnlyFields()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true, configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true, configure: (opt) =>
         {
             opt.IgnoreReadOnlyFields = true;
         });
@@ -670,7 +670,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CannotPopulateOrSerialize_ReferenceHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.ReferenceHandler = ReferenceHandler.Preserve;
         });
@@ -686,7 +686,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CannotPopulateOrSerialize_ReferenceHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.ReferenceHandler = ReferenceHandler.IgnoreCycles;
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
@@ -703,7 +703,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CannotPopulateOrSerialize_ReferenceHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.ReferenceHandler = ReferenceHandler.Preserve;
         });
@@ -719,7 +719,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulateOrSerialize_RequiredProperties()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
 
         string json = """{"Property":{"RequiredValue":"NewValue"}}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithInitializedProperty<ClassWithRequiredProperty>>(json, options);
@@ -771,7 +771,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulateOrSerialize_RequiredPropertiesRecursive()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -835,7 +835,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
         int timesOnDeserializingCalled = 0;
         int timesOnDeserializedCalled = 0;
 
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == type)
             {
@@ -881,7 +881,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [InlineData(typeof(ClassImplementingInterfaceWithInterfaceProperty), null, true)]
     public async Task CreationHandlingSetWithAttributeOnType_Interfaces(Type typeToDeserialize, Type? typeToCreate, bool shouldPopulate)
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeToDeserialize)
             {
@@ -957,7 +957,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [MemberData(nameof(CombinationsForPopulatableProperty))]
     public async Task ReplaceOnType_SetWithMetadata_PopulatableProperty_PropagatesCorrectly(bool expectPopulate, JsonObjectCreationHandling optionsValue, JsonObjectCreationHandling? typeValue, JsonObjectCreationHandling? propertyValue)
     {
-        JsonSerializerOptions options = CreateOptions(configure: opt =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: opt =>
         {
             opt.PreferredObjectCreationHandling = optionsValue;
         },
@@ -1015,7 +1015,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [MemberData(nameof(CombinationsForNonPopulatableProperty))]
     public async Task ReplaceOnType_SetWithMetadata_NonPopulatableProperty_PropagatesCorrectly(bool expectError, JsonObjectCreationHandling optionsValue, JsonObjectCreationHandling? typeValue, JsonObjectCreationHandling? propertyValue)
     {
-        JsonSerializerOptions options = CreateOptions(configure: opt =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: opt =>
         {
             opt.PreferredObjectCreationHandling = optionsValue;
         },
@@ -1064,7 +1064,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_Class()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """
             {
                 "PopulatedPropertyReadOnly":

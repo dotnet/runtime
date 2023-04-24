@@ -49,6 +49,10 @@
     <Compile Include="..\Common\ConstructorTests\ConstructorTests.Stream.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ConstructorTests\ConstructorTests.Stream.cs" />
     <Compile Include="..\Common\ExtensionDataTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ExtensionDataTests.cs" />
     <Compile Include="..\Common\StreamingJsonSerializerWrapper.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\StreamingJsonSerializerWrapper.cs" />
+    <Compile Include="..\Common\JsonCreationHandlingTests.Dictionary.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonCreationHandlingTests.Dictionary.cs" />
+    <Compile Include="..\Common\JsonCreationHandlingTests.Enumerable.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonCreationHandlingTests.Enumerable.cs" />
+    <Compile Include="..\Common\JsonCreationHandlingTests.Generic.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonCreationHandlingTests.Generic.cs" />
+    <Compile Include="..\Common\JsonCreationHandlingTests.Object.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonCreationHandlingTests.Object.cs" />
     <Compile Include="..\Common\JsonSerializerWrapper.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapper.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
     <Compile Include="..\Common\NodeInteropTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NodeInteropTests.cs" />
@@ -153,11 +157,8 @@
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ReadAhead.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.ValueTypedMember.cs" />
     <Compile Include="Serialization\CustomConverterTests\CustomConverterTests.cs" />
-    <Compile Include="Serialization\JsonCreationHandlingTests.Object.cs" />
-    <Compile Include="Serialization\JsonCreationHandlingTests.Dictionary.cs" />
-    <Compile Include="Serialization\JsonCreationHandlingTests.Generic.cs" />
+    <Compile Include="Serialization\JsonCreationHandlingTests.cs" />
     <Compile Include="Serialization\MetadataTests\DefaultJsonPropertyInfo.cs" />
-    <Compile Include="Serialization\JsonCreationHandlingTests.Enumerable.cs" />
     <Compile Include="Serialization\RequiredKeywordTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
     <Compile Include="Serialization\DomTests.cs" />

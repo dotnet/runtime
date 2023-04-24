@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -17,7 +16,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -27,7 +26,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyListOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -36,7 +35,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ListOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -45,7 +44,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ListOfInt_PropertyOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":null,"Property":[1],"Property":[2]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<List<int>>>(json, options);
         Assert.Equal(Enumerable.Range(1, 2), obj.Property);
@@ -60,7 +59,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyListOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyListOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyListOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -69,7 +68,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyListOfIntWithoutPopulateAttribute))
             {
@@ -85,7 +84,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -109,7 +108,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyListOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -119,7 +118,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyListOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -137,7 +136,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyListOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyListOfIntWithNumberHandlingWithoutPopulateAttribute)));
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyListOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -146,7 +145,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyListOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -162,7 +161,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -192,7 +191,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_IListOfInt_BackedBy_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -202,7 +201,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_IListOfInt_BackedBy_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -211,7 +210,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_IListOfInt_BackedBy_ListOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -220,7 +219,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_IListOfInt_PropertyOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":null,"Property":[1],"Property":[2]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<IList<int>>>(json, options);
         Assert.Equal(Enumerable.Range(1, 2), obj.Property);
@@ -237,7 +236,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_IListOfInt_BackedBy_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -246,7 +245,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_IListOfInt_BackedBy_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithoutPopulateAttribute))
             {
@@ -262,7 +261,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_IListOfInt_BackedBy_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -290,7 +289,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_IListOfInt_BackedBy_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -300,7 +299,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_IListOfInt_BackedBy_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -316,7 +315,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_IListOfInt_BackedBy_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithNumberHandlingWithoutPopulateAttribute)));
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -325,7 +324,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_IListOfInt_BackedBy_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_ListOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -341,7 +340,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_IListOfInt_BackedBy_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -367,7 +366,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_IListOfInt_BackedBy_StructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -378,7 +377,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_IListOfInt_BackedBy_StructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -388,7 +387,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_IListOfInt_BackedBy_StructListOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -404,7 +403,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_IListOfInt_BackedBy_StructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -414,7 +413,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_IListOfInt_BackedBy_StructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithoutPopulateAttribute))
             {
@@ -431,7 +430,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_IListOfInt_BackedBy_StructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -456,7 +455,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_IListOfInt_BackedBy_StructListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -467,7 +466,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_IListOfInt_BackedBy_StructListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -486,7 +485,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_IListOfInt_BackedBy_StructListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithNumberHandlingWithoutPopulateAttribute)));
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -496,7 +495,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_IListOfInt_BackedBy_StructListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyIListOfInt_BackedBy_StructListOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -513,7 +512,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_IListOfInt_BackedBy_StructListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -544,7 +543,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_IList_BackedBy_ListOfJsonElement()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIList_BackedBy_ListOfJsonElement>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -554,7 +553,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_IList_BackedBy_ListOfJsonElement()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIList_BackedBy_ListOfJsonElementWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -563,7 +562,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_IList_BackedBy_ListOfJsonElement_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIList_BackedBy_ListOfJsonElement>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -572,7 +571,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_IList_PropertyOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":null,"Property":[1],"Property":[2]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<IList>>(json, options);
         Assert.Equal(Enumerable.Range(1, 2), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -589,7 +588,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_IList_BackedBy_ListOfJsonElement()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIList_BackedBy_ListOfJsonElementWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIList_BackedBy_ListOfJsonElementWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIList_BackedBy_ListOfJsonElementWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -598,7 +597,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_IList_BackedBy_ListOfJsonElement()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyIList_BackedBy_ListOfJsonElementWithoutPopulateAttribute))
             {
@@ -614,7 +613,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_IList_BackedBy_ListOfJsonElement()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -642,7 +641,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_IList_BackedBy_StructListOfJsonElement()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIList_BackedBy_StructListOfJsonElement>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -653,7 +652,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_IList_BackedBy_StructListOfJsonElement()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIList_BackedBy_StructListOfJsonElementWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -663,7 +662,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_IList_BackedBy_StructListOfJsonElement_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIList_BackedBy_StructListOfJsonElement>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -679,7 +678,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_IList_BackedBy_StructListOfJsonElement()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIList_BackedBy_StructListOfJsonElementWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyIList_BackedBy_StructListOfJsonElementWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyIList_BackedBy_StructListOfJsonElementWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -689,7 +688,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_IList_BackedBy_StructListOfJsonElement()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyIList_BackedBy_StructListOfJsonElementWithoutPopulateAttribute))
             {
@@ -706,7 +705,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_IList_BackedBy_StructListOfJsonElement()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -731,7 +730,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -742,7 +741,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_StructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructListOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -752,7 +751,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructListOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -768,7 +767,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_StructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritablePropertyStructListOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritablePropertyStructListOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructListOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -778,7 +777,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_StructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(StructWithWritablePropertyStructListOfIntWithoutPopulateAttribute))
             {
@@ -795,7 +794,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_StructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -820,7 +819,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructListOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -831,7 +830,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_StructListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructListOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -850,7 +849,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_StructListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritablePropertyStructListOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritablePropertyStructListOfIntWithNumberHandlingWithoutPopulateAttribute)));
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructListOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -860,7 +859,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_StructListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(StructWithWritablePropertyStructListOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -877,7 +876,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_StructListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -908,7 +907,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
@@ -919,7 +918,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_NullableStructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructListOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
@@ -929,7 +928,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructListOfInt_FieldOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":[4],"Field":[5],"Field":[6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
@@ -939,7 +938,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructListOfInt_FieldOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":[4],"Field":null,"Field":[1],"Field":[2]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 2), obj.Field.Value);
@@ -949,7 +948,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_PopulatedFieldCanDeserializeNull_NullableStructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":null}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructListOfInt>(json, options);
         Assert.Null(obj.Field);
@@ -966,7 +965,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_NullableStructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritableFieldNullableStructListOfIntWithoutPopulateAttribute)), includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritableFieldNullableStructListOfIntWithoutPopulateAttribute)), includeFields: true);
         string json = """{"Field":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructListOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
@@ -976,7 +975,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_NullableStructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true, modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true, modifier: ti =>
         {
             if (ti.Type == typeof(StructWithWritableFieldNullableStructListOfIntWithoutPopulateAttribute))
             {
@@ -993,7 +992,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_NullableStructListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true, configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true, configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -1022,7 +1021,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_QueueOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueueOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1032,7 +1031,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_QueueOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueueOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1041,7 +1040,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_QueueOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueueOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1050,7 +1049,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_QueueOfInt_PropertyOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":null,"Property":[1],"Property":[2]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<Queue<int>>>(json, options);
         Assert.Equal(Enumerable.Range(1, 2), obj.Property);
@@ -1065,7 +1064,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_QueueOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyQueueOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyQueueOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueueOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1074,7 +1073,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_QueueOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyQueueOfIntWithoutPopulateAttribute))
             {
@@ -1090,7 +1089,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_QueueOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -1114,7 +1113,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_QueueOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueueOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1124,7 +1123,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_QueueOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueueOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1140,7 +1139,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_QueueOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyQueueOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyQueueOfIntWithNumberHandlingWithoutPopulateAttribute)));
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueueOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1149,7 +1148,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_QueueOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyQueueOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -1165,7 +1164,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_QueueOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -1191,7 +1190,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_Queue()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueue>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -1201,7 +1200,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_Queue()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueueWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -1210,7 +1209,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_Queue_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueue>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -1219,7 +1218,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_Queue_PropertyOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":null,"Property":[1],"Property":[2]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<Queue>>(json, options);
         Assert.Equal(Enumerable.Range(1, 2), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -1236,7 +1235,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_Queue()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyQueueWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyQueueWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyQueueWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -1245,7 +1244,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_Queue()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyQueueWithoutPopulateAttribute))
             {
@@ -1261,7 +1260,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_Queue()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -1289,7 +1288,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ConcurrentQueueOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentQueueOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1299,7 +1298,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ConcurrentQueueOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentQueueOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1308,7 +1307,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ConcurrentQueueOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentQueueOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1317,7 +1316,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ConcurrentQueueOfInt_PropertyOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":null,"Property":[1],"Property":[2]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<ConcurrentQueue<int>>>(json, options);
         Assert.Equal(Enumerable.Range(1, 2), obj.Property);
@@ -1334,7 +1333,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ConcurrentQueueOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyConcurrentQueueOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyConcurrentQueueOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentQueueOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1343,7 +1342,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ConcurrentQueueOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyConcurrentQueueOfIntWithoutPopulateAttribute))
             {
@@ -1359,7 +1358,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ConcurrentQueueOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -1387,7 +1386,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ConcurrentQueueOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentQueueOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1397,7 +1396,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ConcurrentQueueOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentQueueOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1413,7 +1412,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ConcurrentQueueOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyConcurrentQueueOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyConcurrentQueueOfIntWithNumberHandlingWithoutPopulateAttribute)));
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentQueueOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1422,7 +1421,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ConcurrentQueueOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyConcurrentQueueOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -1438,7 +1437,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ConcurrentQueueOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -1464,7 +1463,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StackOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStackOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1474,7 +1473,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_StackOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStackOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1483,7 +1482,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StackOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStackOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1492,7 +1491,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StackOfInt_PropertyOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":null,"Property":[1],"Property":[2]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<Stack<int>>>(json, options);
         Assert.Equal(Enumerable.Range(1, 2).Reverse(), obj.Property);
@@ -1507,7 +1506,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_StackOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyStackOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyStackOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStackOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1516,7 +1515,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_StackOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyStackOfIntWithoutPopulateAttribute))
             {
@@ -1532,7 +1531,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_StackOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -1556,7 +1555,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StackOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStackOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1566,7 +1565,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_StackOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStackOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1584,7 +1583,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_StackOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyStackOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyStackOfIntWithNumberHandlingWithoutPopulateAttribute)));
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStackOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1593,7 +1592,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_StackOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyStackOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -1609,7 +1608,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_StackOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -1639,7 +1638,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_Stack()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStack>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -1649,7 +1648,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_Stack()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStackWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -1658,7 +1657,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_Stack_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStack>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -1667,7 +1666,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_Stack_PropertyOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":null,"Property":[1],"Property":[2]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<Stack>>(json, options);
         Assert.Equal(Enumerable.Range(1, 2).Reverse(), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -1684,7 +1683,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_Stack()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyStackWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyStackWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyStackWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property.Cast<JsonElement>().Select(x => x.GetInt32()));
@@ -1693,7 +1692,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_Stack()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyStackWithoutPopulateAttribute))
             {
@@ -1709,7 +1708,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_Stack()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -1737,7 +1736,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ConcurrentStackOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentStackOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1747,7 +1746,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ConcurrentStackOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentStackOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1756,7 +1755,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ConcurrentStackOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentStackOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1765,7 +1764,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ConcurrentStackOfInt_PropertyOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":null,"Property":[1],"Property":[2]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<ConcurrentStack<int>>>(json, options);
         Assert.Equal(Enumerable.Range(1, 2).Reverse(), obj.Property);
@@ -1780,7 +1779,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ConcurrentStackOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyConcurrentStackOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyConcurrentStackOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentStackOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1789,7 +1788,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ConcurrentStackOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyConcurrentStackOfIntWithoutPopulateAttribute))
             {
@@ -1805,7 +1804,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ConcurrentStackOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -1829,7 +1828,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ConcurrentStackOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentStackOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1839,7 +1838,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ConcurrentStackOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentStackOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1855,7 +1854,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ConcurrentStackOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyConcurrentStackOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyConcurrentStackOfIntWithNumberHandlingWithoutPopulateAttribute)));
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyConcurrentStackOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6).Reverse(), obj.Property);
@@ -1864,7 +1863,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ConcurrentStackOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyConcurrentStackOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -1880,7 +1879,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ConcurrentStackOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -1906,7 +1905,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ICollectionOfInt_BackedBy_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1916,7 +1915,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ICollectionOfInt_BackedBy_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1925,7 +1924,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ICollectionOfInt_BackedBy_ListOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1934,7 +1933,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ICollectionOfInt_PropertyOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":null,"Property":[1],"Property":[2]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<ICollection<int>>>(json, options);
         Assert.Equal(Enumerable.Range(1, 2), obj.Property);
@@ -1951,7 +1950,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ICollectionOfInt_BackedBy_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -1960,7 +1959,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ICollectionOfInt_BackedBy_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithoutPopulateAttribute))
             {
@@ -1976,7 +1975,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ICollectionOfInt_BackedBy_ListOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -2004,7 +2003,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ICollectionOfInt_BackedBy_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2014,7 +2013,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ICollectionOfInt_BackedBy_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2032,7 +2031,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ICollectionOfInt_BackedBy_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithNumberHandlingWithoutPopulateAttribute)));
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2041,7 +2040,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ICollectionOfInt_BackedBy_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_ListOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -2057,7 +2056,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ICollectionOfInt_BackedBy_ListOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -2087,7 +2086,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ICollectionOfInt_BackedBy_StructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2098,7 +2097,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ICollectionOfInt_BackedBy_StructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2108,7 +2107,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ICollectionOfInt_BackedBy_StructCollectionOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2124,7 +2123,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ICollectionOfInt_BackedBy_StructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2134,7 +2133,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ICollectionOfInt_BackedBy_StructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithoutPopulateAttribute))
             {
@@ -2151,7 +2150,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ICollectionOfInt_BackedBy_StructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -2176,7 +2175,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ICollectionOfInt_BackedBy_StructCollectionOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2187,7 +2186,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ICollectionOfInt_BackedBy_StructCollectionOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2204,7 +2203,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ICollectionOfInt_BackedBy_StructCollectionOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithNumberHandlingWithoutPopulateAttribute)));
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2214,7 +2213,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ICollectionOfInt_BackedBy_StructCollectionOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyICollectionOfInt_BackedBy_StructCollectionOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -2231,7 +2230,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ICollectionOfInt_BackedBy_StructCollectionOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -2258,7 +2257,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructCollectionOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2269,7 +2268,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_StructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructCollectionOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2279,7 +2278,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructCollectionOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructCollectionOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2297,7 +2296,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_StructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritablePropertyStructCollectionOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritablePropertyStructCollectionOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructCollectionOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2307,7 +2306,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_StructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(StructWithWritablePropertyStructCollectionOfIntWithoutPopulateAttribute))
             {
@@ -2324,7 +2323,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_StructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -2353,7 +2352,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructCollectionOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldStructCollectionOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field);
@@ -2364,7 +2363,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_StructCollectionOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldStructCollectionOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field);
@@ -2383,7 +2382,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_StructCollectionOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritableFieldStructCollectionOfIntWithNumberHandlingWithoutPopulateAttribute)), includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritableFieldStructCollectionOfIntWithNumberHandlingWithoutPopulateAttribute)), includeFields: true);
         string json = """{"Field":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldStructCollectionOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field);
@@ -2393,7 +2392,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_StructCollectionOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true, modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true, modifier: ti =>
         {
             if (ti.Type == typeof(StructWithWritableFieldStructCollectionOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -2410,7 +2409,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_StructCollectionOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true, configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true, configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -2441,7 +2440,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructCollectionOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
@@ -2452,7 +2451,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_NullableStructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructCollectionOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
@@ -2462,7 +2461,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructCollectionOfInt_FieldOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":[4],"Field":[5],"Field":[6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructCollectionOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
@@ -2472,7 +2471,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructCollectionOfInt_FieldOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":[4],"Field":null,"Field":[1],"Field":[2]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructCollectionOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 2), obj.Field.Value);
@@ -2482,7 +2481,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_PopulatedFieldCanDeserializeNull_NullableStructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":null}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructCollectionOfInt>(json, options);
         Assert.Null(obj.Field);
@@ -2497,7 +2496,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_NullableStructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritableFieldNullableStructCollectionOfIntWithoutPopulateAttribute)), includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritableFieldNullableStructCollectionOfIntWithoutPopulateAttribute)), includeFields: true);
         string json = """{"Field":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructCollectionOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
@@ -2507,7 +2506,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_NullableStructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true, modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true, modifier: ti =>
         {
             if (ti.Type == typeof(StructWithWritableFieldNullableStructCollectionOfIntWithoutPopulateAttribute))
             {
@@ -2524,7 +2523,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_NullableStructCollectionOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true, configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true, configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -2549,7 +2548,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ISetOfInt_BackedBy_HashSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2559,7 +2558,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ISetOfInt_BackedBy_HashSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2568,7 +2567,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ISetOfInt_BackedBy_HashSetOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2577,7 +2576,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ISetOfInt_PropertyOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":null,"Property":[1],"Property":[2]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithWritableProperty<ISet<int>>>(json, options);
         Assert.Equal(Enumerable.Range(1, 2), obj.Property);
@@ -2592,7 +2591,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ISetOfInt_BackedBy_HashSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2601,7 +2600,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ISetOfInt_BackedBy_HashSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithoutPopulateAttribute))
             {
@@ -2617,7 +2616,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ISetOfInt_BackedBy_HashSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -2641,7 +2640,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ISetOfInt_BackedBy_HashSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2651,7 +2650,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ISetOfInt_BackedBy_HashSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2669,7 +2668,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ISetOfInt_BackedBy_HashSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithoutPopulateAttribute)));
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2678,7 +2677,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ISetOfInt_BackedBy_HashSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_HashSetOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -2694,7 +2693,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ISetOfInt_BackedBy_HashSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -2724,7 +2723,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ISetOfInt_BackedBy_StructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2735,7 +2734,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ISetOfInt_BackedBy_StructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2745,7 +2744,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ISetOfInt_BackedBy_StructSetOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2763,7 +2762,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ISetOfInt_BackedBy_StructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2773,7 +2772,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ISetOfInt_BackedBy_StructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithoutPopulateAttribute))
             {
@@ -2790,7 +2789,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ISetOfInt_BackedBy_StructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -2819,7 +2818,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_ISetOfInt_BackedBy_StructSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2830,7 +2829,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_ISetOfInt_BackedBy_StructSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2847,7 +2846,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_ISetOfInt_BackedBy_StructSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandlingWithoutPopulateAttribute)));
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2857,7 +2856,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_ISetOfInt_BackedBy_StructSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(ClassWithReadOnlyPropertyISetOfInt_BackedBy_StructSetOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -2874,7 +2873,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_ISetOfInt_BackedBy_StructSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -2901,7 +2900,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructSetOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2912,7 +2911,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_StructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructSetOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2922,7 +2921,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructSetOfInt_PropertyOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":[4],"Property":[5],"Property":[6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructSetOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2938,7 +2937,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_StructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritablePropertyStructSetOfIntWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritablePropertyStructSetOfIntWithoutPopulateAttribute)));
         string json = """{"Property":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructSetOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -2948,7 +2947,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_StructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(StructWithWritablePropertyStructSetOfIntWithoutPopulateAttribute))
             {
@@ -2965,7 +2964,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_StructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -2990,7 +2989,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_StructSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructSetOfIntWithNumberHandling>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -3001,7 +3000,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_StructSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructSetOfIntWithNumberHandlingWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -3020,7 +3019,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_StructSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritablePropertyStructSetOfIntWithNumberHandlingWithoutPopulateAttribute)));
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritablePropertyStructSetOfIntWithNumberHandlingWithoutPopulateAttribute)));
         string json = """{"Property":["4","5","6"]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritablePropertyStructSetOfIntWithNumberHandlingWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Property);
@@ -3030,7 +3029,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_StructSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: ti =>
         {
             if (ti.Type == typeof(StructWithWritablePropertyStructSetOfIntWithNumberHandlingWithoutPopulateAttribute))
             {
@@ -3047,7 +3046,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_StructSetOfInt_WithNumberHandling()
     {
-        JsonSerializerOptions options = CreateOptions(configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -3078,7 +3077,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructSetOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
@@ -3089,7 +3088,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttributeOnType_CanPopulate_NullableStructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructSetOfIntWithAttributeOnType>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
@@ -3099,7 +3098,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructSetOfInt_FieldOccurringMultipleTimes()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":[4],"Field":[5],"Field":[6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructSetOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
@@ -3109,7 +3108,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_CanPopulate_NullableStructSetOfInt_FieldOccurringMultipleTimes_NullInBetween()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":[4],"Field":null,"Field":[1],"Field":[2]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructSetOfInt>(json, options);
         Assert.Equal(Enumerable.Range(1, 2), obj.Field.Value);
@@ -3119,7 +3118,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithAttribute_PopulatedFieldCanDeserializeNull_NullableStructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true);
         string json = """{"Field":null}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructSetOfInt>(json, options);
         Assert.Null(obj.Field);
@@ -3136,7 +3135,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadata_CanPopulate_NullableStructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritableFieldNullableStructSetOfIntWithoutPopulateAttribute)), includeFields: true);
+        JsonSerializerOptions options = Serializer.CreateOptions(modifier: GetFirstPropertyToPopulateForTypeModifier(typeof(StructWithWritableFieldNullableStructSetOfIntWithoutPopulateAttribute)), includeFields: true);
         string json = """{"Field":[4,5,6]}""";
         var obj = await Serializer.DeserializeWrapper<StructWithWritableFieldNullableStructSetOfIntWithoutPopulateAttribute>(json, options);
         Assert.Equal(Enumerable.Range(1, 6), obj.Field.Value);
@@ -3146,7 +3145,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithMetadataOnType_CanPopulate_NullableStructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true, modifier: ti =>
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true, modifier: ti =>
         {
             if (ti.Type == typeof(StructWithWritableFieldNullableStructSetOfIntWithoutPopulateAttribute))
             {
@@ -3163,7 +3162,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [Fact]
     public async Task CreationHandlingSetWithOptions_CanPopulate_NullableStructSetOfInt()
     {
-        JsonSerializerOptions options = CreateOptions(includeFields: true, configure: (opt) =>
+        JsonSerializerOptions options = Serializer.CreateOptions(includeFields: true, configure: (opt) =>
         {
             opt.PreferredObjectCreationHandling = JsonObjectCreationHandling.Populate;
         });
@@ -3198,7 +3197,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     [InlineData(typeof(ClassWithReadOnlyProperty<StructSet<int>?>))]
     public async Task CreationHandlingSetWithAttribute_PopulateWithoutSetterOnValueTypeThrows_Enumerable(Type type)
     {
-        JsonSerializerOptions options = CreateOptions();
+        JsonSerializerOptions options = Serializer.CreateOptions();
         string json = "{}";
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper(json, type, options));
     }
