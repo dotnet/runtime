@@ -46,14 +46,11 @@ class  SyncBlockArray
     BYTE            m_Blocks[MAXSYNCBLOCK * sizeof (SyncBlock)];
 };
 
-// For in-place constructor
-BYTE DECLSPEC_ALIGN(sizeof(void*)) g_SyncBlockCacheInstance[sizeof(SyncBlockCache)];
+SyncBlockCache g_SyncBlockCacheInstance;
 
 SPTR_IMPL (SyncBlockCache, SyncBlockCache, s_pSyncBlockCache);
 
 #ifndef DACCESS_COMPILE
-
-
 
 #ifndef TARGET_UNIX
 // static
@@ -463,49 +460,41 @@ size_t BitMapSize (size_t cacheSize)
 //
 // ***************************************************************************
 
-SyncBlockCache::SyncBlockCache()
-    : m_pCleanupBlockList(NULL),
-      m_FreeBlockList(NULL),
-
-      // NOTE: CRST_UNSAFE_ANYMODE prevents a GC mode switch when entering this crst.
-      // If you remove this flag, we will switch to preemptive mode when entering
-      // g_criticalSection, which means all functions that enter it will become
-      // GC_TRIGGERS.  (This includes all uses of LockHolder around SyncBlockCache::GetSyncBlockCache().
-      // So be sure to update the contracts if you remove this flag.
-      m_CacheLock(CrstSyncBlockCache, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD)),
-
-      m_FreeCount(0),
-      m_ActiveCount(0),
-      m_SyncBlocks(0),
-      m_FreeSyncBlock(0),
-      m_FreeSyncTableIndex(1),
-      m_FreeSyncTableList(0),
-      m_SyncTableSize(SYNC_TABLE_INITIAL_SIZE),
-      m_OldSyncTables(0),
-      m_bSyncBlockCleanupInProgress(FALSE),
-      m_EphemeralBitmap(0)
+void SyncBlockCache::Init()
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
+        WRAPPER_NO_CONTRACT;
     }
     CONTRACTL_END;
+
+    m_pCleanupBlockList = NULL;
+    m_FreeBlockList     = NULL;
+
+    // NOTE: CRST_UNSAFE_ANYMODE prevents a GC mode switch when entering this crst.
+    // If you remove this flag, we will switch to preemptive mode when entering
+    // g_criticalSection, which means all functions that enter it will become
+    // GC_TRIGGERS.  (This includes all uses of LockHolder around SyncBlockCache::GetSyncBlockCache().
+    // So be sure to update the contracts if you remove this flag.
+    ::new (&m_CacheLock) Crst(CrstSyncBlockCache, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
+
+    m_FreeCount = 0;
+    m_ActiveCount = 0;
+    m_SyncBlocks = 0;
+    m_FreeSyncBlock = 0;
+    m_FreeSyncTableIndex = 1;
+    m_FreeSyncTableList = 0;
+    m_SyncTableSize = SYNC_TABLE_INITIAL_SIZE;
+    m_OldSyncTables = 0;
+    m_bSyncBlockCleanupInProgress = FALSE;
+    m_EphemeralBitmap = 0;
 }
 
-
-// This method is NO longer called.
-SyncBlockCache::~SyncBlockCache()
+void SyncBlockCache::Destroy()
 {
     CONTRACTL
     {
-        DESTRUCTOR_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
+        WRAPPER_NO_CONTRACT;
     }
     CONTRACTL_END;
 
@@ -655,7 +644,8 @@ void SyncBlockCache::Start()
 #endif
 
     SyncTableEntry::GetSyncTableEntry()[0].m_SyncBlock = 0;
-    SyncBlockCache::GetSyncBlockCache() = new (&g_SyncBlockCacheInstance) SyncBlockCache;
+    SyncBlockCache::GetSyncBlockCache() = &g_SyncBlockCacheInstance;
+    g_SyncBlockCacheInstance.Init();
 
     SyncBlockCache::GetSyncBlockCache()->m_EphemeralBitmap = bm;
 
@@ -681,7 +671,7 @@ void SyncBlockCache::Stop()
     // sync blocks which are live and thus must have their critical sections destroyed.
     if (SyncBlockCache::GetSyncBlockCache())
     {
-        delete SyncBlockCache::GetSyncBlockCache();
+        SyncBlockCache::GetSyncBlockCache()->Destroy();
         SyncBlockCache::GetSyncBlockCache() = 0;
     }
 

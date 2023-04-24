@@ -1356,8 +1356,9 @@ class SyncBlockCache
         LIMITED_METHOD_CONTRACT;
     }
 
-    SyncBlockCache();
-    ~SyncBlockCache();
+    // Note: No constructors/destructors - global instance
+    void Init();
+    void Destroy();
 
     static void Attach();
     static void Detach();
