@@ -69,7 +69,6 @@ export function setupPreloadChannelToMainThread() {
     const mainPort = channel.port2;
     workerPort.addEventListener("message", (event) => {
         const config = JSON.parse(event.data.config) as MonoConfig;
-        console.debug("MONO_WASM: applying mono config from main", event.data.config);
         onMonoConfigReceived(config);
         workerPort.close();
         mainPort.close();

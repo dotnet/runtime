@@ -641,6 +641,7 @@ add_executable_clr(paltests
 add_dependencies(paltests coreclrpal)
 
 target_link_libraries(paltests
+  PUBLIC
   ${COMMON_TEST_LIBRARIES}
 )
 

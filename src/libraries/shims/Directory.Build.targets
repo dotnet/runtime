@@ -1,21 +1,9 @@
 <Project>
+
   <Import Project="..\Directory.Build.targets" />
 
-  <PropertyGroup>
-  <!-- Tell GenFacades which msbuild item maps to the reference assembly to use. -->
-    <GenFacadesReferenceAssemblyItemName>GenFacadesReferenceAssembly</GenFacadesReferenceAssemblyItemName>
-  </PropertyGroup>
-
-  <!-- Tell GenFacades to use reference assemblies instead of the implementation assemblies (for most of the shims). -->
-  <PropertyGroup Condition="'$(CompileUsingReferenceAssemblies)' != 'false'">
+  <PropertyGroup Condition="'$(CompileUsingReferenceAssemblies)' == 'true'">
     <TrimOutPrivateAssembliesFromReferencePath>true</TrimOutPrivateAssembliesFromReferencePath>
-    <GeneratePartialFacadeSourceDependsOn>$(GeneratePartialFacadeSourceDependsOn);FindReferenceAssembliesForReferences</GeneratePartialFacadeSourceDependsOn>
-    <GenFacadesReferencePathItemName>ReferencePathWithRefAssemblies</GenFacadesReferencePathItemName>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(MSBuildProjectName)' != 'netstandard'">
-    <PackageDownload Include="Microsoft.NETFramework.ReferenceAssemblies.net48"
-                     Version="[$(MicrosoftNETFrameworkReferenceAssembliesLatestPackageVersion)]" />
-    <GenFacadesReferenceAssembly Include="$([MSBuild]::NormalizePath('$(NuGetPackageRoot)', 'microsoft.netframework.referenceassemblies.net48', '$(MicrosoftNETFrameworkReferenceAssembliesLatestPackageVersion)', 'build', '.NETFramework', 'v4.8', '$(MSBuildProjectName).dll'))" />
-  </ItemGroup>
 </Project>

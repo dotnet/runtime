@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IlcExportUnmanagedEntrypoints>true</IlcExportUnmanagedEntrypoints>
+    
+    <!-- Stripping symbols causes problems for running the test on macOS -->
+    <StripSymbols>false</StripSymbols>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="GenerateUnmanagedEntryPoints.cs" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)ReferencedAssembly1\ReferencedAssembly1.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)ReferencedAssembly2\ReferencedAssembly2.csproj" />
+  </ItemGroup>
+
+  <!-- Expose additional unmanaged entry points from ReferencedAssembly1 -->
+  <ItemGroup>
+    <UnmanagedEntryPointsAssembly Include="ReferencedAssembly1" />
+  </ItemGroup>
+
+</Project>

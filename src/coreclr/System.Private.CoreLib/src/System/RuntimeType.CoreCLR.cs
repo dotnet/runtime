@@ -154,18 +154,11 @@ namespace System
             {
                 private readonly MdUtf8String m_name;
                 private readonly MemberListType m_listType;
-                private readonly uint m_nameHash;
 
                 public unsafe Filter(byte* pUtf8Name, int cUtf8Name, MemberListType listType)
                 {
                     m_name = new MdUtf8String(pUtf8Name, cUtf8Name);
                     m_listType = listType;
-                    m_nameHash = 0;
-
-                    if (RequiresStringComparison())
-                    {
-                        m_nameHash = m_name.HashCaseInsensitive();
-                    }
                 }
 
                 public bool Match(MdUtf8String name)
@@ -186,7 +179,6 @@ namespace System
 
                 // Does the current match type require a string comparison?
                 // If not, we know Match will always return true and the call can be skipped
-                // If so, we know we can have a valid hash to check against from GetHashToMatch
                 public bool RequiresStringComparison()
                 {
                     return (m_listType == MemberListType.CaseSensitive) ||
@@ -194,13 +186,6 @@ namespace System
                 }
 
                 public bool CaseSensitive() => m_listType == MemberListType.CaseSensitive;
-
-                public uint GetHashToMatch()
-                {
-                    Debug.Assert(RequiresStringComparison());
-
-                    return m_nameHash;
-                }
             }
 
             private sealed class MemberInfoCache<T> where T : MemberInfo
@@ -622,12 +607,6 @@ namespace System
                         {
                             if (filter.RequiresStringComparison())
                             {
-                                if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
-                                {
-                                    Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
-                                    continue;
-                                }
-
                                 if (!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)))
                                     continue;
                             }
@@ -684,12 +663,6 @@ namespace System
                             {
                                 if (filter.RequiresStringComparison())
                                 {
-                                    if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
-                                    {
-                                        Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
-                                        continue;
-                                    }
-
                                     if (!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)))
                                         continue;
                                 }
@@ -793,12 +766,6 @@ namespace System
                     {
                         if (filter.RequiresStringComparison())
                         {
-                            if (!RuntimeMethodHandle.MatchesNameHash(methodHandle, filter.GetHashToMatch()))
-                            {
-                                Debug.Assert(!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)));
-                                continue;
-                            }
-
                             if (!filter.Match(RuntimeMethodHandle.GetUtf8Name(methodHandle)))
                                 continue;
                         }
@@ -922,12 +889,6 @@ namespace System
 
                         if (filter.RequiresStringComparison())
                         {
-                            if (!RuntimeFieldHandle.MatchesNameHash(runtimeFieldHandle, filter.GetHashToMatch()))
-                            {
-                                Debug.Assert(!filter.Match(RuntimeFieldHandle.GetUtf8Name(runtimeFieldHandle)));
-                                continue;
-                            }
-
                             if (!filter.Match(RuntimeFieldHandle.GetUtf8Name(runtimeFieldHandle)))
                                 continue;
                         }
@@ -1818,15 +1779,6 @@ namespace System
         #region Static Members
 
         #region Internal
-        internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase,
-            ref StackCrawlMark stackMark)
-        {
-            ArgumentNullException.ThrowIfNull(typeName);
-
-            return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, ref stackMark);
-        }
-
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)
         {
@@ -1847,7 +1799,7 @@ namespace System
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "The code in this method looks up the method by name, but it always starts with a method handle." +
-                            "To get here something somwhere had to get the method handle and thus the method must exist.")]
+                            "To get here something somewhere had to get the method handle and thus the method must exist.")]
         internal static MethodBase? GetMethodBase(RuntimeType? reflectedType, RuntimeMethodHandleInternal methodHandle)
         {
             Debug.Assert(!methodHandle.IsNullHandle());
@@ -4196,9 +4148,6 @@ namespace System
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_HashCaseInsensitive")]
-        private static partial uint HashCaseInsensitive(void* sz, int cSz);
-
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.
         private readonly int m_StringHeapByteLength;
 
@@ -4247,11 +4196,6 @@ namespace System
             {
                 return (m_StringHeapByteLength == 0) || EqualsCaseInsensitive(s.m_pStringHeap, m_pStringHeap, m_StringHeapByteLength);
             }
-        }
-
-        internal uint HashCaseInsensitive()
-        {
-            return HashCaseInsensitive(m_pStringHeap, m_StringHeapByteLength);
         }
 
         public override string ToString()

@@ -76,7 +76,7 @@ The process follows the following strategy
     getting some code to work is a prerequisite for handling more complex
     scenarios. When doing initial bringup, configuring the Gen0 budget of the GC
     to be a large number so that the GC does not attempt to run during most
-    tests is very useful. (Set `COMPlus_GCgen0size=99999999`)
+    tests is very useful. (Set `DOTNET_GCgen0size=99999999`)
 
 -   Once basic code is executing, the focus shifts to enabling the GC to work.
     In this initial phase, the correct choice is to enable conservative GC
@@ -137,7 +137,7 @@ Stage 4 Focus on stress
     really works.
 
 -   See the various test passes done in CI, but most critically GCStress testing
-    is needed. See documentation around use of the ComPlus_GCStress environment
+    is needed. See documentation around use of the DOTNET_GCStress environment
     variable.
 
 Stage 5 productization

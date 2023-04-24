@@ -218,6 +218,9 @@ if ($vs) {
 
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
+  
+  # Disable .NET runtime signature validation errors which errors for local builds
+  $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
 
   if ($runtimeConfiguration)
   {
@@ -301,13 +304,6 @@ foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
   foreach ($singleArch in $arch) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
-    if ($os -eq "browser") {
-      $env:__DistroRid="browser-$singleArch"
-    } elseif ($os -eq "wasi") {
-      $env:__DistroRid="wasi-$singleArch"
-    } else {
-      $env:__DistroRid="win-$singleArch"
-    }
     Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
     if ($lastExitCode -ne 0) {
         $failedBuilds += "Configuration: $config, Architecture: $singleArch"

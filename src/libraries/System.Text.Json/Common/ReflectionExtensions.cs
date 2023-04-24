@@ -227,7 +227,7 @@ namespace System.Text.Json.Reflection
         {
             Debug.Assert(genericTypeDef.IsGenericType);
             string fullName = genericTypeDef.FullName!;
-            int length = fullName.IndexOf("`") + 2;
+            int length = fullName.IndexOf('`') + 2;
             return fullName.Substring(0, length);
         }
 

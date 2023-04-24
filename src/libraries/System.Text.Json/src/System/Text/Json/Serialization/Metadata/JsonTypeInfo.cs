@@ -630,6 +630,31 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         /// <summary>
+        /// Gets any ancestor polymorphic types that declare
+        /// a type discriminator for the current type. Consulted
+        /// when serializing polymorphic values as objects.
+        /// </summary>
+        internal JsonTypeInfo? AncestorPolymorphicType
+        {
+            get
+            {
+                Debug.Assert(IsConfigured);
+                Debug.Assert(Type != typeof(object));
+
+                if (!_isAncestorPolymorphicTypeResolved)
+                {
+                    _ancestorPolymorhicType = PolymorphicTypeResolver.FindNearestPolymorphicBaseType(this);
+                    _isAncestorPolymorphicTypeResolved = true;
+                }
+
+                return _ancestorPolymorhicType;
+            }
+        }
+
+        private JsonTypeInfo? _ancestorPolymorhicType;
+        private volatile bool _isAncestorPolymorphicTypeResolved;
+
+        /// <summary>
         /// Determines if the transitive closure of all JsonTypeInfo metadata referenced
         /// by the current type (property types, key types, element types, ...) are
         /// compatible with the settings as specified in JsonSerializerOptions.
@@ -695,12 +720,7 @@ namespace System.Text.Json.Serialization.Metadata
                     return false;
                 }
 
-                return OriginatingResolver switch
-                {
-                    JsonSerializerContext ctx => ctx.IsCompatibleWithGeneratedOptions(Options),
-                    DefaultJsonTypeInfoResolver => true, // generates default contracts by definition
-                    _ => false
-                };
+                return OriginatingResolver.IsCompatibleWithOptions(Options);
             }
         }
 
@@ -882,15 +902,14 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonParameterInfoValues[]? ParameterInfoValues { get; set; }
 
         // Untyped, root-level serialization methods
-        internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue, bool isInvokedByPolymorphicConverter = false);
-        internal abstract Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken, bool isInvokedByPolymorphicConverter = false);
-        internal abstract void SerializeAsObject(Stream utf8Json, object? rootValue, bool isInvokedByPolymorphicConverter = false);
+        internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue);
+        internal abstract Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken);
+        internal abstract void SerializeAsObject(Stream utf8Json, object? rootValue);
 
         // Untyped, root-level deserialization methods
         internal abstract object? DeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state);
         internal abstract ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken);
         internal abstract object? DeserializeAsObject(Stream utf8Json);
-        internal abstract IAsyncEnumerable<object?> DeserializeAsyncEnumerableAsObject(Stream utf8Json, CancellationToken cancellationToken);
 
         /// <summary>
         /// Used by the built-in resolvers to add property metadata applying conflict resolution.
@@ -1253,7 +1272,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (type == typeof(object) && converter.CanBePolymorphic)
             {
                 // System.Object is polymorphic and will not respect Properties
-                Debug.Assert(converter is ObjectConverter);
+                Debug.Assert(converter is ObjectConverter or ObjectConverterSlim);
                 return JsonTypeInfoKind.None;
             }
 
@@ -1282,8 +1301,8 @@ namespace System.Text.Json.Serialization.Metadata
                 _jsonTypeInfo = jsonTypeInfo;
             }
 
-            protected override bool IsImmutable => _jsonTypeInfo.IsReadOnly || _jsonTypeInfo.Kind != JsonTypeInfoKind.Object;
-            protected override void VerifyMutable()
+            public override bool IsReadOnly => _jsonTypeInfo.IsReadOnly || _jsonTypeInfo.Kind != JsonTypeInfoKind.Object;
+            protected override void OnCollectionModifying()
             {
                 _jsonTypeInfo.VerifyMutable();
 
@@ -1293,7 +1312,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
             }
 
-            protected override void OnAddingElement(JsonPropertyInfo item)
+            protected override void ValidateAddedValue(JsonPropertyInfo item)
             {
                 item.EnsureChildOf(_jsonTypeInfo);
             }

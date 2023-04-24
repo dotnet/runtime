@@ -961,7 +961,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode GetStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
-            DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+            MetadataType closestCanonDefType = (MetadataType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
             ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(closestCanonDefType));
             staticsBagKind = BagElementKind.GcStaticDesc;
 
@@ -970,7 +970,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode GetThreadStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
-            DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+            MetadataType closestCanonDefType = (MetadataType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
             ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(closestCanonDefType));
             staticsBagKind = BagElementKind.ThreadStaticDesc;
 
@@ -1708,6 +1708,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public NativeLayoutFieldLdTokenGenericDictionarySlotNode(FieldDesc field)
         {
+            Debug.Assert(field.OwningType.IsRuntimeDeterminedSubtype);
             _field = field;
         }
 
@@ -1717,12 +1718,21 @@ namespace ILCompiler.DependencyAnalysis
 
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            yield return new DependencyListEntry(factory.NativeLayout.FieldLdTokenVertex(_field), "Field Signature");
+            var result = new DependencyList
+            {
+                { factory.NativeLayout.FieldLdTokenVertex(_field), "Field Signature" }
+            };
 
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_field.OwningType))
             {
-                yield return new DependencyListEntry(dependency, "template construction dependency");
+                result.Add(dependency, "template construction dependency");
             }
+
+            var canonOwningType = (InstantiatedType)_field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
+            FieldDesc canonField = factory.TypeSystemContext.GetFieldForInstantiatedType(_field.GetTypicalFieldDefinition(), canonOwningType);
+            factory.MetadataManager.GetDependenciesDueToLdToken(ref result, factory, canonField);
+
+            return result;
         }
 
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
@@ -1747,18 +1757,25 @@ namespace ILCompiler.DependencyAnalysis
 
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            yield return new DependencyListEntry(factory.NativeLayout.MethodLdTokenVertex(_method), "Method Signature");
+            var result = new DependencyList
+            {
+                { factory.NativeLayout.MethodLdTokenVertex(_method), "Method Signature" }
+            };
 
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
-                yield return new DependencyListEntry(dependency, "template construction dependency for method OwningType");
+                result.Add(dependency, "template construction dependency for method OwningType");
             }
 
             foreach (var type in _method.Instantiation)
             {
                 foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(type))
-                    yield return new DependencyListEntry(dependency, "template construction dependency for method Instantiation types");
+                    result.Add(dependency, "template construction dependency for method Instantiation types");
             }
+
+            factory.MetadataManager.GetDependenciesDueToLdToken(ref result, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+
+            return result;
         }
 
         protected sealed override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)

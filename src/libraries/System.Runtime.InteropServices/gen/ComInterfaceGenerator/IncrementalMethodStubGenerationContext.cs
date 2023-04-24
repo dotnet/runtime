@@ -4,9 +4,12 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
+using System.Collections.Immutable;
 
 namespace Microsoft.Interop
 {
+    internal abstract record GeneratedMethodContextBase(ManagedTypeInfo OriginalDefiningType, SequenceEqualImmutableArray<Diagnostic> Diagnostics);
+
     internal sealed record IncrementalMethodStubGenerationContext(
         SignatureContext SignatureContext,
         ContainingSyntaxContext ContainingSyntaxContext,
@@ -19,5 +22,5 @@ namespace Microsoft.Interop
         MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> UnmanagedToManagedGeneratorFactory,
         ManagedTypeInfo TypeKeyOwner,
         SequenceEqualImmutableArray<Diagnostic> Diagnostics,
-        TypeSyntax UnwrapperSyntax);
+        MarshallingInfo ManagedThisMarshallingInfo) : GeneratedMethodContextBase(TypeKeyOwner, Diagnostics);
 }

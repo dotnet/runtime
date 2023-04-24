@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class X
 {
@@ -11,7 +12,8 @@ public class X
     static ushort us_8712 = 8712;
     static ushort us_973 = 973;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         short sh3 = (short)(sh_8712 * sh_m973);
         ushort us3 = (ushort)(us_8712 * us_973);

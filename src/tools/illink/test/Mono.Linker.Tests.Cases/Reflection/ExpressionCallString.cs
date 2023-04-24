@@ -286,7 +286,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			// https://github.com/dotnet/linker/issues/2755
-			[ExpectedWarning ("IL2060", "Expression.Call", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2060", "Expression.Call", ProducedBy = Tool.Trimmer)]
 			static void TestMethodWithRequirementsUnknownTypeArray (Type[] types)
 			{
 				// The passed in types array cannot be analyzed, so a warning is produced.

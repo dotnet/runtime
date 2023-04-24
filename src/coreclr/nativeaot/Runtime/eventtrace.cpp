@@ -22,6 +22,7 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 //#include "PalRedhawk.h"
+#include "EventPipeInterface.h"
 
 #define Win32EventWrite PalEventWrite
 #else // !FEATURE_NATIVEAOT
@@ -898,7 +899,7 @@ void ETW::GCLog::FireGcStart(ETW_GC_INFO* pGcInfo)
 
 #if !defined(FEATURE_PAL) || defined(FEATURE_DTRACE)
 
-    if (ETW_TRACING_CATEGORY_ENABLED(
+    if (EventPipeAdapter_Enabled() || ETW_TRACING_CATEGORY_ENABLED(
         MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
         TRACE_LEVEL_INFORMATION,
         CLR_GC_KEYWORD))
@@ -3899,7 +3900,7 @@ void ETW::ExceptionLog::ExceptionThrown(CrawlFrame* pCf, BOOL bIsReThrownExcepti
         gc.exceptionMessageRef = ((EXCEPTIONREF)gc.exceptionObj)->GetMessage();
         TypeHandle exceptionTypeHandle = (gc.exceptionObj)->GetTypeHandle();
         exceptionTypeHandle.GetName(exceptionType);
-        WCHAR* exceptionTypeName = (WCHAR*)exceptionType.GetUnicode();
+        WCHAR* exceptionTypeName = exceptionType.GetUnicode();
 
         if (gc.exceptionMessageRef != NULL)
         {

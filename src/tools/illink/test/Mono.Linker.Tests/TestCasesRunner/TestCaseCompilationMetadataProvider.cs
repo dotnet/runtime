@@ -28,7 +28,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		private static bool IsIgnoredByTrimmer (CustomAttribute attr)
 		{
 			var ignoredBy = attr.GetPropertyValue ("IgnoredBy");
-			return ignoredBy is null ? true : ((ProducedBy) ignoredBy).HasFlag (ProducedBy.Trimmer);
+			return ignoredBy is null ? true : ((Tool) ignoredBy).HasFlag (Tool.Trimmer);
 		}
 
 		public virtual bool IsIgnored (out string reason)

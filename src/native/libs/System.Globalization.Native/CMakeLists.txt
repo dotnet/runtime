@@ -116,6 +116,7 @@ if (GEN_SHARED_LIB)
     )
 
     target_link_libraries(System.Globalization.Native
+        PRIVATE
         dl
         ${FOUNDATION}
     )
@@ -135,7 +136,7 @@ endif()
 
 install (TARGETS System.Globalization.Native-Static DESTINATION ${STATIC_LIB_DESTINATION} COMPONENT libs)
 
-if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID)
+if(NOT CLR_CMAKE_TARGET_APPLE AND NOT CLR_CMAKE_TARGET_ANDROID AND NOT CLR_CMAKE_TARGET_ALPINE_LINUX)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"
@@ -161,9 +162,6 @@ if(CLR_CMAKE_TARGET_WIN32)
             ${NATIVEGLOBALIZATION_SOURCES}
         )
         target_compile_options(System.Globalization.Native.Aot.GuardCF PRIVATE /GL-)
-
-        target_link_libraries(System.Globalization.Native.Aot ${__LinkLibraries})
-        target_link_libraries(System.Globalization.Native.Aot.GuardCF ${__LinkLibraries})
 
         install_static_library(System.Globalization.Native.Aot aotsdk nativeaot)
         install_static_library(System.Globalization.Native.Aot.GuardCF aotsdk nativeaot)

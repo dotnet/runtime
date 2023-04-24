@@ -888,7 +888,7 @@ unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTr
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
 #else
     *inTryRegion = true;
@@ -3020,7 +3020,7 @@ void Compiler::fgVerifyHandlerTab()
     // between debug and non-debug code paths. So, create a renumbered block mapping: map the
     // existing block number to a renumbered block number that is ordered by block list order.
 
-    unsigned bbNumMax = impInlineRoot()->fgBBNumMax;
+    unsigned bbNumMax = fgBBNumMax;
 
     // blockNumMap[old block number] => new block number
     size_t    blockNumBytes = (bbNumMax + 1) * sizeof(unsigned);
@@ -3481,6 +3481,49 @@ void Compiler::fgVerifyHandlerTab()
         if (!blockTryBegSet[block->bbNum])
         {
             assert((block->bbFlags & BBF_TRY_BEG) == 0);
+        }
+
+        // Check for legal block types
+        switch (block->bbJumpKind)
+        {
+            case BBJ_EHFINALLYRET:
+            {
+                // Can only exist within a 'finally' handler
+                EHblkDsc* ehDsc = ehGetDsc(block->getHndIndex());
+                assert(ehDsc->HasFinallyHandler());
+                break;
+            }
+
+            case BBJ_EHFAULTRET:
+            {
+                // Can only exist within a 'fault' handler
+                EHblkDsc* ehDsc = ehGetDsc(block->getHndIndex());
+                assert(ehDsc->HasFaultHandler());
+                break;
+            }
+
+            case BBJ_EHFILTERRET:
+            {
+                // Can only exist within a filter region of a 'try/filter/filter-handler' handler
+                EHblkDsc* ehDsc = ehGetDsc(block->getHndIndex());
+                assert(ehDsc->HasFilter());
+                // Make sure it's in the filter region itself.
+                assert((blockNumMap[ehDsc->ebdFilter->bbNum] <= blockNumMap[block->bbNum]) &&
+                       (blockNumMap[block->bbNum] < blockNumMap[ehDsc->ebdHndBeg->bbNum]));
+                break;
+            }
+
+            case BBJ_EHCATCHRET:
+            {
+                // Can only exist within a 'catch' region of a 'try/catch' handler
+                EHblkDsc* ehDsc = ehGetDsc(block->getHndIndex());
+                assert(ehDsc->HasCatchHandler());
+                break;
+            }
+
+            default:
+                // No EH-related requirements.
+                break;
         }
     }
 }

@@ -19,7 +19,7 @@ namespace System
             [NotNull]
 #endif
             object? argument,
-            [CallerArgumentExpression("argument")] string? paramName = null)
+            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
         {
             if (argument is null)
             {

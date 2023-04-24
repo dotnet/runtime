@@ -15,7 +15,7 @@
       "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64"]
     },
     "wasm-experimental": {
-      "description": ".NET WebAssembly experimental",
+      "description": ".NET WebAssembly experimental tooling",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Templates",
         "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm",
@@ -23,6 +23,24 @@
       ],
       "extends": [ "wasm-tools" ],
       "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64" ]
+    },
+    "wasi-experimental": {
+      "description": ".NET WASI experimental",
+      "packs": [
+        "Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk",
+        "Microsoft.NETCore.App.Runtime.Mono.wasi-wasm",
+        "Microsoft.NET.Runtime.WebAssembly.Templates"
+      ],
+      "extends": [ "microsoft-net-runtime-mono-tooling" ],
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64" ]
+    },
+    "mobile-librarybuilder-experimental": {
+      "description": "Mobile SDK for building a self-contained .NET native library",
+      "packs": [
+        "Microsoft.NET.Runtime.LibraryBuilder.Sdk"
+      ],
+      "extends": [ "microsoft-net-runtime-android-aot", "microsoft-net-runtime-ios", "microsoft-net-runtime-maccatalyst", "microsoft-net-runtime-tvos" ],
+      "platforms": [ "osx-x64", "osx-arm64" ]
     },
     "microsoft-net-runtime-android": {
       "abstract": true,
@@ -125,6 +143,7 @@
       "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
     },
     "runtimes-windows": {
+      "abstract": true,
       "description": "Windows Runtime Packs",
       "packs": [
         "Microsoft.NETCore.App.Runtime.win-x64",
@@ -151,7 +170,15 @@
       "kind": "Sdk",
       "version": "${PackageVersion}"
     },
+    "Microsoft.NET.Runtime.LibraryBuilder.Sdk": {
+      "kind": "Sdk",
+      "version": "${PackageVersion}"
+    },
     "Microsoft.NET.Runtime.WebAssembly.Sdk": {
+      "kind": "Sdk",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk": {
       "kind": "Sdk",
       "version": "${PackageVersion}"
     },
@@ -351,6 +378,10 @@
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.wasi-wasm" : {
       "kind": "framework",
       "version": "${PackageVersion}"
     },

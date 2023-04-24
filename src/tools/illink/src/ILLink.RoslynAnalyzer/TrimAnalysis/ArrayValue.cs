@@ -64,6 +64,15 @@ namespace ILLink.Shared.TrimAnalysis
 		{
 			var newArray = new ArrayValue (Size);
 			foreach (var kvp in IndexValues) {
+#if DEBUG
+				// Since it's possible to store a reference to array as one of its own elements
+				// simple deep copy could lead to endless recursion.
+				// So instead we simply disallow arrays as element values completely - and treat that case as "too complex to analyze".
+				foreach (SingleValue v in kvp.Value) {
+					System.Diagnostics.Debug.Assert (v is not ArrayValue);
+				}
+#endif
+
 				newArray.IndexValues.Add (kvp.Key, kvp.Value.Clone ());
 			}
 

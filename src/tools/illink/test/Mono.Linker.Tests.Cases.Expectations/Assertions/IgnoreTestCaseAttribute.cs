@@ -14,6 +14,6 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 			ArgumentNullException.ThrowIfNull (reason);
 		}
 
-		public ProducedBy IgnoredBy { get; set; } = ProducedBy.TrimmerAnalyzerAndNativeAot;
+		public Tool IgnoredBy { get; set; } = Tool.TrimmerAnalyzerAndNativeAot;
 	}
 }

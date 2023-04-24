@@ -48,7 +48,7 @@
     <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
     <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
     <_AssemblyInTargetingPack Condition="('$(IsNETCoreAppSrc)' == 'true' or '$(IsNetCoreAppRef)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETFramework'">true</_AssemblyInTargetingPack>
-    <!-- Assembly version do not get updated in non-netfx ref pack assemblies. -->
+    <!-- The assembly version gets updated when the assembly isn't part of a targeting pack. -->
     <AssemblyVersion Condition="'$(_AssemblyInTargetingPack)' != 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
   </PropertyGroup>
 
@@ -60,7 +60,7 @@
           Condition="'$(IncludeDesignerMarker)' != 'false'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(AddNETFrameworkAssemblyReferenceToPackage)' == 'true'">
+  <ItemGroup Condition="'$(AddNETFrameworkAssemblyReferenceToPackage)' == 'true' and '$(NetFrameworkMinimum)' != ''">
     <_FrameworkAssemblyReferences Include="$(MSBuildProjectName)"
                                   TargetFramework="$(NetFrameworkMinimum)" />
   </ItemGroup>
@@ -80,7 +80,7 @@
         <None Include="$(PlaceholderFile)"
               Pack="true"
               PackagePath="$(BuildOutputTargetFolder)\$(NetFrameworkMinimum)\"
-              Condition="'$(AddNETFrameworkPlaceholderFileToPackage)' == 'true'" />
+              Condition="'$(AddNETFrameworkPlaceholderFileToPackage)' == 'true' and '$(NetFrameworkMinimum)' != ''" />
         <None Include="$(PlaceholderFile)"
               Pack="true"
               PackagePath="$(BuildOutputTargetFolder)\MonoAndroid10\;
@@ -104,7 +104,7 @@
                                        ($(TargetFrameworks.Contains('$(NetCoreAppMinimum)')) or $(TargetFrameworks.Contains('$(NetCoreAppPrevious)')) or $(TargetFrameworks.Contains('$(NetCoreAppCurrent)')))" />
     <NETStandardCompatError Include="net461"
                             Supported="$(NetFrameworkMinimum)"
-                            Condition="$(TargetFrameworks.Contains('netstandard2.0')) and
+                            Condition="'$(NetFrameworkMinimum)' != '' and $(TargetFrameworks.Contains('netstandard2.0')) and
                                        ($(TargetFrameworks.Contains('$(NetFrameworkMinimum)')) or $(TargetFrameworks.Contains('net47')) or $(TargetFrameworks.Contains('net48')))" />
   </ItemGroup>
 
@@ -164,7 +164,7 @@
     <IncludeMultiTargetRoslynComponentTargets Condition="'$(IncludeMultiTargetRoslynComponentTargets)' == ''">true</IncludeMultiTargetRoslynComponentTargets>
   </PropertyGroup>
 
-  <!-- In packages that contain Analyzers, include a .targets file that will select the correct analyzer. -->
+  <!-- In packages that contain multi-target Analyzers, include a .targets file that will select the correct analyzer. -->
   <Target Name="IncludeMultiTargetRoslynComponentTargetsInPackage"
           AfterTargets="IncludeAnalyzersInPackage"
           Condition="'@(ProjectReference)' != '' and
@@ -281,12 +281,6 @@
       <!-- Remove symbols from the non symbol package. -->
       <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="ValidateAssemblyVersionsInRefPack"
-          Condition="'$(SkipValidateAssemblyVersion)' != 'true' and '$(_AssemblyInTargetingPack)' == 'true' and '$(PreReleaseVersionLabel)' == 'servicing'"
-          AfterTargets="CoreCompile" >
-    <Error Condition="'$(AssemblyVersion)' != '$(LastReleasedStableAssemblyVersion)'" Text="AssemblyVersion should match last released assembly version $(LastReleasedStableAssemblyVersion)" />
   </Target>
 
   <Target Name="ValidateServicingVersionIsProperlySet"

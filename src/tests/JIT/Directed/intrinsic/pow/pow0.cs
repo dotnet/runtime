@@ -5,10 +5,12 @@
 //simple and recursive call
 
 using System;
+using Xunit;
 
-internal class pow0
+public class pow0
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = true;
         double x, y, z;

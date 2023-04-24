@@ -6,16 +6,15 @@ using System.IO;
 
 namespace System.Runtime.Serialization
 {
+    [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public interface IFormatter
     {
         internal const string RequiresDynamicCodeMessage = "BinaryFormatter serialization uses dynamic code generation, the type of objects being processed cannot be statically discovered.";
         internal const string RequiresUnreferencedCodeMessage = "BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.";
 
-        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         object Deserialize(Stream serializationStream);
-        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         void Serialize(Stream serializationStream, object graph);
         ISurrogateSelector? SurrogateSelector { get; set; }

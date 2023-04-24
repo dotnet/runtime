@@ -25,8 +25,7 @@ GTNODE(LCL_VAR          , GenTreeLclVar      ,0,GTK_LEAF)             // local v
 GTNODE(LCL_FLD          , GenTreeLclFld      ,0,GTK_LEAF)             // field in a non-primitive variable
 GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,GTK_UNOP|GTK_NOVALUE) // store to local variable
 GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,GTK_UNOP|GTK_NOVALUE) // store to a part of the variable
-GTNODE(LCL_VAR_ADDR     , GenTreeLclVar      ,0,GTK_LEAF)             // address of local variable
-GTNODE(LCL_FLD_ADDR     , GenTreeLclFld      ,0,GTK_LEAF)             // address of field in a non-primitive variable
+GTNODE(LCL_ADDR         , GenTreeLclFld      ,0,GTK_LEAF)             // local address
 
 //-----------------------------------------------------------------------------
 //  Leaf nodes (i.e. these nodes have no sub-operands):
@@ -77,16 +76,12 @@ GTNODE(BITCAST          , GenTreeOp          ,0,GTK_UNOP)               // reint
 GTNODE(CKFINITE         , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // Check for NaN
 GTNODE(LCLHEAP          , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // alloca()
 
-GTNODE(ADDR             , GenTreeOp          ,0,GTK_UNOP|DBK_NOTLIR)    // address of
-
 GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs
 
 GTNODE(IND              , GenTreeIndir       ,0,GTK_UNOP)                       // Load indirection
 GTNODE(STOREIND         , GenTreeStoreInd    ,0,GTK_BINOP|GTK_NOVALUE)          // Store indirection
-GTNODE(OBJ              , GenTreeObj         ,0,GTK_UNOP|GTK_EXOP)              // Object that MAY have gc pointers, and thus includes the relevant gc layout info.
-GTNODE(STORE_OBJ        , GenTreeObj         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Object that MAY have gc pointers, and thus includes the relevant gc layout info.
-GTNODE(BLK              , GenTreeBlk         ,0,GTK_UNOP|GTK_EXOP)              // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
-GTNODE(STORE_BLK        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
+GTNODE(BLK              , GenTreeBlk         ,0,GTK_UNOP|GTK_EXOP)              // Struct load
+GTNODE(STORE_BLK        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Struct store
 GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,GTK_SPECIAL|GTK_NOVALUE)        // Dynamically sized block store, with native uint size
 GTNODE(NULLCHECK        , GenTreeIndir       ,0,GTK_UNOP|GTK_NOVALUE)           // Null checks the source
 
@@ -243,8 +238,18 @@ GTNODE(JCC              , GenTreeCC          ,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and produces 1 if the condition specified by GenTreeCC::gtCondition is true and 0 otherwise.
 GTNODE(SETCC            , GenTreeCC          ,0,GTK_LEAF|DBK_NOTHIR)
 // Variant of SELECT that reuses flags computed by a previous node with the specified condition.
-GTNODE(SELECTCC         , GenTreeCC          ,0,GTK_BINOP|DBK_NOTHIR)
-
+GTNODE(SELECTCC         , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)
+#ifdef TARGET_ARM64
+// The arm64 ccmp instruction. If the specified condition is true, compares two
+// operands and sets the condition flags according to the result. Otherwise
+// sets the condition flags to the specified immediate value.
+GTNODE(CCMP             , GenTreeCCMP        ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+// Maps to arm64 cinc instruction. It returns the operand incremented by one when the condition is true.
+// Otherwise returns the unchanged operand. Optimises for patterns such as, result = condition ? op1 + 1 : op1
+GTNODE(CINC             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
+// Variant of CINC that reuses flags computed by a previous node with the specified condition.
+GTNODE(CINCCC           , GenTreeOpCC        ,0,GTK_UNOP|DBK_NOTHIR)
+#endif
 
 //-----------------------------------------------------------------------------
 //  Other nodes that look like unary/binary operators:

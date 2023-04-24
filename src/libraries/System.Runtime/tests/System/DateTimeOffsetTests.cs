@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using Xunit;
 
@@ -1252,93 +1253,193 @@ namespace System.Tests
         {
             // Randomly generated data on .NET Framework with:
             //     using System;
+            //     using System.Globalization;
             //     class Program
             //     {
             //         static void Main()
             //         {
-            //             var rand = new Random(42);
+            //             var rand = new Random(1);
             //             var bytes = new byte[8];
-            //             int i = 0;
-            //             while (i < 40)
+            //             for (int i = 0; i < 100; )
             //             {
-            //                 DateTimeKind kind = rand.Next(2) == 0 ? DateTimeKind.Utc : DateTimeKind.Unspecified;
-            //                 string format;
-            //                 switch (rand.Next(4))
-            //                 {
-            //                     case 0: format = "o"; break;
-            //                     case 1: format = "O"; break;
-            //                     case 2: format = "r"; break;
-            //                     default: format = "R"; break;
-            //                 }
-            //
+            //                 const string Formats = "dDfFgGmMoOrRstTuUyY";
+            //                 string format = Formats[rand.Next(Formats.Length - 1)].ToString();
             //                 try
             //                 {
             //                     rand.NextBytes(bytes);
             //                     long seed1 = BitConverter.ToInt64(bytes, 0);
             //                     short seed2 = BitConverter.ToInt16(bytes, 0);
             //                     var dto = new DateTimeOffset(seed1, TimeSpan.FromSeconds(seed2));
-            //                     Console.WriteLine($"yield return new object[] {{ new DateTimeOffset({seed1}, TimeSpan.FromSeconds({seed2})), \"{format}\", null, \"{dto.ToString(format)}\" }};");
+            //                     if (format[0] is 'o' or 'O' or 'r' or 'R' or 'u' or 's')
+            //                     {
+            //                         Console.WriteLine($"yield return new object[] {{ new DateTimeOffset({seed1}, TimeSpan.FromSeconds({seed2})), \"{format}\", null, \"{dto.ToString(format)}\" }};");
+            //                     }
+            //                     Console.WriteLine($"yield return new object[] {{ new DateTimeOffset({seed1}, TimeSpan.FromSeconds({seed2})), \"{format}\", CultureInfo.InvariantCulture, \"{dto.ToString(format, CultureInfo.InvariantCulture)}\" }};");
             //                     i++;
             //                 }
             //                 catch { }
             //             }
             //         }
             //     }
-            yield return new object[] { new DateTimeOffset(2900400428644841236, TimeSpan.FromSeconds(14100)), "R", null, "Thu, 02 Jan 9192 18:39:24 GMT" };
-            yield return new object[] { new DateTimeOffset(1274262903994885572, TimeSpan.FromSeconds(-23100)), "R", null, "Fri, 24 Dec 4038 14:11:39 GMT" };
-            yield return new object[] { new DateTimeOffset(1228646631256163984, TimeSpan.FromSeconds(1680)), "R", null, "Tue, 05 Jun 3894 16:37:25 GMT" };
-            yield return new object[] { new DateTimeOffset(2075652349868341848, TimeSpan.FromSeconds(31320)), "O", null, "6578-06-25T09:43:06.8341848+08:42" };
-            yield return new object[] { new DateTimeOffset(2552829549675618692, TimeSpan.FromSeconds(8580)), "O", null, "8090-08-05T19:56:07.5618692+02:23" };
-            yield return new object[] { new DateTimeOffset(2125715934081389968, TimeSpan.FromSeconds(5520)), "o", null, "6737-02-16T08:50:08.1389968+01:32" };
-            yield return new object[] { new DateTimeOffset(98868902986124576, TimeSpan.FromSeconds(3360)), "O", null, "0314-04-22T14:24:58.6124576+00:56" };
-            yield return new object[] { new DateTimeOffset(2013251697288306712, TimeSpan.FromSeconds(24600)), "O", null, "6380-09-28T10:15:28.8306712+06:50" };
-            yield return new object[] { new DateTimeOffset(1037147523427228640, TimeSpan.FromSeconds(23520)), "o", null, "3287-08-04T05:25:42.7228640+06:32" };
-            yield return new object[] { new DateTimeOffset(2177752403904984188, TimeSpan.FromSeconds(29820)), "r", null, "Mon, 09 Jan 6902 10:02:50 GMT" };
-            yield return new object[] { new DateTimeOffset(832166470435218996, TimeSpan.FromSeconds(9780)), "r", null, "Fri, 12 Jan 2638 12:34:23 GMT" };
-            yield return new object[] { new DateTimeOffset(651609783134768240, TimeSpan.FromSeconds(-13200)), "o", null, "2065-11-13T23:45:13.4768240-03:40" };
-            yield return new object[] { new DateTimeOffset(1436056534611459616, TimeSpan.FromSeconds(-480)), "o", null, "4551-09-07T11:17:41.1459616-00:08" };
-            yield return new object[] { new DateTimeOffset(1028124353647668124, TimeSpan.FromSeconds(-5220)), "o", null, "3258-12-30T17:49:24.7668124-01:27" };
-            yield return new object[] { new DateTimeOffset(815446183072290676, TimeSpan.FromSeconds(-10380)), "o", null, "2585-01-17T10:51:47.2290676-02:53" };
-            yield return new object[] { new DateTimeOffset(2091185090181553120, TimeSpan.FromSeconds(23520)), "r", null, "Fri, 14 Sep 6627 20:11:38 GMT" };
-            yield return new object[] { new DateTimeOffset(2668855365894778960, TimeSpan.FromSeconds(-20400)), "R", null, "Mon, 08 Apr 8458 04:56:29 GMT" };
-            yield return new object[] { new DateTimeOffset(1640160533452759488, TimeSpan.FromSeconds(8640)), "O", null, "5198-06-18T22:49:05.2759488+02:24" };
-            yield return new object[] { new DateTimeOffset(2958665748788957224, TimeSpan.FromSeconds(20520)), "o", null, "9376-08-21T15:41:18.8957224+05:42" };
-            yield return new object[] { new DateTimeOffset(2902544657562766092, TimeSpan.FromSeconds(-29940)), "R", null, "Tue, 20 Oct 9198 00:48:16 GMT" };
-            yield return new object[] { new DateTimeOffset(2847595389168931696, TimeSpan.FromSeconds(21360)), "R", null, "Thu, 02 Sep 9024 17:59:16 GMT" };
-            yield return new object[] { new DateTimeOffset(2010196475667096780, TimeSpan.FromSeconds(9420)), "r", null, "Sat, 23 Jan 6371 04:22:26 GMT" };
-            yield return new object[] { new DateTimeOffset(613442997756722832, TimeSpan.FromSeconds(32400)), "O", null, "1944-12-04T11:16:15.6722832+09:00" };
-            yield return new object[] { new DateTimeOffset(921560296274801912, TimeSpan.FromSeconds(13560)), "r", null, "Wed, 23 Apr 2921 13:21:07 GMT" };
-            yield return new object[] { new DateTimeOffset(1990689515682669052, TimeSpan.FromSeconds(8700)), "o", null, "6309-03-31T18:59:28.2669052+02:25" };
-            yield return new object[] { new DateTimeOffset(620638066929852080, TimeSpan.FromSeconds(24240)), "O", null, "1967-09-23T02:18:12.9852080+06:44" };
-            yield return new object[] { new DateTimeOffset(327248350932775524, TimeSpan.FromSeconds(12900)), "O", null, "1038-01-04T15:58:13.2775524+03:35" };
-            yield return new object[] { new DateTimeOffset(1370257845275318012, TimeSpan.FromSeconds(-10500)), "O", null, "4343-03-06T13:55:27.5318012-02:55" };
-            yield return new object[] { new DateTimeOffset(1239382730779209800, TimeSpan.FromSeconds(12360)), "O", null, "3928-06-13T18:04:37.9209800+03:26" };
-            yield return new object[] { new DateTimeOffset(2935667013803687040, TimeSpan.FromSeconds(-17280)), "o", null, "9303-10-05T17:56:20.3687040-04:48" };
-            yield return new object[] { new DateTimeOffset(2101626275971711700, TimeSpan.FromSeconds(-15660)), "R", null, "Tue, 16 Oct 6660 00:00:57 GMT" };
-            yield return new object[] { new DateTimeOffset(1417918072364232412, TimeSpan.FromSeconds(28380)), "o", null, "4494-03-15T21:07:16.4232412+07:53" };
-            yield return new object[] { new DateTimeOffset(962535844977970944, TimeSpan.FromSeconds(3840)), "r", null, "Thu, 27 Feb 3051 01:44:17 GMT" };
-            yield return new object[] { new DateTimeOffset(2576630638913059544, TimeSpan.FromSeconds(-1320)), "R", null, "Tue, 07 Jan 8166 09:40:11 GMT" };
-            yield return new object[] { new DateTimeOffset(991481917233718112, TimeSpan.FromSeconds(25440)), "r", null, "Thu, 19 Nov 3142 05:18:03 GMT" };
-            yield return new object[] { new DateTimeOffset(230115425073485984, TimeSpan.FromSeconds(-10080)), "o", null, "0730-03-18T07:08:27.3485984-02:48" };
-            yield return new object[] { new DateTimeOffset(1289946780226617584, TimeSpan.FromSeconds(240)), "r", null, "Sat, 04 Sep 4088 22:56:22 GMT" };
-            yield return new object[] { new DateTimeOffset(3119563990129685280, TimeSpan.FromSeconds(-19680)), "R", null, "Sun, 04 Jul 9886 16:44:52 GMT" };
-            yield return new object[] { new DateTimeOffset(1167612095351481672, TimeSpan.FromSeconds(-6840)), "r", null, "Thu, 06 Jan 3701 23:12:55 GMT" };
-            yield return new object[] { new DateTimeOffset(1617181518122280616, TimeSpan.FromSeconds(26280)), "O", null, "5125-08-24T20:50:12.2280616+07:18" };
+            yield return new object[] { new DateTimeOffset(2866003186733990972, TimeSpan.FromSeconds(-15300)), "d", CultureInfo.InvariantCulture, "01/02/9083" };
+            yield return new object[] { new DateTimeOffset(17724261114884476, TimeSpan.FromSeconds(-20100)), "o", null, "0057-03-02T04:35:11.4884476-05:35" };
+            yield return new object[] { new DateTimeOffset(17724261114884476, TimeSpan.FromSeconds(-20100)), "o", CultureInfo.InvariantCulture, "0057-03-02T04:35:11.4884476-05:35" };
+            yield return new object[] { new DateTimeOffset(1922396642931594516, TimeSpan.FromSeconds(21780)), "M", CultureInfo.InvariantCulture, "October 31" };
+            yield return new object[] { new DateTimeOffset(483367606946453596, TimeSpan.FromSeconds(22620)), "G", CultureInfo.InvariantCulture, "09/25/1532 05:58:14" };
+            yield return new object[] { new DateTimeOffset(69949591831359208, TimeSpan.FromSeconds(-20760)), "o", null, "0222-08-31T04:13:03.1359208-05:46" };
+            yield return new object[] { new DateTimeOffset(69949591831359208, TimeSpan.FromSeconds(-20760)), "o", CultureInfo.InvariantCulture, "0222-08-31T04:13:03.1359208-05:46" };
+            yield return new object[] { new DateTimeOffset(2558272663974397160, TimeSpan.FromSeconds(17640)), "o", null, "8107-11-05T17:33:17.4397160+04:54" };
+            yield return new object[] { new DateTimeOffset(2558272663974397160, TimeSpan.FromSeconds(17640)), "o", CultureInfo.InvariantCulture, "8107-11-05T17:33:17.4397160+04:54" };
+            yield return new object[] { new DateTimeOffset(1595228036159296076, TimeSpan.FromSeconds(-11700)), "g", CultureInfo.InvariantCulture, "01/29/5056 17:53" };
+            yield return new object[] { new DateTimeOffset(1482818938952517812, TimeSpan.FromSeconds(-30540)), "r", null, "Mon, 13 Nov 4699 23:27:15 GMT" };
+            yield return new object[] { new DateTimeOffset(1482818938952517812, TimeSpan.FromSeconds(-30540)), "r", CultureInfo.InvariantCulture, "Mon, 13 Nov 4699 23:27:15 GMT" };
+            yield return new object[] { new DateTimeOffset(2374737620308081364, TimeSpan.FromSeconds(15060)), "y", CultureInfo.InvariantCulture, "7526 March" };
+            yield return new object[] { new DateTimeOffset(1480473615374849012, TimeSpan.FromSeconds(-27660)), "g", CultureInfo.InvariantCulture, "06/08/4692 03:05" };
+            yield return new object[] { new DateTimeOffset(559024831959587456, TimeSpan.FromSeconds(-9600)), "M", CultureInfo.InvariantCulture, "June 24" };
+            yield return new object[] { new DateTimeOffset(1184653058942329036, TimeSpan.FromSeconds(24780)), "d", CultureInfo.InvariantCulture, "01/07/3755" };
+            yield return new object[] { new DateTimeOffset(516669061683837048, TimeSpan.FromSeconds(30840)), "G", CultureInfo.InvariantCulture, "04/05/1638 14:22:48" };
+            yield return new object[] { new DateTimeOffset(2258308651822418992, TimeSpan.FromSeconds(3120)), "T", CultureInfo.InvariantCulture, "03:53:02" };
+            yield return new object[] { new DateTimeOffset(1383517800988996320, TimeSpan.FromSeconds(-3360)), "t", CultureInfo.InvariantCulture, "18:01" };
+            yield return new object[] { new DateTimeOffset(728656139270861240, TimeSpan.FromSeconds(-20040)), "u", null, "2310-01-09 05:52:47Z" };
+            yield return new object[] { new DateTimeOffset(728656139270861240, TimeSpan.FromSeconds(-20040)), "u", CultureInfo.InvariantCulture, "2310-01-09 05:52:47Z" };
+            yield return new object[] { new DateTimeOffset(393200115812717732, TimeSpan.FromSeconds(-11100)), "M", CultureInfo.InvariantCulture, "January 01" };
+            yield return new object[] { new DateTimeOffset(1359420562790649548, TimeSpan.FromSeconds(-28980)), "u", null, "4308-11-01 18:20:59Z" };
+            yield return new object[] { new DateTimeOffset(1359420562790649548, TimeSpan.FromSeconds(-28980)), "u", CultureInfo.InvariantCulture, "4308-11-01 18:20:59Z" };
+            yield return new object[] { new DateTimeOffset(1235254827956094012, TimeSpan.FromSeconds(-15300)), "u", null, "3915-05-16 06:21:35Z" };
+            yield return new object[] { new DateTimeOffset(1235254827956094012, TimeSpan.FromSeconds(-15300)), "u", CultureInfo.InvariantCulture, "3915-05-16 06:21:35Z" };
+            yield return new object[] { new DateTimeOffset(114477656718234848, TimeSpan.FromSeconds(-11040)), "f", CultureInfo.InvariantCulture, "Tuesday, 08 October 0363 06:54" };
+            yield return new object[] { new DateTimeOffset(192057803897653116, TimeSpan.FromSeconds(18300)), "O", null, "0609-08-11T02:59:49.7653116+05:05" };
+            yield return new object[] { new DateTimeOffset(192057803897653116, TimeSpan.FromSeconds(18300)), "O", CultureInfo.InvariantCulture, "0609-08-11T02:59:49.7653116+05:05" };
+            yield return new object[] { new DateTimeOffset(546374288963361880, TimeSpan.FromSeconds(23640)), "G", CultureInfo.InvariantCulture, "05/23/1732 15:34:56" };
+            yield return new object[] { new DateTimeOffset(270121790607980192, TimeSpan.FromSeconds(-2400)), "R", null, "Sun, 24 Dec 0856 23:44:20 GMT" };
+            yield return new object[] { new DateTimeOffset(270121790607980192, TimeSpan.FromSeconds(-2400)), "R", CultureInfo.InvariantCulture, "Sun, 24 Dec 0856 23:44:20 GMT" };
+            yield return new object[] { new DateTimeOffset(2305676294986132560, TimeSpan.FromSeconds(-5040)), "D", CultureInfo.InvariantCulture, "Thursday, 26 May 7307" };
+            yield return new object[] { new DateTimeOffset(2532230820032055596, TimeSpan.FromSeconds(-30420)), "T", CultureInfo.InvariantCulture, "17:00:03" };
+            yield return new object[] { new DateTimeOffset(1076978232703995584, TimeSpan.FromSeconds(20160)), "T", CultureInfo.InvariantCulture, "14:01:10" };
+            yield return new object[] { new DateTimeOffset(1339659304181130620, TimeSpan.FromSeconds(25980)), "M", CultureInfo.InvariantCulture, "March 19" };
+            yield return new object[] { new DateTimeOffset(2750426316766699852, TimeSpan.FromSeconds(-7860)), "t", CultureInfo.InvariantCulture, "19:01" };
+            yield return new object[] { new DateTimeOffset(972505514843635232, TimeSpan.FromSeconds(-480)), "T", CultureInfo.InvariantCulture, "02:04:44" };
+            yield return new object[] { new DateTimeOffset(2427049669893407744, TimeSpan.FromSeconds(-15360)), "R", null, "Sun, 06 Jan 7692 10:39:09 GMT" };
+            yield return new object[] { new DateTimeOffset(2427049669893407744, TimeSpan.FromSeconds(-15360)), "R", CultureInfo.InvariantCulture, "Sun, 06 Jan 7692 10:39:09 GMT" };
+            yield return new object[] { new DateTimeOffset(2167597301268758764, TimeSpan.FromSeconds(16620)), "u", null, "6869-11-03 23:31:46Z" };
+            yield return new object[] { new DateTimeOffset(2167597301268758764, TimeSpan.FromSeconds(16620)), "u", CultureInfo.InvariantCulture, "6869-11-03 23:31:46Z" };
+            yield return new object[] { new DateTimeOffset(2833512902056985060, TimeSpan.FromSeconds(-15900)), "u", null, "8980-01-18 00:08:25Z" };
+            yield return new object[] { new DateTimeOffset(2833512902056985060, TimeSpan.FromSeconds(-15900)), "u", CultureInfo.InvariantCulture, "8980-01-18 00:08:25Z" };
+            yield return new object[] { new DateTimeOffset(2053144072711223968, TimeSpan.FromSeconds(-17760)), "F", CultureInfo.InvariantCulture, "Sunday, 27 February 6507 03:47:51" };
+            yield return new object[] { new DateTimeOffset(1245775652276323568, TimeSpan.FromSeconds(-15120)), "d", CultureInfo.InvariantCulture, "09/15/3948" };
+            yield return new object[] { new DateTimeOffset(3067145896534734916, TimeSpan.FromSeconds(-1980)), "s", null, "9720-05-26T09:07:33" };
+            yield return new object[] { new DateTimeOffset(3067145896534734916, TimeSpan.FromSeconds(-1980)), "s", CultureInfo.InvariantCulture, "9720-05-26T09:07:33" };
+            yield return new object[] { new DateTimeOffset(1149266991238407556, TimeSpan.FromSeconds(-6780)), "m", CultureInfo.InvariantCulture, "November 19" };
+            yield return new object[] { new DateTimeOffset(1749528579164719160, TimeSpan.FromSeconds(-14280)), "G", CultureInfo.InvariantCulture, "01/14/5545 08:05:16" };
+            yield return new object[] { new DateTimeOffset(1375434758076332332, TimeSpan.FromSeconds(31020)), "R", null, "Sat, 01 Aug 4359 00:26:27 GMT" };
+            yield return new object[] { new DateTimeOffset(1375434758076332332, TimeSpan.FromSeconds(31020)), "R", CultureInfo.InvariantCulture, "Sat, 01 Aug 4359 00:26:27 GMT" };
+            yield return new object[] { new DateTimeOffset(28528038954117508, TimeSpan.FromSeconds(-22140)), "D", CultureInfo.InvariantCulture, "Sunday, 27 May 0091" };
+            yield return new object[] { new DateTimeOffset(685194926724353912, TimeSpan.FromSeconds(3960)), "t", CultureInfo.InvariantCulture, "16:24" };
+            yield return new object[] { new DateTimeOffset(2887804226685042448, TimeSpan.FromSeconds(-240)), "D", CultureInfo.InvariantCulture, "Sunday, 03 February 9152" };
+            yield return new object[] { new DateTimeOffset(863118435880997388, TimeSpan.FromSeconds(4620)), "D", CultureInfo.InvariantCulture, "Wednesday, 12 February 2736" };
+            yield return new object[] { new DateTimeOffset(1131353524374008364, TimeSpan.FromSeconds(-3540)), "y", CultureInfo.InvariantCulture, "3586 February" };
+            yield return new object[] { new DateTimeOffset(315210523520920416, TimeSpan.FromSeconds(-5280)), "r", null, "Tue, 12 Nov 0999 01:20:32 GMT" };
+            yield return new object[] { new DateTimeOffset(315210523520920416, TimeSpan.FromSeconds(-5280)), "r", CultureInfo.InvariantCulture, "Tue, 12 Nov 0999 01:20:32 GMT" };
+            yield return new object[] { new DateTimeOffset(2230965644288159332, TimeSpan.FromSeconds(28260)), "D", CultureInfo.InvariantCulture, "Friday, 26 August 7070" };
+            yield return new object[] { new DateTimeOffset(2347007386434452848, TimeSpan.FromSeconds(-17040)), "M", CultureInfo.InvariantCulture, "May 16" };
+            yield return new object[] { new DateTimeOffset(3057726375364446024, TimeSpan.FromSeconds(-14520)), "T", CultureInfo.InvariantCulture, "03:45:36" };
+            yield return new object[] { new DateTimeOffset(1346223178375097544, TimeSpan.FromSeconds(-4920)), "T", CultureInfo.InvariantCulture, "16:17:17" };
+            yield return new object[] { new DateTimeOffset(2139495673968405100, TimeSpan.FromSeconds(10860)), "G", CultureInfo.InvariantCulture, "10/17/6780 03:23:16" };
+            yield return new object[] { new DateTimeOffset(1393959301494092688, TimeSpan.FromSeconds(13200)), "r", null, "Fri, 13 Apr 4418 16:02:29 GMT" };
+            yield return new object[] { new DateTimeOffset(1393959301494092688, TimeSpan.FromSeconds(13200)), "r", CultureInfo.InvariantCulture, "Fri, 13 Apr 4418 16:02:29 GMT" };
+            yield return new object[] { new DateTimeOffset(2354387478841092052, TimeSpan.FromSeconds(26580)), "u", null, "7461-10-04 04:48:24Z" };
+            yield return new object[] { new DateTimeOffset(2354387478841092052, TimeSpan.FromSeconds(26580)), "u", CultureInfo.InvariantCulture, "7461-10-04 04:48:24Z" };
+            yield return new object[] { new DateTimeOffset(2695673889181138404, TimeSpan.FromSeconds(-540)), "T", CultureInfo.InvariantCulture, "22:15:18" };
+            yield return new object[] { new DateTimeOffset(3129400016207346692, TimeSpan.FromSeconds(-1020)), "f", CultureInfo.InvariantCulture, "Tuesday, 04 September 9917 18:13" };
+            yield return new object[] { new DateTimeOffset(268510768954133436, TimeSpan.FromSeconds(-13380)), "m", CultureInfo.InvariantCulture, "November 17" };
+            yield return new object[] { new DateTimeOffset(1675324527268079456, TimeSpan.FromSeconds(10080)), "y", CultureInfo.InvariantCulture, "5309 November" };
+            yield return new object[] { new DateTimeOffset(1226179294413194056, TimeSpan.FromSeconds(840)), "s", null, "3886-08-10T23:57:21" };
+            yield return new object[] { new DateTimeOffset(1226179294413194056, TimeSpan.FromSeconds(840)), "s", CultureInfo.InvariantCulture, "3886-08-10T23:57:21" };
+            yield return new object[] { new DateTimeOffset(1541746737990743828, TimeSpan.FromSeconds(14100)), "g", CultureInfo.InvariantCulture, "08/08/4886 02:16" };
+            yield return new object[] { new DateTimeOffset(3014961136493232496, TimeSpan.FromSeconds(-32400)), "O", null, "9555-01-13T08:27:29.3232496-09:00" };
+            yield return new object[] { new DateTimeOffset(3014961136493232496, TimeSpan.FromSeconds(-32400)), "O", CultureInfo.InvariantCulture, "9555-01-13T08:27:29.3232496-09:00" };
+            yield return new object[] { new DateTimeOffset(93553939704192692, TimeSpan.FromSeconds(7860)), "m", CultureInfo.InvariantCulture, "June 18" };
+            yield return new object[] { new DateTimeOffset(1474648860395527136, TimeSpan.FromSeconds(23520)), "s", null, "4673-12-23T12:20:39" };
+            yield return new object[] { new DateTimeOffset(1474648860395527136, TimeSpan.FromSeconds(23520)), "s", CultureInfo.InvariantCulture, "4673-12-23T12:20:39" };
+            yield return new object[] { new DateTimeOffset(1295864623067010816, TimeSpan.FromSeconds(-26880)), "M", CultureInfo.InvariantCulture, "June 08" };
+            yield return new object[] { new DateTimeOffset(2739123151422226552, TimeSpan.FromSeconds(120)), "o", null, "8680-12-08T10:12:22.2226552+00:02" };
+            yield return new object[] { new DateTimeOffset(2739123151422226552, TimeSpan.FromSeconds(120)), "o", CultureInfo.InvariantCulture, "8680-12-08T10:12:22.2226552+00:02" };
+            yield return new object[] { new DateTimeOffset(1515671391938001628, TimeSpan.FromSeconds(-17700)), "o", null, "4803-12-22T07:06:33.8001628-04:55" };
+            yield return new object[] { new DateTimeOffset(1515671391938001628, TimeSpan.FromSeconds(-17700)), "o", CultureInfo.InvariantCulture, "4803-12-22T07:06:33.8001628-04:55" };
+            yield return new object[] { new DateTimeOffset(1675967728676687860, TimeSpan.FromSeconds(-12300)), "D", CultureInfo.InvariantCulture, "Monday, 07 December 5311" };
+            yield return new object[] { new DateTimeOffset(2231850043577254012, TimeSpan.FromSeconds(-16260)), "O", null, "7073-06-14T18:32:37.7254012-04:31" };
+            yield return new object[] { new DateTimeOffset(2231850043577254012, TimeSpan.FromSeconds(-16260)), "O", CultureInfo.InvariantCulture, "7073-06-14T18:32:37.7254012-04:31" };
+            yield return new object[] { new DateTimeOffset(763201213144623488, TimeSpan.FromSeconds(-5760)), "y", CultureInfo.InvariantCulture, "2419 June" };
+            yield return new object[] { new DateTimeOffset(1902743697611562976, TimeSpan.FromSeconds(8160)), "R", null, "Mon, 22 Jul 6030 13:20:01 GMT" };
+            yield return new object[] { new DateTimeOffset(1902743697611562976, TimeSpan.FromSeconds(8160)), "R", CultureInfo.InvariantCulture, "Mon, 22 Jul 6030 13:20:01 GMT" };
+            yield return new object[] { new DateTimeOffset(2170088908634528380, TimeSpan.FromSeconds(6780)), "M", CultureInfo.InvariantCulture, "September 26" };
+            yield return new object[] { new DateTimeOffset(2945387119699905100, TimeSpan.FromSeconds(19020)), "u", null, "9334-07-24 15:35:49Z" };
+            yield return new object[] { new DateTimeOffset(2945387119699905100, TimeSpan.FromSeconds(19020)), "u", CultureInfo.InvariantCulture, "9334-07-24 15:35:49Z" };
+            yield return new object[] { new DateTimeOffset(2210427227472213120, TimeSpan.FromSeconds(13440)), "d", CultureInfo.InvariantCulture, "07/26/7005" };
+            yield return new object[] { new DateTimeOffset(1172280359902648716, TimeSpan.FromSeconds(6540)), "r", null, "Wed, 23 Oct 3715 21:30:50 GMT" };
+            yield return new object[] { new DateTimeOffset(1172280359902648716, TimeSpan.FromSeconds(6540)), "r", CultureInfo.InvariantCulture, "Wed, 23 Oct 3715 21:30:50 GMT" };
+            yield return new object[] { new DateTimeOffset(193781915832174040, TimeSpan.FromSeconds(17880)), "G", CultureInfo.InvariantCulture, "01/27/0615 14:59:43" };
+            yield return new object[] { new DateTimeOffset(1434340271653145524, TimeSpan.FromSeconds(19380)), "s", null, "4546-03-31T01:19:25" };
+            yield return new object[] { new DateTimeOffset(1434340271653145524, TimeSpan.FromSeconds(19380)), "s", CultureInfo.InvariantCulture, "4546-03-31T01:19:25" };
+            yield return new object[] { new DateTimeOffset(2232002475903745148, TimeSpan.FromSeconds(-900)), "R", null, "Mon, 08 Dec 7073 05:01:30 GMT" };
+            yield return new object[] { new DateTimeOffset(2232002475903745148, TimeSpan.FromSeconds(-900)), "R", CultureInfo.InvariantCulture, "Mon, 08 Dec 7073 05:01:30 GMT" };
+            yield return new object[] { new DateTimeOffset(75862097515405336, TimeSpan.FromSeconds(24600)), "r", null, "Wed, 26 May 0241 01:39:11 GMT" };
+            yield return new object[] { new DateTimeOffset(75862097515405336, TimeSpan.FromSeconds(24600)), "r", CultureInfo.InvariantCulture, "Wed, 26 May 0241 01:39:11 GMT" };
+            yield return new object[] { new DateTimeOffset(1311882990195785184, TimeSpan.FromSeconds(15840)), "s", null, "4158-03-12T02:10:19" };
+            yield return new object[] { new DateTimeOffset(1311882990195785184, TimeSpan.FromSeconds(15840)), "s", CultureInfo.InvariantCulture, "4158-03-12T02:10:19" };
+            yield return new object[] { new DateTimeOffset(2492654623258780576, TimeSpan.FromSeconds(9120)), "t", CultureInfo.InvariantCulture, "22:12" };
+            yield return new object[] { new DateTimeOffset(3044591719812160368, TimeSpan.FromSeconds(-9360)), "O", null, "9648-12-05T00:13:01.2160368-02:36" };
+            yield return new object[] { new DateTimeOffset(3044591719812160368, TimeSpan.FromSeconds(-9360)), "O", CultureInfo.InvariantCulture, "9648-12-05T00:13:01.2160368-02:36" };
+            yield return new object[] { new DateTimeOffset(2782989619967598208, TimeSpan.FromSeconds(-24960)), "o", null, "8819-12-11T19:13:16.7598208-06:56" };
+            yield return new object[] { new DateTimeOffset(2782989619967598208, TimeSpan.FromSeconds(-24960)), "o", CultureInfo.InvariantCulture, "8819-12-11T19:13:16.7598208-06:56" };
+            yield return new object[] { new DateTimeOffset(2691678346098786600, TimeSpan.FromSeconds(16680)), "G", CultureInfo.InvariantCulture, "08/04/8530 10:56:49" };
+            yield return new object[] { new DateTimeOffset(2863023557156129544, TimeSpan.FromSeconds(-13560)), "M", CultureInfo.InvariantCulture, "July 24" };
+            yield return new object[] { new DateTimeOffset(2141892998746916860, TimeSpan.FromSeconds(-14340)), "o", null, "6788-05-22T19:44:34.6916860-03:59" };
+            yield return new object[] { new DateTimeOffset(2141892998746916860, TimeSpan.FromSeconds(-14340)), "o", CultureInfo.InvariantCulture, "6788-05-22T19:44:34.6916860-03:59" };
+            yield return new object[] { new DateTimeOffset(1647902714725003280, TimeSpan.FromSeconds(-4080)), "o", null, "5222-12-30T19:24:32.5003280-01:08" };
+            yield return new object[] { new DateTimeOffset(1647902714725003280, TimeSpan.FromSeconds(-4080)), "o", CultureInfo.InvariantCulture, "5222-12-30T19:24:32.5003280-01:08" };
+            yield return new object[] { new DateTimeOffset(3015783691236408744, TimeSpan.FromSeconds(-600)), "G", CultureInfo.InvariantCulture, "08/22/9557 09:12:03" };
+            yield return new object[] { new DateTimeOffset(1723006204695438056, TimeSpan.FromSeconds(25320)), "m", CultureInfo.InvariantCulture, "December 28" };
+            yield return new object[] { new DateTimeOffset(205672147887324044, TimeSpan.FromSeconds(-1140)), "m", CultureInfo.InvariantCulture, "October 01" };
+            yield return new object[] { new DateTimeOffset(176841286150132116, TimeSpan.FromSeconds(4500)), "d", CultureInfo.InvariantCulture, "05/22/0561" };
+            yield return new object[] { new DateTimeOffset(358056122991012336, TimeSpan.FromSeconds(27120)), "f", CultureInfo.InvariantCulture, "Wednesday, 21 August 1135 19:24" };
+            yield return new object[] { new DateTimeOffset(504008756218880332, TimeSpan.FromSeconds(-7860)), "m", CultureInfo.InvariantCulture, "February 21" };
+            yield return new object[] { new DateTimeOffset(2338734206946518640, TimeSpan.FromSeconds(9840)), "M", CultureInfo.InvariantCulture, "February 27" };
+            yield return new object[] { new DateTimeOffset(2514061437370836652, TimeSpan.FromSeconds(9900)), "o", null, "7967-09-30T07:55:37.0836652+02:45" };
+            yield return new object[] { new DateTimeOffset(2514061437370836652, TimeSpan.FromSeconds(9900)), "o", CultureInfo.InvariantCulture, "7967-09-30T07:55:37.0836652+02:45" };
+            yield return new object[] { new DateTimeOffset(2910141711367555000, TimeSpan.FromSeconds(18360)), "r", null, "Tue, 15 Nov 9222 08:39:36 GMT" };
+            yield return new object[] { new DateTimeOffset(2910141711367555000, TimeSpan.FromSeconds(18360)), "r", CultureInfo.InvariantCulture, "Tue, 15 Nov 9222 08:39:36 GMT" };
+            yield return new object[] { new DateTimeOffset(2268815489190300608, TimeSpan.FromSeconds(-29760)), "M", CultureInfo.InvariantCulture, "August 04" };
+            yield return new object[] { new DateTimeOffset(2270906825242135956, TimeSpan.FromSeconds(19860)), "T", CultureInfo.InvariantCulture, "09:08:44" };
+            yield return new object[] { new DateTimeOffset(1257384048216439692, TimeSpan.FromSeconds(-1140)), "D", CultureInfo.InvariantCulture, "Saturday, 29 June 3985" };
+            yield return new object[] { new DateTimeOffset(2905726883951199532, TimeSpan.FromSeconds(-15060)), "F", CultureInfo.InvariantCulture, "Tuesday, 18 November 9208 19:39:55" };
+            yield return new object[] { new DateTimeOffset(1963041343129029388, TimeSpan.FromSeconds(-29940)), "r", null, "Sun, 19 Aug 6221 22:30:52 GMT" };
+            yield return new object[] { new DateTimeOffset(1963041343129029388, TimeSpan.FromSeconds(-29940)), "r", CultureInfo.InvariantCulture, "Sun, 19 Aug 6221 22:30:52 GMT" };
+            yield return new object[] { new DateTimeOffset(1344688163288837500, TimeSpan.FromSeconds(-4740)), "G", CultureInfo.InvariantCulture, "02/24/4262 00:58:48" };
+            yield return new object[] { new DateTimeOffset(2904241358872885260, TimeSpan.FromSeconds(-18420)), "y", CultureInfo.InvariantCulture, "9204 March" };
+            yield return new object[] { new DateTimeOffset(2226716916868971284, TimeSpan.FromSeconds(-1260)), "G", CultureInfo.InvariantCulture, "03/09/7057 15:41:26" };
 
             // Year patterns
             var enUS = new CultureInfo("en-US");
             var thTH = new CultureInfo("th-TH");
             yield return new object[] { new DateTimeOffset(new DateTime(1234, 5, 6)), "yy", enUS, "34" };
             if (PlatformDetection.IsNotInvariantGlobalization)
+            {
                 yield return new object[] { DateTimeOffset.MaxValue, "yy", thTH, "42" };
+            }
 
             for (int i = 3; i < 20; i++)
             {
                 yield return new object[] { new DateTimeOffset(new DateTime(1234, 5, 6)), new string('y', i), enUS, 1234.ToString("D" + i) };
 
                 if (PlatformDetection.IsNotInvariantGlobalization)
+                {
                     yield return new object[] { DateTimeOffset.MaxValue, new string('y', i), thTH, 10542.ToString("D" + i) };
+                }
             }
+
+            // Non-ASCII in format string
+            yield return new object[] { new DateTimeOffset(2023, 04, 17, 10, 46, 12, TimeSpan.Zero), "HH\u202dmm", null, "10\u202d46" };
         }
 
         [Theory]
@@ -1442,26 +1543,53 @@ namespace System.Tests
         [Fact]
         public static void TryFormat_ToString_EqualResults()
         {
-            DateTimeOffset expected = DateTimeOffset.MaxValue;
-            string expectedString = expected.ToString();
+            // UTF16
+            {
+                DateTimeOffset expected = DateTimeOffset.MaxValue;
+                string expectedString = expected.ToString();
 
-            // Just the right amount of space, succeeds
-            Span<char> actual = new char[expectedString.Length];
-            Assert.True(expected.TryFormat(actual, out int charsWritten));
-            Assert.Equal(expectedString.Length, charsWritten);
-            Assert.Equal<char>(expectedString.ToCharArray(), actual.ToArray());
+                // Just the right amount of space, succeeds
+                Span<char> actual = new char[expectedString.Length];
+                Assert.True(expected.TryFormat(actual, out int charsWritten));
+                Assert.Equal(expectedString.Length, charsWritten);
+                Assert.Equal<char>(expectedString.ToCharArray(), actual.ToArray());
 
-            // Too little space, fails
-            actual = new char[expectedString.Length - 1];
-            Assert.False(expected.TryFormat(actual, out charsWritten));
-            Assert.Equal(0, charsWritten);
+                // Too little space, fails
+                actual = new char[expectedString.Length - 1];
+                Assert.False(expected.TryFormat(actual, out charsWritten));
+                Assert.Equal(0, charsWritten);
 
-            // More than enough space, succeeds
-            actual = new char[expectedString.Length + 1];
-            Assert.True(expected.TryFormat(actual, out charsWritten));
-            Assert.Equal(expectedString.Length, charsWritten);
-            Assert.Equal<char>(expectedString.ToCharArray(), actual.Slice(0, expectedString.Length).ToArray());
-            Assert.Equal(0, actual[actual.Length - 1]);
+                // More than enough space, succeeds
+                actual = new char[expectedString.Length + 1];
+                Assert.True(expected.TryFormat(actual, out charsWritten));
+                Assert.Equal(expectedString.Length, charsWritten);
+                Assert.Equal<char>(expectedString.ToCharArray(), actual.Slice(0, expectedString.Length).ToArray());
+                Assert.Equal(0, actual[actual.Length - 1]);
+            }
+
+            // UTF8
+            {
+                DateTimeOffset expected = DateTimeOffset.MaxValue;
+                string expectedString = expected.ToString();
+
+                // Just the right amount of space, succeeds
+                Span<byte> actual = new byte[Encoding.UTF8.GetByteCount(expectedString)];
+                Assert.True(expected.TryFormat(actual, out int bytesWritten, default, null));
+                Assert.Equal(actual.Length, bytesWritten);
+                Assert.Equal(expectedString, Encoding.UTF8.GetString(actual));
+
+                // Too little space, fails
+                actual = new byte[Encoding.UTF8.GetByteCount(expectedString) - 1];
+                Assert.False(expected.TryFormat(actual, out bytesWritten, default, null));
+                Assert.Equal(0, bytesWritten);
+
+                // More than enough space, succeeds
+                actual = new byte[Encoding.UTF8.GetByteCount(expectedString) + 1];
+                Assert.True(expected.TryFormat(actual, out bytesWritten, default, null));
+                Assert.Equal(actual.Length - 1, bytesWritten);
+                Assert.Equal(expectedString, Encoding.UTF8.GetString(actual.Slice(0, bytesWritten)));
+                Assert.Equal(0, actual[actual.Length - 1]);
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
@@ -1469,13 +1597,27 @@ namespace System.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60562", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void TryFormat_MatchesExpected(DateTimeOffset dateTimeOffset, string format, IFormatProvider provider, string expected)
         {
-            var destination = new char[expected.Length];
+            // UTF16
+            {
+                var destination = new char[expected.Length];
 
-            Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+                Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
 
-            Assert.True(dateTimeOffset.TryFormat(destination, out int charsWritten, format, provider));
-            Assert.Equal(destination.Length, charsWritten);
-            Assert.Equal(expected, new string(destination));
+                Assert.True(dateTimeOffset.TryFormat(destination, out int charsWritten, format, provider));
+                Assert.Equal(destination.Length, charsWritten);
+                Assert.Equal(expected, new string(destination));
+            }
+
+            // UTF8
+            {
+                var destination = new byte[Encoding.UTF8.GetByteCount(expected)];
+
+                Assert.False(dateTimeOffset.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+
+                Assert.True(dateTimeOffset.TryFormat(destination, out int bytesWritten, format, provider));
+                Assert.Equal(destination.Length, bytesWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(destination));
+            }
         }
 
         [Fact]

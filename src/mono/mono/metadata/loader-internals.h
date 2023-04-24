@@ -305,6 +305,9 @@ mono_alc_find_assembly (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 MONO_COMPONENT_API GPtrArray*
 mono_alc_get_all_loaded_assemblies (void);
 
+GPtrArray*
+mono_alc_get_all (void);
+
 MONO_API void
 mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);
 

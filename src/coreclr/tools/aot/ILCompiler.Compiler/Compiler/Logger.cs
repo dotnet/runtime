@@ -4,15 +4,18 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Reflection.Metadata;
 
 using Internal.TypeSystem;
+using Internal.IL;
 
 using ILCompiler.Dataflow;
 using ILCompiler.Logging;
 using ILLink.Shared;
+
 using MethodIL = Internal.IL.MethodIL;
-using Internal.IL;
 
 namespace ILCompiler
 {
@@ -146,11 +149,6 @@ namespace ILCompiler
 
         internal bool IsWarningSuppressed(int code, MessageOrigin origin)
         {
-            // This is causing too much noise
-            // https://github.com/dotnet/runtime/issues/81156
-            if (code == 2110 || code == 2111 || code == 2113 || code == 2115)
-                return true;
-
             if (_suppressedWarnings.Contains(code))
                 return true;
 
@@ -212,17 +210,26 @@ namespace ILCompiler
         }
 
         internal bool ShouldSuppressAnalysisWarningsForRequires(TypeSystemEntity originMember, string requiresAttribute)
+             => ShouldSuppressAnalysisWarningsForRequires(originMember, requiresAttribute, out _);
+
+        internal bool ShouldSuppressAnalysisWarningsForRequires(TypeSystemEntity originMember, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {
             // Check if the current scope method has Requires on it
             // since that attribute automatically suppresses all trim analysis warnings.
             // Check both the immediate origin method as well as suppression context method
             // since that will be different for compiler generated code.
             if (originMember is MethodDesc method &&
-                method.IsInRequiresScope(requiresAttribute))
+                method.IsInRequiresScope(requiresAttribute, out attribute))
                 return true;
 
+            if (originMember is FieldDesc field)
+                return field.DoesFieldRequire(requiresAttribute, out attribute);
+
             if (originMember.GetOwningType() == null)  // Basically a way to test if the entity is a member (type, method, field, ...)
+            {
+                attribute = null;
                 return false;
+            }
 
             MethodDesc owningMethod;
             if (_compilerGeneratedState != null)
@@ -230,12 +237,13 @@ namespace ILCompiler
                 while (_compilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember(originMember, out owningMethod))
                 {
                     Debug.Assert(owningMethod != originMember);
-                    if (owningMethod.IsInRequiresScope(requiresAttribute))
+                    if (owningMethod.IsInRequiresScope(requiresAttribute, out attribute))
                         return true;
                     originMember = owningMethod;
                 }
             }
 
+            attribute = null;
             return false;
         }
     }

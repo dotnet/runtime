@@ -1085,7 +1085,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				}
 
 				object keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
-				return keptBy is null ? true : ((ProducedBy) keptBy).HasFlag (ProducedBy.Trimmer);
+				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.Trimmer);
 			});
  		}
 
@@ -1102,7 +1102,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				}
 
 				object keptBy = ca.GetPropertyValue (nameof (KeptAttribute.By));
-				return keptBy is null ? true : ((ProducedBy) keptBy).HasFlag (ProducedBy.Trimmer);
+				return keptBy is null ? true : ((Tool) keptBy).HasFlag (Tool.Trimmer);
 			});
 		}
 

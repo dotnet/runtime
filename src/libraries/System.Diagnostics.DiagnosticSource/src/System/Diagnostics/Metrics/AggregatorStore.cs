@@ -309,7 +309,7 @@ namespace System.Diagnostics.Metrics
         }
     }
 
-    internal struct LabelInstruction
+    internal readonly struct LabelInstruction
     {
         public LabelInstruction(int sourceIndex, string labelName)
         {

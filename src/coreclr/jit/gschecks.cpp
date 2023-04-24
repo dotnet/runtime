@@ -162,7 +162,6 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
         // Indirections - look for *p uses and defs
         case GT_IND:
         case GT_BLK:
-        case GT_OBJ:
         case GT_ARR_ELEM:
         case GT_ARR_INDEX:
         case GT_ARR_OFFSET:
@@ -434,9 +433,8 @@ void Compiler::gsParamsToShadows()
         shadowVarDsc->lvType = type;
 
 #ifdef FEATURE_SIMD
-        shadowVarDsc->lvSIMDType            = varDsc->lvSIMDType;
         shadowVarDsc->lvUsedInSIMDIntrinsic = varDsc->lvUsedInSIMDIntrinsic;
-        if (varDsc->lvSIMDType)
+        if (varTypeIsSIMD(varDsc))
         {
             CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
             shadowVarDsc->SetSimdBaseJitType(simdBaseJitType);
@@ -454,7 +452,7 @@ void Compiler::gsParamsToShadows()
         {
             // We don't need unsafe value cls check here since we are copying the params and this flag
             // would have been set on the original param before reaching here.
-            lvaSetStruct(shadowVarNum, varDsc->GetStructHnd(), false);
+            lvaSetStruct(shadowVarNum, varDsc->GetLayout(), false);
             shadowVarDsc->lvIsMultiRegArg = varDsc->lvIsMultiRegArg;
             shadowVarDsc->lvIsMultiRegRet = varDsc->lvIsMultiRegRet;
         }
@@ -495,7 +493,7 @@ void Compiler::gsParamsToShadows()
         {
             GenTree* tree = *use;
 
-            if (tree->OperIsLocal() || tree->OperIsLocalAddr())
+            if (tree->OperIsLocal() || tree->OperIs(GT_LCL_ADDR))
             {
                 unsigned int lclNum       = tree->AsLclVarCommon()->GetLclNum();
                 unsigned int shadowLclNum = m_compiler->gsShadowVarInfo[lclNum].shadowCopy;
@@ -564,7 +562,7 @@ void Compiler::gsParamsToShadows()
         if (type == TYP_STRUCT)
         {
             assert(shadowVarDsc->GetLayout() != nullptr);
-            assert(shadowVarDsc->lvExactSize != 0);
+            assert(shadowVarDsc->lvExactSize() != 0);
             opAssign = gtNewBlkOpNode(dst, src);
         }
         else

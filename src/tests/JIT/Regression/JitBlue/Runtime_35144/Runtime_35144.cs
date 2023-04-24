@@ -9,6 +9,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 #pragma warning disable 0169 // warning CS0169: The field '{0}' is never used
 struct WrappedVector64  { Vector64<byte> _; }
@@ -43,7 +44,8 @@ public static class Runtime_35144
         if (((string)o) != "SomeString") throw new Exception();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnVal = 100;
         try

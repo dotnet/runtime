@@ -248,6 +248,7 @@ public:
         Range(const Range& other) = delete;
         Range& operator=(const Range& other) = delete;
 
+        template <bool markFlagsOperands = false>
         ReadOnlyRange GetMarkedRange(unsigned markCount, GenTree* start, bool* isClosed, unsigned* sideEffects) const;
 
         void FinishInsertBefore(GenTree* insertionPoint, GenTree* first, GenTree* last);
@@ -291,6 +292,9 @@ public:
 
         ReadOnlyRange GetTreeRange(GenTree* root, bool* isClosed) const;
         ReadOnlyRange GetTreeRange(GenTree* root, bool* isClosed, unsigned* sideEffects) const;
+#ifdef DEBUG
+        ReadOnlyRange GetTreeRangeWithFlags(GenTree* root, bool* isClosed, unsigned* sideEffects) const;
+#endif
         ReadOnlyRange GetRangeOfOperandTrees(GenTree* root, bool* isClosed, unsigned* sideEffects) const;
 
 #ifdef DEBUG

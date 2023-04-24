@@ -2346,6 +2346,25 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	} else {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: image '%s' found.", found_aot_name);
 	}
+
+	/* Initialize exported methods since they can be called without being loaded */
+	if (!amodule->out_of_date && info->n_exported_methods) {
+		guint32 *exported = (guint32*)(amodule->blob + info->exported_methods);
+
+		for (guint32 i = 0; i < info->n_exported_methods; ++i) {
+			ERROR_DECL (load_error);
+			guint32 token = exported [i];
+			MonoMethod *m = mono_get_method_checked (assembly->image, token, NULL, NULL, load_error);
+			mono_error_cleanup (load_error); /* FIXME don't swallow the error */
+			error_init (load_error);
+			if (m) {
+				mono_class_init_internal (m->klass);
+				mono_aot_get_method (m, load_error);
+				mono_error_cleanup (load_error); /* FIXME don't swallow the error */
+				error_init (load_error);
+			}
+		}
+	}
 }
 
 /*
@@ -2414,35 +2433,46 @@ mono_aot_init (void)
 /*
  * load_container_amodule:
  *
- *   Load the container assembly and its AOT image.
+ *   Load AOT module of a container assembly
  */
 static void
 load_container_amodule (MonoAssemblyLoadContext *alc)
 {
-	ERROR_DECL (error);
-
+	// If container_amodule loaded, don't lock the runtime
 	if (!container_assm_name || container_amodule)
 		return;
 
-	char *local_ref = container_assm_name;
-	container_assm_name = NULL;
-	MonoImageOpenStatus status = MONO_IMAGE_OK;
-	MonoAssemblyOpenRequest req;
-	gchar *dll = g_strdup_printf (		"%s.dll", local_ref);
-	/*
-	 * Don't fire managed assembly load events whose execution
-	 * might require this module to be already loaded.
-	 */
-	mono_assembly_request_prepare_open (&req, alc);
-	req.request.no_managed_load_event = TRUE;
-	MonoAssembly *assm = mono_assembly_request_open (dll, &req, &status);
-	if (!assm) {
-		gchar *exe = g_strdup_printf ("%s.exe", local_ref);
-		assm = mono_assembly_request_open (exe, &req, &status);
+	mono_loader_lock ();
+	// There might be several threads that passed the first check
+	// Adding another check to ensure single load of a container assembly due to race condition 
+	if (!container_amodule) {
+		ERROR_DECL (error);
+
+		// This method is recursively invoked within the same thread during AOT module loads
+		// It avoids recursive invocation by setting container_assm_name to NULL
+		char *local_ref = container_assm_name;
+		container_assm_name = NULL;
+
+		// Create a fake MonoAssembly/MonoImage to retrieve its AOT module.
+		// Container MonoAssembly/MonoImage shouldn't be used during the runtime.
+		MonoAssembly *assm = g_new0 (MonoAssembly, 1);
+		assm->image = g_new0 (MonoImage, 1);
+		assm->image->dynamic = 0;
+		assm->image->alc = alc;
+		assm->aname.name = local_ref;
+
+		mono_image_init (assm->image);
+		MonoAotFileInfo* info = (MonoAotFileInfo *)g_hash_table_lookup (static_aot_modules, assm->aname.name);
+		assm->image->guid = (char*)info->assembly_guid;
+		mono_assembly_addref (assm);
+
+		load_aot_module(alc, assm, NULL, error);
+		mono_memory_barrier ();
+		g_assert (assm->image->aot_module);
+		container_amodule = assm->image->aot_module;
 	}
-	g_assert (assm);
-	load_aot_module (alc, assm, NULL, error);
-	container_amodule = assm->image->aot_module;
+
+	mono_loader_unlock ();
 }
 
 static gboolean
@@ -2582,6 +2612,10 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	MonoTableInfo  *t;
 	guint32 cols [MONO_TYPEDEF_SIZE];
 	GHashTable *nspace_table;
+#ifdef DEBUG_AOT_NAME_TABLE
+	char *debug_full_name;
+	uint32_t debug_hash;
+#endif
 
 	if (!amodule || !amodule->class_name_table)
 		return FALSE;
@@ -2615,6 +2649,10 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 			full_name = g_strdup_printf ("%s.%s", name_space, name);
 		}
 	}
+#ifdef DEBUG_AOT_NAME_TABLE
+	debug_full_name = g_strdup (full_name);
+	debug_hash = mono_metadata_str_hash (full_name) % table_size;
+#endif
 	hash = mono_metadata_str_hash (full_name) % table_size;
 	if (full_name != full_name_buf)
 		g_free (full_name);
@@ -2654,6 +2692,9 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 					g_hash_table_insert (nspace_table, (char*)name2, *klass);
 					amodule_unlock (amodule);
 				}
+#ifdef DEBUG_AOT_NAME_TABLE
+				g_free (debug_full_name);
+#endif
 				return TRUE;
 			}
 
@@ -2666,6 +2707,13 @@ mono_aot_get_class_from_name (MonoImage *image, const char *name_space, const ch
 	}
 
 	amodule_unlock (amodule);
+
+#ifdef DEBUG_AOT_NAME_TABLE
+	if (*klass == NULL) {
+		g_warning ("AOT class name cache '%s'=%08x not found\n", debug_full_name, debug_hash);
+	}
+	g_free (debug_full_name);
+#endif
 
 	return TRUE;
 }
@@ -3730,7 +3778,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_ICALL_ADDR_CALL:
 	case MONO_PATCH_INFO_METHOD_RGCTX:
-	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
 	case MONO_PATCH_INFO_METHOD_PINVOKE_ADDR_CACHE:
 	case MONO_PATCH_INFO_LLVMONLY_INTERP_ENTRY: {
 		MethodRef ref;
@@ -3784,7 +3831,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		if (!ji->data.klass)
 			goto cleanup;
 		break;
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+	case MONO_PATCH_INFO_DELEGATE_INFO:
 		ji->data.del_tramp = (MonoDelegateClassMethodPair *)mono_mempool_alloc0 (mp, sizeof (MonoDelegateClassMethodPair));
 		ji->data.del_tramp->klass = decode_klass_ref (aot_module, p, &p, error);
 		mono_error_cleanup (error); /* FIXME don't swallow the error */
@@ -4033,7 +4080,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 				entry->data = decode_resolve_method_ref (aot_module, p, &p, error);
 				mono_error_assert_ok (error);
 				break;
-			case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+			case MONO_PATCH_INFO_DELEGATE_INFO:
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_CALL: {

@@ -28,6 +28,7 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="System.DirectoryServices.Forwards.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectorySecurity.cs" />
     <Compile Include="System\DirectoryServices\AdsVLV.cs" />
     <Compile Include="System\DirectoryServices\AuthenticationTypes.cs" />
@@ -136,11 +137,6 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
     <Compile Include="System\DirectoryServices\ActiveDirectory\UnsafeNativeMethods.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\Utils.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\WellKnownDN.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermission.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAccess.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAttribute.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntry.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntryCollection.cs" />
     <Compile Include="Interop\AdsOptions.cs" />
     <Compile Include="Interop\AdsPropertyOperation.cs" />
     <Compile Include="Interop\AdsSearchColumn.cs" />
@@ -222,8 +218,8 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
              Link="Common\Interop\Windows\Kernel32\Interop.GetProcAddress.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibrary.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.LoadLibrary.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs"
-             Link="Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.LocalFree.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs"
              Link="Common\Interop\Windows\OleAut32\Interop.VariantClear.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtStatus.cs"
@@ -241,7 +237,9 @@ System.DirectoryServices.ActiveDirectory.DomainController</PackageDescription>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
+    <!-- Use of 'PrivateAssets=all' removes the package reference to S.S.P since S.S.P has references to other packages that are not desired.
+    S.S.P only contains DirectoryServices obsolete types including DirectoryServicesPermission.-->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">

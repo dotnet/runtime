@@ -3617,11 +3617,7 @@ void DacDbiInterfaceImpl::EnumerateMemRangesForLoaderAllocator(PTR_LoaderAllocat
     if (pVcsMgr)
     {
         if (pVcsMgr->indcell_heap != NULL) heapsToEnumerate.Push(pVcsMgr->indcell_heap);
-        if (pVcsMgr->lookup_heap != NULL) heapsToEnumerate.Push(pVcsMgr->lookup_heap);
-        if (pVcsMgr->resolve_heap != NULL) heapsToEnumerate.Push(pVcsMgr->resolve_heap);
-        if (pVcsMgr->dispatch_heap != NULL) heapsToEnumerate.Push(pVcsMgr->dispatch_heap);
         if (pVcsMgr->cache_entry_heap != NULL) heapsToEnumerate.Push(pVcsMgr->cache_entry_heap);
-        if (pVcsMgr->vtable_heap != NULL) heapsToEnumerate.Push(pVcsMgr->vtable_heap);
     }
 
     TADDR rangeAccumAsTaddr = TO_TADDR(rangeAcummulator);
@@ -4519,7 +4515,9 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
     // Debugger isn't notified of Resource / Inspection-only modules.
     if (pDomainAssembly->GetModule()->IsVisibleToDebugger())
     {
-        _ASSERTE(pDomainAssembly->IsLoaded());
+        // If domain assembly isn't yet loaded, just return
+        if (!pDomainAssembly->IsLoaded())
+            return;
 
         VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
         vmDomainAssembly.SetHostPtr(pDomainAssembly);
@@ -5201,7 +5199,7 @@ void DacDbiInterfaceImpl::Hijack(
     HRESULT hr = m_pTarget->GetThreadContext(
         dwThreadId,
         CONTEXT_FULL,
-        sizeof(ctx),
+        sizeof(DT_CONTEXT),
         (BYTE*) &ctx);
     IfFailThrow(hr);
 
@@ -5348,7 +5346,7 @@ void DacDbiInterfaceImpl::Hijack(
     //
     // Commit the context.
     //
-    hr = m_pMutableTarget->SetThreadContext(dwThreadId, sizeof(ctx), reinterpret_cast<BYTE*> (&ctx));
+    hr = m_pMutableTarget->SetThreadContext(dwThreadId, sizeof(DT_CONTEXT), reinterpret_cast<BYTE*> (&ctx));
     IfFailThrow(hr);
 }
 
@@ -5719,7 +5717,7 @@ void DacDbiInterfaceImpl::GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContex
         pContextBuffer->ContextFlags = DT_CONTEXT_ALL;
         HRESULT hr = m_pTarget->GetThreadContext(pThread->GetOSThreadId(),
                                                 pContextBuffer->ContextFlags,
-                                                sizeof(*pContextBuffer),
+                                                sizeof(DT_CONTEXT),
                                                 reinterpret_cast<BYTE *>(pContextBuffer));
         if (hr == E_NOTIMPL)
         {
@@ -7081,7 +7079,7 @@ HRESULT DacDbiInterfaceImpl::CreateRefWalk(OUT RefWalkHandle * pHandle, BOOL wal
 {
     DD_ENTER_MAY_THROW;
 
-    DacRefWalker *walker = new (nothrow) DacRefWalker(this, walkStacks, walkFQ, handleWalkMask);
+    DacRefWalker *walker = new (nothrow) DacRefWalker(this, walkStacks, walkFQ, handleWalkMask, TRUE);
 
     if (walker == NULL)
         return E_OUTOFMEMORY;
@@ -7525,9 +7523,9 @@ HRESULT DacDbiInterfaceImpl::EnableGCNotificationEvents(BOOL fEnable)
     return hr;
 }
 
-DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask)
+DacRefWalker::DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask, BOOL resolvePointers)
     : mDac(dac), mWalkStacks(walkStacks), mWalkFQ(walkFQ), mHandleMask(handleMask), mStackWalker(NULL),
-      mHandleWalker(NULL), mFQStart(PTR_NULL), mFQEnd(PTR_NULL), mFQCurr(PTR_NULL)
+      mResolvePointers(resolvePointers), mHandleWalker(NULL), mFQStart(PTR_NULL), mFQEnd(PTR_NULL), mFQCurr(PTR_NULL)
 {
 }
 
@@ -7618,7 +7616,7 @@ HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetch
     {
         hr = mHandleWalker->Next(celt, roots, &total);
 
-        if (hr == S_FALSE || FAILED(hr))
+        if (total == 0 || FAILED(hr))
         {
             delete mHandleWalker;
             mHandleWalker = NULL;
@@ -7651,7 +7649,7 @@ HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetch
         if (FAILED(hr))
             return hr;
 
-        if (hr == S_FALSE)
+        if (fetched == 0)
         {
             hr = NextThread();
 
@@ -7682,174 +7680,75 @@ HRESULT DacRefWalker::NextThread()
     if (!pThread)
         return S_FALSE;
 
-    mStackWalker = new DacStackReferenceWalker(mDac, pThread->GetOSThreadId());
+    mStackWalker = new DacStackReferenceWalker(mDac, pThread->GetOSThreadId(), mResolvePointers == TRUE);
     return mStackWalker->Init();
 }
 
-HRESULT DacHandleWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetched)
+HRESULT DacHandleWalker::Next(ULONG count, DacGcReference roots[], ULONG *pFetched)
 {
     SUPPORTS_DAC;
 
-    if (roots == NULL || pceltFetched == NULL)
+    if (roots == NULL || pFetched == NULL)
         return E_POINTER;
 
-    return DoHandleWalk<DacGcReference, ULONG, DacHandleWalker::EnumCallbackDac>(celt, roots, pceltFetched);
-}
+    if (!mEnumerated)
+        WalkHandles();
 
-
-void CALLBACK DacHandleWalker::EnumCallbackDac(PTR_UNCHECKED_OBJECTREF handle, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2)
-{
-    SUPPORTS_DAC;
-
-    DacHandleWalkerParam *param = (DacHandleWalkerParam *)param1;
-    HandleChunkHead *curr = param->Curr;
-
-    // If we failed on a previous call (OOM) don't keep trying to allocate, it's not going to work.
-    if (FAILED(param->Result))
-        return;
-
-    // We've moved past the size of the current chunk.  We'll allocate a new chunk
-    // and stuff the handles there.  These are cleaned up by the destructor
-    if (curr->Count >= (curr->Size/sizeof(DacGcReference)))
+    unsigned int i;
+    for (i = 0; i < count && mIteratorIndex < mList.GetCount(); mIteratorIndex++, i++)
     {
-        if (curr->Next == NULL)
+        const SOSHandleData &handle = mList.Get(mIteratorIndex);
+
+        roots[i].objHnd.SetDacTargetPtr(TO_TADDR(handle.Handle));
+        roots[i].vmDomain.SetDacTargetPtr(TO_TADDR(handle.AppDomain));
+        roots[i].i64ExtraData = 0;
+
+        unsigned int refCnt = 0;
+        switch (handle.Type)
         {
-            HandleChunk *next = new (nothrow) HandleChunk;
-            if (next != NULL)
-            {
-                curr->Next = next;
-            }
-            else
-            {
-                param->Result = E_OUTOFMEMORY;
-                return;
-            }
+            case HNDTYPE_STRONG:
+                roots[i].dwType = (DWORD)CorHandleStrong;
+                break;
+
+            case HNDTYPE_PINNED:
+                roots[i].dwType = (DWORD)CorHandleStrongPinning;
+                break;
+
+            case HNDTYPE_WEAK_SHORT:
+                roots[i].dwType = (DWORD)CorHandleWeakShort;
+                break;
+
+            case HNDTYPE_WEAK_LONG:
+                roots[i].dwType = (DWORD)CorHandleWeakLong;
+                break;
+
+        #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
+            case HNDTYPE_REFCOUNTED:
+                GetRefCountedHandleInfo((OBJECTREF)CLRDATA_ADDRESS_TO_TADDR(handle.Handle), handle.Type, &refCnt, NULL, NULL, NULL);
+                roots[i].i64ExtraData = refCnt;
+                roots[i].dwType = (DWORD)(roots[i].i64ExtraData ? CorHandleStrongRefCount : CorHandleWeakRefCount);
+                break;
+        #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
+
+            case HNDTYPE_DEPENDENT:
+                roots[i].dwType = (DWORD)CorHandleStrongDependent;
+                roots[i].i64ExtraData = GetDependentHandleSecondary(CLRDATA_ADDRESS_TO_TADDR(handle.Handle)).GetAddr();
+                break;
+
+            case HNDTYPE_ASYNCPINNED:
+                roots[i].dwType = (DWORD)CorHandleStrongAsyncPinned;
+                break;
+
+            case HNDTYPE_SIZEDREF:
+                roots[i].dwType = (DWORD)CorHandleStrongSizedByref;
+                break;
         }
-
-        curr = param->Curr = param->Curr->Next;
     }
 
-    // Fill the current handle.
-    DacGcReference *dataArray = (DacGcReference*)curr->pData;
-    DacGcReference &data = dataArray[curr->Count++];
+    *pFetched = i;
 
-    data.objHnd.SetDacTargetPtr(handle.GetAddr());
-    data.vmDomain.SetDacTargetPtr(TO_TADDR(param->AppDomain));
-
-    data.i64ExtraData = 0;
-    unsigned int refCnt = 0;
-
-    switch (param->Type)
-    {
-        case HNDTYPE_STRONG:
-            data.dwType = (DWORD)CorHandleStrong;
-            break;
-
-        case HNDTYPE_PINNED:
-            data.dwType = (DWORD)CorHandleStrongPinning;
-            break;
-
-        case HNDTYPE_WEAK_SHORT:
-            data.dwType = (DWORD)CorHandleWeakShort;
-            break;
-
-        case HNDTYPE_WEAK_LONG:
-            data.dwType = (DWORD)CorHandleWeakLong;
-            break;
-
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL)
-        case HNDTYPE_REFCOUNTED:
-            data.dwType = (DWORD)(data.i64ExtraData ? CorHandleStrongRefCount : CorHandleWeakRefCount);
-            GetRefCountedHandleInfo((OBJECTREF)*handle, param->Type, &refCnt, NULL, NULL, NULL);
-            data.i64ExtraData = refCnt;
-            break;
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL
-
-        case HNDTYPE_DEPENDENT:
-            data.dwType = (DWORD)CorHandleStrongDependent;
-            data.i64ExtraData = GetDependentHandleSecondary(handle.GetAddr()).GetAddr();
-            break;
-
-        case HNDTYPE_ASYNCPINNED:
-            data.dwType = (DWORD)CorHandleStrongAsyncPinned;
-            break;
-
-        case HNDTYPE_SIZEDREF:
-            data.dwType = (DWORD)CorHandleStrongSizedByref;
-            break;
-    }
+    return (unsigned)mIteratorIndex < mList.GetCount() ? S_FALSE : S_OK;
 }
-
-
-void DacStackReferenceWalker::GCEnumCallbackDac(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
-{
-    GCCONTEXT *gcctx = (GCCONTEXT *)hCallback;
-    DacScanContext *dsc = (DacScanContext*)gcctx->sc;
-
-    CORDB_ADDRESS obj = 0;
-
-    if (flags & GC_CALL_INTERIOR)
-    {
-        if (loc.targetPtr)
-            obj = (CORDB_ADDRESS)(*PTR_PTR_Object((TADDR)pObject)).GetAddr();
-        else
-            obj = (CORDB_ADDRESS)TO_TADDR(pObject);
-
-        HRESULT hr = dsc->pWalker->mHeap.ListNearObjects(obj, NULL, &obj, NULL);
-
-        // If we failed don't add this instance to the list.  ICorDebug doesn't handle invalid pointers
-        // very well, and the only way the heap walker's ListNearObjects will fail is if we have heap
-        // corruption...which ICorDebug doesn't deal with anyway.
-        if (FAILED(hr))
-            return;
-    }
-
-    DacGcReference *data = dsc->pWalker->GetNextObject<DacGcReference>(dsc);
-    if (data != NULL)
-    {
-        data->vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
-        if (obj)
-            data->pObject = obj | 1;
-        else if (loc.targetPtr)
-            data->objHnd.SetDacTargetPtr(TO_TADDR(pObject));
-        else
-            data->pObject = pObject->GetAddr() | 1;
-
-        data->dwType = CorReferenceStack;
-        data->i64ExtraData = 0;
-    }
-}
-
-
-void DacStackReferenceWalker::GCReportCallbackDac(PTR_PTR_Object ppObj, ScanContext *sc, uint32_t flags)
-{
-    DacScanContext *dsc = (DacScanContext*)sc;
-
-    TADDR obj = ppObj.GetAddr();
-    if (flags & GC_CALL_INTERIOR)
-    {
-        CORDB_ADDRESS fixed_addr = 0;
-        HRESULT hr = dsc->pWalker->mHeap.ListNearObjects((CORDB_ADDRESS)obj, NULL, &fixed_addr, NULL);
-
-        // If we failed don't add this instance to the list.  ICorDebug doesn't handle invalid pointers
-        // very well, and the only way the heap walker's ListNearObjects will fail is if we have heap
-        // corruption...which ICorDebug doesn't deal with anyway.
-        if (FAILED(hr))
-            return;
-
-        obj = TO_TADDR(fixed_addr);
-    }
-
-    DacGcReference *data = dsc->pWalker->GetNextObject<DacGcReference>(dsc);
-    if (data != NULL)
-    {
-        data->vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
-        data->objHnd.SetDacTargetPtr(obj);
-        data->dwType = CorReferenceStack;
-        data->i64ExtraData = 0;
-    }
-}
-
 
 
 HRESULT DacStackReferenceWalker::Next(ULONG count, DacGcReference stackRefs[], ULONG *pFetched)
@@ -7857,10 +7756,30 @@ HRESULT DacStackReferenceWalker::Next(ULONG count, DacGcReference stackRefs[], U
     if (stackRefs == NULL || pFetched == NULL)
         return E_POINTER;
 
-    HRESULT hr = DoStackWalk<ULONG, DacGcReference,
-                             DacStackReferenceWalker::GCReportCallbackDac,
-                             DacStackReferenceWalker::GCEnumCallbackDac>
-                                (count, stackRefs, pFetched);
+    if (!mEnumerated)
+        WalkStack();
 
-    return hr;
+    TADDR domain = AppDomain::GetCurrentDomain().GetAddr();
+
+    unsigned int i;
+    for (i = 0; i < count && mIteratorIndex < mList.GetCount(); mIteratorIndex++, i++)
+    {
+        stackRefs[i].dwType = CorReferenceStack;
+        stackRefs[i].vmDomain.SetDacTargetPtr(domain);
+        stackRefs[i].i64ExtraData = 0;
+
+        const SOSStackRefData &sosStackRef = mList.Get(i);
+        if (sosStackRef.Flags & GC_CALL_INTERIOR)
+        {
+            stackRefs[i].pObject = CLRDATA_ADDRESS_TO_TADDR(sosStackRef.Object) | 1;
+        }
+        else
+        {
+            stackRefs[i].objHnd.SetDacTargetPtr(CLRDATA_ADDRESS_TO_TADDR(sosStackRef.Address));
+        }
+    }
+
+    *pFetched = i;
+
+    return S_OK;
 }

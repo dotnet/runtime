@@ -1775,9 +1775,19 @@ namespace Mono.Linker.Steps
 					(origin.Provider is MethodDefinition originMethod && CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (originMethod)));
 			}
 
-			if (dependencyKind == DependencyKind.DynamicallyAccessedMemberOnType) {
+			switch (dependencyKind) {
+			// Marked through things like descriptor - don't want to warn as it's intentional choice
+			case DependencyKind.AlreadyMarked:
+			case DependencyKind.TypePreserve:
+			case DependencyKind.PreservedMethod:
+				return;
+
+			case DependencyKind.DynamicallyAccessedMemberOnType:
 				ReportWarningsForTypeHierarchyReflectionAccess (field, origin);
 				return;
+
+			default:
+				break;
 			}
 
 			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider, out _))
@@ -1966,7 +1976,7 @@ namespace Mono.Linker.Steps
 
 			MarkType (type.BaseType, new DependencyInfo (DependencyKind.BaseType, type));
 
-			// The DynamicallyAccessedMembers hiearchy processing must be done after the base type was marked
+			// The DynamicallyAccessedMembers hierarchy processing must be done after the base type was marked
 			// (to avoid inconsistencies in the cache), but before anything else as work done below
 			// might need the results of the processing here.
 			DynamicallyAccessedMembersTypeHierarchy.ProcessMarkedTypeForDynamicallyAccessedMembersHierarchy (type);
@@ -3189,9 +3199,10 @@ namespace Mono.Linker.Steps
 				if (!Annotations.ProcessSatelliteAssemblies && KnownMembers.IsSatelliteAssemblyMarker (method))
 					Annotations.ProcessSatelliteAssemblies = true;
 			} else if (method.TryGetProperty (out PropertyDefinition? property))
-				MarkProperty (property, new DependencyInfo (DependencyKind.PropertyOfPropertyMethod, method));
-			else if (method.TryGetEvent (out EventDefinition? @event))
-				MarkEvent (@event, new DependencyInfo (DependencyKind.EventOfEventMethod, method));
+				MarkProperty (property, new DependencyInfo (PropagateDependencyKindToAccessors (reason.Kind, DependencyKind.PropertyOfPropertyMethod), method));
+			else if (method.TryGetEvent (out EventDefinition? @event)) {
+				MarkEvent (@event, new DependencyInfo (PropagateDependencyKindToAccessors(reason.Kind, DependencyKind.EventOfEventMethod), method));
+			}
 
 			if (method.HasMetadataParameters ()) {
 #pragma warning disable RS0030 // MethodReference.Parameters is banned. It's easiest to leave the code as is for now
@@ -3268,6 +3279,20 @@ namespace Mono.Linker.Steps
 		// Allow subclassers to mark additional things when marking a method
 		protected virtual void DoAdditionalMethodProcessing (MethodDefinition method)
 		{
+		}
+
+		static DependencyKind PropagateDependencyKindToAccessors(DependencyKind parentDependencyKind, DependencyKind kind)
+		{
+			switch (parentDependencyKind) {
+			// If the member is marked due to descriptor or similar, propagate the original reason to suppress some warnings correctly
+			case DependencyKind.AlreadyMarked:
+			case DependencyKind.TypePreserve:
+			case DependencyKind.PreservedMethod:
+				return parentDependencyKind;
+
+			default:
+				return kind;
+			}
 		}
 
 		void MarkImplicitlyUsedFields (TypeDefinition type)
@@ -3506,9 +3531,12 @@ namespace Mono.Linker.Steps
 			using var eventScope = ScopeStack.PushScope (new MessageOrigin (evt));
 
 			MarkCustomAttributes (evt, new DependencyInfo (DependencyKind.CustomAttribute, evt));
-			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (DependencyKind.EventMethod, evt), ScopeStack.CurrentScope.Origin);
-			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (DependencyKind.EventMethod, evt), ScopeStack.CurrentScope.Origin);
-			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (DependencyKind.EventMethod, evt), ScopeStack.CurrentScope.Origin);
+
+			DependencyKind dependencyKind = PropagateDependencyKindToAccessors(reason.Kind, DependencyKind.EventMethod);
+			MarkMethodIfNotNull (evt.AddMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
+			MarkMethodIfNotNull (evt.InvokeMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
+			MarkMethodIfNotNull (evt.RemoveMethod, new DependencyInfo (dependencyKind, evt), ScopeStack.CurrentScope.Origin);
+
 			DoAdditionalEventProcessing (evt);
 		}
 
