@@ -47,7 +47,7 @@ class  SyncBlockArray
 };
 
 // For in-place constructor
-BYTE g_SyncBlockCacheInstance[sizeof(SyncBlockCache)];
+BYTE DECLSPEC_ALIGN(sizeof(void*)) g_SyncBlockCacheInstance[sizeof(SyncBlockCache)];
 
 SPTR_IMPL (SyncBlockCache, SyncBlockCache, s_pSyncBlockCache);
 
