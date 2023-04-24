@@ -7,11 +7,17 @@ using System.Runtime.Versioning;
 
 namespace Microsoft.Extensions.Hosting.WindowsServices
 {
-    /// <summary>Helper methods for Windows Services.</summary>
+    /// <summary>
+    /// Helper methods for Windows Services.
+    /// </summary>
     public static class WindowsServiceHelpers
     {
-        /// <summary>Check if the current process is hosted as a Windows Service.</summary>
-        /// <returns><see langword="true" /> if the current process is hosted as a Windows Service; otherwise, <see langword="false" />.</returns>
+        /// <summary>
+        /// Check if the current process is hosted as a Windows Service.
+        /// </summary>
+        /// <returns>
+        /// <see langword="true" /> if the current process is hosted as a Windows Service; otherwise, <see langword="false" />.
+        /// </returns>
         [SupportedOSPlatformGuard("windows")]
         public static bool IsWindowsService()
         {

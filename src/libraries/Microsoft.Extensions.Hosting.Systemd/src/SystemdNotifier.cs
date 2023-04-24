@@ -27,12 +27,10 @@ namespace Microsoft.Extensions.Hosting.Systemd
             _socketPath = socketPath;
         }
 
-        /// <summary>Returns whether systemd is configured to receive service notifications.</summary>
-        /// <value><see langword="true" /> if systemd is configured to receive service notifications; <see langword="false" /> otherwise.</value>
+        /// <inheritdoc />
         public bool IsEnabled => _socketPath != null;
 
-        /// <summary>Sends a notification to systemd.</summary>
-        /// <param name="state">The service state to notify.</param>
+        /// <inheritdoc />
         public void Notify(ServiceState state)
         {
             if (!IsEnabled)

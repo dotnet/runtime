@@ -62,9 +62,15 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         private IHostEnvironment Environment { get; }
         private ILogger Logger { get; }
 
-        /// <summary>Asynchronously waits until start is complete before continuing. This method is called at the beginning of <see cref="IHost.StartAsync(CancellationToken)" />. This can be used to delay startup until signaled by an external event.</summary>
-        /// <param name="cancellationToken">A cancellation token that indicates when stop should no longer be graceful.</param>
-        /// <returns>A task that represents the asynchronous waiting for start operation.</returns>
+        /// <summary>
+        /// Asynchronously waits until start is complete before continuing. This method is called at the beginning of <see cref="IHost.StartAsync(CancellationToken)" />. This can be used to delay startup until signaled by an external event.
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// A cancellation token that indicates when stop should no longer be graceful.
+        /// </param>
+        /// <returns>
+        /// A task that represents the asynchronous waiting for start operation.
+        /// </returns>
         public Task WaitForStartAsync(CancellationToken cancellationToken)
         {
             cancellationToken.Register(() => _delayStart.TrySetCanceled());
@@ -101,9 +107,15 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             }
         }
 
-        /// <summary>Asynchronously stops and shuts down the host. This method is called from <see cref="IHost.StopAsync(CancellationToken)" />.</summary>
-        /// <param name="cancellationToken">A cancellation token that indicates when stop should no longer be graceful.</param>
-        /// <returns>A task that represents the asynchronous stop operation.</returns>
+        /// <summary>
+        /// Asynchronously stops and shuts down the host. This method is called from <see cref="IHost.StopAsync(CancellationToken)" />.
+        /// </summary>
+        /// <param name="cancellationToken">
+        /// A cancellation token that indicates when stop should no longer be graceful.
+        /// </param>
+        /// <returns>
+        /// A task that represents the asynchronous stop operation.
+        /// </returns>
         public async Task StopAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
