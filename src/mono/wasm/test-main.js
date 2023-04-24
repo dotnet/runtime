@@ -25,12 +25,12 @@ if (is_node && process.versions.node.split(".")[0] < 14) {
 
 if (is_node) {
     // the emscripten 3.1.34 stopped handling these when MODULARIZE is enabled
-    process.on('uncaughtException', function(ex) {
+    process.on('uncaughtException', function (ex) {
         // ignore UnhandledPromiseRejection exceptions with exit status
         if (ex !== 'unwind' && (ex.name !== "UnhandledPromiseRejection" || !ex.message.includes('"#<ExitStatus>"'))) {
-          throw ex;
+            throw ex;
         }
-      });
+    });
 }
 
 if (!is_node && !is_browser && typeof globalThis.crypto === 'undefined') {
@@ -387,6 +387,7 @@ async function run() {
                 const main_assembly_name = runArgs.applicationArguments[1];
                 const app_args = runArgs.applicationArguments.slice(2);
                 const result = await App.runtime.runMain(main_assembly_name, app_args);
+                console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result}`);
                 mono_exit(result);
             } catch (error) {
                 if (error.name != "ExitStatus") {
