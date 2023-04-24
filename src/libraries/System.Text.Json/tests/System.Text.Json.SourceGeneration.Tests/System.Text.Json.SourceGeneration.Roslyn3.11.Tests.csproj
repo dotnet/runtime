@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <TestedRoslynVersion>3.11</TestedRoslynVersion>
+  </PropertyGroup>
+
   <Import Project="System.Text.Json.SourceGeneration.Tests.targets" />
 
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
