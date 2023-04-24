@@ -246,7 +246,7 @@ namespace System.IO
             {
                 if (!_disposed)
                 {
-                    await FlushAsync().ConfigureAwait(false);
+                    await FlushAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             finally
@@ -633,7 +633,7 @@ namespace System.IO
         {
             if (_charPos == _charLen)
             {
-                await FlushAsyncInternal(flushStream: false, flushEncoder: false).ConfigureAwait(false);
+                await FlushAsyncInternal(flushStream: false, flushEncoder: false).ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             _charBuffer[_charPos++] = value;
@@ -644,7 +644,7 @@ namespace System.IO
                 {
                     if (_charPos == _charLen)
                     {
-                        await FlushAsyncInternal(flushStream: false, flushEncoder: false).ConfigureAwait(false);
+                        await FlushAsyncInternal(flushStream: false, flushEncoder: false).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
 
                     _charBuffer[_charPos++] = CoreNewLine[i];
@@ -653,7 +653,7 @@ namespace System.IO
 
             if (_autoFlush)
             {
-                await FlushAsyncInternal(flushStream: true, flushEncoder: false).ConfigureAwait(false);
+                await FlushAsyncInternal(flushStream: true, flushEncoder: false).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -741,7 +741,7 @@ namespace System.IO
             {
                 if (_charPos == _charLen)
                 {
-                    await FlushAsyncInternal(flushStream: false, flushEncoder: false, cancellationToken).ConfigureAwait(false);
+                    await FlushAsyncInternal(flushStream: false, flushEncoder: false, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
 
                 int n = Math.Min(_charLen - _charPos, source.Length - copied);
@@ -758,7 +758,7 @@ namespace System.IO
                 {
                     if (_charPos == _charLen)
                     {
-                        await FlushAsyncInternal(flushStream: false, flushEncoder: false, cancellationToken).ConfigureAwait(false);
+                        await FlushAsyncInternal(flushStream: false, flushEncoder: false, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
 
                     _charBuffer[_charPos++] = CoreNewLine[i];
@@ -767,7 +767,7 @@ namespace System.IO
 
             if (_autoFlush)
             {
-                await FlushAsyncInternal(flushStream: true, flushEncoder: false, cancellationToken).ConfigureAwait(false);
+                await FlushAsyncInternal(flushStream: true, flushEncoder: false, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -933,7 +933,7 @@ namespace System.IO
                     byte[] preamble = _encoding.GetPreamble();
                     if (preamble.Length > 0)
                     {
-                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(preamble), cancellationToken).ConfigureAwait(false);
+                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(preamble), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                 }
 
@@ -943,7 +943,7 @@ namespace System.IO
                 _charPos = 0;
                 if (count > 0)
                 {
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(byteBuffer, 0, count), cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(byteBuffer, 0, count), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
 
                 // By definition, calling Flush should flush the stream, but this is
@@ -951,7 +951,7 @@ namespace System.IO
                 // Services guys have some perf tests where flushing needlessly hurts.
                 if (flushStream)
                 {
-                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
         }

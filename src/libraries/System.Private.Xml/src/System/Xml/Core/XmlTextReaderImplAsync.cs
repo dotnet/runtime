@@ -43,12 +43,12 @@ namespace System.Xml
             {
                 if (_parsingFunction == ParsingFunction.PartialTextValue)
                 {
-                    await FinishPartialValueAsync().ConfigureAwait(false);
+                    await FinishPartialValueAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     _parsingFunction = _nextParsingFunction;
                 }
                 else
                 {
-                    await FinishOtherValueIteratorAsync().ConfigureAwait(false);
+                    await FinishOtherValueIteratorAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             return _curNode.StringValue;
@@ -74,7 +74,7 @@ namespace System.Xml
 
         private async Task FinishInitUriStringAsync()
         {
-            Stream stream = (Stream)(await _laterInitParam!.inputUriResolver!.GetEntityAsync(_laterInitParam.inputbaseUri!, string.Empty, typeof(Stream)).ConfigureAwait(false));
+            Stream stream = (Stream)(await _laterInitParam!.inputUriResolver!.GetEntityAsync(_laterInitParam.inputbaseUri!, string.Empty, typeof(Stream)).ConfigureAwait(OperatingSystem.IsBrowser()));
 
             if (stream == null)
             {
@@ -92,14 +92,14 @@ namespace System.Xml
             {
                 // init ParsingState
                 Debug.Assert(_reportedBaseUri != null);
-                await InitStreamInputAsync(_laterInitParam.inputbaseUri, _reportedBaseUri, stream, null, 0, enc).ConfigureAwait(false);
+                await InitStreamInputAsync(_laterInitParam.inputbaseUri, _reportedBaseUri, stream, null, 0, enc).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 _reportedEncoding = _ps.encoding;
 
                 // parse DTD
                 if (_laterInitParam.inputContext != null && _laterInitParam.inputContext.HasDtdInfo)
                 {
-                    await ProcessDtdFromParserContextAsync(_laterInitParam.inputContext).ConfigureAwait(false);
+                    await ProcessDtdFromParserContextAsync(_laterInitParam.inputContext).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             catch
@@ -123,14 +123,14 @@ namespace System.Xml
 
             // init ParsingState
             Debug.Assert(_reportedBaseUri != null);
-            await InitStreamInputAsync(_laterInitParam.inputbaseUri, _reportedBaseUri, _laterInitParam!.inputStream!, _laterInitParam.inputBytes, _laterInitParam.inputByteCount, enc).ConfigureAwait(false);
+            await InitStreamInputAsync(_laterInitParam.inputbaseUri, _reportedBaseUri, _laterInitParam!.inputStream!, _laterInitParam.inputBytes, _laterInitParam.inputByteCount, enc).ConfigureAwait(OperatingSystem.IsBrowser());
 
             _reportedEncoding = _ps.encoding;
 
             // parse DTD
             if (_laterInitParam.inputContext != null && _laterInitParam.inputContext.HasDtdInfo)
             {
-                await ProcessDtdFromParserContextAsync(_laterInitParam.inputContext).ConfigureAwait(false);
+                await ProcessDtdFromParserContextAsync(_laterInitParam.inputContext).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             _laterInitParam = null;
         }
@@ -138,14 +138,14 @@ namespace System.Xml
         private async Task FinishInitTextReaderAsync()
         {
             // init ParsingState
-            await InitTextReaderInputAsync(_reportedBaseUri!, _laterInitParam!.inputTextReader!).ConfigureAwait(false);
+            await InitTextReaderInputAsync(_reportedBaseUri!, _laterInitParam!.inputTextReader!).ConfigureAwait(OperatingSystem.IsBrowser());
 
             _reportedEncoding = _ps.encoding;
 
             // parse DTD
             if (_laterInitParam.inputContext != null && _laterInitParam.inputContext.HasDtdInfo)
             {
-                await ProcessDtdFromParserContextAsync(_laterInitParam.inputContext).ConfigureAwait(false);
+                await ProcessDtdFromParserContextAsync(_laterInitParam.inputContext).ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             _laterInitParam = null;
@@ -284,8 +284,8 @@ namespace System.Xml
 
         private async Task<bool> _ReadAsync_SwitchToInteractiveXmlDecl(Task<bool> task)
         {
-            bool result = await task.ConfigureAwait(false);
-            return await ReadAsync_SwitchToInteractiveXmlDecl_Helper(result).ConfigureAwait(false);
+            bool result = await task.ConfigureAwait(OperatingSystem.IsBrowser());
+            return await ReadAsync_SwitchToInteractiveXmlDecl_Helper(result).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         private Task<bool> ReadAsync_SwitchToInteractiveXmlDecl_Helper(bool finish)
@@ -327,16 +327,16 @@ namespace System.Xml
                         FinishIncrementalRead();
                         break;
                     case ParsingFunction.PartialTextValue:
-                        await SkipPartialTextValueAsync().ConfigureAwait(false);
+                        await SkipPartialTextValueAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case ParsingFunction.InReadValueChunk:
-                        await FinishReadValueChunkAsync().ConfigureAwait(false);
+                        await FinishReadValueChunkAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case ParsingFunction.InReadContentAsBinary:
-                        await FinishReadContentAsBinaryAsync().ConfigureAwait(false);
+                        await FinishReadContentAsBinaryAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case ParsingFunction.InReadElementContentAsBinary:
-                        await FinishReadElementContentAsBinaryAsync().ConfigureAwait(false);
+                        await FinishReadElementContentAsBinaryAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                 }
             }
@@ -352,7 +352,7 @@ namespace System.Xml
                     int initialDepth = _index;
                     _parsingMode = ParsingMode.SkipContent;
                     // skip content
-                    while (await _outerReader.ReadAsync().ConfigureAwait(false) && _index > initialDepth) ;
+                    while (await _outerReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()) && _index > initialDepth) ;
                     Debug.Assert(_curNode.type == XmlNodeType.EndElement);
                     Debug.Assert(_parsingFunction != ParsingFunction.Eof);
                     _parsingMode = ParsingMode.Full;
@@ -362,13 +362,13 @@ namespace System.Xml
                     goto case XmlNodeType.Element;
             }
             // move to following sibling node
-            await _outerReader.ReadAsync().ConfigureAwait(false);
+            await _outerReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             return;
         }
 
         private async Task<int> ReadContentAsBase64_AsyncHelper(Task<bool> task, byte[] buffer, int index, int count)
         {
-            bool result = await task.ConfigureAwait(false);
+            bool result = await task.ConfigureAwait(OperatingSystem.IsBrowser());
             if (!result)
             {
                 return 0;
@@ -379,7 +379,7 @@ namespace System.Xml
                 InitBase64Decoder();
 
                 // read binary data
-                return await ReadContentAsBinaryAsync(buffer, index, count).ConfigureAwait(false);
+                return await ReadContentAsBinaryAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -455,7 +455,7 @@ namespace System.Xml
                 if (_incReadDecoder == _binHexDecoder)
                 {
                     // read more binary data
-                    return await ReadContentAsBinaryAsync(buffer, index, count).ConfigureAwait(false);
+                    return await ReadContentAsBinaryAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             // first call of ReadContentAsBinHex -> initialize (move to first text child (for elements) and initialize incremental read state)
@@ -474,7 +474,7 @@ namespace System.Xml
                     throw CreateReadContentAsException(nameof(ReadContentAsBinHex));
                 }
 
-                if (!await InitReadContentAsBinaryAsync().ConfigureAwait(false))
+                if (!await InitReadContentAsBinaryAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                 {
                     return 0;
                 }
@@ -484,12 +484,12 @@ namespace System.Xml
             InitBinHexDecoder();
 
             // read binary data
-            return await ReadContentAsBinaryAsync(buffer, index, count).ConfigureAwait(false);
+            return await ReadContentAsBinaryAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         private async Task<int> ReadElementContentAsBase64Async_Helper(Task<bool> task, byte[] buffer, int index, int count)
         {
-            bool result = await task.ConfigureAwait(false);
+            bool result = await task.ConfigureAwait(OperatingSystem.IsBrowser());
             if (!result)
             {
                 return 0;
@@ -500,7 +500,7 @@ namespace System.Xml
                 InitBase64Decoder();
 
                 // read binary data
-                return await ReadElementContentAsBinaryAsync(buffer, index, count).ConfigureAwait(false);
+                return await ReadElementContentAsBinaryAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -576,7 +576,7 @@ namespace System.Xml
                 if (_incReadDecoder == _binHexDecoder)
                 {
                     // read more binary data
-                    return await ReadElementContentAsBinaryAsync(buffer, index, count).ConfigureAwait(false);
+                    return await ReadElementContentAsBinaryAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             // first call of ReadContentAsBinHex -> initialize
@@ -594,7 +594,7 @@ namespace System.Xml
                 {
                     throw CreateReadElementContentAsException(nameof(ReadElementContentAsBinHex));
                 }
-                if (!await InitReadElementContentAsBinaryAsync().ConfigureAwait(false))
+                if (!await InitReadElementContentAsBinaryAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                 {
                     return 0;
                 }
@@ -604,7 +604,7 @@ namespace System.Xml
             InitBinHexDecoder();
 
             // read binary data
-            return await ReadElementContentAsBinaryAsync(buffer, index, count).ConfigureAwait(false);
+            return await ReadElementContentAsBinaryAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         // Iterates over Value property and copies it into the provided buffer
@@ -681,7 +681,7 @@ namespace System.Xml
                 while (readCount < count && !endOfValue)
                 {
                     int orChars = 0;
-                    var tuple_0 = await ParseTextAsync(orChars).ConfigureAwait(false);
+                    var tuple_0 = await ParseTextAsync(orChars).ConfigureAwait(OperatingSystem.IsBrowser());
                     startPos = tuple_0.Item1;
                     endPos = tuple_0.Item2;
 
@@ -730,7 +730,7 @@ namespace System.Xml
         {
             CheckAsyncCall();
 
-            var tuple_1 = await this.ParseNumericCharRefAsync(true, internalSubsetBuilder).ConfigureAwait(false);
+            var tuple_1 = await this.ParseNumericCharRefAsync(true, internalSubsetBuilder).ConfigureAwait(OperatingSystem.IsBrowser());
             return tuple_1.Item2;
         }
 
@@ -747,12 +747,12 @@ namespace System.Xml
             {
                 ParsingMode pm = _parsingMode;
                 _parsingMode = ParsingMode.SkipNode;
-                await ParsePIAsync(null).ConfigureAwait(false);
+                await ParsePIAsync(null).ConfigureAwait(OperatingSystem.IsBrowser());
                 _parsingMode = pm;
             }
             else
             {
-                await ParsePIAsync(sb).ConfigureAwait(false);
+                await ParsePIAsync(sb).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -767,7 +767,7 @@ namespace System.Xml
                 {
                     ParsingMode savedParsingMode = _parsingMode;
                     _parsingMode = ParsingMode.SkipNode;
-                    await ParseCDataOrCommentAsync(XmlNodeType.Comment).ConfigureAwait(false);
+                    await ParseCDataOrCommentAsync(XmlNodeType.Comment).ConfigureAwait(OperatingSystem.IsBrowser());
                     _parsingMode = savedParsingMode;
                 }
                 else
@@ -775,7 +775,7 @@ namespace System.Xml
                     NodeData originalCurNode = _curNode;
 
                     _curNode = AddNode(_index + _attrCount + 1, _index);
-                    await ParseCDataOrCommentAsync(XmlNodeType.Comment).ConfigureAwait(false);
+                    await ParseCDataOrCommentAsync(XmlNodeType.Comment).ConfigureAwait(OperatingSystem.IsBrowser());
                     _curNode.CopyTo(0, sb);
 
                     _curNode = originalCurNode;
@@ -808,7 +808,7 @@ namespace System.Xml
 
                     return (entityId, false);
                 }
-                retValue = await PushExternalEntityAsync(entity).ConfigureAwait(false);
+                retValue = await PushExternalEntityAsync(entity).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else
             {
@@ -838,7 +838,7 @@ namespace System.Xml
             {
                 _ps.baseUri = _xmlResolver!.ResolveUri(null, _ps.baseUriStr);
             }
-            await PushExternalEntityOrSubsetAsync(publicId, systemId, _ps.baseUri, null).ConfigureAwait(false);
+            await PushExternalEntityOrSubsetAsync(publicId, systemId, _ps.baseUri, null).ConfigureAwait(OperatingSystem.IsBrowser());
 
             _ps.entity = null;
             _ps.entityId = 0;
@@ -847,9 +847,9 @@ namespace System.Xml
             int initialPos = _ps.charPos;
             if (_v1Compat)
             {
-                await EatWhitespacesAsync(null).ConfigureAwait(false);
+                await EatWhitespacesAsync(null).ConfigureAwait(OperatingSystem.IsBrowser());
             }
-            if (!await ParseXmlDeclarationAsync(true).ConfigureAwait(false))
+            if (!await ParseXmlDeclarationAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 _ps.charPos = initialPos;
             }
@@ -911,7 +911,7 @@ namespace System.Xml
             if (_ps.bytesUsed < 4 && _ps.bytes.Length - _ps.bytesUsed > 0)
             {
                 int bytesToRead = Math.Min(4, _ps.bytes.Length - _ps.bytesUsed);
-                int read = await stream.ReadAtLeastAsync(_ps.bytes.AsMemory(_ps.bytesUsed), bytesToRead, throwOnEndOfStream: false).ConfigureAwait(false);
+                int read = await stream.ReadAtLeastAsync(_ps.bytes.AsMemory(_ps.bytesUsed), bytesToRead, throwOnEndOfStream: false).ConfigureAwait(OperatingSystem.IsBrowser());
                 if (read < bytesToRead)
                 {
                     _ps.isStreamEof = true;
@@ -932,7 +932,7 @@ namespace System.Xml
 
             // decode first characters
             _ps.appendMode = true;
-            await ReadDataAsync().ConfigureAwait(false);
+            await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser());
         }
         private Task<int> InitTextReaderInputAsync(string baseUriStr, TextReader input)
         {
@@ -1124,7 +1124,7 @@ namespace System.Xml
                     // read new bytes
                     if (_ps.bytePos == _ps.bytesUsed && _ps.bytes!.Length - _ps.bytesUsed > 0)
                     {
-                        int read = await _ps.stream.ReadAsync(_ps.bytes.AsMemory(_ps.bytesUsed)).ConfigureAwait(false);
+                        int read = await _ps.stream.ReadAsync(_ps.bytes.AsMemory(_ps.bytesUsed)).ConfigureAwait(OperatingSystem.IsBrowser());
                         if (read == 0)
                         {
                             _ps.isStreamEof = true;
@@ -1140,13 +1140,13 @@ namespace System.Xml
                 if (charsRead == 0 && _ps.bytePos != originalBytePos)
                 {
                     // GetChars consumed some bytes but it was not enough bytes to form a character -> try again
-                    return await ReadDataAsync().ConfigureAwait(false);
+                    return await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             else if (_ps.textReader != null)
             {
                 // read chars
-                charsRead = await _ps.textReader.ReadAsync(_ps.chars.AsMemory(_ps.charsUsed, _ps.chars.Length - _ps.charsUsed - 1)).ConfigureAwait(false);
+                charsRead = await _ps.textReader.ReadAsync(_ps.chars.AsMemory(_ps.charsUsed, _ps.chars.Length - _ps.charsUsed - 1)).ConfigureAwait(OperatingSystem.IsBrowser());
                 _ps.charsUsed += charsRead;
             }
             else
@@ -1170,7 +1170,7 @@ namespace System.Xml
         {
             while (_ps.charsUsed - _ps.charPos < 6)
             {  // minimum "<?xml "
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     goto NoXmlDecl;
                 }
@@ -1200,7 +1200,7 @@ namespace System.Xml
             while (true)
             {
                 int originalSbLen = sb.Length;
-                int wsCount = await EatWhitespacesAsync(xmlDeclState == 0 ? null : sb).ConfigureAwait(false);
+                int wsCount = await EatWhitespacesAsync(xmlDeclState == 0 ? null : sb).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 // end of xml declaration
                 if (_ps.chars[_ps.charPos] == '?')
@@ -1244,12 +1244,12 @@ namespace System.Xml
                             }
                             if (_ps.decoder is SafeAsciiDecoder)
                             {
-                                await SwitchEncodingToUTF8Async().ConfigureAwait(false);
+                                await SwitchEncodingToUTF8Async().ConfigureAwait(OperatingSystem.IsBrowser());
                             }
                         }
                         else
                         {
-                            await SwitchEncodingAsync(encoding).ConfigureAwait(false);
+                            await SwitchEncodingAsync(encoding).ConfigureAwait(OperatingSystem.IsBrowser());
                         }
                         _ps.appendMode = false;
                         return true;
@@ -1270,7 +1270,7 @@ namespace System.Xml
                 }
 
                 // read attribute name
-                int nameEndPos = await ParseNameAsync().ConfigureAwait(false);
+                int nameEndPos = await ParseNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
                 NodeData? attr = null;
                 switch (_ps.chars.AsSpan(_ps.charPos, nameEndPos - _ps.charPos))
@@ -1318,7 +1318,7 @@ namespace System.Xml
                 // parse equals and quote char;
                 if (_ps.chars[_ps.charPos] != '=')
                 {
-                    await EatWhitespacesAsync(sb).ConfigureAwait(false);
+                    await EatWhitespacesAsync(sb).ConfigureAwait(OperatingSystem.IsBrowser());
                     if (_ps.chars[_ps.charPos] != '=')
                     {
                         ThrowUnexpectedToken("=");
@@ -1330,7 +1330,7 @@ namespace System.Xml
                 char quoteChar = _ps.chars[_ps.charPos];
                 if (quoteChar != '"' && quoteChar != '\'')
                 {
-                    await EatWhitespacesAsync(sb).ConfigureAwait(false);
+                    await EatWhitespacesAsync(sb).ConfigureAwait(OperatingSystem.IsBrowser());
                     quoteChar = _ps.chars[_ps.charPos];
                     if (quoteChar != '"' && quoteChar != '\'')
                     {
@@ -1417,7 +1417,7 @@ namespace System.Xml
                 }
                 else if (pos == _ps.charsUsed)
                 {
-                    if (await ReadDataAsync().ConfigureAwait(false) != 0)
+                    if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) != 0)
                     {
                         goto Continue;
                     }
@@ -1432,7 +1432,7 @@ namespace System.Xml
                 }
 
             ReadData:
-                if (_ps.isEof || await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (_ps.isEof || await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     Throw(SR.Xml_UnexpectedEOF1);
                 }
@@ -1457,7 +1457,7 @@ namespace System.Xml
             }
             if (_ps.decoder is SafeAsciiDecoder)
             {
-                await SwitchEncodingToUTF8Async().ConfigureAwait(false);
+                await SwitchEncodingToUTF8Async().ConfigureAwait(OperatingSystem.IsBrowser());
             }
             _ps.appendMode = false;
             return false;
@@ -1623,7 +1623,7 @@ namespace System.Xml
                     _fragmentType = XmlNodeType.Element;
                 }
 
-                var tuple_3 = await HandleEntityReferenceAsync(false, EntityExpandType.OnlyGeneral).ConfigureAwait(false);
+                var tuple_3 = await HandleEntityReferenceAsync(false, EntityExpandType.OnlyGeneral).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 switch (tuple_3.Item2)
                 {
@@ -1633,18 +1633,18 @@ namespace System.Xml
                         {
                             _parsingFunction = _nextParsingFunction;
                         }
-                        await ParseEntityReferenceAsync().ConfigureAwait(false);
+                        await ParseEntityReferenceAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         return true;
                     case EntityType.CharacterDec:
                     case EntityType.CharacterHex:
                     case EntityType.CharacterNamed:
-                        if (await ParseTextAsync().ConfigureAwait(false))
+                        if (await ParseTextAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                         {
                             return true;
                         }
-                        return await ParseDocumentContentAsync().ConfigureAwait(false);
+                        return await ParseDocumentContentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     default:
-                        return await ParseDocumentContentAsync().ConfigureAwait(false);
+                        return await ParseDocumentContentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
         }
@@ -1675,7 +1675,7 @@ namespace System.Xml
 
         private async Task<bool> _ParseDocumentContentAsync_WhiteSpace(Task<bool> task)
         {
-            if (await task.ConfigureAwait(false))
+            if (await task.ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 if (_fragmentType == XmlNodeType.None && _curNode.type == XmlNodeType.Text)
                 {
@@ -1683,15 +1683,15 @@ namespace System.Xml
                 }
                 return true;
             }
-            return await ParseDocumentContentAsync().ConfigureAwait(false);
+            return await ParseDocumentContentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         private async Task<bool> ParseDocumentContentAsync_ReadData(bool needMoreChars)
         {
             // read new characters into the buffer
-            if (await ReadDataAsync().ConfigureAwait(false) != 0)
+            if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) != 0)
             {
-                return await ParseDocumentContentAsync().ConfigureAwait(false);
+                return await ParseDocumentContentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else
             {
@@ -1707,7 +1707,7 @@ namespace System.Xml
                         SetupEndEntityNodeInContent();
                         return true;
                     }
-                    return await ParseDocumentContentAsync().ConfigureAwait(false);
+                    return await ParseDocumentContentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 Debug.Assert(_index == 0);
 
@@ -1828,7 +1828,7 @@ namespace System.Xml
         private async Task<bool> ParseElementContent_ReadData()
         {
             // read new characters into the buffer
-            if (await ReadDataAsync().ConfigureAwait(false) == 0)
+            if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
             {
                 if (_ps.charsUsed - _ps.charPos != 0)
                 {
@@ -1849,7 +1849,7 @@ namespace System.Xml
                     return true;
                 }
             }
-            return await ParseElementContentAsync().ConfigureAwait(false);
+            return await ParseElementContentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         // Parses the element start tag
@@ -1940,10 +1940,10 @@ namespace System.Xml
 
         private async Task _ParseElementAsync_ContinueWithSetElement(Task<(int, int)> task)
         {
-            var tuple_4 = await task.ConfigureAwait(false);
+            var tuple_4 = await task.ConfigureAwait(OperatingSystem.IsBrowser());
             int colonPos = tuple_4.Item1;
             int pos = tuple_4.Item2;
-            await ParseElementAsync_SetElement(colonPos, pos).ConfigureAwait(false);
+            await ParseElementAsync_SetElement(colonPos, pos).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         private Task ParseElementAsync_SetElement(int colonPos, int pos)
@@ -2049,12 +2049,12 @@ namespace System.Xml
 
         private async Task ParseElementAsync_ReadData(int pos)
         {
-            if (await ReadDataAsync().ConfigureAwait(false) == 0)
+            if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
             {
                 Throw(pos, SR.Xml_UnexpectedEOF, ">");
             }
 
-            await ParseElementAsync_NoAttributes().ConfigureAwait(false);
+            await ParseElementAsync_NoAttributes().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         private Task ParseEndElementAsync()
@@ -2074,8 +2074,8 @@ namespace System.Xml
 
         private async Task _ParseEndElmentAsync()
         {
-            await ParseEndElmentAsync_PrepareData().ConfigureAwait(false);
-            await ParseEndElementAsync_CheckNameAndParse().ConfigureAwait(false);
+            await ParseEndElmentAsync_PrepareData().ConfigureAwait(OperatingSystem.IsBrowser());
+            await ParseEndElementAsync_CheckNameAndParse().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         private async Task ParseEndElmentAsync_PrepareData()
@@ -2088,7 +2088,7 @@ namespace System.Xml
 
             while (_ps.charsUsed - _ps.charPos < prefLen + locLen + 1)
             {
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     break;
                 }
@@ -2163,7 +2163,7 @@ namespace System.Xml
         {
             while (true)
             {
-                await task.ConfigureAwait(false);
+                await task.ConfigureAwait(OperatingSystem.IsBrowser());
                 switch (_parseEndElement_NextFunc)
                 {
                     case ParseEndElementParseFunction.CheckEndTag:
@@ -2269,7 +2269,7 @@ namespace System.Xml
 
         private async Task ParseEndElementAsync_ReadData()
         {
-            if (await ReadDataAsync().ConfigureAwait(false) == 0)
+            if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
             {
                 ThrowUnclosedElements();
             }
@@ -2283,7 +2283,7 @@ namespace System.Xml
             {
                 // parse the bad name
 
-                var tuple_5 = await ParseQNameAsync().ConfigureAwait(false);
+                var tuple_5 = await ParseQNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
                 int endPos = tuple_5.Item2;
 
@@ -2458,7 +2458,7 @@ namespace System.Xml
 
                         // else fallback to full name parsing routine
 
-                        var tuple_6 = await ParseQNameAsync().ConfigureAwait(false);
+                        var tuple_6 = await ParseQNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         colonPos = tuple_6.Item1;
 
                         pos = tuple_6.Item2;
@@ -2468,7 +2468,7 @@ namespace System.Xml
                 }
                 else if (pos + 1 >= _ps.charsUsed)
                 {
-                    var tuple_7 = await ParseQNameAsync().ConfigureAwait(false);
+                    var tuple_7 = await ParseQNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     colonPos = tuple_7.Item1;
 
                     pos = tuple_7.Item2;
@@ -2487,7 +2487,7 @@ namespace System.Xml
                 if (chars[pos] != '=')
                 {
                     _ps.charPos = pos;
-                    await EatWhitespacesAsync(null).ConfigureAwait(false);
+                    await EatWhitespacesAsync(null).ConfigureAwait(OperatingSystem.IsBrowser());
                     pos = _ps.charPos;
                     if (chars[pos] != '=')
                     {
@@ -2500,7 +2500,7 @@ namespace System.Xml
                 if (quoteChar != '"' && quoteChar != '\'')
                 {
                     _ps.charPos = pos;
-                    await EatWhitespacesAsync(null).ConfigureAwait(false);
+                    await EatWhitespacesAsync(null).ConfigureAwait(OperatingSystem.IsBrowser());
                     pos = _ps.charPos;
                     quoteChar = chars[pos];
                     if (quoteChar != '"' && quoteChar != '\'')
@@ -2536,7 +2536,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    await ParseAttributeValueSlowAsync(pos, quoteChar, attr).ConfigureAwait(false);
+                    await ParseAttributeValueSlowAsync(pos, quoteChar, attr).ConfigureAwait(OperatingSystem.IsBrowser());
                     pos = _ps.charPos;
                     chars = _ps.chars;
                 }
@@ -2567,7 +2567,7 @@ namespace System.Xml
 
             ReadData:
                 _ps.lineNo -= lineNoDelta;
-                if (await ReadDataAsync().ConfigureAwait(false) != 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) != 0)
                 {
                     pos = _ps.charPos;
                     chars = _ps.chars;
@@ -2699,7 +2699,7 @@ namespace System.Xml
                             int enclosingEntityId = _ps.entityId;
                             LineInfo entityLineInfo = new LineInfo(_ps.lineNo, _ps.LinePos + 1);
 
-                            var tuple_8 = await HandleEntityReferenceAsync(true, EntityExpandType.All).ConfigureAwait(false);
+                            var tuple_8 = await HandleEntityReferenceAsync(true, EntityExpandType.All).ConfigureAwait(OperatingSystem.IsBrowser());
                             pos = tuple_8.Item1;
 
                             switch (tuple_8.Item2)
@@ -2725,7 +2725,7 @@ namespace System.Xml
 
                                         // parse entity name
                                         _ps.charPos++;
-                                        string entityName = await ParseEntityNameAsync().ConfigureAwait(false);
+                                        string entityName = await ParseEntityNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
                                         // construct entity reference chunk
                                         NodeData entityChunk = new NodeData();
@@ -2748,7 +2748,7 @@ namespace System.Xml
                                     else
                                     {
                                         _ps.charPos++;
-                                        await ParseEntityNameAsync().ConfigureAwait(false);
+                                        await ParseEntityNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                                     }
                                     pos = _ps.charPos;
                                     break;
@@ -2818,7 +2818,7 @@ namespace System.Xml
 
             ReadData:
                 // read new characters into the buffer
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     if (_ps.charsUsed - _ps.charPos > 0)
                     {
@@ -2956,7 +2956,7 @@ namespace System.Xml
                 (int, int, int, bool) tuple_9;
                 do
                 {
-                    tuple_9 = await ParseTextAsync(orChars).ConfigureAwait(false);
+                    tuple_9 = await ParseTextAsync(orChars).ConfigureAwait(OperatingSystem.IsBrowser());
                     orChars = tuple_9.Item3;
                 } while (!tuple_9.Item4);
 
@@ -2969,7 +2969,7 @@ namespace System.Xml
             parseTask = ParseTextAsync(orChars).AsTask();
 
         Parse:
-            var tuple_10 = await parseTask.ConfigureAwait(false);
+            var tuple_10 = await parseTask.ConfigureAwait(OperatingSystem.IsBrowser());
             startPos = tuple_10.Item1;
             endPos = tuple_10.Item2;
             orChars = tuple_10.Item3;
@@ -3004,7 +3004,7 @@ namespace System.Xml
                             _stringBuilder.Append(_ps.chars, startPos, endPos - startPos);
                         }
 
-                        tuple_11 = await ParseTextAsync(orChars).ConfigureAwait(false);
+                        tuple_11 = await ParseTextAsync(orChars).ConfigureAwait(OperatingSystem.IsBrowser());
                         startPos = tuple_11.Item1;
                         endPos = tuple_11.Item2;
                         orChars = tuple_11.Item3;
@@ -3050,7 +3050,7 @@ namespace System.Xml
                     }
                     do
                     {
-                        var tuple_12 = await ParseTextAsync(orChars).ConfigureAwait(false);
+                        var tuple_12 = await ParseTextAsync(orChars).ConfigureAwait(OperatingSystem.IsBrowser());
                         startPos = tuple_12.Item1;
                         endPos = tuple_12.Item2;
                         orChars = tuple_12.Item3;
@@ -3074,7 +3074,7 @@ namespace System.Xml
                             (int, int, int, bool) tuple_13;
                             do
                             {
-                                tuple_13 = await ParseTextAsync(orChars).ConfigureAwait(false);
+                                tuple_13 = await ParseTextAsync(orChars).ConfigureAwait(OperatingSystem.IsBrowser());
                                 orChars = tuple_13.Item3;
                             } while (!tuple_13.Item4);
                         }
@@ -3095,7 +3095,7 @@ namespace System.Xml
             }
 
         IgnoredNode:
-            return await ParseTextAsync_IgnoreNode().ConfigureAwait(false);
+            return await ParseTextAsync_IgnoreNode().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         private Task<bool> ParseTextAsync_IgnoreNode()
@@ -3208,7 +3208,7 @@ namespace System.Xml
         {
             while (true)
             {
-                await task.ConfigureAwait(false);
+                await task.ConfigureAwait(OperatingSystem.IsBrowser());
 
                 int outOrChars = _lastParseTextState.outOrChars;
                 char[] chars = _lastParseTextState.chars;
@@ -3377,7 +3377,7 @@ namespace System.Xml
                     return _parseText_dummyTask.Result;
                 }
 
-                var tuple_14 = await HandleEntityReferenceAsync(false, EntityExpandType.All).ConfigureAwait(false);
+                var tuple_14 = await HandleEntityReferenceAsync(false, EntityExpandType.All).ConfigureAwait(OperatingSystem.IsBrowser());
                 pos = tuple_14.Item1;
 
                 switch (tuple_14.Item2)
@@ -3439,7 +3439,7 @@ namespace System.Xml
                 }
             }
             int offset = pos - _ps.charPos;
-            if (await ZeroEndingStreamAsync(pos).ConfigureAwait(false))
+            if (await ZeroEndingStreamAsync(pos).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 chars = _ps.chars;
                 pos = _ps.charPos + offset;
@@ -3464,7 +3464,7 @@ namespace System.Xml
                 return _parseText_dummyTask.Result;
             }
             // read new characters into the buffer
-            if (await ReadDataAsync().ConfigureAwait(false) == 0)
+            if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
             {
                 if (_ps.charsUsed - _ps.charPos > 0)
                 {
@@ -3536,7 +3536,7 @@ namespace System.Xml
             int endPos;
             int orChars = 0;
 
-            var tuple_15 = await ParseTextAsync(orChars).ConfigureAwait(false);
+            var tuple_15 = await ParseTextAsync(orChars).ConfigureAwait(OperatingSystem.IsBrowser());
             startPos = tuple_15.Item1;
             endPos = tuple_15.Item2;
             orChars = tuple_15.Item3;
@@ -3545,7 +3545,7 @@ namespace System.Xml
             {
                 _stringBuilder.Append(_ps.chars, startPos, endPos - startPos);
 
-                tuple_15 = await ParseTextAsync(orChars).ConfigureAwait(false);
+                tuple_15 = await ParseTextAsync(orChars).ConfigureAwait(OperatingSystem.IsBrowser());
                 startPos = tuple_15.Item1;
                 endPos = tuple_15.Item2;
                 orChars = tuple_15.Item3;
@@ -3567,7 +3567,7 @@ namespace System.Xml
                 case ParsingFunction.InReadValueChunk:
                     if (_incReadState == IncrementalReadState.ReadValueChunk_OnPartialValue)
                     {
-                        await FinishPartialValueAsync().ConfigureAwait(false);
+                        await FinishPartialValueAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         _incReadState = IncrementalReadState.ReadValueChunk_OnCachedValue;
                     }
                     else
@@ -3584,7 +3584,7 @@ namespace System.Xml
                     switch (_incReadState)
                     {
                         case IncrementalReadState.ReadContentAsBinary_OnPartialValue:
-                            await FinishPartialValueAsync().ConfigureAwait(false);
+                            await FinishPartialValueAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                             _incReadState = IncrementalReadState.ReadContentAsBinary_OnCachedValue;
                             break;
                         case IncrementalReadState.ReadContentAsBinary_OnCachedValue:
@@ -3615,7 +3615,7 @@ namespace System.Xml
             (int, int, int, bool) tuple_16;
             do
             {
-                tuple_16 = await ParseTextAsync(orChars).ConfigureAwait(false);
+                tuple_16 = await ParseTextAsync(orChars).ConfigureAwait(OperatingSystem.IsBrowser());
                 orChars = tuple_16.Item3;
             } while (!tuple_16.Item4);
         }
@@ -3647,7 +3647,7 @@ namespace System.Xml
             if (_incReadState == IncrementalReadState.ReadContentAsBinary_OnPartialValue)
             {
                 Debug.Assert((_index > 0) ? _nextParsingFunction == ParsingFunction.ElementContent : _nextParsingFunction == ParsingFunction.DocumentContent);
-                await SkipPartialTextValueAsync().ConfigureAwait(false);
+                await SkipPartialTextValueAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else
             {
@@ -3656,20 +3656,20 @@ namespace System.Xml
             }
             if (_incReadState != IncrementalReadState.ReadContentAsBinary_End)
             {
-                while (await MoveToNextContentNodeAsync(true).ConfigureAwait(false)) ;
+                while (await MoveToNextContentNodeAsync(true).ConfigureAwait(OperatingSystem.IsBrowser())) ;
             }
         }
 
         private async Task FinishReadElementContentAsBinaryAsync()
         {
-            await FinishReadContentAsBinaryAsync().ConfigureAwait(false);
+            await FinishReadContentAsBinaryAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
             if (_curNode.type != XmlNodeType.EndElement)
             {
                 Throw(SR.Xml_InvalidNodeType, _curNode.type.ToString());
             }
             // move off the end element
-            await _outerReader.ReadAsync().ConfigureAwait(false);
+            await _outerReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         private async Task<bool> ParseRootLevelWhitespaceAsync()
@@ -3680,8 +3680,8 @@ namespace System.Xml
 
             if (nodeType == XmlNodeType.None)
             {
-                await EatWhitespacesAsync(null).ConfigureAwait(false);
-                if (_ps.chars[_ps.charPos] == '<' || _ps.charsUsed - _ps.charPos == 0 || await ZeroEndingStreamAsync(_ps.charPos).ConfigureAwait(false))
+                await EatWhitespacesAsync(null).ConfigureAwait(OperatingSystem.IsBrowser());
+                if (_ps.chars[_ps.charPos] == '<' || _ps.charsUsed - _ps.charPos == 0 || await ZeroEndingStreamAsync(_ps.charPos).ConfigureAwait(OperatingSystem.IsBrowser()))
                 {
                     return false;
                 }
@@ -3689,8 +3689,8 @@ namespace System.Xml
             else
             {
                 _curNode.SetLineInfo(_ps.LineNo, _ps.LinePos);
-                await EatWhitespacesAsync(_stringBuilder).ConfigureAwait(false);
-                if (_ps.chars[_ps.charPos] == '<' || _ps.charsUsed - _ps.charPos == 0 || await ZeroEndingStreamAsync(_ps.charPos).ConfigureAwait(false))
+                await EatWhitespacesAsync(_stringBuilder).ConfigureAwait(OperatingSystem.IsBrowser());
+                if (_ps.chars[_ps.charPos] == '<' || _ps.charsUsed - _ps.charPos == 0 || await ZeroEndingStreamAsync(_ps.charPos).ConfigureAwait(OperatingSystem.IsBrowser()))
                 {
                     if (_stringBuilder.Length > 0)
                     {
@@ -3719,7 +3719,7 @@ namespace System.Xml
             _ps.charPos++;
 
             _curNode.SetLineInfo(_ps.LineNo, _ps.LinePos);
-            _curNode.SetNamedNode(XmlNodeType.EntityReference, await ParseEntityNameAsync().ConfigureAwait(false));
+            _curNode.SetNamedNode(XmlNodeType.EntityReference, await ParseEntityNameAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
         }
 
         private async Task<(int, EntityType)> HandleEntityReferenceAsync(bool isInAttributeValue, EntityExpandType expandType)
@@ -3730,7 +3730,7 @@ namespace System.Xml
 
             if (_ps.charPos + 1 == _ps.charsUsed)
             {
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     Throw(SR.Xml_UnexpectedEOF1);
                 }
@@ -3741,7 +3741,7 @@ namespace System.Xml
             {
                 EntityType entityType;
 
-                var tuple_17 = await ParseNumericCharRefAsync(expandType != EntityExpandType.OnlyGeneral, null).ConfigureAwait(false);
+                var tuple_17 = await ParseNumericCharRefAsync(expandType != EntityExpandType.OnlyGeneral, null).ConfigureAwait(OperatingSystem.IsBrowser());
                 entityType = tuple_17.Item1;
 
                 charRefEndPos = tuple_17.Item2;
@@ -3754,7 +3754,7 @@ namespace System.Xml
             else
             {
                 // named character reference
-                charRefEndPos = await ParseNamedCharRefAsync(expandType != EntityExpandType.OnlyGeneral, null).ConfigureAwait(false);
+                charRefEndPos = await ParseNamedCharRefAsync(expandType != EntityExpandType.OnlyGeneral, null).ConfigureAwait(OperatingSystem.IsBrowser());
                 if (charRefEndPos >= 0)
                 {
                     return (charRefEndPos, EntityType.CharacterNamed);
@@ -3776,7 +3776,7 @@ namespace System.Xml
                 int savedLinePos = _ps.LinePos;
                 try
                 {
-                    endPos = await ParseNameAsync().ConfigureAwait(false);
+                    endPos = await ParseNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 catch (XmlException)
                 {
@@ -3796,7 +3796,7 @@ namespace System.Xml
                 _ps.charPos = endPos + 1;
                 charRefEndPos = -1;
 
-                EntityType entType = await HandleGeneralEntityReferenceAsync(entityName, isInAttributeValue, false, entityLinePos).ConfigureAwait(false);
+                EntityType entType = await HandleGeneralEntityReferenceAsync(entityName, isInAttributeValue, false, entityLinePos).ConfigureAwait(OperatingSystem.IsBrowser());
                 _reportedBaseUri = _ps.baseUriStr;
                 _reportedEncoding = _ps.encoding;
 
@@ -3812,7 +3812,7 @@ namespace System.Xml
 
             if (_dtdInfo == null && _fragmentParserContext != null && _fragmentParserContext.HasDtdInfo && _dtdProcessing == DtdProcessing.Parse)
             {
-                await ParseDtdFromParserContextAsync().ConfigureAwait(false);
+                await ParseDtdFromParserContextAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             if (_dtdInfo == null ||
@@ -3864,7 +3864,7 @@ namespace System.Xml
                 {
                     if (pushFakeEntityIfNullResolver)
                     {
-                        await PushExternalEntityAsync(entity).ConfigureAwait(false);
+                        await PushExternalEntityAsync(entity).ConfigureAwait(OperatingSystem.IsBrowser());
                         _curNode.entityId = _ps.entityId;
                         return EntityType.FakeExpanded;
                     }
@@ -3872,7 +3872,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    await PushExternalEntityAsync(entity).ConfigureAwait(false);
+                    await PushExternalEntityAsync(entity).ConfigureAwait(OperatingSystem.IsBrowser());
                     _curNode.entityId = _ps.entityId;
                     return EntityType.Expanded;
                 }
@@ -3908,7 +3908,7 @@ namespace System.Xml
             Debug.Assert(_stringBuilder.Length == 0);
 
             // parse target name
-            int nameEndPos = await ParseNameAsync().ConfigureAwait(false);
+            int nameEndPos = await ParseNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             string target = _nameTable.Add(_ps.chars, _ps.charPos, nameEndPos - _ps.charPos);
 
             if (string.Equals(target, "xml", StringComparison.OrdinalIgnoreCase))
@@ -3932,11 +3932,11 @@ namespace System.Xml
             // check mandatory whitespace
             char ch = _ps.chars[_ps.charPos];
             Debug.Assert(_ps.charPos < _ps.charsUsed);
-            if (await EatWhitespacesAsync(piInDtdStringBuilder).ConfigureAwait(false) == 0)
+            if (await EatWhitespacesAsync(piInDtdStringBuilder).ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
             {
                 if (_ps.charsUsed - _ps.charPos < 2)
                 {
-                    await ReadDataAsync().ConfigureAwait(false);
+                    await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 if (ch != '?' || _ps.chars[_ps.charPos + 1] != '>')
                 {
@@ -3947,7 +3947,7 @@ namespace System.Xml
             // scan processing instruction value
             int startPos, endPos;
 
-            var tuple_18 = await ParsePIValueAsync().ConfigureAwait(false);
+            var tuple_18 = await ParsePIValueAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             startPos = tuple_18.Item1;
             endPos = tuple_18.Item2;
 
@@ -3979,7 +3979,7 @@ namespace System.Xml
                         (int, int, bool) tuple_19;
                         do
                         {
-                            tuple_19 = await ParsePIValueAsync().ConfigureAwait(false);
+                            tuple_19 = await ParsePIValueAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         } while (!tuple_19.Item3);
 
                         return false;
@@ -3998,7 +3998,7 @@ namespace System.Xml
                 {
                     sb.Append(_ps.chars, startPos, endPos - startPos);
 
-                    tuple_20 = await ParsePIValueAsync().ConfigureAwait(false);
+                    tuple_20 = await ParsePIValueAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     startPos = tuple_20.Item1;
                     endPos = tuple_20.Item2;
                 } while (!tuple_20.Item3);
@@ -4022,7 +4022,7 @@ namespace System.Xml
             // read new characters into the buffer
             if (_ps.charsUsed - _ps.charPos < 2)
             {
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     Throw(_ps.charsUsed, SR.Xml_UnexpectedEOF, "PI");
                 }
@@ -4175,13 +4175,13 @@ namespace System.Xml
             {
                 ParsingMode oldParsingMode = _parsingMode;
                 _parsingMode = ParsingMode.SkipNode;
-                await ParseCDataOrCommentAsync(XmlNodeType.Comment).ConfigureAwait(false);
+                await ParseCDataOrCommentAsync(XmlNodeType.Comment).ConfigureAwait(OperatingSystem.IsBrowser());
                 _parsingMode = oldParsingMode;
                 return false;
             }
             else
             {
-                await ParseCDataOrCommentAsync(XmlNodeType.Comment).ConfigureAwait(false);
+                await ParseCDataOrCommentAsync(XmlNodeType.Comment).ConfigureAwait(OperatingSystem.IsBrowser());
                 return true;
             }
         }
@@ -4201,7 +4201,7 @@ namespace System.Xml
                 _curNode.SetLineInfo(_ps.LineNo, _ps.LinePos);
                 Debug.Assert(_stringBuilder.Length == 0);
 
-                var tuple_21 = await ParseCDataOrCommentTupleAsync(type).ConfigureAwait(false);
+                var tuple_21 = await ParseCDataOrCommentTupleAsync(type).ConfigureAwait(OperatingSystem.IsBrowser());
                 startPos = tuple_21.Item1;
                 endPos = tuple_21.Item2;
 
@@ -4217,7 +4217,7 @@ namespace System.Xml
                     {
                         _stringBuilder.Append(_ps.chars, startPos, endPos - startPos);
 
-                        tuple_22 = await ParseCDataOrCommentTupleAsync(type).ConfigureAwait(false);
+                        tuple_22 = await ParseCDataOrCommentTupleAsync(type).ConfigureAwait(OperatingSystem.IsBrowser());
                         startPos = tuple_22.Item1;
                         endPos = tuple_22.Item2;
                     } while (!tuple_22.Item3);
@@ -4232,7 +4232,7 @@ namespace System.Xml
                 (int, int, bool) tuple_23;
                 do
                 {
-                    tuple_23 = await ParseCDataOrCommentTupleAsync(type).ConfigureAwait(false);
+                    tuple_23 = await ParseCDataOrCommentTupleAsync(type).ConfigureAwait(OperatingSystem.IsBrowser());
                 } while (!tuple_23.Item3);
             }
         }
@@ -4247,7 +4247,7 @@ namespace System.Xml
             if (_ps.charsUsed - _ps.charPos < 3)
             {
                 // read new characters into the buffer
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     Throw(SR.Xml_UnexpectedEOF, (type == XmlNodeType.Comment) ? "Comment" : "CDATA");
                 }
@@ -4416,7 +4416,7 @@ namespace System.Xml
             // parse 'DOCTYPE'
             while (_ps.charsUsed - _ps.charPos < 8)
             {
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     Throw(SR.Xml_UnexpectedEOF, "DOCTYPE");
                 }
@@ -4441,14 +4441,14 @@ namespace System.Xml
 
             _ps.charPos += 8;
 
-            await EatWhitespacesAsync(null).ConfigureAwait(false);
+            await EatWhitespacesAsync(null).ConfigureAwait(OperatingSystem.IsBrowser());
 
             // Parse DTD
             if (_dtdProcessing == DtdProcessing.Parse)
             {
                 _curNode.SetLineInfo(_ps.LineNo, _ps.LinePos);
 
-                await ParseDtdAsync().ConfigureAwait(false);
+                await ParseDtdAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
                 _nextParsingFunction = _parsingFunction;
                 _parsingFunction = ParsingFunction.ResetAttributesRootLevel;
@@ -4459,7 +4459,7 @@ namespace System.Xml
             {
                 Debug.Assert(_dtdProcessing == DtdProcessing.Ignore);
 
-                await SkipDtdAsync().ConfigureAwait(false);
+                await SkipDtdAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 return false;
             }
         }
@@ -4468,7 +4468,7 @@ namespace System.Xml
         {
             IDtdParser dtdParser = DtdParser.Create();
 
-            _dtdInfo = await dtdParser.ParseInternalDtdAsync(new DtdParserProxy(this), true).ConfigureAwait(false);
+            _dtdInfo = await dtdParser.ParseInternalDtdAsync(new DtdParserProxy(this), true).ConfigureAwait(OperatingSystem.IsBrowser());
 
             if ((_validatingReaderCompatFlag || !_v1Compat) && (_dtdInfo.HasDefaultAttributes || _dtdInfo.HasNonCDataAttributes))
             {
@@ -4484,14 +4484,14 @@ namespace System.Xml
 
             // parse dtd name
 
-            var tuple_24 = await ParseQNameAsync().ConfigureAwait(false);
+            var tuple_24 = await ParseQNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
             int pos = tuple_24.Item2;
 
             _ps.charPos = pos;
 
             // check whitespace
-            await EatWhitespacesAsync(null).ConfigureAwait(false);
+            await EatWhitespacesAsync(null).ConfigureAwait(OperatingSystem.IsBrowser());
 
             // PUBLIC Id
             if (_ps.chars[_ps.charPos] == 'P')
@@ -4499,7 +4499,7 @@ namespace System.Xml
                 // make sure we have enough characters
                 while (_ps.charsUsed - _ps.charPos < 6)
                 {
-                    if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                    if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                     {
                         Throw(SR.Xml_UnexpectedEOF1);
                     }
@@ -4512,31 +4512,31 @@ namespace System.Xml
                 _ps.charPos += 6;
 
                 // check whitespace
-                if (await EatWhitespacesAsync(null).ConfigureAwait(false) == 0)
+                if (await EatWhitespacesAsync(null).ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     ThrowExpectingWhitespace(_ps.charPos);
                 }
 
                 // parse PUBLIC value
-                await SkipPublicOrSystemIdLiteralAsync().ConfigureAwait(false);
+                await SkipPublicOrSystemIdLiteralAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
                 // check whitespace
-                if (await EatWhitespacesAsync(null).ConfigureAwait(false) == 0)
+                if (await EatWhitespacesAsync(null).ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     ThrowExpectingWhitespace(_ps.charPos);
                 }
 
                 // parse SYSTEM value
-                await SkipPublicOrSystemIdLiteralAsync().ConfigureAwait(false);
+                await SkipPublicOrSystemIdLiteralAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
-                await EatWhitespacesAsync(null).ConfigureAwait(false);
+                await EatWhitespacesAsync(null).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else if (_ps.chars[_ps.charPos] == 'S')
             {
                 // make sure we have enough characters
                 while (_ps.charsUsed - _ps.charPos < 6)
                 {
-                    if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                    if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                     {
                         Throw(SR.Xml_UnexpectedEOF1);
                     }
@@ -4549,15 +4549,15 @@ namespace System.Xml
                 _ps.charPos += 6;
 
                 // check whitespace
-                if (await EatWhitespacesAsync(null).ConfigureAwait(false) == 0)
+                if (await EatWhitespacesAsync(null).ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     ThrowExpectingWhitespace(_ps.charPos);
                 }
 
                 // parse SYSTEM value
-                await SkipPublicOrSystemIdLiteralAsync().ConfigureAwait(false);
+                await SkipPublicOrSystemIdLiteralAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
-                await EatWhitespacesAsync(null).ConfigureAwait(false);
+                await EatWhitespacesAsync(null).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else if (_ps.chars[_ps.charPos] != '[' && _ps.chars[_ps.charPos] != '>')
             {
@@ -4569,9 +4569,9 @@ namespace System.Xml
             {
                 _ps.charPos++;
 
-                await SkipUntilAsync(']', true).ConfigureAwait(false);
+                await SkipUntilAsync(']', true).ConfigureAwait(OperatingSystem.IsBrowser());
 
-                await EatWhitespacesAsync(null).ConfigureAwait(false);
+                await EatWhitespacesAsync(null).ConfigureAwait(OperatingSystem.IsBrowser());
                 if (_ps.chars[_ps.charPos] != '>')
                 {
                     ThrowUnexpectedToken(">");
@@ -4779,7 +4779,7 @@ namespace System.Xml
 
             ReadData:
                 // read new characters into the buffer
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     if (_ps.charsUsed - _ps.charPos > 0)
                     {
@@ -4877,7 +4877,7 @@ namespace System.Xml
                     wsCount += tmp3;
                 }
 
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     if (_ps.charsUsed - _ps.charPos == 0)
                     {
@@ -4913,7 +4913,7 @@ namespace System.Xml
                 {
                     case -2:
                         // read new characters in the buffer
-                        if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                        if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                         {
                             Throw(SR.Xml_UnexpectedEOF);
                         }
@@ -4947,7 +4947,7 @@ namespace System.Xml
                         return -1;
                     case -2:
                         // read new characters in the buffer
-                        if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                        if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                         {
                             return -1;
                         }
@@ -4965,7 +4965,7 @@ namespace System.Xml
 
         private async Task<int> ParseNameAsync()
         {
-            var tuple_25 = await ParseQNameAsync(false, 0).ConfigureAwait(false);
+            var tuple_25 = await ParseQNameAsync(false, 0).ConfigureAwait(OperatingSystem.IsBrowser());
             return tuple_25.Item2;
         }
 
@@ -4993,7 +4993,7 @@ namespace System.Xml
             {
                 if (pos + 1 >= _ps.charsUsed)
                 {
-                    var tuple_27 = await ReadDataInNameAsync(pos).ConfigureAwait(false);
+                    var tuple_27 = await ReadDataInNameAsync(pos).ConfigureAwait(OperatingSystem.IsBrowser());
                     pos = tuple_27.Item1;
 
                     if (tuple_27.Item2)
@@ -5045,7 +5045,7 @@ namespace System.Xml
             // end of buffer
             else if (pos == _ps.charsUsed)
             {
-                var tuple_28 = await ReadDataInNameAsync(pos).ConfigureAwait(false);
+                var tuple_28 = await ReadDataInNameAsync(pos).ConfigureAwait(OperatingSystem.IsBrowser());
                 pos = tuple_28.Item1;
 
                 if (tuple_28.Item2)
@@ -5065,7 +5065,7 @@ namespace System.Xml
         private async Task<(int, bool)> ReadDataInNameAsync(int pos)
         {
             int offset = pos - _ps.charPos;
-            bool newDataRead = (await ReadDataAsync().ConfigureAwait(false) != 0);
+            bool newDataRead = (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) != 0);
             pos = _ps.charPos + offset;
 
             return (pos, newDataRead);
@@ -5076,7 +5076,7 @@ namespace System.Xml
             int endPos;
             try
             {
-                endPos = await ParseNameAsync().ConfigureAwait(false);
+                endPos = await ParseNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
             catch (XmlException)
             {
@@ -5107,7 +5107,7 @@ namespace System.Xml
                 try
                 {
                     uri = _xmlResolver!.ResolveUri(baseUri, publicId);
-                    if (await OpenAndPushAsync(uri).ConfigureAwait(false))
+                    if (await OpenAndPushAsync(uri).ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         return;
                     }
@@ -5122,7 +5122,7 @@ namespace System.Xml
             uri = _xmlResolver!.ResolveUri(baseUri, systemId);
             try
             {
-                if (await OpenAndPushAsync(uri).ConfigureAwait(false))
+                if (await OpenAndPushAsync(uri).ConfigureAwait(OperatingSystem.IsBrowser()))
                 {
                     return;
                 }
@@ -5163,28 +5163,28 @@ namespace System.Xml
             // First try to get the data as a TextReader
             if (_xmlResolver.SupportsType(uri, typeof(TextReader)))
             {
-                TextReader textReader = (TextReader)await _xmlResolver.GetEntityAsync(uri, null, typeof(TextReader)).ConfigureAwait(false);
+                TextReader textReader = (TextReader)await _xmlResolver.GetEntityAsync(uri, null, typeof(TextReader)).ConfigureAwait(OperatingSystem.IsBrowser());
                 if (textReader == null)
                 {
                     return false;
                 }
 
                 PushParsingState();
-                await InitTextReaderInputAsync(uri.ToString(), uri, textReader).ConfigureAwait(false);
+                await InitTextReaderInputAsync(uri.ToString(), uri, textReader).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else
             {
                 // Then try get it as a Stream
                 Debug.Assert(_xmlResolver.SupportsType(uri, typeof(Stream)), "Stream must always be a supported type in XmlResolver");
 
-                Stream stream = (Stream)await _xmlResolver.GetEntityAsync(uri, null, typeof(Stream)).ConfigureAwait(false);
+                Stream stream = (Stream)await _xmlResolver.GetEntityAsync(uri, null, typeof(Stream)).ConfigureAwait(OperatingSystem.IsBrowser());
                 if (stream == null)
                 {
                     return false;
                 }
 
                 PushParsingState();
-                await InitStreamInputAsync(uri, stream, null).ConfigureAwait(false);
+                await InitStreamInputAsync(uri, stream, null).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             return true;
         }
@@ -5204,7 +5204,7 @@ namespace System.Xml
                 {
                     entityBaseUri = _xmlResolver!.ResolveUri(null, entity.BaseUriString);
                 }
-                await PushExternalEntityOrSubsetAsync(entity.PublicId, entity.SystemId, entityBaseUri, entity.Name).ConfigureAwait(false);
+                await PushExternalEntityOrSubsetAsync(entity.PublicId, entity.SystemId, entityBaseUri, entity.Name).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 RegisterEntity(entity);
 
@@ -5212,9 +5212,9 @@ namespace System.Xml
                 int initialPos = _ps.charPos;
                 if (_v1Compat)
                 {
-                    await EatWhitespacesAsync(null).ConfigureAwait(false);
+                    await EatWhitespacesAsync(null).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
-                if (!await ParseXmlDeclarationAsync(true).ConfigureAwait(false))
+                if (!await ParseXmlDeclarationAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()))
                 {
                     _ps.charPos = initialPos;
                 }
@@ -5242,7 +5242,7 @@ namespace System.Xml
         // Note that this method calls ReadData() which may change the value of ps.chars and ps.charPos.
         private async Task<bool> ZeroEndingStreamAsync(int pos)
         {
-            if (_v1Compat && pos == _ps.charsUsed - 1 && _ps.chars[pos] == (char)0 && await ReadDataAsync().ConfigureAwait(false) == 0 && _ps.isStreamEof)
+            if (_v1Compat && pos == _ps.charsUsed - 1 && _ps.chars[pos] == (char)0 && await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0 && _ps.isStreamEof)
             {
                 _ps.charsUsed--;
                 return true;
@@ -5257,7 +5257,7 @@ namespace System.Xml
             IDtdParser dtdParser = DtdParser.Create();
 
             // Parse DTD
-            _dtdInfo = await dtdParser.ParseFreeFloatingDtdAsync(_fragmentParserContext.BaseURI, _fragmentParserContext.DocTypeName, _fragmentParserContext.PublicId, _fragmentParserContext.SystemId, _fragmentParserContext.InternalSubset, new DtdParserProxy(this)).ConfigureAwait(false);
+            _dtdInfo = await dtdParser.ParseFreeFloatingDtdAsync(_fragmentParserContext.BaseURI, _fragmentParserContext.DocTypeName, _fragmentParserContext.PublicId, _fragmentParserContext.SystemId, _fragmentParserContext.InternalSubset, new DtdParserProxy(this)).ConfigureAwait(OperatingSystem.IsBrowser());
 
             if ((_validatingReaderCompatFlag || !_v1Compat) && (_dtdInfo.HasDefaultAttributes || _dtdInfo.HasNonCDataAttributes))
             {
@@ -5280,7 +5280,7 @@ namespace System.Xml
 
             if (!XmlReader.IsTextualNode(_curNode.type))
             {
-                if (!await MoveToNextContentNodeAsync(false).ConfigureAwait(false))
+                if (!await MoveToNextContentNodeAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()))
                 {
                     return false;
                 }
@@ -5299,21 +5299,21 @@ namespace System.Xml
             bool isEmpty = _curNode.IsEmptyElement;
 
             // move to content or off the empty element
-            await _outerReader.ReadAsync().ConfigureAwait(false);
+            await _outerReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             if (isEmpty)
             {
                 return false;
             }
 
             // make sure we are on a content node
-            if (!await MoveToNextContentNodeAsync(false).ConfigureAwait(false))
+            if (!await MoveToNextContentNodeAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 if (_curNode.type != XmlNodeType.EndElement)
                 {
                     Throw(SR.Xml_InvalidNodeType, _curNode.type.ToString());
                 }
                 // move off end element
-                await _outerReader.ReadAsync().ConfigureAwait(false);
+                await _outerReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 return false;
             }
             SetupReadContentAsBinaryState(ParsingFunction.InReadElementContentAsBinary);
@@ -5350,7 +5350,7 @@ namespace System.Xml
                         return false;
                 }
                 moveIfOnContentNode = false;
-            } while (await _outerReader.ReadAsync().ConfigureAwait(false));
+            } while (await _outerReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
             return false;
         }
 
@@ -5402,7 +5402,7 @@ namespace System.Xml
                         // store current line info and parse more text
                         _incReadLineInfo.Set(_ps.LineNo, _ps.LinePos);
 
-                        var tuple_36 = await ParseTextAsync(orChars).ConfigureAwait(false);
+                        var tuple_36 = await ParseTextAsync(orChars).ConfigureAwait(OperatingSystem.IsBrowser());
                         startPos = tuple_36.Item1;
                         endPos = tuple_36.Item2;
 
@@ -5438,7 +5438,7 @@ namespace System.Xml
                 _nextParsingFunction = _nextNextParsingFunction;
 
                 // move to next textual node in the element content; throw on sub elements
-                if (!await MoveToNextContentNodeAsync(true).ConfigureAwait(false))
+                if (!await MoveToNextContentNodeAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()))
                 {
                     SetupReadContentAsBinaryState(tmp);
                     _incReadState = IncrementalReadState.ReadContentAsBinary_End;
@@ -5455,7 +5455,7 @@ namespace System.Xml
             {
                 return 0;
             }
-            int decoded = await ReadContentAsBinaryAsync(buffer, index, count).ConfigureAwait(false);
+            int decoded = await ReadContentAsBinaryAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
             if (decoded > 0)
             {
                 return decoded;
@@ -5473,7 +5473,7 @@ namespace System.Xml
             Debug.Assert(_parsingFunction != ParsingFunction.InReadElementContentAsBinary);
 
             // move off the EndElement
-            await _outerReader.ReadAsync().ConfigureAwait(false);
+            await _outerReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             return 0;
         }
     }

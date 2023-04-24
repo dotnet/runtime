@@ -52,7 +52,7 @@ namespace System.Xml
                         }
                         Debug.Assert(reader.NodeType == XmlNodeType.Element && !reader.IsEmptyElement);
                     }
-                    if (await reader.ReadAsync().ConfigureAwait(false))
+                    if (await reader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         ProcessNamespaces();
                         return true;
@@ -79,19 +79,19 @@ namespace System.Xml
 
                 case State.ReadElementContentAsBase64:
                 case State.ReadElementContentAsBinHex:
-                    if (!await FinishReadElementContentAsBinaryAsync().ConfigureAwait(false))
+                    if (!await FinishReadElementContentAsBinaryAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         return false;
                     }
-                    return await ReadAsync().ConfigureAwait(false);
+                    return await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
                 case State.ReadContentAsBase64:
                 case State.ReadContentAsBinHex:
-                    if (!await FinishReadContentAsBinaryAsync().ConfigureAwait(false))
+                    if (!await FinishReadContentAsBinaryAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         return false;
                     }
-                    return await ReadAsync().ConfigureAwait(false);
+                    return await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
                 default:
                     Debug.Fail($"Unexpected state {_state}");
@@ -104,7 +104,7 @@ namespace System.Xml
             switch (_state)
             {
                 case State.Initial:
-                    await ReadAsync().ConfigureAwait(false);
+                    await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     return;
 
                 case State.Interactive:
@@ -117,11 +117,11 @@ namespace System.Xml
                         if (reader.NodeType == XmlNodeType.Element && !reader.IsEmptyElement)
                         {
                             // we are on root of the subtree -> skip to the end element and set to Eof state
-                            if (await reader.ReadAsync().ConfigureAwait(false))
+                            if (await reader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                             {
                                 while (reader.NodeType != XmlNodeType.EndElement && reader.Depth > _initialDepth)
                                 {
-                                    await reader.SkipAsync().ConfigureAwait(false);
+                                    await reader.SkipAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                                 }
                             }
                         }
@@ -137,7 +137,7 @@ namespace System.Xml
                     {
                         _nsManager.PopScope();
                     }
-                    await reader.SkipAsync().ConfigureAwait(false);
+                    await reader.SkipAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     ProcessNamespaces();
 
                     Debug.Assert(reader.Depth >= _initialDepth);
@@ -158,17 +158,17 @@ namespace System.Xml
 
                 case State.ReadElementContentAsBase64:
                 case State.ReadElementContentAsBinHex:
-                    if (await FinishReadElementContentAsBinaryAsync().ConfigureAwait(false))
+                    if (await FinishReadElementContentAsBinaryAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
-                        await SkipAsync().ConfigureAwait(false);
+                        await SkipAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     break;
 
                 case State.ReadContentAsBase64:
                 case State.ReadContentAsBinHex:
-                    if (await FinishReadContentAsBinaryAsync().ConfigureAwait(false))
+                    if (await FinishReadContentAsBinaryAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
-                        await SkipAsync().ConfigureAwait(false);
+                        await SkipAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     break;
 
@@ -186,7 +186,7 @@ namespace System.Xml
             try
             {
                 InitReadContentAsType("ReadContentAsObject");
-                object value = await reader.ReadContentAsObjectAsync().ConfigureAwait(false);
+                object value = await reader.ReadContentAsObjectAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 FinishReadContentAsType();
                 return value;
             }
@@ -202,7 +202,7 @@ namespace System.Xml
             try
             {
                 InitReadContentAsType("ReadContentAsString");
-                string value = await reader.ReadContentAsStringAsync().ConfigureAwait(false);
+                string value = await reader.ReadContentAsStringAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 FinishReadContentAsType();
                 return value;
             }
@@ -218,7 +218,7 @@ namespace System.Xml
             try
             {
                 InitReadContentAsType("ReadContentAs");
-                object value = await reader.ReadContentAsAsync(returnType, namespaceResolver).ConfigureAwait(false);
+                object value = await reader.ReadContentAsAsync(returnType, namespaceResolver).ConfigureAwait(OperatingSystem.IsBrowser());
                 FinishReadContentAsType();
                 return value;
             }
@@ -280,7 +280,7 @@ namespace System.Xml
                             goto case XmlNodeType.Text;
                         case XmlNodeType.Text:
                             Debug.Assert(AttributeCount > 0);
-                            return await reader.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
+                            return await reader.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
                         default:
                             Debug.Fail($"Unexpected state {_state}");
                             return 0;
@@ -291,7 +291,7 @@ namespace System.Xml
                     goto case State.ReadContentAsBase64;
 
                 case State.ReadContentAsBase64:
-                    int read = await reader.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
+                    int read = await reader.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
                     if (read == 0)
                     {
                         _state = State.Interactive;
@@ -323,14 +323,14 @@ namespace System.Xml
                 case State.Interactive:
                 case State.PopNamespaceScope:
                 case State.ClearNsAttributes:
-                    if (!await InitReadElementContentAsBinaryAsync(State.ReadElementContentAsBase64).ConfigureAwait(false))
+                    if (!await InitReadElementContentAsBinaryAsync(State.ReadElementContentAsBase64).ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         return 0;
                     }
                     goto case State.ReadElementContentAsBase64;
 
                 case State.ReadElementContentAsBase64:
-                    int read = await reader.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
+                    int read = await reader.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
                     if (read > 0 || count == 0)
                     {
                         return read;
@@ -352,7 +352,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        await ReadAsync().ConfigureAwait(false);
+                        await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     return 0;
 
@@ -418,7 +418,7 @@ namespace System.Xml
                             goto case XmlNodeType.Text;
                         case XmlNodeType.Text:
                             Debug.Assert(AttributeCount > 0);
-                            return await reader.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
+                            return await reader.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
                         default:
                             Debug.Fail($"Unexpected state {_state}");
                             return 0;
@@ -429,7 +429,7 @@ namespace System.Xml
                     goto case State.ReadContentAsBinHex;
 
                 case State.ReadContentAsBinHex:
-                    int read = await reader.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
+                    int read = await reader.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
                     if (read == 0)
                     {
                         _state = State.Interactive;
@@ -461,13 +461,13 @@ namespace System.Xml
                 case State.Interactive:
                 case State.PopNamespaceScope:
                 case State.ClearNsAttributes:
-                    if (!await InitReadElementContentAsBinaryAsync(State.ReadElementContentAsBinHex).ConfigureAwait(false))
+                    if (!await InitReadElementContentAsBinaryAsync(State.ReadElementContentAsBinHex).ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         return 0;
                     }
                     goto case State.ReadElementContentAsBinHex;
                 case State.ReadElementContentAsBinHex:
-                    int read = await reader.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
+                    int read = await reader.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
                     if (read > 0 || count == 0)
                     {
                         return read;
@@ -489,7 +489,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        await ReadAsync().ConfigureAwait(false);
+                        await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     return 0;
 
@@ -565,7 +565,7 @@ namespace System.Xml
             bool isEmpty = IsEmptyElement;
 
             // move to content or off the empty element
-            if (!await ReadAsync().ConfigureAwait(false) || isEmpty)
+            if (!await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()) || isEmpty)
             {
                 return false;
             }
@@ -577,7 +577,7 @@ namespace System.Xml
                 case XmlNodeType.EndElement:
                     // pop scope & move off end element
                     ProcessNamespaces();
-                    await ReadAsync().ConfigureAwait(false);
+                    await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     return false;
             }
 
@@ -593,11 +593,11 @@ namespace System.Xml
             byte[] bytes = new byte[256];
             if (_state == State.ReadElementContentAsBase64)
             {
-                while (await reader.ReadContentAsBase64Async(bytes, 0, 256).ConfigureAwait(false) > 0) ;
+                while (await reader.ReadContentAsBase64Async(bytes, 0, 256).ConfigureAwait(OperatingSystem.IsBrowser()) > 0) ;
             }
             else
             {
-                while (await reader.ReadContentAsBinHexAsync(bytes, 0, 256).ConfigureAwait(false) > 0) ;
+                while (await reader.ReadContentAsBinHexAsync(bytes, 0, 256).ConfigureAwait(OperatingSystem.IsBrowser()) > 0) ;
             }
 
             if (NodeType != XmlNodeType.EndElement)
@@ -617,7 +617,7 @@ namespace System.Xml
                 return false;
             }
             // move off end element
-            return await ReadAsync().ConfigureAwait(false);
+            return await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         private async Task<bool> FinishReadContentAsBinaryAsync()
@@ -627,11 +627,11 @@ namespace System.Xml
             byte[] bytes = new byte[256];
             if (_state == State.ReadContentAsBase64)
             {
-                while (await reader.ReadContentAsBase64Async(bytes, 0, 256).ConfigureAwait(false) > 0) ;
+                while (await reader.ReadContentAsBase64Async(bytes, 0, 256).ConfigureAwait(OperatingSystem.IsBrowser()) > 0) ;
             }
             else
             {
-                while (await reader.ReadContentAsBinHexAsync(bytes, 0, 256).ConfigureAwait(false) > 0) ;
+                while (await reader.ReadContentAsBinHexAsync(bytes, 0, 256).ConfigureAwait(OperatingSystem.IsBrowser()) > 0) ;
             }
 
             _state = State.Interactive;

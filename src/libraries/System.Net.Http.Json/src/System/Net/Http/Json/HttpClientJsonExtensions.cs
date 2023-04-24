@@ -81,7 +81,7 @@ namespace System.Net.Http.Json
             {
                 try
                 {
-                    using HttpResponseMessage response = await responseTask.ConfigureAwait(false);
+                    using HttpResponseMessage response = await responseTask.ConfigureAwait(OperatingSystem.IsBrowser());
                     response.EnsureSuccessStatusCode();
 
                     Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
@@ -94,14 +94,14 @@ namespace System.Net.Http.Json
 
                     try
                     {
-                        using Stream contentStream = await HttpContentJsonExtensions.GetContentStreamAsync(response.Content, linkedCTS?.Token ?? cancellationToken).ConfigureAwait(false);
+                        using Stream contentStream = await HttpContentJsonExtensions.GetContentStreamAsync(response.Content, linkedCTS?.Token ?? cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                         // If ResponseHeadersRead wasn't used, HttpClient will have already buffered the whole response upfront. No need to check the limit again.
                         Stream readStream = usingResponseHeadersRead
                             ? new LengthLimitReadStream(contentStream, (int)client.MaxResponseContentBufferSize)
                             : contentStream;
 
-                        return await deserializeMethod(readStream, jsonOptions, linkedCTS?.Token ?? cancellationToken).ConfigureAwait(false);
+                        return await deserializeMethod(readStream, jsonOptions, linkedCTS?.Token ?? cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     catch (OperationCanceledException oce) when ((linkedCTS?.Token.IsCancellationRequested == true) && !cancellationToken.IsCancellationRequested)
                     {

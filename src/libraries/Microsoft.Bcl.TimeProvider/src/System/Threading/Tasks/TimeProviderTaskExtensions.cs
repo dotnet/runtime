@@ -212,7 +212,7 @@ namespace System.Threading.Tasks
 #else
         public static async Task<TResult> WaitAsync<TResult>(this Task<TResult> task, TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken = default)
         {
-            await ((Task)task).WaitAsync(timeout, timeProvider, cancellationToken).ConfigureAwait(false);
+            await ((Task)task).WaitAsync(timeout, timeProvider, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             return task.Result;
         }
 #endif // NET8_0_OR_GREATER

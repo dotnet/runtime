@@ -285,7 +285,7 @@ namespace System.Security.Cryptography.Cose
             CancellationToken cancellationToken)
         {
             byte[] buffer = new byte[expectedSize];
-            int bytesWritten = await CreateCoseMultiSignMessageAsync(content, buffer, signer, protectedHeaders, unprotectedHeaders, associatedData, cancellationToken).ConfigureAwait(false);
+            int bytesWritten = await CreateCoseMultiSignMessageAsync(content, buffer, signer, protectedHeaders, unprotectedHeaders, associatedData, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             Debug.Assert(buffer.Length == bytesWritten);
             return buffer;
@@ -413,7 +413,7 @@ namespace System.Security.Cryptography.Cose
             CoseHelpers.WriteHeaderMap(buffer.AsSpan(protectedMapBytesWritten), writer, unprotectedHeaders, isProtected: false, null);
             CoseHelpers.WriteContent(writer, default, isDetached: true);
 
-            await WriteSignatureAsync(writer, signer, buffer, buffer.AsMemory(0, protectedMapBytesWritten), associatedData, content, cancellationToken).ConfigureAwait(false);
+            await WriteSignatureAsync(writer, signer, buffer, buffer.AsMemory(0, protectedMapBytesWritten), associatedData, content, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             writer.WriteEndArray();
             return writer.Encode(buffer);
@@ -490,7 +490,7 @@ namespace System.Security.Cryptography.Cose
             using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
             {
                 // We can use the whole buffer at this point as the space for bodyProtected and signProtected is consumed.
-                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature, bodyProtected, buffer.AsMemory(start, signProtectedBytesWritten), associatedData, contentStream, cancellationToken).ConfigureAwait(false);
+                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature, bodyProtected, buffer.AsMemory(start, signProtectedBytesWritten), associatedData, contentStream, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 CoseHelpers.WriteSignature(buffer, hasher, writer, signer);
             }
 
@@ -873,7 +873,7 @@ namespace System.Security.Cryptography.Cose
 
             using (IncrementalHash hasher = IncrementalHash.CreateHash(signer.HashAlgorithm))
             {
-                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature, _protectedHeaderAsBstr, encodedSignProtected, associatedData, content, cancellationToken).ConfigureAwait(false);
+                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature, _protectedHeaderAsBstr, encodedSignProtected, associatedData, content, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 bytesWritten = CoseHelpers.SignHash(signer, hasher, buffer);
 
                 byte[] signature = buffer.AsSpan(0, bytesWritten).ToArray();

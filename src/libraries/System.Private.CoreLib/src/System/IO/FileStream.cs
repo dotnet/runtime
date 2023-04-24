@@ -519,7 +519,7 @@ namespace System.IO
 
         public override async ValueTask DisposeAsync()
         {
-            await _strategy.DisposeAsync().ConfigureAwait(false);
+            await _strategy.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
             // For compatibility, derived classes must only call base.DisposeAsync(),
             // otherwise we would end up calling Dispose twice (one from base.DisposeAsync() and one from here).

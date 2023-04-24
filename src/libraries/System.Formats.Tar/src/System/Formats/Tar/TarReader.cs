@@ -88,11 +88,11 @@ namespace System.Formats.Tar
                     {
                         foreach (Stream s in _dataStreamsToDispose)
                         {
-                            await s.DisposeAsync().ConfigureAwait(false);
+                            await s.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         }
                     }
 
-                    await _archiveStream.DisposeAsync().ConfigureAwait(false);
+                    await _archiveStream.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
         }
@@ -270,20 +270,20 @@ namespace System.Formats.Tar
                     if (dataStream.Position < (_previouslyReadEntry._header._size - 1))
                     {
                         long bytesToSkip = _previouslyReadEntry._header._size - dataStream.Position;
-                        await TarHelpers.AdvanceStreamAsync(_archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(false);
+                        await TarHelpers.AdvanceStreamAsync(_archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                         dataStream.HasReachedEnd = true; // Now the pointer is beyond the limit, so any read attempts should throw
                     }
                 }
-                await TarHelpers.SkipBlockAlignmentPaddingAsync(_archiveStream, _previouslyReadEntry._header._size, cancellationToken).ConfigureAwait(false);
+                await TarHelpers.SkipBlockAlignmentPaddingAsync(_archiveStream, _previouslyReadEntry._header._size, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
         // Asynchronously retrieves the next entry if one is found.
         private async ValueTask<TarEntry?> GetNextEntryInternalAsync(bool copyData, CancellationToken cancellationToken)
         {
-            await AdvanceDataStreamIfNeededAsync(cancellationToken).ConfigureAwait(false);
+            await AdvanceDataStreamIfNeededAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
-            TarHeader? header = await TryGetNextEntryHeaderAsync(copyData, cancellationToken).ConfigureAwait(false);
+            TarHeader? header = await TryGetNextEntryHeaderAsync(copyData, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             if (header != null)
             {
                 TarEntry entry = header._format switch
@@ -360,7 +360,7 @@ namespace System.Formats.Tar
 
             Debug.Assert(!_reachedEndMarkers);
 
-            TarHeader? header = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Unknown, processDataBlock: true, cancellationToken).ConfigureAwait(false);
+            TarHeader? header = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Unknown, processDataBlock: true, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             if (header == null)
             {
                 return null;
@@ -371,7 +371,7 @@ namespace System.Formats.Tar
             // PAX metadata
             if (header._typeFlag is TarEntryType.ExtendedAttributes)
             {
-                TarHeader? mainHeader = await TryProcessExtendedAttributesHeaderAsync(header, copyData, cancellationToken).ConfigureAwait(false);
+                TarHeader? mainHeader = await TryProcessExtendedAttributesHeaderAsync(header, copyData, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 if (mainHeader == null)
                 {
                     return null;
@@ -381,7 +381,7 @@ namespace System.Formats.Tar
             // GNU metadata
             else if (header._typeFlag is TarEntryType.LongLink or TarEntryType.LongPath)
             {
-                TarHeader? mainHeader = await TryProcessGnuMetadataHeaderAsync(header, copyData, cancellationToken).ConfigureAwait(false);
+                TarHeader? mainHeader = await TryProcessGnuMetadataHeaderAsync(header, copyData, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 if (mainHeader == null)
                 {
                     return null;
@@ -431,7 +431,7 @@ namespace System.Formats.Tar
 
             // Don't process the data block of the actual entry just yet, because there's a slim chance
             // that the extended attributes contain a size that we need to override in the header
-            TarHeader? actualHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Pax, processDataBlock: false, cancellationToken).ConfigureAwait(false);
+            TarHeader? actualHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Pax, processDataBlock: false, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             if (actualHeader == null)
             {
                 return null;
@@ -544,7 +544,7 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             // Get the second entry, which is the actual entry
-            TarHeader? secondHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true, cancellationToken).ConfigureAwait(false);
+            TarHeader? secondHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             if (secondHeader == null)
             {
                 return null;
@@ -563,7 +563,7 @@ namespace System.Formats.Tar
                 (header._typeFlag is TarEntryType.LongPath && secondHeader._typeFlag is TarEntryType.LongLink))
             {
                 // Get the third entry, which is the actual entry
-                TarHeader? thirdHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true, cancellationToken).ConfigureAwait(false);
+                TarHeader? thirdHeader = await TarHeader.TryGetNextHeaderAsync(_archiveStream, copyData, TarEntryFormat.Gnu, processDataBlock: true, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 if (thirdHeader == null)
                 {
                     return null;

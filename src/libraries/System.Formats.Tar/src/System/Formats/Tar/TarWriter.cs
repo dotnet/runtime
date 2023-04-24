@@ -115,12 +115,12 @@ namespace System.Formats.Tar
 
                 if (_wroteEntries)
                 {
-                    await WriteFinalRecordsAsync().ConfigureAwait(false);
+                    await WriteFinalRecordsAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
 
                 if (!_leaveOpen)
                 {
-                    await _archiveStream.DisposeAsync().ConfigureAwait(false);
+                    await _archiveStream.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
         }
@@ -176,10 +176,10 @@ namespace System.Formats.Tar
 
             TarEntry entry = ConstructEntryForWriting(fullPath, entryName, FileOptions.Asynchronous);
 
-            await WriteEntryAsync(entry, cancellationToken).ConfigureAwait(false);
+            await WriteEntryAsync(entry, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             if (entry._header._dataStream != null)
             {
-                await entry._header._dataStream.DisposeAsync().ConfigureAwait(false);
+                await entry._header._dataStream.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -330,7 +330,7 @@ namespace System.Formats.Tar
                 TarEntryFormat.Gnu => entry._header.WriteAsGnuAsync(_archiveStream, buffer, cancellationToken),
                 _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
             };
-            await task.ConfigureAwait(false);
+            await task.ConfigureAwait(OperatingSystem.IsBrowser());
 
             _wroteEntries = true;
 
@@ -358,7 +358,7 @@ namespace System.Formats.Tar
             byte[] twoEmptyRecords = ArrayPool<byte>.Shared.Rent(TwoRecordSize);
             Array.Clear(twoEmptyRecords, 0, TwoRecordSize);
 
-            await _archiveStream.WriteAsync(twoEmptyRecords.AsMemory(0, TwoRecordSize), cancellationToken: default).ConfigureAwait(false);
+            await _archiveStream.WriteAsync(twoEmptyRecords.AsMemory(0, TwoRecordSize), cancellationToken: default).ConfigureAwait(OperatingSystem.IsBrowser());
 
             ArrayPool<byte>.Shared.Return(twoEmptyRecords);
         }

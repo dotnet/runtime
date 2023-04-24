@@ -364,9 +364,9 @@ namespace System.Formats.Tar
             };
             // Throws if the destination file exists
             FileStream archive = new(destinationFileName, options);
-            await using (archive.ConfigureAwait(false))
+            await using (archive.ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                await CreateFromDirectoryInternalAsync(sourceDirectoryName, archive, includeBaseDirectory, leaveOpen: false, cancellationToken).ConfigureAwait(false);
+                await CreateFromDirectoryInternalAsync(sourceDirectoryName, archive, includeBaseDirectory, leaveOpen: false, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -378,7 +378,7 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             TarWriter writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen);
-            await using (writer.ConfigureAwait(false))
+            await using (writer.ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 DirectoryInfo di = new(sourceDirectoryName);
                 string basePath = GetBasePathForCreateFromDirectory(di, includeBaseDirectory);
@@ -386,7 +386,7 @@ namespace System.Formats.Tar
                 bool skipBaseDirRecursion = false;
                 if (includeBaseDirectory)
                 {
-                    await writer.WriteEntryAsync(di.FullName, GetEntryNameForBaseDirectory(di.Name), cancellationToken).ConfigureAwait(false);
+                    await writer.WriteEntryAsync(di.FullName, GetEntryNameForBaseDirectory(di.Name), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     skipBaseDirRecursion = (di.Attributes & FileAttributes.ReparsePoint) != 0;
                 }
 
@@ -398,7 +398,7 @@ namespace System.Formats.Tar
 
                 foreach (FileSystemInfo file in GetFileSystemEnumerationForCreation(sourceDirectoryName))
                 {
-                    await writer.WriteEntryAsync(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length), cancellationToken).ConfigureAwait(false);
+                    await writer.WriteEntryAsync(file.FullName, GetEntryNameForFileSystemInfo(file, basePath.Length), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
         }
@@ -472,9 +472,9 @@ namespace System.Formats.Tar
                 Options = FileOptions.Asynchronous,
             };
             FileStream archive = new(sourceFileName, options);
-            await using (archive.ConfigureAwait(false))
+            await using (archive.ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                await ExtractToDirectoryInternalAsync(archive, destinationDirectoryName, overwriteFiles, leaveOpen: false, cancellationToken).ConfigureAwait(false);
+                await ExtractToDirectoryInternalAsync(archive, destinationDirectoryName, overwriteFiles, leaveOpen: false, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -487,14 +487,14 @@ namespace System.Formats.Tar
 
             SortedDictionary<string, UnixFileMode>? pendingModes = TarHelpers.CreatePendingModesDictionary();
             TarReader reader = new TarReader(source, leaveOpen);
-            await using (reader.ConfigureAwait(false))
+            await using (reader.ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 TarEntry? entry;
-                while ((entry = await reader.GetNextEntryAsync(cancellationToken: cancellationToken).ConfigureAwait(false)) != null)
+                while ((entry = await reader.GetNextEntryAsync(cancellationToken: cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser())) != null)
                 {
                     if (entry.EntryType is not TarEntryType.GlobalExtendedAttributes)
                     {
-                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryPath, overwriteFiles, pendingModes, cancellationToken).ConfigureAwait(false);
+                        await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryPath, overwriteFiles, pendingModes, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                 }
             }

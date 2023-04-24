@@ -76,7 +76,7 @@ namespace System.Threading
             // Register for cancellation, perform the work, and clean up. Even though we're in an async method, awaits _must not_ be used inside
             // the using block, or else the I/O cancellation could both not work and negatively interact with I/O on another thread.  The func
             // _must_ be invoked on the same thread that invoked RegisterCancellation, with no intervening work.
-            await using (workItem.RegisterCancellation(cancellationToken).ConfigureAwait(false))
+            await using (workItem.RegisterCancellation(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 try
                 {
@@ -116,7 +116,7 @@ namespace System.Threading
             // Register for cancellation, perform the work, and clean up. Even though we're in an async method, awaits _must not_ be used inside
             // the using block, or else the I/O cancellation could both not work and negatively interact with I/O on another thread.  The func
             // _must_ be invoked on the same thread that invoked RegisterCancellation, with no intervening work.
-            await using (workItem.RegisterCancellation(cancellationToken).ConfigureAwait(false))
+            await using (workItem.RegisterCancellation(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 try
                 {
@@ -188,13 +188,13 @@ namespace System.Threading
                 // Then we need to dispose of the registration.  Upon Dispose returning, we know that
                 // either the synchronous invocation of the callback completed or that the callback
                 // will never be invoked.
-                await CancellationRegistration.DisposeAsync().ConfigureAwait(false);
+                await CancellationRegistration.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
                 // Now that we know the synchronous callback has quiesced, check to see whether it scheduled
                 // asynchronous work.  If it did, wait for that work to complete.
                 if (WorkItem.CallbackCompleted is Task t)
                 {
-                    await t.ConfigureAwait(false);
+                    await t.ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
         }

@@ -45,11 +45,11 @@ namespace System.Formats.Tar
 
             WriteV7FieldsToBuffer(buffer.Span);
 
-            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             if (_dataStream != null)
             {
-                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
+                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -84,11 +84,11 @@ namespace System.Formats.Tar
 
             WriteUstarFieldsToBuffer(buffer.Span);
 
-            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             if (_dataStream != null)
             {
-                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
+                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -162,11 +162,11 @@ namespace System.Formats.Tar
             _size = GetTotalDataBytesToWrite();
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
             // And pass the attributes to the preceding extended attributes header for writing
-            await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(false);
+            await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             buffer.Span.Clear(); // Reset it to reuse it
             // Second, we write this header as a normal one
-            await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+            await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         // Writes the current header as a Gnu entry into the archive stream.
@@ -203,7 +203,7 @@ namespace System.Formats.Tar
             if (_linkName != null && Encoding.UTF8.GetByteCount(_linkName) > FieldLengths.LinkName)
             {
                 TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
-                await longLinkHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                await longLinkHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 buffer.Span.Clear(); // Reset it to reuse it
             }
 
@@ -211,12 +211,12 @@ namespace System.Formats.Tar
             if (Encoding.UTF8.GetByteCount(_name) > FieldLengths.Name)
             {
                 TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, _name);
-                await longPathHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+                await longPathHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 buffer.Span.Clear(); // Reset it to reuse it
             }
 
             // Third, we write this header as a normal one
-            await WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+            await WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream.
@@ -257,11 +257,11 @@ namespace System.Formats.Tar
 
             WriteAsGnuSharedInternal(buffer.Span);
 
-            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             if (_dataStream != null)
             {
-                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
+                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -331,11 +331,11 @@ namespace System.Formats.Tar
 
             WriteAsPaxSharedInternal(buffer.Span);
 
-            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             if (_dataStream != null)
             {
-                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
+                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -628,7 +628,7 @@ namespace System.Formats.Tar
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            await dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
+            await dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser()); // The data gets copied from the current position
 
             int paddingAfterData = TarHelpers.CalculatePadding(actualLength);
             if (paddingAfterData != 0)
@@ -636,7 +636,7 @@ namespace System.Formats.Tar
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(paddingAfterData);
                 Array.Clear(buffer, 0, paddingAfterData);
 
-                await archiveStream.WriteAsync(buffer.AsMemory(0, paddingAfterData), cancellationToken).ConfigureAwait(false);
+                await archiveStream.WriteAsync(buffer.AsMemory(0, paddingAfterData), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 ArrayPool<byte>.Shared.Return(buffer);
             }

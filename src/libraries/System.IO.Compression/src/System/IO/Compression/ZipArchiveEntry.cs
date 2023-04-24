@@ -1258,7 +1258,7 @@ namespace System.IO.Compression
                         _usedZip64inLH = _entry.WriteLocalFileHeader(isEmptyFile: false);
                     }
 
-                    await _crcSizeStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+                    await _crcSizeStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     _position += buffer.Length;
                 }
             }

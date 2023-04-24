@@ -48,7 +48,7 @@ namespace System.Threading.Tasks.Dataflow
         // Note:
         // Enumerating the IAsyncEnumerable is done with ConfigureAwait(true), using the default behavior of
         // paying attention to the current context/scheduler. This makes it so that the enumerable code runs on the target scheduler.
-        // For this to work correctly, there can't be any ConfigureAwait(false) in the same method prior to
+        // For this to work correctly, there can't be any ConfigureAwait(OperatingSystem.IsBrowser()) in the same method prior to
         // these await foreach loops, nor in the call chain prior to the method invocation.
 
         /// <summary>Processes the message with a user-provided transform function that returns an async enumerable.</summary>
@@ -60,7 +60,7 @@ namespace System.Threading.Tasks.Dataflow
             {
                 // Run the user transform and store the results.
                 IAsyncEnumerable<TOutput> outputItems = transformFunction(messageWithId.Key);
-                await StoreOutputItemsAsync(messageWithId, outputItems).ConfigureAwait(false);
+                await StoreOutputItemsAsync(messageWithId, outputItems).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             catch (Exception exc)
             {
@@ -95,12 +95,12 @@ namespace System.Threading.Tasks.Dataflow
             // The reordering buffer will handle all details, including bounding.
             if (_reorderingBuffer is not null)
             {
-                await StoreOutputItemsReorderedAsync(messageWithId.Value, outputItems).ConfigureAwait(false);
+                await StoreOutputItemsReorderedAsync(messageWithId.Value, outputItems).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             // Otherwise, output the data directly.
             else if (outputItems is not null)
             {
-                await StoreOutputItemsNonReorderedWithIterationAsync(outputItems).ConfigureAwait(false);
+                await StoreOutputItemsNonReorderedWithIterationAsync(outputItems).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else if (_target.IsBounded)
             {
@@ -146,7 +146,7 @@ namespace System.Threading.Tasks.Dataflow
                 // If this is the next item, we can output it now.
                 if (_reorderingBuffer.IsNext(id))
                 {
-                    await StoreOutputItemsNonReorderedWithIterationAsync(item).ConfigureAwait(false);
+                    await StoreOutputItemsNonReorderedWithIterationAsync(item).ConfigureAwait(OperatingSystem.IsBrowser());
                     // here itemCopy remains null, so that base.AddItem will finish our interactions with the reordering buffer
                 }
                 else

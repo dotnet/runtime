@@ -32,20 +32,20 @@ namespace System.Xml
                 Debug.Assert(kind == NamespaceKind.NeedToWrite);
                 if (null != rawWriter)
                 {
-                    await rawWriter.WriteNamespaceDeclarationAsync(prefix, namespaceUri).ConfigureAwait(false);
+                    await rawWriter.WriteNamespaceDeclarationAsync(prefix, namespaceUri).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 else
                 {
                     if (prefix.Length == 0)
                     {
-                        await writer.WriteStartAttributeAsync(string.Empty, "xmlns", XmlReservedNs.NsXmlNs).ConfigureAwait(false);
+                        await writer.WriteStartAttributeAsync(string.Empty, "xmlns", XmlReservedNs.NsXmlNs).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     else
                     {
-                        await writer.WriteStartAttributeAsync("xmlns", prefix, XmlReservedNs.NsXmlNs).ConfigureAwait(false);
+                        await writer.WriteStartAttributeAsync("xmlns", prefix, XmlReservedNs.NsXmlNs).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
-                    await writer.WriteStringAsync(namespaceUri).ConfigureAwait(false);
-                    await writer.WriteEndAttributeAsync().ConfigureAwait(false);
+                    await writer.WriteStringAsync(namespaceUri).ConfigureAwait(OperatingSystem.IsBrowser());
+                    await writer.WriteEndAttributeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
         }
@@ -56,7 +56,7 @@ namespace System.Xml
             {
                 if (_singleStringValue != null)
                 {
-                    await writer.WriteStringAsync(_singleStringValue).ConfigureAwait(false);
+                    await writer.WriteStringAsync(_singleStringValue).ConfigureAwait(OperatingSystem.IsBrowser());
                     return;
                 }
 
@@ -67,34 +67,34 @@ namespace System.Xml
                     switch (item.type)
                     {
                         case ItemType.EntityRef:
-                            await writer.WriteEntityRefAsync((string)item.data).ConfigureAwait(false);
+                            await writer.WriteEntityRefAsync((string)item.data).ConfigureAwait(OperatingSystem.IsBrowser());
                             break;
                         case ItemType.CharEntity:
-                            await writer.WriteCharEntityAsync((char)item.data).ConfigureAwait(false);
+                            await writer.WriteCharEntityAsync((char)item.data).ConfigureAwait(OperatingSystem.IsBrowser());
                             break;
                         case ItemType.SurrogateCharEntity:
                             char[] chars = (char[])item.data;
-                            await writer.WriteSurrogateCharEntityAsync(chars[0], chars[1]).ConfigureAwait(false);
+                            await writer.WriteSurrogateCharEntityAsync(chars[0], chars[1]).ConfigureAwait(OperatingSystem.IsBrowser());
                             break;
                         case ItemType.Whitespace:
-                            await writer.WriteWhitespaceAsync((string)item.data).ConfigureAwait(false);
+                            await writer.WriteWhitespaceAsync((string)item.data).ConfigureAwait(OperatingSystem.IsBrowser());
                             break;
                         case ItemType.String:
-                            await writer.WriteStringAsync((string)item.data).ConfigureAwait(false);
+                            await writer.WriteStringAsync((string)item.data).ConfigureAwait(OperatingSystem.IsBrowser());
                             break;
                         case ItemType.StringChars:
                             bufChunk = (BufferChunk)item.data;
-                            await writer.WriteCharsAsync(bufChunk.buffer, bufChunk.index, bufChunk.count).ConfigureAwait(false);
+                            await writer.WriteCharsAsync(bufChunk.buffer, bufChunk.index, bufChunk.count).ConfigureAwait(OperatingSystem.IsBrowser());
                             break;
                         case ItemType.Raw:
-                            await writer.WriteRawAsync((string)item.data).ConfigureAwait(false);
+                            await writer.WriteRawAsync((string)item.data).ConfigureAwait(OperatingSystem.IsBrowser());
                             break;
                         case ItemType.RawChars:
                             bufChunk = (BufferChunk)item.data;
-                            await writer.WriteCharsAsync(bufChunk.buffer, bufChunk.index, bufChunk.count).ConfigureAwait(false);
+                            await writer.WriteCharsAsync(bufChunk.buffer, bufChunk.index, bufChunk.count).ConfigureAwait(OperatingSystem.IsBrowser());
                             break;
                         case ItemType.ValueString:
-                            await writer.WriteStringAsync((string)item.data).ConfigureAwait(false);
+                            await writer.WriteStringAsync((string)item.data).ConfigureAwait(OperatingSystem.IsBrowser());
                             break;
                         default:
                             Debug.Fail("Unexpected ItemType value.");

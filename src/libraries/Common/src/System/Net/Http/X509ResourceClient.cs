@@ -60,7 +60,7 @@ namespace System.Net.Http
 
             try
             {
-                ret = await s_downloadBytes(uri, cts?.Token ?? default, async).ConfigureAwait(false);
+                ret = await s_downloadBytes(uri, cts?.Token ?? default, async).ConfigureAwait(OperatingSystem.IsBrowser());
                 return ret;
             }
             catch { }
@@ -163,7 +163,7 @@ namespace System.Net.Http
                     if (async)
                     {
                         Task sendTask = (Task)sendAsyncMethod.Invoke(httpClient, new object[] { requestMessage, cancellationToken })!;
-                        await sendTask.ConfigureAwait(false);
+                        await sendTask.ConfigureAwait(OperatingSystem.IsBrowser());
                         responseMessage = taskOfHttpResponseMessageResultProp.GetValue(sendTask)!;
                     }
                     else
@@ -207,7 +207,7 @@ namespace System.Net.Http
                         if (async)
                         {
                             Task sendTask = (Task)sendAsyncMethod.Invoke(httpClient, new object[] { requestMessage, cancellationToken })!;
-                            await sendTask.ConfigureAwait(false);
+                            await sendTask.ConfigureAwait(OperatingSystem.IsBrowser());
                             responseMessage = taskOfHttpResponseMessageResultProp.GetValue(sendTask)!;
                         }
                         else
@@ -229,7 +229,7 @@ namespace System.Net.Http
                     var result = new MemoryStream();
                     if (async)
                     {
-                        await responseStream.CopyToAsync(result).ConfigureAwait(false);
+                        await responseStream.CopyToAsync(result).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     else
                     {

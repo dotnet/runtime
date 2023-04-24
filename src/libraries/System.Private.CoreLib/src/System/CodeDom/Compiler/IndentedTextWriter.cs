@@ -78,7 +78,7 @@ namespace System.CodeDom.Compiler
             {
                 for (int i = 0; i < _indentLevel; i++)
                 {
-                    await _writer.WriteAsync(_tabString).ConfigureAwait(false);
+                    await _writer.WriteAsync(_tabString).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 _tabsPending = false;
             }
@@ -170,8 +170,8 @@ namespace System.CodeDom.Compiler
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public override async Task WriteAsync(char value)
         {
-            await OutputTabsAsync().ConfigureAwait(false);
-            await _writer.WriteAsync(value).ConfigureAwait(false);
+            await OutputTabsAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+            await _writer.WriteAsync(value).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         /// <summary>
@@ -185,8 +185,8 @@ namespace System.CodeDom.Compiler
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public override async Task WriteAsync(char[] buffer, int index, int count)
         {
-            await OutputTabsAsync().ConfigureAwait(false);
-            await _writer.WriteAsync(buffer, index, count).ConfigureAwait(false);
+            await OutputTabsAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+            await _writer.WriteAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         /// <summary>
@@ -197,8 +197,8 @@ namespace System.CodeDom.Compiler
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public override async Task WriteAsync(string? value)
         {
-            await OutputTabsAsync().ConfigureAwait(false);
-            await _writer.WriteAsync(value).ConfigureAwait(false);
+            await OutputTabsAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+            await _writer.WriteAsync(value).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         /// <summary>
@@ -210,8 +210,8 @@ namespace System.CodeDom.Compiler
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public override async Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
         {
-            await OutputTabsAsync().ConfigureAwait(false);
-            await _writer.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+            await OutputTabsAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+            await _writer.WriteAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         /// <summary>
@@ -223,8 +223,8 @@ namespace System.CodeDom.Compiler
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public override async Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default)
         {
-            await OutputTabsAsync().ConfigureAwait(false);
-            await _writer.WriteAsync(value, cancellationToken).ConfigureAwait(false);
+            await OutputTabsAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+            await _writer.WriteAsync(value, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         public void WriteLineNoTabs(string? s)
@@ -351,8 +351,8 @@ namespace System.CodeDom.Compiler
         /// <inheritdoc/>
         public override async Task WriteLineAsync()
         {
-            await OutputTabsAsync().ConfigureAwait(false);
-            await _writer.WriteLineAsync().ConfigureAwait(false);
+            await OutputTabsAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+            await _writer.WriteLineAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             _tabsPending = true;
         }
 
@@ -364,8 +364,8 @@ namespace System.CodeDom.Compiler
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public override async Task WriteLineAsync(char value)
         {
-            await OutputTabsAsync().ConfigureAwait(false);
-            await _writer.WriteLineAsync(value).ConfigureAwait(false);
+            await OutputTabsAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+            await _writer.WriteLineAsync(value).ConfigureAwait(OperatingSystem.IsBrowser());
             _tabsPending = true;
         }
 
@@ -379,8 +379,8 @@ namespace System.CodeDom.Compiler
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public override async Task WriteLineAsync(char[] buffer, int index, int count)
         {
-            await OutputTabsAsync().ConfigureAwait(false);
-            await _writer.WriteLineAsync(buffer, index, count).ConfigureAwait(false);
+            await OutputTabsAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+            await _writer.WriteLineAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
             _tabsPending = true;
         }
 
@@ -392,8 +392,8 @@ namespace System.CodeDom.Compiler
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public override async Task WriteLineAsync(string? value)
         {
-            await OutputTabsAsync().ConfigureAwait(false);
-            await _writer.WriteLineAsync(value).ConfigureAwait(false);
+            await OutputTabsAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+            await _writer.WriteLineAsync(value).ConfigureAwait(OperatingSystem.IsBrowser());
             _tabsPending = true;
         }
 
@@ -406,8 +406,8 @@ namespace System.CodeDom.Compiler
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public override async Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default)
         {
-            await OutputTabsAsync().ConfigureAwait(false);
-            await _writer.WriteLineAsync(buffer, cancellationToken).ConfigureAwait(false);
+            await OutputTabsAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+            await _writer.WriteLineAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             _tabsPending = true;
         }
 
@@ -420,8 +420,8 @@ namespace System.CodeDom.Compiler
         /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
         public override async Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default)
         {
-            await OutputTabsAsync().ConfigureAwait(false);
-            await _writer.WriteLineAsync(value, cancellationToken).ConfigureAwait(false);
+            await OutputTabsAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+            await _writer.WriteLineAsync(value, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             _tabsPending = true;
         }
     }

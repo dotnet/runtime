@@ -89,9 +89,9 @@ namespace System.Net.Http.Json
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
+            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonHelpers.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
+                return await JsonSerializer.DeserializeAsync(contentStream, type, options ?? JsonHelpers.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -99,9 +99,9 @@ namespace System.Net.Http.Json
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
         private static async Task<T?> ReadFromJsonAsyncCore<T>(HttpContent content, JsonSerializerOptions? options, CancellationToken cancellationToken)
         {
-            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
+            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonHelpers.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(false);
+                return await JsonSerializer.DeserializeAsync<T>(contentStream, options ?? JsonHelpers.s_defaultSerializerOptions, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -127,23 +127,23 @@ namespace System.Net.Http.Json
 
         private static async Task<object?> ReadFromJsonAsyncCore(HttpContent content, Type type, JsonSerializerContext context, CancellationToken cancellationToken)
         {
-            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
+            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                return await JsonSerializer.DeserializeAsync(contentStream, type, context, cancellationToken).ConfigureAwait(false);
+                return await JsonSerializer.DeserializeAsync(contentStream, type, context, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
         private static async Task<T?> ReadFromJsonAsyncCore<T>(HttpContent content, JsonTypeInfo<T> jsonTypeInfo, CancellationToken cancellationToken)
         {
-            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(false))
+            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                return await JsonSerializer.DeserializeAsync(contentStream, jsonTypeInfo, cancellationToken).ConfigureAwait(false);
+                return await JsonSerializer.DeserializeAsync(contentStream, jsonTypeInfo, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
         internal static async ValueTask<Stream> GetContentStreamAsync(HttpContent content, CancellationToken cancellationToken)
         {
-            Stream contentStream = await ReadHttpContentStreamAsync(content, cancellationToken).ConfigureAwait(false);
+            Stream contentStream = await ReadHttpContentStreamAsync(content, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
             if (JsonHelpers.GetEncoding(content) is Encoding sourceEncoding && sourceEncoding != Encoding.UTF8)

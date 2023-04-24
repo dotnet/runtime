@@ -80,7 +80,7 @@ namespace System.Net.Http.Json
                 {
                     if (async)
                     {
-                        await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                        await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     else
                     {
@@ -93,7 +93,7 @@ namespace System.Net.Http.Json
                     // buffers should be empty as we expect JsonSerializer to emit only well-formed UTF-8 data.
                     if (async)
                     {
-                        await transcodingStream.DisposeAsync().ConfigureAwait(false);
+                        await transcodingStream.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     else
                     {
@@ -105,11 +105,11 @@ namespace System.Net.Http.Json
 
                 using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
                 {
-                    await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     // The transcoding streams use Encoders and Decoders that have internal buffers. We need to flush these
                     // when there is no more data to be written. Stream.FlushAsync isn't suitable since it's
                     // acceptable to Flush a Stream (multiple times) prior to completion.
-                    await transcodingStream.FinalWriteAsync(cancellationToken).ConfigureAwait(false);
+                    await transcodingStream.FinalWriteAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
 #endif
             }
@@ -117,7 +117,7 @@ namespace System.Net.Http.Json
             {
                 if (async)
                 {
-                    await JsonSerializer.SerializeAsync(targetStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(targetStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 else
                 {

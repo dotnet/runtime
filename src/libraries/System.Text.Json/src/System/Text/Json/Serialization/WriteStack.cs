@@ -284,7 +284,7 @@ namespace System.Text.Json
             {
                 try
                 {
-                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 catch (Exception e)
                 {
@@ -347,12 +347,12 @@ namespace System.Text.Json
         {
             Exception? exception = null;
 
-            exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncDisposable, exception).ConfigureAwait(false);
+            exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncDisposable, exception).ConfigureAwait(OperatingSystem.IsBrowser());
 
             int stackSize = Math.Max(_count, _continuationCount);
             for (int i = 0; i < stackSize - 1; i++)
             {
-                exception = await DisposeFrame(_stack[i].CollectionEnumerator, _stack[i].AsyncDisposable, exception).ConfigureAwait(false);
+                exception = await DisposeFrame(_stack[i].CollectionEnumerator, _stack[i].AsyncDisposable, exception).ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             if (exception is not null)
@@ -372,7 +372,7 @@ namespace System.Text.Json
                     }
                     else if (asyncDisposable is not null)
                     {
-                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                 }
                 catch (Exception e)

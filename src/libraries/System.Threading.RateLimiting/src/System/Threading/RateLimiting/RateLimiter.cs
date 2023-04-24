@@ -115,7 +115,7 @@ namespace System.Threading.RateLimiting
         public async ValueTask DisposeAsync()
         {
             // Perform async cleanup.
-            await DisposeAsyncCore().ConfigureAwait(false);
+            await DisposeAsyncCore().ConfigureAwait(OperatingSystem.IsBrowser());
 
             // Dispose of unmanaged resources.
             Dispose(false);

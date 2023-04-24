@@ -135,7 +135,7 @@ namespace System.Security.Cryptography
             int clearLimit = 0;
             int bytesRead;
 
-            while ((bytesRead = await inputStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+            while ((bytesRead = await inputStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser())) > 0)
             {
                 if (bytesRead > clearLimit)
                 {

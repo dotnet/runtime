@@ -105,9 +105,9 @@ namespace System.IO
                 try
                 {
                     int bytesRead;
-                    while ((bytesRead = await source.ReadAsync(new Memory<byte>(buffer), cancellationToken).ConfigureAwait(false)) != 0)
+                    while ((bytesRead = await source.ReadAsync(new Memory<byte>(buffer), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser())) != 0)
                     {
-                        await destination.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
+                        await destination.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                 }
                 finally
@@ -321,7 +321,7 @@ namespace System.IO
             {
                 try
                 {
-                    int result = await readTask.ConfigureAwait(false);
+                    int result = await readTask.ConfigureAwait(OperatingSystem.IsBrowser());
                     new ReadOnlySpan<byte>(localBuffer, 0, result).CopyTo(localDestination.Span);
                     return result;
                 }
@@ -432,7 +432,7 @@ namespace System.IO
             int totalRead = 0;
             while (totalRead < minimumBytes)
             {
-                int read = await ReadAsync(buffer.Slice(totalRead), cancellationToken).ConfigureAwait(false);
+                int read = await ReadAsync(buffer.Slice(totalRead), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 if (read == 0)
                 {
                     if (throwOnEndOfStream)
@@ -753,7 +753,7 @@ namespace System.IO
         {
             try
             {
-                await writeTask.ConfigureAwait(false);
+                await writeTask.ConfigureAwait(OperatingSystem.IsBrowser());
             }
             finally
             {

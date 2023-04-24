@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             using var combinedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _applicationLifetime.ApplicationStopping);
             CancellationToken combinedCancellationToken = combinedCancellationTokenSource.Token;
 
-            await _hostLifetime.WaitForStartAsync(combinedCancellationToken).ConfigureAwait(false);
+            await _hostLifetime.WaitForStartAsync(combinedCancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             combinedCancellationToken.ThrowIfCancellationRequested();
             _hostedServices = Services.GetRequiredService<IEnumerable<IHostedService>>();
@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 Task tasks = Task.WhenAll(_hostedServices.Select(async service =>
                 {
-                    await service.StartAsync(combinedCancellationToken).ConfigureAwait(false);
+                    await service.StartAsync(combinedCancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                     if (service is BackgroundService backgroundService)
                     {
@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 try
                 {
-                    await tasks.ConfigureAwait(false);
+                    await tasks.ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 catch (Exception ex)
                 {
@@ -96,7 +96,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                     try
                     {
                         // Fire IHostedService.Start
-                        await hostedService.StartAsync(combinedCancellationToken).ConfigureAwait(false);
+                        await hostedService.StartAsync(combinedCancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                         if (hostedService is BackgroundService backgroundService)
                         {
@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             try
             {
-                await backgroundTask.ConfigureAwait(false);
+                await backgroundTask.ConfigureAwait(OperatingSystem.IsBrowser());
             }
             catch (Exception ex)
             {
@@ -185,11 +185,11 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                     if (_options.ServicesStopConcurrently)
                     {
-                        Task tasks = Task.WhenAll(hostedServices.Select(async service => await service.StopAsync(token).ConfigureAwait(false)));
+                        Task tasks = Task.WhenAll(hostedServices.Select(async service => await service.StopAsync(token).ConfigureAwait(OperatingSystem.IsBrowser())));
 
                         try
                         {
-                            await tasks.ConfigureAwait(false);
+                            await tasks.ConfigureAwait(OperatingSystem.IsBrowser());
                         }
                         catch (Exception ex)
                         {
@@ -202,7 +202,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                         {
                             try
                             {
-                                await hostedService.StopAsync(token).ConfigureAwait(false);
+                                await hostedService.StopAsync(token).ConfigureAwait(OperatingSystem.IsBrowser());
                             }
                             catch (Exception ex)
                             {
@@ -217,7 +217,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 try
                 {
-                    await _hostLifetime.StopAsync(token).ConfigureAwait(false);
+                    await _hostLifetime.StopAsync(token).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 catch (Exception ex)
                 {
@@ -253,25 +253,25 @@ namespace Microsoft.Extensions.Hosting.Internal
             if (ReferenceEquals(_hostEnvironment.ContentRootFileProvider, _defaultProvider))
             {
                 // Dispose the content provider
-                await DisposeAsync(_hostEnvironment.ContentRootFileProvider).ConfigureAwait(false);
+                await DisposeAsync(_hostEnvironment.ContentRootFileProvider).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else
             {
                 // In the rare case that the user replaced the ContentRootFileProvider, dispose it and the one
                 // we originally created
-                await DisposeAsync(_hostEnvironment.ContentRootFileProvider).ConfigureAwait(false);
-                await DisposeAsync(_defaultProvider).ConfigureAwait(false);
+                await DisposeAsync(_hostEnvironment.ContentRootFileProvider).ConfigureAwait(OperatingSystem.IsBrowser());
+                await DisposeAsync(_defaultProvider).ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             // Dispose the service provider
-            await DisposeAsync(Services).ConfigureAwait(false);
+            await DisposeAsync(Services).ConfigureAwait(OperatingSystem.IsBrowser());
 
             static async ValueTask DisposeAsync(object o)
             {
                 switch (o)
                 {
                     case IAsyncDisposable asyncDisposable:
-                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case IDisposable disposable:
                         disposable.Dispose();

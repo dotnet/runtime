@@ -534,7 +534,7 @@ namespace System.Diagnostics
                         // Wait
                         try
                         {
-                            await Task.Delay(pollingIntervalMs, cancellationToken).ConfigureAwait(false);
+                            await Task.Delay(pollingIntervalMs, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                             pollingIntervalMs = Math.Min(pollingIntervalMs * 2, MaxPollingIntervalMs);
                         }
                         catch (OperationCanceledException) { }

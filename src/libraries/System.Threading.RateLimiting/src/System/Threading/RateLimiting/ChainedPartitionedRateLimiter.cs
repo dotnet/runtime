@@ -88,7 +88,7 @@ namespace System.Threading.RateLimiting
                 Exception? exception = null;
                 try
                 {
-                    lease = await _limiters[i].AcquireAsync(resource, permitCount, cancellationToken).ConfigureAwait(false);
+                    lease = await _limiters[i].AcquireAsync(resource, permitCount, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 catch (Exception ex)
                 {

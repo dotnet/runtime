@@ -53,7 +53,7 @@ namespace System.Threading.Channels
 
         private async ValueTask WriteAsyncCore(T innerItem, CancellationToken ct)
         {
-            while (await WaitToWriteAsync(ct).ConfigureAwait(false))
+            while (await WaitToWriteAsync(ct).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 if (TryWrite(innerItem))
                 {

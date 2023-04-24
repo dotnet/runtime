@@ -473,9 +473,9 @@ namespace System.Security.Cryptography.Cose
             byte[] contentBuffer = ArrayPool<byte>.Shared.Rent(4096);
             int bytesRead;
 #if NETSTANDARD2_0 || NETFRAMEWORK
-            while ((bytesRead = await content.ReadAsync(contentBuffer, 0, contentBuffer.Length, cancellationToken).ConfigureAwait(false)) > 0)
+            while ((bytesRead = await content.ReadAsync(contentBuffer, 0, contentBuffer.Length, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser())) > 0)
 #else
-            while ((bytesRead = await content.ReadAsync(contentBuffer, cancellationToken).ConfigureAwait(false)) > 0)
+            while ((bytesRead = await content.ReadAsync(contentBuffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser())) > 0)
 #endif
             {
                 hasher.AppendData(contentBuffer, 0, bytesRead);

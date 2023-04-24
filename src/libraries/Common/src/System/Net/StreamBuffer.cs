@@ -170,7 +170,7 @@ namespace System.IO
                 }
 
                 buffer = buffer.Slice(bytesWritten);
-                await _writeTaskSource.WaitAsync(cancellationToken).ConfigureAwait(false);
+                await _writeTaskSource.WaitAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -243,7 +243,7 @@ namespace System.IO
             if (wait)
             {
                 Debug.Assert(bytesRead == 0);
-                await _readTaskSource.WaitAsync(cancellationToken).ConfigureAwait(false);
+                await _readTaskSource.WaitAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 (wait, bytesRead) = TryReadFromBuffer(buffer.Span);
                 Debug.Assert(!wait);
             }

@@ -96,11 +96,11 @@ namespace System.IO.Strategies
                 {
                     try
                     {
-                        await FlushAsync().ConfigureAwait(false);
+                        await FlushAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     finally
                     {
-                        await _strategy.DisposeAsync().ConfigureAwait(false);
+                        await _strategy.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                 }
             }
@@ -352,7 +352,7 @@ namespace System.IO.Strategies
             Debug.Assert(!_strategy.CanSeek);
 
             // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
-            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(false);
+            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             try
             {
                 // Pipes are tricky, at least when you have 2 different pipes
@@ -378,7 +378,7 @@ namespace System.IO.Strategies
                 else
                 {
                     Debug.Assert(_writePos == 0, "Win32FileStream must not have buffered write data here!  Pipes should be unidirectional.");
-                    return await _strategy.ReadAsync(destination, cancellationToken).ConfigureAwait(false);
+                    return await _strategy.ReadAsync(destination, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             finally
@@ -394,7 +394,7 @@ namespace System.IO.Strategies
             Debug.Assert(_strategy.CanSeek);
 
             // Employ async waiting based on the same synchronization used in BeginRead of the abstract Stream.
-            await semaphoreLockTask.ConfigureAwait(false);
+            await semaphoreLockTask.ConfigureAwait(OperatingSystem.IsBrowser());
             try
             {
                 int bytesFromBuffer = 0;
@@ -430,19 +430,19 @@ namespace System.IO.Strategies
                 // If there was anything in the write buffer, clear it.
                 if (_writePos > 0)
                 {
-                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
+                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     _writePos = 0;
                 }
 
                 // If the requested read is larger than buffer size, avoid the buffer and still use a single read:
                 if (buffer.Length >= _bufferSize)
                 {
-                    return await _strategy.ReadAsync(buffer, cancellationToken).ConfigureAwait(false) + bytesAlreadySatisfied;
+                    return await _strategy.ReadAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser()) + bytesAlreadySatisfied;
                 }
 
                 // Ok. We can fill the buffer:
                 EnsureBufferAllocated();
-                _readLen = await _strategy.ReadAsync(new Memory<byte>(_buffer, 0, _bufferSize), cancellationToken).ConfigureAwait(false);
+                _readLen = await _strategy.ReadAsync(new Memory<byte>(_buffer, 0, _bufferSize), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 bytesFromBuffer = Math.Min(_readLen, buffer.Length);
                 _buffer.AsSpan(0, bytesFromBuffer).CopyTo(buffer.Span);
@@ -659,10 +659,10 @@ namespace System.IO.Strategies
         {
             Debug.Assert(!_strategy.CanSeek);
 
-            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(false);
+            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             try
             {
-                await _strategy.WriteAsync(source, cancellationToken).ConfigureAwait(false);
+                await _strategy.WriteAsync(source, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             finally
             {
@@ -676,7 +676,7 @@ namespace System.IO.Strategies
             Debug.Assert(_asyncActiveSemaphore != null);
             Debug.Assert(_strategy.CanSeek);
 
-            await semaphoreLockTask.ConfigureAwait(false);
+            await semaphoreLockTask.ConfigureAwait(OperatingSystem.IsBrowser());
             try
             {
                 if (_writePos == 0)
@@ -711,7 +711,7 @@ namespace System.IO.Strategies
                         }
                     }
 
-                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
+                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     _writePos = 0;
                 }
 
@@ -719,7 +719,7 @@ namespace System.IO.Strategies
                 if (source.Length >= _bufferSize)
                 {
                     Debug.Assert(_writePos == 0, "FileStream cannot have buffered data to write here!  Your stream will be corrupted.");
-                    await _strategy.WriteAsync(source, cancellationToken).ConfigureAwait(false);
+                    await _strategy.WriteAsync(source, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     return;
                 }
                 else if (source.Length == 0)
@@ -794,12 +794,12 @@ namespace System.IO.Strategies
 
         private async Task FlushAsyncInternal(CancellationToken cancellationToken)
         {
-            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(false);
+            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             try
             {
                 if (_writePos > 0)
                 {
-                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
+                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     _writePos = 0;
                     Debug.Assert(_writePos == 0 && _readPos == 0 && _readLen == 0);
                     return;
@@ -842,7 +842,7 @@ namespace System.IO.Strategies
         private async Task CopyToAsyncCore(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             // Synchronize async operations as does Read/WriteAsync.
-            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(false);
+            await EnsureAsyncActiveSemaphoreInitialized().WaitAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             try
             {
                 int readBytes = _readLen - _readPos;
@@ -852,18 +852,18 @@ namespace System.IO.Strategies
                 {
                     // If there's any read data in the buffer, write it all to the destination stream.
                     Debug.Assert(_writePos == 0, "Write buffer must be empty if there's data in the read buffer");
-                    await destination.WriteAsync(new ReadOnlyMemory<byte>(_buffer, _readPos, readBytes), cancellationToken).ConfigureAwait(false);
+                    await destination.WriteAsync(new ReadOnlyMemory<byte>(_buffer, _readPos, readBytes), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     _readPos = _readLen = 0;
                 }
                 else if (_writePos > 0)
                 {
                     // If there's write data in the buffer, flush it back to the underlying stream, as does ReadAsync.
-                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(false);
+                    await _strategy.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, _writePos), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     _writePos = 0;
                 }
 
                 // Our buffer is now clear. Copy data directly from the source stream to the destination stream.
-                await _strategy.CopyToAsync(destination, bufferSize, cancellationToken).ConfigureAwait(false);
+                await _strategy.CopyToAsync(destination, bufferSize, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             finally
             {

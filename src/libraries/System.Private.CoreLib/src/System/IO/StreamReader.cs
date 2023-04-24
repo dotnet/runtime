@@ -905,7 +905,7 @@ namespace System.IO
 
         private async Task<string?> ReadLineAsyncInternal(CancellationToken cancellationToken)
         {
-            if (_charPos == _charLen && (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) == 0)
+            if (_charPos == _charLen && (await ReadBufferAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser())) == 0)
             {
                 return null;
             }
@@ -943,7 +943,7 @@ namespace System.IO
                     // If we found '\r', consume any immediately following '\n'.
                     if (matchedChar == '\r')
                     {
-                        if (charPos < charLen || (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) > 0)
+                        if (charPos < charLen || (await ReadBufferAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser())) > 0)
                         {
                             if (_charBuffer[_charPos] == '\n')
                             {
@@ -971,7 +971,7 @@ namespace System.IO
                 charBuffer.AsSpan(charPos, charLen - charPos).CopyTo(arrayPoolBuffer.AsSpan(arrayPoolBufferPos));
                 arrayPoolBufferPos += charLen - charPos;
             }
-            while (await ReadBufferAsync(cancellationToken).ConfigureAwait(false) > 0);
+            while (await ReadBufferAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser()) > 0);
 
             if (arrayPoolBuffer is not null)
             {
@@ -1040,7 +1040,7 @@ namespace System.IO
                 int tmpCharPos = _charPos;
                 sb.Append(_charBuffer, tmpCharPos, _charLen - tmpCharPos);
                 _charPos = _charLen;  // We consumed these characters
-                await ReadBufferAsync(cancellationToken).ConfigureAwait(false);
+                await ReadBufferAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             } while (_charLen > 0);
 
             return sb.ToString();
@@ -1096,7 +1096,7 @@ namespace System.IO
 
         internal override async ValueTask<int> ReadAsyncInternal(Memory<char> buffer, CancellationToken cancellationToken)
         {
-            if (_charPos == _charLen && (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) == 0)
+            if (_charPos == _charLen && (await ReadBufferAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser())) == 0)
             {
                 return 0;
             }
@@ -1139,7 +1139,7 @@ namespace System.IO
                         {
                             Debug.Assert(_bytePos <= _encoding.Preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
                             int tmpBytePos = _bytePos;
-                            int len = await tmpStream.ReadAsync(new Memory<byte>(tmpByteBuffer, tmpBytePos, tmpByteBuffer.Length - tmpBytePos), cancellationToken).ConfigureAwait(false);
+                            int len = await tmpStream.ReadAsync(new Memory<byte>(tmpByteBuffer, tmpBytePos, tmpByteBuffer.Length - tmpBytePos), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                             Debug.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
                             if (len == 0)
@@ -1175,7 +1175,7 @@ namespace System.IO
                         {
                             Debug.Assert(_bytePos == 0, "_bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
 
-                            _byteLen = await tmpStream.ReadAsync(new Memory<byte>(tmpByteBuffer), cancellationToken).ConfigureAwait(false);
+                            _byteLen = await tmpStream.ReadAsync(new Memory<byte>(tmpByteBuffer), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                             Debug.Assert(_byteLen >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
@@ -1334,7 +1334,7 @@ namespace System.IO
                 {
                     Debug.Assert(_bytePos <= _encoding.Preamble.Length, "possible bug in _compressPreamble. Are two threads using this StreamReader at the same time?");
                     int tmpBytePos = _bytePos;
-                    int len = await tmpStream.ReadAsync(tmpByteBuffer.AsMemory(tmpBytePos), cancellationToken).ConfigureAwait(false);
+                    int len = await tmpStream.ReadAsync(tmpByteBuffer.AsMemory(tmpBytePos), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     Debug.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
                     if (len == 0)
@@ -1348,7 +1348,7 @@ namespace System.IO
                 else
                 {
                     Debug.Assert(_bytePos == 0, "_bytePos can be non zero only when we are trying to _checkPreamble. Are two threads using this StreamReader at the same time?");
-                    _byteLen = await tmpStream.ReadAsync(new Memory<byte>(tmpByteBuffer), cancellationToken).ConfigureAwait(false);
+                    _byteLen = await tmpStream.ReadAsync(new Memory<byte>(tmpByteBuffer), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     Debug.Assert(_byteLen >= 0, "Stream.Read returned a negative number!  Bug in stream class.");
 
                     if (_byteLen == 0)

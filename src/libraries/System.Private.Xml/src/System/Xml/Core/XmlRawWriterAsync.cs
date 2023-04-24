@@ -194,11 +194,11 @@ namespace System.Xml
         {
             if (prefix.Length != 0)
             {
-                await WriteStringAsync(prefix).ConfigureAwait(false);
-                await WriteStringAsync(":").ConfigureAwait(false);
+                await WriteStringAsync(prefix).ConfigureAwait(OperatingSystem.IsBrowser());
+                await WriteStringAsync(":").ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
-            await WriteStringAsync(localName).ConfigureAwait(false);
+            await WriteStringAsync(localName).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         // This method must be called instead of WriteStartAttribute() for namespaces.

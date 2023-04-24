@@ -374,7 +374,7 @@ namespace System.Xml
 
         private async Task WriteEndAttributeAsyncImpl()
         {
-            await FlushBase64Async().ConfigureAwait(false);
+            await FlushBase64Async().ConfigureAwait(OperatingSystem.IsBrowser());
             try
             {
                 if (_isXmlAttribute)
@@ -416,7 +416,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    await _writer.WriteEndAttributeAsync().ConfigureAwait(false);
+                    await _writer.WriteEndAttributeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             finally
@@ -544,14 +544,14 @@ namespace System.Xml
 
         private async Task StartElementAndWriteStartElementAsync(string? prefix, string localName, string? namespaceUri)
         {
-            prefix = await StartElementAsync(prefix, localName, namespaceUri, null).ConfigureAwait(false);
-            await _writer.WriteStartElementAsync(prefix, localName).ConfigureAwait(false);
+            prefix = await StartElementAsync(prefix, localName, namespaceUri, null).ConfigureAwait(OperatingSystem.IsBrowser());
+            await _writer.WriteStartElementAsync(prefix, localName).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         private async Task<string> StartElementAsync(string? prefix, string localName, string? ns, XmlDictionaryString? xNs)
         {
-            await FlushBase64Async().ConfigureAwait(false);
-            await AutoCompleteAsync(WriteState.Element).ConfigureAwait(false);
+            await FlushBase64Async().ConfigureAwait(OperatingSystem.IsBrowser());
+            await AutoCompleteAsync(WriteState.Element).ConfigureAwait(OperatingSystem.IsBrowser());
             Element element = EnterScope();
             if (ns == null)
             {
@@ -641,18 +641,18 @@ namespace System.Xml
         private async Task WriteEndElementAsyncImpl()
         {
             if (_writeState == WriteState.Attribute)
-                await WriteEndAttributeAsync().ConfigureAwait(false);
+                await WriteEndAttributeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
             FlushBase64();
             if (_writeState == WriteState.Element)
             {
                 _nsMgr.DeclareNamespaces(_writer);
-                await _writer.WriteEndStartElementAsync(true).ConfigureAwait(false);
+                await _writer.WriteEndStartElementAsync(true).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else
             {
                 Element element = _elements![_depth];
-                await _writer.WriteEndElementAsync(element.Prefix, element.LocalName!).ConfigureAwait(false);
+                await _writer.WriteEndElementAsync(element.Prefix, element.LocalName!).ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             ExitScope();
@@ -722,7 +722,7 @@ namespace System.Xml
 
         protected async Task StartContentAsync()
         {
-            await FlushElementAsync().ConfigureAwait(false);
+            await FlushElementAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             if (_depth == 0)
                 throw new InvalidOperationException(SR.XmlIllegalOutsideRoot);
         }
@@ -783,7 +783,7 @@ namespace System.Xml
         {
             if (_writeState == WriteState.Element)
             {
-                await EndStartElementAsync().ConfigureAwait(false);
+                await EndStartElementAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
             _writeState = writeState;
         }
@@ -1547,8 +1547,8 @@ namespace System.Xml
                     }
                     if (!_isXmlnsAttribute)
                     {
-                        await StartContentAsync().ConfigureAwait(false);
-                        await _writer.WriteBase64TextAsync(_trailBytes, _trailByteCount, buffer, offset, actualByteCount - _trailByteCount).ConfigureAwait(false);
+                        await StartContentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+                        await _writer.WriteBase64TextAsync(_trailBytes, _trailByteCount, buffer, offset, actualByteCount - _trailByteCount).ConfigureAwait(OperatingSystem.IsBrowser());
                         EndContent();
                     }
                     _trailByteCount = (totalByteCount - actualByteCount);
@@ -1766,8 +1766,8 @@ namespace System.Xml
 
             if (!_isXmlnsAttribute)
             {
-                await StartContentAsync().ConfigureAwait(false);
-                await _writer.WriteBase64TextAsync(_trailBytes, _trailByteCount, _trailBytes, 0, 0).ConfigureAwait(false);
+                await StartContentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+                await _writer.WriteBase64TextAsync(_trailBytes, _trailByteCount, _trailBytes, 0, 0).ConfigureAwait(OperatingSystem.IsBrowser());
                 EndContent();
             }
             _trailByteCount = 0;

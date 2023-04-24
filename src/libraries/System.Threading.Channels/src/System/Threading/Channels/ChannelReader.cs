@@ -78,7 +78,7 @@ namespace System.Threading.Channels
             {
                 while (true)
                 {
-                    if (!await WaitToReadAsync(ct).ConfigureAwait(false))
+                    if (!await WaitToReadAsync(ct).ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         throw new ChannelClosedException();
                     }

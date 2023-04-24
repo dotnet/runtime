@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 using ICacheEntry entry = cache.CreateEntry(key);
 
-                result = await factory(entry).ConfigureAwait(false);
+                result = await factory(entry).ConfigureAwait(OperatingSystem.IsBrowser());
                 entry.Value = result;
             }
 

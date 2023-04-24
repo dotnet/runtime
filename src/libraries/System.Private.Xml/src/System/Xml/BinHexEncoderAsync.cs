@@ -24,7 +24,7 @@ namespace System.Xml
                 {
                     int cnt = (count < CharsChunkSize / 2) ? count : CharsChunkSize / 2;
                     HexConverter.EncodeToUtf16(buffer.AsSpan(index, cnt), chars);
-                    await writer.WriteRawAsync(chars, 0, cnt * 2).ConfigureAwait(false);
+                    await writer.WriteRawAsync(chars, 0, cnt * 2).ConfigureAwait(OperatingSystem.IsBrowser());
                     index += cnt;
                     count -= cnt;
                 }

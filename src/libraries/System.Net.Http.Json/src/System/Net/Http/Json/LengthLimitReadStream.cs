@@ -61,7 +61,7 @@ namespace System.Net.Http.Json
 
             async ValueTask<int> Core(ValueTask<int> readTask)
             {
-                int read = await readTask.ConfigureAwait(false);
+                int read = await readTask.ConfigureAwait(OperatingSystem.IsBrowser());
                 CheckLengthLimit(read);
                 return read;
             }
@@ -69,7 +69,7 @@ namespace System.Net.Http.Json
 #else
         public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            int read = await _innerStream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+            int read = await _innerStream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             CheckLengthLimit(read);
             return read;
         }

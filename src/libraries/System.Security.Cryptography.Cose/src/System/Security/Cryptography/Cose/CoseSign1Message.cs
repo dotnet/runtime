@@ -235,7 +235,7 @@ namespace System.Security.Cryptography.Cose
         private static async Task<byte[]> SignAsyncCore(int expectedSize, Stream content, CoseSigner signer, ReadOnlyMemory<byte> associatedData, CancellationToken cancellationToken)
         {
             byte[] buffer = new byte[expectedSize];
-            int bytesWritten = await CreateCoseSign1MessageAsync(content, buffer, signer, associatedData, cancellationToken).ConfigureAwait(false);
+            int bytesWritten = await CreateCoseSign1MessageAsync(content, buffer, signer, associatedData, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             Debug.Assert(buffer.Length == bytesWritten);
             return buffer;
@@ -355,7 +355,7 @@ namespace System.Security.Cryptography.Cose
 
             using (IncrementalHash hasher = IncrementalHash.CreateHash(signer.HashAlgorithm))
             {
-                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature1, buffer.AsMemory(0, protectedMapBytesWritten), ReadOnlyMemory<byte>.Empty, associatedData, content, cancellationToken).ConfigureAwait(false);
+                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature1, buffer.AsMemory(0, protectedMapBytesWritten), ReadOnlyMemory<byte>.Empty, associatedData, content, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 CoseHelpers.WriteSignature(buffer, hasher, writer, signer);
             }
 
@@ -729,7 +729,7 @@ namespace System.Security.Cryptography.Cose
                     contentLength: 0);
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferLength);
 
-                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature1, _protectedHeaderAsBstr, ReadOnlyMemory<byte>.Empty, associatedData, content, cancellationToken).ConfigureAwait(false);
+                await AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature1, _protectedHeaderAsBstr, ReadOnlyMemory<byte>.Empty, associatedData, content, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 bool retVal = VerifyHash(key, hasher, hashAlgorithm, keyType, padding);
 
                 ArrayPool<byte>.Shared.Return(buffer, clearArray: true);

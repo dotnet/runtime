@@ -150,7 +150,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             static async ValueTask Await(int i, ValueTask vt, List<object> toDispose)
             {
-                await vt.ConfigureAwait(false);
+                await vt.ConfigureAwait(OperatingSystem.IsBrowser());
                 // vt is acting on the disposable at index i,
                 // decrement it and move to the next iteration
                 i--;
@@ -160,7 +160,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     object disposable = toDispose[i];
                     if (disposable is IAsyncDisposable asyncDisposable)
                     {
-                        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                        await asyncDisposable.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     else
                     {

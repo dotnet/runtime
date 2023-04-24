@@ -245,7 +245,7 @@ namespace System.IO
             try
             {
                 int len;
-                while ((len = await ReadAsyncInternal(chars, cancellationToken).ConfigureAwait(false)) != 0)
+                while ((len = await ReadAsyncInternal(chars, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser())) != 0)
                 {
                     sb.Append(chars, 0, len);
                 }
@@ -315,7 +315,7 @@ namespace System.IO
             int n = 0, i;
             do
             {
-                i = await ReadAsyncInternal(buffer.Slice(n), cancellationToken).ConfigureAwait(false);
+                i = await ReadAsyncInternal(buffer.Slice(n), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 n += i;
             } while (i > 0 && n < buffer.Length);
 

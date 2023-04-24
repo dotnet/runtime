@@ -186,7 +186,7 @@ namespace System.IO.Compression
                     Debug.Assert(_deflater != null && _buffer != null);
 
                     // Compress any bytes left:
-                    await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
+                    await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                     // Pull out any bytes left inside deflater:
                     bool flushSuccessful;
@@ -196,13 +196,13 @@ namespace System.IO.Compression
                         flushSuccessful = _deflater.Flush(_buffer, out compressedBytes);
                         if (flushSuccessful)
                         {
-                            await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(false);
+                            await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                         }
                         Debug.Assert(flushSuccessful == (compressedBytes > 0));
                     } while (flushSuccessful);
 
                     // Always flush on the underlying stream
-                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 finally
                 {
@@ -421,7 +421,7 @@ namespace System.IO.Compression
                         // data to proceed, read some to populate it.
                         if (_inflater.NeedsInput())
                         {
-                            int n = await _stream.ReadAsync(new Memory<byte>(_buffer, 0, _buffer.Length), cancellationToken).ConfigureAwait(false);
+                            int n = await _stream.ReadAsync(new Memory<byte>(_buffer, 0, _buffer.Length), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                             if (n <= 0)
                             {
                                 // - Inflater didn't return any data although a non-empty output buffer was passed by the caller.
@@ -631,7 +631,7 @@ namespace System.IO.Compression
             if (_wroteBytes)
             {
                 // Compress any bytes left
-                await WriteDeflaterOutputAsync(default).ConfigureAwait(false);
+                await WriteDeflaterOutputAsync(default).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 // Pull out any bytes left inside deflater:
                 bool finished;
@@ -641,7 +641,7 @@ namespace System.IO.Compression
                     finished = _deflater.Finish(_buffer, out compressedBytes);
 
                     if (compressedBytes > 0)
-                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes)).ConfigureAwait(false);
+                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes)).ConfigureAwait(OperatingSystem.IsBrowser());
                 } while (!finished);
             }
             else
@@ -716,7 +716,7 @@ namespace System.IO.Compression
                 // Same logic as Dispose(true), except with async counterparts.
                 try
                 {
-                    await PurgeBuffersAsync().ConfigureAwait(false);
+                    await PurgeBuffersAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 finally
                 {
@@ -728,7 +728,7 @@ namespace System.IO.Compression
                     try
                     {
                         if (!_leaveOpen && stream != null)
-                            await stream.DisposeAsync().ConfigureAwait(false);
+                            await stream.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     finally
                     {
@@ -802,13 +802,13 @@ namespace System.IO.Compression
                 AsyncOperationStarting();
                 try
                 {
-                    await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
+                    await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                     Debug.Assert(_deflater != null);
                     // Pass new bytes through deflater
                     _deflater.SetInput(buffer);
 
-                    await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
+                    await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                     _wroteBytes = true;
                 }
@@ -830,7 +830,7 @@ namespace System.IO.Compression
                 int compressedBytes = _deflater.GetDeflateOutput(_buffer);
                 if (compressedBytes > 0)
                 {
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
         }
@@ -899,7 +899,7 @@ namespace System.IO.Compression
                         int bytesRead = _deflateStream._inflater.Inflate(_arrayPoolBuffer, 0, _arrayPoolBuffer.Length);
                         if (bytesRead > 0)
                         {
-                            await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), _cancellationToken).ConfigureAwait(false);
+                            await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), _cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                         }
                         else if (_deflateStream._inflater.NeedsInput())
                         {
@@ -909,7 +909,7 @@ namespace System.IO.Compression
                     }
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
-                    await _deflateStream._stream.CopyToAsync(this, _arrayPoolBuffer.Length, _cancellationToken).ConfigureAwait(false);
+                    await _deflateStream._stream.CopyToAsync(this, _arrayPoolBuffer.Length, _cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     if (s_useStrictValidation && !_deflateStream._inflater.Finished())
                     {
                         ThrowTruncatedInvalidData();
@@ -996,7 +996,7 @@ namespace System.IO.Compression
                     int bytesRead = _deflateStream._inflater.Inflate(new Span<byte>(_arrayPoolBuffer));
                     if (bytesRead > 0)
                     {
-                        await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
+                        await _destination.WriteAsync(new ReadOnlyMemory<byte>(_arrayPoolBuffer, 0, bytesRead), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     else if (_deflateStream._inflater.NeedsInput())
                     {

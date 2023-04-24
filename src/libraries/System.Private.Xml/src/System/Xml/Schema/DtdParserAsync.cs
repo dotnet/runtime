@@ -24,14 +24,14 @@ namespace System.Xml
         async Task<IDtdInfo> IDtdParser.ParseInternalDtdAsync(IDtdParserAdapter adapter, bool saveInternalSubset)
         {
             Initialize(adapter);
-            await ParseAsync(saveInternalSubset).ConfigureAwait(false);
+            await ParseAsync(saveInternalSubset).ConfigureAwait(OperatingSystem.IsBrowser());
             return _schemaInfo;
         }
 
         async Task<IDtdInfo> IDtdParser.ParseFreeFloatingDtdAsync(string baseUri, string docTypeName, string publicId, string systemId, string internalSubset, IDtdParserAdapter adapter)
         {
             InitializeFreeFloatingDtd(baseUri, docTypeName, publicId, systemId, internalSubset, adapter);
-            await ParseAsync(false).ConfigureAwait(false);
+            await ParseAsync(false).ConfigureAwait(OperatingSystem.IsBrowser());
             return _schemaInfo;
         }
         #endregion
@@ -44,11 +44,11 @@ namespace System.Xml
         {
             if (_freeFloatingDtd)
             {
-                await ParseFreeFloatingDtdAsync().ConfigureAwait(false);
+                await ParseFreeFloatingDtdAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else
             {
-                await ParseInDocumentDtdAsync(saveInternalSubset).ConfigureAwait(false);
+                await ParseInDocumentDtdAsync(saveInternalSubset).ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             _schemaInfo.Finish();
@@ -76,21 +76,21 @@ namespace System.Xml
             _nextScanningFunction = ScanningFunction.Doctype1;
 
             // doctype name
-            if (await GetTokenAsync(false).ConfigureAwait(false) != Token.QName)
+            if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.QName)
             {
                 OnUnexpectedError();
             }
             _schemaInfo.DocTypeName = GetNameQualified(true);
 
             // SYSTEM or PUBLIC id
-            Token token = await GetTokenAsync(false).ConfigureAwait(false);
+            Token token = await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser());
             if (token == Token.SYSTEM || token == Token.PUBLIC)
             {
-                var tuple_0 = await ParseExternalIdAsync(token, Token.DOCTYPE).ConfigureAwait(false);
+                var tuple_0 = await ParseExternalIdAsync(token, Token.DOCTYPE).ConfigureAwait(OperatingSystem.IsBrowser());
                 _publicId = tuple_0.Item1;
                 _systemId = tuple_0.Item2;
 
-                token = await GetTokenAsync(false).ConfigureAwait(false);
+                token = await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             switch (token)
@@ -101,7 +101,7 @@ namespace System.Xml
                         SaveParsingBuffer(); // this will cause saving the internal subset right from the point after '['
                         _internalSubsetValueSb = new StringBuilder();
                     }
-                    await ParseInternalSubsetAsync().ConfigureAwait(false);
+                    await ParseInternalSubsetAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     break;
                 case Token.GreaterThan:
                     break;
@@ -113,7 +113,7 @@ namespace System.Xml
 
             if (_systemId != null && _systemId.Length > 0)
             {
-                await ParseExternalSubsetAsync().ConfigureAwait(false);
+                await ParseExternalSubsetAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -122,13 +122,13 @@ namespace System.Xml
             if (_hasFreeFloatingInternalSubset)
             {
                 LoadParsingBuffer();
-                await ParseInternalSubsetAsync().ConfigureAwait(false);
+                await ParseInternalSubsetAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 SaveParsingBuffer();
             }
 
             if (_systemId != null && _systemId.Length > 0)
             {
-                await ParseExternalSubsetAsync().ConfigureAwait(false);
+                await ParseExternalSubsetAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -143,7 +143,7 @@ namespace System.Xml
             Debug.Assert(_externalEntitiesDepth == 0);
 
             // push external subset
-            if (!await _readerAdapter.PushExternalSubsetAsync(_systemId, _publicId).ConfigureAwait(false))
+            if (!await _readerAdapter.PushExternalSubsetAsync(_systemId, _publicId).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 return;
             }
@@ -158,7 +158,7 @@ namespace System.Xml
             LoadParsingBuffer();
 
             // parse
-            await ParseSubsetAsync().ConfigureAwait(false);
+            await ParseSubsetAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
 #if DEBUG
             Debug.Assert(_readerAdapter.EntityStackLength == 0 ||
@@ -171,32 +171,32 @@ namespace System.Xml
             int startTagEntityId;
             while (true)
             {
-                Token token = await GetTokenAsync(false).ConfigureAwait(false);
+                Token token = await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser());
                 startTagEntityId = _currentEntityId;
                 switch (token)
                 {
                     case Token.AttlistDecl:
-                        await ParseAttlistDeclAsync().ConfigureAwait(false);
+                        await ParseAttlistDeclAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
 
                     case Token.ElementDecl:
-                        await ParseElementDeclAsync().ConfigureAwait(false);
+                        await ParseElementDeclAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
 
                     case Token.EntityDecl:
-                        await ParseEntityDeclAsync().ConfigureAwait(false);
+                        await ParseEntityDeclAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
 
                     case Token.NotationDecl:
-                        await ParseNotationDeclAsync().ConfigureAwait(false);
+                        await ParseNotationDeclAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
 
                     case Token.Comment:
-                        await ParseCommentAsync().ConfigureAwait(false);
+                        await ParseCommentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
 
                     case Token.PI:
-                        await ParsePIAsync().ConfigureAwait(false);
+                        await ParsePIAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
 
                     case Token.CondSectionStart:
@@ -204,7 +204,7 @@ namespace System.Xml
                         {
                             Throw(_curPos - 3, SR.Xml_InvalidConditionalSection); // 3==strlen("<![")
                         }
-                        await ParseCondSectionAsync().ConfigureAwait(false);
+                        await ParseCondSectionAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         startTagEntityId = _currentEntityId;
                         break;
                     case Token.CondSectionEnd:
@@ -237,7 +237,7 @@ namespace System.Xml
                                 _internalSubsetValueSb = null;
                             }
                             // check '>'
-                            if (await GetTokenAsync(false).ConfigureAwait(false) != Token.GreaterThan)
+                            if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.GreaterThan)
                             {
                                 ThrowUnexpectedToken(_curPos, ">");
                             }
@@ -288,7 +288,7 @@ namespace System.Xml
 
         private async Task ParseAttlistDeclAsync()
         {
-            if (await GetTokenAsync(true).ConfigureAwait(false) != Token.QName)
+            if (await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.QName)
             {
                 goto UnexpectedError;
             }
@@ -308,7 +308,7 @@ namespace System.Xml
             SchemaAttDef? attrDef = null;
             while (true)
             {
-                switch (await GetTokenAsync(false).ConfigureAwait(false))
+                switch (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()))
                 {
                     case Token.QName:
                         XmlQualifiedName attrName = GetNameQualified(true);
@@ -344,8 +344,8 @@ namespace System.Xml
 
                 bool attrDefAlreadyExists = (elementDecl.GetAttDef(attrDef.Name) != null);
 
-                await ParseAttlistTypeAsync(attrDef, elementDecl, attrDefAlreadyExists).ConfigureAwait(false);
-                await ParseAttlistDefaultAsync(attrDef, attrDefAlreadyExists).ConfigureAwait(false);
+                await ParseAttlistTypeAsync(attrDef, elementDecl, attrDefAlreadyExists).ConfigureAwait(OperatingSystem.IsBrowser());
+                await ParseAttlistDefaultAsync(attrDef, attrDefAlreadyExists).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 // check xml:space and xml:lang
                 if (attrDef.Prefix.Length > 0 && attrDef.Prefix.Equals("xml"))
@@ -396,7 +396,7 @@ namespace System.Xml
 
         private async Task ParseAttlistTypeAsync(SchemaAttDef attrDef, SchemaElementDecl elementDecl, bool ignoreErrors)
         {
-            Token token = await GetTokenAsync(true).ConfigureAwait(false);
+            Token token = await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser());
 
             if (token != Token.CDATA)
             {
@@ -445,13 +445,13 @@ namespace System.Xml
                     }
                 }
 
-                if (await GetTokenAsync(true).ConfigureAwait(false) != Token.LeftParen)
+                if (await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.LeftParen)
                 {
                     goto UnexpectedError;
                 }
 
                 // parse notation list
-                if (await GetTokenAsync(false).ConfigureAwait(false) != Token.Name)
+                if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.Name)
                 {
                     goto UnexpectedError;
                 }
@@ -468,10 +468,10 @@ namespace System.Xml
                     }
                     attrDef.AddValue(notationName);
 
-                    switch (await GetTokenAsync(false).ConfigureAwait(false))
+                    switch (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         case Token.Or:
-                            if (await GetTokenAsync(false).ConfigureAwait(false) != Token.Name)
+                            if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.Name)
                             {
                                 goto UnexpectedError;
                             }
@@ -489,16 +489,16 @@ namespace System.Xml
                 attrDef.SchemaType = XmlSchemaType.GetBuiltInSimpleType(attrDef.Datatype.TypeCode);
 
                 // parse nmtoken list
-                if (await GetTokenAsync(false).ConfigureAwait(false) != Token.Nmtoken)
+                if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.Nmtoken)
                     goto UnexpectedError;
                 attrDef.AddValue(GetNameString());
 
                 while (true)
                 {
-                    switch (await GetTokenAsync(false).ConfigureAwait(false))
+                    switch (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         case Token.Or:
-                            if (await GetTokenAsync(false).ConfigureAwait(false) != Token.Nmtoken)
+                            if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.Nmtoken)
                                 goto UnexpectedError;
                             string nmtoken = GetNmtokenString();
                             if (_validate && !_v1Compat && attrDef.Values != null && attrDef.Values.Contains(nmtoken) && !ignoreErrors)
@@ -525,7 +525,7 @@ namespace System.Xml
 
         private async Task ParseAttlistDefaultAsync(SchemaAttDef attrDef, bool ignoreErrors)
         {
-            switch (await GetTokenAsync(true).ConfigureAwait(false))
+            switch (await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 case Token.REQUIRED:
                     attrDef.Presence = SchemaDeclBase.Use.Required;
@@ -535,7 +535,7 @@ namespace System.Xml
                     return;
                 case Token.FIXED:
                     attrDef.Presence = SchemaDeclBase.Use.Fixed;
-                    if (await GetTokenAsync(true).ConfigureAwait(false) != Token.Literal)
+                    if (await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.Literal)
                     {
                         goto UnexpectedError;
                     }
@@ -573,7 +573,7 @@ namespace System.Xml
         private async Task ParseElementDeclAsync()
         {
             // element name
-            if (await GetTokenAsync(true).ConfigureAwait(false) != Token.QName)
+            if (await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.QName)
             {
                 goto UnexpectedError;
             }
@@ -604,7 +604,7 @@ namespace System.Xml
             elementDecl.IsDeclaredInExternal = !ParsingInternalSubset;
 
             // content spec
-            switch (await GetTokenAsync(true).ConfigureAwait(false))
+            switch (await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 case Token.EMPTY:
                     elementDecl.ContentValidator = ContentValidator.Empty;
@@ -614,7 +614,7 @@ namespace System.Xml
                     break;
                 case Token.LeftParen:
                     int startParenEntityId = _currentEntityId;
-                    switch (await GetTokenAsync(false).ConfigureAwait(false))
+                    switch (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         case Token.PCDATA:
                             {
@@ -622,7 +622,7 @@ namespace System.Xml
                                 pcv.Start();
                                 pcv.OpenGroup();
 
-                                await ParseElementMixedContentAsync(pcv, startParenEntityId).ConfigureAwait(false);
+                                await ParseElementMixedContentAsync(pcv, startParenEntityId).ConfigureAwait(OperatingSystem.IsBrowser());
 
                                 elementDecl.ContentValidator = pcv.Finish(true);
                                 break;
@@ -634,7 +634,7 @@ namespace System.Xml
                                 pcv.Start();
                                 pcv.OpenGroup();
 
-                                await ParseElementOnlyContentAsync(pcv, startParenEntityId).ConfigureAwait(false);
+                                await ParseElementOnlyContentAsync(pcv, startParenEntityId).ConfigureAwait(OperatingSystem.IsBrowser());
 
                                 elementDecl.ContentValidator = pcv.Finish(true);
                                 break;
@@ -647,7 +647,7 @@ namespace System.Xml
                     goto UnexpectedError;
             }
 
-            if (await GetTokenAsync(false).ConfigureAwait(false) != Token.GreaterThan)
+            if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.GreaterThan)
             {
                 ThrowUnexpectedToken(_curPos, ">");
             }
@@ -666,11 +666,11 @@ namespace System.Xml
         RecursiveCall:
 
         Loop:
-            switch (await GetTokenAsync(false).ConfigureAwait(false))
+            switch (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 case Token.QName:
                     pcv.AddName(GetNameQualified(true), null);
-                    await ParseHowManyAsync(pcv).ConfigureAwait(false);
+                    await ParseHowManyAsync(pcv).ConfigureAwait(OperatingSystem.IsBrowser());
                     break;
                 case Token.LeftParen:
                     pcv.OpenGroup();
@@ -695,7 +695,7 @@ namespace System.Xml
             }
 
         ReturnFromRecursiveCall:
-            switch (await GetTokenAsync(false).ConfigureAwait(false))
+            switch (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 case Token.Comma:
                     if (currentFrame.parsingSchema == Token.Or)
@@ -719,7 +719,7 @@ namespace System.Xml
                     {
                         SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                     }
-                    await ParseHowManyAsync(pcv).ConfigureAwait(false);
+                    await ParseHowManyAsync(pcv).ConfigureAwait(OperatingSystem.IsBrowser());
                     goto Return;
                 case Token.GreaterThan:
                     Throw(_curPos, SR.Xml_InvalidContentModel);
@@ -749,7 +749,7 @@ namespace System.Xml
 
         private async Task ParseHowManyAsync(ParticleContentValidator pcv)
         {
-            switch (await GetTokenAsync(false).ConfigureAwait(false))
+            switch (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 case Token.Star:
                     pcv.AddStar();
@@ -773,7 +773,7 @@ namespace System.Xml
 
             while (true)
             {
-                switch (await GetTokenAsync(false).ConfigureAwait(false))
+                switch (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()))
                 {
                     case Token.RightParen:
                         pcv.CloseGroup();
@@ -781,7 +781,7 @@ namespace System.Xml
                         {
                             SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                         }
-                        if (await GetTokenAsync(false).ConfigureAwait(false) == Token.Star && hasNames)
+                        if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) == Token.Star && hasNames)
                         {
                             pcv.AddStar();
                         }
@@ -808,7 +808,7 @@ namespace System.Xml
                             }
                         }
 
-                        if (await GetTokenAsync(false).ConfigureAwait(false) != Token.QName)
+                        if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.QName)
                         {
                             goto default;
                         }
@@ -842,11 +842,11 @@ namespace System.Xml
             SchemaEntity? entity;
 
             // get entity name and type
-            switch (await GetTokenAsync(true).ConfigureAwait(false))
+            switch (await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 case Token.Percent:
                     isParamEntity = true;
-                    if (await GetTokenAsync(true).ConfigureAwait(false) != Token.Name)
+                    if (await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.Name)
                     {
                         goto UnexpectedError;
                     }
@@ -880,7 +880,7 @@ namespace System.Xml
                     goto UnexpectedError;
             }
 
-            Token token = await GetTokenAsync(true).ConfigureAwait(false);
+            Token token = await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser());
             switch (token)
             {
                 case Token.PUBLIC:
@@ -888,7 +888,7 @@ namespace System.Xml
                     string? systemId;
                     string? publicId;
 
-                    var tuple_1 = await ParseExternalIdAsync(token, Token.EntityDecl).ConfigureAwait(false);
+                    var tuple_1 = await ParseExternalIdAsync(token, Token.EntityDecl).ConfigureAwait(OperatingSystem.IsBrowser());
                     publicId = tuple_1.Item1;
                     systemId = tuple_1.Item2;
 
@@ -896,7 +896,7 @@ namespace System.Xml
                     entity.Url = systemId;
                     entity.Pubid = publicId;
 
-                    if (await GetTokenAsync(false).ConfigureAwait(false) == Token.NData)
+                    if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) == Token.NData)
                     {
                         if (isParamEntity)
                         {
@@ -907,7 +907,7 @@ namespace System.Xml
                             Throw(_curPos - 5, SR.Xml_ExpectingWhiteSpace, "NDATA");
                         }
 
-                        if (await GetTokenAsync(true).ConfigureAwait(false) != Token.Name)
+                        if (await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.Name)
                         {
                             goto UnexpectedError;
                         }
@@ -929,7 +929,7 @@ namespace System.Xml
                     goto UnexpectedError;
             }
 
-            if (await GetTokenAsync(false).ConfigureAwait(false) == Token.GreaterThan)
+            if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) == Token.GreaterThan)
             {
                 entity.ParsingInProgress = false;
                 return;
@@ -942,7 +942,7 @@ namespace System.Xml
         private async Task ParseNotationDeclAsync()
         {
             // notation name
-            if (await GetTokenAsync(true).ConfigureAwait(false) != Token.Name)
+            if (await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.Name)
             {
                 OnUnexpectedError();
             }
@@ -966,12 +966,12 @@ namespace System.Xml
             }
 
             // public / system id
-            Token token = await GetTokenAsync(true).ConfigureAwait(false);
+            Token token = await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser());
             if (token == Token.SYSTEM || token == Token.PUBLIC)
             {
                 string? notationPublicId, notationSystemId;
 
-                var tuple_2 = await ParseExternalIdAsync(token, Token.NOTATION).ConfigureAwait(false);
+                var tuple_2 = await ParseExternalIdAsync(token, Token.NOTATION).ConfigureAwait(OperatingSystem.IsBrowser());
                 notationPublicId = tuple_2.Item1;
                 notationSystemId = tuple_2.Item2;
 
@@ -986,7 +986,7 @@ namespace System.Xml
                 OnUnexpectedError();
             }
 
-            if (await GetTokenAsync(false).ConfigureAwait(false) != Token.GreaterThan)
+            if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.GreaterThan)
                 OnUnexpectedError();
         }
 
@@ -998,12 +998,12 @@ namespace System.Xml
                 if (SaveInternalSubsetValue)
                 {
                     Debug.Assert(_internalSubsetValueSb != null);
-                    await _readerAdapter.ParseCommentAsync(_internalSubsetValueSb).ConfigureAwait(false);
+                    await _readerAdapter.ParseCommentAsync(_internalSubsetValueSb).ConfigureAwait(OperatingSystem.IsBrowser());
                     _internalSubsetValueSb.Append("-->");
                 }
                 else
                 {
-                    await _readerAdapter.ParseCommentAsync(null).ConfigureAwait(false);
+                    await _readerAdapter.ParseCommentAsync(null).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             catch (XmlException e)
@@ -1026,12 +1026,12 @@ namespace System.Xml
             if (SaveInternalSubsetValue)
             {
                 Debug.Assert(_internalSubsetValueSb != null);
-                await _readerAdapter.ParsePIAsync(_internalSubsetValueSb).ConfigureAwait(false);
+                await _readerAdapter.ParsePIAsync(_internalSubsetValueSb).ConfigureAwait(OperatingSystem.IsBrowser());
                 _internalSubsetValueSb.Append("?>");
             }
             else
             {
-                await _readerAdapter.ParsePIAsync(null).ConfigureAwait(false);
+                await _readerAdapter.ParsePIAsync(null).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             LoadParsingBuffer();
         }
@@ -1040,10 +1040,10 @@ namespace System.Xml
         {
             int csEntityId = _currentEntityId;
 
-            switch (await GetTokenAsync(false).ConfigureAwait(false))
+            switch (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 case Token.INCLUDE:
-                    if (await GetTokenAsync(false).ConfigureAwait(false) != Token.LeftBracket)
+                    if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.LeftBracket)
                     {
                         goto default;
                     }
@@ -1068,7 +1068,7 @@ namespace System.Xml
                     _condSectionDepth++;
                     break;
                 case Token.IGNORE:
-                    if (await GetTokenAsync(false).ConfigureAwait(false) != Token.LeftBracket)
+                    if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.LeftBracket)
                     {
                         goto default;
                     }
@@ -1077,7 +1077,7 @@ namespace System.Xml
                         SendValidationEvent(_curPos, XmlSeverityType.Error, SR.Sch_ParEntityRefNesting, string.Empty);
                     }
                     // the content of the ignore section is parsed & skipped by scanning function
-                    if (await GetTokenAsync(false).ConfigureAwait(false) != Token.CondSectionEnd)
+                    if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.CondSectionEnd)
                     {
                         goto default;
                     }
@@ -1101,7 +1101,7 @@ namespace System.Xml
             publicId = null;
             systemId = null;
 
-            if (await GetTokenAsync(true).ConfigureAwait(false) != Token.Literal)
+            if (await GetTokenAsync(true).ConfigureAwait(OperatingSystem.IsBrowser()) != Token.Literal)
             {
                 ThrowUnexpectedToken(_curPos, "\"", "'");
             }
@@ -1138,7 +1138,7 @@ namespace System.Xml
                     _literalLineInfo.linePos++;
                     _readerAdapter.OnPublicId(publicId, keywordLineInfo, _literalLineInfo);
 
-                    if (await GetTokenAsync(false).ConfigureAwait(false) == Token.Literal)
+                    if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) == Token.Literal)
                     {
                         if (!_whitespaceSeen)
                         {
@@ -1155,7 +1155,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    if (await GetTokenAsync(false).ConfigureAwait(false) == Token.Literal)
+                    if (await GetTokenAsync(false).ConfigureAwait(OperatingSystem.IsBrowser()) == Token.Literal)
                     {
                         if (!_whitespaceSeen)
                         {
@@ -1237,7 +1237,7 @@ namespace System.Xml
                             }
                             else
                             {
-                                await HandleEntityReferenceAsync(true, false, false).ConfigureAwait(false);
+                                await HandleEntityReferenceAsync(true, false, false).ConfigureAwait(OperatingSystem.IsBrowser());
                             }
                             continue;
                         }
@@ -1251,36 +1251,36 @@ namespace System.Xml
                     SwitchAgain:
                         switch (_scanningFunction)
                         {
-                            case ScanningFunction.Name: return await ScanNameExpectedAsync().ConfigureAwait(false);
-                            case ScanningFunction.QName: return await ScanQNameExpectedAsync().ConfigureAwait(false);
-                            case ScanningFunction.Nmtoken: return await ScanNmtokenExpectedAsync().ConfigureAwait(false);
-                            case ScanningFunction.SubsetContent: return await ScanSubsetContentAsync().ConfigureAwait(false);
-                            case ScanningFunction.Doctype1: return await ScanDoctype1Async().ConfigureAwait(false);
+                            case ScanningFunction.Name: return await ScanNameExpectedAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.QName: return await ScanQNameExpectedAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.Nmtoken: return await ScanNmtokenExpectedAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.SubsetContent: return await ScanSubsetContentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.Doctype1: return await ScanDoctype1Async().ConfigureAwait(OperatingSystem.IsBrowser());
                             case ScanningFunction.Doctype2: return ScanDoctype2();
-                            case ScanningFunction.Element1: return await ScanElement1Async().ConfigureAwait(false);
-                            case ScanningFunction.Element2: return await ScanElement2Async().ConfigureAwait(false);
-                            case ScanningFunction.Element3: return await ScanElement3Async().ConfigureAwait(false);
+                            case ScanningFunction.Element1: return await ScanElement1Async().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.Element2: return await ScanElement2Async().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.Element3: return await ScanElement3Async().ConfigureAwait(OperatingSystem.IsBrowser());
                             case ScanningFunction.Element4: return ScanElement4();
                             case ScanningFunction.Element5: return ScanElement5();
                             case ScanningFunction.Element6: return ScanElement6();
                             case ScanningFunction.Element7: return ScanElement7();
-                            case ScanningFunction.Attlist1: return await ScanAttlist1Async().ConfigureAwait(false);
-                            case ScanningFunction.Attlist2: return await ScanAttlist2Async().ConfigureAwait(false);
+                            case ScanningFunction.Attlist1: return await ScanAttlist1Async().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.Attlist2: return await ScanAttlist2Async().ConfigureAwait(OperatingSystem.IsBrowser());
                             case ScanningFunction.Attlist3: return ScanAttlist3();
                             case ScanningFunction.Attlist4: return ScanAttlist4();
                             case ScanningFunction.Attlist5: return ScanAttlist5();
-                            case ScanningFunction.Attlist6: return await ScanAttlist6Async().ConfigureAwait(false);
+                            case ScanningFunction.Attlist6: return await ScanAttlist6Async().ConfigureAwait(OperatingSystem.IsBrowser());
                             case ScanningFunction.Attlist7: return ScanAttlist7();
-                            case ScanningFunction.Notation1: return await ScanNotation1Async().ConfigureAwait(false);
-                            case ScanningFunction.SystemId: return await ScanSystemIdAsync().ConfigureAwait(false);
-                            case ScanningFunction.PublicId1: return await ScanPublicId1Async().ConfigureAwait(false);
-                            case ScanningFunction.PublicId2: return await ScanPublicId2Async().ConfigureAwait(false);
-                            case ScanningFunction.Entity1: return await ScanEntity1Async().ConfigureAwait(false);
-                            case ScanningFunction.Entity2: return await ScanEntity2Async().ConfigureAwait(false);
-                            case ScanningFunction.Entity3: return await ScanEntity3Async().ConfigureAwait(false);
-                            case ScanningFunction.CondSection1: return await ScanCondSection1Async().ConfigureAwait(false);
+                            case ScanningFunction.Notation1: return await ScanNotation1Async().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.SystemId: return await ScanSystemIdAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.PublicId1: return await ScanPublicId1Async().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.PublicId2: return await ScanPublicId2Async().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.Entity1: return await ScanEntity1Async().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.Entity2: return await ScanEntity2Async().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.Entity3: return await ScanEntity3Async().ConfigureAwait(OperatingSystem.IsBrowser());
+                            case ScanningFunction.CondSection1: return await ScanCondSection1Async().ConfigureAwait(OperatingSystem.IsBrowser());
                             case ScanningFunction.CondSection2: return ScanCondSection2();
-                            case ScanningFunction.CondSection3: return await ScanCondSection3Async().ConfigureAwait(false);
+                            case ScanningFunction.CondSection3: return await ScanCondSection3Async().ConfigureAwait(OperatingSystem.IsBrowser());
                             case ScanningFunction.ClosingTag: return ScanClosingTag();
                             case ScanningFunction.ParamEntitySpace:
                                 _whitespaceSeen = true;
@@ -1292,7 +1292,7 @@ namespace System.Xml
                         }
                 }
             ReadData:
-                if (_readerAdapter.IsEof || await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (_readerAdapter.IsEof || await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     if (HandleEntityEnd(false))
                     {
@@ -1468,7 +1468,7 @@ namespace System.Xml
                         break;
                 }
             ReadData:
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     Throw(_charsUsed, SR.Xml_IncompleteDtdContent);
                 }
@@ -1477,21 +1477,21 @@ namespace System.Xml
 
         private async Task<Token> ScanNameExpectedAsync()
         {
-            await ScanNameAsync().ConfigureAwait(false);
+            await ScanNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             _scanningFunction = _nextScanningFunction;
             return Token.Name;
         }
 
         private async Task<Token> ScanQNameExpectedAsync()
         {
-            await ScanQNameAsync().ConfigureAwait(false);
+            await ScanQNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             _scanningFunction = _nextScanningFunction;
             return Token.QName;
         }
 
         private async Task<Token> ScanNmtokenExpectedAsync()
         {
-            await ScanNmtokenAsync().ConfigureAwait(false);
+            await ScanNmtokenAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             _scanningFunction = _nextScanningFunction;
             return Token.Nmtoken;
         }
@@ -1501,7 +1501,7 @@ namespace System.Xml
             switch (_chars[_curPos])
             {
                 case 'P':
-                    if (!await EatPublicKeywordAsync().ConfigureAwait(false))
+                    if (!await EatPublicKeywordAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
@@ -1509,7 +1509,7 @@ namespace System.Xml
                     _scanningFunction = ScanningFunction.PublicId1;
                     return Token.PUBLIC;
                 case 'S':
-                    if (!await EatSystemKeywordAsync().ConfigureAwait(false))
+                    if (!await EatSystemKeywordAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
@@ -1570,7 +1570,7 @@ namespace System.Xml
                         break;
                 }
             ReadData:
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     Throw(_curPos, SR.Xml_IncompleteDtdContent);
                 }
@@ -1583,7 +1583,7 @@ namespace System.Xml
             {
                 while (_charsUsed - _curPos < 7)
                 {
-                    if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                    if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                     {
                         Throw(_curPos, SR.Xml_IncompleteDtdContent);
                     }
@@ -1617,7 +1617,7 @@ namespace System.Xml
                     _scanningFunction = ScanningFunction.SubsetContent;
                     return Token.GreaterThan;
                 default:
-                    await ScanQNameAsync().ConfigureAwait(false);
+                    await ScanQNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     _scanningFunction = ScanningFunction.Element4;
                     return Token.QName;
             }
@@ -1636,7 +1636,7 @@ namespace System.Xml
                     {
                         Throw(_curPos, SR.Xml_ExpectingWhiteSpace, ParseUnexpectedToken(_curPos));
                     }
-                    await ScanQNameAsync().ConfigureAwait(false);
+                    await ScanQNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     _scanningFunction = ScanningFunction.Attlist2;
                     return Token.QName;
             }
@@ -1767,7 +1767,7 @@ namespace System.Xml
                 }
 
             ReadData:
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     Throw(_curPos, SR.Xml_IncompleteDtdContent);
                 }
@@ -1782,7 +1782,7 @@ namespace System.Xml
                 {
                     case '"':
                     case '\'':
-                        await ScanLiteralAsync(LiteralType.AttributeValue).ConfigureAwait(false);
+                        await ScanLiteralAsync(LiteralType.AttributeValue).ConfigureAwait(OperatingSystem.IsBrowser());
                         _scanningFunction = ScanningFunction.Attlist1;
                         return Token.Literal;
                     case '#':
@@ -1834,7 +1834,7 @@ namespace System.Xml
                         break;
                 }
             ReadData:
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     Throw(_curPos, SR.Xml_IncompleteDtdContent);
                 }
@@ -1957,7 +1957,7 @@ namespace System.Xml
                             _curPos++;
                             continue;
                         }
-                        await HandleEntityReferenceAsync(true, true, literalType == LiteralType.AttributeValue).ConfigureAwait(false);
+                        await HandleEntityReferenceAsync(true, true, literalType == LiteralType.AttributeValue).ConfigureAwait(OperatingSystem.IsBrowser());
                         _tokenStartPos = _curPos;
                         continue;
                     // general entity reference
@@ -1975,7 +1975,7 @@ namespace System.Xml
                         if (_chars[_curPos + 1] == '#')
                         {
                             SaveParsingBuffer();
-                            int endPos = await _readerAdapter.ParseNumericCharRefAsync(SaveInternalSubsetValue ? _internalSubsetValueSb : null).ConfigureAwait(false);
+                            int endPos = await _readerAdapter.ParseNumericCharRefAsync(SaveInternalSubsetValue ? _internalSubsetValueSb : null).ConfigureAwait(OperatingSystem.IsBrowser());
                             LoadParsingBuffer();
                             _stringBuilder.Append(_chars, _curPos, endPos - _curPos);
                             _readerAdapter.CurrentPosition = endPos;
@@ -1989,7 +1989,7 @@ namespace System.Xml
                             SaveParsingBuffer();
                             if (literalType == LiteralType.AttributeValue)
                             {
-                                int endPos = await _readerAdapter.ParseNamedCharRefAsync(true, SaveInternalSubsetValue ? _internalSubsetValueSb : null).ConfigureAwait(false);
+                                int endPos = await _readerAdapter.ParseNamedCharRefAsync(true, SaveInternalSubsetValue ? _internalSubsetValueSb : null).ConfigureAwait(OperatingSystem.IsBrowser());
                                 LoadParsingBuffer();
 
                                 if (endPos >= 0)
@@ -2002,14 +2002,14 @@ namespace System.Xml
                                 }
                                 else
                                 {
-                                    await HandleEntityReferenceAsync(false, true, true).ConfigureAwait(false);
+                                    await HandleEntityReferenceAsync(false, true, true).ConfigureAwait(OperatingSystem.IsBrowser());
                                     _tokenStartPos = _curPos;
                                 }
                                 continue;
                             }
                             else
                             {
-                                int endPos = await _readerAdapter.ParseNamedCharRefAsync(false, null).ConfigureAwait(false);
+                                int endPos = await _readerAdapter.ParseNamedCharRefAsync(false, null).ConfigureAwait(OperatingSystem.IsBrowser());
                                 LoadParsingBuffer();
 
                                 if (endPos >= 0)
@@ -2062,7 +2062,7 @@ namespace System.Xml
                 Debug.Assert(_curPos - _tokenStartPos == 0);
 
                 // read new characters into the buffer
-                if (_readerAdapter.IsEof || await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (_readerAdapter.IsEof || await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     if (literalType == LiteralType.SystemOrPublicID || !HandleEntityEnd(true))
                     {
@@ -2078,7 +2078,7 @@ namespace System.Xml
             switch (_chars[_curPos])
             {
                 case 'P':
-                    if (!await EatPublicKeywordAsync().ConfigureAwait(false))
+                    if (!await EatPublicKeywordAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
@@ -2086,7 +2086,7 @@ namespace System.Xml
                     _scanningFunction = ScanningFunction.PublicId1;
                     return Token.PUBLIC;
                 case 'S':
-                    if (!await EatSystemKeywordAsync().ConfigureAwait(false))
+                    if (!await EatSystemKeywordAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
@@ -2106,7 +2106,7 @@ namespace System.Xml
                 ThrowUnexpectedToken(_curPos, "\"", "'");
             }
 
-            await ScanLiteralAsync(LiteralType.SystemOrPublicID).ConfigureAwait(false);
+            await ScanLiteralAsync(LiteralType.SystemOrPublicID).ConfigureAwait(OperatingSystem.IsBrowser());
 
             _scanningFunction = _nextScanningFunction;
             return Token.Literal;
@@ -2123,7 +2123,7 @@ namespace System.Xml
             }
             else
             {
-                await ScanNameAsync().ConfigureAwait(false);
+                await ScanNameAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 _scanningFunction = ScanningFunction.Entity2;
                 return Token.Name;
             }
@@ -2134,7 +2134,7 @@ namespace System.Xml
             switch (_chars[_curPos])
             {
                 case 'P':
-                    if (!await EatPublicKeywordAsync().ConfigureAwait(false))
+                    if (!await EatPublicKeywordAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
@@ -2142,7 +2142,7 @@ namespace System.Xml
                     _scanningFunction = ScanningFunction.PublicId1;
                     return Token.PUBLIC;
                 case 'S':
-                    if (!await EatSystemKeywordAsync().ConfigureAwait(false))
+                    if (!await EatSystemKeywordAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         Throw(_curPos, SR.Xml_ExpectExternalOrClose);
                     }
@@ -2152,7 +2152,7 @@ namespace System.Xml
 
                 case '"':
                 case '\'':
-                    await ScanLiteralAsync(LiteralType.EntityReplText).ConfigureAwait(false);
+                    await ScanLiteralAsync(LiteralType.EntityReplText).ConfigureAwait(OperatingSystem.IsBrowser());
                     _scanningFunction = ScanningFunction.ClosingTag;
                     return Token.Literal;
                 default:
@@ -2167,7 +2167,7 @@ namespace System.Xml
             {
                 while (_charsUsed - _curPos < 5)
                 {
-                    if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                    if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                     {
                         goto End;
                     }
@@ -2193,7 +2193,7 @@ namespace System.Xml
                 ThrowUnexpectedToken(_curPos, "\"", "'");
             }
 
-            await ScanLiteralAsync(LiteralType.SystemOrPublicID).ConfigureAwait(false);
+            await ScanLiteralAsync(LiteralType.SystemOrPublicID).ConfigureAwait(OperatingSystem.IsBrowser());
 
             _scanningFunction = ScanningFunction.PublicId2;
             return Token.Literal;
@@ -2207,7 +2207,7 @@ namespace System.Xml
                 return Token.None;
             }
 
-            await ScanLiteralAsync(LiteralType.SystemOrPublicID).ConfigureAwait(false);
+            await ScanLiteralAsync(LiteralType.SystemOrPublicID).ConfigureAwait(OperatingSystem.IsBrowser());
             _scanningFunction = _nextScanningFunction;
 
             return Token.Literal;
@@ -2260,7 +2260,7 @@ namespace System.Xml
                         return Token.None;
                 }
             ReadData:
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     Throw(_curPos, SR.Xml_IncompleteDtdContent);
                 }
@@ -2372,7 +2372,7 @@ namespace System.Xml
 
             ReadData:
                 // read new characters into the buffer
-                if (_readerAdapter.IsEof || await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (_readerAdapter.IsEof || await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     if (HandleEntityEnd(false))
                     {
@@ -2409,7 +2409,7 @@ namespace System.Xml
                 {
                     if (_curPos + 1 >= _charsUsed)
                     {
-                        if (await ReadDataInNameAsync().ConfigureAwait(false))
+                        if (await ReadDataInNameAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                         {
                             continue;
                         }
@@ -2455,7 +2455,7 @@ namespace System.Xml
                 // end of buffer
                 else if (_curPos == _charsUsed)
                 {
-                    if (await ReadDataInNameAsync().ConfigureAwait(false))
+                    if (await ReadDataInNameAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         goto ContinueName;
                     }
@@ -2474,7 +2474,7 @@ namespace System.Xml
         {
             int offset = _curPos - _tokenStartPos;
             _curPos = _tokenStartPos;
-            bool newDataRead = (await ReadDataAsync().ConfigureAwait(false) != 0);
+            bool newDataRead = (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) != 0);
             _tokenStartPos = _curPos;
             _curPos += offset;
             return newDataRead;
@@ -2509,7 +2509,7 @@ namespace System.Xml
 
                 int len = _curPos - _tokenStartPos;
                 _curPos = _tokenStartPos;
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     if (len > 0)
                     {
@@ -2529,7 +2529,7 @@ namespace System.Xml
             Debug.Assert(_chars[_curPos] == 'P');
             while (_charsUsed - _curPos < 6)
             {
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     return false;
                 }
@@ -2548,7 +2548,7 @@ namespace System.Xml
             Debug.Assert(_chars[_curPos] == 'S');
             while (_charsUsed - _curPos < 6)
             {
-                if (await ReadDataAsync().ConfigureAwait(false) == 0)
+                if (await ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser()) == 0)
                 {
                     return false;
                 }
@@ -2568,7 +2568,7 @@ namespace System.Xml
         private async Task<int> ReadDataAsync()
         {
             SaveParsingBuffer();
-            int charsRead = await _readerAdapter.ReadDataAsync().ConfigureAwait(false);
+            int charsRead = await _readerAdapter.ReadDataAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             LoadParsingBuffer();
             return charsRead;
         }
@@ -2607,7 +2607,7 @@ namespace System.Xml
             int newEntityId;
             if (entity.IsExternal)
             {
-                var tuple_3 = await _readerAdapter.PushEntityAsync(entity).ConfigureAwait(false);
+                var tuple_3 = await _readerAdapter.PushEntityAsync(entity).ConfigureAwait(OperatingSystem.IsBrowser());
                 newEntityId = tuple_3.Item1;
 
                 if (!tuple_3.Item2)
@@ -2623,7 +2623,7 @@ namespace System.Xml
                     return false;
                 }
 
-                var tuple_4 = await _readerAdapter.PushEntityAsync(entity).ConfigureAwait(false);
+                var tuple_4 = await _readerAdapter.PushEntityAsync(entity).ConfigureAwait(OperatingSystem.IsBrowser());
                 newEntityId = tuple_4.Item1;
 
                 if (!tuple_4.Item2)

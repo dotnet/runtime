@@ -36,12 +36,12 @@ namespace System.Data.Common
 
             try
             {
-                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 return connection;
             }
             catch
             {
-                await connection.DisposeAsync().ConfigureAwait(false);
+                await connection.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 throw;
             }
         }
@@ -80,7 +80,7 @@ namespace System.Data.Common
 
         public async ValueTask DisposeAsync()
         {
-            await DisposeAsyncCore().ConfigureAwait(false);
+            await DisposeAsyncCore().ConfigureAwait(OperatingSystem.IsBrowser());
 
             Dispose(disposing: false);
             GC.SuppressFinalize(this);
@@ -134,18 +134,18 @@ namespace System.Data.Common
 
             public override async Task<int> ExecuteNonQueryAsync(CancellationToken cancellationToken)
             {
-                await _connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                await _connection.OpenAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 try
                 {
                     return await _wrappedCommand.ExecuteNonQueryAsync(cancellationToken)
-                        .ConfigureAwait(false);
+                        .ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 finally
                 {
                     try
                     {
-                        await _connection.CloseAsync().ConfigureAwait(false);
+                        await _connection.CloseAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     catch (Exception e)
                     {
@@ -187,18 +187,18 @@ namespace System.Data.Common
 
             public override async Task<object?> ExecuteScalarAsync(CancellationToken cancellationToken)
             {
-                await _connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                await _connection.OpenAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 try
                 {
                     return await _wrappedCommand.ExecuteScalarAsync(cancellationToken)
-                        .ConfigureAwait(false);
+                        .ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 finally
                 {
                     try
                     {
-                        await _connection.CloseAsync().ConfigureAwait(false);
+                        await _connection.CloseAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     catch (Exception e)
                     {
@@ -241,20 +241,20 @@ namespace System.Data.Common
                 CommandBehavior behavior,
                 CancellationToken cancellationToken)
             {
-                await _connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                await _connection.OpenAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 try
                 {
                     return await _wrappedCommand.ExecuteReaderAsync(
                             behavior | CommandBehavior.CloseConnection,
                             cancellationToken)
-                        .ConfigureAwait(false);
+                        .ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 catch
                 {
                     try
                     {
-                        await _connection.CloseAsync().ConfigureAwait(false);
+                        await _connection.CloseAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     catch (Exception e)
                     {
@@ -322,8 +322,8 @@ namespace System.Data.Common
             {
                 var connection = _wrappedCommand.Connection;
 
-                await _wrappedCommand.DisposeAsync().ConfigureAwait(false);
-                await connection!.DisposeAsync().ConfigureAwait(false);
+                await _wrappedCommand.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+                await connection!.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             // In most case, preparation doesn't make sense on a connectionless command since prepared statements are
@@ -393,18 +393,18 @@ namespace System.Data.Common
 
             public override async Task<int> ExecuteNonQueryAsync(CancellationToken cancellationToken)
             {
-                await _connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                await _connection.OpenAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 try
                 {
                     return await _wrappedBatch.ExecuteNonQueryAsync(cancellationToken)
-                        .ConfigureAwait(false);
+                        .ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 finally
                 {
                     try
                     {
-                        await _connection.CloseAsync().ConfigureAwait(false);
+                        await _connection.CloseAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     catch (Exception e)
                     {
@@ -446,18 +446,18 @@ namespace System.Data.Common
 
             public override async Task<object?> ExecuteScalarAsync(CancellationToken cancellationToken)
             {
-                await _connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                await _connection.OpenAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 try
                 {
                     return await _wrappedBatch.ExecuteScalarAsync(cancellationToken)
-                        .ConfigureAwait(false);
+                        .ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 finally
                 {
                     try
                     {
-                        await _connection.CloseAsync().ConfigureAwait(false);
+                        await _connection.CloseAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     catch (Exception e)
                     {
@@ -500,20 +500,20 @@ namespace System.Data.Common
                 CommandBehavior behavior,
                 CancellationToken cancellationToken)
             {
-                await _connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                await _connection.OpenAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 try
                 {
                     return await _wrappedBatch.ExecuteReaderAsync(
                             behavior | CommandBehavior.CloseConnection,
                             cancellationToken)
-                        .ConfigureAwait(false);
+                        .ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 catch
                 {
                     try
                     {
-                        await _connection.CloseAsync().ConfigureAwait(false);
+                        await _connection.CloseAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     catch (Exception e)
                     {
@@ -551,8 +551,8 @@ namespace System.Data.Common
             {
                 var connection = _wrappedBatch.Connection;
 
-                await _wrappedBatch.DisposeAsync().ConfigureAwait(false);
-                await connection!.DisposeAsync().ConfigureAwait(false);
+                await _wrappedBatch.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+                await connection!.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             // In most case, preparation doesn't make sense on a connectionless command since prepared statements are

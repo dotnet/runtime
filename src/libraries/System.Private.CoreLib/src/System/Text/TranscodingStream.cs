@@ -152,11 +152,11 @@ namespace System.Text
                 Stream innerStream = _innerStream;
                 _innerStream = null!;
 
-                await innerStream.WriteAsync(pendingData.AsMemory()).ConfigureAwait(false);
+                await innerStream.WriteAsync(pendingData.AsMemory()).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 if (!_leaveOpen)
                 {
-                    await innerStream.DisposeAsync().ConfigureAwait(false);
+                    await innerStream.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
         }
@@ -401,7 +401,7 @@ namespace System.Text
                             // a larger-than-expected array, but our worst-case expansion calculations
                             // performed earlier didn't take that into account.
 
-                            int innerBytesReadJustNow = await _innerStream.ReadAsync(rentedBytes.AsMemory(0, DefaultReadByteBufferSize), cancellationToken).ConfigureAwait(false);
+                            int innerBytesReadJustNow = await _innerStream.ReadAsync(rentedBytes.AsMemory(0, DefaultReadByteBufferSize), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                             isEofReached = (innerBytesReadJustNow == 0);
 
                             // Convert bytes [inner] -> chars, then convert chars -> bytes [this].
@@ -594,7 +594,7 @@ namespace System.Text
                                 out encoderFinished);
 
                             decodedChars = decodedChars.Slice(charsConsumed);
-                            await _innerStream.WriteAsync(new ReadOnlyMemory<byte>(scratchBytes, 0, bytesWritten), cancellationToken).ConfigureAwait(false);
+                            await _innerStream.WriteAsync(new ReadOnlyMemory<byte>(scratchBytes, 0, bytesWritten), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                         } while (!encoderFinished);
                     } while (!decoderFinished);
                 }

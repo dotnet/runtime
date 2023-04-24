@@ -499,7 +499,7 @@ namespace System.Xml.Linq
                     ret = new XDocumentType(name, publicId, systemId, internalSubset);
                     break;
                 case XmlNodeType.Element:
-                    return await XElement.CreateAsync(reader, cancellationToken).ConfigureAwait(false);
+                    return await XElement.CreateAsync(reader, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 case XmlNodeType.ProcessingInstruction:
                     var target = reader.Name;
                     var data = reader.Value;
@@ -511,7 +511,7 @@ namespace System.Xml.Linq
             }
 
             cancellationToken.ThrowIfCancellationRequested();
-            await reader.ReadAsync().ConfigureAwait(false);
+            await reader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
             return ret;
         }

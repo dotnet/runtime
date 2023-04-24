@@ -40,7 +40,7 @@ namespace System.Xml
                 }
 #pragma warning restore CA1416
 
-                using (Stream respStream = await client.GetStreamAsync(uri).ConfigureAwait(false))
+                using (Stream respStream = await client.GetStreamAsync(uri).ConfigureAwait(OperatingSystem.IsBrowser()))
                 {
                     var result = new MemoryStream();
                     respStream.CopyTo(result);

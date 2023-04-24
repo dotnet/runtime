@@ -93,7 +93,7 @@ namespace System.Text.Json.Serialization.Metadata
                     Utf8JsonWriterCache.ReturnWriter(writer);
                 }
 
-                await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+                await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else if (
 #if NETCOREAPP
@@ -104,7 +104,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Options.TryGetPolymorphicTypeInfoForRootType(rootValue, out JsonTypeInfo? derivedTypeInfo))
             {
                 Debug.Assert(typeof(T) == typeof(object));
-                await derivedTypeInfo.SerializeAsObjectAsync(utf8Json, rootValue, cancellationToken).ConfigureAwait(false);
+                await derivedTypeInfo.SerializeAsObjectAsync(utf8Json, rootValue, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else
             {
@@ -139,7 +139,7 @@ namespace System.Text.Json.Serialization.Metadata
                             }
                             else
                             {
-                                await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+                                await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                                 bufferWriter.Clear();
                             }
                         }
@@ -151,7 +151,7 @@ namespace System.Text.Json.Serialization.Metadata
                             {
                                 try
                                 {
-                                    await state.PendingTask.ConfigureAwait(false);
+                                    await state.PendingTask.ConfigureAwait(OperatingSystem.IsBrowser());
                                 }
                                 catch
                                 {
@@ -163,7 +163,7 @@ namespace System.Text.Json.Serialization.Metadata
                             // Dispose any pending async disposables (currently these can only be completed IAsyncEnumerators).
                             if (state.CompletedAsyncDisposables?.Count > 0)
                             {
-                                await state.DisposeCompletedAsyncDisposables().ConfigureAwait(false);
+                                await state.DisposeCompletedAsyncDisposables().ConfigureAwait(OperatingSystem.IsBrowser());
                             }
                         }
 
@@ -172,7 +172,7 @@ namespace System.Text.Json.Serialization.Metadata
                 catch
                 {
                     // On exception, walk the WriteStack for any orphaned disposables and try to dispose them.
-                    await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(false);
+                    await state.DisposePendingDisposablesOnExceptionAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     throw;
                 }
 

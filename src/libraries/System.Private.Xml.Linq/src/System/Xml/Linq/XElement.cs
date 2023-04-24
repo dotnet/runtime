@@ -163,7 +163,7 @@ namespace System.Xml.Linq
         internal static async Task<XElement> CreateAsync(XmlReader r, CancellationToken cancellationToken)
         {
             XElement xe = new XElement(default(AsyncConstructionSentry));
-            await xe.ReadElementFromAsync(r, LoadOptions.None, cancellationToken).ConfigureAwait(false);
+            await xe.ReadElementFromAsync(r, LoadOptions.None, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             return xe;
         }
 
@@ -687,7 +687,7 @@ namespace System.Xml.Linq
 
             using (XmlReader r = XmlReader.Create(stream, rs))
             {
-                return await LoadAsync(r, options, cancellationToken).ConfigureAwait(false);
+                return await LoadAsync(r, options, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -769,7 +769,7 @@ namespace System.Xml.Linq
 
             using (XmlReader r = XmlReader.Create(textReader, rs))
             {
-                return await LoadAsync(r, options, cancellationToken).ConfigureAwait(false);
+                return await LoadAsync(r, options, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -844,13 +844,13 @@ namespace System.Xml.Linq
 
         private static async Task<XElement> LoadAsyncInternal(XmlReader reader, LoadOptions options, CancellationToken cancellationToken)
         {
-            if (await reader.MoveToContentAsync().ConfigureAwait(false) != XmlNodeType.Element) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ExpectedNodeType, XmlNodeType.Element, reader.NodeType));
+            if (await reader.MoveToContentAsync().ConfigureAwait(OperatingSystem.IsBrowser()) != XmlNodeType.Element) throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ExpectedNodeType, XmlNodeType.Element, reader.NodeType));
 
             XElement e = new XElement(default(AsyncConstructionSentry));
-            await e.ReadElementFromAsync(reader, options, cancellationToken).ConfigureAwait(false);
+            await e.ReadElementFromAsync(reader, options, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             cancellationToken.ThrowIfCancellationRequested();
-            await reader.MoveToContentAsync().ConfigureAwait(false);
+            await reader.MoveToContentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
             if (!reader.EOF) throw new InvalidOperationException(SR.InvalidOperation_ExpectedEndOfFile);
             return e;
@@ -1085,9 +1085,9 @@ namespace System.Xml.Linq
             ws.Async = true;
 
             XmlWriter w = XmlWriter.Create(stream, ws);
-            await using (w.ConfigureAwait(false))
+            await using (w.ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                await SaveAsync(w, cancellationToken).ConfigureAwait(false);
+                await SaveAsync(w, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -1147,9 +1147,9 @@ namespace System.Xml.Linq
             ws.Async = true;
 
             XmlWriter w = XmlWriter.Create(textWriter, ws);
-            await using (w.ConfigureAwait(false))
+            await using (w.ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                await SaveAsync(w, cancellationToken).ConfigureAwait(false);
+                await SaveAsync(w, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -1186,12 +1186,12 @@ namespace System.Xml.Linq
 
         private async Task SaveAsyncInternal(XmlWriter writer, CancellationToken cancellationToken)
         {
-            await writer.WriteStartDocumentAsync().ConfigureAwait(false);
+            await writer.WriteStartDocumentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
-            await WriteToAsync(writer, cancellationToken).ConfigureAwait(false);
+            await WriteToAsync(writer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             cancellationToken.ThrowIfCancellationRequested();
-            await writer.WriteEndDocumentAsync().ConfigureAwait(false);
+            await writer.WriteEndDocumentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         /// <summary>
@@ -2032,13 +2032,13 @@ namespace System.Xml.Linq
             if (!r.IsEmptyElement)
             {
                 cancellationTokentoken.ThrowIfCancellationRequested();
-                await r.ReadAsync().ConfigureAwait(false);
+                await r.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
-                await ReadContentFromAsync(r, o, cancellationTokentoken).ConfigureAwait(false);
+                await ReadContentFromAsync(r, o, cancellationTokentoken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             cancellationTokentoken.ThrowIfCancellationRequested();
-            await r.ReadAsync().ConfigureAwait(false);
+            await r.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         /// <summary>

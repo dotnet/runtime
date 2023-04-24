@@ -1534,7 +1534,7 @@ namespace System.Diagnostics
                 // exception up to the user
                 if (HasExited)
                 {
-                    await WaitUntilOutputEOF(cancellationToken).ConfigureAwait(false);
+                    await WaitUntilOutputEOF(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     return;
                 }
 
@@ -1557,12 +1557,12 @@ namespace System.Diagnostics
                     // CASE 1.1 & CASE 3.1: Process exits or is canceled here
                     using (cancellationToken.UnsafeRegister(static (s, cancellationToken) => ((TaskCompletionSource)s!).TrySetCanceled(cancellationToken), tcs))
                     {
-                        await tcs.Task.ConfigureAwait(false);
+                        await tcs.Task.ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                 }
 
                 // Wait until output streams have been drained
-                await WaitUntilOutputEOF(cancellationToken).ConfigureAwait(false);
+                await WaitUntilOutputEOF(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             finally
             {
@@ -1573,12 +1573,12 @@ namespace System.Diagnostics
             {
                 if (_output is not null)
                 {
-                    await _output.EOF.WaitAsync(cancellationToken).ConfigureAwait(false);
+                    await _output.EOF.WaitAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
 
                 if (_error is not null)
                 {
-                    await _error.EOF.WaitAsync(cancellationToken).ConfigureAwait(false);
+                    await _error.EOF.WaitAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
         }

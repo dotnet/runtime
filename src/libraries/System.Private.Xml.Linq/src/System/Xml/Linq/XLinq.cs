@@ -257,10 +257,10 @@ namespace System.Xml.Linq
                 XElement? current = n as XElement;
                 if (current != null)
                 {
-                    await WriteStartElementAsync(current, cancellationToken).ConfigureAwait(false);
+                    await WriteStartElementAsync(current, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     if (current.content == null)
                     {
-                        await WriteEndElementAsync(cancellationToken).ConfigureAwait(false);
+                        await WriteEndElementAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     else
                     {
@@ -268,8 +268,8 @@ namespace System.Xml.Linq
                         if (s != null)
                         {
                             cancellationToken.ThrowIfCancellationRequested();
-                            await _writer.WriteStringAsync(s).ConfigureAwait(false);
-                            await WriteFullEndElementAsync(cancellationToken).ConfigureAwait(false);
+                            await _writer.WriteStringAsync(s).ConfigureAwait(OperatingSystem.IsBrowser());
+                            await WriteFullEndElementAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                         }
                         else
                         {
@@ -280,12 +280,12 @@ namespace System.Xml.Linq
                 }
                 else
                 {
-                    await n.WriteToAsync(_writer, cancellationToken).ConfigureAwait(false);
+                    await n.WriteToAsync(_writer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 while (n != root && n == n.parent!.content)
                 {
                     n = n.parent;
-                    await WriteFullEndElementAsync(cancellationToken).ConfigureAwait(false);
+                    await WriteFullEndElementAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 if (n == root) break;
                 n = n.next!;
@@ -350,7 +350,7 @@ namespace System.Xml.Linq
         private async Task WriteEndElementAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await _writer.WriteEndElementAsync().ConfigureAwait(false);
+            await _writer.WriteEndElementAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             _resolver.PopScope();
         }
 
@@ -363,7 +363,7 @@ namespace System.Xml.Linq
         private async Task WriteFullEndElementAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await _writer.WriteFullEndElementAsync().ConfigureAwait(false);
+            await _writer.WriteFullEndElementAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             _resolver.PopScope();
         }
 
@@ -390,7 +390,7 @@ namespace System.Xml.Linq
         {
             PushElement(e);
             XNamespace ns = e.Name.Namespace;
-            await _writer.WriteStartElementAsync(GetPrefixOfNamespace(ns, true), e.Name.LocalName, ns.NamespaceName).ConfigureAwait(false);
+            await _writer.WriteStartElementAsync(GetPrefixOfNamespace(ns, true), e.Name.LocalName, ns.NamespaceName).ConfigureAwait(OperatingSystem.IsBrowser());
             XAttribute? a = e.lastAttr;
             if (a != null)
             {
@@ -401,7 +401,7 @@ namespace System.Xml.Linq
                     string localName = a.Name.LocalName;
                     string namespaceName = ns.NamespaceName;
                     cancellationToken.ThrowIfCancellationRequested();
-                    await _writer.WriteAttributeStringAsync(GetPrefixOfNamespace(ns, false), localName, namespaceName.Length == 0 && localName == "xmlns" ? XNamespace.xmlnsPrefixNamespace : namespaceName, a.Value).ConfigureAwait(false);
+                    await _writer.WriteAttributeStringAsync(GetPrefixOfNamespace(ns, false), localName, namespaceName.Length == 0 && localName == "xmlns" ? XNamespace.xmlnsPrefixNamespace : namespaceName, a.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                 } while (a != e.lastAttr);
             }
         }

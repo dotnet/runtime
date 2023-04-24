@@ -356,7 +356,7 @@ namespace System.IO.Compression
                     buffer = buffer.Slice(0, (int)(_endInSuperStream - _positionInSuperStream));
                 }
 
-                int ret = await _superStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                int ret = await _superStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 _positionInSuperStream += ret;
                 return ret;
@@ -569,7 +569,7 @@ namespace System.IO.Compression
 
                 _checksum = Crc32Helper.UpdateCrc32(_checksum, buffer.Span);
 
-                await _baseStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+                await _baseStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 _position += buffer.Length;
             }
         }

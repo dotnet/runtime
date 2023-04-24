@@ -103,12 +103,12 @@ namespace System.IO.Compression
                 {
                     if (_mode == CompressionMode.Compress)
                     {
-                        await WriteAsyncMemoryCore(ReadOnlyMemory<byte>.Empty, CancellationToken.None, isFinalBlock: true).ConfigureAwait(false);
+                        await WriteAsyncMemoryCore(ReadOnlyMemory<byte>.Empty, CancellationToken.None, isFinalBlock: true).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
 
                     if (!_leaveOpen)
                     {
-                        await _stream.DisposeAsync().ConfigureAwait(false);
+                        await _stream.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                 }
             }

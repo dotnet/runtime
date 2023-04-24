@@ -18,7 +18,7 @@ namespace System.Threading.Tasks
         {
             using (cancellationToken.UnsafeRegister(static (s, cancellationToken) => ((TaskCompletionSourceWithCancellation<T>)s!).TrySetCanceled(cancellationToken), this))
             {
-                return await Task.ConfigureAwait(false);
+                return await Task.ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 

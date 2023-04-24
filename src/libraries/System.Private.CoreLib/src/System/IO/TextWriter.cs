@@ -546,7 +546,7 @@ namespace System.IO
             {
                 foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
                 {
-                    await WriteAsync(chunk, ct).ConfigureAwait(false);
+                    await WriteAsync(chunk, ct).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
         }
@@ -609,9 +609,9 @@ namespace System.IO
             {
                 foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
                 {
-                    await WriteAsync(chunk, ct).ConfigureAwait(false);
+                    await WriteAsync(chunk, ct).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
-                await WriteAsync(CoreNewLine, ct).ConfigureAwait(false);
+                await WriteAsync(CoreNewLine, ct).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 

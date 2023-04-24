@@ -46,7 +46,7 @@ namespace System.Xml
                 throw CreateReadContentAsException(nameof(ReadContentAsString));
             }
 
-            object typedValue = await InternalReadContentAsObjectAsync().ConfigureAwait(false);
+            object typedValue = await InternalReadContentAsObjectAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             XmlSchemaType? xmlType = NodeType == XmlNodeType.Attribute ? AttributeXmlType : ElementXmlType;
             try
             {
@@ -82,7 +82,7 @@ namespace System.Xml
 
             string originalStringValue;
 
-            var tuple_0 = await InternalReadContentAsObjectTupleAsync(false).ConfigureAwait(false);
+            var tuple_0 = await InternalReadContentAsObjectTupleAsync(false).ConfigureAwait(OperatingSystem.IsBrowser());
             originalStringValue = tuple_0.Item1;
 
             object typedValue = tuple_0.Item2;
@@ -127,7 +127,7 @@ namespace System.Xml
                 throw CreateReadElementContentAsException(nameof(ReadElementContentAsObject));
             }
 
-            var tuple_1 = await InternalReadElementContentAsObjectAsync(true).ConfigureAwait(false);
+            var tuple_1 = await InternalReadElementContentAsObjectAsync(true).ConfigureAwait(OperatingSystem.IsBrowser());
 
             return tuple_1.Item2;
         }
@@ -141,7 +141,7 @@ namespace System.Xml
 
             XmlSchemaType xmlType;
 
-            var content = await InternalReadElementContentAsObjectAsync().ConfigureAwait(false);
+            var content = await InternalReadElementContentAsObjectAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             xmlType = content.Item1;
 
             object typedValue = content.Item2;
@@ -182,7 +182,7 @@ namespace System.Xml
             XmlSchemaType xmlType;
             string originalStringValue;
 
-            var content = await InternalReadElementContentAsObjectTupleAsync(false).ConfigureAwait(false);
+            var content = await InternalReadElementContentAsObjectTupleAsync(false).ConfigureAwait(OperatingSystem.IsBrowser());
             xmlType = content.Item1;
             originalStringValue = content.Item2;
 
@@ -247,9 +247,9 @@ namespace System.Xml
 
         private async Task<bool> _ReadAsync_Read(Task<bool> task)
         {
-            if (await task.ConfigureAwait(false))
+            if (await task.ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                await ProcessReaderEventAsync().ConfigureAwait(false);
+                await ProcessReaderEventAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 return true;
             }
             else
@@ -279,7 +279,7 @@ namespace System.Xml
 
         private async Task<bool> _ReadAsync_ReadAhead(Task task)
         {
-            await task.ConfigureAwait(false);
+            await task.ConfigureAwait(OperatingSystem.IsBrowser());
             _validationState = ValidatingReaderState.Read;
             return true;
         }
@@ -362,7 +362,7 @@ namespace System.Xml
                         callSkipToEndElem = false;
                     }
 
-                    await _coreReader.SkipAsync().ConfigureAwait(false);
+                    await _coreReader.SkipAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     _validationState = ValidatingReaderState.ReadAhead;
                     if (callSkipToEndElem)
                     {
@@ -376,7 +376,7 @@ namespace System.Xml
                     goto case XmlNodeType.Element;
             }
             // For all other NodeTypes Skip() same as Read()
-            await ReadAsync().ConfigureAwait(false);
+            await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             return;
         }
 
@@ -399,7 +399,7 @@ namespace System.Xml
 
             // call to the helper
             Debug.Assert(_readBinaryHelper != null);
-            int readCount = await _readBinaryHelper.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
+            int readCount = await _readBinaryHelper.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
 
             // set OnReadBinaryContent state again and return
             _savedState = _validationState;
@@ -426,7 +426,7 @@ namespace System.Xml
 
             // call to the helper
             Debug.Assert(_readBinaryHelper != null);
-            int readCount = await _readBinaryHelper.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
+            int readCount = await _readBinaryHelper.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
 
             // set OnReadBinaryContent state again and return
             _savedState = _validationState;
@@ -453,7 +453,7 @@ namespace System.Xml
 
             // call to the helper
             Debug.Assert(_readBinaryHelper != null);
-            int readCount = await _readBinaryHelper.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
+            int readCount = await _readBinaryHelper.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
 
             // set OnReadBinaryContent state again and return
             _savedState = _validationState;
@@ -480,7 +480,7 @@ namespace System.Xml
 
             // call to the helper
             Debug.Assert(_readBinaryHelper != null);
-            int readCount = await _readBinaryHelper.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
+            int readCount = await _readBinaryHelper.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
 
             // set OnReadBinaryContent state again and return
             _savedState = _validationState;
@@ -546,7 +546,7 @@ namespace System.Xml
                 {
                     // If its not empty schema, then parse else ignore
                     _inlineSchemaParser = new Parser(SchemaType.XSD, _coreReaderNameTable, _validator.SchemaSet.GetSchemaNames(_coreReaderNameTable), _validationEvent);
-                    await _inlineSchemaParser.StartParsingAsync(_coreReader, null).ConfigureAwait(false);
+                    await _inlineSchemaParser.StartParsingAsync(_coreReader, null).ConfigureAwait(OperatingSystem.IsBrowser());
                     _inlineSchemaParser.ParseReaderNode();
                     _validationState = ValidatingReaderState.ParseInlineSchema;
                 }
@@ -615,7 +615,7 @@ namespace System.Xml
                 _validator.ValidateEndOfAttributes(_xmlSchemaInfo);
                 if (_coreReader.IsEmptyElement)
                 {
-                    await ProcessEndElementEventAsync().ConfigureAwait(false);
+                    await ProcessEndElementEventAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
 
                 _validationState = ValidatingReaderState.ClearAttributes;
@@ -635,7 +635,7 @@ namespace System.Xml
                 Debug.Assert(_cachingReader != null);
                 _cachingReader.RecordTextNode(_xmlSchemaInfo.XmlType!.ValueConverter.ToString(_atomicValue), _originalAtomicValueString, depth + 1, 0, 0);
                 _cachingReader.RecordEndElementNode();
-                await _cachingReader.SetToReplayModeAsync().ConfigureAwait(false);
+                await _cachingReader.SetToReplayModeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 _replayCache = true;
             }
             else if (_manageNamespaces)
@@ -648,7 +648,7 @@ namespace System.Xml
         private async Task ProcessInlineSchemaAsync()
         {
             Debug.Assert(_inlineSchemaParser != null);
-            if (await _coreReader.ReadAsync().ConfigureAwait(false))
+            if (await _coreReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 if (_coreReader.NodeType == XmlNodeType.Element)
                 {
@@ -678,7 +678,7 @@ namespace System.Xml
 
         private async Task<object> InternalReadContentAsObjectAsync(bool unwrapTypedValue)
         {
-            var content = await InternalReadContentAsObjectTupleAsync(unwrapTypedValue).ConfigureAwait(false);
+            var content = await InternalReadContentAsObjectTupleAsync(unwrapTypedValue).ConfigureAwait(OperatingSystem.IsBrowser());
             return content.Item2;
         }
 
@@ -728,7 +728,7 @@ namespace System.Xml
                 if (_validator.CurrentContentType == XmlSchemaContentType.TextOnly)
                 {
                     // if current element is of simple type
-                    object? value = ReturnBoxedValue(await ReadTillEndElementAsync().ConfigureAwait(false), _xmlSchemaInfo.XmlType!, unwrapTypedValue);
+                    object? value = ReturnBoxedValue(await ReadTillEndElementAsync().ConfigureAwait(OperatingSystem.IsBrowser()), _xmlSchemaInfo.XmlType!, unwrapTypedValue);
                     Debug.Assert(value != null);
 
                     Debug.Assert(_originalAtomicValueString != null);
@@ -745,7 +745,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        originalStringValue = await InternalReadContentAsStringAsync().ConfigureAwait(false);
+                        originalStringValue = await InternalReadContentAsStringAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
 
                     return (originalStringValue, originalStringValue);
@@ -760,7 +760,7 @@ namespace System.Xml
 
         private async Task<(XmlSchemaType, object)> InternalReadElementContentAsObjectAsync(bool unwrapTypedValue)
         {
-            var content = await InternalReadElementContentAsObjectTupleAsync(unwrapTypedValue).ConfigureAwait(false);
+            var content = await InternalReadElementContentAsObjectTupleAsync(unwrapTypedValue).ConfigureAwait(OperatingSystem.IsBrowser());
 
             return (content.Item1, content.Item3);
         }
@@ -787,13 +787,13 @@ namespace System.Xml
                 Debug.Assert(_originalAtomicValueString != null);
                 originalString = _originalAtomicValueString;
                 xmlType = ElementXmlType; // Set this for default values
-                await this.ReadAsync().ConfigureAwait(false);
+                await this.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
                 return (xmlType!, originalString, typedValue);
             }
 
             // move to content and read typed value
-            await this.ReadAsync().ConfigureAwait(false);
+            await this.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
             if (this.NodeType == XmlNodeType.EndElement)
             {
@@ -827,7 +827,7 @@ namespace System.Xml
             }
             else
             {
-                var content = await InternalReadContentAsObjectTupleAsync(unwrapTypedValue).ConfigureAwait(false);
+                var content = await InternalReadContentAsObjectTupleAsync(unwrapTypedValue).ConfigureAwait(OperatingSystem.IsBrowser());
                 originalString = content.Item1;
 
                 typedValue = content.Item2;
@@ -842,7 +842,7 @@ namespace System.Xml
             xmlType = ElementXmlType; // Set this as we are moving ahead to the next node
 
             // move to next node
-            await this.ReadAsync().ConfigureAwait(false);
+            await this.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
             return (xmlType!, originalString, typedValue);
         }
@@ -851,7 +851,7 @@ namespace System.Xml
         {
             if (_atomicValue == null)
             {
-                while (await _coreReader.ReadAsync().ConfigureAwait(false))
+                while (await _coreReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                 {
                     if (_replayCache)
                     {
@@ -862,7 +862,7 @@ namespace System.Xml
                     switch (_coreReader.NodeType)
                     {
                         case XmlNodeType.Element:
-                            await ProcessReaderEventAsync().ConfigureAwait(false);
+                            await ProcessReaderEventAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                             goto breakWhile;
 
                         case XmlNodeType.Text:

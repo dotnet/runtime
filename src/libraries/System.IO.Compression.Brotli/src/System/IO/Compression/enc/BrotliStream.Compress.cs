@@ -153,7 +153,7 @@ namespace System.IO.Compression
                     if (bytesConsumed > 0)
                         buffer = buffer.Slice(bytesConsumed);
                     if (bytesWritten > 0)
-                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, bytesWritten), cancellationToken).ConfigureAwait(false);
+                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, bytesWritten), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             finally
@@ -223,10 +223,10 @@ namespace System.IO.Compression
                     if (lastResult == OperationStatus.InvalidData)
                         throw new InvalidDataException(SR.BrotliStream_Compress_InvalidData);
                     if (bytesWritten > 0)
-                        await _stream.WriteAsync(output.Slice(0, bytesWritten), cancellationToken).ConfigureAwait(false);
+                        await _stream.WriteAsync(output.Slice(0, bytesWritten), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
 
-                await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                await _stream.FlushAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             finally
             {

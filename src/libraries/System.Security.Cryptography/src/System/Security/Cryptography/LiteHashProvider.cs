@@ -151,7 +151,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    while ((read = await source.ReadAsync(rented, cancellationToken).ConfigureAwait(false)) > 0)
+                    while ((read = await source.ReadAsync(rented, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser())) > 0)
                     {
                         maxRead = Math.Max(maxRead, read);
                         hash.Append(rented.AsSpan(0, read));
@@ -173,7 +173,7 @@ namespace System.Security.Cryptography
             CancellationToken cancellationToken) where T : ILiteHash
         {
             byte[] result = new byte[hash.HashSizeInBytes];
-            int written = await ProcessStreamAsync(hash, source, result, cancellationToken).ConfigureAwait(false);
+            int written = await ProcessStreamAsync(hash, source, result, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             Debug.Assert(written == result.Length);
             return result;

@@ -151,7 +151,7 @@ namespace System.IO.Compression
                     int bytesWritten;
                     while (!TryDecompress(buffer.Span, out bytesWritten))
                     {
-                        int bytesRead = await _stream.ReadAsync(_buffer.AsMemory(_bufferCount), cancellationToken).ConfigureAwait(false);
+                        int bytesRead = await _stream.ReadAsync(_buffer.AsMemory(_bufferCount), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                         if (bytesRead <= 0)
                         {
                             if (s_useStrictValidation && _nonEmptyInput && !buffer.IsEmpty)

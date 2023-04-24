@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.Hosting
                 var tcs = new TaskCompletionSource<object>();
                 using CancellationTokenRegistration registration = cancellationToken.Register(s => ((TaskCompletionSource<object>)s!).SetCanceled(), tcs);
                 // Do not await the _executeTask because cancelling it will throw an OperationCanceledException which we are explicitly ignoring
-                await Task.WhenAny(_executeTask, tcs.Task).ConfigureAwait(false);
+                await Task.WhenAny(_executeTask, tcs.Task).ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
         }

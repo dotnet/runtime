@@ -213,7 +213,7 @@ namespace System.Text.Json
             JsonDocumentOptions options = default,
             CancellationToken cancellationToken = default)
         {
-            ArraySegment<byte> drained = await ReadToEndAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+            ArraySegment<byte> drained = await ReadToEndAsync(utf8Json, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             Debug.Assert(drained.Array != null);
             try
             {
@@ -862,7 +862,7 @@ namespace System.Text.Json
                         written,
                         utf8BomLength - written,
 #endif
-                        cancellationToken).ConfigureAwait(false);
+                        cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                     written += lastRead;
                 } while (lastRead > 0 && written < utf8BomLength);
@@ -893,7 +893,7 @@ namespace System.Text.Json
                         written,
                         rented.Length - written,
 #endif
-                        cancellationToken).ConfigureAwait(false);
+                        cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                     written += lastRead;
 

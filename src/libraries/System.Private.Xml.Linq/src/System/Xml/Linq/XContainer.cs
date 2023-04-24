@@ -859,14 +859,14 @@ namespace System.Xml.Linq
             {
                 cancellationToken.ThrowIfCancellationRequested();
             }
-            while (await cr.ReadContentFromAsync(this, r).ConfigureAwait(false) && await r.ReadAsync().ConfigureAwait(false));
+            while (await cr.ReadContentFromAsync(this, r).ConfigureAwait(OperatingSystem.IsBrowser()) && await r.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
         }
 
         internal async Task ReadContentFromAsync(XmlReader r, LoadOptions o, CancellationToken cancellationToken)
         {
             if ((o & (LoadOptions.SetBaseUri | LoadOptions.SetLineInfo)) == 0)
             {
-                await ReadContentFromAsync(r, cancellationToken).ConfigureAwait(false);
+                await ReadContentFromAsync(r, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 return;
             }
             if (r.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
@@ -876,7 +876,7 @@ namespace System.Xml.Linq
             {
                 cancellationToken.ThrowIfCancellationRequested();
             }
-            while (await cr.ReadContentFromContainerAsync(this, r).ConfigureAwait(false) && await r.ReadAsync().ConfigureAwait(false));
+            while (await cr.ReadContentFromContainerAsync(this, r).ConfigureAwait(OperatingSystem.IsBrowser()) && await r.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
         }
 
         private sealed class ContentReader
@@ -965,7 +965,7 @@ namespace System.Xml.Linq
                             {
                                 e.AppendAttributeSkipNotify(new XAttribute(
                                     _aCache.Get(r.Prefix.Length == 0 ? string.Empty : r.NamespaceURI).GetName(r.LocalName),
-                                    await r.GetValueAsync().ConfigureAwait(false)));
+                                    await r.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser())));
                             } while (r.MoveToNextAttribute());
                             r.MoveToElement();
                         }
@@ -983,19 +983,19 @@ namespace System.Xml.Linq
                     case XmlNodeType.Text:
                     case XmlNodeType.SignificantWhitespace:
                     case XmlNodeType.Whitespace:
-                        _currentContainer.AddStringSkipNotify(await r.GetValueAsync().ConfigureAwait(false));
+                        _currentContainer.AddStringSkipNotify(await r.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
                         break;
                     case XmlNodeType.CDATA:
-                        _currentContainer.AddNodeSkipNotify(new XCData(await r.GetValueAsync().ConfigureAwait(false)));
+                        _currentContainer.AddNodeSkipNotify(new XCData(await r.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser())));
                         break;
                     case XmlNodeType.Comment:
-                        _currentContainer.AddNodeSkipNotify(new XComment(await r.GetValueAsync().ConfigureAwait(false)));
+                        _currentContainer.AddNodeSkipNotify(new XComment(await r.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser())));
                         break;
                     case XmlNodeType.ProcessingInstruction:
-                        _currentContainer.AddNodeSkipNotify(new XProcessingInstruction(r.Name, await r.GetValueAsync().ConfigureAwait(false)));
+                        _currentContainer.AddNodeSkipNotify(new XProcessingInstruction(r.Name, await r.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser())));
                         break;
                     case XmlNodeType.DocumentType:
-                        _currentContainer.AddNodeSkipNotify(new XDocumentType(r.LocalName, r.GetAttribute("PUBLIC"), r.GetAttribute("SYSTEM"), await r.GetValueAsync().ConfigureAwait(false)));
+                        _currentContainer.AddNodeSkipNotify(new XDocumentType(r.LocalName, r.GetAttribute("PUBLIC"), r.GetAttribute("SYSTEM"), await r.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser())));
                         break;
                     case XmlNodeType.EntityReference:
                         if (!r.CanResolveEntity) throw new InvalidOperationException(SR.InvalidOperation_UnresolvedEntityReference);
@@ -1147,7 +1147,7 @@ namespace System.Xml.Linq
                                 {
                                     XAttribute a = new XAttribute(
                                         _aCache.Get(r.Prefix.Length == 0 ? string.Empty : r.NamespaceURI).GetName(r.LocalName),
-                                        await r.GetValueAsync().ConfigureAwait(false));
+                                        await r.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
                                     if (_lineInfo != null && _lineInfo.HasLineInfo())
                                     {
                                         a.SetLineInfo(_lineInfo.LineNumber, _lineInfo.LinePosition);
@@ -1192,24 +1192,24 @@ namespace System.Xml.Linq
                         if ((_baseUri != null && _baseUri != baseUri) ||
                             (_lineInfo != null && _lineInfo.HasLineInfo()))
                         {
-                            newNode = new XText(await r.GetValueAsync().ConfigureAwait(false));
+                            newNode = new XText(await r.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
                         }
                         else
                         {
-                            _currentContainer.AddStringSkipNotify(await r.GetValueAsync().ConfigureAwait(false));
+                            _currentContainer.AddStringSkipNotify(await r.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
                         }
                         break;
                     case XmlNodeType.CDATA:
-                        newNode = new XCData(await r.GetValueAsync().ConfigureAwait(false));
+                        newNode = new XCData(await r.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
                         break;
                     case XmlNodeType.Comment:
-                        newNode = new XComment(await r.GetValueAsync().ConfigureAwait(false));
+                        newNode = new XComment(await r.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
                         break;
                     case XmlNodeType.ProcessingInstruction:
-                        newNode = new XProcessingInstruction(r.Name, await r.GetValueAsync().ConfigureAwait(false));
+                        newNode = new XProcessingInstruction(r.Name, await r.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
                         break;
                     case XmlNodeType.DocumentType:
-                        newNode = new XDocumentType(r.LocalName, r.GetAttribute("PUBLIC"), r.GetAttribute("SYSTEM"), await r.GetValueAsync().ConfigureAwait(false));
+                        newNode = new XDocumentType(r.LocalName, r.GetAttribute("PUBLIC"), r.GetAttribute("SYSTEM"), await r.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
                         break;
                     case XmlNodeType.EntityReference:
                         if (!r.CanResolveEntity) throw new InvalidOperationException(SR.InvalidOperation_UnresolvedEntityReference);
@@ -1337,7 +1337,7 @@ namespace System.Xml.Linq
                         tWrite = writer.WriteStringAsync(stringContent);
                     }
 
-                    await tWrite.ConfigureAwait(false);
+                    await tWrite.ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 else
                 {
@@ -1345,7 +1345,7 @@ namespace System.Xml.Linq
                     do
                     {
                         n = n.next!;
-                        await n.WriteToAsync(writer, cancellationToken).ConfigureAwait(false);
+                        await n.WriteToAsync(writer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     } while (n != content);
                 }
             }

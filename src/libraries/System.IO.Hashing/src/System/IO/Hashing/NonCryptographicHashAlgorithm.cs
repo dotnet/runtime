@@ -157,9 +157,9 @@ namespace System.IO.Hashing
             while (true)
             {
 #if NETCOREAPP
-                int read = await stream.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
+                int read = await stream.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 #else
-                int read = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
+                int read = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 #endif
 
                 if (read == 0)

@@ -45,12 +45,12 @@ namespace System.Formats.Tar
             byte[] rented = ArrayPool<byte>.Shared.Rent(minimumLength: TarHelpers.RecordSize);
             Memory<byte> buffer = rented.AsMemory(0, TarHelpers.RecordSize); // minimumLength means the array could've been larger
 
-            await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
+            await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             TarHeader? header = TryReadAttributes(initialFormat, buffer.Span);
             if (header != null && processDataBlock)
             {
-                await header.ProcessDataBlockAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(false);
+                await header.ProcessDataBlockAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             ArrayPool<byte>.Shared.Return(rented);
@@ -247,10 +247,10 @@ namespace System.Formats.Tar
             switch (_typeFlag)
             {
                 case TarEntryType.ExtendedAttributes or TarEntryType.GlobalExtendedAttributes:
-                    await ReadExtendedAttributesBlockAsync(archiveStream, cancellationToken).ConfigureAwait(false);
+                    await ReadExtendedAttributesBlockAsync(archiveStream, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     break;
                 case TarEntryType.LongLink or TarEntryType.LongPath:
-                    await ReadGnuLongPathDataBlockAsync(archiveStream, cancellationToken).ConfigureAwait(false);
+                    await ReadGnuLongPathDataBlockAsync(archiveStream, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     break;
                 case TarEntryType.BlockDevice:
                 case TarEntryType.CharacterDevice:
@@ -273,10 +273,10 @@ namespace System.Formats.Tar
                 case TarEntryType.SparseFile: // Contains portion of a file
                 case TarEntryType.TapeVolume: // Might contain data
                 default: // Unrecognized entry types could potentially have a data section
-                    _dataStream = await GetDataStreamAsync(archiveStream, copyData, _size, cancellationToken).ConfigureAwait(false);
+                    _dataStream = await GetDataStreamAsync(archiveStream, copyData, _size, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     if (_dataStream is SeekableSubReadStream)
                     {
-                        await TarHelpers.AdvanceStreamAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);
+                        await TarHelpers.AdvanceStreamAsync(archiveStream, _size, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     else if (_dataStream is SubReadStream)
                     {
@@ -292,7 +292,7 @@ namespace System.Formats.Tar
             {
                 if (_size > 0)
                 {
-                    await TarHelpers.SkipBlockAlignmentPaddingAsync(archiveStream, _size, cancellationToken).ConfigureAwait(false);
+                    await TarHelpers.SkipBlockAlignmentPaddingAsync(archiveStream, _size, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
 
                 if (archiveStream.CanSeek)
@@ -343,7 +343,7 @@ namespace System.Formats.Tar
             if (copyData)
             {
                 MemoryStream copiedData = new MemoryStream();
-                await TarHelpers.CopyBytesAsync(archiveStream, copiedData, size, cancellationToken).ConfigureAwait(false);
+                await TarHelpers.CopyBytesAsync(archiveStream, copiedData, size, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 // Reset position pointer so the user can do the first DataStream read from the beginning
                 copiedData.Position = 0;
                 return copiedData;
@@ -597,7 +597,7 @@ namespace System.Formats.Tar
                 byte[] buffer = ArrayPool<byte>.Shared.Rent((int)_size);
                 Memory<byte> memory = buffer.AsMemory(0, (int)_size);
 
-                await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(false);
+                await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 ReadExtendedAttributesFromBuffer(memory.Span, _name);
 
                 ArrayPool<byte>.Shared.Return(buffer);
@@ -668,7 +668,7 @@ namespace System.Formats.Tar
                 byte[] buffer = ArrayPool<byte>.Shared.Rent((int)_size);
                 Memory<byte> memory = buffer.AsMemory(0, (int)_size);
 
-                await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(false);
+                await archiveStream.ReadExactlyAsync(memory, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 ReadGnuLongPathDataFromBuffer(memory.Span);
 
                 ArrayPool<byte>.Shared.Return(buffer);

@@ -386,7 +386,7 @@ namespace System.Text.Json
                 }
             }
 
-            await FlushAsync().ConfigureAwait(false);
+            await FlushAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             ResetHelper();
 
             _stream = null;
@@ -419,20 +419,20 @@ namespace System.Text.Json
                     BytesPending = 0;
 
 #if NETCOREAPP
-                    await _stream.WriteAsync(_arrayBufferWriter.WrittenMemory, cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(_arrayBufferWriter.WrittenMemory, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 #else
                     Debug.Assert(_arrayBufferWriter.WrittenMemory.Length == _arrayBufferWriter.WrittenCount);
                     bool result = MemoryMarshal.TryGetArray(_arrayBufferWriter.WrittenMemory, out ArraySegment<byte> underlyingBuffer);
                     Debug.Assert(result);
                     Debug.Assert(underlyingBuffer.Offset == 0);
                     Debug.Assert(_arrayBufferWriter.WrittenCount == underlyingBuffer.Count);
-                    await _stream.WriteAsync(underlyingBuffer.Array, underlyingBuffer.Offset, underlyingBuffer.Count, cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(underlyingBuffer.Array, underlyingBuffer.Offset, underlyingBuffer.Count, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 #endif
 
                     BytesCommitted += _arrayBufferWriter.WrittenCount;
                     _arrayBufferWriter.Clear();
                 }
-                await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                await _stream.FlushAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else
             {

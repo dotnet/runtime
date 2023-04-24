@@ -130,7 +130,7 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <returns>A task that gets the string value from the stored cache key.</returns>
         public static async Task<string?> GetStringAsync(this IDistributedCache cache, string key, CancellationToken token = default(CancellationToken))
         {
-            byte[]? data = await cache.GetAsync(key, token).ConfigureAwait(false);
+            byte[]? data = await cache.GetAsync(key, token).ConfigureAwait(OperatingSystem.IsBrowser());
             if (data == null)
             {
                 return null;

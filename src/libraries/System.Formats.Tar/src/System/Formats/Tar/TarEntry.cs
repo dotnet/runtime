@@ -552,12 +552,12 @@ namespace System.Formats.Tar
 
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             FileStream fs = new FileStream(destinationFileName, CreateFileStreamOptions(isAsync: true));
-            await using (fs.ConfigureAwait(false))
+            await using (fs.ConfigureAwait(OperatingSystem.IsBrowser()))
             {
                 if (DataStream != null)
                 {
                     // Important: The DataStream will be written from its current position
-                    await DataStream.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
+                    await DataStream.CopyToAsync(fs, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
 

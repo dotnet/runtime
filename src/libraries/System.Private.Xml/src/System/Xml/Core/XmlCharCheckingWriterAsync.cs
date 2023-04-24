@@ -112,12 +112,12 @@ namespace System.Xml
                 int i;
                 while ((i = text.IndexOf("]]>", StringComparison.Ordinal)) >= 0)
                 {
-                    await writer.WriteCDataAsync(text.Substring(0, i + 2)).ConfigureAwait(false);
+                    await writer.WriteCDataAsync(text.Substring(0, i + 2)).ConfigureAwait(OperatingSystem.IsBrowser());
                     text = text.Substring(i + 2);
                 }
             }
 
-            await writer.WriteCDataAsync(text).ConfigureAwait(false);
+            await writer.WriteCDataAsync(text).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         public override Task WriteCommentAsync(string? text)

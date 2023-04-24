@@ -97,7 +97,7 @@ namespace System.Xml
             }
             else
             {
-                await FlushBufferAsync().ConfigureAwait(false);
+                await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 offset = 0;
             }
 #if DEBUG
@@ -145,7 +145,7 @@ namespace System.Xml
 
         private async Task FlushBufferAndWriteByteAsync(byte b)
         {
-            await FlushBufferAsync().ConfigureAwait(false);
+            await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             _buffer[_offset++] = b;
         }
 
@@ -191,7 +191,7 @@ namespace System.Xml
 
         private async Task FlushAndWriteBytesAsync(byte b1, byte b2)
         {
-            await FlushBufferAsync().ConfigureAwait(false);
+            await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             _buffer[_offset++] = b1;
             _buffer[_offset++] = b2;
         }
@@ -420,8 +420,8 @@ namespace System.Xml
 
         public override async Task FlushAsync()
         {
-            await FlushBufferAsync().ConfigureAwait(false);
-            await OutputStream.FlushAsync().ConfigureAwait(false);
+            await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+            await OutputStream.FlushAsync().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         public override void Close()

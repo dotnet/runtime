@@ -28,7 +28,7 @@ namespace System.Xml.Schema
             {
                 _isProcessNamespaces = false;
             }
-            while (reader.NodeType != XmlNodeType.Element && await reader.ReadAsync().ConfigureAwait(false)) { }
+            while (reader.NodeType != XmlNodeType.Element && await reader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser())) { }
 
             _markupDepth = int.MaxValue;
             _schemaXmlDepth = reader.Depth;

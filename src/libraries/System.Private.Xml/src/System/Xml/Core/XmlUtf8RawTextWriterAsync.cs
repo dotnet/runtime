@@ -36,26 +36,26 @@ namespace System.Xml
             // Output xml declaration only if user allows it and it was not already output
             if (!_omitXmlDeclaration && !_autoXmlDeclaration)
             {
-                await RawTextAsync("<?xml version=\"").ConfigureAwait(false);
+                await RawTextAsync("<?xml version=\"").ConfigureAwait(OperatingSystem.IsBrowser());
 
                 // Version
-                await RawTextAsync("1.0").ConfigureAwait(false);
+                await RawTextAsync("1.0").ConfigureAwait(OperatingSystem.IsBrowser());
 
                 // Encoding
                 if (_encoding != null)
                 {
-                    await RawTextAsync("\" encoding=\"").ConfigureAwait(false);
-                    await RawTextAsync(_encoding.WebName).ConfigureAwait(false);
+                    await RawTextAsync("\" encoding=\"").ConfigureAwait(OperatingSystem.IsBrowser());
+                    await RawTextAsync(_encoding.WebName).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
 
                 // Standalone
                 if (standalone != XmlStandalone.Omit)
                 {
-                    await RawTextAsync("\" standalone=\"").ConfigureAwait(false);
-                    await RawTextAsync(standalone == XmlStandalone.Yes ? "yes" : "no").ConfigureAwait(false);
+                    await RawTextAsync("\" standalone=\"").ConfigureAwait(OperatingSystem.IsBrowser());
+                    await RawTextAsync(standalone == XmlStandalone.Yes ? "yes" : "no").ConfigureAwait(OperatingSystem.IsBrowser());
                 }
 
-                await RawTextAsync("\"?>").ConfigureAwait(false);
+                await RawTextAsync("\"?>").ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -75,7 +75,7 @@ namespace System.Xml
         {
             try
             {
-                await FlushBufferAsync().ConfigureAwait(false);
+                await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
             finally
             {
@@ -86,7 +86,7 @@ namespace System.Xml
                 {
                     try
                     {
-                        await _stream.FlushAsync().ConfigureAwait(false);
+                        await _stream.FlushAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     finally
                     {
@@ -94,7 +94,7 @@ namespace System.Xml
                         {
                             if (_closeOutput)
                             {
-                                await _stream.DisposeAsync().ConfigureAwait(false);
+                                await _stream.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                             }
                         }
                         finally
@@ -112,23 +112,23 @@ namespace System.Xml
             CheckAsyncCall();
             Debug.Assert(name != null && name.Length > 0);
 
-            await RawTextAsync("<!DOCTYPE ").ConfigureAwait(false);
-            await RawTextAsync(name).ConfigureAwait(false);
+            await RawTextAsync("<!DOCTYPE ").ConfigureAwait(OperatingSystem.IsBrowser());
+            await RawTextAsync(name).ConfigureAwait(OperatingSystem.IsBrowser());
             if (pubid != null)
             {
-                await RawTextAsync(" PUBLIC \"").ConfigureAwait(false);
-                await RawTextAsync(pubid).ConfigureAwait(false);
-                await RawTextAsync("\" \"").ConfigureAwait(false);
+                await RawTextAsync(" PUBLIC \"").ConfigureAwait(OperatingSystem.IsBrowser());
+                await RawTextAsync(pubid).ConfigureAwait(OperatingSystem.IsBrowser());
+                await RawTextAsync("\" \"").ConfigureAwait(OperatingSystem.IsBrowser());
                 if (sysid != null)
                 {
-                    await RawTextAsync(sysid).ConfigureAwait(false);
+                    await RawTextAsync(sysid).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 _bufBytes[_bufPos++] = (byte)'"';
             }
             else if (sysid != null)
             {
-                await RawTextAsync(" SYSTEM \"").ConfigureAwait(false);
-                await RawTextAsync(sysid).ConfigureAwait(false);
+                await RawTextAsync(" SYSTEM \"").ConfigureAwait(OperatingSystem.IsBrowser());
+                await RawTextAsync(sysid).ConfigureAwait(OperatingSystem.IsBrowser());
                 _bufBytes[_bufPos++] = (byte)'"';
             }
             else
@@ -139,7 +139,7 @@ namespace System.Xml
             if (subset != null)
             {
                 _bufBytes[_bufPos++] = (byte)'[';
-                await RawTextAsync(subset).ConfigureAwait(false);
+                await RawTextAsync(subset).ConfigureAwait(OperatingSystem.IsBrowser());
                 _bufBytes[_bufPos++] = (byte)']';
             }
 
@@ -272,9 +272,9 @@ namespace System.Xml
             CheckAsyncCall();
             Debug.Assert(prefix != null && namespaceName != null);
 
-            await WriteStartNamespaceDeclarationAsync(prefix).ConfigureAwait(false);
-            await WriteStringAsync(namespaceName).ConfigureAwait(false);
-            await WriteEndNamespaceDeclarationAsync().ConfigureAwait(false);
+            await WriteStartNamespaceDeclarationAsync(prefix).ConfigureAwait(OperatingSystem.IsBrowser());
+            await WriteStringAsync(namespaceName).ConfigureAwait(OperatingSystem.IsBrowser());
+            await WriteEndNamespaceDeclarationAsync().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         internal override async Task WriteStartNamespaceDeclarationAsync(string prefix)
@@ -289,12 +289,12 @@ namespace System.Xml
 
             if (prefix.Length == 0)
             {
-                await RawTextAsync("xmlns=\"").ConfigureAwait(false);
+                await RawTextAsync("xmlns=\"").ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else
             {
-                await RawTextAsync("xmlns:").ConfigureAwait(false);
-                await RawTextAsync(prefix).ConfigureAwait(false);
+                await RawTextAsync("xmlns:").ConfigureAwait(OperatingSystem.IsBrowser());
+                await RawTextAsync(prefix).ConfigureAwait(OperatingSystem.IsBrowser());
                 _bufBytes[_bufPos++] = (byte)'=';
                 _bufBytes[_bufPos++] = (byte)'"';
             }
@@ -341,7 +341,7 @@ namespace System.Xml
                 _bufBytes[_bufPos++] = (byte)'[';
             }
 
-            await WriteCDataSectionAsync(text).ConfigureAwait(false);
+            await WriteCDataSectionAsync(text).ConfigureAwait(OperatingSystem.IsBrowser());
 
             _bufBytes[_bufPos++] = (byte)']';
             _bufBytes[_bufPos++] = (byte)']';
@@ -362,7 +362,7 @@ namespace System.Xml
             _bufBytes[_bufPos++] = (byte)'-';
             _bufBytes[_bufPos++] = (byte)'-';
 
-            await WriteCommentOrPiAsync(text, '-').ConfigureAwait(false);
+            await WriteCommentOrPiAsync(text, '-').ConfigureAwait(OperatingSystem.IsBrowser());
 
             _bufBytes[_bufPos++] = (byte)'-';
             _bufBytes[_bufPos++] = (byte)'-';
@@ -378,12 +378,12 @@ namespace System.Xml
 
             _bufBytes[_bufPos++] = (byte)'<';
             _bufBytes[_bufPos++] = (byte)'?';
-            await RawTextAsync(name).ConfigureAwait(false);
+            await RawTextAsync(name).ConfigureAwait(OperatingSystem.IsBrowser());
 
             if (text.Length > 0)
             {
                 _bufBytes[_bufPos++] = (byte)' ';
-                await WriteCommentOrPiAsync(text, '?').ConfigureAwait(false);
+                await WriteCommentOrPiAsync(text, '?').ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             _bufBytes[_bufPos++] = (byte)'?';
@@ -397,12 +397,12 @@ namespace System.Xml
             Debug.Assert(name != null && name.Length > 0);
 
             _bufBytes[_bufPos++] = (byte)'&';
-            await RawTextAsync(name).ConfigureAwait(false);
+            await RawTextAsync(name).ConfigureAwait(OperatingSystem.IsBrowser());
             _bufBytes[_bufPos++] = (byte)';';
 
             if (_bufPos > _bufLen)
             {
-                await FlushBufferAsync().ConfigureAwait(false);
+                await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             _textPos = _bufPos;
@@ -423,12 +423,12 @@ namespace System.Xml
             _bufBytes[_bufPos++] = (byte)'&';
             _bufBytes[_bufPos++] = (byte)'#';
             _bufBytes[_bufPos++] = (byte)'x';
-            await RawTextAsync(strVal).ConfigureAwait(false);
+            await RawTextAsync(strVal).ConfigureAwait(OperatingSystem.IsBrowser());
             _bufBytes[_bufPos++] = (byte)';';
 
             if (_bufPos > _bufLen)
             {
-                await FlushBufferAsync().ConfigureAwait(false);
+                await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             _textPos = _bufPos;
@@ -478,7 +478,7 @@ namespace System.Xml
             _bufBytes[_bufPos++] = (byte)'&';
             _bufBytes[_bufPos++] = (byte)'#';
             _bufBytes[_bufPos++] = (byte)'x';
-            await RawTextAsync(surrogateChar.ToString("X", NumberFormatInfo.InvariantInfo)).ConfigureAwait(false);
+            await RawTextAsync(surrogateChar.ToString("X", NumberFormatInfo.InvariantInfo)).ConfigureAwait(OperatingSystem.IsBrowser());
             _bufBytes[_bufPos++] = (byte)';';
             _textPos = _bufPos;
         }
@@ -513,7 +513,7 @@ namespace System.Xml
             Debug.Assert(index >= 0);
             Debug.Assert(count >= 0 && index + count <= buffer.Length);
 
-            await WriteRawWithCharCheckingAsync(buffer, index, count).ConfigureAwait(false);
+            await WriteRawWithCharCheckingAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
 
             _textPos = _bufPos;
         }
@@ -525,7 +525,7 @@ namespace System.Xml
             CheckAsyncCall();
             Debug.Assert(data != null);
 
-            await WriteRawWithCharCheckingAsync(data).ConfigureAwait(false);
+            await WriteRawWithCharCheckingAsync(data).ConfigureAwait(OperatingSystem.IsBrowser());
 
             _textPos = _bufPos;
         }
@@ -534,11 +534,11 @@ namespace System.Xml
         public override async Task FlushAsync()
         {
             CheckAsyncCall();
-            await FlushBufferAsync().ConfigureAwait(false);
+            await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
             if (_stream != null)
             {
-                await _stream.FlushAsync().ConfigureAwait(false);
+                await _stream.FlushAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -556,7 +556,7 @@ namespace System.Xml
                     if (_bufPos - 1 > 0)
                     {
                         Debug.Assert(_stream != null);
-                        await _stream.WriteAsync(_bufBytes.AsMemory(1, _bufPos - 1)).ConfigureAwait(false);
+                        await _stream.WriteAsync(_bufBytes.AsMemory(1, _bufPos - 1)).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                 }
             }
@@ -754,7 +754,7 @@ namespace System.Xml
                 leftCount -= writeLen;
                 if (writeLen >= 0)
                 {
-                    await FlushBufferAsync().ConfigureAwait(false);
+                    await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             } while (writeLen >= 0);
         }
@@ -779,7 +779,7 @@ namespace System.Xml
         private async Task _WriteAttributeTextBlockAsync(string text, int curIndex, int leftCount)
         {
             int writeLen;
-            await FlushBufferAsync().ConfigureAwait(false);
+            await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             do
             {
                 writeLen = WriteAttributeTextBlockNoFlush(text, curIndex, leftCount);
@@ -787,7 +787,7 @@ namespace System.Xml
                 leftCount -= writeLen;
                 if (writeLen >= 0)
                 {
-                    await FlushBufferAsync().ConfigureAwait(false);
+                    await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             } while (writeLen >= 0);
         }
@@ -966,13 +966,13 @@ namespace System.Xml
                 if (needWriteNewLine)
                 {
                     //hit WriteNewLine
-                    await RawTextAsync(_newLineChars).ConfigureAwait(false);
+                    await RawTextAsync(_newLineChars).ConfigureAwait(OperatingSystem.IsBrowser());
                     curIndex++;
                     leftCount--;
                 }
                 else if (writeLen >= 0)
                 {
-                    await FlushBufferAsync().ConfigureAwait(false);
+                    await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             } while (writeLen >= 0 || needWriteNewLine);
         }
@@ -1006,13 +1006,13 @@ namespace System.Xml
 
             if (newLine)
             {
-                await RawTextAsync(_newLineChars).ConfigureAwait(false);
+                await RawTextAsync(_newLineChars).ConfigureAwait(OperatingSystem.IsBrowser());
                 curIndex++;
                 leftCount--;
             }
             else
             {
-                await FlushBufferAsync().ConfigureAwait(false);
+                await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             do
@@ -1023,13 +1023,13 @@ namespace System.Xml
                 if (needWriteNewLine)
                 {
                     //hit WriteNewLine
-                    await RawTextAsync(_newLineChars).ConfigureAwait(false);
+                    await RawTextAsync(_newLineChars).ConfigureAwait(OperatingSystem.IsBrowser());
                     curIndex++;
                     leftCount--;
                 }
                 else if (writeLen >= 0)
                 {
-                    await FlushBufferAsync().ConfigureAwait(false);
+                    await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             } while (writeLen >= 0 || needWriteNewLine);
         }
@@ -1187,7 +1187,7 @@ namespace System.Xml
             Debug.Assert(text3 != null || (text4 == null));
 
             // Write out the remainder of the first string
-            await FlushBufferAsync().ConfigureAwait(false);
+            await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             int writeLen;
             do
             {
@@ -1196,14 +1196,14 @@ namespace System.Xml
                 leftCount1 -= writeLen;
                 if (writeLen >= 0)
                 {
-                    await FlushBufferAsync().ConfigureAwait(false);
+                    await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             } while (writeLen >= 0);
 
             // If there are additional strings, write them out as well
             if (text2 != null)
             {
-                await RawTextAsync(text2, text3, text4).ConfigureAwait(false);
+                await RawTextAsync(text2, text3, text4).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -1362,13 +1362,13 @@ namespace System.Xml
                 leftCount -= writeLen;
                 if (needWriteNewLine)
                 {
-                    await RawTextAsync(_newLineChars).ConfigureAwait(false);
+                    await RawTextAsync(_newLineChars).ConfigureAwait(OperatingSystem.IsBrowser());
                     curIndex++;
                     leftCount--;
                 }
                 else if (writeLen >= 0)
                 {
-                    await FlushBufferAsync().ConfigureAwait(false);
+                    await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             } while (writeLen >= 0 || needWriteNewLine);
         }
@@ -1386,13 +1386,13 @@ namespace System.Xml
                 leftCount -= writeLen;
                 if (needWriteNewLine)
                 {
-                    await RawTextAsync(_newLineChars).ConfigureAwait(false);
+                    await RawTextAsync(_newLineChars).ConfigureAwait(OperatingSystem.IsBrowser());
                     curIndex++;
                     leftCount--;
                 }
                 else if (writeLen >= 0)
                 {
-                    await FlushBufferAsync().ConfigureAwait(false);
+                    await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             } while (writeLen >= 0 || needWriteNewLine);
         }
@@ -1556,7 +1556,7 @@ namespace System.Xml
             {
                 if (_bufPos >= _bufLen)
                 {
-                    await FlushBufferAsync().ConfigureAwait(false);
+                    await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 return;
             }
@@ -1572,13 +1572,13 @@ namespace System.Xml
                 leftCount -= writeLen;
                 if (needWriteNewLine)
                 {
-                    await RawTextAsync(_newLineChars).ConfigureAwait(false);
+                    await RawTextAsync(_newLineChars).ConfigureAwait(OperatingSystem.IsBrowser());
                     curIndex++;
                     leftCount--;
                 }
                 else if (writeLen >= 0)
                 {
-                    await FlushBufferAsync().ConfigureAwait(false);
+                    await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             } while (writeLen >= 0 || needWriteNewLine);
         }
@@ -1739,7 +1739,7 @@ namespace System.Xml
             {
                 if (_bufPos >= _bufLen)
                 {
-                    await FlushBufferAsync().ConfigureAwait(false);
+                    await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 return;
             }
@@ -1755,13 +1755,13 @@ namespace System.Xml
                 leftCount -= writeLen;
                 if (needWriteNewLine)
                 {
-                    await RawTextAsync(_newLineChars).ConfigureAwait(false);
+                    await RawTextAsync(_newLineChars).ConfigureAwait(OperatingSystem.IsBrowser());
                     curIndex++;
                     leftCount--;
                 }
                 else if (writeLen >= 0)
                 {
-                    await FlushBufferAsync().ConfigureAwait(false);
+                    await FlushBufferAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             } while (writeLen >= 0 || needWriteNewLine);
         }
@@ -1776,9 +1776,9 @@ namespace System.Xml
             // Add indentation
             if (!_mixedContent && base._textPos != base._bufPos)
             {
-                await WriteIndentAsync().ConfigureAwait(false);
+                await WriteIndentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
-            await base.WriteDocTypeAsync(name, pubid, sysid, subset).ConfigureAwait(false);
+            await base.WriteDocTypeAsync(name, pubid, sysid, subset).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         public override async Task WriteStartElementAsync(string? prefix, string localName, string? ns)
@@ -1789,12 +1789,12 @@ namespace System.Xml
             // Add indentation
             if (!_mixedContent && base._textPos != base._bufPos)
             {
-                await WriteIndentAsync().ConfigureAwait(false);
+                await WriteIndentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
             _indentLevel++;
             _mixedContentStack.PushBit(_mixedContent);
 
-            await base.WriteStartElementAsync(prefix, localName, ns).ConfigureAwait(false);
+            await base.WriteStartElementAsync(prefix, localName, ns).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         internal override async Task WriteEndElementAsync(string prefix, string localName, string ns)
@@ -1807,12 +1807,12 @@ namespace System.Xml
                 // There was content, so try to indent
                 if (base._textPos != base._bufPos)
                 {
-                    await WriteIndentAsync().ConfigureAwait(false);
+                    await WriteIndentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             _mixedContent = _mixedContentStack.PopBit();
 
-            await base.WriteEndElementAsync(prefix, localName, ns).ConfigureAwait(false);
+            await base.WriteEndElementAsync(prefix, localName, ns).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         internal override async Task WriteFullEndElementAsync(string prefix, string localName, string ns)
@@ -1825,12 +1825,12 @@ namespace System.Xml
                 // There was content, so try to indent
                 if (base._textPos != base._bufPos)
                 {
-                    await WriteIndentAsync().ConfigureAwait(false);
+                    await WriteIndentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             _mixedContent = _mixedContentStack.PopBit();
 
-            await base.WriteFullEndElementAsync(prefix, localName, ns).ConfigureAwait(false);
+            await base.WriteFullEndElementAsync(prefix, localName, ns).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         // Same as base class, plus possible indentation.
@@ -1840,10 +1840,10 @@ namespace System.Xml
             // Add indentation
             if (_newLineOnAttributes)
             {
-                await WriteIndentAsync().ConfigureAwait(false);
+                await WriteIndentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
-            await base.WriteStartAttributeAsync(prefix, localName, ns).ConfigureAwait(false);
+            await base.WriteStartAttributeAsync(prefix, localName, ns).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         // Same as base class, plus possible indentation.
@@ -1853,10 +1853,10 @@ namespace System.Xml
             // Add indentation
             if (_newLineOnAttributes)
             {
-                await WriteIndentAsync().ConfigureAwait(false);
+                await WriteIndentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
-            await base.WriteStartNamespaceDeclarationAsync(prefix).ConfigureAwait(false);
+            await base.WriteStartNamespaceDeclarationAsync(prefix).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         public override Task WriteCDataAsync(string? text)
@@ -1871,10 +1871,10 @@ namespace System.Xml
             CheckAsyncCall();
             if (!_mixedContent && base._textPos != base._bufPos)
             {
-                await WriteIndentAsync().ConfigureAwait(false);
+                await WriteIndentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
-            await base.WriteCommentAsync(text).ConfigureAwait(false);
+            await base.WriteCommentAsync(text).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         public override async Task WriteProcessingInstructionAsync(string target, string? text)
@@ -1882,10 +1882,10 @@ namespace System.Xml
             CheckAsyncCall();
             if (!_mixedContent && base._textPos != base._bufPos)
             {
-                await WriteIndentAsync().ConfigureAwait(false);
+                await WriteIndentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
-            await base.WriteProcessingInstructionAsync(target, text).ConfigureAwait(false);
+            await base.WriteProcessingInstructionAsync(target, text).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         public override Task WriteEntityRefAsync(string name)
@@ -1955,10 +1955,10 @@ namespace System.Xml
         private async Task WriteIndentAsync()
         {
             CheckAsyncCall();
-            await RawTextAsync(base._newLineChars).ConfigureAwait(false);
+            await RawTextAsync(base._newLineChars).ConfigureAwait(OperatingSystem.IsBrowser());
             for (int i = _indentLevel; i > 0; i--)
             {
-                await RawTextAsync(_indentChars).ConfigureAwait(false);
+                await RawTextAsync(_indentChars).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
     }

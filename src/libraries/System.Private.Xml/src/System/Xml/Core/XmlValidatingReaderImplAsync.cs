@@ -29,7 +29,7 @@ namespace System.Xml
             switch (_parsingFunction)
             {
                 case ParsingFunction.Read:
-                    if (await _coreReader.ReadAsync().ConfigureAwait(false))
+                    if (await _coreReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         ProcessCoreReaderEvent();
                         return true;
@@ -41,7 +41,7 @@ namespace System.Xml
                     }
                 case ParsingFunction.ParseDtdFromContext:
                     _parsingFunction = ParsingFunction.Read;
-                    await ParseDtdFromParserContextAsync().ConfigureAwait(false);
+                    await ParseDtdFromParserContextAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     goto case ParsingFunction.Read;
                 case ParsingFunction.Error:
                 case ParsingFunction.ReaderClosed:
@@ -59,11 +59,11 @@ namespace System.Xml
                     }
                 case ParsingFunction.ResolveEntityInternally:
                     _parsingFunction = ParsingFunction.Read;
-                    await ResolveEntityInternallyAsync().ConfigureAwait(false);
+                    await ResolveEntityInternallyAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     goto case ParsingFunction.Read;
                 case ParsingFunction.InReadBinaryContent:
                     _parsingFunction = ParsingFunction.Read;
-                    await _readBinaryHelper!.FinishAsync().ConfigureAwait(false);
+                    await _readBinaryHelper!.FinishAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     goto case ParsingFunction.Read;
                 default:
                     Debug.Fail($"Unexpected parsing function {_parsingFunction}");
@@ -88,7 +88,7 @@ namespace System.Xml
             _parsingFunction = ParsingFunction.Read;
 
             // call to the helper
-            int readCount = await _readBinaryHelper!.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
+            int readCount = await _readBinaryHelper!.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
 
             // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
@@ -112,7 +112,7 @@ namespace System.Xml
             _parsingFunction = ParsingFunction.Read;
 
             // call to the helper
-            int readCount = await _readBinaryHelper!.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
+            int readCount = await _readBinaryHelper!.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
 
             // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
@@ -136,7 +136,7 @@ namespace System.Xml
             _parsingFunction = ParsingFunction.Read;
 
             // call to the helper
-            int readCount = await _readBinaryHelper!.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
+            int readCount = await _readBinaryHelper!.ReadElementContentAsBase64Async(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
 
             // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
@@ -160,7 +160,7 @@ namespace System.Xml
             _parsingFunction = ParsingFunction.Read;
 
             // call to the helper
-            int readCount = await _readBinaryHelper!.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
+            int readCount = await _readBinaryHelper!.ReadElementContentAsBinHexAsync(buffer, index, count).ConfigureAwait(OperatingSystem.IsBrowser());
 
             // setup parsingFunction
             _parsingFunction = ParsingFunction.InReadBinaryContent;
@@ -183,7 +183,7 @@ namespace System.Xml
 
             IDtdParser dtdParser = DtdParser.Create();
             XmlTextReaderImpl.DtdParserProxy proxy = new XmlTextReaderImpl.DtdParserProxy(_coreReaderImpl);
-            IDtdInfo dtdInfo = await dtdParser.ParseFreeFloatingDtdAsync(_parserContext.BaseURI, _parserContext.DocTypeName, _parserContext.PublicId, _parserContext.SystemId, _parserContext.InternalSubset, proxy).ConfigureAwait(false);
+            IDtdInfo dtdInfo = await dtdParser.ParseFreeFloatingDtdAsync(_parserContext.BaseURI, _parserContext.DocTypeName, _parserContext.PublicId, _parserContext.SystemId, _parserContext.InternalSubset, proxy).ConfigureAwait(OperatingSystem.IsBrowser());
             _coreReaderImpl.SetDtdInfo(dtdInfo);
 
             ValidateDtd();
@@ -194,7 +194,7 @@ namespace System.Xml
             Debug.Assert(_coreReader.NodeType == XmlNodeType.EntityReference);
             int initialDepth = _coreReader.Depth;
             _outerReader.ResolveEntity();
-            while (await _outerReader.ReadAsync().ConfigureAwait(false) && _coreReader.Depth > initialDepth) ;
+            while (await _outerReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()) && _coreReader.Depth > initialDepth) ;
         }
     }
 }

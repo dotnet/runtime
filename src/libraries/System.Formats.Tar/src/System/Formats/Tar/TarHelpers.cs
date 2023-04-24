@@ -84,7 +84,7 @@ namespace System.Formats.Tar
                 while (bytesToDiscard > 0)
                 {
                     int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToDiscard);
-                    await archiveStream.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
+                    await archiveStream.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     bytesToDiscard -= currentLengthToRead;
                 }
                 ArrayPool<byte>.Shared.Return(buffer);
@@ -115,8 +115,8 @@ namespace System.Formats.Tar
             {
                 int currentLengthToRead = (int)Math.Min(MaxBufferLength, bytesToCopy);
                 Memory<byte> memory = buffer.AsMemory(0, currentLengthToRead);
-                await origin.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(false);
-                await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
+                await origin.ReadExactlyAsync(buffer, 0, currentLengthToRead, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
+                await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 bytesToCopy -= currentLengthToRead;
             }
             ArrayPool<byte>.Shared.Return(buffer);
@@ -302,7 +302,7 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             int bytesToSkip = CalculatePadding(size);
-            await AdvanceStreamAsync(archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(false);
+            await AdvanceStreamAsync(archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             return bytesToSkip;
         }
 

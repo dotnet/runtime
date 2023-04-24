@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 while (true)
                 {
-                    bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+                    bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     T? value = ContinueDeserialize(ref bufferState, ref jsonReaderState, ref readStack);
 
                     if (bufferState.IsFinalBlock)
@@ -100,7 +100,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 do
                 {
-                    bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
+                    bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(OperatingSystem.IsBrowser());
                     queueTypeInfo.ContinueDeserialize(
                         ref bufferState,
                         ref jsonReaderState,
@@ -128,7 +128,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal sealed override async ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken)
         {
-            T? result = await DeserializeAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+            T? result = await DeserializeAsync(utf8Json, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             return result;
         }
 

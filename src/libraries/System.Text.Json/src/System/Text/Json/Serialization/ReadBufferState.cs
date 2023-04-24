@@ -54,7 +54,7 @@ namespace System.Text.Json.Serialization
 #else
                     bufferState._buffer, bufferState._count, bufferState._buffer.Length - bufferState._count,
 #endif
-                    cancellationToken).ConfigureAwait(false);
+                    cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 if (bytesRead == 0)
                 {

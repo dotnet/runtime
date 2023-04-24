@@ -173,12 +173,12 @@ namespace System.Xml
 
         public override async Task WriteStartElementAsync(string? prefix, string localName)
         {
-            await WriteByteAsync('<').ConfigureAwait(false);
+            await WriteByteAsync('<').ConfigureAwait(OperatingSystem.IsBrowser());
             if (!string.IsNullOrEmpty(prefix))
             {
                 // This method calls into unsafe method which cannot run asyncly.
                 WritePrefix(prefix);
-                await WriteByteAsync(':').ConfigureAwait(false);
+                await WriteByteAsync(':').ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             // This method calls into unsafe method which cannot run asyncly.
@@ -217,11 +217,11 @@ namespace System.Xml
         {
             if (!isEmpty)
             {
-                await WriteByteAsync('>').ConfigureAwait(false);
+                await WriteByteAsync('>').ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else
             {
-                await WriteBytesAsync('/', '>').ConfigureAwait(false);
+                await WriteBytesAsync('/', '>').ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -239,14 +239,14 @@ namespace System.Xml
 
         public override async Task WriteEndElementAsync(string? prefix, string localName)
         {
-            await WriteBytesAsync('<', '/').ConfigureAwait(false);
+            await WriteBytesAsync('<', '/').ConfigureAwait(OperatingSystem.IsBrowser());
             if (!string.IsNullOrEmpty(prefix))
             {
                 WritePrefix(prefix);
-                await WriteByteAsync(':').ConfigureAwait(false);
+                await WriteByteAsync(':').ConfigureAwait(OperatingSystem.IsBrowser());
             }
             WriteLocalName(localName);
-            await WriteByteAsync('>').ConfigureAwait(false);
+            await WriteByteAsync('>').ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         public override void WriteEndElement(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] localNameBuffer, int localNameOffset, int localNameLength)
@@ -337,7 +337,7 @@ namespace System.Xml
 
         public override async Task WriteEndAttributeAsync()
         {
-            await WriteByteAsync('"').ConfigureAwait(false);
+            await WriteByteAsync('"').ConfigureAwait(OperatingSystem.IsBrowser());
             _inAttribute = false;
         }
 
@@ -640,10 +640,10 @@ namespace System.Xml
         {
             if (trailByteCount > 0)
             {
-                await InternalWriteBase64TextAsync(trailBytes, 0, trailByteCount).ConfigureAwait(false);
+                await InternalWriteBase64TextAsync(trailBytes, 0, trailByteCount).ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
-            await InternalWriteBase64TextAsync(buffer, offset, count).ConfigureAwait(false);
+            await InternalWriteBase64TextAsync(buffer, offset, count).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         private void InternalWriteBase64Text(byte[] buffer, int offset, int count)
@@ -673,7 +673,7 @@ namespace System.Xml
                 int byteCount = Math.Min(bufferLength / 4 * 3, count - count % 3);
                 int charCount = byteCount / 3 * 4;
                 int charOffset;
-                BytesWithOffset bufferResult = await GetBufferAsync(charCount).ConfigureAwait(false);
+                BytesWithOffset bufferResult = await GetBufferAsync(charCount).ConfigureAwait(OperatingSystem.IsBrowser());
                 byte[] chars = bufferResult.Bytes;
                 charOffset = bufferResult.Offset;
                 Advance(encoding.GetChars(buffer, offset, byteCount, chars, charOffset));
@@ -683,7 +683,7 @@ namespace System.Xml
             if (count > 0)
             {
                 int charOffset;
-                BytesWithOffset bufferResult = await GetBufferAsync(4).ConfigureAwait(false);
+                BytesWithOffset bufferResult = await GetBufferAsync(4).ConfigureAwait(OperatingSystem.IsBrowser());
                 byte[] chars = bufferResult.Bytes;
                 charOffset = bufferResult.Offset;
                 Advance(encoding.GetChars(buffer, offset, count, chars, charOffset));

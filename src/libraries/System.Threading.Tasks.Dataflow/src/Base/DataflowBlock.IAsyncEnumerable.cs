@@ -25,7 +25,7 @@ namespace System.Threading.Tasks.Dataflow
 
             static async IAsyncEnumerable<TOutput> Core(IReceivableSourceBlock<TOutput> source, [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                while (await source.OutputAvailableAsync(cancellationToken).ConfigureAwait(false))
+                while (await source.OutputAvailableAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser()))
                 {
                     while (source.TryReceive(out TOutput? item))
                     {

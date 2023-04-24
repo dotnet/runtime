@@ -163,7 +163,7 @@ namespace System.Formats.Tar
                 buffer = buffer.Slice(0, (int)(_endInSuperStream - _positionInSuperStream));
             }
 
-            int ret = await _superStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            int ret = await _superStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             _positionInSuperStream += ret;
             return ret;

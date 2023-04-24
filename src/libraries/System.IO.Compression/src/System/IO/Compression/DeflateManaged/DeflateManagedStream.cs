@@ -206,7 +206,7 @@ namespace System.IO.Compression
             {
                 while (true)
                 {
-                    int bytesRead = await readTask.ConfigureAwait(false);
+                    int bytesRead = await readTask.ConfigureAwait(OperatingSystem.IsBrowser());
                     EnsureNotDisposed();
 
                     if (bytesRead <= 0)

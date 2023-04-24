@@ -76,9 +76,9 @@ namespace System.Xml
 
         private async Task WriteAttributeStringAsyncHelper(Task task, string? value)
         {
-            await task.ConfigureAwait(false);
-            await WriteStringAsync(value).ConfigureAwait(false);
-            await WriteEndAttributeAsync().ConfigureAwait(false);
+            await task.ConfigureAwait(OperatingSystem.IsBrowser());
+            await WriteStringAsync(value).ConfigureAwait(OperatingSystem.IsBrowser());
+            await WriteEndAttributeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         // Writes the start of an attribute.
@@ -222,10 +222,10 @@ namespace System.Xml
                 {
                     throw new ArgumentException(SR.Format(SR.Xml_UndefNamespace, ns));
                 }
-                await WriteStringAsync(prefix).ConfigureAwait(false);
-                await WriteStringAsync(":").ConfigureAwait(false);
+                await WriteStringAsync(prefix).ConfigureAwait(OperatingSystem.IsBrowser());
+                await WriteStringAsync(":").ConfigureAwait(OperatingSystem.IsBrowser());
             }
-            await WriteStringAsync(localName).ConfigureAwait(false);
+            await WriteStringAsync(localName).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         // XmlReader Helper Methods
@@ -242,7 +242,7 @@ namespace System.Xml
                 {
                     if (reader.MoveToFirstAttribute())
                     {
-                        await WriteAttributesAsync(reader, defattr).ConfigureAwait(false);
+                        await WriteAttributesAsync(reader, defattr).ConfigureAwait(OperatingSystem.IsBrowser());
                         reader.MoveToElement();
                     }
                 }
@@ -258,19 +258,19 @@ namespace System.Xml
                         // If either of these is true and defattr=false, we should not write the attribute out
                         if (defattr || !reader.IsDefaultInternal)
                         {
-                            await WriteStartAttributeAsync(reader.Prefix, reader.LocalName, reader.NamespaceURI).ConfigureAwait(false);
+                            await WriteStartAttributeAsync(reader.Prefix, reader.LocalName, reader.NamespaceURI).ConfigureAwait(OperatingSystem.IsBrowser());
                             while (reader.ReadAttributeValue())
                             {
                                 if (reader.NodeType == XmlNodeType.EntityReference)
                                 {
-                                    await WriteEntityRefAsync(reader.Name).ConfigureAwait(false);
+                                    await WriteEntityRefAsync(reader.Name).ConfigureAwait(OperatingSystem.IsBrowser());
                                 }
                                 else
                                 {
-                                    await WriteStringAsync(reader.Value).ConfigureAwait(false);
+                                    await WriteStringAsync(reader.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                                 }
                             }
-                            await WriteEndAttributeAsync().ConfigureAwait(false);
+                            await WriteEndAttributeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         }
                     }
                     while (reader.MoveToNextAttribute());
@@ -305,11 +305,11 @@ namespace System.Xml
                 switch (reader.NodeType)
                 {
                     case XmlNodeType.Element:
-                        await WriteStartElementAsync(reader.Prefix, reader.LocalName, reader.NamespaceURI).ConfigureAwait(false);
-                        await WriteAttributesAsync(reader, defattr).ConfigureAwait(false);
+                        await WriteStartElementAsync(reader.Prefix, reader.LocalName, reader.NamespaceURI).ConfigureAwait(OperatingSystem.IsBrowser());
+                        await WriteAttributesAsync(reader, defattr).ConfigureAwait(OperatingSystem.IsBrowser());
                         if (reader.IsEmptyElement)
                         {
-                            await WriteEndElementAsync().ConfigureAwait(false);
+                            await WriteEndElementAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         }
                         break;
                     case XmlNodeType.Text:
@@ -319,37 +319,37 @@ namespace System.Xml
                             int read;
                             while ((read = reader.ReadValueChunk(_writeNodeBuffer, 0, WriteNodeBufferSize)) > 0)
                             {
-                                await WriteCharsAsync(_writeNodeBuffer, 0, read).ConfigureAwait(false);
+                                await WriteCharsAsync(_writeNodeBuffer, 0, read).ConfigureAwait(OperatingSystem.IsBrowser());
                             }
                         }
                         else
                         {
-                            await WriteStringAsync(reader.Value).ConfigureAwait(false);
+                            await WriteStringAsync(reader.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                         }
                         break;
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
-                        await WriteWhitespaceAsync(reader.Value).ConfigureAwait(false);
+                        await WriteWhitespaceAsync(reader.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case XmlNodeType.CDATA:
-                        await WriteCDataAsync(reader.Value).ConfigureAwait(false);
+                        await WriteCDataAsync(reader.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case XmlNodeType.EntityReference:
-                        await WriteEntityRefAsync(reader.Name).ConfigureAwait(false);
+                        await WriteEntityRefAsync(reader.Name).ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case XmlNodeType.XmlDeclaration:
                     case XmlNodeType.ProcessingInstruction:
-                        await WriteProcessingInstructionAsync(reader.Name, reader.Value).ConfigureAwait(false);
+                        await WriteProcessingInstructionAsync(reader.Name, reader.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case XmlNodeType.DocumentType:
-                        await WriteDocTypeAsync(reader.Name, reader.GetAttribute("PUBLIC"), reader.GetAttribute("SYSTEM"), reader.Value).ConfigureAwait(false);
+                        await WriteDocTypeAsync(reader.Name, reader.GetAttribute("PUBLIC"), reader.GetAttribute("SYSTEM"), reader.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
 
                     case XmlNodeType.Comment:
-                        await WriteCommentAsync(reader.Value).ConfigureAwait(false);
+                        await WriteCommentAsync(reader.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case XmlNodeType.EndElement:
-                        await WriteFullEndElementAsync().ConfigureAwait(false);
+                        await WriteFullEndElementAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                 }
             } while (reader.Read() && (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement)));
@@ -367,11 +367,11 @@ namespace System.Xml
                 switch (reader.NodeType)
                 {
                     case XmlNodeType.Element:
-                        await WriteStartElementAsync(reader.Prefix, reader.LocalName, reader.NamespaceURI).ConfigureAwait(false);
-                        await WriteAttributesAsync(reader, defattr).ConfigureAwait(false);
+                        await WriteStartElementAsync(reader.Prefix, reader.LocalName, reader.NamespaceURI).ConfigureAwait(OperatingSystem.IsBrowser());
+                        await WriteAttributesAsync(reader, defattr).ConfigureAwait(OperatingSystem.IsBrowser());
                         if (reader.IsEmptyElement)
                         {
-                            await WriteEndElementAsync().ConfigureAwait(false);
+                            await WriteEndElementAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         }
                         break;
                     case XmlNodeType.Text:
@@ -379,43 +379,43 @@ namespace System.Xml
                         {
                             _writeNodeBuffer ??= new char[WriteNodeBufferSize];
                             int read;
-                            while ((read = await reader.ReadValueChunkAsync(_writeNodeBuffer, 0, WriteNodeBufferSize).ConfigureAwait(false)) > 0)
+                            while ((read = await reader.ReadValueChunkAsync(_writeNodeBuffer, 0, WriteNodeBufferSize).ConfigureAwait(OperatingSystem.IsBrowser())) > 0)
                             {
-                                await WriteCharsAsync(_writeNodeBuffer, 0, read).ConfigureAwait(false);
+                                await WriteCharsAsync(_writeNodeBuffer, 0, read).ConfigureAwait(OperatingSystem.IsBrowser());
                             }
                         }
                         else
                         {
                             //reader.Value may block on Text or WhiteSpace node, use GetValueAsync
-                            await WriteStringAsync(await reader.GetValueAsync().ConfigureAwait(false)).ConfigureAwait(false);
+                            await WriteStringAsync(await reader.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser())).ConfigureAwait(OperatingSystem.IsBrowser());
                         }
                         break;
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
-                        await WriteWhitespaceAsync(await reader.GetValueAsync().ConfigureAwait(false)).ConfigureAwait(false);
+                        await WriteWhitespaceAsync(await reader.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser())).ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case XmlNodeType.CDATA:
-                        await WriteCDataAsync(reader.Value).ConfigureAwait(false);
+                        await WriteCDataAsync(reader.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case XmlNodeType.EntityReference:
-                        await WriteEntityRefAsync(reader.Name).ConfigureAwait(false);
+                        await WriteEntityRefAsync(reader.Name).ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case XmlNodeType.XmlDeclaration:
                     case XmlNodeType.ProcessingInstruction:
-                        await WriteProcessingInstructionAsync(reader.Name, reader.Value).ConfigureAwait(false);
+                        await WriteProcessingInstructionAsync(reader.Name, reader.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case XmlNodeType.DocumentType:
-                        await WriteDocTypeAsync(reader.Name, reader.GetAttribute("PUBLIC"), reader.GetAttribute("SYSTEM"), reader.Value).ConfigureAwait(false);
+                        await WriteDocTypeAsync(reader.Name, reader.GetAttribute("PUBLIC"), reader.GetAttribute("SYSTEM"), reader.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
 
                     case XmlNodeType.Comment:
-                        await WriteCommentAsync(reader.Value).ConfigureAwait(false);
+                        await WriteCommentAsync(reader.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                     case XmlNodeType.EndElement:
-                        await WriteFullEndElementAsync().ConfigureAwait(false);
+                        await WriteFullEndElementAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         break;
                 }
-            } while (await reader.ReadAsync().ConfigureAwait(false) && (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement)));
+            } while (await reader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()) && (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement)));
         }
 
         // Copies the current node from the given XPathNavigator to the writer (including child nodes).
@@ -438,7 +438,7 @@ namespace System.Xml
                     switch (nodeType)
                     {
                         case XPathNodeType.Element:
-                            await WriteStartElementAsync(navigator.Prefix, navigator.LocalName, navigator.NamespaceURI).ConfigureAwait(false);
+                            await WriteStartElementAsync(navigator.Prefix, navigator.LocalName, navigator.NamespaceURI).ConfigureAwait(OperatingSystem.IsBrowser());
 
                             // Copy attributes
                             if (navigator.MoveToFirstAttribute())
@@ -448,10 +448,10 @@ namespace System.Xml
                                     IXmlSchemaInfo? schemaInfo = navigator.SchemaInfo;
                                     if (defattr || (schemaInfo == null || !schemaInfo.IsDefault))
                                     {
-                                        await WriteStartAttributeAsync(navigator.Prefix, navigator.LocalName, navigator.NamespaceURI).ConfigureAwait(false);
+                                        await WriteStartAttributeAsync(navigator.Prefix, navigator.LocalName, navigator.NamespaceURI).ConfigureAwait(OperatingSystem.IsBrowser());
                                         // copy string value to writer
-                                        await WriteStringAsync(navigator.Value).ConfigureAwait(false);
-                                        await WriteEndAttributeAsync().ConfigureAwait(false);
+                                        await WriteStringAsync(navigator.Value).ConfigureAwait(OperatingSystem.IsBrowser());
+                                        await WriteEndAttributeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                                     }
                                 } while (navigator.MoveToNextAttribute());
                                 navigator.MoveToParent();
@@ -460,7 +460,7 @@ namespace System.Xml
                             // Copy namespaces
                             if (navigator.MoveToFirstNamespace(XPathNamespaceScope.Local))
                             {
-                                await WriteLocalNamespacesAsync(navigator).ConfigureAwait(false);
+                                await WriteLocalNamespacesAsync(navigator).ConfigureAwait(OperatingSystem.IsBrowser());
                                 navigator.MoveToParent();
                             }
                             mayHaveChildren = true;
@@ -469,20 +469,20 @@ namespace System.Xml
                             // do nothing on root level attribute
                             break;
                         case XPathNodeType.Text:
-                            await WriteStringAsync(navigator.Value).ConfigureAwait(false);
+                            await WriteStringAsync(navigator.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                             break;
                         case XPathNodeType.SignificantWhitespace:
                         case XPathNodeType.Whitespace:
-                            await WriteWhitespaceAsync(navigator.Value).ConfigureAwait(false);
+                            await WriteWhitespaceAsync(navigator.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                             break;
                         case XPathNodeType.Root:
                             mayHaveChildren = true;
                             break;
                         case XPathNodeType.Comment:
-                            await WriteCommentAsync(navigator.Value).ConfigureAwait(false);
+                            await WriteCommentAsync(navigator.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                             break;
                         case XPathNodeType.ProcessingInstruction:
-                            await WriteProcessingInstructionAsync(navigator.LocalName, navigator.Value).ConfigureAwait(false);
+                            await WriteProcessingInstructionAsync(navigator.LocalName, navigator.Value).ConfigureAwait(OperatingSystem.IsBrowser());
                             break;
                         case XPathNodeType.Namespace:
                             // do nothing on root level namespace
@@ -506,11 +506,11 @@ namespace System.Xml
                         {
                             if (navigator.IsEmptyElement)
                             {
-                                await WriteEndElementAsync().ConfigureAwait(false);
+                                await WriteEndElementAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                             }
                             else
                             {
-                                await WriteFullEndElementAsync().ConfigureAwait(false);
+                                await WriteFullEndElementAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                             }
                         }
                     }
@@ -536,7 +536,7 @@ namespace System.Xml
 
                         // EndElement
                         if (navigator.NodeType == XPathNodeType.Element)
-                            await WriteFullEndElementAsync().ConfigureAwait(false);
+                            await WriteFullEndElementAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                 }
             }
@@ -547,12 +547,12 @@ namespace System.Xml
         // Writes out an attribute with the specified name, namespace URI, and string value.
         public async Task WriteElementStringAsync(string? prefix, string localName, string? ns, string value)
         {
-            await WriteStartElementAsync(prefix, localName, ns).ConfigureAwait(false);
+            await WriteStartElementAsync(prefix, localName, ns).ConfigureAwait(OperatingSystem.IsBrowser());
             if (!string.IsNullOrEmpty(value))
             {
-                await WriteStringAsync(value).ConfigureAwait(false);
+                await WriteStringAsync(value).ConfigureAwait(OperatingSystem.IsBrowser());
             }
-            await WriteEndElementAsync().ConfigureAwait(false);
+            await WriteEndElementAsync().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         // Copy local namespaces on the navigator's current node to the raw writer. The namespaces are returned by the navigator in reversed order.
@@ -564,22 +564,22 @@ namespace System.Xml
 
             if (nsNav.MoveToNextNamespace(XPathNamespaceScope.Local))
             {
-                await WriteLocalNamespacesAsync(nsNav).ConfigureAwait(false);
+                await WriteLocalNamespacesAsync(nsNav).ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             if (prefix.Length == 0)
             {
-                await WriteAttributeStringAsync(string.Empty, "xmlns", XmlReservedNs.NsXmlNs, ns).ConfigureAwait(false);
+                await WriteAttributeStringAsync(string.Empty, "xmlns", XmlReservedNs.NsXmlNs, ns).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else
             {
-                await WriteAttributeStringAsync("xmlns", prefix, XmlReservedNs.NsXmlNs, ns).ConfigureAwait(false);
+                await WriteAttributeStringAsync("xmlns", prefix, XmlReservedNs.NsXmlNs, ns).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
         public async ValueTask DisposeAsync()
         {
-            await DisposeAsyncCore().ConfigureAwait(false);
+            await DisposeAsyncCore().ConfigureAwait(OperatingSystem.IsBrowser());
             Dispose(false);
             GC.SuppressFinalize(this);
         }

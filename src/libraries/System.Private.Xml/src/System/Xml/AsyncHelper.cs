@@ -33,7 +33,7 @@ namespace System.Xml
 
         private static async Task CallVoidFuncWhenFinishCoreAsync<TArg>(this Task task, Action<TArg> func, TArg arg)
         {
-            await task.ConfigureAwait(false);
+            await task.ConfigureAwait(OperatingSystem.IsBrowser());
             func(arg);
         }
 
@@ -46,7 +46,7 @@ namespace System.Xml
 
         private static async Task<bool> ReturnTrueTaskWhenFinishCoreAsync(this Task task)
         {
-            await task.ConfigureAwait(false);
+            await task.ConfigureAwait(OperatingSystem.IsBrowser());
             return true;
         }
 
@@ -59,8 +59,8 @@ namespace System.Xml
 
         private static async Task CallTaskFuncWhenFinishCoreAsync<TArg>(Task task, Func<TArg, Task> func, TArg arg)
         {
-            await task.ConfigureAwait(false);
-            await func(arg).ConfigureAwait(false);
+            await task.ConfigureAwait(OperatingSystem.IsBrowser());
+            await func(arg).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         public static Task<bool> CallBoolTaskFuncWhenFinishAsync<TArg>(this Task task, Func<TArg, Task<bool>> func, TArg arg)
@@ -72,8 +72,8 @@ namespace System.Xml
 
         private static async Task<bool> CallBoolTaskFuncWhenFinishCoreAsync<TArg>(this Task task, Func<TArg, Task<bool>> func, TArg arg)
         {
-            await task.ConfigureAwait(false);
-            return await func(arg).ConfigureAwait(false);
+            await task.ConfigureAwait(OperatingSystem.IsBrowser());
+            return await func(arg).ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         public static Task<bool> ContinueBoolTaskFuncWhenFalseAsync<TArg>(this Task<bool> task, Func<TArg, Task<bool>> func, TArg arg)
@@ -90,10 +90,10 @@ namespace System.Xml
 
         private static async Task<bool> ContinueBoolTaskFuncWhenFalseCoreAsync<TArg>(Task<bool> task, Func<TArg, Task<bool>> func, TArg arg)
         {
-            if (await task.ConfigureAwait(false))
+            if (await task.ConfigureAwait(OperatingSystem.IsBrowser()))
                 return true;
             else
-                return await func(arg).ConfigureAwait(false);
+                return await func(arg).ConfigureAwait(OperatingSystem.IsBrowser());
         }
     }
 }

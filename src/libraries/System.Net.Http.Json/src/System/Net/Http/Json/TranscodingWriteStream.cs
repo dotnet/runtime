@@ -103,7 +103,7 @@ namespace System.Net.Http.Json
 
                 _charsDecoded += charsDecoded;
                 bufferSegment = bufferSegment.Slice(bytesDecoded);
-                await WriteBufferAsync(cancellationToken).ConfigureAwait(false);
+                await WriteBufferAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -118,7 +118,7 @@ namespace System.Net.Http.Json
                 _encoder.Convert(_charBuffer, charsWritten, _charsDecoded - charsWritten, byteBuffer, byteIndex: 0, byteBuffer.Length,
                     flush: false, out int charsEncoded, out int bytesUsed, out encoderCompleted);
 
-                await _stream.WriteAsync(byteBuffer, 0, bytesUsed, cancellationToken).ConfigureAwait(false);
+                await _stream.WriteAsync(byteBuffer, 0, bytesUsed, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 charsWritten += charsEncoded;
             }
 
@@ -150,7 +150,7 @@ namespace System.Net.Http.Json
                 _encoder.Convert(Array.Empty<char>(), 0, 0, byteBuffer, 0, byteBuffer.Length,
                     flush: true, out _, out int bytesUsed, out encoderCompleted);
 
-                await _stream.WriteAsync(byteBuffer, 0, bytesUsed, cancellationToken).ConfigureAwait(false);
+                await _stream.WriteAsync(byteBuffer, 0, bytesUsed, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             ArrayPool<byte>.Shared.Return(byteBuffer);

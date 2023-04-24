@@ -185,7 +185,7 @@ namespace System
             {
                 if (async)
                 {
-                    await stream.CopyToAsync(memoryStream, bufferSize, cancellationToken).ConfigureAwait(false);
+                    await stream.CopyToAsync(memoryStream, bufferSize, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 else
                 {

@@ -406,7 +406,7 @@ namespace System.Security.Cryptography.Cose
 
                 try
                 {
-                    await CoseMessage.AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature, Message.RawProtectedHeaders, _encodedSignProtectedHeaders, associatedData, content, cancellationToken).ConfigureAwait(false);
+                    await CoseMessage.AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature, Message.RawProtectedHeaders, _encodedSignProtectedHeaders, associatedData, content, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     return VerifyHash(key, hasher, hashAlgorithm, keyType, padding);
                 }
                 finally

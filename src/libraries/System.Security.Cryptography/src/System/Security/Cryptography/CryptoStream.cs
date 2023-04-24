@@ -146,7 +146,7 @@ namespace System.Security.Cryptography
                 byte[] finalBytes = _transform.TransformFinalBlock(_inputBuffer!, 0, _inputBufferIndex);
                 if (useAsync)
                 {
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(finalBytes), cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(finalBytes), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 else
                 {
@@ -159,14 +159,14 @@ namespace System.Security.Cryptography
             {
                 if (!innerCryptoStream.HasFlushedFinalBlock)
                 {
-                    await innerCryptoStream.FlushFinalBlockAsync(useAsync, cancellationToken).ConfigureAwait(false);
+                    await innerCryptoStream.FlushFinalBlockAsync(useAsync, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             else
             {
                 if (useAsync)
                 {
-                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 else
                 {
@@ -237,10 +237,10 @@ namespace System.Security.Cryptography
             // async requests outstanding, we will block the application's main
             // thread if it does a second IO request until the first one completes.
 
-            await AsyncActiveSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await AsyncActiveSemaphore.WaitAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             try
             {
-                return await ReadAsyncCore(buffer, cancellationToken, useAsync: true).ConfigureAwait(false);
+                return await ReadAsyncCore(buffer, cancellationToken, useAsync: true).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             finally
             {
@@ -348,7 +348,7 @@ namespace System.Security.Cryptography
                         // Read into our temporary input buffer, leaving enough room at the beginning for any existing data
                         // we have in _inputBuffer.
                         bytesRead = useAsync ?
-                            await _stream.ReadAsync(new Memory<byte>(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex), cancellationToken).ConfigureAwait(false) :
+                            await _stream.ReadAsync(new Memory<byte>(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser()) :
                             _stream.Read(tempInputBuffer, _inputBufferIndex, numWholeBlocksInBytes - _inputBufferIndex);
                         eof = bytesRead == 0;
 
@@ -425,7 +425,7 @@ namespace System.Security.Cryptography
                     while (_inputBufferIndex < _inputBlockSize)
                     {
                         bytesRead = useAsync ?
-                            await _stream.ReadAsync(new Memory<byte>(_inputBuffer, _inputBufferIndex, _inputBlockSize - _inputBufferIndex), cancellationToken).ConfigureAwait(false) :
+                            await _stream.ReadAsync(new Memory<byte>(_inputBuffer, _inputBufferIndex, _inputBlockSize - _inputBufferIndex), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser()) :
                             _stream.Read(_inputBuffer, _inputBufferIndex, _inputBlockSize - _inputBufferIndex);
                         if (bytesRead <= 0)
                         {
@@ -476,10 +476,10 @@ namespace System.Security.Cryptography
             // async requests outstanding, we will block the application's main
             // thread if it does a second IO request until the first one completes.
 
-            await AsyncActiveSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await AsyncActiveSemaphore.WaitAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             try
             {
-                await WriteAsyncCore(buffer, cancellationToken, useAsync: true).ConfigureAwait(false);
+                await WriteAsyncCore(buffer, cancellationToken, useAsync: true).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             finally
             {
@@ -570,7 +570,7 @@ namespace System.Security.Cryptography
                 numOutputBytes = _transform.TransformBlock(_inputBuffer, 0, _inputBlockSize, _outputBuffer, 0);
                 // write out the bytes we just got
                 if (useAsync)
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_outputBuffer, 0, numOutputBytes), cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_outputBuffer, 0, numOutputBytes), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 else
                     _stream.Write(_outputBuffer, 0, numOutputBytes);
 
@@ -599,7 +599,7 @@ namespace System.Security.Cryptography
 
                             if (useAsync)
                             {
-                                await _stream.WriteAsync(new ReadOnlyMemory<byte>(tempOutputBuffer, 0, numOutputBytes), cancellationToken).ConfigureAwait(false);
+                                await _stream.WriteAsync(new ReadOnlyMemory<byte>(tempOutputBuffer, 0, numOutputBytes), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                             }
                             else
                             {
@@ -626,7 +626,7 @@ namespace System.Security.Cryptography
                         numOutputBytes = TransformBlock(_transform, buffer.Slice(currentInputIndex, _inputBlockSize), _outputBuffer, 0);
 
                         if (useAsync)
-                            await _stream.WriteAsync(new ReadOnlyMemory<byte>(_outputBuffer, 0, numOutputBytes), cancellationToken).ConfigureAwait(false);
+                            await _stream.WriteAsync(new ReadOnlyMemory<byte>(_outputBuffer, 0, numOutputBytes), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                         else
                             _stream.Write(_outputBuffer, 0, numOutputBytes);
 
@@ -727,8 +727,8 @@ namespace System.Security.Cryptography
                 int bytesRead;
                 do
                 {
-                    bytesRead = await ReadAsync(rentedBuffer.AsMemory(0, bufferSize), cancellationToken).ConfigureAwait(false);
-                    await destination.WriteAsync(rentedBuffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+                    bytesRead = await ReadAsync(rentedBuffer.AsMemory(0, bufferSize), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
+                    await destination.WriteAsync(rentedBuffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 } while (bytesRead > 0);
             }
             finally
@@ -811,12 +811,12 @@ namespace System.Security.Cryptography
             {
                 if (!_finalBlockTransformed)
                 {
-                    await FlushFinalBlockAsync(useAsync: true, default).ConfigureAwait(false);
+                    await FlushFinalBlockAsync(useAsync: true, default).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
 
                 if (!_leaveOpen)
                 {
-                    await _stream.DisposeAsync().ConfigureAwait(false);
+                    await _stream.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
             finally

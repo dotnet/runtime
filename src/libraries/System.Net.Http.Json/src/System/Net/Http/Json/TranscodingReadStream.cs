@@ -116,7 +116,7 @@ namespace System.Net.Http.Json
             // Only read more content from the input stream if we have exhausted all the buffered chars.
             if (_charBuffer.Count == 0)
             {
-                int bytesRead = await ReadInputChars(cancellationToken).ConfigureAwait(false);
+                int bytesRead = await ReadInputChars(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 shouldFlushEncoder = bytesRead == 0 && _byteBuffer.Count == 0;
             }
 
@@ -170,7 +170,7 @@ namespace System.Net.Http.Json
             int offset = _byteBuffer.Count;
             int count = _byteBuffer.Array.Length - _byteBuffer.Count;
 
-            int bytesRead = await _stream.ReadAsync(_byteBuffer.Array, offset, count, cancellationToken).ConfigureAwait(false);
+            int bytesRead = await _stream.ReadAsync(_byteBuffer.Array, offset, count, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             _byteBuffer = new ArraySegment<byte>(_byteBuffer.Array, 0, offset + bytesRead);
 

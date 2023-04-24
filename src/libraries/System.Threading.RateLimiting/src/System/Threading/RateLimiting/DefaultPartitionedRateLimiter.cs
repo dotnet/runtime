@@ -57,7 +57,7 @@ namespace System.Threading.RateLimiting
             {
                 try
                 {
-                    await Heartbeat().ConfigureAwait(false);
+                    await Heartbeat().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 // TODO: Can we log to EventSource or somewhere? Maybe dispatch throwing the exception so it is at least an unhandled exception?
                 catch { }
@@ -146,12 +146,12 @@ namespace System.Threading.RateLimiting
         {
             bool alreadyDisposed = CommonDispose();
 
-            await _timerTask.ConfigureAwait(false);
+            await _timerTask.ConfigureAwait(OperatingSystem.IsBrowser());
             _cachedLimiters.Clear();
 
             if (alreadyDisposed)
             {
-                await _disposeComplete.Task.ConfigureAwait(false);
+                await _disposeComplete.Task.ConfigureAwait(OperatingSystem.IsBrowser());
                 return;
             }
 
@@ -160,7 +160,7 @@ namespace System.Threading.RateLimiting
             {
                 try
                 {
-                    await limiter.Value.Value.DisposeAsync().ConfigureAwait(false);
+                    await limiter.Value.Value.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 catch (Exception ex)
                 {
@@ -264,7 +264,7 @@ namespace System.Threading.RateLimiting
             {
                 try
                 {
-                    await limiter.DisposeAsync().ConfigureAwait(false);
+                    await limiter.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 catch (Exception ex)
                 {

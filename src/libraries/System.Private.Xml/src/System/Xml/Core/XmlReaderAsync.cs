@@ -27,7 +27,7 @@ namespace System.Xml
             {
                 throw CreateReadContentAsException(nameof(ReadContentAsObject));
             }
-            return await InternalReadContentAsStringAsync().ConfigureAwait(false);
+            return await InternalReadContentAsStringAsync().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         // Concatenates values of textual nodes of the current content, ignoring comments and PIs, expanding entity references,
@@ -50,7 +50,7 @@ namespace System.Xml
                 throw CreateReadContentAsException(nameof(ReadContentAs));
             }
 
-            string strContentValue = await InternalReadContentAsStringAsync().ConfigureAwait(false);
+            string strContentValue = await InternalReadContentAsStringAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             if (returnType == typeof(string))
             {
                 return strContentValue;
@@ -73,10 +73,10 @@ namespace System.Xml
         // Returns the content of the current element as the most appropriate type. Moves to the node following the element's end tag.
         public virtual async Task<object> ReadElementContentAsObjectAsync()
         {
-            if (await SetupReadElementContentAsXxxAsync("ReadElementContentAsObject").ConfigureAwait(false))
+            if (await SetupReadElementContentAsXxxAsync("ReadElementContentAsObject").ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                object value = await ReadContentAsObjectAsync().ConfigureAwait(false);
-                await FinishReadElementContentAsXxxAsync().ConfigureAwait(false);
+                object value = await ReadContentAsObjectAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+                await FinishReadElementContentAsXxxAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 return value;
             }
             return string.Empty;
@@ -85,10 +85,10 @@ namespace System.Xml
         // Returns the content of the current element as a string. Moves to the node following the element's end tag.
         public virtual async Task<string> ReadElementContentAsStringAsync()
         {
-            if (await SetupReadElementContentAsXxxAsync("ReadElementContentAsString").ConfigureAwait(false))
+            if (await SetupReadElementContentAsXxxAsync("ReadElementContentAsString").ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                string value = await ReadContentAsStringAsync().ConfigureAwait(false);
-                await FinishReadElementContentAsXxxAsync().ConfigureAwait(false);
+                string value = await ReadContentAsStringAsync().ConfigureAwait(OperatingSystem.IsBrowser());
+                await FinishReadElementContentAsXxxAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 return value;
             }
             return string.Empty;
@@ -97,10 +97,10 @@ namespace System.Xml
         // Returns the content of the current element as the requested type. Moves to the node following the element's end tag.
         public virtual async Task<object> ReadElementContentAsAsync(Type returnType, IXmlNamespaceResolver namespaceResolver)
         {
-            if (await SetupReadElementContentAsXxxAsync("ReadElementContentAs").ConfigureAwait(false))
+            if (await SetupReadElementContentAsXxxAsync("ReadElementContentAs").ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                object value = await ReadContentAsAsync(returnType, namespaceResolver).ConfigureAwait(false);
-                await FinishReadElementContentAsXxxAsync().ConfigureAwait(false);
+                object value = await ReadContentAsAsync(returnType, namespaceResolver).ConfigureAwait(OperatingSystem.IsBrowser());
+                await FinishReadElementContentAsXxxAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 return value;
             }
             return returnType == typeof(string) ? string.Empty : XmlUntypedConverter.Untyped.ChangeType(string.Empty, returnType, namespaceResolver);
@@ -171,7 +171,7 @@ namespace System.Xml
                     case XmlNodeType.EndEntity:
                         return NodeType;
                 }
-            } while (await ReadAsync().ConfigureAwait(false));
+            } while (await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
             return NodeType;
         }
 
@@ -184,7 +184,7 @@ namespace System.Xml
             }
             if (NodeType != XmlNodeType.Attribute && NodeType != XmlNodeType.Element)
             {
-                await ReadAsync().ConfigureAwait(false);
+                await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 return string.Empty;
             }
 
@@ -200,7 +200,7 @@ namespace System.Xml
 
                 if (NodeType == XmlNodeType.Element)
                 {
-                    await WriteNodeAsync(xtw, false).ConfigureAwait(false);
+                    await WriteNodeAsync(xtw, false).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
 
@@ -211,7 +211,7 @@ namespace System.Xml
         private async Task WriteNodeAsync(XmlTextWriter xtw, bool defattr)
         {
             int d = NodeType == XmlNodeType.None ? -1 : Depth;
-            while (await ReadAsync().ConfigureAwait(false) && d < Depth)
+            while (await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()) && d < Depth)
             {
                 switch (NodeType)
                 {
@@ -225,11 +225,11 @@ namespace System.Xml
                         }
                         break;
                     case XmlNodeType.Text:
-                        xtw.WriteString(await GetValueAsync().ConfigureAwait(false));
+                        xtw.WriteString(await GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
                         break;
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
-                        xtw.WriteWhitespace(await GetValueAsync().ConfigureAwait(false));
+                        xtw.WriteWhitespace(await GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
                         break;
                     case XmlNodeType.CDATA:
                         xtw.WriteCData(Value);
@@ -254,7 +254,7 @@ namespace System.Xml
             }
             if (d == Depth && NodeType == XmlNodeType.EndElement)
             {
-                await ReadAsync().ConfigureAwait(false);
+                await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -267,7 +267,7 @@ namespace System.Xml
             }
             if (NodeType != XmlNodeType.Attribute && NodeType != XmlNodeType.Element)
             {
-                await ReadAsync().ConfigureAwait(false);
+                await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 return string.Empty;
             }
 
@@ -301,18 +301,18 @@ namespace System.Xml
             {
                 int depth = Depth;
 
-                while (await ReadAsync().ConfigureAwait(false) && depth < Depth)
+                while (await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()) && depth < Depth)
                 {
                     // Nothing, just read on
                 }
 
                 // consume end tag
                 if (NodeType == XmlNodeType.EndElement)
-                    return await ReadAsync().ConfigureAwait(false);
+                    return await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
             else
             {
-                return await ReadAsync().ConfigureAwait(false);
+                return await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             return false;
@@ -335,12 +335,12 @@ namespace System.Xml
                         // merge text content
                         if (value.Length == 0)
                         {
-                            value = await GetValueAsync().ConfigureAwait(false);
+                            value = await GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         }
                         else
                         {
                             sb ??= new StringBuilder().Append(value);
-                            sb.Append(await GetValueAsync().ConfigureAwait(false));
+                            sb.Append(await GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
                         }
                         break;
                     case XmlNodeType.ProcessingInstruction:
@@ -358,7 +358,7 @@ namespace System.Xml
                     default:
                         goto ReturnContent;
                 }
-            } while (AttributeCount != 0 ? ReadAttributeValue() : await ReadAsync().ConfigureAwait(false));
+            } while (AttributeCount != 0 ? ReadAttributeValue() : await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
 
         ReturnContent:
             return sb == null ? value : sb.ToString();
@@ -374,7 +374,7 @@ namespace System.Xml
             bool isEmptyElement = IsEmptyElement;
 
             // move to content or beyond the empty element
-            await ReadAsync().ConfigureAwait(false);
+            await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
 
             if (isEmptyElement)
             {
@@ -384,7 +384,7 @@ namespace System.Xml
             XmlNodeType nodeType = NodeType;
             if (nodeType == XmlNodeType.EndElement)
             {
-                await ReadAsync().ConfigureAwait(false);
+                await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 return false;
             }
 

@@ -41,7 +41,7 @@ namespace System.Threading.Tasks
 
                     if (!moveNextTask.IsCompleted)
                     {
-                        (mres ??= new ManualResetEventWithAwaiterSupport()).Wait(moveNextTask.ConfigureAwait(false).GetAwaiter());
+                        (mres ??= new ManualResetEventWithAwaiterSupport()).Wait(moveNextTask.ConfigureAwait(OperatingSystem.IsBrowser()).GetAwaiter());
                         Debug.Assert(moveNextTask.IsCompleted);
                     }
 
@@ -59,7 +59,7 @@ namespace System.Threading.Tasks
 
                 if (!disposeTask.IsCompleted)
                 {
-                    (mres ?? new ManualResetEventWithAwaiterSupport()).Wait(disposeTask.ConfigureAwait(false).GetAwaiter());
+                    (mres ?? new ManualResetEventWithAwaiterSupport()).Wait(disposeTask.ConfigureAwait(OperatingSystem.IsBrowser()).GetAwaiter());
                     Debug.Assert(disposeTask.IsCompleted);
                 }
 

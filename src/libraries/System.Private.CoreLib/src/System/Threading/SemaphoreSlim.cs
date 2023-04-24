@@ -730,7 +730,7 @@ namespace System.Threading
 
             // The waiter had already been removed, which means it's already completed or is about to
             // complete, so let it, and don't return until it does.
-            return await asyncWaiter.ConfigureAwait(false);
+            return await asyncWaiter.ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         // TODO https://github.com/dotnet/runtime/issues/22144: Replace with official nothrow await solution once available.

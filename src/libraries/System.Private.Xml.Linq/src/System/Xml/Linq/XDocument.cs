@@ -300,7 +300,7 @@ namespace System.Xml.Linq
 
             using (XmlReader r = XmlReader.Create(stream, rs))
             {
-                return await LoadAsync(r, options, cancellationToken).ConfigureAwait(false);
+                return await LoadAsync(r, options, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -383,7 +383,7 @@ namespace System.Xml.Linq
 
             using (XmlReader r = XmlReader.Create(textReader, rs))
             {
-                return await LoadAsync(r, options, cancellationToken).ConfigureAwait(false);
+                return await LoadAsync(r, options, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -464,11 +464,11 @@ namespace System.Xml.Linq
         {
             if (reader.ReadState == ReadState.Initial)
             {
-                await reader.ReadAsync().ConfigureAwait(false);
+                await reader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
 
             XDocument d = InitLoad(reader, options);
-            await d.ReadContentFromAsync(reader, options, cancellationToken).ConfigureAwait(false);
+            await d.ReadContentFromAsync(reader, options, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
             if (!reader.EOF) throw new InvalidOperationException(SR.InvalidOperation_ExpectedEndOfFile);
             if (d.Root == null) throw new InvalidOperationException(SR.InvalidOperation_MissingRoot);
@@ -635,10 +635,10 @@ namespace System.Xml.Linq
             }
 
             XmlWriter w = XmlWriter.Create(stream, ws);
-            await using (w.ConfigureAwait(false))
+            await using (w.ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                await WriteToAsync(w, cancellationToken).ConfigureAwait(false);
-                await w.FlushAsync().ConfigureAwait(false);
+                await WriteToAsync(w, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
+                await w.FlushAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -709,10 +709,10 @@ namespace System.Xml.Linq
             ws.Async = true;
 
             XmlWriter w = XmlWriter.Create(textWriter, ws);
-            await using (w.ConfigureAwait(false))
+            await using (w.ConfigureAwait(OperatingSystem.IsBrowser()))
             {
-                await WriteToAsync(w, cancellationToken).ConfigureAwait(false);
-                await w.FlushAsync().ConfigureAwait(false);
+                await WriteToAsync(w, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
+                await w.FlushAsync().ConfigureAwait(OperatingSystem.IsBrowser());
             }
         }
 
@@ -847,10 +847,10 @@ namespace System.Xml.Linq
             {
                 tStart = writer.WriteStartDocumentAsync();
             }
-            await tStart.ConfigureAwait(false);
+            await tStart.ConfigureAwait(OperatingSystem.IsBrowser());
 
-            await WriteContentToAsync(writer, cancellationToken).ConfigureAwait(false);
-            await writer.WriteEndDocumentAsync().ConfigureAwait(false);
+            await WriteContentToAsync(writer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
+            await writer.WriteEndDocumentAsync().ConfigureAwait(OperatingSystem.IsBrowser());
         }
 
         internal override void AddAttribute(XAttribute a)

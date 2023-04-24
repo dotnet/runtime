@@ -344,7 +344,7 @@ namespace System.DirectoryServices.Protocols
                     {
                         try
                         {
-                            DirectoryResponse response = await vt.ConfigureAwait(false);
+                            DirectoryResponse response = await vt.ConfigureAwait(OperatingSystem.IsBrowser());
                             requestState._response = response;
                         }
                         catch (Exception e)
@@ -1414,7 +1414,7 @@ namespace System.DirectoryServices.Protocols
                     {
                         break;
                     }
-                    await Task.Delay(Math.Min(iterationDelay, 100)).ConfigureAwait(false);
+                    await Task.Delay(Math.Min(iterationDelay, 100)).ConfigureAwait(OperatingSystem.IsBrowser());
                     if (iterationDelay < 100)
                     {
                         iterationDelay *= 2;

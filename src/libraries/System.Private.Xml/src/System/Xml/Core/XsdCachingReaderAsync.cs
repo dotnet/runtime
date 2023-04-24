@@ -39,7 +39,7 @@ namespace System.Xml
 
                 case CachingReaderState.Record:
                     ValidatingReaderNodeData? recordedNode = null;
-                    if (await _coreReader.ReadAsync().ConfigureAwait(false))
+                    if (await _coreReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()))
                     {
                         switch (_coreReader.NodeType)
                         {
@@ -61,7 +61,7 @@ namespace System.Xml
                             case XmlNodeType.Whitespace:
                             case XmlNodeType.SignificantWhitespace:
                                 recordedNode = AddContent(_coreReader.NodeType);
-                                recordedNode.SetItemData(await _coreReader.GetValueAsync().ConfigureAwait(false));
+                                recordedNode.SetItemData(await _coreReader.GetValueAsync().ConfigureAwait(OperatingSystem.IsBrowser()));
                                 recordedNode.SetLineInfo(_lineInfo);
                                 recordedNode.Depth = _coreReader.Depth;
                                 break;
@@ -85,7 +85,7 @@ namespace System.Xml
                         _cacheHandler(this);
                         if (_coreReader.NodeType != XmlNodeType.Element || _readAhead)
                         { //Only when coreReader not positioned on Element node, read ahead, otherwise it is on the next element node already, since this was not cached
-                            return await _coreReader.ReadAsync().ConfigureAwait(false);
+                            return await _coreReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                         }
                         return true;
                     }
@@ -112,10 +112,10 @@ namespace System.Xml
                     if (_coreReader.NodeType != XmlNodeType.EndElement && !_readAhead)
                     { //will be true for IsDefault cases where we peek only one node ahead
                         int startDepth = _coreReader.Depth - 1;
-                        while (await _coreReader.ReadAsync().ConfigureAwait(false) && _coreReader.Depth > startDepth)
+                        while (await _coreReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser()) && _coreReader.Depth > startDepth)
                             ;
                     }
-                    await _coreReader.ReadAsync().ConfigureAwait(false);
+                    await _coreReader.ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     _cacheState = CachingReaderState.ReaderClosed;
                     _cacheHandler(this);
                     break;
@@ -126,7 +126,7 @@ namespace System.Xml
 
                 default:
                     Debug.Assert(_cacheState == CachingReaderState.Replay);
-                    await ReadAsync().ConfigureAwait(false);
+                    await ReadAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                     break;
             }
         }
