@@ -124,8 +124,8 @@ namespace System.Text
         /// <summary>Parse the composite format string into segments.</summary>
         /// <param name="format">The format string.</param>
         /// <param name="segments">The list into which to store the segments.</param>
-        /// <param name="failureOffset">The offset at which a parsing error occured if false is returned.</param>
-        /// <param name="failureReason">The reason for a parsing failure if false is returned.</param>
+        /// <param name="failureOffset">The offset at which a parsing error occured if <see langword="false"/> is returned.</param>
+        /// <param name="failureReason">The reason for a parsing failure if <see langword="false"/> is returned.</param>
         /// <returns>true if the format string can be parsed successfully; otherwise, false.</returns>
         private static bool TryParseLiterals(ReadOnlySpan<char> format, List<(string? Literal, int ArgIndex, int Alignment, string? Format)> segments, ref int failureOffset, ref ExceptionResource failureReason)
         {
