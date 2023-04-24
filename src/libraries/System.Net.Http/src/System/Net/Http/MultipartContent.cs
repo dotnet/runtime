@@ -209,7 +209,7 @@ namespace System.Net.Http
             try
             {
                 // Write start boundary.
-                await EncodeStringToStreamAsync(stream, "--" + _boundary + CrLf, cancellationToken).ConfigureAwait(false);
+                await EncodeStringToStreamAsync(stream, "--" + _boundary + CrLf, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
                 // Write each nested content.
                 var output = new MemoryStream();
@@ -221,13 +221,13 @@ namespace System.Net.Http
                     output.SetLength(0);
                     SerializeHeadersToStream(output, content, writeDivider: contentIndex != 0);
                     output.Position = 0;
-                    await output.CopyToAsync(stream, cancellationToken).ConfigureAwait(false);
+                    await output.CopyToAsync(stream, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
 
-                    await content.CopyToAsync(stream, context, cancellationToken).ConfigureAwait(false);
+                    await content.CopyToAsync(stream, context, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
 
                 // Write footer boundary.
-                await EncodeStringToStreamAsync(stream, CrLf + "--" + _boundary + "--" + CrLf, cancellationToken).ConfigureAwait(false);
+                await EncodeStringToStreamAsync(stream, CrLf + "--" + _boundary + "--" + CrLf, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             catch (Exception ex)
             {
@@ -273,7 +273,7 @@ namespace System.Net.Http
                     Stream readStream;
                     if (async)
                     {
-                        readStream = nestedContent.TryReadAsStream() ?? await nestedContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                        readStream = nestedContent.TryReadAsStream() ?? await nestedContent.ReadAsStreamAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
                     else
                     {
@@ -291,7 +291,7 @@ namespace System.Net.Http
 
 #pragma warning disable CA2016
                         // Do not pass a cancellationToken to base.CreateContentReadStreamAsync() as it would trigger an infinite loop => StackOverflow
-                        return async ? await base.CreateContentReadStreamAsync().ConfigureAwait(false) : base.CreateContentReadStream(cancellationToken);
+                        return async ? await base.CreateContentReadStreamAsync().ConfigureAwait(OperatingSystem.IsBrowser()) : base.CreateContentReadStream(cancellationToken);
 #pragma warning restore CA2016
                     }
                     streams[streamIndex++] = readStream;
@@ -448,7 +448,7 @@ namespace System.Net.Http
             {
                 foreach (Stream s in _streams)
                 {
-                    await s.DisposeAsync().ConfigureAwait(false);
+                    await s.DisposeAsync().ConfigureAwait(OperatingSystem.IsBrowser());
                 }
             }
 
@@ -549,7 +549,7 @@ namespace System.Net.Http
                 {
                     if (_current != null)
                     {
-                        int bytesRead = await _current.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                        int bytesRead = await _current.ReadAsync(buffer, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                         if (bytesRead != 0)
                         {
                             _position += bytesRead;

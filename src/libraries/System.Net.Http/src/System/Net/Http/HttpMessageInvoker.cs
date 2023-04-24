@@ -83,7 +83,7 @@ namespace System.Net.Http
                 HttpResponseMessage? response = null;
                 try
                 {
-                    response = await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    response = await handler.SendAsync(request, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
                     return response;
                 }
                 catch (Exception ex) when (LogRequestFailed(ex, telemetryStarted: true))

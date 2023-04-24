@@ -146,7 +146,7 @@ namespace System.Net.Http
             try
             {
                 response = async ?
-                    await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false) :
+                    await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser()) :
                     _innerHandler.Send(request, cancellationToken);
                 return response;
             }

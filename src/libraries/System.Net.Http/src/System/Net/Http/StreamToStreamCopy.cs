@@ -79,7 +79,7 @@ namespace System.Net.Http
 
                         static async Task DisposeSourceAsync(Task copyTask, Stream source)
                         {
-                            await copyTask.ConfigureAwait(false);
+                            await copyTask.ConfigureAwait(OperatingSystem.IsBrowser());
                             DisposeSource(source);
                         }
                 }

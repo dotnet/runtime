@@ -395,7 +395,7 @@ namespace System.Net.Http
             {
                 try
                 {
-                    await copyTask.ConfigureAwait(false);
+                    await copyTask.ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
                 {
@@ -511,7 +511,7 @@ namespace System.Net.Http
         {
             try
             {
-                await serializeToStreamTask.ConfigureAwait(false);
+                await serializeToStreamTask.ConfigureAwait(OperatingSystem.IsBrowser());
             }
             catch (Exception e)
             {
@@ -828,7 +828,7 @@ namespace System.Net.Http
 
         private static async Task<TResult> WaitAndReturnAsync<TState, TResult>(Task waitTask, TState state, Func<TState, TResult> returnFunc)
         {
-            await waitTask.ConfigureAwait(false);
+            await waitTask.ConfigureAwait(OperatingSystem.IsBrowser());
             return returnFunc(state);
         }
 

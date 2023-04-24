@@ -127,7 +127,7 @@ namespace System.Net.WebSockets
 
             try
             {
-                await _innerWebSocket.ConnectAsync(uri, invoker, cancellationToken, Options).ConfigureAwait(false);
+                await _innerWebSocket.ConnectAsync(uri, invoker, cancellationToken, Options).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             catch
             {

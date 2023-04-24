@@ -185,7 +185,7 @@ namespace System.Net.Http
             try
             {
                 // Wait for the response message and make sure it completed successfully.
-                response = await base.SendAsync(request, cts.Token).ConfigureAwait(false);
+                response = await base.SendAsync(request, cts.Token).ConfigureAwait(OperatingSystem.IsBrowser());
                 ThrowForNullResponse(response);
                 response.EnsureSuccessStatusCode();
 
@@ -199,12 +199,12 @@ namespace System.Net.Http
 
                 // Since the underlying byte[] will never be exposed, we use an ArrayPool-backed
                 // stream to which we copy all of the data from the response.
-                using Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
+                using Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cts.Token).ConfigureAwait(OperatingSystem.IsBrowser());
                 using var buffer = new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize, (int)c.Headers.ContentLength.GetValueOrDefault());
 
                 try
                 {
-                    await responseStream.CopyToAsync(buffer, cts.Token).ConfigureAwait(false);
+                    await responseStream.CopyToAsync(buffer, cts.Token).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
                 {
@@ -260,7 +260,7 @@ namespace System.Net.Http
             try
             {
                 // Wait for the response message and make sure it completed successfully.
-                response = await base.SendAsync(request, cts.Token).ConfigureAwait(false);
+                response = await base.SendAsync(request, cts.Token).ConfigureAwait(OperatingSystem.IsBrowser());
                 ThrowForNullResponse(response);
                 response.EnsureSuccessStatusCode();
 
@@ -284,10 +284,10 @@ namespace System.Net.Http
                     new HttpContent.LimitMemoryStream(_maxResponseContentBufferSize, (int)contentLength.GetValueOrDefault()) :
                     new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize);
 
-                using Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
+                using Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cts.Token).ConfigureAwait(OperatingSystem.IsBrowser());
                 try
                 {
-                    await responseStream.CopyToAsync(buffer, cts.Token).ConfigureAwait(false);
+                    await responseStream.CopyToAsync(buffer, cts.Token).ConfigureAwait(OperatingSystem.IsBrowser());
                 }
                 catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
                 {
@@ -338,12 +338,12 @@ namespace System.Net.Http
             try
             {
                 // Wait for the response message and make sure it completed successfully.
-                response = await base.SendAsync(request, cts.Token).ConfigureAwait(false);
+                response = await base.SendAsync(request, cts.Token).ConfigureAwait(OperatingSystem.IsBrowser());
                 ThrowForNullResponse(response);
                 response.EnsureSuccessStatusCode();
 
                 HttpContent c = response.Content;
-                return c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                return c.TryReadAsStream() ?? await c.ReadAsStreamAsync(cancellationToken).ConfigureAwait(OperatingSystem.IsBrowser());
             }
             catch (Exception e)
             {
@@ -527,7 +527,7 @@ namespace System.Net.Http
                 try
                 {
                     // Wait for the send request to complete, getting back the response.
-                    response = await base.SendAsync(request, cts.Token).ConfigureAwait(false);
+                    response = await base.SendAsync(request, cts.Token).ConfigureAwait(OperatingSystem.IsBrowser());
                     ThrowForNullResponse(response);
 
                     // Buffer the response content if we've been asked to.
@@ -539,7 +539,7 @@ namespace System.Net.Http
                             responseContentTelemetryStarted = true;
                         }
 
-                        await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize, cts.Token).ConfigureAwait(false);
+                        await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize, cts.Token).ConfigureAwait(OperatingSystem.IsBrowser());
                     }
 
                     return response;
