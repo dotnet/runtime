@@ -1465,6 +1465,7 @@ namespace System.Text
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nuint NarrowUtf16ToAscii_Intrinsified(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
         {
             // This method contains logic optimized using vector instructions for both x64 and Arm64.
