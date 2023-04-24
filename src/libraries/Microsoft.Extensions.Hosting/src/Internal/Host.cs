@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             if (_options.ServicesStartConcurrently)
             {
-                Task tasks = Task.WhenAll(_hostedServices.Select(service => Task.Run(() => StartAndTryToExecuteAsync(service, combinedCancellationToken))));
+                Task tasks = Task.WhenAll(_hostedServices.Select(service => Task.Run(() => StartAndTryToExecuteAsync(service, combinedCancellationToken), cancellationToken)));
 
                 try
                 {
@@ -182,7 +182,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                     if (_options.ServicesStopConcurrently)
                     {
-                        Task tasks = Task.WhenAll(hostedServices.Select(service => Task.Run(() => service.StopAsync(token))));
+                        Task tasks = Task.WhenAll(hostedServices.Select(service => Task.Run(() => service.StopAsync(token), cancellationToken)));
 
                         try
                         {
