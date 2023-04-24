@@ -85,5 +85,6 @@ export enum ICUDataMode {
     Sharded,
     All,
     Invariant,
-    Custom
+    Custom,
+    Hybrid
 }
