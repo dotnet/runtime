@@ -2124,11 +2124,10 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 
     ClassLayout* blkLayout = typGetBlkLayout(blkSize);
     GenTree*     dstAddr   = gtNewOperNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(dataOffset, TYP_I_IMPL));
-    GenTree*     dst       = gtNewLoadValueNode(blkLayout, dstAddr);
-    dst->gtFlags |= GTF_GLOB_REF;
+    GenTree*     dst       = gtNewBlkIndir(blkLayout, dstAddr);
 
     GenTree* srcAddr = gtNewIconHandleNode((size_t)initData, GTF_ICON_CONST_PTR);
-    GenTree* src     = gtNewLoadValueNode(blkLayout, srcAddr);
+    GenTree* src     = gtNewBlkIndir(blkLayout, srcAddr);
 
 #ifdef DEBUG
     src->gtGetOp1()->AsIntCon()->gtTargetHandle = THT_InitializeArrayIntrinsics;
@@ -3697,8 +3696,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                         unsigned offs   = eeGetMDArrayLengthOffset(rank, dim);
                                         GenTree* gtOffs = gtNewIconNode(offs, TYP_I_IMPL);
                                         GenTree* gtAddr = gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffs);
-                                        retNode         = gtNewIndir(TYP_INT, gtAddr);
-                                        retNode->gtFlags |= GTF_IND_INVARIANT;
+                                        retNode         = gtNewIndir(TYP_INT, gtAddr, GTF_IND_INVARIANT);
                                         break;
                                     }
                                     case NI_System_Array_GetLowerBound:
@@ -3707,8 +3705,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                         unsigned offs   = eeGetMDArrayLowerBoundOffset(rank, dim);
                                         GenTree* gtOffs = gtNewIconNode(offs, TYP_I_IMPL);
                                         GenTree* gtAddr = gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffs);
-                                        retNode         = gtNewIndir(TYP_INT, gtAddr);
-                                        retNode->gtFlags |= GTF_IND_INVARIANT;
+                                        retNode         = gtNewIndir(TYP_INT, gtAddr, GTF_IND_INVARIANT);
                                         break;
                                     }
                                     case NI_System_Array_GetUpperBound:
@@ -3721,14 +3718,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                         unsigned offs         = eeGetMDArrayLowerBoundOffset(rank, dim);
                                         GenTree* gtOffs       = gtNewIconNode(offs, TYP_I_IMPL);
                                         GenTree* gtAddr       = gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffs);
-                                        GenTree* gtLowerBound = gtNewIndir(TYP_INT, gtAddr);
-                                        gtLowerBound->gtFlags |= GTF_IND_INVARIANT;
+                                        GenTree* gtLowerBound = gtNewIndir(TYP_INT, gtAddr, GTF_IND_INVARIANT);
 
                                         offs              = eeGetMDArrayLengthOffset(rank, dim);
                                         gtOffs            = gtNewIconNode(offs, TYP_I_IMPL);
                                         gtAddr            = gtNewOperNode(GT_ADD, TYP_BYREF, gtArrClone, gtOffs);
-                                        GenTree* gtLength = gtNewIndir(TYP_INT, gtAddr);
-                                        gtLength->gtFlags |= GTF_IND_INVARIANT;
+                                        GenTree* gtLength = gtNewIndir(TYP_INT, gtAddr, GTF_IND_INVARIANT);
 
                                         GenTree* gtSum = gtNewOperNode(GT_ADD, TYP_INT, gtLowerBound, gtLength);
                                         GenTree* gtOne = gtNewIconNode(1, TYP_INT);
@@ -5157,8 +5152,6 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
             CorInfoType constraintTyp = info.compCompHnd->asCorInfoType(pConstrainedResolvedToken->hClass);
 
             obj = gtNewIndir(JITtype2varType(constraintTyp), obj);
-            obj->gtFlags |= GTF_GLOB_REF;
-
             return obj;
         }
 
@@ -8879,7 +8872,6 @@ GenTree* Compiler::impArrayAccessIntrinsic(
         }
         else
         {
-            // TODO-Bug: GTF_GLOB_REF is missing.
             arrElem = gtNewIndir(elemType, arrElem);
         }
     }
