@@ -2074,12 +2074,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			// Read back.
 			// TODO: on x86, use a LEA
 			MonoInst* scratch = emit_xzero (cfg, args [0]->klass);
-
 			MonoInst* scratcha;
 			NEW_VARLOADA_VREG (cfg, scratcha, scratch->dreg, fsig->params [0]);
 			MONO_ADD_INS (cfg->cbb, scratcha);
-
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREX_MEMBASE, scratcha->dreg, 0, args [0]->dreg);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, mono_type_to_store_membase (cfg, fsig->params [0]), scratcha->dreg, 0, args [0]->dreg);
 
 			int offset_reg = alloc_lreg (cfg);
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, args [1]->dreg, type_to_width_log2 (arg0_type));
@@ -2089,7 +2087,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			MONO_EMIT_NEW_STORE_MEMBASE (cfg, mono_type_to_store_membase (cfg, fsig->params [2]), addr_reg, 0, args [2]->dreg);
 
 			MonoInst* ret;
-			NEW_LOAD_MEMBASE (cfg, ret, OP_LOADX_MEMBASE, scratch->dreg, scratcha->dreg, 0);
+			NEW_LOAD_MEMBASE (cfg, ret, mono_type_to_load_membase (cfg, fsig->ret), scratch->dreg, scratcha->dreg, 0);
 			MONO_ADD_INS (cfg->cbb, ret);
 
 			return ret;
