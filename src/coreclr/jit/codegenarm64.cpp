@@ -4575,10 +4575,14 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                         case GT_RSH:
                         case GT_RSZ:
                         {
+                            if (!op2->gtGetOp1()->isContained())
+                            {
+                                break;
+                            }
+
                             GenTree* shiftOp1 = op2->gtGetOp1()->gtGetOp1();
                             GenTree* shiftOp2 = op2->gtGetOp1()->gtGetOp2();
 
-                            assert(op2->gtGetOp1()->isContained());
                             assert(shiftOp2->IsCnsIntOrI());
                             assert(shiftOp2->isContained());
 
@@ -4588,11 +4592,11 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                         break;
 
                         default:
-                            assert(!op2->gtGetOp1()->isContained());
-
-                            emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum());
                             break;
                     }
+                    assert(!op2->gtGetOp1()->isContained());
+
+                    emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum());
                     break;
 
                 case GT_LSH:

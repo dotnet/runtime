@@ -307,7 +307,13 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             return false;
         }
 
-        if (parentNode->OperIs(GT_CMP) || parentNode->OperIsCompare())
+        // If the parent is an unsigned op, we cannot contain NEG.
+        if (parentNode->IsUnsigned())
+        {
+            return false;
+        }
+
+        if (parentNode->OperIs(GT_CMP) || parentNode->OperIsCmpCompare())
         {
             if (IsInvariantInRange(childNode, parentNode))
             {
