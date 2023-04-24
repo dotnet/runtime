@@ -15,7 +15,8 @@ public class AssetsComputingHelper
     private static readonly string[] monoPackageIds = new[]
     {
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
-        "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm"
+        "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm",
+        "Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm",
     };
 
     public static bool ShouldFilterCandidate(
