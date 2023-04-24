@@ -28,11 +28,13 @@ namespace System.Reflection.Emit
         public object?[] _ctorArgs;
         public string[] _namedParamNames;
         public object?[] _namedParamValues;
+        private const int Field = 0x53;
+        private const int EnumType = 0x55;
+        private const int NullValue = 0xff;
+        private const int OneByteMask = 0x7f;
+        private const int TwoByteMask = 0x3f;
+        private const int FourByteMask = 0x1f;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:Unrecognized value passed to the parameter 'typeName' of method 'System.Type.GetType(String)'",
-            Justification = "The 'enumTypeName' only available at runtime")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicFields', 'DynamicallyAccessedMemberTypes.NonPublicFields' in call to 'System.Type.GetField(String, BindingFlags)'",
-            Justification = "Could not propagate attribute into 'ctor.DeclaringType' only available at runtime")]
         internal static CustomAttributeInfo DecodeCustomAttribute(ConstructorInfo ctor, ReadOnlySpan<byte> data)
         {
             int pos = 2;
@@ -42,7 +44,7 @@ namespace System.Reflection.Emit
             {
                 throw new InvalidOperationException(SR.Format(SR.InvalidOperation_InvalidCustomAttributeLength, ctor.DeclaringType, data.Length));
             }
-            if ((data[0] != 0x1) || (data[1] != 0x00))
+            if ((data[0] != 0x01) || (data[1] != 0x00))
             {
                 throw new InvalidOperationException(SR.Format(SR.InvalidOperation_InvalidProlog, ctor.DeclaringType));
             }
@@ -63,12 +65,11 @@ namespace System.Reflection.Emit
             {
                 int namedType = data[pos++];
                 int dataType = data[pos++];
-                string? enumTypeName = null;
 
-                if (dataType == 0x55)
+                if (dataType == EnumType)
                 {
+                    // skip bytes for Enum type name;
                     int len2 = DecodeLen(data, pos, out pos);
-                    enumTypeName = StringFromBytes(data, pos, len2);
                     pos += len2;
                 }
 
@@ -77,23 +78,10 @@ namespace System.Reflection.Emit
                 info._namedParamNames[i] = name;
                 pos += len;
 
-                if (namedType == 0x53)
+                if (namedType == Field)
                 {
-                    /* Field */
-                    FieldInfo? fi = ctor.DeclaringType!.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                    if (fi == null)
-                    {
-                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_EmptyFieldForCustomAttribute, ctor.DeclaringType, name));
-                    }
-                    object? val = DecodeCustomAttributeValue(fi.FieldType, data, pos, out pos);
-
-                    if (enumTypeName != null)
-                    {
-                        Type enumType = Type.GetType(enumTypeName)!;
-                        val = Enum.ToObject(enumType, val!);
-                    }
-
-                    info._namedParamValues[i] = val;
+                    Type fieldType = dataType == EnumType ? typeof(int) : ElementTypeToType((PrimitiveSerializationTypeCode)dataType);
+                    info._namedParamValues[i] = DecodeCustomAttributeValue(fieldType, data, pos, out pos); ;
                 }
                 else
                 {
@@ -114,16 +102,16 @@ namespace System.Reflection.Emit
             int len;
             if ((data[pos] & 0x80) == 0)
             {
-                len = (int)(data[pos++] & 0x7f);
+                len = (data[pos++] & OneByteMask);
             }
             else if ((data[pos] & 0x40) == 0)
             {
-                len = ((data[pos] & 0x3f) << 8) + data[pos + 1];
+                len = ((data[pos] & TwoByteMask) << 8) + data[pos + 1];
                 pos += 2;
             }
             else
             {
-                len = ((data[pos] & 0x1f) << 24) + (data[pos + 1] << 16) + (data[pos + 2] << 8) + data[pos + 3];
+                len = ((data[pos] & FourByteMask) << 24) + (data[pos + 1] << 16) + (data[pos + 2] << 8) + data[pos + 3];
                 pos += 4;
             }
             rpos = pos;
@@ -135,7 +123,7 @@ namespace System.Reflection.Emit
             switch (Type.GetTypeCode(t))
             {
                 case TypeCode.String:
-                    if (data[pos] == 0xff)
+                    if (data[pos] == NullValue)
                     {
                         rpos = pos + 1;
                         return null;
