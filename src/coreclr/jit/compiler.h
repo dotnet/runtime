@@ -3831,14 +3831,7 @@ protected:
     void impCheckForPInvokeCall(
         GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
 
-    enum SigTransform
-    {
-        LeaveIntact    = 0,
-        DeleteThis     = 1 << 0,
-        ReplaceRefThis = 1 << 1,
-    };
-
-    bool impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO* targetSig, SigTransform transformation);
+    bool impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig, CORINFO_SIG_INFO* targetSig, var_types sourceThis, var_types targetThis);
     GenTreeCall* impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di = DebugInfo());
     void impPopArgsForUnmanagedCall(GenTreeCall* call, CORINFO_SIG_INFO* sig);
 

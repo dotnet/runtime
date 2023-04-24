@@ -111,7 +111,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool                  optimizedOrInstrumented = opts.OptimizationEnabled() || opts.IsInstrumented();
     CORINFO_METHOD_HANDLE replacementMethod       = nullptr;
     GenTree*              newThis                 = nullptr;
-    SigTransform          sigTransformation       = SigTransform::LeaveIntact;
+    var_types oldThis = TYP_UNDEF;
+    var_types newThis = TYP_UNDEF;
 
     // handle special import cases
     if (opcode == CEE_CALLI)
@@ -177,12 +178,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         {
             JITDUMP("impImportCall aborting transformation - found PInvoke\n");
         }
-        else if (impCanSubstituteSig(&originalSig, &methodSig, sigTransformation))
+        else if (impCanSubstituteSig(&originalSig, &methodSig, oldThis, newThis))
         {
             impPopStack();
             if (newThis != nullptr)
             {
-                assert(sigTransformation == SigTransform::ReplaceRefThis);
+                assert(oldThis == TYP_REF);
+                assert(newThis == TYP_REF);
                 CORINFO_CLASS_HANDLE thisCls = NO_CLASS_HANDLE;
                 info.compCompHnd->getArgType(&methodSig, methodSig.args, &thisCls);
                 impPushOnStack(newThis, typeInfo(TI_REF, thisCls));
@@ -1716,31 +1718,37 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
 //
 bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
                                    CORINFO_SIG_INFO* targetSig,
-                                   SigTransform      transformation)
+                                   var_types sourceThis,
+                                   var_types targetThis)
 {
+    assert(sourceSig->hasThisNonExplicit() || sourceThis == TYP_UNDEF);
+    assert(targetSig->hasThisNonExplicit() || targetThis == TYP_UNDEF || targetThis == TYP_VOID);
+    assert(!targetSig->hasThisNonExplicit() || targetThis != TYP_VOID);
+    assert(sourceThis != TYP_VOID);
+
     if (sourceSig->getCallConv() != targetSig->getCallConv())
     {
         JITDUMP("impCanSubstituteSig returning false - call conv %u != %u\n", sourceSig->callConv, targetSig->callConv);
         return false;
     }
 
-    if (sourceSig->hasExplicitThis() || targetSig->hasExplicitThis())
+    if (sourceSig->hasThisNonExplicit() && sourceThis == TYP_UNDEF || targetSig->hasThisNonExplicit() && targetThis == TYP_UNDEF)
     {
-        JITDUMP("impCanSubstituteSig returning false - explicit this\n");
+        JITDUMP("impCanSubstituteSig returning false - unknown this type\n");
         return false;
     }
 
     unsigned sourceArgCount = sourceSig->totalILArgs();
-    if ((transformation & SigTransform::DeleteThis) != 0)
+    if (targetThis == TYP_VOID)
     {
-        assert((transformation & SigTransform::ReplaceRefThis) == 0);
-        assert(sourceSig->hasThis());
+        assert(sourceSig->hasThisNonExplicit() && sourceThis == TYP_REF);
         sourceArgCount--;
     }
 
     if (sourceArgCount != targetSig->totalILArgs())
     {
-        JITDUMP("impCanSubstituteSig returning false - args count %u != %u\n", sourceArgCount, targetSig->totalILArgs());
+        JITDUMP("impCanSubstituteSig returning false - args count %u != %u\n", sourceArgCount,
+                targetSig->totalILArgs());
         return false;
     }
 
@@ -1767,7 +1775,32 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
     CORINFO_ARG_LIST_HANDLE sourceArg = sourceSig->args;
     CORINFO_ARG_LIST_HANDLE targetArg = targetSig->args;
 
-    for (unsigned i = 0; i < targetSig->numArgs;
+    unsigned numArgs = targetSig->totalILArgs();
+
+    if (sourceSig->hasThisNonExplicit() && targetThis != TYP_VOID || targetSig->hasThisNonExplicit())
+    {
+        if (sourceThis == TYP_UNDEF)
+        {
+            sourceThis = eeGetArgType(sourceArg, sourceSig);
+            sourceArg = info.compCompHnd->getArgNext(sourceArg);
+            numArgs--;
+        }
+        else
+        {
+            targetThis = eeGetArgType(targetArg, targetSig);
+            targetArg = info.compCompHnd->getArgNext(targetArg);
+        }
+        assert(sourceThis == TYP_REF || sourceThis == TYP_BYREF || sourceThis == TYP_I_IMPL);
+        assert(targetThis == TYP_REF || targetThis == TYP_BYREF || targetThis == TYP_I_IMPL);
+        if (sourceThis != targetThis)
+        {
+            JITDUMP("impCanSubstituteSig returning false - this type %s != %s\n", i, varTypeName(sourceType),
+                    varTypeName(targetType));
+            return false;
+        }
+    }
+
+    for (unsigned i = 0; i < numArgs;
          i++, sourceArg = info.compCompHnd->getArgNext(sourceArg), targetArg = info.compCompHnd->getArgNext(targetArg))
     {
         var_types sourceType = eeGetArgType(sourceArg, sourceSig);
