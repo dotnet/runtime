@@ -3597,6 +3597,12 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     emitAttr  cmpSize    = EA_ATTR(genTypeSize(op1Type));
     regNumber regOp1     = op1->GetRegNum();
 
+    if (tree->gtFlags & GTF_JCMP_EQ)
+    {
+        GenCondition condReverse(static_cast<GenCondition::Code>(cond));
+        cond = GenCondition::Reverse(condReverse).GetCode();
+    }
+
     if (varTypeIsFloating(op1Type))
     {
         NYI_RISCV64("genCodeForJumpCompare floating-----unimplemented on RISCV64 yet----");
