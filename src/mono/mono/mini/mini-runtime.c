@@ -2164,7 +2164,7 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
                 rec.nr_entry = 1;
                 for (i = 0; i < dmji->num_line_numbers; ++i){
                         
-			loc = mono_debug_lookup_source_location_by_il (jinfo->d.method,dmji->line_numbers[i].il_offset,NULL);
+			loc = mono_debug_lookup_source_location_by_il (jinfo->d.method, dmji->line_numbers[i].il_offset, NULL);
 
                         if(!loc)
                                 continue;
@@ -2178,7 +2178,7 @@ mono_emit_jit_dump (MonoJitInfo *jinfo, gpointer code)
                         rec.nr_entry++;
                 }
 
-                fwrite (&rec, sizeof (rec), 1 , perf_dump_file);
+                fwrite (&rec, sizeof (rec), 1, perf_dump_file);
 
 
                 for( i = 0; i < dmji->num_line_numbers; ++i){
