@@ -5849,6 +5849,8 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
 
                 case NI_AVX512F_ConvertToVector256Int32:
                 case NI_AVX512F_ConvertToVector256UInt32:
+                case NI_AVX512F_VL_ConvertToVector128UInt32:
+                case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
                 {
                     if (varTypeIsFloating(simdBaseType))
                     {
@@ -5857,30 +5859,74 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     FALLTHROUGH;
                 }
 
+                case NI_AVX512F_ConvertToVector128Byte:
+                case NI_AVX512F_ConvertToVector128ByteWithSaturation:
                 case NI_AVX512F_ConvertToVector128Int16:
-                case NI_AVX512F_ConvertToVector128Int32:
+                case NI_AVX512F_ConvertToVector128Int16WithSaturation:
+                case NI_AVX512F_ConvertToVector128SByte:
+                case NI_AVX512F_ConvertToVector128SByteWithSaturation:
                 case NI_AVX512F_ConvertToVector128UInt16:
-                case NI_AVX512F_ConvertToVector128UInt32:
+                case NI_AVX512F_ConvertToVector128UInt16WithSaturation:
                 case NI_AVX512F_ConvertToVector256Int16:
+                case NI_AVX512F_ConvertToVector256Int16WithSaturation:
+                case NI_AVX512F_ConvertToVector256Int32WithSaturation:
                 case NI_AVX512F_ConvertToVector256UInt16:
-                case NI_AVX512BW_ConvertToVector128Byte:
-                case NI_AVX512BW_ConvertToVector128SByte:
+                case NI_AVX512F_ConvertToVector256UInt16WithSaturation:
+                case NI_AVX512F_ConvertToVector256UInt32WithSaturation:
+                case NI_AVX512F_VL_ConvertToVector128Byte:
+                case NI_AVX512F_VL_ConvertToVector128ByteWithSaturation:
+                case NI_AVX512F_VL_ConvertToVector128Int16:
+                case NI_AVX512F_VL_ConvertToVector128Int16WithSaturation:
+                case NI_AVX512F_VL_ConvertToVector128Int32:
+                case NI_AVX512F_VL_ConvertToVector128Int32WithSaturation:
+                case NI_AVX512F_VL_ConvertToVector128SByte:
+                case NI_AVX512F_VL_ConvertToVector128SByteWithSaturation:
+                case NI_AVX512F_VL_ConvertToVector128UInt16:
+                case NI_AVX512F_VL_ConvertToVector128UInt16WithSaturation:
                 case NI_AVX512BW_ConvertToVector256Byte:
+                case NI_AVX512BW_ConvertToVector256ByteWithSaturation:
                 case NI_AVX512BW_ConvertToVector256SByte:
+                case NI_AVX512BW_ConvertToVector256SByteWithSaturation:
+                case NI_AVX512BW_VL_ConvertToVector128Byte:
+                case NI_AVX512BW_VL_ConvertToVector128ByteWithSaturation:
+                case NI_AVX512BW_VL_ConvertToVector128SByte:
+                case NI_AVX512BW_VL_ConvertToVector128SByteWithSaturation:
                 {
                     // These intrinsics are "ins reg/mem, xmm"
-                    unsigned simdSize = hwintrinsic->GetSimdSize();
+                    instruction  ins       = HWIntrinsicInfo::lookupIns(intrinsicId, simdBaseType);
+                    insTupleType tupleType = comp->GetEmitter()->insTupleTypeInfo(ins);
+                    unsigned     simdSize  = hwintrinsic->GetSimdSize();
+                    unsigned     memSize   = 0;
 
-                    if (simdSize == 16)
+                    switch (tupleType)
                     {
-                        // For TYP_SIMD16, we produce a TYP_SIMD16 register
-                        // but only store TYP_SIMD8 to memory and so we cannot
-                        // contain without additional work.
-                        isContainable = false;
+                        case INS_TT_HALF_MEM:
+                        {
+                            memSize = simdSize / 2;
+                            break;
+                        }
+
+                        case INS_TT_QUARTER_MEM:
+                        {
+                            memSize = simdSize / 4;
+                            break;
+                        }
+
+                        case INS_TT_EIGHTH_MEM:
+                        {
+                            memSize = simdSize / 8;
+                            break;
+                        }
+
+                        default:
+                        {
+                            unreached();
+                        }
                     }
-                    else
+
+
+                    if (genTypeSize(node) == memSize)
                     {
-                        assert((simdSize == 32) || (simdSize == 64));
                         isContainable = true;
                     }
                     break;
@@ -7285,23 +7331,53 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             return supportsSIMDScalarLoads;
         }
 
+        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        case NI_AVX512F_VL_ConvertToVector128UInt32:
+        case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
+        {
+            // These ones are not containable as stores when the base
+            // type is a floating-point type
+            FALLTHROUGH;
+        }
+
         case NI_Vector128_GetElement:
         case NI_AVX_ExtractVector128:
         case NI_AVX2_ExtractVector128:
         case NI_AVX512F_ExtractVector128:
         case NI_AVX512F_ExtractVector256:
+        case NI_AVX512F_ConvertToVector128Byte:
+        case NI_AVX512F_ConvertToVector128ByteWithSaturation:
         case NI_AVX512F_ConvertToVector128Int16:
-        case NI_AVX512F_ConvertToVector128Int32:
+        case NI_AVX512F_ConvertToVector128Int16WithSaturation:
+        case NI_AVX512F_ConvertToVector128SByte:
+        case NI_AVX512F_ConvertToVector128SByteWithSaturation:
         case NI_AVX512F_ConvertToVector128UInt16:
-        case NI_AVX512F_ConvertToVector128UInt32:
+        case NI_AVX512F_ConvertToVector128UInt16WithSaturation:
         case NI_AVX512F_ConvertToVector256Int16:
-        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256Int16WithSaturation:
+        case NI_AVX512F_ConvertToVector256Int32WithSaturation:
         case NI_AVX512F_ConvertToVector256UInt16:
-        case NI_AVX512F_ConvertToVector256UInt32:
-        case NI_AVX512BW_ConvertToVector128Byte:
-        case NI_AVX512BW_ConvertToVector128SByte:
+        case NI_AVX512F_ConvertToVector256UInt16WithSaturation:
+        case NI_AVX512F_ConvertToVector256UInt32WithSaturation:
+        case NI_AVX512F_VL_ConvertToVector128Byte:
+        case NI_AVX512F_VL_ConvertToVector128ByteWithSaturation:
+        case NI_AVX512F_VL_ConvertToVector128Int16:
+        case NI_AVX512F_VL_ConvertToVector128Int16WithSaturation:
+        case NI_AVX512F_VL_ConvertToVector128Int32:
+        case NI_AVX512F_VL_ConvertToVector128Int32WithSaturation:
+        case NI_AVX512F_VL_ConvertToVector128SByte:
+        case NI_AVX512F_VL_ConvertToVector128SByteWithSaturation:
+        case NI_AVX512F_VL_ConvertToVector128UInt16:
+        case NI_AVX512F_VL_ConvertToVector128UInt16WithSaturation:
         case NI_AVX512BW_ConvertToVector256Byte:
+        case NI_AVX512BW_ConvertToVector256ByteWithSaturation:
         case NI_AVX512BW_ConvertToVector256SByte:
+        case NI_AVX512BW_ConvertToVector256SByteWithSaturation:
+        case NI_AVX512BW_VL_ConvertToVector128Byte:
+        case NI_AVX512BW_VL_ConvertToVector128ByteWithSaturation:
+        case NI_AVX512BW_VL_ConvertToVector128SByte:
+        case NI_AVX512BW_VL_ConvertToVector128SByteWithSaturation:
         case NI_AVX512DQ_ExtractVector128:
         case NI_AVX512DQ_ExtractVector256:
         {
@@ -7509,6 +7585,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     case NI_AVX512F_ConvertToVector256Int32:
                     case NI_AVX512F_ConvertToVector256UInt32:
+                    case NI_AVX512F_VL_ConvertToVector128UInt32:
+                    case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
                     {
                         if (varTypeIsFloating(simdBaseType))
                         {
@@ -7519,16 +7597,38 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         FALLTHROUGH;
                     }
 
+                    case NI_AVX512F_ConvertToVector128Byte:
+                    case NI_AVX512F_ConvertToVector128ByteWithSaturation:
                     case NI_AVX512F_ConvertToVector128Int16:
-                    case NI_AVX512F_ConvertToVector128Int32:
+                    case NI_AVX512F_ConvertToVector128Int16WithSaturation:
+                    case NI_AVX512F_ConvertToVector128SByte:
+                    case NI_AVX512F_ConvertToVector128SByteWithSaturation:
                     case NI_AVX512F_ConvertToVector128UInt16:
-                    case NI_AVX512F_ConvertToVector128UInt32:
+                    case NI_AVX512F_ConvertToVector128UInt16WithSaturation:
                     case NI_AVX512F_ConvertToVector256Int16:
+                    case NI_AVX512F_ConvertToVector256Int16WithSaturation:
+                    case NI_AVX512F_ConvertToVector256Int32WithSaturation:
                     case NI_AVX512F_ConvertToVector256UInt16:
-                    case NI_AVX512BW_ConvertToVector128Byte:
-                    case NI_AVX512BW_ConvertToVector128SByte:
+                    case NI_AVX512F_ConvertToVector256UInt16WithSaturation:
+                    case NI_AVX512F_ConvertToVector256UInt32WithSaturation:
+                    case NI_AVX512F_VL_ConvertToVector128Byte:
+                    case NI_AVX512F_VL_ConvertToVector128ByteWithSaturation:
+                    case NI_AVX512F_VL_ConvertToVector128Int16:
+                    case NI_AVX512F_VL_ConvertToVector128Int16WithSaturation:
+                    case NI_AVX512F_VL_ConvertToVector128Int32:
+                    case NI_AVX512F_VL_ConvertToVector128Int32WithSaturation:
+                    case NI_AVX512F_VL_ConvertToVector128SByte:
+                    case NI_AVX512F_VL_ConvertToVector128SByteWithSaturation:
+                    case NI_AVX512F_VL_ConvertToVector128UInt16:
+                    case NI_AVX512F_VL_ConvertToVector128UInt16WithSaturation:
                     case NI_AVX512BW_ConvertToVector256Byte:
+                    case NI_AVX512BW_ConvertToVector256ByteWithSaturation:
                     case NI_AVX512BW_ConvertToVector256SByte:
+                    case NI_AVX512BW_ConvertToVector256SByteWithSaturation:
+                    case NI_AVX512BW_VL_ConvertToVector128Byte:
+                    case NI_AVX512BW_VL_ConvertToVector128ByteWithSaturation:
+                    case NI_AVX512BW_VL_ConvertToVector128SByte:
+                    case NI_AVX512BW_VL_ConvertToVector128SByteWithSaturation:
                     {
                         // These intrinsics are "ins reg/mem, xmm" and get
                         // contained by the relevant store operation instead.
