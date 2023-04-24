@@ -1732,7 +1732,7 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
         return false;
     }
 
-    if (sourceSig->hasThisNonExplicit() && sourceThis == TYP_UNDEF || targetSig->hasThisNonExplicit() && targetThis == TYP_UNDEF)
+    if ((sourceSig->hasThisNonExplicit() && sourceThis == TYP_UNDEF) || (targetSig->hasThisNonExplicit() && targetThis == TYP_UNDEF))
     {
         JITDUMP("impCanSubstituteSig returning false - unknown this type\n");
         return false;
@@ -1777,7 +1777,7 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
 
     unsigned numArgs = targetSig->totalILArgs();
 
-    if (sourceSig->hasThisNonExplicit() && targetThis != TYP_VOID || targetSig->hasThisNonExplicit())
+    if ((sourceSig->hasThisNonExplicit() && targetThis != TYP_VOID) || targetSig->hasThisNonExplicit())
     {
         if (sourceThis == TYP_UNDEF)
         {
