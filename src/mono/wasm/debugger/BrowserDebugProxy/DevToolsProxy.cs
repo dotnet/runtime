@@ -340,9 +340,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     catch (Exception e)
                     {
-                        Log("error", $"DevToolsProxy::Run: Exception {e}");
+                        if (e.InnerException is null || e.InnerException is not System.Net.WebSockets.WebSocketException)
+                            Log("error", $"DevToolsProxy::Run: Exception {e}");
                         _channelWriter.Complete(e);
-                        //throw;
                     }
                     finally
                     {
