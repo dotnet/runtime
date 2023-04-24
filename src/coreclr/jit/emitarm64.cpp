@@ -6549,6 +6549,12 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
         {
             imm >>= scale; // The immediate is scaled by the size of the ld/st
         }
+        else
+        {
+            // Unlike emitIns_S_S_R_R(), we would never come here when
+            // (imm & mask) != 0.
+            assert(false);
+        }
     }
 
     bool validVar1 = varx1 != -1;
@@ -6601,14 +6607,6 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
     {
         id->idGCrefReg2(GCT_NONE);
     }
-
-#ifdef DEBUG
-    if (validVar1 && validVar2)
-    {
-        assert(id->idGCref() != GCT_NONE);
-        assert(id->idGCrefReg2() != GCT_NONE);
-    }
-#endif
 
     dispIns(id);
     appendToCurIG(id);
@@ -11852,39 +11850,64 @@ SKIP_GC_UPDATE:
                 vt              = tmpDsc->tdTempType();
             }
             if (vt == TYP_REF || vt == TYP_BYREF)
+            {
                 emitGCvarDeadUpd(adr + ofs, dst DEBUG_ARG(varNum));
+            }
         }
         if (emitInsWritesToLclVarStackLocPair(id))
         {
-            unsigned ofs2 = ofs + TARGET_POINTER_SIZE;
-            if (id->idGCrefReg2() != GCT_NONE)
+            int      varNum2 = varNum;
+            unsigned ofs2    = ofs + size;
+            int      adr2    = adr;
+
+            if (id->idIsLclVarPair())
             {
-                int varNum2 = varNum;
-                if (id->idIsLclVarPair())
+                bool                 FPbased2;
+                instrDescLclVarPair* idPair = (instrDescLclVarPair*)id;
+
+                // If there are 2 GC vars in this instrDesc, get the 2nd variable
+                // that should be tracked.
+                varNum2 = idPair->iiaLclVar2.lvaVarNum();
+                adr2    = emitComp->lvaFrameAddress(varNum2, &FPbased2);
+                ofs2    = AlignDown(idPair->iiaLclVar2.lvaOffset(), TARGET_POINTER_SIZE);
+#ifdef DEBUG
+                assert(FPbased == FPbased2);
+                if (FPbased)
                 {
-                    // If there are 2 GC vars in this instrDesc, get the 2nd variable
-                    // that should be tracked.
-                    varNum2 = ((instrDescLclVarPair*)id)->iiaLclVar2.lvaVarNum();
+                    assert(idPair->idReg3() == REG_FP);
+                }
+                else
+                {
+                    assert(idPair->idReg3() == REG_SP);
                 }
                 assert(varNum2 != -1);
-                emitGCvarLiveUpd(adr + ofs2, varNum2, id->idGCrefReg2(), dst DEBUG_ARG(varNum2));
+                // assert((varNum == varNum2) || (adr + ofs + size == adr2 + ofs2));
+
+#endif // DEBUG
+            }
+
+            if (id->idGCrefReg2() != GCT_NONE)
+            {
+                emitGCvarLiveUpd(adr2 + ofs2, varNum2, id->idGCrefReg2(), dst DEBUG_ARG(varNum2));
             }
             else
             {
                 // If the type of the local is a gc ref type, update the liveness.
                 var_types vt;
-                if (varNum >= 0)
+                if (varNum2 >= 0)
                 {
                     // "Regular" (non-spill-temp) local.
-                    vt = var_types(emitComp->lvaTable[varNum].lvType);
+                    vt = var_types(emitComp->lvaTable[varNum2].lvType);
                 }
                 else
                 {
-                    TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum);
+                    TempDsc* tmpDsc = codeGen->regSet.tmpFindNum(varNum2);
                     vt              = tmpDsc->tdTempType();
                 }
                 if (vt == TYP_REF || vt == TYP_BYREF)
-                    emitGCvarDeadUpd(adr + ofs2, dst DEBUG_ARG(varNum));
+                {
+                    emitGCvarDeadUpd(adr2 + ofs2, dst DEBUG_ARG(varNum2));
+                }
             }
         }
     }
