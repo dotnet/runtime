@@ -55,7 +55,7 @@ struct simd8_t
 };
 static_assert_no_msg(sizeof(simd8_t) == 8);
 
-#include "pshpack4.h"
+#include <pshpack4.h>
 struct simd12_t
 {
     union {
