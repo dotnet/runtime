@@ -3673,8 +3673,6 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //
 emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
-    emitAttr defaultSize = id->idOpSize();
-
     if (id->idIsEvexbContext())
     {
         // should have the assumption that Evex.b now stands for the embedded broadcast context.
