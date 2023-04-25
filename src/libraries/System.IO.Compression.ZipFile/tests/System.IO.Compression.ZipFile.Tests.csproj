@@ -17,6 +17,7 @@
   <ItemGroup>
     <Compile Include="ZipFile.Create.cs" />
     <Compile Include="ZipFile.Extract.cs" />
+    <Compile Include="ZipFile.Open.cs" />
     <Compile Include="ZipFileExtensions.ZipArchive.Create.cs" />
     <Compile Include="ZipFileExtensions.ZipArchiveEntry.Extract.cs" />
     <Compile Include="ZipFileExtensions.ZipArchive.Extract.cs" />
