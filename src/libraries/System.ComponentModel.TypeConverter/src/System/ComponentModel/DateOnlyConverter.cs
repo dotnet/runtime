@@ -85,16 +85,12 @@ namespace System.ComponentModel
 
                 culture ??= CultureInfo.CurrentCulture;
 
-                DateTimeFormatInfo? formatInfo = (DateTimeFormatInfo?)culture.GetFormat(typeof(DateTimeFormatInfo));
-
                 if (culture == CultureInfo.InvariantCulture)
                 {
                     return dateOnly.ToString("yyyy-MM-dd", culture);
                 }
 
-                string format = formatInfo!.ShortDatePattern;
-
-                return dateOnly.ToString(format, culture);
+                return dateOnly.ToString(culture.DateTimeFormat.ShortDatePattern, culture);
             }
 
             if (destinationType == typeof(InstanceDescriptor) && value is DateOnly date)

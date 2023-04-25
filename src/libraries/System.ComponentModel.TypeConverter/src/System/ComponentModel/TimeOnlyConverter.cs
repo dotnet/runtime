@@ -85,9 +85,7 @@ namespace System.ComponentModel
 
                 culture ??= CultureInfo.CurrentCulture;
 
-                DateTimeFormatInfo formatInfo = (DateTimeFormatInfo)culture.GetFormat(typeof(DateTimeFormatInfo))!;
-
-                return timeOnly.ToString(formatInfo.ShortTimePattern, culture);
+                return timeOnly.ToString(culture.DateTimeFormat.ShortTimePattern, culture);
             }
 
             if (destinationType == typeof(InstanceDescriptor) && value is TimeOnly time)
