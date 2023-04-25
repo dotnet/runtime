@@ -925,7 +925,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Writes primitive type code.
         /// </summary>
-        /// <param name="type">Any primitive type code except for <see cref="PrimitiveTypeCode.TypedReference"/> and <see cref="PrimitiveTypeCode.Void"/>.</param>
+        /// <param name="type">Any primitive type code except for <see cref="PrimitiveTypeCode.Void"/>.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not valid in this context.</exception>
         public void PrimitiveType(PrimitiveTypeCode type)
         {
@@ -943,6 +943,7 @@ namespace System.Reflection.Metadata.Ecma335
                 case PrimitiveTypeCode.UInt64:
                 case PrimitiveTypeCode.Single:
                 case PrimitiveTypeCode.Double:
+                case PrimitiveTypeCode.TypedReference:
                 case PrimitiveTypeCode.IntPtr:
                 case PrimitiveTypeCode.UIntPtr:
                 case PrimitiveTypeCode.String:
@@ -950,7 +951,6 @@ namespace System.Reflection.Metadata.Ecma335
                     Builder.WriteByte((byte)type);
                     return;
 
-                case PrimitiveTypeCode.TypedReference:
                 case PrimitiveTypeCode.Void:
                 default:
                     Throw.ArgumentOutOfRange(nameof(type));
