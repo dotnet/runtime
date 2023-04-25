@@ -111,8 +111,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool                  optimizedOrInstrumented = opts.OptimizationEnabled() || opts.IsInstrumented();
     CORINFO_METHOD_HANDLE replacementMethod       = nullptr;
     GenTree*              newThis                 = nullptr;
-    var_types oldThis = TYP_UNDEF;
-    var_types targetThis = TYP_UNDEF;
+    var_types             oldThis                 = TYP_UNDEF;
+    var_types             targetThis              = TYP_UNDEF;
 
     // handle special import cases
     if (opcode == CEE_CALLI)
@@ -172,7 +172,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         CORINFO_CLASS_HANDLE targetClass = info.compCompHnd->getMethodClass(replacementMethod);
         info.compCompHnd->getMethodSig(replacementMethod, &methodSig, targetClass);
 
-        if (methodSig.hasThisNonExplicit() && targetThis == TYP_UNDEF)
+        if (methodSig.hasImplicitThis() && targetThis == TYP_UNDEF)
         {
             targetThis = eeIsValueClass(targetClass) ? TYP_BYREF : TYP_REF;
         }
@@ -1723,12 +1723,12 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
 //
 bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
                                    CORINFO_SIG_INFO* targetSig,
-                                   var_types sourceThis,
-                                   var_types targetThis)
+                                   var_types         sourceThis,
+                                   var_types         targetThis)
 {
-    assert(sourceSig->hasThisNonExplicit() || sourceThis == TYP_UNDEF);
-    assert(targetSig->hasThisNonExplicit() || targetThis == TYP_UNDEF || targetThis == TYP_VOID);
-    assert(!targetSig->hasThisNonExplicit() || targetThis != TYP_VOID);
+    assert(sourceSig->hasImplicitThis() || sourceThis == TYP_UNDEF);
+    assert(targetSig->hasImplicitThis() || targetThis == TYP_UNDEF || targetThis == TYP_VOID);
+    assert(!targetSig->hasImplicitThis() || targetThis != TYP_VOID);
     assert(sourceThis != TYP_VOID);
 
     if (sourceSig->getCallConv() != targetSig->getCallConv())
@@ -1737,7 +1737,8 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
         return false;
     }
 
-    if ((sourceSig->hasThisNonExplicit() && sourceThis == TYP_UNDEF) || (targetSig->hasThisNonExplicit() && targetThis == TYP_UNDEF))
+    if ((sourceSig->hasImplicitThis() && sourceThis == TYP_UNDEF) ||
+        (targetSig->hasImplicitThis() && targetThis == TYP_UNDEF))
     {
         JITDUMP("impCanSubstituteSig returning false - unknown this type\n");
         return false;
@@ -1746,7 +1747,7 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
     unsigned sourceArgCount = sourceSig->totalILArgs();
     if (targetThis == TYP_VOID)
     {
-        assert(sourceSig->hasThisNonExplicit() && sourceThis == TYP_REF);
+        assert(sourceSig->hasImplicitThis() && sourceThis == TYP_REF);
         sourceArgCount--;
     }
 
@@ -1782,18 +1783,18 @@ bool Compiler::impCanSubstituteSig(CORINFO_SIG_INFO* sourceSig,
 
     unsigned numArgs = targetSig->totalILArgs();
 
-    if ((sourceSig->hasThisNonExplicit() && targetThis != TYP_VOID) || targetSig->hasThisNonExplicit())
+    if ((sourceSig->hasImplicitThis() && targetThis != TYP_VOID) || targetSig->hasImplicitThis())
     {
         if (sourceThis == TYP_UNDEF)
         {
             sourceThis = eeGetArgType(sourceArg, sourceSig);
-            sourceArg = info.compCompHnd->getArgNext(sourceArg);
+            sourceArg  = info.compCompHnd->getArgNext(sourceArg);
             numArgs--;
         }
         else
         {
             targetThis = eeGetArgType(targetArg, targetSig);
-            targetArg = info.compCompHnd->getArgNext(targetArg);
+            targetArg  = info.compCompHnd->getArgNext(targetArg);
         }
         assert(sourceThis == TYP_REF || sourceThis == TYP_BYREF || sourceThis == TYP_I_IMPL);
         assert(targetThis == TYP_REF || targetThis == TYP_BYREF || targetThis == TYP_I_IMPL);

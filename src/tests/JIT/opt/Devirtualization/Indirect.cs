@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -35,6 +37,8 @@ public static unsafe class Test
 
     private static int A() => 1;
     private static int B() => 2;
+    private static int A(int a, int b) => a + b + 1;
+    private static int B(int a, int b) => a + b + 2;
     private static void C() { }
 
     private static int D() => 3;
@@ -44,6 +48,14 @@ public static unsafe class Test
     private static int UnmanagedCdecl() => D();
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
     private static int UnmanagedStdcall() => D();
+
+    private static int D(int a, int b) => a + b + 3;
+    [UnmanagedCallersOnly]
+    private static int UnmanagedDefault(int a, int b) => D(a, b);
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static int UnmanagedCdecl(int a, int b) => D(a, b);
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    private static int UnmanagedStdcall(int a, int b) => D(a, b);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static delegate*<int> ExecuteCctor() => Ptr;
@@ -60,6 +72,12 @@ public static unsafe class Test
         AreSame(D(), Invoke(() => ((delegate* unmanaged[Cdecl]<int>)&UnmanagedCdecl)()));
         AreSame(D(), Invoke(() => ((delegate* unmanaged[Stdcall]<int>)&UnmanagedStdcall)()));
 
+        AreSame(A(8, 9), Invoke(() => ((delegate*<int, int, int>)&A)(8, 9)));
+        AreSame(B(8, 9), Invoke(() => ((delegate*<int, int, int>)&B)(8, 9)));
+        AreSame(D(8, 9), Invoke(() => ((delegate* unmanaged<int, int, int>)&UnmanagedDefault)(8, 9)));
+        AreSame(D(8, 9), Invoke(() => ((delegate* unmanaged[Cdecl]<int, int, int>)&UnmanagedCdecl)(8, 9)));
+        AreSame(D(8, 9), Invoke(() => ((delegate* unmanaged[Stdcall]<int, int, int>)&UnmanagedStdcall)(8, 9)));
+
         AreSame(A(), Invoke(() => Ptr()));
 
         static int CallPtr(delegate*<int> ptr) => ptr();
@@ -70,6 +88,13 @@ public static unsafe class Test
         AreSame(A(), Invoke(() => ReturnA()()));
         static delegate*<int> ReturnAStatic() => Ptr;
         AreSame(A(), Invoke(() => ReturnAStatic()()));
+
+        static int CallPtrParam(delegate*<int, int, int> ptr, int a, int b) => ptr(a, b);
+        AreSame(A(8, 9), Invoke(() => CallPtrParam(&A, 8, 9)));
+        AreSame(B(8, 9), Invoke(() => CallPtrParam(&B, 8, 9)));
+
+        static delegate*<int, int, int> ReturnAParam() => &A;
+        AreSame(A(8, 9), Invoke(() => ReturnAParam()(8, 9)));
 
         AreSame(A(), Invoke(() =>
         {
@@ -82,6 +107,19 @@ public static unsafe class Test
             var ptr = (delegate*<int>)&A;
             _ = NoInline(B());
             return ptr();
+        }));
+
+        AreSame(A(8, 9), Invoke(() =>
+        {
+            var ptr = (delegate*<int, int, int>)&A;
+            _ = B(8, 9);
+            return ptr(8, 9);
+        }));
+        AreSame(A(8, 9), Invoke(() =>
+        {
+            var ptr = (delegate*<int, int, int>)&A;
+            _ = NoInline(B(8, 9));
+            return ptr(8, 9);
         }));
 
         static int Branch(bool a)
@@ -98,6 +136,21 @@ public static unsafe class Test
         AreSame(B(), Invoke(() => Branch(false)));
         AreSame(A(), Invoke(a => Branch(a), true));
         AreSame(B(), Invoke(a => Branch(a), false));
+
+        static int BranchParam(bool a)
+        {
+            delegate*<int, int, int> ptr;
+            if (a)
+                ptr = &A;
+            else
+                ptr = &B;
+            return ptr(8, 9);
+        }
+
+        AreSame(A(8, 9), Invoke(() => BranchParam(true)));
+        AreSame(B(8, 9), Invoke(() => BranchParam(false)));
+        AreSame(A(8, 9), Invoke(a => BranchParam(a), true));
+        AreSame(B(8, 9), Invoke(a => BranchParam(a), false));
 
         AreSame(A(), Invoke(a => a ? PtrNull() : Ptr(), false));
         AreSame(A(), Invoke(a => a ? PtrPlus1() : Ptr(), false));
@@ -135,6 +188,41 @@ public static unsafe class Test
                 Assign(&ptr, &B);
             return ptr();
         }
+
+        AreSame(A(), Invoke(() => ConditionalAddressAssign(false)));
+        AreSame(B(), Invoke(() => ConditionalAddressAssign(true)));
+        AreSame(A(), Invoke(a => ConditionalAddressAssign(a), false));
+        AreSame(B(), Invoke(a => ConditionalAddressAssign(a), true));
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void AssignParam(delegate*<int, int, int>* ptrptr, delegate*<int, int, int> ptr) => *ptrptr = ptr;
+
+        AreSame(A(8, 9), Invoke(() =>
+        {
+            delegate*<int, int, int> ptr = &A;
+            AssignParam(&ptr, &B);
+            return ptr(8, 9);
+        }));
+        AreSame(A(8, 9), Invoke(() =>
+        {
+            delegate*<int, int, int> ptr;
+            AssignParam(&ptr, &B);
+            ptr = &A;
+            return ptr(8, 9);
+        }));
+
+        static int ConditionalAddressAssignParam(bool a, int b, int c)
+        {
+            delegate*<int, int, int> ptr = &A;
+            if (a)
+                AssignParam(&ptr, &B);
+            return ptr(b, c);
+        }
+
+        AreSame(A(), Invoke(() => ConditionalAddressAssignParam(false, 8, 9)));
+        AreSame(B(), Invoke(() => ConditionalAddressAssignParam(true, 8, 9)));
+        AreSame(A(), Invoke(a => ConditionalAddressAssignParam(a, 8, 9), false));
+        AreSame(B(), Invoke(a => ConditionalAddressAssignParam(a, 8, 9), true));
 
         AreSame(2, IndirectIL.StaticClass());
         AreSame(1, IndirectIL.InstanceClass());
