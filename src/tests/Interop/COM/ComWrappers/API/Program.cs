@@ -11,6 +11,7 @@ namespace ComWrappersTests
     using System.Runtime.InteropServices;
 
     using ComWrappersTests.Common;
+    using TestLibrary;
     using Xunit;
 
     class Program
@@ -173,6 +174,77 @@ namespace ComWrappersTests
             // Release the wrapper
             int count = Marshal.Release(comWrapper);
             Assert.Equal(0, count);
+        }
+
+        static void ValidateComObjectExtendsManagedLifetime()
+        {
+            Console.WriteLine($"Running {nameof(ValidateComObjectExtendsManagedLifetime)}...");
+
+            // Cleanup any existing objects
+            ForceGC();
+            Assert.Equal(0, Test.InstanceCount);
+
+            // Allocate a wrapper for the object
+            IntPtr comWrapper = CreateObjectAndGetComInterface();
+            Assert.NotEqual(IntPtr.Zero, comWrapper);
+
+            // GC should not free object
+            Assert.Equal(1, Test.InstanceCount);
+            ForceGC();
+            Assert.Equal(1, Test.InstanceCount);
+
+            // Release the wrapper
+            int count = Marshal.Release(comWrapper);
+            Assert.Equal(0, count);
+
+            // Check that the object is no longer rooted.
+            ForceGC();
+            Assert.Equal(0, Test.InstanceCount);
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static IntPtr CreateObjectAndGetComInterface()
+            {
+                var wrappers = new TestComWrappers();
+                return wrappers.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.None);
+            }
+        }
+
+        // Just because one use of a COM interface returned from GetOrCreateComInterfaceForObject
+        // hits zero ref count does not mean future calls to GetOrCreateComInterfaceForObject
+        // should return an unusable object.
+        static void ValidateCreatingAComInterfaceForObjectAfterTheFirstIsFree()
+        {
+            Console.WriteLine($"Running {nameof(ValidateCreatingAComInterfaceForObjectAfterTheFirstIsFree)}...");
+
+            var wrappers = new TestComWrappers();
+            var testInstance = new Test();
+
+            CallSetValue(wrappers, testInstance, 1);
+            CallSetValue(wrappers, testInstance, 2);
+
+            GC.KeepAlive(testInstance);
+
+            unsafe static void CallSetValue(TestComWrappers wrappers, Test testInstance, int value)
+            {
+                IntPtr nativeInstance = wrappers.GetOrCreateComInterfaceForObject(testInstance, CreateComInterfaceFlags.None);
+                Assert.NotEqual(IntPtr.Zero, nativeInstance);
+
+                var iid = typeof(ITest).GUID;
+                IntPtr itestPtr;
+                Assert.Equal(0, Marshal.QueryInterface(nativeInstance, ref iid, out itestPtr));
+
+                var inst = Marshal.PtrToStructure<VtblPtr>(itestPtr);
+                var vtbl = Marshal.PtrToStructure<ITestVtbl>(inst.Vtbl);
+                var setValue = (delegate* unmanaged<IntPtr, int, int>)vtbl.SetValue;
+
+                Assert.Equal(0, setValue(itestPtr, value));
+                Assert.Equal(value, testInstance.GetValue());
+
+                // release for QueryInterface
+                Assert.Equal(1, Marshal.Release(itestPtr));
+                // release for GetOrCreateComInterfaceForObject
+                Assert.Equal(0, Marshal.Release(itestPtr));
+            }
         }
 
         static void ValidateFallbackQueryInterface()
@@ -702,6 +774,8 @@ namespace ComWrappersTests
             {
                 ValidateComInterfaceCreation();
                 ValidateComInterfaceCreationRoundTrip();
+                ValidateComObjectExtendsManagedLifetime();
+                ValidateCreatingAComInterfaceForObjectAfterTheFirstIsFree();
                 ValidateFallbackQueryInterface();
                 ValidateCreateObjectCachingScenario();
                 ValidateMappingAPIs();
@@ -713,8 +787,13 @@ namespace ComWrappersTests
                 ValidateBadComWrapperImpl();
                 ValidateRuntimeTrackerScenario();
                 ValidateQueryInterfaceAfterManagedObjectCollected();
-                ValidateAggregationWithComObject();
-                ValidateAggregationWithReferenceTrackerObject();
+
+                // Tracked by https://github.com/dotnet/runtime/issues/74620
+                if (!TestLibrary.Utilities.IsNativeAot)
+                {
+                    ValidateAggregationWithComObject();
+                    ValidateAggregationWithReferenceTrackerObject();
+                }
 
                 // Ensure all objects have been cleaned up.
                 ForceGC();

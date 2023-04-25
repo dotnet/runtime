@@ -18,46 +18,46 @@
 #include "gcrecord.h"
 
 // The per heap and global fields are separated into the following categories -
-// 
+//
 // Used in GC and needs to be maintained, ie, next GC can be using this field so it needs to have the right value.
 // Note that for some fields this doesn't mean the value of the field itself will change (it could remain the same
 // throughout the process lifetime (for example, finalize_queue) but you'll need to pay attention to its content
-// and make sure it's updated correctly through each GC. 
-// 
+// and make sure it's updated correctly through each GC.
+//
 // Some fields are marked as "loosely maintained" in their comments - this means they are really only modified during
 // a single GC *except* they can be resized during a GC so the reinit-ed value will carry over to later GCs.
 // PER_HEAP_FIELD_MAINTAINED
-// 
+//
 // Like PER_HEAP_FIELD_MAINTAINED and also used in the allocator code paths
 // PER_HEAP_FIELD_MAINTAINED_ALLOC
-// 
+//
 // Used only during a single GC so we could fill it with an arbitrary value and shouldn't break anything.
 // Note that for BGC fields, this means it's initialized at the beginning of that BGC. Ephemeral GCs can happen during
 // this single BGC but they do not actually modify these fields.
 // PER_HEAP_FIELD_SINGLE_GC
-// 
+//
 // Like PER_HEAP_FIELD_SINGLE_GC and also used in the allocator code paths
 // PER_HEAP_FIELD_SINGLE_GC_ALLOC
-// 
+//
 // Only used by the allocator code paths
 // PER_HEAP_FIELD_ALLOC
-// 
+//
 // Initialized during the GC init and never changes
 // PER_HEAP_FIELD_INIT_ONLY
-// 
+//
 // Used for diagnostics purpose only
 // PER_HEAP_FIELD_DIAG_ONLY
-// 
+//
 // Corresponding annotation for global fields
 // PER_HEAP_ISOLATED_FIELD_MAINTAINED
 // PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC
 // PER_HEAP_ISOLATED_FIELD_SINGLE_GC
 // PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC
 // PER_HEAP_ISOLATED_FIELD_INIT_ONLY
-// 
-// If a field does not fit any of the above category, such as fgn_maxgen_percent which is only updated by an API, 
+//
+// If a field does not fit any of the above category, such as fgn_maxgen_percent which is only updated by an API,
 // it will be marked as PER_HEAP_FIELD/PER_HEAP_ISOLATED_FIELD.
-// 
+//
 // A few notes -
 //
 // + within the section of a particular category of fields I use the following policy to list them -
@@ -70,7 +70,7 @@
 //
 // + some of the fields are used by both regions and segments share. When that's the case, the annotation
 // is based on regions. So for segments they may or may not apply (segments code is in maintainence mode only).
-// 
+//
 // + some fields are used by the GC and WB but not by the allocator, in which case I will indicate them as such.
 #ifdef MULTIPLE_HEAPS
 #define PER_HEAP_FIELD
@@ -148,6 +148,7 @@ inline void FATAL_GC_ERROR()
 // + creates some ro segs
 // We can add more mechanisms here.
 //#define STRESS_REGIONS
+//#define COMMITTED_BYTES_SHADOW
 #define MARK_PHASE_PREFETCH
 #endif //USE_REGIONS
 
@@ -278,7 +279,7 @@ void GCLogConfig (const char *fmt, ... );
 #define MAX_NUM_BUCKETS (MAX_INDEX_POWER2 - MIN_INDEX_POWER2 + 1)
 
 #ifdef USE_REGIONS
-#define MAX_REGION_SIZE 0x80000000 
+#define MAX_REGION_SIZE 0x80000000
 #endif // USE_REGIONS
 
 #define MAX_NUM_FREE_SPACES 200
@@ -534,15 +535,17 @@ enum memory_type
 static const char * const str_bgc_state[] =
 {
     "not_in_process",
+    "bgc_initialized",
+    "reset_ww",
     "mark_handles",
     "mark_stack",
     "revisit_soh",
-    "revisit_loh",
+    "revisit_uoh",
     "overflow_soh",
-    "overflow_loh",
+    "overflow_uoh",
     "final_marking",
     "sweep_soh",
-    "sweep_loh",
+    "sweep_uoh",
     "plan_phase"
 };
 #endif // defined(TRACE_GC) && defined(BACKGROUND_GC)
@@ -969,7 +972,7 @@ public:
     // When a generation is condemned, these are re-calculated. For older generations these are maintained across GCs as
     // younger generation GCs allocate into this generation's FL.
     //
-    // If we rearrange regions between heaps, we need to adjust these values accordingly. free_list_space can be adjusted 
+    // If we rearrange regions between heaps, we need to adjust these values accordingly. free_list_space can be adjusted
     // when we adjust the FL. However, since we don't actually maintain free_obj_space per region and walking an entire
     // region just to get free_obj_space is not really worth it, we might just have to live with inaccurate value till
     // the next GC that condemns this generation which is okay since this is usually a small value anyway.
@@ -1028,7 +1031,7 @@ struct static_data
 };
 
 // dynamic data is maintained per generation, so we have total_generation_count number of them.
-// 
+//
 // The dynamic data fields are grouped into 3 categories:
 //
 // calculated logical data (like desired_allocation)
@@ -1046,7 +1049,7 @@ public:
 
     //
     // The next group of fields are updated during a GC if that GC condemns this generation.
-    // 
+    //
     // Same as new_allocation but only updated during a GC if the generation is condemned.
     // We should really just get rid of this.
     ptrdiff_t gc_new_allocation;
@@ -1343,6 +1346,8 @@ enum free_region_kind
     count_free_region_kinds,
 };
 
+static_assert(count_free_region_kinds == FREE_REGION_KINDS, "Keep count_free_region_kinds in sync with FREE_REGION_KINDS, changing this is not a version breaking change.");
+
 class region_free_list
 {
     size_t  num_free_regions;
@@ -1379,6 +1384,8 @@ public:
     void sort_by_committed_and_age();
     static bool is_on_free_list (heap_segment* region, region_free_list free_list[count_free_region_kinds]);
 };
+
+static_assert(sizeof(region_free_list) == sizeof(dac_region_free_list), "The DAC relies on the size of these two types matching for pointer arithmetic.");
 #endif
 
 enum bookkeeping_element
@@ -1582,12 +1589,12 @@ private:
     PER_HEAP_ISOLATED_METHOD void set_region_gen_num (heap_segment* region, int gen_num);
     PER_HEAP_ISOLATED_METHOD int get_region_plan_gen_num (uint8_t* obj);
     PER_HEAP_ISOLATED_METHOD bool is_region_demoted (uint8_t* obj);
-    PER_HEAP_METHOD void set_region_plan_gen_num (heap_segment* region, int plan_gen_num);
+    PER_HEAP_METHOD void set_region_plan_gen_num (heap_segment* region, int plan_gen_num, bool replace_p = false);
     PER_HEAP_METHOD void set_region_plan_gen_num_sip (heap_segment* region, int plan_gen_num);
     PER_HEAP_METHOD void set_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_demoted (heap_segment* region);
-    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region);
+    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region, int* no_pinned_surv_region_count);
     PER_HEAP_METHOD void skip_pins_in_alloc_region (generation* consing_gen, int plan_gen_num);
     PER_HEAP_METHOD void process_last_np_surv_region (generation* consing_gen,
                                       int current_plan_gen_num,
@@ -1608,7 +1615,7 @@ private:
     PER_HEAP_METHOD bool decide_on_compaction_space();
     PER_HEAP_METHOD bool try_get_new_free_region();
     PER_HEAP_METHOD bool init_table_for_region (int gen_number, heap_segment* region);
-    PER_HEAP_METHOD heap_segment* find_first_valid_region (heap_segment* region, bool compact_p);
+    PER_HEAP_METHOD heap_segment* find_first_valid_region (heap_segment* region, bool compact_p, int* num_returned_regions);
     PER_HEAP_METHOD void thread_final_regions (bool compact_p);
     PER_HEAP_METHOD void thread_start_region (generation* gen, heap_segment* region);
     PER_HEAP_METHOD heap_segment* get_new_region (int gen_number, size_t size = 0);
@@ -1632,6 +1639,12 @@ private:
                                     uint8_t* parent_loc);
     // This relocates the SIP regions and return the next non SIP region.
     PER_HEAP_METHOD heap_segment* relocate_advance_to_non_sip (heap_segment* region);
+
+    // Compute the size committed for the mark array for this region.
+    PER_HEAP_METHOD size_t get_mark_array_size(heap_segment* seg);
+
+    // Accumulate the committed bytes for both the region and the mark array for this list of regions.
+    PER_HEAP_METHOD void accumulate_committed_bytes(heap_segment* seg, size_t& committed_bytes, size_t& mark_array_committed_bytes, gc_oh_num oh = unknown);
 
     PER_HEAP_ISOLATED_METHOD void verify_region_to_generation_map();
 
@@ -1990,6 +2003,13 @@ private:
 
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED_METHOD bool on_used_changed (uint8_t* left);
+
+    // new_sizes are the logical sizes of the card table elements while
+    // commit_sizes are the physical sizes of the card table elements due to alignment constraints.
+    PER_HEAP_ISOLATED_METHOD bool get_card_table_commit_layout (uint8_t* from, uint8_t* to,
+                                        uint8_t* commit_begins[total_bookkeeping_elements],
+                                        size_t commit_sizes[total_bookkeeping_elements],
+                                        size_t new_sizes[total_bookkeeping_elements]);
 
     PER_HEAP_ISOLATED_METHOD bool inplace_commit_card_table (uint8_t* from, uint8_t* to);
 #else //USE_REGIONS
@@ -2960,6 +2980,13 @@ private:
     PER_HEAP_ISOLATED_METHOD size_t get_total_committed_size();
     PER_HEAP_ISOLATED_METHOD size_t get_total_fragmentation();
     PER_HEAP_ISOLATED_METHOD size_t get_total_gen_fragmentation (int gen_number);
+
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED_METHOD int get_total_new_gen0_regions_in_plns ();
+    PER_HEAP_ISOLATED_METHOD int get_total_new_regions_in_prr ();
+    PER_HEAP_ISOLATED_METHOD int get_total_new_regions_in_threading ();
+#endif //USE_REGIONS
+
     PER_HEAP_ISOLATED_METHOD size_t get_total_gen_estimated_reclaim (int gen_number);
     PER_HEAP_ISOLATED_METHOD size_t get_total_gen_size (int gen_number);
     PER_HEAP_ISOLATED_METHOD void get_memory_info (uint32_t* memory_load,
@@ -3239,6 +3266,11 @@ private:
 
     PER_HEAP_ISOLATED_METHOD BOOL dt_high_memory_load_p();
 
+    PER_HEAP_ISOLATED_METHOD bool compute_hard_limit();
+
+    PER_HEAP_ISOLATED_METHOD bool compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config,
+        size_t new_current_total_committed);
+
     PER_HEAP_METHOD void update_collection_counts ();
 
     /*****************************************************************************************************************/
@@ -3382,12 +3414,22 @@ private:
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
-// This is the number of regions we would free up if we sweep.
-// It's used in the decision for compaction so we calculate it in plan.
+    // This is the number of regions we would free up if we sweep.
+    // It's used in the decision for compaction so we calculate it in plan.
     PER_HEAP_FIELD_SINGLE_GC int num_regions_freed_in_sweep;
 
     PER_HEAP_FIELD_SINGLE_GC int sip_maxgen_regions_per_gen[max_generation + 1];
     PER_HEAP_FIELD_SINGLE_GC heap_segment* reserved_free_regions_sip[max_generation];
+
+    // Used to keep track of the total regions in each condemned generation. For SIP regions we need
+    // to know if we've made all regions in a condemned gen into a max_generation region; if so we
+    // would want to revert our decision so we leave at least one region in that generation. Otherwise
+    // this is used in dprintf's.
+    PER_HEAP_FIELD_SINGLE_GC int regions_per_gen[max_generation + 1];
+
+    // Used to keep track of how many regions we have planned to see if any generation
+    // doens't have a region yet and act accordingly.
+    PER_HEAP_FIELD_SINGLE_GC int planned_regions_per_gen[max_generation + 1];
 
     // After plan we calculate this as the planned end gen0 space;
     // but if we end up sweeping, we recalculate it at the end of
@@ -3539,7 +3581,7 @@ private:
     PER_HEAP_FIELD_MAINTAINED generation generation_table[total_generation_count];
 
     // These are loosely maintained, ie, could be reinitialized at any GC if needed. All that's
-    // maintained is just the # of elements in mark_stack_array.    
+    // maintained is just the # of elements in mark_stack_array.
     // The content of mark_stack_array is only maintained during a single GC.
     PER_HEAP_FIELD_MAINTAINED size_t mark_stack_array_length;
     PER_HEAP_FIELD_MAINTAINED mark* mark_stack_array;
@@ -3630,7 +3672,7 @@ private:
     PER_HEAP_FIELD_MAINTAINED_ALLOC alloc_list poh_alloc_list[NUM_POH_ALIST - 1];
 
     // Keeps track of the highest address allocated by Alloc
-    // Used in allocator code path. Blocking GCs do use it at the beginning (to update heap_segment_allocated) and 
+    // Used in allocator code path. Blocking GCs do use it at the beginning (to update heap_segment_allocated) and
     // at the end they get initialized for the allocator.
     PER_HEAP_FIELD_MAINTAINED_ALLOC uint8_t* alloc_allocated;
 
@@ -3696,13 +3738,13 @@ private:
 #define vm_heap ((GCHeap*) g_theGCHeap)
 #define heap_number (0)
 #endif //MULTIPLE_HEAPS
-    
+
 #ifdef BACKGROUND_GC
     // We only use this when we need to timeout BGC threads.
     PER_HEAP_FIELD_INIT_ONLY CLRCriticalSection bgc_threads_timeout_cs;
 
     // For regions these are the same as g_gc_lowest_address/g_gc_highest_address
-    // and never change. 
+    // and never change.
     PER_HEAP_FIELD_INIT_ONLY uint8_t* background_saved_lowest_address;
     PER_HEAP_FIELD_INIT_ONLY uint8_t* background_saved_highest_address;
 
@@ -3732,6 +3774,7 @@ private:
 #ifdef MULTIPLE_HEAPS
 #ifdef _DEBUG
     PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap[total_oh_count];
+    PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap_refresh[total_oh_count];
 #endif //_DEBUG
 #else //MULTIPLE_HEAPS
 #endif //MULTIPLE_HEAPS
@@ -3771,8 +3814,12 @@ private:
 #endif //BACKGROUND_GC
 
 #ifdef USE_REGIONS
-    // Used in a single GC.
-    PER_HEAP_FIELD_DIAG_ONLY int regions_per_gen[max_generation + 1];
+    // Used to keep track of the new regions we get in process_last_np_surv_region (plns)
+    PER_HEAP_FIELD_DIAG_ONLY int new_gen0_regions_in_plns;
+    // Used to keep track of the new regions we get in process_remaining_regions (prr)
+    PER_HEAP_FIELD_DIAG_ONLY int new_regions_in_prr;
+    // Used to keep track of the new regions we get in thread_final_regions
+    PER_HEAP_FIELD_DIAG_ONLY int new_regions_in_threading;
 
 #ifdef STRESS_REGIONS
     // TODO: could consider dynamically grow this.
@@ -3968,7 +4015,7 @@ private:
 
     // Highest and lowest address for ephemeral generations.
     // For regions these are only used during a GC (init-ed at beginning of mark and
-    // used later in that GC). 
+    // used later in that GC).
     // They could be used for WB but we currently don't use them for that purpose, even
     // thought we do pass them to the WB code.
     //
@@ -4160,11 +4207,13 @@ private:
     // TODO: some of the logic here applies to the general case as well
     // such as LOH automatic compaction. However it will require more
     //testing to change the general case.
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool hard_limit_config_p;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t heap_hard_limit;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t heap_hard_limit_oh[total_oh_count];
 
     // Used both in a GC and on the allocator code paths when heap_hard_limit is non zero
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY CLRCriticalSection check_commit_cs;
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY CLRCriticalSection decommit_lock;
 
     // Indicate to use large pages. This only works if hardlimit is also enabled.
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool use_large_pages_p;
@@ -4192,10 +4241,10 @@ private:
 #endif //BGC_SERVO_TUNING
 #endif //BACKGROUND_GC
 
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY uint8_t* bookkeeping_start;
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t regions_range;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool enable_special_regions_p;
-    PER_HEAP_ISOLATED_FIELD_INIT_ONLY uint8_t* bookkeeping_covered_start;
 #else //USE_REGIONS
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t eph_gen_starts_size;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t min_segment_size;
@@ -4240,7 +4289,7 @@ private:
 
     // For implementation of GCHeap::GetMemoryInfo which is called by
     // the GC.GetGCMemoryInfo API
-    // 
+    //
     // We record the time GC work is done while EE is suspended.
     // suspended_start_ts is what we get right before we call
     // SuspendEE. We omit the time between GC end and RestartEE
@@ -4349,7 +4398,6 @@ private:
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t gen0_max_budget_from_config;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY int high_mem_percent_from_config;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY bool use_frozen_segments_p;
-    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY bool hard_limit_config_p;
 #endif //FEATURE_EVENT_TRACE
 
 #ifdef HEAP_BALANCE_INSTRUMENTATION
@@ -4403,6 +4451,8 @@ public:
 
     PER_HEAP_ISOLATED_METHOD uint32_t wait_for_gc_done(int32_t timeOut = INFINITE);
 
+    PER_HEAP_ISOLATED_METHOD int refresh_memory_limit();
+
     /***************************************************************************************************/
     // public fields                                                                                   //
     /***************************************************************************************************/
@@ -4423,7 +4473,6 @@ public:
 #ifdef FEATURE_BASICFREEZE
     PER_HEAP_ISOLATED_FIELD_MAINTAINED sorted_table* seg_table;
 #endif //FEATURE_BASICFREEZE
-
 }; // class gc_heap
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION

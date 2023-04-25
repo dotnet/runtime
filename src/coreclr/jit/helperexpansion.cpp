@@ -209,12 +209,12 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt,
         const bool isLastIndirectionWithSizeCheck = (i == runtimeLookup.indirections - 1) && needsSizeCheck;
         if (i != 0)
         {
-            slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
-            slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
+            GenTreeFlags indirFlags = GTF_IND_NONFAULTING;
             if (!isLastIndirectionWithSizeCheck)
             {
-                slotPtrTree->gtFlags |= GTF_IND_INVARIANT;
+                indirFlags |= GTF_IND_INVARIANT;
             }
+            slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, indirFlags);
         }
 
         if ((i == 1 && runtimeLookup.indirectFirstOffset) || (i == 2 && runtimeLookup.indirectSecondOffset))
@@ -254,8 +254,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt,
     //
 
     // null-check basic block
-    GenTree* fastPathValue = gtNewOperNode(GT_IND, TYP_I_IMPL, gtCloneExpr(slotPtrTree));
-    fastPathValue->gtFlags |= GTF_IND_NONFAULTING;
+    GenTree* fastPathValue = gtNewIndir(TYP_I_IMPL, gtCloneExpr(slotPtrTree), GTF_IND_NONFAULTING);
     // Save dictionary slot to a local (to be used by fast path)
     GenTree* fastPathValueClone =
         opts.OptimizationEnabled() ? fgMakeMultiUse(&fastPathValue) : gtCloneExpr(fastPathValue);
@@ -303,8 +302,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt,
         GenTreeIntCon* sizeOffset = gtNewIconNode(runtimeLookup.sizeOffset, TYP_I_IMPL);
         assert(lastIndOfTree != nullptr);
         GenTree* sizeValueOffset = gtNewOperNode(GT_ADD, TYP_I_IMPL, lastIndOfTree, sizeOffset);
-        GenTree* sizeValue       = gtNewOperNode(GT_IND, TYP_I_IMPL, sizeValueOffset);
-        sizeValue->gtFlags |= GTF_IND_NONFAULTING;
+        GenTree* sizeValue       = gtNewIndir(TYP_I_IMPL, sizeValueOffset, GTF_IND_NONFAULTING);
 
         // sizeCheck fails if sizeValue <= pRuntimeLookup->offsets[i]
         GenTree* offsetValue = gtNewIconNode(runtimeLookup.offsets[runtimeLookup.indirections - 1], TYP_I_IMPL);
@@ -391,12 +389,6 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt,
     {
         assert(BasicBlock::sameEHRegion(prevBb, sizeCheckBb));
     }
-
-    if (opts.OptimizationEnabled())
-    {
-        fgReorderBlocks(/* useProfileData */ false);
-        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
-    }
     return true;
 }
 
@@ -465,6 +457,13 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     {
         return false;
     }
+
+#ifdef TARGET_ARM
+    // On Arm, Thread execution blocks are accessed using co-processor registers and instructions such
+    // as MRC and MCR are used to access them. We do not support them and so should never optimize the
+    // field access using TLS.
+    assert(!"Unsupported scenario of optimizing TLS access on Arm32");
+#endif
 
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo);
@@ -674,9 +673,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     assert(BasicBlock::sameEHRegion(prevBb, threadStaticBlockNullCondBB));
     assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
 
-    fgReorderBlocks(/* useProfileData */ false);
-    fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
-
     return true;
 }
 
@@ -704,6 +700,13 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
             result = PhaseStatus::MODIFIED_EVERYTHING;
         }
     }
+
+    if ((result == PhaseStatus::MODIFIED_EVERYTHING) && opts.OptimizationEnabled())
+    {
+        fgReorderBlocks(/* useProfileData */ false);
+        fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
+    }
+
     return result;
 }
 
@@ -909,7 +912,6 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, Gen
         // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
         GenTree* offsetNode     = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, gtNewIconNode(isInitOffset));
         isInitedActualValueNode = gtNewIndir(TYP_I_IMPL, offsetNode, GTF_IND_NONFAULTING);
-        isInitedActualValueNode->gtFlags |= GTF_GLOB_REF;
 
         // 0 means "initialized" on NativeAOT
         isInitedExpectedValue = gtNewIconNode(0, TYP_I_IMPL);

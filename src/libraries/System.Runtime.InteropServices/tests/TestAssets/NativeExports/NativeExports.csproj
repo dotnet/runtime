@@ -11,12 +11,16 @@
          to the apphost to make sure that it is built before this project invokes DNNE. -->
     <UseLocalAppHostPack>false</UseLocalAppHostPack>
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
-    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
     <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
     <_TargetsAppleOS Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or
       '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'iossimulator' or
       '$(TargetOS)' == 'tvossimulator'">true</_TargetsAppleOS>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\TestAssets\SharedTypes\ComInterfaces\*.cs" Link="ComInterfaceGenerator\ComInterfaces\%(FileName).cs" />
+  </ItemGroup>
 
   <!-- Until we use the live app host, use a prebuilt from the 7.0 SDK.
        Issue: https://github.com/dotnet/runtime/issues/58109. -->
@@ -36,6 +40,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SharedTypes\SharedTypes.csproj" />
+    <ProjectReference Include="..\..\Ancillary.Interop\Ancillary.Interop.csproj" />
   </ItemGroup>
 
   <Target Name="GetUnixBuildArgumentsForDNNE" Condition="'$(OS)' == 'Unix'">

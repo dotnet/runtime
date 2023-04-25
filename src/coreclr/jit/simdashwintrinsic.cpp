@@ -772,6 +772,47 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         }
 #endif // TARGET_XARCH
 
+#if defined(TARGET_XARCH)
+        case NI_VectorT128_Multiply:
+        case NI_VectorT128_op_Multiply:
+        case NI_VectorT256_Multiply:
+        case NI_VectorT256_op_Multiply:
+        {
+            if (varTypeIsLong(simdBaseType))
+            {
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512DQ_VL))
+                {
+                    // TODO-XARCH-CQ: We should support long/ulong multiplication
+                    return nullptr;
+                }
+
+#if defined(TARGET_X86)
+                // TODO-XARCH-CQ: We need to support 64-bit CreateBroadcast
+                return nullptr;
+#endif // TARGET_X86
+            }
+            break;
+        }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_XARCH)
+        case NI_VectorT128_ShiftRightArithmetic:
+        case NI_VectorT128_op_RightShift:
+        case NI_VectorT256_ShiftRightArithmetic:
+        case NI_VectorT256_op_RightShift:
+        {
+            if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
+            {
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                {
+                    // TODO-XARCH-CQ: We should support long/ulong arithmetic shift
+                    return nullptr;
+                }
+            }
+            break;
+        }
+#endif // TARGET_XARCH
+
         default:
         {
             // Most intrinsics have some path that works even if only SSE2/AdvSimd is available
@@ -900,8 +941,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                 // We fold away the cast here, as it only exists to satisfy the
                 // type system. It is safe to do this here since the op1 type
                 // and the signature return type are both the same TYP_SIMD.
-
-                op1 = impSIMDPopStack(retType, /* expectAddr: */ false, sig->retTypeClass);
+                op1 = impSIMDPopStack();
                 SetOpLclRelatedToSIMDIntrinsic(op1);
                 assert(op1->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
 
@@ -1866,7 +1906,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     else if (areArgumentsContiguous(op2, op3))
                     {
                         GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 8);
-                        copyBlkSrc          = gtNewOperNode(GT_IND, TYP_SIMD8, op2Address);
+                        copyBlkSrc          = gtNewIndir(TYP_SIMD8, op2Address);
                     }
                     else
                     {
@@ -2006,7 +2046,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                     else if (areArgumentsContiguous(op2, op3) && areArgumentsContiguous(op3, op4))
                     {
                         GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 12);
-                        copyBlkSrc          = gtNewOperNode(GT_IND, TYP_SIMD12, op2Address);
+                        copyBlkSrc          = gtNewIndir(TYP_SIMD12, op2Address);
                     }
                     else
                     {
@@ -2133,7 +2173,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
                              areArgumentsContiguous(op4, op5))
                     {
                         GenTree* op2Address = CreateAddressNodeForSimdHWIntrinsicCreate(op2, simdBaseType, 16);
-                        copyBlkSrc          = gtNewOperNode(GT_IND, TYP_SIMD16, op2Address);
+                        copyBlkSrc          = gtNewIndir(TYP_SIMD16, op2Address);
                     }
                     else
                     {
@@ -2166,17 +2206,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     if (copyBlkDst != nullptr)
     {
         assert(copyBlkSrc != nullptr);
-
-        // At this point, we have a tree that we are going to store into a destination.
-        // TODO-1stClassStructs: This should be a simple store or assignment, and should not require
-        // GTF_ALL_EFFECT for the dest. This is currently emulating the previous behavior of
-        // block ops.
-
-        GenTree* dest = gtNewStructVal(typGetBlkLayout(simdSize), copyBlkDst);
-
-        dest->gtType = simdType;
-        dest->gtFlags |= GTF_GLOB_REF;
-
+        GenTree* dest    = gtNewLoadValueNode(simdType, copyBlkDst);
         GenTree* retNode = gtNewBlkOpNode(dest, copyBlkSrc);
 
         return retNode;

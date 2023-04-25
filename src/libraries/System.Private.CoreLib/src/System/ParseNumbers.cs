@@ -9,23 +9,10 @@ namespace System
     /// <summary>Methods for parsing numbers and strings.</summary>
     internal static class ParseNumbers
     {
-        internal const int LeftAlign = 0x0001;
-        internal const int RightAlign = 0x0004;
-        internal const int PrefixSpace = 0x0008;
-        internal const int PrintSign = 0x0010;
-        internal const int PrintBase = 0x0020;
-        internal const int PrintAsI1 = 0x0040;
-        internal const int PrintAsI2 = 0x0080;
-        internal const int PrintAsI4 = 0x0100;
         internal const int TreatAsUnsigned = 0x0200;
         internal const int TreatAsI1 = 0x0400;
         internal const int TreatAsI2 = 0x0800;
         internal const int IsTight = 0x1000;
-        internal const int NoSpace = 0x2000;
-        internal const int PrintRadixBase = 0x4000;
-
-        private const int MinRadix = 2;
-        private const int MaxRadix = 36;
 
         public static unsafe long StringToLong(ReadOnlySpan<char> s, int radix, int flags)
         {
@@ -51,7 +38,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_IndexMustBeLess);
 
             // Get rid of the whitespace and then check that we've still got some digits to parse.
-            if (((flags & IsTight) == 0) && ((flags & NoSpace) == 0))
+            if ((flags & IsTight) == 0)
             {
                 EatWhiteSpace(s, ref i);
                 if (i == length)
@@ -139,7 +126,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_IndexMustBeLess);
 
             // Get rid of the whitespace and then check that we've still got some digits to parse.
-            if (((flags & IsTight) == 0) && ((flags & NoSpace) == 0))
+            if ((flags & IsTight) == 0)
             {
                 EatWhiteSpace(s, ref i);
                 if (i == length)
@@ -212,294 +199,6 @@ namespace System
                 result *= sign;
             }
 
-            return result;
-        }
-
-        public static string IntToString(int n, int radix, int width, char paddingChar, int flags)
-        {
-            Span<char> buffer = stackalloc char[66]; // Longest possible string length for an integer in binary notation with prefix
-
-            if (radix < MinRadix || radix > MaxRadix)
-                throw new ArgumentException(SR.Arg_InvalidBase, nameof(radix));
-
-            // If the number is negative, make it positive and remember the sign.
-            // If the number is MIN_VALUE, this will still be negative, so we'll have to
-            // special case this later.
-            bool isNegative = false;
-            uint l;
-            if (n < 0)
-            {
-                isNegative = true;
-
-                // For base 10, write out -num, but other bases write out the
-                // 2's complement bit pattern
-                l = (10 == radix) ? (uint)-n : (uint)n;
-            }
-            else
-            {
-                l = (uint)n;
-            }
-
-            // The conversion to a uint will sign extend the number.  In order to ensure
-            // that we only get as many bits as we expect, we chop the number.
-            if ((flags & PrintAsI1) != 0)
-            {
-                l &= 0xFF;
-            }
-            else if ((flags & PrintAsI2) != 0)
-            {
-                l &= 0xFFFF;
-            }
-
-            // Special case the 0.
-            int index;
-            if (0 == l)
-            {
-                buffer[0] = '0';
-                index = 1;
-            }
-            else
-            {
-                index = 0;
-                for (int i = 0; i < buffer.Length; i++) // for (...;i<buffer.Length;...) loop instead of do{...}while(l!=0) to help JIT eliminate span bounds checks
-                {
-                    uint div = l / (uint)radix; // TODO https://github.com/dotnet/runtime/issues/5213
-                    uint charVal = l - (div * (uint)radix);
-                    l = div;
-
-                    buffer[i] = (charVal < 10) ?
-                        (char)(charVal + '0') :
-                        (char)(charVal + 'a' - 10);
-
-                    if (l == 0)
-                    {
-                        index = i + 1;
-                        break;
-                    }
-                }
-
-                Debug.Assert(l == 0, $"Expected {l} == 0");
-            }
-
-            // If they want the base, append that to the string (in reverse order)
-            if (radix != 10 && ((flags & PrintBase) != 0))
-            {
-                if (16 == radix)
-                {
-                    buffer[index++] = 'x';
-                    buffer[index++] = '0';
-                }
-                else if (8 == radix)
-                {
-                    buffer[index++] = '0';
-                }
-            }
-
-            if (10 == radix)
-            {
-                // If it was negative, append the sign, else if they requested, add the '+'.
-                // If they requested a leading space, put it on.
-                if (isNegative)
-                {
-                    buffer[index++] = '-';
-                }
-                else if ((flags & PrintSign) != 0)
-                {
-                    buffer[index++] = '+';
-                }
-                else if ((flags & PrefixSpace) != 0)
-                {
-                    buffer[index++] = ' ';
-                }
-            }
-
-            // Figure out the size of and allocate the resulting string
-            string result = string.FastAllocateString(Math.Max(width, index));
-            unsafe
-            {
-                // Put the characters into the string in reverse order.
-                // Fill the remaining space, if there is any, with the correct padding character.
-                fixed (char* resultPtr = result)
-                {
-                    char* p = resultPtr;
-                    int padding = result.Length - index;
-
-                    if ((flags & LeftAlign) != 0)
-                    {
-                        for (int i = 0; i < padding; i++)
-                        {
-                            *p++ = paddingChar;
-                        }
-
-                        for (int i = 0; i < index; i++)
-                        {
-                            *p++ = buffer[index - i - 1];
-                        }
-                    }
-                    else
-                    {
-                        for (int i = 0; i < index; i++)
-                        {
-                            *p++ = buffer[index - i - 1];
-                        }
-
-                        for (int i = 0; i < padding; i++)
-                        {
-                            *p++ = paddingChar;
-                        }
-                    }
-
-                    Debug.Assert((p - resultPtr) == result.Length, $"Expected {p - resultPtr} == {result.Length}");
-                }
-            }
-            return result;
-        }
-
-        public static string LongToString(long n, int radix, int width, char paddingChar, int flags)
-        {
-            Span<char> buffer = stackalloc char[67]; // Longest possible string length for an integer in binary notation with prefix
-
-            if (radix < MinRadix || radix > MaxRadix)
-                throw new ArgumentException(SR.Arg_InvalidBase, nameof(radix));
-
-            // If the number is negative, make it positive and remember the sign.
-            ulong ul;
-            bool isNegative = false;
-            if (n < 0)
-            {
-                isNegative = true;
-
-                // For base 10, write out -num, but other bases write out the
-                // 2's complement bit pattern
-                ul = (10 == radix) ? (ulong)(-n) : (ulong)n;
-            }
-            else
-            {
-                ul = (ulong)n;
-            }
-
-            if ((flags & PrintAsI1) != 0)
-            {
-                ul &= 0xFF;
-            }
-            else if ((flags & PrintAsI2) != 0)
-            {
-                ul &= 0xFFFF;
-            }
-            else if ((flags & PrintAsI4) != 0)
-            {
-                ul &= 0xFFFFFFFF;
-            }
-
-            // Special case the 0.
-            int index;
-            if (0 == ul)
-            {
-                buffer[0] = '0';
-                index = 1;
-            }
-            else
-            {
-                index = 0;
-                for (int i = 0; i < buffer.Length; i++) // for loop instead of do{...}while(l!=0) to help JIT eliminate span bounds checks
-                {
-                    ulong div = ul / (ulong)radix; // TODO https://github.com/dotnet/runtime/issues/5213
-                    int charVal = (int)(ul - (div * (ulong)radix));
-                    ul = div;
-
-                    buffer[i] = (charVal < 10) ?
-                        (char)(charVal + '0') :
-                        (char)(charVal + 'a' - 10);
-
-                    if (ul == 0)
-                    {
-                        index = i + 1;
-                        break;
-                    }
-                }
-                Debug.Assert(ul == 0, $"Expected {ul} == 0");
-            }
-
-            // If they want the base, append that to the string (in reverse order)
-            if (radix != 10 && ((flags & PrintBase) != 0))
-            {
-                if (16 == radix)
-                {
-                    buffer[index++] = 'x';
-                    buffer[index++] = '0';
-                }
-                else if (8 == radix)
-                {
-                    buffer[index++] = '0';
-                }
-                else if ((flags & PrintRadixBase) != 0)
-                {
-                    buffer[index++] = '#';
-                    buffer[index++] = (char)((radix % 10) + '0');
-                    buffer[index++] = (char)((radix / 10) + '0');
-                }
-            }
-
-            if (10 == radix)
-            {
-                // If it was negative, append the sign.
-                if (isNegative)
-                {
-                    buffer[index++] = '-';
-                }
-
-                // else if they requested, add the '+';
-                else if ((flags & PrintSign) != 0)
-                {
-                    buffer[index++] = '+';
-                }
-
-                // If they requested a leading space, put it on.
-                else if ((flags & PrefixSpace) != 0)
-                {
-                    buffer[index++] = ' ';
-                }
-            }
-
-            // Figure out the size of and allocate the resulting string
-            string result = string.FastAllocateString(Math.Max(width, index));
-            unsafe
-            {
-                // Put the characters into the string in reverse order.
-                // Fill the remaining space, if there is any, with the correct padding character.
-                fixed (char* resultPtr = result)
-                {
-                    char* p = resultPtr;
-                    int padding = result.Length - index;
-
-                    if ((flags & LeftAlign) != 0)
-                    {
-                        for (int i = 0; i < padding; i++)
-                        {
-                            *p++ = paddingChar;
-                        }
-
-                        for (int i = 0; i < index; i++)
-                        {
-                            *p++ = buffer[index - i - 1];
-                        }
-                    }
-                    else
-                    {
-                        for (int i = 0; i < index; i++)
-                        {
-                            *p++ = buffer[index - i - 1];
-                        }
-
-                        for (int i = 0; i < padding; i++)
-                        {
-                            *p++ = paddingChar;
-                        }
-                    }
-
-                    Debug.Assert((p - resultPtr) == result.Length, $"Expected {p - resultPtr} == {result.Length}");
-                }
-            }
             return result;
         }
 

@@ -161,7 +161,7 @@ namespace System.Text.Json.Serialization
                 }
 
                 // Dispatch to any polymorphic converters: should always be entered regardless of ObjectState progress
-                if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Type) &&
+                if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0 &&
                     state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted &&
                     ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
@@ -181,7 +181,7 @@ namespace System.Text.Json.Serialization
 
                     CreateCollection(ref reader, ref state, options);
 
-                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Id))
+                    if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                     {
                         Debug.Assert(state.ReferenceId != null);
                         Debug.Assert(options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve);
@@ -245,7 +245,7 @@ namespace System.Text.Json.Serialization
                     state.Current.ObjectState = StackFrameObjectState.EndToken;
 
                     // Array payload is nested inside a $values metadata property.
-                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Values))
+                    if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Values) != 0)
                     {
                         if (!reader.Read())
                         {
@@ -258,7 +258,7 @@ namespace System.Text.Json.Serialization
                 if (state.Current.ObjectState < StackFrameObjectState.EndTokenValidation)
                 {
                     // Array payload is nested inside a $values metadata property.
-                    if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Values))
+                    if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Values) != 0)
                     {
                         if (reader.TokenType != JsonTokenType.EndObject)
                         {
