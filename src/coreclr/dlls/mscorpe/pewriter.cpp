@@ -816,6 +816,11 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags, LPCWSTR seedFileN
         m_ntHeaders->FileHeader.Characteristics |= VAL16(IMAGE_FILE_RELOCS_STRIPPED);
     }
 
+    if (createFlags & ICEE_CREATE_FILE_DET)
+    {
+        m_ntHeaders->FileHeader.TimeDateStamp = VAL32(0);
+    }
+
     // Linker version should be consistent with current VC level
     m_ntHeaders->OptionalHeader.MajorLinkerVersion  = 11;
     m_ntHeaders->OptionalHeader.MinorLinkerVersion  = 0;

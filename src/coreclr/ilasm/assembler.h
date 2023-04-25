@@ -752,6 +752,7 @@ public:
     BOOL    m_fIsMscorlib;
     BOOL    m_fTolerateDupMethods;
     BOOL    m_fOptimize;
+    BOOL    m_fDeterministic;
     mdToken m_tkSysObject;
     mdToken m_tkSysString;
     mdToken m_tkSysValue;
@@ -760,6 +761,7 @@ public:
 
     IMetaDataDispenserEx2 *m_pDisp;
     IMetaDataEmit3      *m_pEmitter;
+    IMDInternalEmit     *m_pInternalEmitForDeterministicMvid;
     ICeeFileGen        *m_pCeeFileGen;
     IMetaDataImport2    *m_pImporter;			// Import interface.
     HCEEFILE m_pCeeFile;
@@ -1255,6 +1257,8 @@ public:
     void EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, mdToken tkOwner, GenericParamConstraintList* pGPCL);
 
 };
+
+HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize);
 
 #endif  // Assember_h
 

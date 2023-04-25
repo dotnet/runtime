@@ -43,6 +43,34 @@ HRESULT Assembler::InitMetaData()
     if(FAILED(hr = m_pEmitter->QueryInterface(IID_IMetaDataImport2, (void**)&m_pImporter)))
         goto exit;
 
+    if (m_fDeterministic)
+    {
+        //
+        // In deterministic mode, the MVID will need to be stabilized for the metadata scope that
+        // was created above, and the ChangeMvid service that makes this possible is only available
+        // on the IMDInternalEmit interface.
+        //
+        // When the CLSID_CorMetaDataDispenser instance above has activated against a current
+        // clr.dll (which is the only supported configuration for the determinism feature), it is
+        // guaranteed that "m_pEmitter" is implemented by the RegMeta object that was created
+        // during the DefineScope call above, and it is guaranteed that this same RegMeta object
+        // also implements the required IMDInternalEmit interface.
+        //
+        // Any failure is unexpected and catastrophic, so print a noisy message and return an
+        // error (which generally fails the entire ilasm operation) if any failure occurs.
+        //
+
+        hr = m_pEmitter->QueryInterface(IID_IMDInternalEmit, (void**)&m_pInternalEmitForDeterministicMvid);
+
+        if (FAILED(hr) || (m_pInternalEmitForDeterministicMvid == NULL))
+        {
+            fprintf(stderr, "Unexpected: Failed to query the required MVID determinism interface: %X\n",hr);
+            hr = E_FAIL;
+            goto exit;
+        }
+    }
+
+
     if (m_fGeneratePDB)
     {
         m_pPortablePdbWriter = new PortablePdbWriter();
@@ -1590,6 +1618,64 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 exit:
     return hr;
 }
+
+HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
+{
+    NTSTATUS status;
+    
+    BCRYPT_ALG_HANDLE   algHandle = NULL;
+    BCRYPT_HASH_HANDLE  hashHandle = NULL;
+    
+    BYTE    hash[32]; // 256 bits
+    DWORD   hashLength = 0;
+    DWORD   resultLength = 0;
+    status = BCryptOpenAlgorithmProvider(&algHandle, BCRYPT_SHA256_ALGORITHM, NULL, BCRYPT_HASH_REUSABLE_FLAG);
+    if(!NT_SUCCESS(status))
+    {
+        goto cleanup;
+    }
+    status = BCryptGetProperty(algHandle, BCRYPT_HASH_LENGTH, (PBYTE)&hashLength, sizeof(hashLength), &resultLength, 0);
+    if(!NT_SUCCESS(status))
+    {
+        goto cleanup;
+    }
+    if (hashLength != 32)
+    {
+        status = STATUS_NO_MEMORY;
+        goto cleanup;
+    }
+    status = BCryptCreateHash(algHandle, &hashHandle, NULL, 0, NULL, 0, 0);
+    if(!NT_SUCCESS(status))
+    {
+        goto cleanup;
+    }
+    
+    status = BCryptHashData(hashHandle, pSrc, srcSize, 0);
+    if(!NT_SUCCESS(status))
+    {
+        goto cleanup;
+    }
+    
+    status = BCryptFinishHash(hashHandle, hash, hashLength, 0);
+    if(!NT_SUCCESS(status))
+    {
+        goto cleanup;
+    }
+    memcpy(pDst, hash, min(hashLength, dstSize));
+    status = STATUS_SUCCESS;
+       
+cleanup:
+    if (NULL != hashHandle)    
+    {
+         BCryptDestroyHash(hashHandle);
+    }
+    if(NULL != algHandle)
+    {
+        BCryptCloseAlgorithmProvider(algHandle, 0);
+    }
+    return status;
+}
+
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif

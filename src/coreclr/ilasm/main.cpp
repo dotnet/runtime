@@ -320,6 +320,10 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                     {
                       pAsm->m_fOptimize = TRUE;
                     }
+                    else if (!_stricmp(szOpt, "DET"))
+                    {
+                      pAsm->m_fDeterministic = TRUE;
+                    }
                     else if (!_stricmp(szOpt, "X64"))
                     {
                       pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;
