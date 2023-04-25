@@ -445,7 +445,6 @@ HRESULT EEClass::AddField(MethodTable* pMT, mdFieldDef fieldDef, FieldDesc** ppN
     // existing code etc.
     DWORD dwFieldAttrs;
     IfFailThrow(pImport->GetFieldDefProps(fieldDef, &dwFieldAttrs));
-    _ASSERTE(IsFdPrivate(dwFieldAttrs));
 
     FieldDesc* pNewFD;
     if (FAILED(hr = AddFieldDesc(pMT, fieldDef, dwFieldAttrs, &pNewFD)))
