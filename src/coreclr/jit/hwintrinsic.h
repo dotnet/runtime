@@ -537,6 +537,7 @@ struct HWIntrinsicInfo
             case NI_SSE41_RoundToPositiveInfinity:
             case NI_SSE41_RoundToPositiveInfinityScalar:
             case NI_AVX_Ceiling:
+            case NI_AVX512F_Ceiling:
             case NI_AVX_RoundToPositiveInfinity:
             {
                 return static_cast<int>(FloatRoundingMode::ToPositiveInfinity);
@@ -547,6 +548,7 @@ struct HWIntrinsicInfo
             case NI_SSE41_RoundToNegativeInfinity:
             case NI_SSE41_RoundToNegativeInfinityScalar:
             case NI_AVX_Floor:
+            case NI_AVX512F_Floor:
             case NI_AVX_RoundToNegativeInfinity:
             {
                 return static_cast<int>(FloatRoundingMode::ToNegativeInfinity);

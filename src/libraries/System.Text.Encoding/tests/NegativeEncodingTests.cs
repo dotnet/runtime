@@ -128,9 +128,21 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes("a", 0, 1, new byte[0], 0));
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes("abc", 0, 3, new byte[1], 0));
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes("\uD800\uDC00", 0, 2, new byte[1], 0));
+
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(new char[1], 0, 1, new byte[0], 0));
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes(new char[3], 0, 3, new byte[1], 0));
             AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes("\uD800\uDC00".ToCharArray(), 0, 2, new byte[1], 0));
+
+            AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes((ReadOnlySpan<char>)new char[1], (Span<byte>)new byte[0]));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes((ReadOnlySpan<char>)new char[3], (Span<byte>)new byte[1]));
+            AssertExtensions.Throws<ArgumentException>("bytes", () => encoding.GetBytes((ReadOnlySpan<char>)"\uD800\uDC00".ToCharArray(), (Span<byte>)new byte[1]));
+
+            Assert.False(encoding.TryGetBytes((ReadOnlySpan<char>)new char[1], (Span<byte>)new byte[0], out int bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.False(encoding.TryGetBytes((ReadOnlySpan<char>)new char[3], (Span<byte>)new byte[1], out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.False(encoding.TryGetBytes((ReadOnlySpan<char>)"\uD800\uDC00".ToCharArray(), (Span<byte>)new byte[1], out bytesWritten));
+            Assert.Equal(0, bytesWritten);
 
             char[] chars = new char[3];
             byte[] bytes = new byte[3];
@@ -223,6 +235,9 @@ namespace System.Text.Tests
 
             // Chars does not have enough capacity to accommodate result
             AssertExtensions.Throws<ArgumentException>("chars", () => encoding.GetChars(new byte[4], 0, 4, new char[1], 1));
+            AssertExtensions.Throws<ArgumentException>("chars", () => encoding.GetChars((ReadOnlySpan<byte>)new byte[4], (new char[1]).AsSpan(1)));
+            Assert.False(encoding.TryGetChars((ReadOnlySpan<byte>)new byte[4], (new char[1]).AsSpan(1), out int charsWritten));
+            Assert.Equal(0, charsWritten);
 
             byte[] bytes = new byte[encoding.GetMaxByteCount(2)];
             char[] chars = new char[4];

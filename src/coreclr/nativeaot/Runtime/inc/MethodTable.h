@@ -75,6 +75,7 @@ enum EETypeElementType : uint8_t
     ElementType_SzArray = 0x18,
     ElementType_ByRef = 0x19,
     ElementType_Pointer = 0x1A,
+    ElementType_FunctionPointer = 0x1B,
 };
 
 //-------------------------------------------------------------------------------------------------

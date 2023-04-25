@@ -139,7 +139,7 @@ namespace DebuggerTests
             await CheckString(props, "B", "xx");
             await CheckString(props, "c", "20_xx");
 
-            pause_location = await StepAndCheck(StepKind.Over, dep_cs_loc, 25, 8, "Simple.Complex.DoStuff", times: 2);
+            pause_location = await StepAndCheck(StepKind.Over, dep_cs_loc, 25, 8, "Simple.Complex.DoStuff", times: 4);
             // Check UseComplex frame again
             locals_m1 = await GetLocalsForFrame(pause_location["callFrames"][1], debugger_test_loc, 23, 8, "Math.UseComplex");
             Assert.Equal(7, locals_m1.Count());
@@ -207,7 +207,7 @@ namespace DebuggerTests
             await CheckObject(locals_m1, "nim", "Math.NestedInMath");
 
             // step back into OuterMethod
-            await StepAndCheck(StepKind.Over, debugger_test_loc, 91, 8, "Math.OuterMethod", times: 6,
+            await StepAndCheck(StepKind.Over, debugger_test_loc, 91, 8, "Math.OuterMethod", times: 7,
                 locals_fn: async (locals) =>
                 {
                     Assert.Equal(5, locals.Count());
@@ -247,7 +247,7 @@ namespace DebuggerTests
                 }
             );
 
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 92, 8, "Math.OuterMethod", times: 1,
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 92, 8, "Math.OuterMethod", times: 2,
                 locals_fn: async (locals) =>
                 {
                     Assert.Equal(5, locals.Count());
@@ -310,7 +310,7 @@ namespace DebuggerTests
             );
 
             // Step back to OuterMethod
-            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 90, 8, "Math.OuterMethod", times: 6,
+            await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 90, 8, "Math.OuterMethod", times: 7,
                 locals_fn: async (locals) =>
                 {
                     Assert.Equal(5, locals.Count());
@@ -483,7 +483,7 @@ namespace DebuggerTests
             // ----------- Step back to the caller ---------
 
             pause_location = await StepAndCheck(StepKind.Over, debugger_test_loc, 30, 12, "DebuggerTests.ValueTypesTest.TestStructsAsMethodArgs",
-                times: 1, locals_fn: async (l) => { /* non-null to make sure that locals get fetched */ await Task.CompletedTask;  });
+                times: 2, locals_fn: async (l) => { /* non-null to make sure that locals get fetched */ await Task.CompletedTask;  });
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             await CheckProps(locals, new
             {
@@ -850,7 +850,7 @@ namespace DebuggerTests
                 "dotnet://debugger-test.dll/debugger-test.cs", 552, 8,
                 "HiddenSequencePointTest.MethodWithHiddenLinesAtTheEnd");
 
-            await StepAndCheck(StepKind.Over, source_loc, 544, 4, "HiddenSequencePointTest.StepOverHiddenSP");
+            await StepAndCheck(StepKind.Over, source_loc, 544, 4, "HiddenSequencePointTest.StepOverHiddenSP", times:2);
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]

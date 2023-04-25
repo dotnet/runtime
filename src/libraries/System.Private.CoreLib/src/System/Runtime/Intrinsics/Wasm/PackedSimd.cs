@@ -515,6 +515,127 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static Vector128<uint>   AddPairwiseWidening(Vector128<ushort> value) => AddPairwiseWidening(value);
 
+        // Saturating integer arithmetic
+
+        /// <summary>
+        ///   i8x16.add.sat.s
+        /// </summary>
+        public static Vector128<sbyte>  AddSaturate(Vector128<sbyte>  left, Vector128<sbyte>  right) => AddSaturate(left, right);
+        /// <summary>
+        ///   i8x16.add.sat.u
+        /// </summary>
+        public static Vector128<byte>   AddSaturate(Vector128<byte>   left, Vector128<byte>   right) => AddSaturate(left, right);
+        /// <summary>
+        ///   i16x8.add.sat.s
+        /// </summary>
+        public static Vector128<short>  AddSaturate(Vector128<short>  left, Vector128<short>  right) => AddSaturate(left, right);
+        /// <summary>
+        ///   i16x8.add.sat.u
+        /// </summary>
+        public static Vector128<ushort> AddSaturate(Vector128<ushort> left, Vector128<ushort> right) => AddSaturate(left, right);
+
+        /// <summary>
+        ///   i8x16.sub.sat.s
+        /// </summary>
+        public static Vector128<sbyte>  SubtractSaturate(Vector128<sbyte>  left, Vector128<sbyte>  right) => SubtractSaturate(left, right);
+        /// <summary>
+        ///   i8x16.sub.sat.u
+        /// </summary>
+        public static Vector128<byte>   SubtractSaturate(Vector128<byte>   left, Vector128<byte>   right) => SubtractSaturate(left, right);
+        /// <summary>
+        ///   i16x8.sub.sat.s
+        /// </summary>
+        public static Vector128<short>  SubtractSaturate(Vector128<short>  left, Vector128<short>  right) => SubtractSaturate(left, right);
+        /// <summary>
+        ///   i16x8.sub.sat.u
+        /// </summary>
+        public static Vector128<ushort> SubtractSaturate(Vector128<ushort> left, Vector128<ushort> right) => SubtractSaturate(left, right);
+
+        /// <summary>
+        ///   i16x8.q15mulr.sat.s
+        /// </summary>
+        public static Vector128<short> MultiplyRoundedSaturateQ15(Vector128<short> left, Vector128<short> right) => MultiplyRoundedSaturateQ15(left, right);
+
+        /// <summary>
+        ///   i8x16.min.s
+        /// </summary>
+        public static Vector128<sbyte>  Min(Vector128<sbyte>  left, Vector128<sbyte>  right) => Min(left, right);
+        /// <summary>
+        ///   i8x16.min.u
+        /// </summary>
+        public static Vector128<byte>   Min(Vector128<byte>   left, Vector128<byte>   right) => Min(left, right);
+        /// <summary>
+        ///   i16x8.min.s
+        /// </summary>
+        public static Vector128<short>  Min(Vector128<short>  left, Vector128<short>  right) => Min(left, right);
+        /// <summary>
+        ///   i16x8.min.u
+        /// </summary>
+        public static Vector128<ushort> Min(Vector128<ushort> left, Vector128<ushort> right) => Min(left, right);
+        /// <summary>
+        ///   i32x4.min.s
+        /// </summary>
+        public static Vector128<int>    Min(Vector128<int>    left, Vector128<int>    right) => Min(left, right);
+        /// <summary>
+        ///   i32x4.min.u
+        /// </summary>
+        public static Vector128<uint>   Min(Vector128<uint>   left, Vector128<uint>   right) => Min(left, right);
+
+        /// <summary>
+        ///   i8x16.max.s
+        /// </summary>
+        public static Vector128<sbyte>  Max(Vector128<sbyte>  left, Vector128<sbyte>  right) => Max(left, right);
+        /// <summary>
+        ///   i8x16.max.u
+        /// </summary>
+        public static Vector128<byte>   Max(Vector128<byte>   left, Vector128<byte>   right) => Max(left, right);
+        /// <summary>
+        ///   i16x8.max.s
+        /// </summary>
+        public static Vector128<short>  Max(Vector128<short>  left, Vector128<short>  right) => Max(left, right);
+        /// <summary>
+        ///   i16x8.max.u
+        /// </summary>
+        public static Vector128<ushort> Max(Vector128<ushort> left, Vector128<ushort> right) => Max(left, right);
+        /// <summary>
+        ///   i32x4.max.s
+        /// </summary>
+        public static Vector128<int>    Max(Vector128<int>    left, Vector128<int>    right) => Max(left, right);
+        /// <summary>
+        ///   i32x4.max.u
+        /// </summary>
+        public static Vector128<uint>   Max(Vector128<uint>   left, Vector128<uint>   right) => Max(left, right);
+
+        /// <summary>
+        ///   i8x16.avgr.u
+        /// </summary>
+        public static Vector128<byte>   AverageRounded(Vector128<byte>   left, Vector128<byte>   right) => AverageRounded(left, right);
+        /// <summary>
+        ///   i16x8.avgr.u
+        /// </summary>
+        public static Vector128<ushort> AverageRounded(Vector128<ushort> left, Vector128<ushort> right) => AverageRounded(left, right);
+
+        /// <summary>
+        ///   i8x16.abs
+        /// </summary>
+        public static Vector128<sbyte> Abs(Vector128<sbyte> value) => Abs(value);
+        /// <summary>
+        ///   i16x8.abs
+        /// </summary>
+        public static Vector128<short> Abs(Vector128<short> value) => Abs(value);
+        /// <summary>
+        ///   i32x4.abs
+        /// </summary>
+        public static Vector128<int>   Abs(Vector128<int>   value) => Abs(value);
+        /// <summary>
+        ///   i64x2.abs
+        /// </summary>
+        public static Vector128<long>  Abs(Vector128<long>  value) => Abs(value);
+        /// <summary>
+        ///   i32x4.abs
+        /// </summary>
+        public static Vector128<nint>  Abs(Vector128<nint>  value) => Abs(value);
+
         // Bit shifts
 
         /// <summary>

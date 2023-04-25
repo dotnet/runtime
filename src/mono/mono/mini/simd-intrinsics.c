@@ -4961,9 +4961,12 @@ static SimdIntrinsic wasmbase_methods [] = {
 };
 
 static SimdIntrinsic packedsimd_methods [] = {
+	{SN_Abs, OP_VECTOR_IABS},
 	{SN_Add},
 	{SN_AddPairwiseWidening},
+	{SN_AddSaturate},
 	{SN_And, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_AND},
+	{SN_AverageRounded},
 	{SN_Bitmask, OP_WASM_SIMD_BITMASK},
 	{SN_CompareEqual},
 	{SN_CompareNotEqual},
@@ -4971,7 +4974,10 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_ConvertNarrowingUnsignedSaturate},
 	{SN_Dot, OP_XOP_X_X_X, INTRINS_WASM_DOT},
 	{SN_ExtractLane},
+	{SN_Max, OP_XBINOP, OP_IMIN, OP_XBINOP, OP_IMIN_UN},
+	{SN_Min, OP_XBINOP, OP_IMAX, OP_XBINOP, OP_IMAX_UN},
 	{SN_Multiply},
+	{SN_MultiplyRoundedSaturateQ15, OP_XOP_X_X_X, INTRINS_WASM_Q15MULR_SAT_SIGNED},
 	{SN_MultiplyWideningLower, OP_WASM_EXTMUL_LOWER, 0, OP_WASM_EXTMUL_LOWER_U},
 	{SN_MultiplyWideningUpper, OP_WASM_EXTMUL_UPPER, 0, OP_WASM_EXTMUL_UPPER_U},
 	{SN_Negate},
@@ -4982,6 +4988,7 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Shuffle, OP_WASM_SIMD_SHUFFLE},
 	{SN_Splat},
 	{SN_Subtract},
+	{SN_SubtractSaturate},
 	{SN_Swizzle, OP_WASM_SIMD_SWIZZLE},
 	{SN_get_IsSupported},
 };
@@ -5088,6 +5095,48 @@ emit_wasm_supported_intrinsics (
 
 				return NULL;
 			}
+			case SN_AddSaturate: {
+				op = OP_XOP_X_X_X;
+
+				switch (arg0_type) {
+				case MONO_TYPE_I1:
+						c0 = INTRINS_SSE_SADD_SATI8;
+						break;
+				case MONO_TYPE_I2:
+						c0 = INTRINS_SSE_SADD_SATI16;
+						break;
+				case MONO_TYPE_U1:
+						c0 = INTRINS_SSE_UADD_SATI8;
+						break;
+				case MONO_TYPE_U2:
+						c0 = INTRINS_SSE_UADD_SATI16;
+						break;
+				}
+
+				// continue with default emit
+				if (c0 != 0)
+						break;
+
+				return NULL;
+			}
+			case SN_AverageRounded: {
+				op = OP_XOP_X_X_X;
+
+				switch (arg0_type) {
+				case MONO_TYPE_U1:
+						c0 = INTRINS_WASM_AVERAGE_ROUNDED_V16;
+						break;
+				case MONO_TYPE_U2:
+						c0 = INTRINS_WASM_AVERAGE_ROUNDED_V8;
+						break;
+				}
+
+				// continue with default emit
+				if (c0 != 0)
+						break;
+
+				return NULL;
+			}
 			case SN_CompareEqual:
 				return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_EQ, arg0_type, fsig, args);
 			case SN_CompareNotEqual:
@@ -5143,6 +5192,30 @@ emit_wasm_supported_intrinsics (
 				MonoType *etype = get_vector_t_elem_type (fsig->ret);
 				g_assert (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype));
 				return emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), args [0]->dreg, -1);
+			}
+			case SN_SubtractSaturate: {
+				op = OP_XOP_X_X_X;
+
+				switch (arg0_type) {
+				case MONO_TYPE_I1:
+						c0 = INTRINS_WASM_SUB_SAT_SIGNED_V16;
+						break;
+				case MONO_TYPE_I2:
+						c0 = INTRINS_WASM_SUB_SAT_SIGNED_V8;
+						break;
+				case MONO_TYPE_U1:
+						c0 = INTRINS_WASM_SUB_SAT_UNSIGNED_V16;
+						break;
+				case MONO_TYPE_U2:
+						c0 = INTRINS_WASM_SUB_SAT_UNSIGNED_V8;
+						break;
+				}
+
+				// continue with default emit
+				if (c0 != 0)
+						break;
+
+				return NULL;
 			}
 		}
 

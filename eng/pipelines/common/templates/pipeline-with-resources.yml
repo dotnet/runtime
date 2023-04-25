@@ -67,7 +67,7 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-gcc12-amd64
 
     - container: linux_x64_llvmaot
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
 
     - container: browser_wasm
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly-net8-20230327150025-4404b5c

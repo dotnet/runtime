@@ -192,6 +192,7 @@ namespace Internal.Runtime
         ETF_DynamicTemplateType,
         ETF_GenericDefinition,
         ETF_GenericComposition,
+        ETF_FunctionPointerParameters,
         ETF_DynamicGcStatics,
         ETF_DynamicNonGcStatics,
         ETF_DynamicThreadStaticOffset,
@@ -281,6 +282,12 @@ namespace Internal.Runtime
         // size for an actual array.
         public const int Pointer = 0;
         public const int ByRef = 1;
+    }
+
+    internal static class FunctionPointerFlags
+    {
+        public const uint IsUnmanaged = 0x80000000;
+        public const uint FlagsMask = IsUnmanaged;
     }
 
     internal static class StringComponentSize

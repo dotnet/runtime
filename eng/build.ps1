@@ -304,13 +304,6 @@ foreach ($config in $configuration) {
   $argumentsWithConfig = $arguments + " -configuration $((Get-Culture).TextInfo.ToTitleCase($config))";
   foreach ($singleArch in $arch) {
     $argumentsWithArch =  "/p:TargetArchitecture=$singleArch " + $argumentsWithConfig
-    if ($os -eq "browser") {
-      $env:__DistroRid="browser-$singleArch"
-    } elseif ($os -eq "wasi") {
-      $env:__DistroRid="wasi-$singleArch"
-    } else {
-      $env:__DistroRid="win-$singleArch"
-    }
     Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" $argumentsWithArch"
     if ($lastExitCode -ne 0) {
         $failedBuilds += "Configuration: $config, Architecture: $singleArch"

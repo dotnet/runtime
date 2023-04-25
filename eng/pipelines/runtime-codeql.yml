@@ -58,7 +58,7 @@ extends:
           - linux_x64
           - windows_x64
           jobParameters:
-            buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig)
+            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
             nameSuffix: AllSubsets_Mono
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360
