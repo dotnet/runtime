@@ -1324,6 +1324,22 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
     if (FAILED(hr=CreateTLSDirectory())) goto exit;
 
+    if (m_fGeneratePDB)
+    {
+        mdMethodDef entryPoint;
+
+        if (FAILED(hr = m_pCeeFileGen->GetEntryPoint(m_pCeeFile, &entryPoint))) goto exit;
+        if (FAILED(hr = m_pPortablePdbWriter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
+
+        if (m_fDeterministic)
+        {
+            _ASSERTE(m_pInternalEmitForDeterministicPdbGuid != NULL);
+            m_pInternalEmitForDeterministicPdbGuid->ComputePdbGuid(Sha256Hash);
+        }
+    }
+
+    if (FAILED(hr=CreateDebugDirectory())) goto exit;
+
     if (FAILED(hr=m_pCeeFileGen->SetOutputFileName(m_pCeeFile, pwzOutputFilename))) goto exit;
 
         // Reserve a buffer for the meta-data
@@ -1547,14 +1563,6 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         if (FAILED(hr)) goto exit;
     }
 
-    if (m_fGeneratePDB)
-    {
-        mdMethodDef entryPoint;
-
-        if (FAILED(hr = m_pCeeFileGen->GetEntryPoint(m_pCeeFile, &entryPoint))) goto exit;
-        if (FAILED(hr = m_pPortablePdbWriter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
-    }
-
     if (m_fDeterministic)
     {
         // In deterministic mode, the MVID needs to be stabilized for the metadata scope that was
@@ -1565,15 +1573,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         hr = Sha256Hash(metaData, metaDataSize, (BYTE*)&mvid, sizeof(GUID));
         if (FAILED(hr)) goto exit;
         m_pInternalEmitForDeterministicMvid->ChangeMvid(mvid);
-
-        if (m_fGeneratePDB)
-        {
-            _ASSERTE(m_pInternalEmitForDeterministicPdbGuid != NULL);
-            m_pInternalEmitForDeterministicPdbGuid->ComputePdbGuid(Sha256Hash);
-        }
     }
-
-    if (FAILED(hr=CreateDebugDirectory())) goto exit;
 
     if(bClock) bClock->cFilegenBegin = GetTickCount();
     // actually output the meta-data
