@@ -809,6 +809,9 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(PackedSimd))]
         private static Vector128<byte> IndexOfAnyLookup<TNegator, TOptimizations>(Vector128<short> source0, Vector128<short> source1, Vector128<byte> bitmapLookup)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
@@ -872,6 +875,7 @@ namespace System.Buffers
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
         private static Vector256<byte> IndexOfAnyLookup<TNegator, TOptimizations>(Vector256<short> source0, Vector256<short> source1, Vector256<byte> bitmapLookup)
             where TNegator : struct, INegator
             where TOptimizations : struct, IOptimizations
@@ -893,6 +897,7 @@ namespace System.Buffers
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
         private static Vector256<byte> IndexOfAnyLookupCore(Vector256<byte> source, Vector256<byte> bitmapLookup)
         {
             // See comments in IndexOfAnyLookupCore(Vector128<byte>) above for more details.
@@ -927,6 +932,7 @@ namespace System.Buffers
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
         private static Vector256<byte> IndexOfAnyLookup<TNegator>(Vector256<byte> source, Vector256<byte> bitmapLookup0, Vector256<byte> bitmapLookup1)
             where TNegator : struct, INegator
         {
@@ -1074,6 +1080,7 @@ namespace System.Buffers
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
         private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
         {
             Debug.Assert(Avx2.IsSupported);

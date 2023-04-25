@@ -3218,6 +3218,8 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
         internal static Vector128<byte> UnpackLow(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)
@@ -3232,6 +3234,8 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
         internal static Vector128<byte> UnpackHigh(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)
@@ -3248,6 +3252,8 @@ namespace System.Runtime.Intrinsics
         // TODO: Make generic versions of these public, see https://github.com/dotnet/runtime/issues/82559
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
         internal static Vector128<byte> AddSaturate(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)
@@ -3262,6 +3268,8 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
         internal static Vector128<byte> SubtractSaturate(Vector128<byte> left, Vector128<byte> right)
         {
             if (Sse2.IsSupported)

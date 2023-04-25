@@ -353,6 +353,7 @@ namespace System.Buffers.Text
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
         private static unsafe void Avx2Decode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
         {
             // If we have AVX2 support, pick off 32 bytes at a time for as long as we can,
@@ -493,6 +494,8 @@ namespace System.Buffers.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Ssse3))]
         private static unsafe void Vector128Decode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
         {
             Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);

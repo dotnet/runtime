@@ -107,6 +107,7 @@ namespace System.Buffers
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
         private static Vector256<byte> ContainsMask32CharsAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, ref char searchSpace)
         {
             Vector256<ushort> source0 = Vector256.LoadUnsafe(ref searchSpace);
@@ -128,6 +129,7 @@ namespace System.Buffers
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
         private static Vector256<byte> IsCharBitSetAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, Vector256<byte> values)
         {
             // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
@@ -145,6 +147,8 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
         private static Vector128<byte> ContainsMask16Chars(Vector128<byte> charMapLower, Vector128<byte> charMapUpper, ref char searchSpace)
         {
             Vector128<ushort> source0 = Vector128.LoadUnsafe(ref searchSpace);

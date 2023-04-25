@@ -787,6 +787,7 @@ namespace System
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
         private static Vector256<byte> PackSources(Vector256<short> source0, Vector256<short> source1)
         {
             Debug.Assert(Avx2.IsSupported);
@@ -798,6 +799,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Sse2))]
         private static Vector128<byte> PackSources(Vector128<short> source0, Vector128<short> source1)
         {
             Debug.Assert(Sse2.IsSupported);
@@ -866,6 +868,7 @@ namespace System
 
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
         private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
         {
             Debug.Assert(Avx2.IsSupported);

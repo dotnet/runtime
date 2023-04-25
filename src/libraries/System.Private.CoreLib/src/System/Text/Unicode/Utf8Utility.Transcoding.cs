@@ -953,7 +953,7 @@ namespace System.Text.Unicode
 
                             utf16Data = Unsafe.ReadUnaligned<Vector128<short>>(pInputBuffer);
 
-                            if (AdvSimd.IsSupported)
+                            if (AdvSimd.Arm64.IsSupported)
                             {
                                 Vector128<short> isUtf16DataNonAscii = AdvSimd.CompareTest(utf16Data, nonAsciiUtf16DataMask);
                                 bool hasNonAsciiDataInVector = AdvSimd.Arm64.MinPairwise(isUtf16DataNonAscii, isUtf16DataNonAscii).AsUInt64().ToScalar() != 0;

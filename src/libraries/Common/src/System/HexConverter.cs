@@ -236,6 +236,7 @@ namespace System
         }
 
 #if SYSTEM_PRIVATE_CORELIB
+        [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(AdvSimd.Arm64))]
         public static bool TryDecodeFromUtf16_Vector128(ReadOnlySpan<char> chars, Span<byte> bytes)
         {
             Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported);
