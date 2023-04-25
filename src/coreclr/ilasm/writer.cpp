@@ -1534,6 +1534,18 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         if (FAILED(hr)) goto exit;
     }
 
+    if (m_fDeterministic)
+    {
+        // In deterministic mode, the MVID needs to be stabilized for the metadata scope that was
+        // created in Assembler::InitMetaData, and it is guaranteed that the IMDInternalEmit for
+        // that scope was already acquired immediately after that scope was created.
+        _ASSERTE(m_pInternalEmitForDeterministicMvid != NULL);
+        GUID mvid;
+        hr = Sha256Hash(metaData, metaDataSize, (BYTE*)&mvid, sizeof(GUID));
+        if (FAILED(hr)) goto exit;
+        m_pInternalEmitForDeterministicMvid->ChangeMvid(mvid);
+    }
+
     if(bClock) bClock->cFilegenBegin = GetTickCount();
     // actually output the meta-data
     if (FAILED(hr=m_pCeeFileGen->EmitMetaDataAt(m_pCeeFile, m_pEmitter, m_pILSection, metaDataOffset, metaData, metaDataSize))) goto exit;
