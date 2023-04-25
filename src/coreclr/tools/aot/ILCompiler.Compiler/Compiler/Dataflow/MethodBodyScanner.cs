@@ -476,7 +476,7 @@ namespace ILCompiler.Dataflow
                         {
                             if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
                             {
-                                HandleMethodReflectionAccess(methodBody, offset, methodOperand);
+                                HandleMethodTokenAccess(methodBody, offset, methodOperand);
                                 TrackNestedFunctionReference(methodOperand, ref interproceduralState);
                             }
 
@@ -537,7 +537,7 @@ namespace ILCompiler.Dataflow
                         {
                             if (methodBody.GetObject(reader.ReadILToken()) is MethodDesc methodOperand)
                             {
-                                HandleMethodReflectionAccess(methodBody, offset, methodOperand);
+                                HandleMethodTokenAccess(methodBody, offset, methodOperand);
                             }
 
                             PopUnknown(currentStack, 1, methodBody, offset);
@@ -963,14 +963,14 @@ namespace ILCompiler.Dataflow
                     }
                 }
 
-                HandleTypeReflectionAccess(methodBody, offset, type);
+                HandleTypeTokenAccess(methodBody, offset, type);
             }
             else if (operand is MethodDesc method)
             {
                 StackSlot slot = new StackSlot(new RuntimeMethodHandleValue(method));
                 currentStack.Push(slot);
 
-                HandleMethodReflectionAccess(methodBody, offset, method);
+                HandleMethodTokenAccess(methodBody, offset, method);
             }
             else
             {
@@ -978,7 +978,7 @@ namespace ILCompiler.Dataflow
 
                 PushUnknown(currentStack);
 
-                HandleFieldReflectionAccess(methodBody, offset, (FieldDesc)operand);
+                HandleFieldTokenAccess(methodBody, offset, (FieldDesc)operand);
             }
         }
 
@@ -1248,19 +1248,19 @@ namespace ILCompiler.Dataflow
         }
 
         /// <summary>
-        /// Called when type is accessed directly (basically only ldtoken)
+        /// Called when type is accessed directly by its token (so creating a RuntimeHandle)
         /// </summary>
-        protected abstract void HandleTypeReflectionAccess(MethodIL methodBody, int offset, TypeDesc accessedType);
+        protected abstract void HandleTypeTokenAccess(MethodIL methodBody, int offset, TypeDesc accessedType);
 
         /// <summary>
-        /// Called to handle reflection access to a method without any other specifics (ldtoken or ldftn for example)
+        /// Called to handle access to a method by its token (so creating a RuntimeHandle)
         /// </summary>
-        protected abstract void HandleMethodReflectionAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod);
+        protected abstract void HandleMethodTokenAccess(MethodIL methodBody, int offset, MethodDesc accessedMethod);
 
         /// <summary>
-        /// Called to handle reflection access to a field without any other specifics (ldtoken for example)
+        /// Called to handle access to a field by its token (so creating a RuntimeHandle)
         /// </summary>
-        protected abstract void HandleFieldReflectionAccess(MethodIL methodBody, int offset, FieldDesc accessedField);
+        protected abstract void HandleFieldTokenAccess(MethodIL methodBody, int offset, FieldDesc accessedField);
 
         private void HandleCall(
             MethodIL callingMethodBody,

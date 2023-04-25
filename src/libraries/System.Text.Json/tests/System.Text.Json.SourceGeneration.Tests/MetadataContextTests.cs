@@ -81,7 +81,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ObjectArray.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ByteArray.SerializeHandler);
-            Assert.Null(MetadataWithPerTypeAttributeContext.Default.SampleEnum.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.SourceGenSampleEnum.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.String.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.JsonDocument.SerializeHandler);
@@ -204,7 +204,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MetadataContext.Default.ObjectArray.SerializeHandler);
             Assert.Null(MetadataContext.Default.ByteArray.SerializeHandler);
-            Assert.Null(MetadataContext.Default.SampleEnum.SerializeHandler);
+            Assert.Null(MetadataContext.Default.SourceGenSampleEnum.SerializeHandler);
             Assert.Null(MetadataContext.Default.String.SerializeHandler);
             Assert.Null(MetadataContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
             Assert.Null(MetadataContext.Default.JsonDocument.SerializeHandler);

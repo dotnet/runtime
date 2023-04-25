@@ -1568,6 +1568,7 @@ namespace Internal.Runtime
             bool fRequiresOptionalFields,
             bool fHasSealedVirtuals,
             bool fHasGenericInfo,
+            int cFunctionPointerTypeParameters,
             bool fHasNonGcStatics,
             bool fHasGcStatics,
             bool fHasThreadStatics)
@@ -1580,6 +1581,7 @@ namespace Internal.Runtime
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
+                cFunctionPointerTypeParameters * sizeof(IntPtr) +
                 (fHasGenericInfo ? sizeof(IntPtr)*2 : 0) + // pointers to GenericDefinition and GenericComposition
                 (fHasNonGcStatics ? sizeof(IntPtr) : 0) + // pointer to data
                 (fHasGcStatics ? sizeof(IntPtr) : 0) +  // pointer to data
@@ -1740,7 +1742,7 @@ namespace Internal.Runtime
                 if (((nint)_pFirst & IsRelative) != 0)
                     return (((RelativePointer<MethodTable>*)((nint)_pFirst - IsRelative)) + index)->Value;
 
-                return (MethodTable*)_pFirst + index;
+                return *(MethodTable**)_pFirst + index;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set

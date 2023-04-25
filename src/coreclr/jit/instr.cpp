@@ -1487,6 +1487,7 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
     return INS_vmov;
 #else
     NYI("ins_Move_Extend");
+    return INS_invalid;
 #endif
 }
 
