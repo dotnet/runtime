@@ -2863,6 +2863,7 @@ add_member_to_baseline (BaselineInfo *base_info, DeltaInfo *delta_info, MonoClas
 	GSList *members = klass_info->added_members;
 	klass_info->added_members = g_slist_prepend_mem_manager (m_class_get_mem_manager (klass), members, GUINT_TO_POINTER (member_token));
 	add_member_parent (base_info, m_class_get_type_token (klass), member_token);
+	klass_info->generation = delta_info->generation;
 }
 
 
@@ -3102,6 +3103,8 @@ add_property_to_existing_class (MonoImage *image_base, BaselineInfo *base_info, 
 
 	parent_info->added_props = g_slist_prepend_mem_manager (m_class_get_mem_manager (parent_klass), parent_info->added_props, prop);
 
+	parent_info->generation = generation;
+
 	return prop;
 	
 }
@@ -3127,6 +3130,8 @@ add_event_to_existing_class (MonoImage *image_base, BaselineInfo *base_info, uin
 	evt->token = event_token;
 
 	parent_info->added_events = g_slist_prepend_mem_manager (m_class_get_mem_manager (parent_klass), parent_info->added_events, evt);
+
+	parent_info->generation = generation;
 
 	return evt;
 	
