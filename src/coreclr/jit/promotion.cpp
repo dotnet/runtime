@@ -1527,7 +1527,7 @@ public:
                     unsigned srcOffs  = srcLcl->GetLclOffs() + (dstRep->Offset - dstBaseOffs);
                     unsigned fieldLcl = m_compiler->lvaGetFieldLocal(srcDsc, srcOffs);
 
-                    if ((fieldLcl != BAD_VAR_NUM) && m_compiler->lvaGetDesc(fieldLcl)->lvType == dstRep->AccessType)
+                    if ((fieldLcl != BAD_VAR_NUM) && (m_compiler->lvaGetDesc(fieldLcl)->lvType == dstRep->AccessType))
                     {
                         plan->CopyBetweenReplacements(dstRep->LclNum, fieldLcl, dstRep->Offset - dstBaseOffs,
                                                       dstRep->AccessType);
@@ -1554,7 +1554,6 @@ public:
                 {
                     unsigned   dstOffs     = dstLcl->GetLclOffs() + (srcRep->Offset - srcBaseOffs);
                     unsigned   fieldLcl    = m_compiler->lvaGetFieldLocal(dstDsc, dstOffs);
-                    LclVarDsc* fieldLclDsc = m_compiler->lvaGetDesc(fieldLcl);
 
                     if ((fieldLcl != BAD_VAR_NUM) && (m_compiler->lvaGetDesc(fieldLcl)->lvType == srcRep->AccessType))
                     {
