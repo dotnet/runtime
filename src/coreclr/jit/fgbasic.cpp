@@ -2090,9 +2090,21 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                 int flags = getU1LittleEndian(codeAddr);
 
-                prefixFlags |= (flags <<= 6);
+                // What should these constants be called? Should they have their own enum?
+                if (flags & 0x01)
+                {
+                    prefixFlags |= PREFIX_NO_TYPECHECK;
+                }
+                if (flags & 0x02)
+                {
+                    prefixFlags |= PREFIX_NO_RANGECHECK;
+                }
+                if (flags & 0x04)
+                {
+                    prefixFlags |= PREFIX_NO_NULLCHECK;
+                }
 
-                impValidateCheckElisionOpcode(codeAddr, codeEndp, true);
+                impValidateCheckElisionOpcode(codeAddr, codeEndp, flags);
                 handled = true;
                 goto OBSERVE_OPCODE;
             }
