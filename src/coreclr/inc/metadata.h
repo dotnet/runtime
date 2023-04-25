@@ -1118,6 +1118,11 @@ DECLARE_INTERFACE_(IMDInternalEmit, IUnknown)
     STDMETHOD(SetMDUpdateMode)(
         ULONG updateMode, ULONG *pPreviousUpdateMode) PURE;
 
+#ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
+    STDMETHOD(ComputePdbGuid)(              // S_OK or error.
+        HRESULT (*computeHash)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize));
+#endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
+
 }; // IMDInternalEmit
 
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE

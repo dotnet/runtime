@@ -1290,6 +1290,9 @@ public:
         char        *path,                  // [IN] Path string to search.
         char        *separator,             // [OUT] Separator used in path string, NULL if none.
         ULONG       *partsCount);           // [OUT] Number of parts separated by the separator.
+
+    STDMETHODIMP ComputePdbGuid(            // S_OK or error.
+        HRESULT (*computeHash)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize));
 #endif
 
 //*****************************************************************************

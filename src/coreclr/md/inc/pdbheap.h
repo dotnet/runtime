@@ -21,6 +21,7 @@ public:
     ~PdbHeap();
 
     __checkReturn HRESULT SetData(PORT_PDB_STREAM* data);
+    __checkReturn HRESULT ComputeGuid(HRESULT (*computeHash)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize));
     __checkReturn HRESULT SaveToStream(IStream* stream);
     BOOL    IsEmpty();
     ULONG   GetSize();

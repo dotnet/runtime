@@ -414,6 +414,19 @@ RegMeta::GetPathSeparator(
 
     return S_OK;
 } // RegMeta::GetPathSeparator
+
+//*******************************************************************************
+// helper to compute the PDB GUID
+//
+// Implements internal API code:IMDInternalEmit::ComputePdbGuid.
+//*******************************************************************************
+HRESULT
+RegMeta::ComputePdbGuid(            // S_OK or error.
+        HRESULT (*computeHash)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize))
+{
+    return m_pStgdb->m_pPdbHeap->ComputeGuid(computeHash);
+}
+
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 #endif //FEATURE_METADATA_EMIT && FEATURE_METADATA_INTERNAL_APIS

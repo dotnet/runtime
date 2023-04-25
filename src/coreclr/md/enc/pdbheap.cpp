@@ -67,6 +67,17 @@ HRESULT PdbHeap::SetData(PORT_PDB_STREAM* data)
 }
 
 __checkReturn
+HRESULT PdbHeap::ComputeGuid(HRESULT (*computeHash)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize))
+{
+    _ASSERTE(m_size >= sizeof(PDB_ID));
+
+    //if (memcpy_s(m_data, m_size, &guid, sizeof(GUID)))
+    //    return E_FAIL;
+
+    return S_OK;
+}
+
+__checkReturn
 HRESULT PdbHeap::SaveToStream(IStream* stream)
 {
     HRESULT hr = S_OK;

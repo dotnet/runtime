@@ -80,6 +80,15 @@ HRESULT Assembler::InitMetaData()
             // Default values for determinism.
             m_pPortablePdbWriter->SetGuid(GUID());
             m_pPortablePdbWriter->SetTimestamp(0);
+
+            hr = m_pPortablePdbWriter->GetEmitter()->QueryInterface(IID_IMDInternalEmit, (void**)&m_pInternalEmitForDeterministicPdbGuid);
+
+            if (FAILED(hr) || (m_pInternalEmitForDeterministicPdbGuid == NULL))
+            {
+                fprintf(stderr, "Unexpected: Failed to query the required PDB GUID determinism interface: %X\n",hr);
+                hr = E_FAIL;
+                goto exit;
+            }
         }
     }
 
@@ -1315,8 +1324,6 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
     if (FAILED(hr=CreateTLSDirectory())) goto exit;
 
-    if (FAILED(hr=CreateDebugDirectory())) goto exit;
-
     if (FAILED(hr=m_pCeeFileGen->SetOutputFileName(m_pCeeFile, pwzOutputFilename))) goto exit;
 
         // Reserve a buffer for the meta-data
@@ -1540,6 +1547,14 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         if (FAILED(hr)) goto exit;
     }
 
+    if (m_fGeneratePDB)
+    {
+        mdMethodDef entryPoint;
+
+        if (FAILED(hr = m_pCeeFileGen->GetEntryPoint(m_pCeeFile, &entryPoint))) goto exit;
+        if (FAILED(hr = m_pPortablePdbWriter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
+    }
+
     if (m_fDeterministic)
     {
         // In deterministic mode, the MVID needs to be stabilized for the metadata scope that was
@@ -1553,11 +1568,12 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
         if (m_fGeneratePDB)
         {
-            GUID pdbGuid;
-            // TODO: Sha256Hash contents of pdb.
-            m_pPortablePdbWriter->SetGuid(pdbGuid);
+            _ASSERTE(m_pInternalEmitForDeterministicPdbGuid != NULL);
+            m_pInternalEmitForDeterministicPdbGuid->ComputePdbGuid(Sha256Hash);
         }
     }
+
+    if (FAILED(hr=CreateDebugDirectory())) goto exit;
 
     if(bClock) bClock->cFilegenBegin = GetTickCount();
     // actually output the meta-data
