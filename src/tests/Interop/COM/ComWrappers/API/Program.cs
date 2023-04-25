@@ -11,6 +11,7 @@ namespace ComWrappersTests
     using System.Runtime.InteropServices;
 
     using ComWrappersTests.Common;
+    using TestLibrary;
     using Xunit;
 
     class Program
