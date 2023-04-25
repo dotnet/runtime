@@ -1309,7 +1309,7 @@ class SyncBlockCache
   private:
     PTR_SLink   m_pCleanupBlockList;    // list of sync blocks that need cleanup
     SLink*      m_FreeBlockList;        // list of free sync blocks
-    Crst        m_CacheLock;            // cache lock
+    CrstStatic  m_CacheLock;            // cache lock
     DWORD       m_FreeCount;            // count of active sync blocks
     DWORD       m_ActiveCount;          // number active
     SyncBlockArray *m_SyncBlocks;       // Array of new SyncBlocks.

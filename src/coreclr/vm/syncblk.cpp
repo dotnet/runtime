@@ -480,7 +480,7 @@ void SyncBlockCache::Init()
     // g_criticalSection, which means all functions that enter it will become
     // GC_TRIGGERS.  (This includes all uses of LockHolder around SyncBlockCache::GetSyncBlockCache().
     // So be sure to update the contracts if you remove this flag.
-    ::new (&m_CacheLock) Crst(CrstSyncBlockCache, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
+    m_CacheLock.Init(CrstSyncBlockCache, (CrstFlags) (CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
 
     m_FreeCount = 0;
     m_ActiveCount = 0;
@@ -509,6 +509,8 @@ void SyncBlockCache::Destroy()
     m_FreeBlockList = NULL;
     //<TODO>@todo we can clear this fast too I guess</TODO>
     m_pCleanupBlockList = NULL;
+
+    m_CacheLock.Destroy();
 
     // destruct all arrays
     while (m_SyncBlocks)
