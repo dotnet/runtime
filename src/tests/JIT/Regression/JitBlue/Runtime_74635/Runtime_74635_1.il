@@ -5,6 +5,7 @@
 .assembly extern xunit.core {}
 .assembly extern System.Console { }
 .assembly extern TestLibrary {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
 
 .assembly Runtime_74635_1 { }
 
