@@ -6564,12 +6564,18 @@ void emitter::emitIns_SS_R_R_R_I(instruction ins,
 
     if (validVar1 && validVar2)
     {
-        instrDescLclVarPair* idPair = emitNewInstrLclVarPair(attr, imm);
-        idPair->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs1);
-        idPair->iiaLclVar2.initLclVarAddr(varx2, offs2);
-        idPair->idSetIsLclVar();
+        id = emitNewInstrLclVarPair(attr, imm);
+        id->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs1);
+        id->idSetIsLclVar();
 
-        id = idPair;
+        if (id->idSmallCns())
+        {
+            ((instrDescLclVarPair*)id)->iiaLclVar2.initLclVarAddr(varx2, offs2);
+        }
+        else
+        {
+            ((instrDescLclVarPairCns*)id)->iiaLclVar2.initLclVarAddr(varx2, offs2);
+        }
     }
     else
     {
@@ -11862,23 +11868,31 @@ SKIP_GC_UPDATE:
 
             if (id->idIsLclVarPair())
             {
-                bool                 FPbased2;
-                instrDescLclVarPair* idPair = (instrDescLclVarPair*)id;
+                bool FPbased2;
+                if (id->idSmallCns())
+                {
+                    varNum2 = ((instrDescLclVarPair*)id)->iiaLclVar2.lvaVarNum();
+                    ofs2    = ((instrDescLclVarPair*)id)->iiaLclVar2.lvaOffset();
+                }
+                else
+                {
+                    varNum2 = ((instrDescLclVarPairCns*)id)->iiaLclVar2.lvaVarNum();
+                    ofs2    = ((instrDescLclVarPairCns*)id)->iiaLclVar2.lvaOffset();
+                }
 
                 // If there are 2 GC vars in this instrDesc, get the 2nd variable
                 // that should be tracked.
-                varNum2 = idPair->iiaLclVar2.lvaVarNum();
-                adr2    = emitComp->lvaFrameAddress(varNum2, &FPbased2);
-                ofs2    = AlignDown(idPair->iiaLclVar2.lvaOffset(), TARGET_POINTER_SIZE);
+                adr2 = emitComp->lvaFrameAddress(varNum2, &FPbased2);
+                ofs2 = AlignDown(ofs2, TARGET_POINTER_SIZE);
 #ifdef DEBUG
                 assert(FPbased == FPbased2);
                 if (FPbased)
                 {
-                    assert(idPair->idReg3() == REG_FP);
+                    assert(id->idReg3() == REG_FP);
                 }
                 else
                 {
-                    assert(idPair->idReg3() == REG_SP);
+                    assert(id->idReg3() == REG_SP);
                 }
                 assert(varNum2 != -1);
 #endif // DEBUG

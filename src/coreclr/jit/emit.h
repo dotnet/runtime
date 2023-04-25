@@ -1838,11 +1838,11 @@ protected:
         emitLclVarAddr iiaLclVar2;
     };
 
-    struct instrDescLclVarPairCns : instrDescLclVarPair // contains 2 gc vars to be tracked, with large cons
+    struct instrDescLclVarPairCns : instrDescCns // contains 2 gc vars to be tracked, with large cons
     {
         instrDescLclVarPairCns() = delete;
 
-        cnsval_ssize_t idcCnsVal;
+        emitLclVarAddr iiaLclVar2;
     };
 #endif
 
@@ -2733,7 +2733,7 @@ private:
 #if !defined(TARGET_ARM64)
     instrDescLbl* emitNewInstrLbl();
 #else
-    instrDescLclVarPair* emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns);
+    instrDesc* emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns);
 #endif // !TARGET_ARM64
 
     static const BYTE emitFmtToOps[];
@@ -3298,7 +3298,7 @@ inline emitter::instrDescLbl* emitter::emitNewInstrLbl()
     return emitAllocInstrLbl();
 }
 #else
-inline emitter::instrDescLclVarPair* emitter::emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns)
+inline emitter::instrDesc* emitter::emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns)
 {
 #if EMITTER_STATS
     emitTotalIDescCnt++;
