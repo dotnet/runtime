@@ -468,7 +468,7 @@ MonoClass * mono_class_from_name(MonoImage *image, const char* name_space, const
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_TRIGGERS;
         // We don't support multiple domains
         PRECONDITION(image != nullptr);
@@ -486,12 +486,25 @@ MonoClass * mono_class_from_name(MonoImage *image, const char* name_space, const
     while (fullTypeName.Find(i, W('/')))
         fullTypeName.Replace(i, W('+'));
 
-    TypeHandle retTypeHandle = TypeName::GetTypeManaged(fullTypeName.GetUnicode(), domainAssembly, FALSE, ignoreCase, TRUE, NULL, NULL);
+    TypeHandle retTypeHandle;
+
+    EX_TRY
+    {
+        retTypeHandle = TypeName::GetTypeManaged(fullTypeName.GetUnicode(), domainAssembly, FALSE, ignoreCase, TRUE, NULL, NULL);
+    }
+    EX_CATCH
+    {
+        SString sstr;
+        GET_EXCEPTION()->GetMessage(sstr);
+        printf("Exc: %s %d %x\n", sstr.GetUTF8(), GET_EXCEPTION()->IsType(CLRException::GetType()), GET_EXCEPTION()->GetInstanceType());
+    }
+    EX_END_CATCH(SwallowAllExceptions)
 
     if (!retTypeHandle.IsNull())
     {
         return (MonoClass*)retTypeHandle.AsMethodTable();
     }
+
     return NULL;
 }
 
