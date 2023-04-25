@@ -211,12 +211,12 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         const bool isLastIndirectionWithSizeCheck = (i == runtimeLookup.indirections - 1) && needsSizeCheck;
         if (i != 0)
         {
-            slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
-            slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
+            GenTreeFlags indirFlags = GTF_IND_NONFAULTING;
             if (!isLastIndirectionWithSizeCheck)
             {
-                slotPtrTree->gtFlags |= GTF_IND_INVARIANT;
+                indirFlags |= GTF_IND_INVARIANT;
             }
+            slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, indirFlags);
         }
 
         if ((i == 1 && runtimeLookup.indirectFirstOffset) || (i == 2 && runtimeLookup.indirectSecondOffset))
@@ -256,8 +256,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
     //
 
     // null-check basic block
-    GenTree* fastPathValue = gtNewOperNode(GT_IND, TYP_I_IMPL, gtCloneExpr(slotPtrTree));
-    fastPathValue->gtFlags |= GTF_IND_NONFAULTING;
+    GenTree* fastPathValue = gtNewIndir(TYP_I_IMPL, gtCloneExpr(slotPtrTree), GTF_IND_NONFAULTING);
     // Save dictionary slot to a local (to be used by fast path)
     GenTree* fastPathValueClone =
         opts.OptimizationEnabled() ? fgMakeMultiUse(&fastPathValue) : gtCloneExpr(fastPathValue);
@@ -305,8 +304,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stm
         GenTreeIntCon* sizeOffset = gtNewIconNode(runtimeLookup.sizeOffset, TYP_I_IMPL);
         assert(lastIndOfTree != nullptr);
         GenTree* sizeValueOffset = gtNewOperNode(GT_ADD, TYP_I_IMPL, lastIndOfTree, sizeOffset);
-        GenTree* sizeValue       = gtNewOperNode(GT_IND, TYP_I_IMPL, sizeValueOffset);
-        sizeValue->gtFlags |= GTF_IND_NONFAULTING;
+        GenTree* sizeValue       = gtNewIndir(TYP_I_IMPL, sizeValueOffset, GTF_IND_NONFAULTING);
 
         // sizeCheck fails if sizeValue <= pRuntimeLookup->offsets[i]
         GenTree* offsetValue = gtNewIconNode(runtimeLookup.offsets[runtimeLookup.indirections - 1], TYP_I_IMPL);
@@ -921,7 +919,6 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
         // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
         GenTree* offsetNode     = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, gtNewIconNode(isInitOffset));
         isInitedActualValueNode = gtNewIndir(TYP_I_IMPL, offsetNode, GTF_IND_NONFAULTING);
-        isInitedActualValueNode->gtFlags |= GTF_GLOB_REF;
 
         // 0 means "initialized" on NativeAOT
         isInitedExpectedValue = gtNewIconNode(0, TYP_I_IMPL);

@@ -7367,6 +7367,7 @@ namespace System.CodeDom.Compiler
         public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync() { throw null; }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected virtual void OutputTabs() { }
         protected virtual System.Threading.Tasks.Task OutputTabsAsync() { throw null; }
         public override void Write(bool value) { }
@@ -10137,6 +10138,7 @@ namespace System.IO
         public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync() { throw null; }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Write(char value) { }
         public override void Write(char[]? buffer) { }
         public override void Write(char[] buffer, int index, int count) { }
@@ -10254,6 +10256,7 @@ namespace System.IO
         public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public virtual void Flush() { }
         public virtual System.Threading.Tasks.Task FlushAsync() { throw null; }
+        public virtual System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public static System.IO.TextWriter Synchronized(System.IO.TextWriter writer) { throw null; }
         public virtual void Write(bool value) { }
         public virtual void Write(char value) { }
@@ -14441,6 +14444,8 @@ namespace System.Text
         public bool IsAlwaysNormalized() { throw null; }
         public virtual bool IsAlwaysNormalized(System.Text.NormalizationForm form) { throw null; }
         public static void RegisterProvider(System.Text.EncodingProvider provider) { }
+        public virtual bool TryGetBytes(System.ReadOnlySpan<char> chars, System.Span<byte> bytes, out int bytesWritten) { throw null; }
+        public virtual bool TryGetChars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, out int charsWritten) { throw null; }
     }
     public sealed partial class EncodingInfo
     {

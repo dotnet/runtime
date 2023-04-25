@@ -4,8 +4,9 @@
     <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

@@ -160,7 +160,7 @@ GenTree* MorphInitBlockHelper::Morph()
             commaPool      = commaPool->gtNext;
 
             assert(comma->OperIs(GT_COMMA));
-            comma->gtType        = m_result->TypeGet();
+            comma->gtType        = TYP_VOID;
             comma->AsOp()->gtOp1 = sideEffects;
             comma->AsOp()->gtOp2 = m_result;
             comma->gtFlags       = (sideEffects->gtFlags | m_result->gtFlags) & GTF_ALL_EFFECT;
@@ -169,7 +169,7 @@ GenTree* MorphInitBlockHelper::Morph()
         }
         else
         {
-            m_result = m_comp->gtNewOperNode(GT_COMMA, m_result->TypeGet(), sideEffects, m_result);
+            m_result = m_comp->gtNewOperNode(GT_COMMA, TYP_VOID, sideEffects, m_result);
         }
         INDEBUG(m_result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 

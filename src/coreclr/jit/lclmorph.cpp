@@ -1548,10 +1548,7 @@ public:
 
         // Note we don't need accurate counts when the values are large.
         //
-        if (varDsc->lvRefCnt(RCS_EARLY) < USHRT_MAX)
-        {
-            varDsc->incLvRefCnt(1, RCS_EARLY);
-        }
+        varDsc->incLvRefCntSaturating(1, RCS_EARLY);
 
         if (!m_compiler->lvaIsImplicitByRefLocal(lclNum))
         {
@@ -1814,7 +1811,7 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
     else
     {
         GenTree* copyBlkDst = CreateAddressNodeForSimdHWIntrinsicCreate(originalLHS, TYP_FLOAT, simdSize);
-        dstNode             = gtNewOperNode(GT_IND, simdType, copyBlkDst);
+        dstNode             = gtNewIndir(simdType, copyBlkDst);
     }
 
     JITDUMP("\n" FMT_BB " " FMT_STMT " (before):\n", block->bbNum, stmt->GetID());
