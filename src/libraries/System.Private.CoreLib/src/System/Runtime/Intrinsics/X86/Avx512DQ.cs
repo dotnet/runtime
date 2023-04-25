@@ -32,11 +32,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   VBROADCASTI32x2 xmm1 {k1}{z}, xmm2/m64
             /// </summary>
             public static Vector128<uint> BroadcastPairScalarToVector128(Vector128<uint> value) => BroadcastPairScalarToVector128(value);
-            /// <summary>
-            /// __m128 _mm_broadcast_f32x2 (__m128 a)
-            ///   VBROADCASTF32x2 xmm1 {k1}{z}, xmm2/m64
-            /// </summary>
-            public static Vector128<float> BroadcastPairScalarToVector128(Vector128<float> value) => BroadcastPairScalarToVector128(value);
 
             /// <summary>
             /// __m256i _mm256_broadcast_i32x2 (__m128i a)

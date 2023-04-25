@@ -18339,17 +18339,25 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpbroadcastq_gpr:
         case INS_vbroadcasti128:
         case INS_vbroadcastf128:
+        case INS_vbroadcastf64x2:
+        case INS_vbroadcasti64x2:
+        case INS_vbroadcastf64x4:
+        case INS_vbroadcasti64x4:
+        case INS_vbroadcastf32x2:
+        case INS_vbroadcasti32x2:
+        case INS_vbroadcastf32x8:
+        case INS_vbroadcasti32x8:
         case INS_vbroadcastss:
         case INS_vbroadcastsd:
             if (memAccessKind == PERFSCORE_MEMORY_NONE)
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
-                result.insLatency    = opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_1C;
+                result.insLatency    = opSize == EA_16BYTE ? PERFSCORE_LATENCY_1C : PERFSCORE_LATENCY_3C;
             }
             else
             {
                 result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_3C : PERFSCORE_LATENCY_2C;
+                result.insLatency += opSize == EA_16BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_3C;
                 if (ins == INS_vpbroadcastb || ins == INS_vpbroadcastw)
                 {
                     result.insLatency += PERFSCORE_LATENCY_1C;

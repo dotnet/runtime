@@ -4609,7 +4609,6 @@ namespace System.Runtime.Intrinsics.X86
             internal VL() { }
             public static new bool IsSupported { get { throw null; } }
             public static System.Runtime.Intrinsics.Vector128<int> BroadcastPairScalarToVector128(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
-            public static System.Runtime.Intrinsics.Vector128<float> BroadcastPairScalarToVector128(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<uint> BroadcastPairScalarToVector128(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<int> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<float> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
