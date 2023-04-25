@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Http.Logging
         }
 
         /// <inheritdoc />
-        /// <remarks>Loggs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
+        /// <remarks>Logs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             ThrowHelper.ThrowIfNull(request);
@@ -69,8 +69,9 @@ namespace Microsoft.Extensions.Http.Logging
             }
         }
 
+#if NET5_0_OR_GREATER
         /// <inheritdoc />
-        /// <remarks>Loggs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
+        /// <remarks>Logs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
         protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             ThrowHelper.ThrowIfNull(request);
@@ -86,6 +87,7 @@ namespace Microsoft.Extensions.Http.Logging
 
             return response;
         }
+#endif
 
         // Used in tests.
         internal static class Log

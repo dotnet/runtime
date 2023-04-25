@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
@@ -90,6 +90,8 @@ namespace Microsoft.Extensions.Http.Tests.Logging
             Assert.Equal("HTTP GET http://api.example.com/search?term=Western%20Australia", message.Scope.ToString());
         }
 
+if NET5_0_OR_GREATER
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         [Fact]
         public void LoggingHttpMessageHandler_LogsAbsoluteUri_Sync()
         {
@@ -127,6 +129,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
             Assert.Equal("Sending HTTP request GET http://api.example.com/search?term=Western%20Australia", message.Message);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         [Fact]
         public void LoggingScopeHttpMessageHandler_LogsAbsoluteUri_Sync()
         {
@@ -164,6 +167,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
             Assert.Equal("Start processing HTTP request GET http://api.example.com/search?term=Western%20Australia", message.Message);
             Assert.Equal("HTTP GET http://api.example.com/search?term=Western%20Australia", message.Scope.ToString());
         }
+#endif
 
         private class TestMessageHandler : HttpClientHandler
         {
