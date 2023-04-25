@@ -972,6 +972,10 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             AssertEx.Equal(new byte[] { 0x0E }, b.ToArray());
             b.Clear();
 
+            e.TypedReference();
+            AssertEx.Equal(new byte[] { 0x16 }, b.ToArray());
+            b.Clear();
+
             e.IntPtr();
             AssertEx.Equal(new byte[] { 0x18 }, b.ToArray());
             b.Clear();

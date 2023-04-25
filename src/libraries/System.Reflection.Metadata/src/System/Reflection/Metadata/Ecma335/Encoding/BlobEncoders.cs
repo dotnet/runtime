@@ -917,6 +917,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void Single() => WriteTypeCode(SignatureTypeCode.Single);
         public void Double() => WriteTypeCode(SignatureTypeCode.Double);
         public void String() => WriteTypeCode(SignatureTypeCode.String);
+        public void TypedReference() => WriteTypeCode(SignatureTypeCode.TypedReference);
         public void IntPtr() => WriteTypeCode(SignatureTypeCode.IntPtr);
         public void UIntPtr() => WriteTypeCode(SignatureTypeCode.UIntPtr);
         public void Object() => WriteTypeCode(SignatureTypeCode.Object);
