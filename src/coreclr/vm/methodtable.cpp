@@ -2090,7 +2090,7 @@ PTR_FieldDesc MethodTable::GetFieldDescByIndex(DWORD fieldIndex)
 
     // Check if the field index is for an EnC field lookup.
     // See GetIndexForFieldDesc() for when this is applied and why.
-    if (fieldIndex | EnCFieldIndex)
+    if ((fieldIndex & EnCFieldIndex) == EnCFieldIndex)
     {
         DWORD rid = fieldIndex & ~EnCFieldIndex;
         LOG((LF_ENC, LL_INFO100, "MT:GFDBI: rid:0x%08x\n", rid));
