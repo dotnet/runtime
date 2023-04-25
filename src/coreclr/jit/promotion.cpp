@@ -1303,17 +1303,21 @@ public:
                 unsigned dstLclSize = dstLcl->GetLayout(m_compiler)->GetSize();
                 if (dstFirstRep->Offset < dstLclOffs)
                 {
-                    JITDUMP("*** Block operation partially overlaps with destination %s. Write and read-backs are "
-                            "necessary.\n",
-                            dstFirstRep->Name);
-                    // The value of the replacement will be partially assembled from its old value and this struct
-                    // operation.
-                    // We accomplish this by an initial write back, the struct copy, followed by a later read back.
-                    // TODO-CQ: This is very expensive and unreflected in heuristics, but it is also very rare.
-                    result.AddStatement(CreateWriteBack(dstLcl->GetLclNum(), *dstFirstRep));
+                    if (dstFirstRep->NeedsWriteBack)
+                    {
+                        JITDUMP("*** Block operation partially overlaps with destination %s. Write and read-backs are "
+                                "necessary.\n",
+                                dstFirstRep->Name);
+                        // The value of the replacement will be partially assembled from its old value and this struct
+                        // operation.
+                        // We accomplish this by an initial write back, the struct copy, followed by a later read back.
+                        // TODO-CQ: This is very expensive and unreflected in heuristics, but it is also very rare.
+                        result.AddStatement(CreateWriteBack(dstLcl->GetLclNum(), *dstFirstRep));
 
-                    dstFirstRep->NeedsWriteBack = false;
-                    dstFirstRep->NeedsReadBack  = true;
+                        dstFirstRep->NeedsWriteBack = false;
+                        dstFirstRep->NeedsReadBack  = true;
+                    }
+
                     dstFirstRep++;
                 }
 
@@ -1322,13 +1326,18 @@ public:
                     Replacement* dstLastRep = dstEndRep - 1;
                     if (dstLastRep->Offset + genTypeSize(dstLastRep->AccessType) > dstLclOffs + dstLclSize)
                     {
-                        JITDUMP("*** Block operation partially overlaps with destination %s. Write and read-backs are "
+                        if (dstLastRep->NeedsWriteBack)
+                        {
+                            JITDUMP(
+                                "*** Block operation partially overlaps with destination %s. Write and read-backs are "
                                 "necessary.\n",
                                 dstLastRep->Name);
-                        result.AddStatement(CreateWriteBack(dstLcl->GetLclNum(), *dstLastRep));
+                            result.AddStatement(CreateWriteBack(dstLcl->GetLclNum(), *dstLastRep));
 
-                        dstLastRep->NeedsWriteBack = false;
-                        dstLastRep->NeedsReadBack  = true;
+                            dstLastRep->NeedsWriteBack = false;
+                            dstLastRep->NeedsReadBack  = true;
+                        }
+
                         dstEndRep--;
                     }
                 }
@@ -1341,12 +1350,16 @@ public:
 
                 if (srcFirstRep->Offset < srcLclOffs)
                 {
-                    JITDUMP("*** Block operation partially overlaps with source %s. Write back is necessary.\n",
-                            srcFirstRep->Name);
+                    if (srcFirstRep->NeedsWriteBack)
+                    {
+                        JITDUMP("*** Block operation partially overlaps with source %s. Write back is necessary.\n",
+                                srcFirstRep->Name);
 
-                    result.AddStatement(CreateWriteBack(srcLcl->GetLclNum(), *srcFirstRep));
+                        result.AddStatement(CreateWriteBack(srcLcl->GetLclNum(), *srcFirstRep));
 
-                    srcFirstRep->NeedsWriteBack = false;
+                        srcFirstRep->NeedsWriteBack = false;
+                    }
+
                     srcFirstRep++;
                 }
 
@@ -1355,11 +1368,15 @@ public:
                     Replacement* srcLastRep = srcEndRep - 1;
                     if (srcLastRep->Offset + genTypeSize(srcLastRep->AccessType) > srcLclOffs + srcLclSize)
                     {
-                        JITDUMP("*** Block operation partially overlaps with source %s. Write back is necessary.\n",
-                                srcLastRep->Name);
+                        if (srcLastRep->NeedsWriteBack)
+                        {
+                            JITDUMP("*** Block operation partially overlaps with source %s. Write back is necessary.\n",
+                                    srcLastRep->Name);
 
-                        result.AddStatement(CreateWriteBack(srcLcl->GetLclNum(), *srcLastRep));
-                        srcLastRep->NeedsWriteBack = false;
+                            result.AddStatement(CreateWriteBack(srcLcl->GetLclNum(), *srcLastRep));
+                            srcLastRep->NeedsWriteBack = false;
+                        }
+
                         srcEndRep--;
                     }
                 }
@@ -1476,6 +1493,13 @@ public:
 
         while ((dstRep < dstEndRep) || (srcRep < srcEndRep))
         {
+            if ((srcRep < srcEndRep) && srcRep->NeedsReadBack)
+            {
+                assert(srcLcl != nullptr);
+                statements->AddStatement(CreateReadBack(srcLcl->GetLclNum(), *srcRep));
+                srcRep->NeedsReadBack = false;
+            }
+
             if ((dstRep < dstEndRep) && (srcRep < srcEndRep))
             {
                 if (srcRep->Offset - srcBaseOffs + genTypeSize(srcRep->AccessType) < dstRep->Offset - dstBaseOffs)
@@ -1552,8 +1576,8 @@ public:
                 assert(srcRep < srcEndRep);
                 if ((dstDsc != nullptr) && dstDsc->lvPromoted)
                 {
-                    unsigned   dstOffs     = dstLcl->GetLclOffs() + (srcRep->Offset - srcBaseOffs);
-                    unsigned   fieldLcl    = m_compiler->lvaGetFieldLocal(dstDsc, dstOffs);
+                    unsigned dstOffs  = dstLcl->GetLclOffs() + (srcRep->Offset - srcBaseOffs);
+                    unsigned fieldLcl = m_compiler->lvaGetFieldLocal(dstDsc, dstOffs);
 
                     if ((fieldLcl != BAD_VAR_NUM) && (m_compiler->lvaGetDesc(fieldLcl)->lvType == srcRep->AccessType))
                     {
