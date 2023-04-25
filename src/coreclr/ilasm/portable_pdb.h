@@ -46,6 +46,8 @@ public:
     IMetaDataEmit3* GetEmitter();
     GUID*           GetGuid();
     ULONG           GetTimestamp();
+    void            SetGuid(REFGUID newGuid);
+    void            SetTimestamp(const ULONG newTimestamp);
     Document*       GetCurrentDocument();
     HRESULT         BuildPdbStream(IMetaDataEmit3* peEmitter, mdMethodDef entryPoint);
     HRESULT         DefineDocument(char* name, GUID* language);

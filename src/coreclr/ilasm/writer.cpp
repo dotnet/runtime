@@ -70,11 +70,17 @@ HRESULT Assembler::InitMetaData()
         }
     }
 
-
     if (m_fGeneratePDB)
     {
         m_pPortablePdbWriter = new PortablePdbWriter();
         if (FAILED(hr = m_pPortablePdbWriter->Init(m_pDisp))) goto exit;
+
+        if (m_fDeterministic)
+        {
+            // Default values for determinism.
+            m_pPortablePdbWriter->SetGuid(GUID());
+            m_pPortablePdbWriter->SetTimestamp(0);
+        }
     }
 
     //m_Parser = new AsmParse(m_pEmitter);
@@ -1544,6 +1550,13 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         hr = Sha256Hash(metaData, metaDataSize, (BYTE*)&mvid, sizeof(GUID));
         if (FAILED(hr)) goto exit;
         m_pInternalEmitForDeterministicMvid->ChangeMvid(mvid);
+
+        if (m_fGeneratePDB)
+        {
+            GUID pdbGuid;
+            // TODO: Sha256Hash contents of pdb.
+            m_pPortablePdbWriter->SetGuid(pdbGuid);
+        }
     }
 
     if(bClock) bClock->cFilegenBegin = GetTickCount();
@@ -1633,59 +1646,8 @@ exit:
 
 HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    NTSTATUS status;
-    
-    BCRYPT_ALG_HANDLE   algHandle = NULL;
-    BCRYPT_HASH_HANDLE  hashHandle = NULL;
-    
-    BYTE    hash[32]; // 256 bits
-    DWORD   hashLength = 0;
-    DWORD   resultLength = 0;
-    status = BCryptOpenAlgorithmProvider(&algHandle, BCRYPT_SHA256_ALGORITHM, NULL, BCRYPT_HASH_REUSABLE_FLAG);
-    if(!NT_SUCCESS(status))
-    {
-        goto cleanup;
-    }
-    status = BCryptGetProperty(algHandle, BCRYPT_HASH_LENGTH, (PBYTE)&hashLength, sizeof(hashLength), &resultLength, 0);
-    if(!NT_SUCCESS(status))
-    {
-        goto cleanup;
-    }
-    if (hashLength != 32)
-    {
-        status = STATUS_NO_MEMORY;
-        goto cleanup;
-    }
-    status = BCryptCreateHash(algHandle, &hashHandle, NULL, 0, NULL, 0, 0);
-    if(!NT_SUCCESS(status))
-    {
-        goto cleanup;
-    }
-    
-    status = BCryptHashData(hashHandle, pSrc, srcSize, 0);
-    if(!NT_SUCCESS(status))
-    {
-        goto cleanup;
-    }
-    
-    status = BCryptFinishHash(hashHandle, hash, hashLength, 0);
-    if(!NT_SUCCESS(status))
-    {
-        goto cleanup;
-    }
-    memcpy(pDst, hash, min(hashLength, dstSize));
-    status = STATUS_SUCCESS;
-       
-cleanup:
-    if (NULL != hashHandle)    
-    {
-         BCryptDestroyHash(hashHandle);
-    }
-    if(NULL != algHandle)
-    {
-        BCryptCloseAlgorithmProvider(algHandle, 0);
-    }
-    return status;
+    // TODO: Implement sha 256 hash.
+    return 0;
 }
 
 #ifdef _PREFAST_

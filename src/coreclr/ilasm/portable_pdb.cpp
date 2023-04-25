@@ -120,6 +120,16 @@ ULONG PortablePdbWriter::GetTimestamp()
     return m_pdbStream.id.pdbTimeStamp;
 }
 
+void PortablePdbWriter::SetGuid(REFGUID newGuid)
+{
+    m_pdbStream.id.pdbGuid = newGuid;
+}
+
+void PortablePdbWriter::SetTimestamp(const ULONG newTimestamp)
+{
+    m_pdbStream.id.pdbTimeStamp = newTimestamp;
+}
+
 Document* PortablePdbWriter::GetCurrentDocument()
 {
     return m_currentDocument;
