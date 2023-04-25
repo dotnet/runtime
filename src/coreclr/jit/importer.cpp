@@ -7203,6 +7203,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     return;
                 }
 
+                if (opts.OptimizationEnabled() && (gtGetArrayElementClassHandle(impStackTop(1).val) == ldelemClsHnd) &&
+                    impIsClassExact(ldelemClsHnd))
+                {
+                    JITDUMP("\nldelema of T[] with T exact: skipping covariant check\n");
+                    goto ARR_LD;
+                }
+
                 GenTree* index = impPopStack().val;
                 GenTree* arr   = impPopStack().val;
 
@@ -12454,24 +12461,6 @@ void Compiler::verResetCurrentState(BasicBlock* block, EntryState* destState)
 
         memcpy(destState->esStack, block->bbStackOnEntry(), stackSize);
     }
-}
-
-unsigned BasicBlock::bbStackDepthOnEntry() const
-{
-    return (bbEntryState ? bbEntryState->esStackDepth : 0);
-}
-
-void BasicBlock::bbSetStack(void* stackBuffer)
-{
-    assert(bbEntryState);
-    assert(stackBuffer);
-    bbEntryState->esStack = (StackEntry*)stackBuffer;
-}
-
-StackEntry* BasicBlock::bbStackOnEntry() const
-{
-    assert(bbEntryState);
-    return bbEntryState->esStack;
 }
 
 void Compiler::verInitCurrentState()

@@ -128,6 +128,37 @@ namespace Internal.TypeSystem
             {
                 // SignatureVariables do not have RuntimeTypeHandles
             }
+            else if (type is FunctionPointerType functionPointerType)
+            {
+                MethodSignature sig = functionPointerType.Signature;
+                if (sig.ReturnType.RetrieveRuntimeTypeHandleIfPossible())
+                {
+                    RuntimeTypeHandle[] parameterHandles = new RuntimeTypeHandle[sig.Length];
+                    bool handlesAvailable = true;
+                    for (int i = 0; i < parameterHandles.Length; i++)
+                    {
+                        if (sig[i].RetrieveRuntimeTypeHandleIfPossible())
+                        {
+                            parameterHandles[i] = sig[i].RuntimeTypeHandle;
+                        }
+                        else
+                        {
+                            handlesAvailable = false;
+                            break;
+                        }
+                    }
+
+                    if (handlesAvailable
+                        && TypeLoaderEnvironment.Instance.TryLookupFunctionPointerTypeForComponents(
+                            sig.ReturnType.RuntimeTypeHandle, parameterHandles,
+                            isUnmanaged: (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) != 0,
+                            out RuntimeTypeHandle rtth))
+                    {
+                        functionPointerType.SetRuntimeTypeHandleUnsafe(rtth);
+                        return true;
+                    }
+                }
+            }
             else
             {
                 Debug.Assert(false);

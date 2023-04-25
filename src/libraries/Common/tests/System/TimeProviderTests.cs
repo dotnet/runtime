@@ -213,33 +213,34 @@ namespace Tests.System
             //
             // Test out some int-based timeout logic
             //
-#if NETFRAMEWORK
-            CancellationTokenSource cts = new CancellationTokenSource(Timeout.InfiniteTimeSpan); // should be an infinite timeout
+#if TESTEXTENSIONS
+            CancellationTokenSource cts = provider.CreateCancellationTokenSource(Timeout.InfiniteTimeSpan); // should be an infinite timeout
 #else
             CancellationTokenSource cts = new CancellationTokenSource(Timeout.InfiniteTimeSpan, provider); // should be an infinite timeout
-#endif // NETFRAMEWORK
-            CancellationToken token = cts.Token;
+#endif // TESTEXTENSIONS
             ManualResetEventSlim mres = new ManualResetEventSlim(false);
-            CancellationTokenRegistration ctr = token.Register(() => mres.Set());
 
-            Assert.False(token.IsCancellationRequested,
+            Assert.False(cts.Token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on infinite timeout (int)!");
 
-#if NETFRAMEWORK
-            CancelAfter(provider, cts, TimeSpan.FromMilliseconds(1000000));
+#if TESTEXTENSIONS
+            cts.Dispose();
+            cts = provider.CreateCancellationTokenSource(TimeSpan.FromMilliseconds(1000000));
 #else
             cts.CancelAfter(1000000);
-#endif // NETFRAMEWORK
+#endif // TESTEXTENSIONS
 
-            Assert.False(token.IsCancellationRequested,
+            Assert.False(cts.Token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on super-long timeout (int) !");
 
-#if NETFRAMEWORK
-            CancelAfter(provider, cts, TimeSpan.FromMilliseconds(1));
+#if TESTEXTENSIONS
+            cts.Dispose();
+            cts = provider.CreateCancellationTokenSource(TimeSpan.FromMilliseconds(1));
 #else
             cts.CancelAfter(1);
-#endif // NETFRAMEWORK
+#endif // TESTEXTENSIONS
 
+            CancellationTokenRegistration ctr = cts.Token.Register(() => mres.Set());
             Debug.WriteLine("CancellationTokenSourceWithTimer: > About to wait on cancellation that should occur soon (int)... if we hang, something bad happened");
 
             mres.Wait();
@@ -250,33 +251,34 @@ namespace Tests.System
             // Test out some TimeSpan-based timeout logic
             //
             TimeSpan prettyLong = new TimeSpan(1, 0, 0);
-#if NETFRAMEWORK
-            cts = new CancellationTokenSource(prettyLong);
+#if TESTEXTENSIONS
+            cts = provider.CreateCancellationTokenSource(prettyLong);
 #else
             cts = new CancellationTokenSource(prettyLong, provider);
-#endif // NETFRAMEWORK
+#endif // TESTEXTENSIONS
 
-            token = cts.Token;
             mres = new ManualResetEventSlim(false);
-            ctr = token.Register(() => mres.Set());
 
-            Assert.False(token.IsCancellationRequested,
+            Assert.False(cts.Token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on super-long timeout (TimeSpan,1)!");
 
-#if NETFRAMEWORK
-            CancelAfter(provider, cts, prettyLong);
+#if TESTEXTENSIONS
+            cts.Dispose();
+            cts = provider.CreateCancellationTokenSource(prettyLong);
 #else
             cts.CancelAfter(prettyLong);
-#endif // NETFRAMEWORK
+#endif // TESTEXTENSIONS
 
-            Assert.False(token.IsCancellationRequested,
+            Assert.False(cts.Token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on super-long timeout (TimeSpan,2) !");
 
-#if NETFRAMEWORK
-            CancelAfter(provider, cts, TimeSpan.FromMilliseconds(1000));
+#if TESTEXTENSIONS
+            cts.Dispose();
+            cts = provider.CreateCancellationTokenSource(TimeSpan.FromMilliseconds(1000));
 #else
             cts.CancelAfter(new TimeSpan(1000));
-#endif // NETFRAMEWORK
+#endif // TESTEXTENSIONS
+            ctr = cts.Token.Register(() => mres.Set());
 
             Debug.WriteLine("CancellationTokenSourceWithTimer: > About to wait on cancellation that should occur soon (TimeSpan)... if we hang, something bad happened");
 
@@ -555,5 +557,65 @@ namespace Tests.System
 
         private static TestExtensionsTaskFactory extensionsTaskFactory = new();
 #endif // TESTEXTENSIONS
+
+        // A timer that get fired on demand
+        private class ManualTimer : ITimer
+        {
+            TimerCallback _callback;
+            object? _state;
+
+            public ManualTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+            {
+                _callback = callback;
+                _state = state;
+            }
+
+            public bool Change(TimeSpan dueTime, TimeSpan period) => true;
+
+            public void Fire()
+            {
+                _callback?.Invoke(_state);
+                IsFired = true;
+            }
+
+            public bool IsFired { get; set; }
+
+            public void Dispose() { }
+            public ValueTask DisposeAsync () { return default; }
+        }
+
+        private class ManualTimeProvider : TimeProvider
+        {
+            public ManualTimer Timer { get; set; }
+
+            public ManualTimeProvider() { }
+            public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+            {
+                Timer = new ManualTimer(callback, state, dueTime, period);
+                return Timer;
+            }
+        }
+
+        [Fact]
+        // 1- Creates the CTS with a delay that we control via the time provider.
+        // 2- Disposes the CTS.
+        // 3- Then fires the timer. We want to validate the process doesn't crash.
+        public static void TestCTSWithDelayFiringAfterCancellation()
+        {
+            ManualTimeProvider manualTimer = new ManualTimeProvider();
+#if TESTEXTENSIONS
+            CancellationTokenSource cts = manualTimer.CreateCancellationTokenSource(TimeSpan.FromSeconds(60));
+#else
+            CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(60), manualTimer);
+#endif // TESTEXTENSIONS
+
+            Assert.NotNull(manualTimer.Timer);
+            Assert.False(manualTimer.Timer.IsFired);
+
+            cts.Dispose();
+
+            manualTimer.Timer.Fire();
+            Assert.True(manualTimer.Timer.IsFired);
+        }
     }
 }
