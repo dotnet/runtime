@@ -2334,9 +2334,6 @@ size_t      gc_heap::heap_hard_limit_oh[total_oh_count];
 
 size_t      gc_heap::regions_range = 0;
 
-size_t      gc_heap::heap_hard_limit_for_heap = 0;
-size_t      gc_heap::heap_hard_limit_for_bookkeeping = 0;
-
 #endif //USE_REGIONS
 
 bool        affinity_config_specified_p = false;
@@ -6944,10 +6941,6 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
 
         if (heap_hard_limit_oh[soh] != 0)
         {
-#ifdef USE_REGIONS
-            assert (heap_hard_limit_for_heap == 0);
-            assert (heap_hard_limit_for_bookkeeping == 0);
-#endif //USE_REGIONS
             if ((bucket < total_oh_count) && (committed_by_oh[bucket] + size) > heap_hard_limit_oh[bucket])
             {
                 exceeded_p = true;
@@ -6955,23 +6948,9 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
         }
         else
         {
-            size_t base;
-            size_t limit;
-#ifdef USE_REGIONS
-            if (h_number < 0)
-            {
-                base = current_total_committed_bookkeeping;
-                limit = heap_hard_limit_for_bookkeeping;
-            }
-            else
-            {
-                base = current_total_committed - current_total_committed_bookkeeping;
-                limit = heap_hard_limit_for_heap;
-            }
-#else
-            base = current_total_committed;
-            limit = heap_hard_limit;
-#endif //USE_REGIONS
+            size_t base = current_total_committed;
+            size_t limit = heap_hard_limit;
+
             if ((base + size) > limit)
             {
                 dprintf (1, ("%Id + %Id = %Id > limit %Id ", base, size, (base + size), limit));
@@ -11282,12 +11261,6 @@ void gc_heap::clear_region_info (heap_segment* region)
                         seg_deleted);
 
     bgc_verify_mark_array_cleared (region);
-
-    if (dt_high_memory_load_p())
-    {
-        decommit_mark_array_by_seg (region);
-        region->flags &= ~(heap_segment_flags_ma_committed);
-    }
 #endif //BACKGROUND_GC
 }
 
@@ -13607,26 +13580,6 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 #endif //BACKGROUND_GC
 #endif //WRITE_WATCH
 
-#ifdef USE_REGIONS
-    if (gc_heap::heap_hard_limit && gc_heap::heap_hard_limit_oh[soh] == 0)
-    {
-        size_t gc_region_size = (size_t)1 << min_segment_size_shr;
-        size_t sizes[total_bookkeeping_elements];
-        size_t bookkeeping_size_per_region = 0;
-        uint8_t* temp_lowest_address = (uint8_t*)gc_region_size;
-        gc_heap::get_card_table_element_sizes(temp_lowest_address, temp_lowest_address + gc_region_size, sizes);
-        for (int i = 0; i < total_bookkeeping_elements; i++)
-        {
-            bookkeeping_size_per_region += sizes[i];
-        }
-        size_t total_size_per_region = gc_region_size + bookkeeping_size_per_region;
-        size_t max_region_count = gc_heap::heap_hard_limit / total_size_per_region; // implictly rounded down
-        gc_heap::heap_hard_limit_for_heap = max_region_count * gc_region_size;
-        gc_heap::heap_hard_limit_for_bookkeeping = max_region_count * bookkeeping_size_per_region;
-        dprintf (REGIONS_LOG, ("bookkeeping_size_per_region = %Id", bookkeeping_size_per_region));
-    }
-#endif //USE_REGIONS
-
 #ifdef BACKGROUND_GC
     // leave the first page to contain only segment info
     // because otherwise we could need to revisit the first page frequently in
@@ -14390,6 +14343,8 @@ gc_heap::init_gc_heap (int h_number)
 #endif //CARD_BUNDLE
 
 #ifdef BACKGROUND_GC
+    background_saved_highest_address = nullptr;
+    background_saved_lowest_address = nullptr;
     if (gc_can_use_concurrent)
         mark_array = translate_mark_array (card_table_mark_array (&g_gc_card_table[card_word (card_of (g_gc_lowest_address))]));
     else
@@ -20310,20 +20265,17 @@ bool gc_heap::try_get_new_free_region()
 bool gc_heap::init_table_for_region (int gen_number, heap_segment* region)
 {
 #ifdef BACKGROUND_GC
-    if (is_bgc_in_progress())
+    dprintf (GC_TABLE_LOG, ("new seg %Ix, mark_array is %Ix",
+        heap_segment_mem (region), mark_array));
+    if (((region->flags & heap_segment_flags_ma_committed) == 0) &&
+        !commit_mark_array_new_seg (__this, region))
     {
-        dprintf (GC_TABLE_LOG, ("new seg %Ix, mark_array is %Ix",
-            heap_segment_mem (region), mark_array));
-        if (((region->flags & heap_segment_flags_ma_committed) == 0) &&
-            !commit_mark_array_new_seg (__this, region))
-        {
-            dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new region %Ix-%Ix",
-                get_region_start (region), heap_segment_reserved (region)));
+        dprintf (GC_TABLE_LOG, ("failed to commit mark array for the new region %Ix-%Ix",
+            get_region_start (region), heap_segment_reserved (region)));
 
-            // We don't have memory to commit the mark array so we cannot use the new region.
-            decommit_region (region, gen_to_oh (gen_number), heap_number);
-            return false;
-        }
+        // We don't have memory to commit the mark array so we cannot use the new region.
+        decommit_region (region, gen_to_oh (gen_number), heap_number);
+        return false;
     }
     if ((region->flags & heap_segment_flags_ma_committed) != 0)
     {
