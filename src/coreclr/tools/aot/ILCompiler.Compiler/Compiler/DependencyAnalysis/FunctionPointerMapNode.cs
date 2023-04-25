@@ -4,11 +4,8 @@
 using System;
 
 using Internal.NativeFormat;
-using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
-
-using MethodSignature = Internal.TypeSystem.MethodSignature;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -66,22 +63,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (!type.IsFunctionPointer)
                     continue;
 
-                MethodSignature sig = ((FunctionPointerType)type).Signature;
-
-                Vertex sigPart = writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.NecessaryTypeSymbol(sig.ReturnType)));
-                foreach (TypeDesc p in sig)
-                    sigPart = writer.GetTuple(sigPart, writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.NecessaryTypeSymbol(p))));
-
-                uint flags = (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) != 0
-                    ? FunctionPointerMapEntry.IsUnmanagedFlag : 0;
-
-                flags |= (uint)sig.Length << FunctionPointerMapEntry.ParameterCountShift;
-
-                Vertex vertex =
-                    writer.GetTuple(
-                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.NecessaryTypeSymbol(type))),
-                        writer.GetUnsignedConstant(flags),
-                        sigPart);
+                Vertex vertex = writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.NecessaryTypeSymbol(type)));
 
                 int hashCode = type.GetHashCode();
                 typeMapHashTable.Append((uint)hashCode, hashTableSection.Place(vertex));

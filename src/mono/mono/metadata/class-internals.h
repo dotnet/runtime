@@ -1142,7 +1142,7 @@ mono_method_can_access_field_full (MonoMethod *method, MonoClassField *field, Mo
 gboolean
 mono_class_can_access_class (MonoClass *access_class, MonoClass *target_class);
 
-MonoClass *
+MONO_COMPONENT_API MonoClass *
 mono_class_get_generic_type_definition (MonoClass *klass);
 
 gboolean

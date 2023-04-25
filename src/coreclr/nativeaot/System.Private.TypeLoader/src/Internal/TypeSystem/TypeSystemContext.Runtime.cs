@@ -183,9 +183,9 @@ namespace Internal.TypeSystem
             }
             else if (RuntimeAugments.IsFunctionPointerType(rtth))
             {
-                TypeLoaderEnvironment.Instance.GetFunctionPointerTypeComponents(rtth, out RuntimeTypeHandle returnTypeHandle,
-                                                                                      out RuntimeTypeHandle[] parameterHandles,
-                                                                                      out bool isUnmanaged);
+                RuntimeTypeHandle returnTypeHandle = RuntimeAugments.GetFunctionPointerReturnType(rtth);
+                RuntimeTypeHandle[] parameterHandles = RuntimeAugments.GetFunctionPointerParameterTypes(rtth);
+                bool isUnmanaged = RuntimeAugments.IsUnmanagedFunctionPointerType(rtth);
 
                 var sig = new MethodSignature(
                     isUnmanaged ? MethodSignatureFlags.UnmanagedCallingConvention : 0,
