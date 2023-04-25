@@ -77,6 +77,7 @@
     <PlatformManifestFileEntry Include="System.Private.Xml.dll" />
     <PlatformManifestFileEntry Include="System.Private.Xml.Linq.dll" />
     <!-- Native libraries -->
+    <PlatformManifestFileEntry Include="libSystem.Globalization.Native.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Globalization.Native.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.Globalization.Native.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libSystem.IO.Compression.Native.a" IsNative="true" />
