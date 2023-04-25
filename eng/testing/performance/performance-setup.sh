@@ -37,6 +37,7 @@ logical_machine=
 javascript_engine="v8"
 iosmono=false
 iosllvmbuild=""
+iosnativeaot=false
 maui_version=""
 use_local_commit_time=false
 only_sanity=false
@@ -159,6 +160,10 @@ while (($# > 0)); do
       iosmono=true
       shift 1
       ;;
+    --iosnativeaot)
+      iosnativeaot=true
+      shift 1
+      ;;
     --iosllvmbuild)
       iosllvmbuild=$2
       shift 2
@@ -210,6 +215,7 @@ while (($# > 0)); do
       echo "  --dotnetversions               Passed as '--dotnet-versions <value>' to the setup script"
       echo "  --alpine                       Set for runs on Alpine"
       echo "  --iosmono                      Set for ios Mono/Maui runs"
+      echo "  --iosnativeaot                 Set for ios Native AOT runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo "  --uselocalcommittime           Pass local runtime commit time to the setup script"
@@ -318,6 +324,11 @@ if [[ "$iosmono" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
 fi
 
+if [[ "$iosnativeaot" == "true" ]]; then
+    configurations="$configurations"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
+fi
+
 cleaned_branch_name="main"
 if [[ $branch == *"refs/heads/release"* ]]; then
     cleaned_branch_name=${branch/refs\/heads\//}
@@ -408,6 +419,11 @@ if [[ "$iosmono" == "true" ]]; then
         mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvm $payload_directory/iosHelloWorld
         mkdir -p $payload_directory/iosHelloWorldZip/nollvmzip && cp -rv $source_directory/iosHelloWorldZip/nollvmzip $payload_directory/iosHelloWorldZip
     fi
+fi
+
+if [[ "$iosnativeaot" == "true" ]]; then
+    mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld $payload_directory/iosHelloWorld
+    mkdir -p $payload_directory/iosHelloWorldZip && cp -rv $source_directory/iosHelloWorldZip $payload_directory/iosHelloWorldZip
 fi
 
 ci=true
