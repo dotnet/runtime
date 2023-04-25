@@ -2305,10 +2305,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 		}
 		case MONO_TABLE_PROPERTY: {
 			/* allow updates to existing properties. */
-			if (!is_addition)
-				/* FIXME: use DeltaInfo:prev_gen_rows instead of image_base */
-				g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
-			else {
+			if (is_addition) {
 				g_assert (add_property_propertymap != 0);
 
 				uint32_t parent_type_token = mono_metadata_decode_row_col (&image_base->tables [MONO_TABLE_PROPERTYMAP], mono_metadata_token_index (add_property_propertymap) - 1, MONO_PROPERTY_MAP_PARENT);
@@ -2362,10 +2359,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 
 		}
 		case MONO_TABLE_EVENT: {
-			if (!is_addition)
-				/* FIXME: use DeltaInfo:prev_gen_rows instead of image_base */
-				g_assert (token_index <= table_info_get_rows (&image_base->tables [token_table]));
-			else {
+			if (is_addition) {
 				g_assert (add_event_eventmap != 0);
 
 				uint32_t parent_type_token = mono_metadata_decode_row_col (&image_base->tables [MONO_TABLE_EVENTMAP], mono_metadata_token_index (add_event_eventmap) - 1, MONO_EVENT_MAP_PARENT);
