@@ -667,7 +667,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void SupportsPropertiesWithCustomConverterFactory()
         {
-            var value = new ClassWithCustomConverterFactoryProperty { MyEnum = Serialization.Tests.SampleEnum.MinZero };
+            var value = new ClassWithCustomConverterFactoryProperty { MyEnum = SourceGenSampleEnum.MinZero };
             string json = JsonSerializer.Serialize(value, SingleClassWithCustomConverterFactoryPropertyContext.Default.ClassWithCustomConverterFactoryProperty);
             Assert.Equal(@"{""MyEnum"":""MinZero""}", json);
         }

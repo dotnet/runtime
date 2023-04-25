@@ -476,27 +476,104 @@ void CodeGen::genHWIntrinsic_R_RM(
             }
             else
             {
-                if (varTypeIsIntegral(rmOp) && ((node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector128) ||
-                                                (node->GetHWIntrinsicId() == NI_AVX512F_BroadcastScalarToVector512) ||
-                                                (node->GetHWIntrinsicId() == NI_AVX512BW_BroadcastScalarToVector512) ||
-                                                (node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector256)))
+                if (varTypeIsIntegral(rmOp))
                 {
-                    // In lowering we had the special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
-                    //
-                    // This is one of the only instructions where it supports taking integer types from
-                    // a SIMD register or directly as a scalar from memory. Most other instructions, in
-                    // comparison, take such values from general-purpose registers instead.
-                    //
-                    // Because of this, we removed the CreateScalarUnsafe and tried to contain op1 directly
-                    // that failed and we either didn't get marked regOptional or we did and didn't get spilled
-                    //
-                    // As such, we need to emulate the removed CreateScalarUnsafe to ensure that op1 is in a
-                    // SIMD register so the broadcast instruction can execute succesfully. We'll just move
-                    // the value into the target register and then broadcast it out from that.
+                    bool needsBroadcastFixup   = false;
+                    bool needsInstructionFixup = false;
 
-                    emitAttr movdAttr = emitActualTypeSize(node->GetSimdBaseType());
-                    emit->emitIns_Mov(INS_movd, movdAttr, reg, rmOpReg, /* canSkip */ false);
-                    rmOpReg = reg;
+                    switch (node->GetHWIntrinsicId())
+                    {
+                        case NI_AVX2_BroadcastScalarToVector128:
+                        case NI_AVX2_BroadcastScalarToVector256:
+                        {
+                            if (varTypeIsSmall(node->GetSimdBaseType()))
+                            {
+                                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL))
+                                {
+                                    needsInstructionFixup = true;
+                                }
+                                else
+                                {
+                                    needsBroadcastFixup = true;
+                                }
+                            }
+                            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                            {
+                                needsInstructionFixup = true;
+                            }
+                            else
+                            {
+                                needsBroadcastFixup = true;
+                            }
+                            break;
+                        }
+
+                        case NI_AVX512F_BroadcastScalarToVector512:
+                        case NI_AVX512BW_BroadcastScalarToVector512:
+                        {
+                            needsInstructionFixup = true;
+                            break;
+                        }
+
+                        default:
+                        {
+                            break;
+                        }
+                    }
+
+                    if (needsBroadcastFixup)
+                    {
+                        // In lowering we had the special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
+                        //
+                        // This is one of the only instructions where it supports taking integer types from
+                        // a SIMD register or directly as a scalar from memory. Most other instructions, in
+                        // comparison, take such values from general-purpose registers instead.
+                        //
+                        // Because of this, we removed the CreateScalarUnsafe and tried to contain op1 directly
+                        // that failed and we either didn't get marked regOptional or we did and didn't get spilled
+                        //
+                        // As such, we need to emulate the removed CreateScalarUnsafe to ensure that op1 is in a
+                        // SIMD register so the broadcast instruction can execute succesfully. We'll just move
+                        // the value into the target register and then broadcast it out from that.
+
+                        emitAttr movdAttr = emitActualTypeSize(node->GetSimdBaseType());
+                        emit->emitIns_Mov(INS_movd, movdAttr, reg, rmOpReg, /* canSkip */ false);
+                        rmOpReg = reg;
+                    }
+                    else if (needsInstructionFixup)
+                    {
+                        switch (ins)
+                        {
+                            case INS_vpbroadcastb:
+                            {
+                                ins = INS_vpbroadcastb_gpr;
+                                break;
+                            }
+
+                            case INS_vpbroadcastd:
+                            {
+                                ins = INS_vpbroadcastd_gpr;
+                                break;
+                            }
+
+                            case INS_vpbroadcastq:
+                            {
+                                ins = INS_vpbroadcastq_gpr;
+                                break;
+                            }
+
+                            case INS_vpbroadcastw:
+                            {
+                                ins = INS_vpbroadcastw_gpr;
+                                break;
+                            }
+
+                            default:
+                            {
+                                unreached();
+                            }
+                        }
+                    }
                 }
 
                 emit->emitIns_R_R(ins, attr, reg, rmOpReg);

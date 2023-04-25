@@ -28,6 +28,7 @@ namespace System.Globalization.Tests
         protected static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
         protected static CompareInfo s_japaneseCompare = new CultureInfo("ja-JP").CompareInfo;
         protected static CompareInfo s_slovakCompare = new CultureInfo("sk-SK").CompareInfo;
+        protected static CompareInfo s_frenchCompare = new CultureInfo("fr-FR").CompareInfo;
         protected static CompareOptions supportedIgnoreNonSpaceOption =
             PlatformDetection.IsHybridGlobalizationOnBrowser ?
             CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :

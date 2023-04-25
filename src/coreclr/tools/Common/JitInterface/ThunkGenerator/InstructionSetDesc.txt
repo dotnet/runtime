@@ -23,38 +23,41 @@
 ; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numeric values definitions would be R2R format breaking change.
 
 ; Definition of X86 instruction sets
-definearch         ,X86   ,32Bit     ,X64
+definearch         ,X86   ,32Bit                ,X64
 
-instructionset     ,X86   ,X86Base   ,        ,22 ,X86Base  ,base
-instructionset     ,X86   ,Sse       ,        ,1  ,SSE      ,sse
-instructionset     ,X86   ,Sse2      ,        ,2  ,SSE2     ,sse2
-instructionset     ,X86   ,Sse3      ,        ,3  ,SSE3     ,sse3
-instructionset     ,X86   ,Ssse3     ,        ,4  ,SSSE3    ,ssse3
-instructionset     ,X86   ,Sse41     ,        ,5  ,SSE41    ,sse4.1
-instructionset     ,X86   ,Sse42     ,        ,6  ,SSE42    ,sse4.2
-instructionset     ,X86   ,Avx       ,        ,7  ,AVX      ,avx
-instructionset     ,X86   ,Avx2      ,        ,8  ,AVX2     ,avx2
-instructionset     ,X86   ,Aes       ,        ,9  ,AES      ,aes
-instructionset     ,X86   ,Bmi1      ,        ,10 ,BMI1     ,bmi
-instructionset     ,X86   ,Bmi2      ,        ,11 ,BMI2     ,bmi2
-instructionset     ,X86   ,Fma       ,        ,12 ,FMA      ,fma
-instructionset     ,X86   ,Lzcnt     ,        ,13 ,LZCNT    ,lzcnt
-instructionset     ,X86   ,Pclmulqdq ,        ,14 ,PCLMULQDQ,pclmul
-instructionset     ,X86   ,Popcnt    ,        ,15 ,POPCNT   ,popcnt
-instructionset     ,X86   ,          ,        ,   ,Vector128,
-instructionset     ,X86   ,          ,        ,   ,Vector256,
-instructionset     ,X86   ,          ,        ,   ,Vector512,
-instructionset     ,X86   ,AvxVnni   ,        ,25 ,AVXVNNI  ,avxvnni
-instructionset     ,X86   ,Movbe     ,        ,27 ,MOVBE    ,movbe
-instructionset     ,X86   ,X86Serialize ,     ,28 ,X86Serialize  ,serialize
-instructionset     ,X86   ,Avx512F   ,        ,29 ,AVX512F  ,avx512f
-instructionset     ,X86   ,Avx512F_VL,        ,30 ,AVX512F_VL  ,avx512f_vl
-instructionset     ,X86   ,Avx512BW  ,        ,31 ,AVX512BW ,avx512bw
-instructionset     ,X86   ,Avx512BW_VL,       ,32 ,AVX512BW_VL  ,avx512bw_vl
-instructionset     ,X86   ,Avx512CD  ,        ,33 ,AVX512CD ,avx512cd
-instructionset     ,X86   ,Avx512CD_VL,       ,34 ,AVX512CD_VL  ,avx512cd_vl
-instructionset     ,X86   ,Avx512DQ  ,        ,35 ,AVX512DQ ,avx512dq
-instructionset     ,X86   ,Avx512DQ_VL,       ,36 ,AVX512DQ_VL  ,avx512dq_vl
+instructionset     ,X86   ,X86Base              ,        ,22 ,X86Base               ,base
+instructionset     ,X86   ,Sse                  ,        ,1  ,SSE                   ,sse
+instructionset     ,X86   ,Sse2                 ,        ,2  ,SSE2                  ,sse2
+instructionset     ,X86   ,Sse3                 ,        ,3  ,SSE3                  ,sse3
+instructionset     ,X86   ,Ssse3                ,        ,4  ,SSSE3                 ,ssse3
+instructionset     ,X86   ,Sse41                ,        ,5  ,SSE41                 ,sse4.1
+instructionset     ,X86   ,Sse42                ,        ,6  ,SSE42                 ,sse4.2
+instructionset     ,X86   ,Avx                  ,        ,7  ,AVX                   ,avx
+instructionset     ,X86   ,Avx2                 ,        ,8  ,AVX2                  ,avx2
+instructionset     ,X86   ,Aes                  ,        ,9  ,AES                   ,aes
+instructionset     ,X86   ,Bmi1                 ,        ,10 ,BMI1                  ,bmi
+instructionset     ,X86   ,Bmi2                 ,        ,11 ,BMI2                  ,bmi2
+instructionset     ,X86   ,Fma                  ,        ,12 ,FMA                   ,fma
+instructionset     ,X86   ,Lzcnt                ,        ,13 ,LZCNT                 ,lzcnt
+instructionset     ,X86   ,Pclmulqdq            ,        ,14 ,PCLMULQDQ             ,pclmul
+instructionset     ,X86   ,Popcnt               ,        ,15 ,POPCNT                ,popcnt
+instructionset     ,X86   ,                     ,        ,   ,Vector128             ,
+instructionset     ,X86   ,                     ,        ,   ,Vector256             ,
+instructionset     ,X86   ,                     ,        ,   ,Vector512             ,
+instructionset     ,X86   ,AvxVnni              ,        ,25 ,AVXVNNI               ,avxvnni
+instructionset     ,X86   ,Movbe                ,        ,27 ,MOVBE                 ,movbe
+instructionset     ,X86   ,X86Serialize         ,        ,28 ,X86Serialize          ,serialize
+instructionset     ,X86   ,Avx512F              ,        ,29 ,AVX512F               ,avx512f
+instructionset     ,X86   ,Avx512F_VL           ,        ,30 ,AVX512F_VL            ,avx512f_vl
+instructionset     ,X86   ,Avx512BW             ,        ,31 ,AVX512BW              ,avx512bw
+instructionset     ,X86   ,Avx512BW_VL          ,        ,32 ,AVX512BW_VL           ,avx512bw_vl
+instructionset     ,X86   ,Avx512CD             ,        ,33 ,AVX512CD              ,avx512cd
+instructionset     ,X86   ,Avx512CD_VL          ,        ,34 ,AVX512CD_VL           ,avx512cd_vl
+instructionset     ,X86   ,Avx512DQ             ,        ,35 ,AVX512DQ              ,avx512dq
+instructionset     ,X86   ,Avx512DQ_VL          ,        ,36 ,AVX512DQ_VL           ,avx512dq_vl
+instructionset     ,X86   ,Avx512Vbmi           ,        ,37 ,AVX512VBMI            ,avx512vbmi
+instructionset     ,X86   ,Avx512Vbmi_VL        ,        ,38 ,AVX512VBMI_VL         ,avx512vbmi_vl
+
 
 instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,SSE
@@ -83,41 +86,44 @@ instructionset64bit,X86   ,AVX512CD
 instructionset64bit,X86   ,AVX512CD_VL
 instructionset64bit,X86   ,AVX512DQ
 instructionset64bit,X86   ,AVX512DQ_VL
+instructionset64bit,X86   ,AVX512VBMI
+instructionset64bit,X86   ,AVX512VBMI_VL
 
 vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256
 vectorinstructionset,X86  ,Vector512
 
-implication        ,X86   ,SSE       ,X86Base
-implication        ,X86   ,SSE2      ,SSE
-implication        ,X86   ,SSE3      ,SSE2
-implication        ,X86   ,SSSE3     ,SSE3
-implication        ,X86   ,SSE41     ,SSSE3
-implication        ,X86   ,SSE42     ,SSE41
-implication        ,X86   ,AVX       ,SSE42
-implication        ,X86   ,AVX2      ,AVX
-implication        ,X86   ,AES       ,SSE2
-implication        ,X86   ,BMI1      ,AVX
-implication        ,X86   ,BMI2      ,AVX
-implication        ,X86   ,FMA       ,AVX
-implication        ,X86   ,LZCNT     ,X86Base
-implication        ,X86   ,PCLMULQDQ ,SSE2
-implication        ,X86   ,POPCNT    ,SSE42
-implication        ,X86   ,Vector128 ,SSE
-implication        ,X86   ,Vector256 ,AVX
-implication        ,X86   ,Vector512 ,AVX512F
-implication        ,X86   ,AVXVNNI   ,AVX2
-implication        ,X86   ,MOVBE     ,SSE42
-implication        ,X86   ,X86Serialize, X86Base
-
-implication        ,X86   ,AVX512F,   AVX2
-implication        ,X86   ,AVX512F_VL,AVX512F
-implication        ,X86   ,AVX512CD,  AVX512F
-implication        ,X86   ,AVX512CD_VL,  AVX512F_VL
-implication        ,X86   ,AVX512BW,  AVX512F
-implication        ,X86   ,AVX512BW_VL,  AVX512F_VL
-implication        ,X86   ,AVX512DQ,  AVX512F
-implication        ,X86   ,AVX512DQ_VL,  AVX512F_VL
+implication        ,X86   ,SSE                  ,X86Base
+implication        ,X86   ,SSE2                 ,SSE
+implication        ,X86   ,SSE3                 ,SSE2
+implication        ,X86   ,SSSE3                ,SSE3
+implication        ,X86   ,SSE41                ,SSSE3
+implication        ,X86   ,SSE42                ,SSE41
+implication        ,X86   ,AVX                  ,SSE42
+implication        ,X86   ,AVX2                 ,AVX
+implication        ,X86   ,AES                  ,SSE2
+implication        ,X86   ,BMI1                 ,AVX
+implication        ,X86   ,BMI2                 ,AVX
+implication        ,X86   ,FMA                  ,AVX
+implication        ,X86   ,LZCNT                ,X86Base
+implication        ,X86   ,PCLMULQDQ            ,SSE2
+implication        ,X86   ,POPCNT               ,SSE42
+implication        ,X86   ,Vector128            ,SSE
+implication        ,X86   ,Vector256            ,AVX
+implication        ,X86   ,Vector512            ,AVX512F
+implication        ,X86   ,AVXVNNI              ,AVX2
+implication        ,X86   ,MOVBE                ,SSE42
+implication        ,X86   ,X86Serialize         ,X86Base
+implication        ,X86   ,AVX512F              ,AVX2
+implication        ,X86   ,AVX512F_VL           ,AVX512F
+implication        ,X86   ,AVX512CD             ,AVX512F
+implication        ,X86   ,AVX512CD_VL          ,AVX512F_VL
+implication        ,X86   ,AVX512BW             ,AVX512F
+implication        ,X86   ,AVX512BW_VL          ,AVX512F_VL
+implication        ,X86   ,AVX512DQ             ,AVX512F
+implication        ,X86   ,AVX512DQ_VL          ,AVX512F_VL
+implication        ,X86   ,AVX512VBMI           ,AVX512BW
+implication        ,X86   ,AVX512VBMI_VL        ,AVX512BW_VL
 
 ; Definition of X64 instruction sets
 definearch         ,X64   ,64Bit     ,X64

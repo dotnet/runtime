@@ -7,14 +7,14 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit
 {
-    // TODO: Only support simple signatures. More complex signatures will be added.
+    // TODO: Only support simple signatures. More complex signatures (generics, array, byref, pointers etc) will be added.
     internal static class MetadataSignatureHelper
     {
         internal static BlobBuilder FieldSignatureEncoder(Type fieldType, ModuleBuilderImpl module)
         {
             BlobBuilder fieldSignature = new();
 
-            WriteSignatureTypeForReflectionType(new BlobEncoder(fieldSignature).FieldSignature(), fieldType, module);
+            WriteSignatureForType(new BlobEncoder(fieldSignature).FieldSignature(), fieldType, module);
 
             return fieldSignature;
         }
@@ -33,7 +33,7 @@ namespace System.Reflection.Emit
 
             if (returnType != null && returnType != module.GetTypeFromCoreAssembly(CoreTypeId.Void))
             {
-                WriteSignatureTypeForReflectionType(retEncoder.Type(), returnType, module);
+                WriteSignatureForType(retEncoder.Type(), returnType, module);
             }
             else // If null mark ReturnTypeEncoder as void
             {
@@ -44,71 +44,74 @@ namespace System.Reflection.Emit
             {
                 foreach (Type parameter in parameters)
                 {
-                    WriteSignatureTypeForReflectionType(parEncoder.AddParameter().Type(), parameter, module);
+                    WriteSignatureForType(parEncoder.AddParameter().Type(), parameter, module);
                 }
             }
 
             return methodSignature;
         }
 
-        private static void WriteSignatureTypeForReflectionType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
+        private static void WriteSignatureForType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
         {
             CoreTypeId? typeId = module.GetTypeIdFromCoreTypes(type);
 
-            // We need to translate from Reflection.Type to SignatureTypeEncoder.
             switch (typeId)
             {
                 case CoreTypeId.Boolean:
                     signature.Boolean();
-                    break;
+                    return;
                 case CoreTypeId.Byte:
                     signature.Byte();
-                    break;
+                    return;
                 case CoreTypeId.SByte:
                     signature.SByte();
-                    break;
+                    return;
                 case CoreTypeId.Char:
                     signature.Char();
-                    break;
+                    return;
                 case CoreTypeId.Int16:
                     signature.Int16();
-                    break;
+                    return;
                 case CoreTypeId.UInt16:
                     signature.UInt16();
-                    break;
+                    return;
                 case CoreTypeId.Int32:
                     signature.Int32();
-                    break;
+                    return;
                 case CoreTypeId.UInt32:
                     signature.UInt32();
-                    break;
+                    return;
                 case CoreTypeId.Int64:
                     signature.Int64();
-                    break;
+                    return;
                 case CoreTypeId.UInt64:
                     signature.UInt64();
-                    break;
+                    return;
                 case CoreTypeId.Single:
                     signature.Single();
-                    break;
+                    return;
                 case CoreTypeId.Double:
                     signature.Double();
-                    break;
+                    return;
                 case CoreTypeId.IntPtr:
                     signature.IntPtr();
-                    break;
+                    return;
                 case CoreTypeId.UIntPtr:
                     signature.UIntPtr();
-                    break;
+                    return;
                 case CoreTypeId.Object:
                     signature.Object();
-                    break;
+                    return;
                 case CoreTypeId.String:
                     signature.String();
-                    break;
-                default:
-                    throw new NotSupportedException(SR.Format(SR.NotSupported_Signature, type.FullName));
+                    return;
+                case CoreTypeId.TypedReference:
+                    signature.Builder.WriteByte((byte)SignatureTypeCode.TypedReference);
+                    return;
             }
+
+            EntityHandle typeHandle = module.GetTypeHandle(type);
+            signature.Type(typeHandle, type.IsValueType);
         }
     }
 
@@ -131,5 +134,6 @@ namespace System.Reflection.Emit
         String,
         IntPtr,
         UIntPtr,
+        TypedReference,
     }
 }
