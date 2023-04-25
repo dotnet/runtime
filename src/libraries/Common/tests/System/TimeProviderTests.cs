@@ -409,6 +409,36 @@ namespace Tests.System
 #endif // !NETFRAMEWORK
         }
 
+#if TESTEXTENSIONS
+        [Fact]
+        public static void InvokeCallbackFromCreateTimer()
+        {
+            TimeProvider p = new InvokeCallbackCreateTimerProvider();
+
+            CancellationTokenSource cts = p.CreateCancellationTokenSource(TimeSpan.FromSeconds(0));
+            Assert.True(cts.IsCancellationRequested);
+
+            Task t = p.Delay(TimeSpan.FromSeconds(0));
+            Assert.True(t.IsCompleted);
+
+            t = new TaskCompletionSource<bool>().Task.WaitAsync(TimeSpan.FromSeconds(0), p);
+            Assert.True(t.IsFaulted);
+        }
+
+        class InvokeCallbackCreateTimerProvider : TimeProvider
+        {
+            public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+            {
+                ITimer t = base.CreateTimer(callback, state, dueTime, period);
+                if (dueTime != Timeout.InfiniteTimeSpan)
+                {
+                    callback(state);
+                }
+                return t;
+            }
+        }
+#endif
+
         class TimerState
         {
             public TimerState()
