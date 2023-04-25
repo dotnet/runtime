@@ -17846,11 +17846,30 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vcvttpd2qq:
         case INS_vcvttpd2uqq:
         case INS_vcvtuqq2pd:
-        case INS_vpmovdw:
-        case INS_vpmovqd:
-        case INS_vpmovwb:
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency += PERFSCORE_LATENCY_4C;
+            break;
+
+        case INS_vpmovdb:
+        case INS_vpmovdw:
+        case INS_vpmovqb:
+        case INS_vpmovqd:
+        case INS_vpmovqw:
+        case INS_vpmovsdb:
+        case INS_vpmovsdw:
+        case INS_vpmovsqb:
+        case INS_vpmovsqd:
+        case INS_vpmovsqw:
+        case INS_vpmovswb:
+        case INS_vpmovusdb:
+        case INS_vpmovusdw:
+        case INS_vpmovusqb:
+        case INS_vpmovusqd:
+        case INS_vpmovusqw:
+        case INS_vpmovuswb:
+        case INS_vpmovwb:
+            result.insThroughput = PERFSCORE_THROUGHPUT_2C;
+            result.insLatency += (opSize == EA_16BYTE) ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_4C;
             break;
 
         case INS_haddps:
