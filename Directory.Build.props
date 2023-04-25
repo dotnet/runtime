@@ -207,7 +207,7 @@
 
     <!-- source-build sets PackageOS to build with non-portable rid packages that were source-built previously. -->
     <PackageRID Condition="'$(PackageOS)' != ''">$(PackageOS)-$(TargetArchitecture)</PackageRID>
-    <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
+    <PackageRID Condition="'$(PackageRID)' == ''">$(_packageOS)-$(TargetArchitecture)</PackageRID>
   </PropertyGroup>
 
   <!-- ToolsRID is used for packages needed on the build host. -->
