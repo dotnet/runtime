@@ -581,7 +581,6 @@ void emitter::emitIns_R_R(
         assert(isFloatReg(reg2));
         code |= reg1 << 7;
         code |= (reg2 & 0x1f) << 15;
-        // TODO-RISCV64-CQ: Check rounding mode
         code |= 0x1 << 12;
     }
     else if (INS_fmv_w_x == ins || INS_fmv_d_x == ins)
@@ -598,7 +597,6 @@ void emitter::emitIns_R_R(
         assert(isGeneralRegisterOrR0(reg2));
         code |= (reg1 & 0x1f) << 7;
         code |= reg2 << 15;
-        // TODO-RISCV64-CQ: Check rounding mode
         code |= 0x7 << 12;
     }
     else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins)
@@ -607,7 +605,6 @@ void emitter::emitIns_R_R(
         assert(isFloatReg(reg2));
         code |= (reg1 & 0x1f) << 7;
         code |= (reg2 & 0x1f) << 15;
-        // TODO-RISCV64-CQ: Check rounding mode
         code |= 0x7 << 12;
     }
     else
@@ -768,7 +765,6 @@ void emitter::emitIns_R_R_R(
         code |= ((reg3 & 0x1f) << 20);
         if ((INS_fadd_s <= ins && INS_fsqrt_s >= ins) || (INS_fadd_d <= ins && INS_fsqrt_d >= ins))
         {
-            // TODO-RISCV64-CQ: Check rounding mode
             code |= 0x7 << 12;
         }
     }
