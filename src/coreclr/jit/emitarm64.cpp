@@ -11881,7 +11881,7 @@ SKIP_GC_UPDATE:
                     assert(idPair->idReg3() == REG_SP);
                 }
                 assert(varNum2 != -1);
-                // assert((varNum == varNum2) || (adr + ofs + size == adr2 + ofs2));
+// assert((varNum == varNum2) || (adr + ofs + size == adr2 + ofs2));
 
 #endif // DEBUG
             }
