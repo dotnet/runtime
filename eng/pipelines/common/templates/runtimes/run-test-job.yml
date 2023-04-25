@@ -653,6 +653,7 @@ jobs:
         inputs:
           artifactFeeds: public/dotnet-public-pypi
           onlyAddExtraIndex: false
+        condition: always()
 
       # Ensure the Python azure-storage-blob package is installed before doing the upload.
       - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
