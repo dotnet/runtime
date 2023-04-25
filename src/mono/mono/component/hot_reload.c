@@ -3020,6 +3020,7 @@ hot_reload_get_field (MonoClass *klass, uint32_t fielddef_token) {
 static MonoProperty *
 hot_reload_get_property (MonoClass *klass, uint32_t property_token)
 {
+	g_assert (m_class_get_class_kind (klass) != MONO_CLASS_GINST);
 	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (klass);
 	g_assert (mono_metadata_token_table (property_token) == MONO_TABLE_PROPERTY);
 	GSList *added_props = info->added_props;
@@ -3035,6 +3036,7 @@ hot_reload_get_property (MonoClass *klass, uint32_t property_token)
 static MonoEvent *
 hot_reload_get_event (MonoClass *klass, uint32_t event_token)
 {
+	g_assert (m_class_get_class_kind (klass) != MONO_CLASS_GINST);
 	MonoClassMetadataUpdateInfo *info = mono_class_get_or_add_metadata_update_info (klass);
 	g_assert (mono_metadata_token_table (event_token) == MONO_TABLE_EVENT);
 	GSList *added_events = info->added_events;
@@ -3166,7 +3168,6 @@ add_semantic_method_to_existing_property (MonoImage *image_base, BaselineInfo *b
 
 
 	g_assert (dest != NULL);
-	g_assert (*dest == NULL);
 
 	MonoMethod *method = mono_get_method_checked (image_base, method_token, klass, NULL, error);
 	mono_error_assert_ok (error);
@@ -3206,7 +3207,6 @@ add_semantic_method_to_existing_event (MonoImage *image_base, BaselineInfo *base
 	}
 
 	g_assert (dest != NULL);
-	g_assert (*dest == NULL);
 
 	MonoMethod *method = mono_get_method_checked (image_base, method_token, klass, NULL, error);
 	mono_error_assert_ok (error);
