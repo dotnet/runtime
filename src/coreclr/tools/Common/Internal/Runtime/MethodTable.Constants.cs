@@ -98,7 +98,10 @@ namespace Internal.Runtime
         /// </summary>
         CanonicalEEType = 0x00000000,
 
-        // unused = 0x00010000,
+        /// <summary>
+        /// Represents a function pointer
+        /// </summary>
+        FunctionPointerEEType = 0x00010000,
 
         /// <summary>
         /// Represents a parameterized type. For example a single dimensional array or pointer type
@@ -189,6 +192,7 @@ namespace Internal.Runtime
         ETF_DynamicTemplateType,
         ETF_GenericDefinition,
         ETF_GenericComposition,
+        ETF_FunctionPointerParameters,
         ETF_DynamicGcStatics,
         ETF_DynamicNonGcStatics,
         ETF_DynamicThreadStaticOffset,
@@ -231,6 +235,7 @@ namespace Internal.Runtime
         SzArray = 0x18,
         ByRef = 0x19,
         Pointer = 0x1A,
+        FunctionPointer = 0x1B,
     }
 
     internal enum EETypeOptionalFieldTag : byte
@@ -277,6 +282,12 @@ namespace Internal.Runtime
         // size for an actual array.
         public const int Pointer = 0;
         public const int ByRef = 1;
+    }
+
+    internal static class FunctionPointerFlags
+    {
+        public const uint IsUnmanaged = 0x80000000;
+        public const uint FlagsMask = IsUnmanaged;
     }
 
     internal static class StringComponentSize

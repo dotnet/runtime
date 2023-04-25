@@ -102,6 +102,13 @@ namespace System
     // left-padded with zeros to produce the number of digits given by the
     // precision specifier.
     //
+    // B b - Binary format. This format is
+    // supported for integral types only. The number is converted to a string of
+    // binary digits, '0' or '1'. The precision specifier indicates the minimum number
+    // of digits desired in the resulting string. If required, the number will be
+    // left-padded with zeros to produce the number of digits given by the
+    // precision specifier.
+    //
     // Some examples of standard format strings and their results are shown in the
     // table below. (The examples all assume a default NumberFormatInfo.)
     //
@@ -900,7 +907,7 @@ namespace System
             }
         }
 
-        private static char GetHexBase(char fmt)
+        internal static char GetHexBase(char fmt)
         {
             // The fmt-(X-A+10) hack has the effect of dictating whether we produce uppercase or lowercase
             // hex numbers for a-f. 'X' as the fmt code produces uppercase. 'x' as the format code produces lowercase.
@@ -933,6 +940,10 @@ namespace System
                 else if (fmtUpper == 'X')
                 {
                     return Int32ToHexStr(value & hexMask, GetHexBase(fmt), digits);
+                }
+                else if (fmtUpper == 'B')
+                {
+                    return UInt32ToBinaryStr((uint)(value & hexMask), digits);
                 }
                 else
                 {
@@ -989,6 +1000,10 @@ namespace System
                 {
                     return TryInt32ToHexStr(value & hexMask, GetHexBase(fmt), digits, destination, out charsWritten);
                 }
+                else if (fmtUpper == 'B')
+                {
+                    return TryUInt32ToBinaryStr((uint)(value & hexMask), digits, destination, out charsWritten);
+                }
                 else
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
@@ -1039,6 +1054,10 @@ namespace System
                 else if (fmtUpper == 'X')
                 {
                     return Int32ToHexStr((int)value, GetHexBase(fmt), digits);
+                }
+                else if (fmtUpper == 'B')
+                {
+                    return UInt32ToBinaryStr(value, digits);
                 }
                 else
                 {
@@ -1092,6 +1111,10 @@ namespace System
                 else if (fmtUpper == 'X')
                 {
                     return TryInt32ToHexStr((int)value, GetHexBase(fmt), digits, destination, out charsWritten);
+                }
+                else if (fmtUpper == 'B')
+                {
+                    return TryUInt32ToBinaryStr(value, digits, destination, out charsWritten);
                 }
                 else
                 {
@@ -1147,6 +1170,10 @@ namespace System
                 else if (fmtUpper == 'X')
                 {
                     return Int64ToHexStr(value, GetHexBase(fmt), digits);
+                }
+                else if (fmtUpper == 'B')
+                {
+                    return UInt64ToBinaryStr((ulong)value, digits);
                 }
                 else
                 {
@@ -1205,6 +1232,10 @@ namespace System
                 {
                     return TryInt64ToHexStr(value, GetHexBase(fmt), digits, destination, out charsWritten);
                 }
+                else if (fmtUpper == 'B')
+                {
+                    return TryUInt64ToBinaryStr((ulong)value, digits, destination, out charsWritten);
+                }
                 else
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
@@ -1255,6 +1286,10 @@ namespace System
                 else if (fmtUpper == 'X')
                 {
                     return Int64ToHexStr((long)value, GetHexBase(fmt), digits);
+                }
+                else if (fmtUpper == 'B')
+                {
+                    return UInt64ToBinaryStr(value, digits);
                 }
                 else
                 {
@@ -1308,6 +1343,10 @@ namespace System
                 else if (fmtUpper == 'X')
                 {
                     return TryInt64ToHexStr((long)value, GetHexBase(fmt), digits, destination, out charsWritten);
+                }
+                else if (fmtUpper == 'B')
+                {
+                    return TryUInt64ToBinaryStr(value, digits, destination, out charsWritten);
                 }
                 else
                 {
@@ -1366,6 +1405,10 @@ namespace System
                 {
                     return Int128ToHexStr(value, GetHexBase(fmt), digits);
                 }
+                else if (fmtUpper == 'B')
+                {
+                    return UInt128ToBinaryStr(value, digits);
+                }
                 else
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
@@ -1423,6 +1466,10 @@ namespace System
                 {
                     return TryInt128ToHexStr(value, GetHexBase(fmt), digits, destination, out charsWritten);
                 }
+                else if (fmtUpper == 'B')
+                {
+                    return TryUInt128ToBinaryStr(value, digits, destination, out charsWritten);
+                }
                 else
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
@@ -1476,6 +1523,10 @@ namespace System
                 {
                     return Int128ToHexStr((Int128)value, GetHexBase(fmt), digits);
                 }
+                else if (fmtUpper == 'B')
+                {
+                    return UInt128ToBinaryStr((Int128)value, digits);
+                }
                 else
                 {
                     NumberFormatInfo info = NumberFormatInfo.GetInstance(provider);
@@ -1528,6 +1579,10 @@ namespace System
                 else if (fmtUpper == 'X')
                 {
                     return TryInt128ToHexStr((Int128)value, GetHexBase(fmt), digits, destination, out charsWritten);
+                }
+                else if (fmtUpper == 'B')
+                {
+                    return TryUInt128ToBinaryStr((Int128)value, digits, destination, out charsWritten);
                 }
                 else
                 {
@@ -1620,7 +1675,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryNegativeInt32ToDecStr<TChar>(int value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryNegativeInt32ToDecStr<TChar>(int value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value < 0);
@@ -1669,7 +1724,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryInt32ToHexStr<TChar>(int value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryInt32ToHexStr<TChar>(int value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -1704,6 +1759,61 @@ namespace System
                 byte digit = (byte)(value & 0xF);
                 *(--buffer) = TChar.CastFrom(digit + (digit < 10 ? (byte)'0' : hexBase));
                 value >>= 4;
+            }
+            return buffer;
+        }
+
+        private static unsafe string UInt32ToBinaryStr(uint value, int digits)
+        {
+            if (digits < 1)
+            {
+                digits = 1;
+            }
+
+            int bufferLength = Math.Max(digits, 32 - (int)uint.LeadingZeroCount(value));
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
+            {
+                char* p = UInt32ToBinaryChars(buffer + bufferLength, value, digits);
+                Debug.Assert(p == buffer);
+            }
+            return result;
+        }
+
+        private static unsafe bool TryUInt32ToBinaryStr<TChar>(uint value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            if (digits < 1)
+            {
+                digits = 1;
+            }
+
+            int bufferLength = Math.Max(digits, 32 - (int)uint.LeadingZeroCount(value));
+            if (bufferLength > destination.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            charsWritten = bufferLength;
+            fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
+            {
+                TChar* p = UInt32ToBinaryChars(buffer + bufferLength, value, digits);
+                Debug.Assert(p == buffer);
+            }
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe TChar* UInt32ToBinaryChars<TChar>(TChar* buffer, uint value, int digits) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            while (--digits >= 0 || value != 0)
+            {
+                *(--buffer) = TChar.CastFrom('0' + (byte)(value & 0x1));
+                value >>= 1;
             }
             return buffer;
         }
@@ -1889,7 +1999,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryUInt32ToDecStr<TChar>(uint value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryUInt32ToDecStr<TChar>(uint value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -1909,7 +2019,7 @@ namespace System
             return false;
         }
 
-        private static unsafe bool TryUInt32ToDecStr<TChar>(uint value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryUInt32ToDecStr<TChar>(uint value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -1998,7 +2108,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryNegativeInt64ToDecStr<TChar>(long value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryNegativeInt64ToDecStr<TChar>(long value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value < 0);
@@ -2047,7 +2157,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryInt64ToHexStr<TChar>(long value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryInt64ToHexStr<TChar>(long value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2097,6 +2207,77 @@ namespace System
                 byte digit = (byte)(value & 0xF);
                 *(--buffer) = TChar.CastFrom(digit + (digit < 10 ? (byte)'0' : hexBase));
                 value >>= 4;
+            }
+            return buffer;
+#endif
+        }
+
+        private static unsafe string UInt64ToBinaryStr(ulong value, int digits)
+        {
+            if (digits < 1)
+            {
+                digits = 1;
+            }
+
+            int bufferLength = Math.Max(digits, 64 - (int)ulong.LeadingZeroCount(value));
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
+            {
+                char* p = UInt64ToBinaryChars(buffer + bufferLength, value, digits);
+                Debug.Assert(p == buffer);
+            }
+            return result;
+        }
+
+        private static unsafe bool TryUInt64ToBinaryStr<TChar>(ulong value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            if (digits < 1)
+            {
+                digits = 1;
+            }
+
+            int bufferLength = Math.Max(digits, 64 - (int)ulong.LeadingZeroCount(value));
+            if (bufferLength > destination.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            charsWritten = bufferLength;
+            fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
+            {
+                TChar* p = UInt64ToBinaryChars(buffer + bufferLength, value, digits);
+                Debug.Assert(p == buffer);
+            }
+            return true;
+        }
+
+#if TARGET_64BIT
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+        private static unsafe TChar* UInt64ToBinaryChars<TChar>(TChar* buffer, ulong value, int digits) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+#if TARGET_32BIT
+            uint lower = (uint)value;
+            uint upper = (uint)(value >> 32);
+
+            if (upper != 0)
+            {
+                buffer = UInt32ToBinaryChars(buffer, lower, 32);
+                return UInt32ToBinaryChars(buffer, upper, digits - 32);
+            }
+            else
+            {
+                return UInt32ToBinaryChars(buffer, lower, Math.Max(digits, 1));
+            }
+#else
+            while (--digits >= 0 || value != 0)
+            {
+                *(--buffer) = TChar.CastFrom('0' + (byte)(value & 0x1));
+                value >>= 1;
             }
             return buffer;
 #endif
@@ -2246,7 +2427,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
@@ -2267,7 +2448,7 @@ namespace System
             return false;
         }
 
-        private static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        internal static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
             int countedDigits = FormattingHelpers.CountDigits(value);
             int bufferLength = Math.Max(digits, countedDigits);
@@ -2449,6 +2630,69 @@ namespace System
             else
             {
                 return Int64ToHexChars(buffer, lower, hexBase, Math.Max(digits, 1));
+            }
+        }
+
+        private static unsafe string UInt128ToBinaryStr(Int128 value, int digits)
+        {
+            if (digits < 1)
+            {
+                digits = 1;
+            }
+
+            UInt128 uValue = (UInt128)value;
+
+            int bufferLength = Math.Max(digits, 128 - (int)UInt128.LeadingZeroCount((UInt128)value));
+            string result = string.FastAllocateString(bufferLength);
+            fixed (char* buffer = result)
+            {
+                char* p = UInt128ToBinaryChars(buffer + bufferLength, uValue, digits);
+                Debug.Assert(p == buffer);
+            }
+            return result;
+        }
+
+        private static unsafe bool TryUInt128ToBinaryStr<TChar>(Int128 value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            if (digits < 1)
+            {
+                digits = 1;
+            }
+
+            UInt128 uValue = (UInt128)value;
+
+            int bufferLength = Math.Max(digits, 128 - (int)UInt128.LeadingZeroCount((UInt128)value));
+            if (bufferLength > destination.Length)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
+            charsWritten = bufferLength;
+            fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
+            {
+                TChar* p = UInt128ToBinaryChars(buffer + bufferLength, uValue, digits);
+                Debug.Assert(p == buffer);
+            }
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe TChar* UInt128ToBinaryChars<TChar>(TChar* buffer, UInt128 value, int digits) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            ulong lower = value.Lower;
+            ulong upper = value.Upper;
+
+            if (upper != 0)
+            {
+                buffer = UInt64ToBinaryChars(buffer, lower, 64);
+                return UInt64ToBinaryChars(buffer, upper, digits - 64);
+            }
+            else
+            {
+                return UInt64ToBinaryChars(buffer, lower, Math.Max(digits, 1));
             }
         }
 

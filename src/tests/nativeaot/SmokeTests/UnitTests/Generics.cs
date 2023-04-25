@@ -55,6 +55,7 @@ class Generics
         TestMDArrayAddressMethod.Run();
         TestNativeLayoutGeneration.Run();
         TestByRefLikeVTables.Run();
+        TestFunctionPointerLoading.Run();
 
         return 100;
     }
@@ -2431,6 +2432,97 @@ class Generics
             RefStruct<string> r = default;
             if (r.ToString() != "System.String")
                 throw new Exception();
+        }
+    }
+
+    class TestFunctionPointerLoading
+    {
+        interface IFace
+        {
+            Type GrabManagedFnptr();
+            Type GrabManagedRefFnptr();
+            Type GrabUnmanagedFnptr();
+            Type GrabUnmanagedStdcallFnptr();
+            Type GrabUnmanagedStdcallSuppressGCFnptr();
+            Array GetFunctionPointerArray();
+            Array GetFunctionPointerMdArray();
+            Type GrabManagedFnptrOverAlsoGen();
+            Type GrabManagedFnptrOverAlsoAlsoGen();
+        }
+
+        unsafe class Gen<T> : IFace
+        {
+            public Type GrabManagedFnptr() => typeof(delegate*<T>);
+            public Type GrabManagedRefFnptr() => typeof(delegate*<ref T>);
+            public Type GrabUnmanagedFnptr() => typeof(delegate* unmanaged<T>);
+            public Type GrabUnmanagedStdcallFnptr() => typeof(delegate* unmanaged[Stdcall]<T>);
+            public Type GrabUnmanagedStdcallSuppressGCFnptr() => typeof(delegate* unmanaged[Stdcall, SuppressGCTransition]<T>);
+            public Array GetFunctionPointerArray() => new delegate*<T[,]>[1];
+            public Array GetFunctionPointerMdArray() => new delegate*<T[,]>[1, 1];
+            public Type GrabManagedFnptrOverAlsoGen() => typeof(delegate*<MyGen<T>, AlsoGen<T>>);
+            public Type GrabManagedFnptrOverAlsoAlsoGen() => typeof(delegate*<AlsoAlsoGen<T>, MyGen<T>>);
+        }
+
+        class MyGen<T> { }
+
+        class AlsoGen<T> { }
+
+        class AlsoAlsoGen<T> { }
+
+        class Atom { }
+
+        static Type s_atomType = typeof(Atom);
+
+        public static void Run()
+        {
+            var o = (IFace)Activator.CreateInstance(typeof(Gen<>).MakeGenericType(s_atomType));
+
+            {
+                Type t = o.GrabManagedFnptr();
+                if (!t.IsFunctionPointer || t.GetFunctionPointerReturnType() != typeof(Atom) || t.IsUnmanagedFunctionPointer)
+                    throw new Exception();
+            }
+
+            {
+                Type t = o.GrabManagedRefFnptr();
+                if (!t.IsFunctionPointer || t.GetFunctionPointerReturnType() != typeof(Atom).MakeByRefType() || t.IsUnmanagedFunctionPointer)
+                    throw new Exception();
+            }
+
+            {
+                Type t = o.GrabUnmanagedFnptr();
+                if (!t.IsFunctionPointer || t.GetFunctionPointerReturnType() != typeof(Atom) || !t.IsUnmanagedFunctionPointer)
+                    throw new Exception();
+
+                if (t != o.GrabUnmanagedStdcallFnptr() || t != o.GrabUnmanagedStdcallSuppressGCFnptr())
+                    throw new Exception();
+            }
+
+            {
+                Array arr = o.GetFunctionPointerArray();
+                if (!arr.GetType().GetElementType().IsFunctionPointer)
+                    throw new Exception();
+            }
+
+            {
+                Array arr = o.GetFunctionPointerMdArray();
+                if (!arr.GetType().GetElementType().IsFunctionPointer)
+                    throw new Exception();
+            }
+
+            {
+                Type t = o.GrabManagedFnptrOverAlsoGen();
+                if (!t.IsFunctionPointer
+                    || t.GetFunctionPointerReturnType().GetGenericTypeDefinition() != typeof(AlsoGen<>)
+                    || t.GetFunctionPointerReturnType().GetGenericArguments()[0] != typeof(Atom))
+                    throw new Exception();
+            }
+
+            {
+                Type t = o.GrabManagedFnptrOverAlsoAlsoGen();
+                if (!t.TypeHandle.Equals(typeof(delegate*<AlsoAlsoGen<Atom>, MyGen<Atom>>).TypeHandle))
+                    throw new Exception();
+            }
         }
     }
 

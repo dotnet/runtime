@@ -55,8 +55,7 @@
     <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">FEATURE_COMINTEROP;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
-    <FeatureComWrappers>false</FeatureComWrappers>
-    <FeatureComWrappers Condition="'$(TargetsWindows)' == 'true'">true</FeatureComWrappers>
+    <FeatureComWrappers>true</FeatureComWrappers>
   </PropertyGroup>
   <PropertyGroup>
     <FeatureObjCMarshal>false</FeatureObjCMarshal>

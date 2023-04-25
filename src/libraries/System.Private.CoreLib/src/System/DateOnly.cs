@@ -772,7 +772,7 @@ namespace System
                 }
             }
 
-            DateTimeFormat.IsValidCustomDateFormat(format.AsSpan(), throwOnError: true);
+            DateTimeFormat.IsValidCustomDateOnlyFormat(format.AsSpan(), throwOnError: true);
             return DateTimeFormat.Format(GetEquivalentDateTime(), format, provider);
         }
 
@@ -820,7 +820,7 @@ namespace System
                 }
             }
 
-            if (!DateTimeFormat.IsValidCustomDateFormat(format, throwOnError: false))
+            if (!DateTimeFormat.IsValidCustomDateOnlyFormat(format, throwOnError: false))
             {
                 throw new FormatException(SR.Format(SR.Format_DateTimeOnlyContainsNoneDateParts, format.ToString(), nameof(DateOnly)));
             }

@@ -9141,6 +9141,15 @@ HRESULT ProfToEEInterfaceImpl::GetObjectGeneration(ObjectID objectId,
 
     IGCHeap *hp = GCHeapUtilities::GetGCHeap();
 
+    if (hp->IsInFrozenSegment((Object*)objectId))
+    {
+        range->generation = (COR_PRF_GC_GENERATION)INT32_MAX;
+        range->rangeStart = 0;
+        range->rangeLength = 0;
+        range->rangeLengthReserved = 0;
+        return CORPROF_E_NOT_GC_OBJECT;
+    }
+
     uint8_t* pStart;
     uint8_t* pAllocated;
     uint8_t* pReserved;

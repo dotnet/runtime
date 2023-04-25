@@ -48,7 +48,6 @@
               ;RuntimeIdentifier=$(PackageRID)
               ;NativeAotSupported=$(NativeAotSupported)
               ;CoreCLRArtifactsPath=$(CoreCLRArtifactsPath)
-              ;StripSymbols=true
               ;ObjCopyName=$(ObjCopyName)
               ;R2ROverridePath=$(MSBuildThisFileDirectory)ReadyToRun.targets">
       <Output TaskParameter="TargetOutputs"

@@ -4,6 +4,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -220,5 +221,15 @@ namespace System.Runtime.InteropServices.JavaScript
             Function = 4,
             Uint8Array = 11,
         }
+
+#if FEATURE_WASM_THREADS
+        public static void ThrowIfLegacyWorkerThread()
+        {
+            if (Thread.CurrentThread.ManagedThreadId != 1)
+            {
+                throw new PlatformNotSupportedException("Legacy interop is not supported with WebAssembly threads.");
+            }
+        }
+#endif
     }
 }

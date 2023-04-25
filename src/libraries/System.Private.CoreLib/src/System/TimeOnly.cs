@@ -945,7 +945,7 @@ namespace System
                 }
             }
 
-            DateTimeFormat.IsValidCustomTimeFormat(format.AsSpan(), throwOnError: true);
+            DateTimeFormat.IsValidCustomTimeOnlyFormat(format.AsSpan(), throwOnError: true);
             return DateTimeFormat.Format(ToDateTime(), format, provider);
         }
 
@@ -991,7 +991,7 @@ namespace System
                 }
             }
 
-            if (!DateTimeFormat.IsValidCustomTimeFormat(format, throwOnError: false))
+            if (!DateTimeFormat.IsValidCustomTimeOnlyFormat(format, throwOnError: false))
             {
                 throw new FormatException(SR.Format(SR.Format_DateTimeOnlyContainsNoneDateParts, format.ToString(), nameof(TimeOnly)));
             }

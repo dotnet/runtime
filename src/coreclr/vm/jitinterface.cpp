@@ -980,8 +980,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 EnsureActive(th, pMD);
             }
         }
-        else
-        if (pFD != NULL)
+        else if (pFD != NULL)
         {
             if ((tkType != mdtFieldDef) && (tkType != mdtMemberRef))
                 ThrowBadTokenException(pResolvedToken);
@@ -1021,7 +1020,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     }
     else
     {
-        unsigned metaTOK = pResolvedToken->token;
+        mdToken metaTOK = pResolvedToken->token;
         Module * pModule = (Module *)pResolvedToken->tokenScope;
 
         switch (TypeFromToken(metaTOK))
@@ -1533,9 +1532,18 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
             if (pFieldMT->IsSharedByGenericInstantiations())
             {
-                fieldAccessor = CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
+                if (pField->IsEnCNew())
+                {
+                    fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
 
-                pResult->helper = getGenericStaticsHelper(pField);
+                    pResult->helper = CORINFO_HELP_GETSTATICFIELDADDR;
+                }
+                else
+                {
+                    fieldAccessor = CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
+
+                    pResult->helper = getGenericStaticsHelper(pField);
+                }
             }
             else
             if (pFieldMT->GetModule()->IsSystem() && (flags & CORINFO_ACCESS_GET) &&
@@ -1561,6 +1569,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
 
 #ifdef HOST_WINDOWS
+#ifndef TARGET_ARM
                 bool canOptimizeHelper = (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
                     (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE);
                 // For windows, we convert the TLS access to the optimized helper where we will store
@@ -1571,6 +1580,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
                     pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
                 }
+#endif // !TARGET_ARM
 #endif // HOST_WINDOWS
             }
             else

@@ -410,6 +410,50 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
+        public bool TryGetStaticFunctionPointerTypeForComponents(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle runtimeTypeHandle)
+        {
+            int hashCode = TypeHashingAlgorithms.ComputeMethodSignatureHashCode(returnTypeHandle.GetHashCode(), parameterHandles);
+
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+            {
+                if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.FunctionPointerTypeMap, out NativeReader fnPtrMapReader))
+                {
+                    NativeParser fnPtrMapParser = new NativeParser(fnPtrMapReader, 0);
+                    NativeHashtable fnPtrHashtable = new NativeHashtable(fnPtrMapParser);
+
+                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                    externalReferences.InitializeCommonFixupsTable(module);
+
+                    var lookup = fnPtrHashtable.Lookup(hashCode);
+                    NativeParser entryParser;
+                    while (!(entryParser = lookup.GetNext()).IsNull)
+                    {
+                        uint foundFnPtrTypeIndex = entryParser.GetUnsigned();
+                        RuntimeTypeHandle foundTypeHandle = externalReferences.GetRuntimeTypeHandleFromIndex(foundFnPtrTypeIndex);
+
+                        if (RuntimeAugments.GetFunctionPointerParameterCount(foundTypeHandle) != parameterHandles.Length)
+                            continue;
+
+                        if (!RuntimeAugments.GetFunctionPointerReturnType(foundTypeHandle).Equals(returnTypeHandle))
+                            continue;
+
+                        if (RuntimeAugments.IsUnmanagedFunctionPointerType(foundTypeHandle) != isUnmanaged)
+                            continue;
+
+                        for (int i = 0; i < parameterHandles.Length; i++)
+                            if (!parameterHandles[i].Equals(RuntimeAugments.GetFunctionPointerParameterType(foundTypeHandle, i)))
+                                continue;
+
+                        runtimeTypeHandle = foundTypeHandle;
+                        return true;
+                    }
+                }
+            }
+
+            runtimeTypeHandle = default;
+            return false;
+        }
+
         /// <summary>
         /// Locate the static constructor context given the runtime type handle (MethodTable) for the type in question.
         /// </summary>

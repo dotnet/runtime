@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 namespace System.Reflection
 {
@@ -64,15 +65,19 @@ namespace System.Reflection
                 }
             }
 
-            // Invoke the method.
             // For CallStack reasons, don't inline target method.
+            // Mono interpreter does not support\need this.
+            if (RuntimeFeature.IsDynamicCodeCompiled)
+            {
 #if MONO
-            il.Emit(OpCodes.Call, Methods.DisableInline());
+                il.Emit(OpCodes.Call, Methods.DisableInline());
 #else
-            il.Emit(OpCodes.Call, Methods.NextCallReturnAddress());
-            il.Emit(OpCodes.Pop);
+                il.Emit(OpCodes.Call, Methods.NextCallReturnAddress());
+                il.Emit(OpCodes.Pop);
 #endif
+            }
 
+            // Invoke the method.
             if (emitNew)
             {
                 il.Emit(OpCodes.Newobj, (ConstructorInfo)method);

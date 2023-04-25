@@ -2940,7 +2940,17 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         else // store into register (i.e move into register)
         {
             // Assign into targetReg when dataReg (from op1) is not the same register
-            inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
+            // Only zero/sign extend if we are using general registers.
+            if (varTypeIsIntegral(targetType) && emit->isGeneralRegister(targetReg) && emit->isGeneralRegister(dataReg))
+            {
+                // We use 'emitActualTypeSize' as the instructions require 8BYTE or 4BYTE.
+                inst_Mov_Extend(targetType, /* srcInReg */ true, targetReg, dataReg, /* canSkip */ true,
+                                emitActualTypeSize(targetType));
+            }
+            else
+            {
+                inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
+            }
         }
         genUpdateLifeStore(lclNode, targetReg, varDsc);
     }
@@ -3359,13 +3369,40 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     // The src must be a register.
     if (tree->OperIs(GT_NEG) && operand->isContained())
     {
-        ins          = INS_mneg;
-        GenTree* op1 = tree->gtGetOp1();
-        GenTree* a   = op1->gtGetOp1();
-        GenTree* b   = op1->gtGetOp2();
-        genConsumeRegs(op1);
-        assert(op1->OperGet() == GT_MUL);
-        GetEmitter()->emitIns_R_R_R(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum());
+        genTreeOps oper = operand->OperGet();
+        switch (oper)
+        {
+            case GT_MUL:
+            {
+                ins          = INS_mneg;
+                GenTree* op1 = tree->gtGetOp1();
+                GenTree* a   = op1->gtGetOp1();
+                GenTree* b   = op1->gtGetOp2();
+                genConsumeRegs(op1);
+                GetEmitter()->emitIns_R_R_R(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum());
+            }
+            break;
+
+            case GT_LSH:
+            case GT_RSH:
+            case GT_RSZ:
+            {
+                assert(ins == INS_neg || ins == INS_negs);
+                assert(operand->gtGetOp2()->IsCnsIntOrI());
+                assert(operand->gtGetOp2()->isContained());
+
+                GenTree* op1 = tree->gtGetOp1();
+                GenTree* a   = op1->gtGetOp1();
+                GenTree* b   = op1->gtGetOp2();
+                genConsumeRegs(op1);
+                GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(),
+                                            b->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(oper));
+            }
+            break;
+
+            default:
+                unreached();
+        }
     }
     else
     {
@@ -4524,12 +4561,53 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         }
         else if (op2->isContained())
         {
-            assert(op2->OperIs(GT_LSH, GT_RSH, GT_RSZ));
-            assert(op2->gtGetOp2()->IsCnsIntOrI());
-            assert(op2->gtGetOp2()->isContained());
+            genTreeOps oper = op2->OperGet();
+            switch (oper)
+            {
+                case GT_NEG:
+                    assert(ins == INS_cmp);
 
-            emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum(),
-                                op2->gtGetOp2()->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(op2->gtOper));
+                    ins  = INS_cmn;
+                    oper = op2->gtGetOp1()->OperGet();
+                    switch (oper)
+                    {
+                        case GT_LSH:
+                        case GT_RSH:
+                        case GT_RSZ:
+                        {
+                            GenTree* shiftOp1 = op2->gtGetOp1()->gtGetOp1();
+                            GenTree* shiftOp2 = op2->gtGetOp1()->gtGetOp2();
+
+                            assert(op2->gtGetOp1()->isContained());
+                            assert(shiftOp2->IsCnsIntOrI());
+                            assert(shiftOp2->isContained());
+
+                            emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), shiftOp1->GetRegNum(),
+                                                shiftOp2->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(oper));
+                        }
+                        break;
+
+                        default:
+                            assert(!op2->gtGetOp1()->isContained());
+
+                            emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum());
+                            break;
+                    }
+                    break;
+
+                case GT_LSH:
+                case GT_RSH:
+                case GT_RSZ:
+                    assert(op2->gtGetOp2()->IsCnsIntOrI());
+                    assert(op2->gtGetOp2()->isContained());
+
+                    emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum(),
+                                        op2->gtGetOp2()->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(oper));
+                    break;
+
+                default:
+                    unreached();
+            }
         }
         else
         {

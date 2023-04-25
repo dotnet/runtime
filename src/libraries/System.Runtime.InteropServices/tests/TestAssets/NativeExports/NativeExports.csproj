@@ -11,7 +11,7 @@
          to the apphost to make sure that it is built before this project invokes DNNE. -->
     <UseLocalAppHostPack>false</UseLocalAppHostPack>
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
-    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
     <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
     <_TargetsAppleOS Condition="'$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or
       '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'iossimulator' or

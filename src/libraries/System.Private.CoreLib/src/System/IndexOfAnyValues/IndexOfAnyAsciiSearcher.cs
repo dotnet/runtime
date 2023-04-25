@@ -1,8 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -869,6 +870,7 @@ namespace System.Buffers
             return result;
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<byte> IndexOfAnyLookup<TNegator, TOptimizations>(Vector256<short> source0, Vector256<short> source1, Vector256<byte> bitmapLookup)
             where TNegator : struct, INegator
@@ -889,6 +891,7 @@ namespace System.Buffers
             return TNegator.NegateIfNeeded(result);
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<byte> IndexOfAnyLookupCore(Vector256<byte> source, Vector256<byte> bitmapLookup)
         {
@@ -922,6 +925,7 @@ namespace System.Buffers
             return TNegator.NegateIfNeeded(result);
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<byte> IndexOfAnyLookup<TNegator>(Vector256<byte> source, Vector256<byte> bitmapLookup0, Vector256<byte> bitmapLookup1)
             where TNegator : struct, INegator
@@ -992,6 +996,7 @@ namespace System.Buffers
             return offsetInVector - Vector128<short>.Count + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref secondVector) / (nuint)sizeof(T));
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeFirstIndex<T, TNegator>(ref T searchSpace, ref T current, Vector256<byte> result)
             where TNegator : struct, INegator
@@ -1007,6 +1012,7 @@ namespace System.Buffers
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeFirstIndexOverlapped<T, TNegator>(ref T searchSpace, ref T current0, ref T current1, Vector256<byte> result)
             where TNegator : struct, INegator
@@ -1028,6 +1034,7 @@ namespace System.Buffers
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / (nuint)sizeof(T));
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeLastIndex<T, TNegator>(ref T searchSpace, ref T current, Vector256<byte> result)
             where TNegator : struct, INegator
@@ -1043,6 +1050,7 @@ namespace System.Buffers
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int ComputeLastIndexOverlapped<T, TNegator>(ref T searchSpace, ref T secondVector, Vector256<byte> result)
             where TNegator : struct, INegator
@@ -1064,6 +1072,7 @@ namespace System.Buffers
             return offsetInVector - Vector256<short>.Count + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref secondVector) / (nuint)sizeof(T));
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
         {
