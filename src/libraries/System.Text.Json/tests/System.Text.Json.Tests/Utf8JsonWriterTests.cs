@@ -12,6 +12,7 @@ using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -3118,7 +3119,7 @@ namespace System.Text.Json.Tests
 
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64StringValue(value.AsSpan(0, 125_000_001)));
+                jsonUtf8.WriteBase64StringValue(value.AsSpan(0, 125_000_001));
             }
 
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
@@ -3133,31 +3134,31 @@ namespace System.Text.Json.Tests
 
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64StringValue(value));
+                jsonUtf8.WriteBase64StringValue(value);
             }
 
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
                 jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String("foo", value));
+                jsonUtf8.WriteBase64String("foo", value);
             }
 
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
                 jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String("foo"u8, value));
+                jsonUtf8.WriteBase64String("foo"u8, value);
             }
 
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
                 jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String("foo".AsSpan(), value));
+                jsonUtf8.WriteBase64String("foo".AsSpan(), value);
             }
 
             using (var jsonUtf8 = new Utf8JsonWriter(output, options))
             {
                 jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(JsonEncodedText.Encode("foo"), value));
+                jsonUtf8.WriteBase64String(JsonEncodedText.Encode("foo"), value);
             }
         }
 
@@ -3172,59 +3173,57 @@ namespace System.Text.Json.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
-        public void WritingLargestPossibleBase64Bytes(bool formatted, bool skipValidation)
+        public void WritingHugeBase64Bytes(bool formatted, bool skipValidation)
         {
-            byte[] value;
-
             try
             {
-                value = new byte[125_000_000];
+                byte[] value = new byte[1_000_000_000];
+
+                value.AsSpan().Fill(168);
+
+                var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+                var output = new ArrayBufferWriter<byte>(1024);
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteBase64StringValue(value);
+                }
+
+                output.Clear();
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo", value);
+                    jsonUtf8.WriteEndObject();
+                }
+
+                output.Clear();
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo"u8, value);
+                    jsonUtf8.WriteEndObject();
+                }
+
+                output.Clear();
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo".AsSpan(), value);
+                    jsonUtf8.WriteEndObject();
+                }
+
+                output.Clear();
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String(JsonEncodedText.Encode("foo"), value);
+                    jsonUtf8.WriteEndObject();
+                }
             }
             catch (OutOfMemoryException)
             {
-                return;
-            }
-
-            value.AsSpan().Fill(168);
-
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-            var output = new ArrayBufferWriter<byte>(1024);
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteBase64StringValue(value);
-            }
-
-            output.Clear();
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                jsonUtf8.WriteBase64String("foo", value);
-                jsonUtf8.WriteEndObject();
-            }
-
-            output.Clear();
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                jsonUtf8.WriteBase64String("foo"u8, value);
-                jsonUtf8.WriteEndObject();
-            }
-
-            output.Clear();
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                jsonUtf8.WriteBase64String("foo".AsSpan(), value);
-                jsonUtf8.WriteEndObject();
-            }
-
-            output.Clear();
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                jsonUtf8.WriteBase64String(JsonEncodedText.Encode("foo"), value);
-                jsonUtf8.WriteEndObject();
+                throw new SkipTestException("Out of memory allocating large objects");
             }
         }
 
