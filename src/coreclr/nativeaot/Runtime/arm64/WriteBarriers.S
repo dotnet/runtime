@@ -279,20 +279,26 @@ LEAF_END RhpAssignRef, _TEXT
 //
 // On exit:
 //  x0: original value of objectref
-//  x10, x12, x17: trashed
+//  x10, x12, x16, x17: trashed
 //
     LEAF_ENTRY RhpCheckedLockCmpXchg
 
-#ifdef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+        PREPARE_EXTERNAL_VAR_INDIRECT_W g_cpuFeatures, 16
+        tbz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, CmpXchgRetry
+#endif
+
         mov    x10, x2
     ALTERNATE_ENTRY RhpCheckedLockCmpXchgAVLocation
         casal  x10, x1, [x0]                  // exchange
         cmp    x2, x10
         bne    CmpXchgNoUpdate
-#else
+
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+        b      DoCardsCmpXchg
 CmpXchgRetry:
         // Check location value is what we expect.
-    ALTERNATE_ENTRY  RhpCheckedLockCmpXchgAVLocation
+    ALTERNATE_ENTRY  RhpCheckedLockCmpXchgAVLocation2
         ldaxr   x10, [x0]
         cmp     x10, x2
         bne     CmpXchgNoUpdate
@@ -302,6 +308,7 @@ CmpXchgRetry:
         cbnz    w12, CmpXchgRetry
 #endif
 
+DoCardsCmpXchg:
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         // already correctly set up.
@@ -311,8 +318,11 @@ CmpXchgRetry:
 CmpXchgNoUpdate:
         // x10 still contains the original value.
         mov     x0, x10
+
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+        tbnz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, NoBarrierCmpXchg
         InterlockedOperationBarrier
+NoBarrierCmpXchg:
 #endif
         ret     lr
 
@@ -333,17 +343,23 @@ CmpXchgNoUpdate:
 // On exit:
 //  x0: original value of objectref
 //  x10: trashed
-//  x12, x17: trashed
+//  x12, x16, x17: trashed
 //
     LEAF_ENTRY RhpCheckedXchg, _TEXT
 
-#ifdef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+        PREPARE_EXTERNAL_VAR_INDIRECT_W g_cpuFeatures, 16
+        tbz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, ExchangeRetry
+#endif
+
     ALTERNATE_ENTRY  RhpCheckedXchgAVLocation
         swpal  x1, x10, [x0]                   // exchange
-#else
+
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+        b      DoCardsXchg
 ExchangeRetry:
         // Read the existing memory location.
-    ALTERNATE_ENTRY  RhpCheckedXchgAVLocation
+    ALTERNATE_ENTRY  RhpCheckedXchgAVLocation2
         ldaxr   x10,  [x0]
 
         // Attempt to update with the new value.
@@ -351,6 +367,7 @@ ExchangeRetry:
         cbnz    w12, ExchangeRetry
 #endif
 
+DoCardsXchg:
         // We have successfully updated the value of the objectref so now we need a GC write barrier.
         // The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         // already correctly set up.
@@ -359,8 +376,11 @@ ExchangeRetry:
 
         // x10 still contains the original value.
         mov     x0, x10
+
 #ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+        tbnz    w16, #ARM64_ATOMICS_FEATURE_FLAG_BIT, NoBarrierXchg
         InterlockedOperationBarrier
+NoBarrierXchg:
 #endif
         ret
 
