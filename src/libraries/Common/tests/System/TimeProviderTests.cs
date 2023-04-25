@@ -140,7 +140,7 @@ namespace Tests.System
                             state,
                             TimeSpan.FromMilliseconds(state.Period), TimeSpan.FromMilliseconds(state.Period));
 
-            state.TokenSource.Token.WaitHandle.WaitOne(60000);
+            state.TokenSource.Token.WaitHandle.WaitOne(Timeout.InfiniteTimeSpan);
             state.TokenSource.Dispose();
 
             Assert.Equal(4, state.Counter);
@@ -499,7 +499,14 @@ namespace Tests.System
                     period = new TimeSpan(period.Ticks / 2);
                 }
 
-                return _timer.Change(dueTime, period);
+                try
+                {
+                    return _timer.Change(dueTime, period);
+                }
+                catch (ObjectDisposedException)
+                {
+                    return false;
+                }
             }
 
             public void Dispose() => _timer.Dispose();

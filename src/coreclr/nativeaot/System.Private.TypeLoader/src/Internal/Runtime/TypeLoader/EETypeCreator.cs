@@ -189,6 +189,7 @@ namespace Internal.Runtime.TypeLoader
 
                 flags |= (uint)EETypeFlags.IsDynamicTypeFlag;
 
+                int numFunctionPointerTypeParameters = 0;
                 if (state.TypeBeingBuilt.IsMdArray)
                 {
                     // If we're building an MDArray, the template is object[,] and we
@@ -196,6 +197,17 @@ namespace Internal.Runtime.TypeLoader
                     baseSize = IntPtr.Size + // sync block
                         2 * IntPtr.Size + // EETypePtr + Length
                         state.ArrayRank.Value * sizeof(int) * 2; // 2 ints per rank for bounds
+                }
+                else if (state.TypeBeingBuilt.IsFunctionPointer)
+                {
+                    // Base size encodes number of parameters and calling convention
+                    MethodSignature sig = ((FunctionPointerType)state.TypeBeingBuilt).Signature;
+                    baseSize = (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) switch
+                    {
+                        0 => sig.Length,
+                        _ => sig.Length | unchecked((int)FunctionPointerFlags.IsUnmanaged),
+                    };
+                    numFunctionPointerTypeParameters = sig.Length;
                 }
 
                 // Optional fields encoding
@@ -250,6 +262,7 @@ namespace Internal.Runtime.TypeLoader
                         cbOptionalFieldsSize > 0,
                         (rareFlags & (int)EETypeRareFlags.HasSealedVTableEntriesFlag) != 0,
                         isGeneric,
+                        numFunctionPointerTypeParameters,
                         allocatedNonGCDataSize != 0,
                         state.GcDataSize != 0,
                         state.ThreadDataSize != 0);
@@ -666,7 +679,7 @@ namespace Internal.Runtime.TypeLoader
 
             MethodTable* pTemplateEEType;
 
-            if (type is PointerType || type is ByRefType)
+            if (type is PointerType || type is ByRefType || type is FunctionPointerType)
             {
                 Debug.Assert(0 == state.NonGcDataSize);
                 Debug.Assert(false == state.HasStaticConstructor);
@@ -675,8 +688,17 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(IntPtr.Zero == state.GcStaticDesc);
                 Debug.Assert(IntPtr.Zero == state.ThreadStaticDesc);
 
-                // Pointers and ByRefs only differ by the ParameterizedTypeShape and ElementType value.
-                RuntimeTypeHandle templateTypeHandle = typeof(void*).TypeHandle;
+                RuntimeTypeHandle templateTypeHandle;
+                if (type is FunctionPointerType)
+                {
+                    // There's still differences to paper over, but `delegate*<void>` is close enough.
+                    templateTypeHandle = typeof(delegate*<void>).TypeHandle;
+                }
+                else
+                {
+                    // Pointers and ByRefs only differ by the ParameterizedTypeShape and ElementType value.
+                    templateTypeHandle = typeof(void*).TypeHandle;
+                }
 
                 pTemplateEEType = templateTypeHandle.ToEETypePtr();
             }
