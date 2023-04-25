@@ -415,7 +415,7 @@ public:
     int Count();
 #else
     // Non-EnC version - simple wrapper
-    EncApproxFieldDescIterator(MethodTable *pMT, int iteratorType, uint32_t flags) :
+    EncApproxFieldDescIterator(MethodTable *pMT, int iteratorType, uint32_t flags = None) :
       m_nonEnCIter( pMT, iteratorType ) {}
 
     PTR_FieldDesc Next() { WRAPPER_NO_CONTRACT; return m_nonEnCIter.Next(); }
