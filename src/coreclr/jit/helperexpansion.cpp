@@ -93,6 +93,25 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
     return fgExpandHelper<&Compiler::fgExpandRuntimeLookupsForCall>(false);
 }
 
+//------------------------------------------------------------------------------
+// fgExpandRuntimeLookupsForCall : partially expand runtime lookups helper calls
+//    to add a nullcheck [+ size check] and a fast path
+//
+// Arguments:
+//    pBlock - Block containing the helper call to expand. If expansion is performed,
+//             this is updated to the new block that was an outcome of block splitting.
+//    stmt   - Statement containing the helper call
+//    call   - The helper call
+//
+// Returns:
+//    true if a runtime lookup was found and expanded.
+//
+// Notes:
+//    The runtime lookup itself is needed to access a handle in code shared between
+//    generic instantiations. The lookup depends on the typeContext which is only available at
+//    runtime, and not at compile - time. See ASCII block diagrams in comments below for
+//    better understanding how this phase expands runtime lookups.
+//
 bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
     BasicBlock* block = *pBlock;
@@ -435,7 +454,8 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 //                             that access fields marked with [ThreadLocal].
 //
 // Arguments:
-//    pBlock - Block containing the helper call to expand (may be updated in case of block splitting)
+//    pBlock - Block containing the helper call to expand. If expansion is performed,
+//             this is updated to the new block that was an outcome of block splitting.
 //    stmt   - Statement containing the helper call
 //    call   - The helper call
 //
@@ -699,9 +719,14 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
         }
 
         // Expand and visit the last block again to find more candidates
+        INDEBUG(BasicBlock* origBlock = block);
         while (fgExpandHelperForBlock<ExpansionFunction>(&block))
         {
             result = PhaseStatus::MODIFIED_EVERYTHING;
+#ifdef DEBUG
+            assert(origBlock != block);
+            origBlock = block;   
+#endif
         }
     }
 
@@ -719,8 +744,8 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
 //    invoke `fgExpand` if any of the tree node was a helper call.
 //
 // Arguments:
-//    pBlock   - block to scan for static initializations
-//               (may be updated in case of block splitting)
+//    pBlock   - Block containing the helper call to expand. If expansion is performed,
+//               this is updated to the new block that was an outcome of block splitting.
 //    fgExpand - function that expands the helper call
 //
 // Returns:
@@ -801,9 +826,10 @@ PhaseStatus Compiler::fgExpandStaticInit()
 //    Also, see fgExpandStaticInit's comments.
 //
 // Arguments:
-//    pBlock - call's block (may be updated in case of block splitting)
-//    stmt   - call's statement
-//    call   - call that represents a static initialization
+//    pBlock - Block containing the helper call to expand. If expansion is performed,
+//             this is updated to the new block that was an outcome of block splitting.
+//    stmt   - Statement containing the helper call
+//    call   - The helper call
 //
 // Returns:
 //    true if a static initialization was expanded
