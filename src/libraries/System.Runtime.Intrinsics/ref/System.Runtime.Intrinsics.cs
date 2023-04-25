@@ -4422,6 +4422,12 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<short> BroadcastScalarToVector512(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<sbyte> BroadcastScalarToVector512(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> BroadcastScalarToVector512(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> ConvertToVector256Byte(System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> ConvertToVector256Byte(System.Runtime.Intrinsics.Vector512<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> ConvertToVector256ByteWithSaturation(System.Runtime.Intrinsics.Vector512<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<sbyte> ConvertToVector256SByte(System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<sbyte> ConvertToVector256SByte(System.Runtime.Intrinsics.Vector512<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<sbyte> ConvertToVector256SByteWithSaturation(System.Runtime.Intrinsics.Vector512<short> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> ConvertToVector512Int16(System.Runtime.Intrinsics.Vector256<sbyte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<short> ConvertToVector512Int16(System.Runtime.Intrinsics.Vector256<byte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ushort> ConvertToVector512UInt16(System.Runtime.Intrinsics.Vector256<sbyte> value) { throw null; }
@@ -4501,6 +4507,18 @@ namespace System.Runtime.Intrinsics.X86
         {
             internal VL() { }
             public static new bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128ByteWithSaturation(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128ByteWithSaturation(System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByteWithSaturation(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByteWithSaturation(System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<short> PermuteVar8x16(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> control) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ushort> PermuteVar8x16(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> control) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<short> PermuteVar16x16(System.Runtime.Intrinsics.Vector256<short> left, System.Runtime.Intrinsics.Vector256<short> control) { throw null; }
@@ -4556,6 +4574,18 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe System.Runtime.Intrinsics.Vector512<int> BroadcastVector256ToVector512(int* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector512<float> BroadcastVector256ToVector512(float* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector512<uint> BroadcastVector256ToVector512(uint* address) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> ConvertToVector512Double(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> ConvertToVector512Double(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> ConvertToVector512Int64(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> ConvertToVector512Int64(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> ConvertToVector512Int64WithTruncation(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<long> ConvertToVector512Int64WithTruncation(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ulong> ConvertToVector512UInt64(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ulong> ConvertToVector512UInt64(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ulong> ConvertToVector512UInt64WithTruncation(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<ulong> ConvertToVector512UInt64WithTruncation(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
         public static new System.Runtime.Intrinsics.Vector128<double> ExtractVector128(System.Runtime.Intrinsics.Vector512<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte index) { throw null; }
         public static new System.Runtime.Intrinsics.Vector128<long> ExtractVector128(System.Runtime.Intrinsics.Vector512<long> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte index) { throw null; }
         public static new System.Runtime.Intrinsics.Vector128<ulong> ExtractVector128(System.Runtime.Intrinsics.Vector512<ulong> value, [System.Diagnostics.CodeAnalysis.ConstantExpected] byte index) { throw null; }
@@ -4579,11 +4609,34 @@ namespace System.Runtime.Intrinsics.X86
             internal VL() { }
             public static new bool IsSupported { get { throw null; } }
             public static System.Runtime.Intrinsics.Vector128<int> BroadcastPairScalarToVector128(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
-            public static System.Runtime.Intrinsics.Vector128<float> BroadcastPairScalarToVector128(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<uint> BroadcastPairScalarToVector128(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<int> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<float> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<uint> BroadcastPairScalarToVector256(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> ConvertToVector128Double(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> ConvertToVector128Double(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> ConvertToVector128Int64(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> ConvertToVector128Int64(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> ConvertToVector128Int64WithTruncation(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<long> ConvertToVector128Int64WithTruncation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> ConvertToVector128Single(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> ConvertToVector128Single(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> ConvertToVector128Single(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> ConvertToVector128Single(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> ConvertToVector128UInt64(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> ConvertToVector128UInt64(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> ConvertToVector128UInt64WithTruncation(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ulong> ConvertToVector128UInt64WithTruncation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> ConvertToVector256Double(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> ConvertToVector256Double(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<long> ConvertToVector256Int64(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<long> ConvertToVector256Int64(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<long> ConvertToVector256Int64WithTruncation(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<long> ConvertToVector256Int64WithTruncation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ulong> ConvertToVector256UInt64(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ulong> ConvertToVector256UInt64(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ulong> ConvertToVector256UInt64WithTruncation(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<ulong> ConvertToVector256UInt64WithTruncation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> MultiplyLow(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ulong> MultiplyLow(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<long> MultiplyLow(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
@@ -4636,11 +4689,50 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe System.Runtime.Intrinsics.Vector512<double> BroadcastVector256ToVector512(double* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector512<long> BroadcastVector256ToVector512(long* address) { throw null; }
         public static unsafe System.Runtime.Intrinsics.Vector512<ulong> BroadcastVector256ToVector512(ulong* address) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> ConvertScalarToVector128Double(System.Runtime.Intrinsics.Vector128<double> upper, uint value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> ConvertScalarToVector128Single(System.Runtime.Intrinsics.Vector128<float> upper, uint value) { throw null; }
+        public static uint ConvertToUInt32(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static uint ConvertToUInt32(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static uint ConvertToUInt32WithTruncation(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+        public static uint ConvertToUInt32WithTruncation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128ByteWithSaturation(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128ByteWithSaturation(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16WithSaturation(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByteWithSaturation(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByteWithSaturation(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16WithSaturation(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<short> ConvertToVector256Int16(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<short> ConvertToVector256Int16(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<short> ConvertToVector256Int16WithSaturation(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> ConvertToVector256Int32(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> ConvertToVector256Int32(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> ConvertToVector256Int32(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> ConvertToVector256Int32WithSaturation(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> ConvertToVector256Int32WithTruncation(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ushort> ConvertToVector256UInt16(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ushort> ConvertToVector256UInt16(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<ushort> ConvertToVector256UInt16WithSaturation(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<uint> ConvertToVector256UInt32(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<uint> ConvertToVector256UInt32(System.Runtime.Intrinsics.Vector512<long> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<uint> ConvertToVector256UInt32(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<uint> ConvertToVector256UInt32WithSaturation(System.Runtime.Intrinsics.Vector512<ulong> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<uint> ConvertToVector256UInt32WithTruncation(System.Runtime.Intrinsics.Vector512<double> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> ConvertToVector512Double(System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> ConvertToVector512Double(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<double> ConvertToVector512Double(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ConvertToVector512Int32(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ConvertToVector512Int32(System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<int> ConvertToVector512Int32(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
@@ -4654,10 +4746,13 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector512<long> ConvertToVector512Int64(System.Runtime.Intrinsics.Vector128<ushort> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<long> ConvertToVector512Int64(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<float> ConvertToVector512Single(System.Runtime.Intrinsics.Vector512<int> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<float> ConvertToVector512Single(System.Runtime.Intrinsics.Vector512<uint> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<uint> ConvertToVector512UInt32(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<uint> ConvertToVector512UInt32(System.Runtime.Intrinsics.Vector256<short> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<uint> ConvertToVector512UInt32(System.Runtime.Intrinsics.Vector128<sbyte> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<uint> ConvertToVector512UInt32(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<uint> ConvertToVector512UInt32(System.Runtime.Intrinsics.Vector256<ushort> value) { throw null; }
+        public static System.Runtime.Intrinsics.Vector512<uint> ConvertToVector512UInt32WithTruncation(System.Runtime.Intrinsics.Vector512<float> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> ConvertToVector512UInt64(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> ConvertToVector512UInt64(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<ulong> ConvertToVector512UInt64(System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
@@ -4886,6 +4981,78 @@ namespace System.Runtime.Intrinsics.X86
             public static bool IsSupported { get { throw null; } }
             public static System.Runtime.Intrinsics.Vector128<ulong> Abs(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<ulong> Abs(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128Byte(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128ByteWithSaturation(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128ByteWithSaturation(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128ByteWithSaturation(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> ConvertToVector128ByteWithSaturation(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<double> ConvertToVector128Double(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16(System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16WithSaturation(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16WithSaturation(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16WithSaturation(System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<short> ConvertToVector128Int16WithSaturation(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<int> ConvertToVector128Int32(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<int> ConvertToVector128Int32(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<int> ConvertToVector128Int32(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<int> ConvertToVector128Int32(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<int> ConvertToVector128Int32WithSaturation(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<int> ConvertToVector128Int32WithSaturation(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByte(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByteWithSaturation(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByteWithSaturation(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByteWithSaturation(System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> ConvertToVector128SByteWithSaturation(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> ConvertToVector128Single(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16(System.Runtime.Intrinsics.Vector128<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16(System.Runtime.Intrinsics.Vector256<int> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16WithSaturation(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16WithSaturation(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16WithSaturation(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<ushort> ConvertToVector128UInt16WithSaturation(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32(System.Runtime.Intrinsics.Vector128<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32(System.Runtime.Intrinsics.Vector256<long> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32WithSaturation(System.Runtime.Intrinsics.Vector128<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32WithSaturation(System.Runtime.Intrinsics.Vector256<ulong> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32WithTruncation(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32WithTruncation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<uint> ConvertToVector128UInt32WithTruncation(System.Runtime.Intrinsics.Vector256<double> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<double> ConvertToVector256Double(System.Runtime.Intrinsics.Vector128<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<float> ConvertToVector256Single(System.Runtime.Intrinsics.Vector256<uint> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<uint> ConvertToVector256UInt32(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector256<uint> ConvertToVector256UInt32WithTruncation(System.Runtime.Intrinsics.Vector256<float> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<long> Max(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<ulong> Max(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector256<long> Max(System.Runtime.Intrinsics.Vector256<long> left, System.Runtime.Intrinsics.Vector256<long> right) { throw null; }
@@ -4908,6 +5075,12 @@ namespace System.Runtime.Intrinsics.X86
         {
             internal X64() { }
             public static new bool IsSupported { get { throw null; } }
+            public static System.Runtime.Intrinsics.Vector128<double> ConvertScalarToVector128Double(System.Runtime.Intrinsics.Vector128<double> upper, ulong value) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<float> ConvertScalarToVector128Single(System.Runtime.Intrinsics.Vector128<float> upper, ulong value) { throw null; }
+            public static ulong ConvertToUInt64(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static ulong ConvertToUInt64(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
+            public static ulong ConvertToUInt64WithTruncation(System.Runtime.Intrinsics.Vector128<double> value) { throw null; }
+            public static ulong ConvertToUInt64WithTruncation(System.Runtime.Intrinsics.Vector128<float> value) { throw null; }
         }
     }
     [System.CLSCompliantAttribute(false)]
