@@ -26,6 +26,5 @@ namespace TestLibrary
         public static bool IsMonoLLVMAOT => _variant == "llvmaot";
         public static bool IsMonoLLVMFULLAOT => _variant == "llvmfullaot";
         public static bool IsMonoInterpreter => _variant == "monointerpreter";
-        public static bool IsNotMonoInterpreter => !IsMonoInterpreter;
     }
 }
