@@ -54,22 +54,23 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            DependencyList dependencies = null;
-            switch (_entity)
+            (TypeDesc owningType, IEnumerable<CustomAttributeValue<TypeDesc>> attributes) = _entity switch
             {
-                case EcmaMethod method:
-                    foreach (var attribute in method.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
-                    {
-                        AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, method, method.OwningType, attribute);
-                    }
-                    break;
+                EcmaMethod method => (method.OwningType, method.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute")),
+                _ => (((EcmaField)_entity).OwningType, ((EcmaField)_entity).GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute")),
+            };
 
-                case EcmaField field:
-                    foreach (var attribute in field.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
-                    {
-                        AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, field, field.OwningType, attribute);
-                    }
-                    break;
+            DependencyList dependencies = null;
+            try
+            {
+                foreach (CustomAttributeValue<TypeDesc> attribute in attributes)
+                {
+                    AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, _entity, owningType, attribute);
+                }
+            }
+            catch (TypeSystemException)
+            {
+                // Ignore entities with custom attributes that don't work.
             }
 
             return dependencies;
