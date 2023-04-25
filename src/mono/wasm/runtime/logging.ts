@@ -131,8 +131,18 @@ export function setup_proxy_console(id: string, console: Console, origin: string
                     }
                 }
 
-                if (typeof payload === "string" && id !== "main")
-                    payload = `[${id}] ${payload}`;
+                if (typeof payload === "string") {
+                    if (payload[0] == "[") {
+                        const now = new Date().toISOString();
+                        if (id !== "main") {
+                            payload = `[${id}][${now}] ${payload}`;
+                        } else {
+                            payload = `[${now}] ${payload}`;
+                        }
+                    } else if (id !== "main") {
+                        payload = `[${id}] ${payload}`;
+                    }
+                }
 
                 if (asJson) {
                     func(JSON.stringify({

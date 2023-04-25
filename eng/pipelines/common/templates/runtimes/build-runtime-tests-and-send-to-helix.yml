@@ -14,6 +14,7 @@ parameters:
   nativeAotTest: false
   runtimeFlavor: 'mono'
   runtimeVariant: 'monointerpreter'
+  llvmAotStepContainer: ''
   scenarios:
     - normal
   variables: {}
@@ -57,9 +58,11 @@ steps:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
         - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }}
           displayName: "LLVM AOT compile CoreCLR tests"
+          target: ${{ coalesce(parameters.llvmAotStepContainer, parameters.container) }}
       - ${{ if eq(parameters.runtimeVariant, 'llvmfullaot') }}:
         - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_fullaot ${{ parameters.buildConfig }} ${{ parameters.archType }}
           displayName: "LLVM AOT compile CoreCLR tests"
+          target: ${{ coalesce(parameters.llvmAotStepContainer, parameters.container) }}
     - ${{ if eq(parameters.archType, 'arm64') }}:
       - ${{ if eq(parameters.runtimeVariant, 'llvmaot') }}:
         - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)MonoAot mono_aot ${{ parameters.buildConfig }} ${{ parameters.archType }}  $(_monoAotCrossCompileArg) /p:RuntimeVariant=llvmfullaot -maxcpucount:2

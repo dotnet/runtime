@@ -328,6 +328,14 @@ namespace System.Text.Unicode
                     return AppendCustomFormatter(value, format: null);
                 }
 
+                // Special-case enums to avoid boxing them.
+                if (typeof(T).IsEnum)
+                {
+                    // TODO https://github.com/dotnet/runtime/issues/81500:
+                    // Once Enum.TryFormat provides direct UTF8 support, use that here instead.
+                    return AppendEnum(value, format: null);
+                }
+
                 // If the value can format itself directly into our buffer, do so.
                 if (value is IUtf8SpanFormattable)
                 {
@@ -371,6 +379,14 @@ namespace System.Text.Unicode
                 if (_hasCustomFormatter)
                 {
                     return AppendCustomFormatter(value, format);
+                }
+
+                // Special-case enums to avoid boxing them.
+                if (typeof(T).IsEnum)
+                {
+                    // TODO https://github.com/dotnet/runtime/issues/81500:
+                    // Once Enum.TryFormat provides direct UTF8 support, use that here instead.
+                    return AppendEnum(value, format);
                 }
 
                 // If the value can format itself directly into our buffer, do so.
@@ -546,7 +562,7 @@ namespace System.Text.Unicode
             }
 
             /// <summary>Writes the specified ISpanFormattable to the handler.</summary>
-            /// <param name="value">The value to write. It must be an ISpanFormattable but isn't constrained because the caller doesn't have a cosntraint.</param>
+            /// <param name="value">The value to write. It must be an ISpanFormattable but isn't constrained because the caller doesn't have a constraint.</param>
             /// <param name="format">The format string.</param>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private bool AppendSpanFormattable<T>(T value, string? format)
@@ -578,6 +594,53 @@ namespace System.Text.Unicode
                         try
                         {
                             if (((ISpanFormattable)value).TryFormat(array, out charsWritten, format, thisRef._provider))
+                            {
+                                return thisRef.AppendFormatted(array.AsSpan(0, charsWritten));
+                            }
+                        }
+                        finally
+                        {
+                            ArrayPool<char>.Shared.Return(array);
+                        }
+                    }
+                }
+            }
+
+            // TODO https://github.com/dotnet/runtime/issues/81500:
+            // Remove once Enum.TryFormat(Span<byte>, ...) is available.
+            /// <summary>Writes the specified enum to the handler.</summary>
+            /// <param name="value">The value to write. It must be an enum but isn't constrained because the caller doesn't have a constraint.</param>
+            /// <param name="format">The format string.</param>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private bool AppendEnum<T>(T value, string? format)
+            {
+                Debug.Assert(typeof(T).IsEnum);
+
+                Span<char> utf16 = stackalloc char[256];
+                return Enum.TryFormatUnconstrained(value, utf16, out int charsWritten, format) ?
+                    AppendFormatted(utf16.Slice(0, charsWritten)) :
+                    GrowAndAppendFormatted(ref this, value, utf16.Length, out charsWritten, format);
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static bool GrowAndAppendFormatted(scoped ref TryWriteInterpolatedStringHandler thisRef, T value, int length, out int charsWritten, string? format)
+                {
+                    Debug.Assert(value is ISpanFormattable);
+
+                    while (true)
+                    {
+                        int newLength = length * 2;
+                        if ((uint)newLength > Array.MaxLength)
+                        {
+                            newLength = length == Array.MaxLength ?
+                                Array.MaxLength + 1 : // force OOM
+                                Array.MaxLength;
+                        }
+                        length = newLength;
+
+                        char[] array = ArrayPool<char>.Shared.Rent(length);
+                        try
+                        {
+                            if (Enum.TryFormatUnconstrained(value, array, out charsWritten, format))
                             {
                                 return thisRef.AppendFormatted(array.AsSpan(0, charsWritten));
                             }
