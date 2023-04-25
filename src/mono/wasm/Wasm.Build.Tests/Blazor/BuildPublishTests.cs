@@ -225,7 +225,7 @@ public class BuildPublishTests : BuildTestBase
             throw new XunitException($"Could not find resources.lazyAssembly object in {bootJson}");
         }
 
-        Assert.Contains("RazorClassLibrary.dll", lazyVal.EnumerateObject().Select(jp => jp.Name));
+        Assert.Contains("RazorClassLibrary.webcil", lazyVal.EnumerateObject().Select(jp => jp.Name));
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
