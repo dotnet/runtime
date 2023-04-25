@@ -1646,8 +1646,64 @@ exit:
 
 HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    // TODO: Implement sha 256 hash.
+#if !defined(_WIN32)
+    // TODO: Use openssl.
     return 0;
+#else
+    NTSTATUS status;
+    
+    BCRYPT_ALG_HANDLE   algHandle = NULL;
+    BCRYPT_HASH_HANDLE  hashHandle = NULL;
+    
+    BYTE    hash[32]; // 256 bits
+    DWORD   hashLength = 0;
+    DWORD   resultLength = 0;
+    status = BCryptOpenAlgorithmProvider(&algHandle, BCRYPT_SHA256_ALGORITHM, NULL, BCRYPT_HASH_REUSABLE_FLAG);
+    if(!NT_SUCCESS(status))
+    {
+        goto cleanup;
+    }
+    status = BCryptGetProperty(algHandle, BCRYPT_HASH_LENGTH, (PBYTE)&hashLength, sizeof(hashLength), &resultLength, 0);
+    if(!NT_SUCCESS(status))
+    {
+        goto cleanup;
+    }
+    if (hashLength != 32)
+    {
+        status = STATUS_NO_MEMORY;
+        goto cleanup;
+    }
+    status = BCryptCreateHash(algHandle, &hashHandle, NULL, 0, NULL, 0, 0);
+    if(!NT_SUCCESS(status))
+    {
+        goto cleanup;
+    }
+    
+    status = BCryptHashData(hashHandle, pSrc, srcSize, 0);
+    if(!NT_SUCCESS(status))
+    {
+        goto cleanup;
+    }
+    
+    status = BCryptFinishHash(hashHandle, hash, hashLength, 0);
+    if(!NT_SUCCESS(status))
+    {
+        goto cleanup;
+    }
+    memcpy(pDst, hash, min(hashLength, dstSize));
+    status = STATUS_SUCCESS;
+       
+cleanup:
+    if (NULL != hashHandle)    
+    {
+         BCryptDestroyHash(hashHandle);
+    }
+    if(NULL != algHandle)
+    {
+        BCryptCloseAlgorithmProvider(algHandle, 0);
+    }
+    return status;
+#endif
 }
 
 #ifdef _PREFAST_
