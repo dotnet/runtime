@@ -110,6 +110,10 @@ namespace System.Text
         /// <summary>Gets the original composite format string used to create this <see cref="CompositeFormat"/> instance.</summary>
         public string Format { get; }
 
+        /// <summary>Gets the minimum number of arguments that must be passed to a formatting operation using this <see cref="CompositeFormat"/>.</summary>
+        /// <remarks>It's permissible to supply more arguments than this value, but it's an error to pass fewer.</remarks>
+        public int MinimumArgumentCount => _argsRequired;
+
         /// <summary>Throws an exception if the specified number of arguments is fewer than the number required.</summary>
         /// <param name="numArgs">The number of arguments provided by the caller.</param>
         /// <exception cref="FormatException">An insufficient number of arguments were provided.</exception>

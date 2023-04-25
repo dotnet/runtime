@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Linq;
 using Xunit;
 
 namespace System.Text.Tests
@@ -53,6 +54,30 @@ namespace System.Text.Tests
             Assert.Equal(format, cf.Format);
 
             Assert.Equal($"\"{format}\"", DebuggerAttributes.ValidateDebuggerDisplayReferences(cf));
+        }
+
+        [Theory]
+        [InlineData("", 0)]
+        [InlineData("testing 123", 0)]
+        [InlineData("testing {{123}}", 0)]
+        [InlineData("{0}", 1)]
+        [InlineData("{0} {1}", 2)]
+        [InlineData("{2}", 3)]
+        [InlineData("{2} {0}", 3)]
+        [InlineData("{1} {34} {3}", 35)]
+        public static void MinimumArgumentCount_MatchesExpectedValue(string format, int expected)
+        {
+            CompositeFormat cf = CompositeFormat.Parse(format);
+
+            Assert.Equal(expected, cf.MinimumArgumentCount);
+
+            string s = string.Format(null, cf, Enumerable.Repeat((object)"arg", expected).ToArray());
+            Assert.NotNull(s);
+
+            if (expected != 0)
+            {
+                Assert.Throws<FormatException>(() => string.Format(null, cf, Enumerable.Repeat((object)"arg", expected - 1).ToArray()));
+            }
         }
 
         [Theory]
