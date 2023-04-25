@@ -1640,6 +1640,14 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
 void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+
+    if ((intrinsicId >= NI_AVX512F_FusedMultiplyAdd) && (intrinsicId <= NI_AVX512F_FusedMultiplySubtractNegated))
+    {
+        assert((NI_AVX512F_FusedMultiplySubtractNegated - NI_AVX512F_FusedMultiplyAdd) + 1 == 6);
+        genFMAIntrinsic(node);
+        return;
+    }
+
     var_types      baseType    = node->GetSimdBaseType();
     emitAttr       attr        = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
     var_types      targetType  = node->TypeGet();

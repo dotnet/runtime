@@ -3613,7 +3613,11 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 
         case INS_movddup:
         {
-            if (defaultSize == 32)
+            if (defaultSize == 64)
+            {
+                return EA_64BYTE;
+            }
+            else if (defaultSize == 32)
             {
                 return EA_32BYTE;
             }
