@@ -47,7 +47,7 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
     {
         JsonSerializerOptions options = Serializer.CreateOptions();
         string json = """{"Property":null}""";
-        await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<ClassWithReadOnlyProperty_SimpleClass>(json, options));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeWrapper<ClassWithReadOnlyProperty_SimpleClass>(json, options));
     }
 
     [Fact]
@@ -1134,5 +1134,35 @@ public abstract partial class JsonCreationHandlingTests : SerializerTests
 
         [JsonObjectCreationHandling(JsonObjectCreationHandling.Populate)]
         public SomeClass? PopulatedChild { get; set; }
+    }
+
+    [Theory]
+    [InlineData((JsonObjectCreationHandling)(-1))]
+    [InlineData((JsonObjectCreationHandling)2)]
+    [InlineData((JsonObjectCreationHandling)int.MaxValue)]
+    public void JsonObjectCreationHandlingAttribute_InvalidConstructorArgument_ThrowsArgumentOutOfRangeException(JsonObjectCreationHandling handling)
+    {
+        ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(
+            () => new JsonObjectCreationHandlingAttribute(handling));
+
+        Assert.Contains("handling", ex.ToString());
+    }
+
+    [Fact]
+    public async Task JsonObjectCreationHandlingAttribute_InvalidAnnotations_ThrowsArgumentOutOfRangeException()
+    {
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => Serializer.SerializeWrapper(new ClassWithInvalidTypeAnnotation()));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => Serializer.SerializeWrapper(new ClassWithInvalidPropertyAnnotation()));
+    }
+
+    [JsonObjectCreationHandling((JsonObjectCreationHandling)(-1))]
+    public class ClassWithInvalidTypeAnnotation
+    {
+    }
+
+    public class ClassWithInvalidPropertyAnnotation
+    {
+        [JsonObjectCreationHandling((JsonObjectCreationHandling)(-1))]
+        public List<int> Property { get; }
     }
 }

@@ -276,6 +276,8 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(IInterfaceWithInterfaceProperty))]
     [JsonSerializable(typeof(ClassWithReplaceOnTypeAndWritableProperty_SimpleClass))]
     [JsonSerializable(typeof(SimpleClassWitNonPopulatableProperty))]
+    [JsonSerializable(typeof(ClassWithInvalidTypeAnnotation))]
+    [JsonSerializable(typeof(ClassWithInvalidPropertyAnnotation))]
     internal partial class CreationHandlingTestContext : JsonSerializerContext
     {
     }

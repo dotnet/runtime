@@ -1402,15 +1402,22 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
             }
 
             private static string GetNumberHandlingAsStr(JsonNumberHandling? numberHandling) =>
-                 numberHandling.HasValue
-                    ? $"({JsonNumberHandlingTypeRef}){(int)numberHandling.Value}"
-                    : "default";
+                numberHandling switch
+                {
+                    null => "default",
+                    >= 0 => $"({JsonNumberHandlingTypeRef}){(int)numberHandling.Value}",
+                    < 0 => $"({JsonNumberHandlingTypeRef})({(int)numberHandling.Value})"
+                };
 
             private static string GetObjectCreationHandlingAsStr(JsonObjectCreationHandling creationHandling) =>
-                $"({JsonObjectCreationHandlingTypeRef}){(int)creationHandling}";
+                creationHandling >= 0
+                ? $"({JsonObjectCreationHandlingTypeRef}){(int)creationHandling}"
+                : $"({JsonObjectCreationHandlingTypeRef})({(int)creationHandling})";
 
             private static string GetUnmappedMemberHandlingAsStr(JsonUnmappedMemberHandling unmappedMemberHandling) =>
-                $"({JsonUnmappedMemberHandlingTypeRef}){(int)unmappedMemberHandling}";
+                unmappedMemberHandling >= 0
+                ? $"({JsonUnmappedMemberHandlingTypeRef}){(int)unmappedMemberHandling}"
+                : $"({JsonUnmappedMemberHandlingTypeRef})({(int)unmappedMemberHandling})";
 
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";
 
