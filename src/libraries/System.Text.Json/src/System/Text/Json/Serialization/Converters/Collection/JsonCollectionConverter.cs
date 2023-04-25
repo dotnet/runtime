@@ -25,6 +25,11 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected virtual void CreateCollection(ref Utf8JsonReader reader, scoped ref ReadStack state, JsonSerializerOptions options)
         {
+            if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+            {
+                return;
+            }
+
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
             if (typeInfo.CreateObject is null)
@@ -109,7 +114,7 @@ namespace System.Text.Json.Serialization
                         }
 
                         // Get the value from the converter and add it.
-                        elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element);
+                        elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element, out _);
                         Add(element!, ref state);
                     }
                 }
@@ -224,7 +229,7 @@ namespace System.Text.Json.Serialization
                         if (state.Current.PropertyState < StackFramePropertyState.TryRead)
                         {
                             // Get the value from the converter and add it.
-                            if (!elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element))
+                            if (!elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element, out _))
                             {
                                 value = default;
                                 return false;

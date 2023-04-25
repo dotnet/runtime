@@ -11,6 +11,8 @@ namespace System.Text.Json.Serialization.Converters
         : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : ISet<TElement>
     {
+        internal override bool CanPopulate => true;
+
         protected override void Add(in TElement value, ref ReadStack state)
         {
             TCollection collection = (TCollection)state.Current.ReturnValue!;
