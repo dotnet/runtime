@@ -1955,10 +1955,7 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
             return E_OUTOFMEMORY;
         }
         *ppMD = pMD;
-    }
 
-    if (!pMD->HasClassOrMethodInstantiation())
-    {
         // not generic, we're done for this method
         return S_OK;
     }

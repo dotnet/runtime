@@ -38,6 +38,7 @@ namespace System.Text.Json.SourceGeneration
             private const string JsonIgnoreConditionFullName = "System.Text.Json.Serialization.JsonIgnoreCondition";
             private const string JsonIncludeAttributeFullName = "System.Text.Json.Serialization.JsonIncludeAttribute";
             private const string JsonNumberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonNumberHandlingAttribute";
+            private const string JsonObjectCreationHandlingAttributeFullName = "System.Text.Json.Serialization.JsonObjectCreationHandlingAttribute";
             private const string JsonUnmappedMemberHandlingAttributeFullName = "System.Text.Json.Serialization.JsonUnmappedMemberHandlingAttribute";
             private const string JsonPropertyNameAttributeFullName = "System.Text.Json.Serialization.JsonPropertyNameAttribute";
             private const string JsonPropertyOrderAttributeFullName = "System.Text.Json.Serialization.JsonPropertyOrderAttribute";
@@ -708,6 +709,7 @@ namespace System.Text.Json.SourceGeneration
                 CollectionType collectionType = CollectionType.NotApplicable;
                 JsonNumberHandling? numberHandling = null;
                 JsonUnmappedMemberHandling? unmappedMemberHandling = null;
+                JsonObjectCreationHandling? preferredPropertyObjectCreationHandling = null;
                 bool foundDesignTimeCustomConverter = false;
                 string? converterInstatiationLogic = null;
                 bool implementsIJsonOnSerialized = false;
@@ -733,6 +735,12 @@ namespace System.Text.Json.SourceGeneration
                     {
                         IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
                         unmappedMemberHandling = (JsonUnmappedMemberHandling)ctorArgs[0].Value!;
+                        continue;
+                    }
+                    else if (attributeTypeFullName == JsonObjectCreationHandlingAttributeFullName)
+                    {
+                        IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
+                        preferredPropertyObjectCreationHandling = (JsonObjectCreationHandling)ctorArgs[0].Value!;
                         continue;
                     }
                     else if (!foundDesignTimeCustomConverter && attributeType.GetCompatibleBaseClass(JsonConverterAttributeFullName) != null)
@@ -1139,6 +1147,7 @@ namespace System.Text.Json.SourceGeneration
                     classType,
                     numberHandling,
                     unmappedMemberHandling,
+                    preferredPropertyObjectCreationHandling,
                     propGenSpecList,
                     paramGenSpecArray,
                     propertyInitializerSpecList,
@@ -1238,6 +1247,7 @@ namespace System.Text.Json.SourceGeneration
                     out string? jsonPropertyName,
                     out JsonIgnoreCondition? ignoreCondition,
                     out JsonNumberHandling? numberHandling,
+                    out JsonObjectCreationHandling? objectCreationHandling,
                     out string? converterInstantiationLogic,
                     out int order,
                     out bool hasFactoryConverter,
@@ -1287,6 +1297,7 @@ namespace System.Text.Json.SourceGeneration
                     SetterIsVirtual = setterIsVirtual,
                     DefaultIgnoreCondition = ignoreCondition,
                     NumberHandling = numberHandling,
+                    ObjectCreationHandling = objectCreationHandling,
                     Order = order,
                     HasJsonInclude = hasJsonInclude,
                     IsExtensionData = isExtensionData,
@@ -1320,6 +1331,7 @@ namespace System.Text.Json.SourceGeneration
                 out string? jsonPropertyName,
                 out JsonIgnoreCondition? ignoreCondition,
                 out JsonNumberHandling? numberHandling,
+                out JsonObjectCreationHandling? objectCreationHandling,
                 out string? converterInstantiationLogic,
                 out int order,
                 out bool hasFactoryConverter,
@@ -1330,6 +1342,7 @@ namespace System.Text.Json.SourceGeneration
                 jsonPropertyName = null;
                 ignoreCondition = default;
                 numberHandling = default;
+                objectCreationHandling = default;
                 converterInstantiationLogic = null;
                 order = 0;
                 isExtensionData = false;
@@ -1380,6 +1393,12 @@ namespace System.Text.Json.SourceGeneration
                                 {
                                     IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
                                     numberHandling = (JsonNumberHandling)ctorArgs[0].Value!;
+                                }
+                                break;
+                            case JsonObjectCreationHandlingAttributeFullName:
+                                {
+                                    IList<CustomAttributeTypedArgument> ctorArgs = attributeData.ConstructorArguments;
+                                    objectCreationHandling = (JsonObjectCreationHandling)ctorArgs[0].Value!;
                                 }
                                 break;
                             case JsonPropertyNameAttributeFullName:

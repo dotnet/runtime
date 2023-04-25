@@ -169,6 +169,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmInvariantGlobalization Condition="'$(_WasmInvariantGlobalization)' == ''">true</_WasmInvariantGlobalization>
       <_WasmCopyOutputSymbolsToOutputDirectory>$(CopyOutputSymbolsToOutputDirectory)</_WasmCopyOutputSymbolsToOutputDirectory>
       <_WasmCopyOutputSymbolsToOutputDirectory Condition="'$(_WasmCopyOutputSymbolsToOutputDirectory)'==''">true</_WasmCopyOutputSymbolsToOutputDirectory>
+      <_WasmEnableThreads>$(WasmEnableThreads)</_WasmEnableThreads>
+      <_WasmEnableThreads Condition="'$(_WasmEnableThreads)' == ''">false</_WasmEnableThreads>
       <_WasmEnableWebcil>$(WasmEnableWebcil)</_WasmEnableWebcil>
       <_WasmEnableWebcil Condition="'$(_WasmEnableWebcil)' == ''">false</_WasmEnableWebcil>
       <_BlazorWebAssemblyStartupMemoryCache>$(BlazorWebAssemblyStartupMemoryCache)</_BlazorWebAssemblyStartupMemoryCache>
@@ -203,6 +205,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       CopySymbols="$(_WasmCopyOutputSymbolsToOutputDirectory)"
       OutputPath="$(OutputPath)"
       FingerprintDotNetJs="$(WasmFingerprintDotnetJs)"
+      EnableThreads="$(_WasmEnableThreads)"
     >
       <Output TaskParameter="AssetCandidates" ItemName="_BuildAssetsCandidates" />
       <Output TaskParameter="FilesToRemove" ItemName="_WasmBuildFilesToRemove" />
@@ -374,6 +377,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       ExistingAssets="@(_WasmPublishPrefilteredAssets)"
       DotNetJsVersion="$(_DotNetJsVersion)"
       FingerprintDotNetJs="$(WasmFingerprintDotnetJs)"
+      EnableThreads="$(_WasmEnableThreads)"
       IsWebCilEnabled="$(_WasmEnableWebcil)"
     >
       <Output TaskParameter="NewCandidates" ItemName="_NewWasmPublishStaticWebAssets" />
