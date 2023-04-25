@@ -174,6 +174,7 @@ public class BuildPublishTests : BuildTestBase
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/70762")]
     public void BugRegression_60479_WithRazorClassLib()
     {
         string id = $"blz_razor_lib_top_{Path.GetRandomFileName()}";
