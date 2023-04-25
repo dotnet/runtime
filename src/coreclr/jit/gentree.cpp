@@ -25092,6 +25092,27 @@ bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
     }
 }
 
+//------------------------------------------------------------------------
+// OperIsBroadcastScalar: Is this HWIntrinsic a broadcast node from scalar.
+//
+// Return Value:
+//    Whether "this" is a broadcast node from scalar.
+//
+bool GenTreeHWIntrinsic::OperIsBroadcastScalar() const
+{
+#if defined(TARGET_XARCH)
+    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
+    if (intrinsicId == NI_AVX2_BroadcastScalarToVector128 || intrinsicId == NI_AVX2_BroadcastScalarToVector256)
+    {
+        return true;
+    }
+    else
+        return false;
+#else
+    return false;
+#endif
+}
+
 //------------------------------------------------------------------------------
 // OperRequiresAsgFlag : Check whether the operation requires GTF_ASG flag regardless
 //                       of the children's flags.

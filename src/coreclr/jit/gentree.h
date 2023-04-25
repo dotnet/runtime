@@ -6256,6 +6256,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryLoadOrStore() const;
     bool OperIsMemoryStoreOrBarrier() const;
+    bool OperIsBroadcastScalar() const;
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
