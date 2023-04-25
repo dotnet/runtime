@@ -855,6 +855,350 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<nuint>  And(Vector128<nuint>  left, Vector128<nuint>  right) => And(left, right);
 
         /// <summary>
+        ///   v128.or
+        /// </summary>
+        public static Vector128<sbyte>  Or(Vector128<sbyte>  left, Vector128<sbyte>  right) => Or(left, right);
+        /// <summary>
+        ///   v128.or
+        /// </summary>
+        public static Vector128<byte>   Or(Vector128<byte>   left, Vector128<byte>   right) => Or(left, right);
+        /// <summary>
+        ///   v128.or
+        /// </summary>
+        public static Vector128<short>  Or(Vector128<short>  left, Vector128<short>  right) => Or(left, right);
+        /// <summary>
+        ///   v128.or
+        /// </summary>
+        public static Vector128<ushort> Or(Vector128<ushort> left, Vector128<ushort> right) => Or(left, right);
+        /// <summary>
+        ///   v128.or
+        /// </summary>
+        public static Vector128<int>    Or(Vector128<int>    left, Vector128<int>    right) => Or(left, right);
+        /// <summary>
+        ///   v128.or
+        /// </summary>
+        public static Vector128<uint>   Or(Vector128<uint>   left, Vector128<uint>   right) => Or(left, right);
+        /// <summary>
+        ///   v128.or
+        /// </summary>
+        public static Vector128<long>   Or(Vector128<long>   left, Vector128<long>   right) => Or(left, right);
+        /// <summary>
+        ///   v128.or
+        /// </summary>
+        public static Vector128<ulong>  Or(Vector128<ulong>  left, Vector128<ulong>  right) => Or(left, right);
+        /// <summary>
+        ///   v128.or
+        /// </summary>
+        public static Vector128<float>  Or(Vector128<float>  left, Vector128<float>  right) => Or(left, right);
+        /// <summary>
+        ///   v128.or
+        /// </summary>
+        public static Vector128<double> Or(Vector128<double> left, Vector128<double> right) => Or(left, right);
+        /// <summary>
+        ///   v128.or
+        /// </summary>
+        public static Vector128<nint>   Or(Vector128<nint>   left, Vector128<nint>   right) => Or(left, right);
+        /// <summary>
+        ///   v128.or
+        /// </summary>
+        public static Vector128<nuint>  Or(Vector128<nuint>  left, Vector128<nuint>  right) => Or(left, right);
+
+        /// <summary>
+        ///   v128.xor
+        /// </summary>
+        public static Vector128<sbyte>  Xor(Vector128<sbyte>  left, Vector128<sbyte>  right) => Xor(left, right);
+        /// <summary>
+        ///   v128.xor
+        /// </summary>
+        public static Vector128<byte>   Xor(Vector128<byte>   left, Vector128<byte>   right) => Xor(left, right);
+        /// <summary>
+        ///   v128.xor
+        /// </summary>
+        public static Vector128<short>  Xor(Vector128<short>  left, Vector128<short>  right) => Xor(left, right);
+        /// <summary>
+        ///   v128.xor
+        /// </summary>
+        public static Vector128<ushort> Xor(Vector128<ushort> left, Vector128<ushort> right) => Xor(left, right);
+        /// <summary>
+        ///   v128.xor
+        /// </summary>
+        public static Vector128<int>    Xor(Vector128<int>    left, Vector128<int>    right) => Xor(left, right);
+        /// <summary>
+        ///   v128.xor
+        /// </summary>
+        public static Vector128<uint>   Xor(Vector128<uint>   left, Vector128<uint>   right) => Xor(left, right);
+        /// <summary>
+        ///   v128.xor
+        /// </summary>
+        public static Vector128<long>   Xor(Vector128<long>   left, Vector128<long>   right) => Xor(left, right);
+        /// <summary>
+        ///   v128.xor
+        /// </summary>
+        public static Vector128<ulong>  Xor(Vector128<ulong>  left, Vector128<ulong>  right) => Xor(left, right);
+        /// <summary>
+        ///   v128.xor
+        /// </summary>
+        public static Vector128<float>  Xor(Vector128<float>  left, Vector128<float>  right) => Xor(left, right);
+        /// <summary>
+        ///   v128.xor
+        /// </summary>
+        public static Vector128<double> Xor(Vector128<double> left, Vector128<double> right) => Xor(left, right);
+        /// <summary>
+        ///   v128.xor
+        /// </summary>
+        public static Vector128<nint>   Xor(Vector128<nint>   left, Vector128<nint>   right) => Xor(left, right);
+        /// <summary>
+        ///   v128.xor
+        /// </summary>
+        public static Vector128<nuint>  Xor(Vector128<nuint>  left, Vector128<nuint>  right) => Xor(left, right);
+
+        /// <summary>
+        ///   v128.not
+        /// </summary>
+        public static Vector128<sbyte>  Not(Vector128<sbyte>  value) => Not(value);
+        /// <summary>
+        ///   v128.not
+        /// </summary>
+        public static Vector128<byte>   Not(Vector128<byte>   value) => Not(value);
+        /// <summary>
+        ///   v128.not
+        /// </summary>
+        public static Vector128<short>  Not(Vector128<short>  value) => Not(value);
+        /// <summary>
+        ///   v128.not
+        /// </summary>
+        public static Vector128<ushort> Not(Vector128<ushort> value) => Not(value);
+        /// <summary>
+        ///   v128.not
+        /// </summary>
+        public static Vector128<int>    Not(Vector128<int>    value) => Not(value);
+        /// <summary>
+        ///   v128.not
+        /// </summary>
+        public static Vector128<uint>   Not(Vector128<uint>   value) => Not(value);
+        /// <summary>
+        ///   v128.not
+        /// </summary>
+        public static Vector128<long>   Not(Vector128<long>   value) => Not(value);
+        /// <summary>
+        ///   v128.not
+        /// </summary>
+        public static Vector128<ulong>  Not(Vector128<ulong>  value) => Not(value);
+        /// <summary>
+        ///   v128.not
+        /// </summary>
+        public static Vector128<float>  Not(Vector128<float>  value) => Not(value);
+        /// <summary>
+        ///   v128.not
+        /// </summary>
+        public static Vector128<double> Not(Vector128<double> value) => Not(value);
+        /// <summary>
+        ///   v128.not
+        /// </summary>
+        public static Vector128<nint>   Not(Vector128<nint>   value) => Not(value);
+        /// <summary>
+        ///   v128.not
+        /// </summary>
+        public static Vector128<nuint>  Not(Vector128<nuint>  value) => Not(value);
+
+        /// <summary>
+        ///   v128.andnot
+        /// </summary>
+        public static Vector128<sbyte>  AndNot(Vector128<sbyte>  left, Vector128<sbyte>  right) => AndNot(left, right);
+        /// <summary>
+        ///   v128.andnot
+        /// </summary>
+        public static Vector128<byte>   AndNot(Vector128<byte>   left, Vector128<byte>   right) => AndNot(left, right);
+        /// <summary>
+        ///   v128.andnot
+        /// </summary>
+        public static Vector128<short>  AndNot(Vector128<short>  left, Vector128<short>  right) => AndNot(left, right);
+        /// <summary>
+        ///   v128.andnot
+        /// </summary>
+        public static Vector128<ushort> AndNot(Vector128<ushort> left, Vector128<ushort> right) => AndNot(left, right);
+        /// <summary>
+        ///   v128.andnot
+        /// </summary>
+        public static Vector128<int>    AndNot(Vector128<int>    left, Vector128<int>    right) => AndNot(left, right);
+        /// <summary>
+        ///   v128.andnot
+        /// </summary>
+        public static Vector128<uint>   AndNot(Vector128<uint>   left, Vector128<uint>   right) => AndNot(left, right);
+        /// <summary>
+        ///   v128.andnot
+        /// </summary>
+        public static Vector128<long>   AndNot(Vector128<long>   left, Vector128<long>   right) => AndNot(left, right);
+        /// <summary>
+        ///   v128.andnot
+        /// </summary>
+        public static Vector128<ulong>  AndNot(Vector128<ulong>  left, Vector128<ulong>  right) => AndNot(left, right);
+        /// <summary>
+        ///   v128.andnot
+        /// </summary>
+        public static Vector128<float>  AndNot(Vector128<float>  left, Vector128<float>  right) => AndNot(left, right);
+        /// <summary>
+        ///   v128.andnot
+        /// </summary>
+        public static Vector128<double> AndNot(Vector128<double> left, Vector128<double> right) => AndNot(left, right);
+        /// <summary>
+        ///   v128.andnot
+        /// </summary>
+        public static Vector128<nint>   AndNot(Vector128<nint>   left, Vector128<nint>   right) => AndNot(left, right);
+        /// <summary>
+        ///   v128.andnot
+        /// </summary>
+        public static Vector128<nuint>  AndNot(Vector128<nuint>  left, Vector128<nuint>  right) => AndNot(left, right);
+
+        /// <summary>
+        ///   v128.bitselect
+        /// </summary>
+        public static Vector128<sbyte>  BitwiseSelect(Vector128<sbyte>  left, Vector128<sbyte>  right, Vector128<sbyte>  select) => BitwiseSelect(left, right, select);
+        /// <summary>
+        ///   v128.bitselect
+        /// </summary>
+        public static Vector128<byte>   BitwiseSelect(Vector128<byte>   left, Vector128<byte>   right, Vector128<byte>   select) => BitwiseSelect(left, right, select);
+        /// <summary>
+        ///   v128.bitselect
+        /// </summary>
+        public static Vector128<short>  BitwiseSelect(Vector128<short>  left, Vector128<short>  right, Vector128<short>  select) => BitwiseSelect(left, right, select);
+        /// <summary>
+        ///   v128.bitselect
+        /// </summary>
+        public static Vector128<ushort> BitwiseSelect(Vector128<ushort> left, Vector128<ushort> right, Vector128<ushort> select) => BitwiseSelect(left, right, select);
+        /// <summary>
+        ///   v128.bitselect
+        /// </summary>
+        public static Vector128<int>    BitwiseSelect(Vector128<int>    left, Vector128<int>    right, Vector128<int>    select) => BitwiseSelect(left, right, select);
+        /// <summary>
+        ///   v128.bitselect
+        /// </summary>
+        public static Vector128<uint>   BitwiseSelect(Vector128<uint>   left, Vector128<uint>   right, Vector128<uint>   select) => BitwiseSelect(left, right, select);
+        /// <summary>
+        ///   v128.bitselect
+        /// </summary>
+        public static Vector128<long>   BitwiseSelect(Vector128<long>   left, Vector128<long>   right, Vector128<long>   select) => BitwiseSelect(left, right, select);
+        /// <summary>
+        ///   v128.bitselect
+        /// </summary>
+        public static Vector128<ulong>  BitwiseSelect(Vector128<ulong>  left, Vector128<ulong>  right, Vector128<ulong>  select) => BitwiseSelect(left, right, select);
+        /// <summary>
+        ///   v128.bitselect
+        /// </summary>
+        public static Vector128<float>  BitwiseSelect(Vector128<float>  left, Vector128<float>  right, Vector128<float>  select) => BitwiseSelect(left, right, select);
+        /// <summary>
+        ///   v128.bitselect
+        /// </summary>
+        public static Vector128<double> BitwiseSelect(Vector128<double> left, Vector128<double> right, Vector128<double> select) => BitwiseSelect(left, right, select);
+        /// <summary>
+        ///   v128.bitselect
+        /// </summary>
+        public static Vector128<nint>   BitwiseSelect(Vector128<nint>   left, Vector128<nint>   right, Vector128<nint>   select) => BitwiseSelect(left, right, select);
+        /// <summary>
+        ///   v128.bitselect
+        /// </summary>
+        public static Vector128<nuint>  BitwiseSelect(Vector128<nuint>  left, Vector128<nuint>  right, Vector128<nuint>  select) => BitwiseSelect(left, right, select);
+
+        /// <summary>
+        ///   i8x16.popcnt
+        /// </summary>
+        public static Vector128<byte> PopCount(Vector128<byte> value) => PopCount(value);
+
+        // Boolean horizontal reductions
+
+        /// <summary>
+        ///   v128.any_true
+        /// </summary>
+        public static bool AnyTrue(Vector128<sbyte>  value) => AnyTrue(value);
+        /// <summary>
+        ///   v128.any_true
+        /// </summary>
+        public static bool AnyTrue(Vector128<byte>   value) => AnyTrue(value);
+        /// <summary>
+        ///   v128.any_true
+        /// </summary>
+        public static bool AnyTrue(Vector128<short>  value) => AnyTrue(value);
+        /// <summary>
+        ///   v128.any_true
+        /// </summary>
+        public static bool AnyTrue(Vector128<ushort> value) => AnyTrue(value);
+        /// <summary>
+        ///   v128.any_true
+        /// </summary>
+        public static bool AnyTrue(Vector128<int>    value) => AnyTrue(value);
+        /// <summary>
+        ///   v128.any_true
+        /// </summary>
+        public static bool AnyTrue(Vector128<uint>   value) => AnyTrue(value);
+        /// <summary>
+        ///   v128.any_true
+        /// </summary>
+        public static bool AnyTrue(Vector128<long>   value) => AnyTrue(value);
+        /// <summary>
+        ///   v128.any_true
+        /// </summary>
+        public static bool AnyTrue(Vector128<ulong>  value) => AnyTrue(value);
+        /// <summary>
+        ///   v128.any_true
+        /// </summary>
+        public static bool AnyTrue(Vector128<float>  value) => AnyTrue(value);
+        /// <summary>
+        ///   v128.any_true
+        /// </summary>
+        public static bool AnyTrue(Vector128<double> value) => AnyTrue(value);
+        /// <summary>
+        ///   v128.any_true
+        /// </summary>
+        public static bool AnyTrue(Vector128<nint>   value) => AnyTrue(value);
+        /// <summary>
+        ///   v128.any_true
+        /// </summary>
+        public static bool AnyTrue(Vector128<nuint>  value) => AnyTrue(value);
+
+        /// <summary>
+        ///   i8x16.all_true
+        /// </summary>
+        public static bool AllTrue(Vector128<sbyte>  value) => AllTrue(value);
+        /// <summary>
+        ///   i8x16.all_true
+        /// </summary>
+        public static bool AllTrue(Vector128<byte>   value) => AllTrue(value);
+        /// <summary>
+        ///   i16x8.all_true
+        /// </summary>
+        public static bool AllTrue(Vector128<short>  value) => AllTrue(value);
+        /// <summary>
+        ///   i16x8.all_true
+        /// </summary>
+        public static bool AllTrue(Vector128<ushort> value) => AllTrue(value);
+        /// <summary>
+        ///   i32x4.all_true
+        /// </summary>
+        public static bool AllTrue(Vector128<int>    value) => AllTrue(value);
+        /// <summary>
+        ///   i32x4.all_true
+        /// </summary>
+        public static bool AllTrue(Vector128<uint>   value) => AllTrue(value);
+        /// <summary>
+        ///   i64x2.all_true
+        /// </summary>
+        public static bool AllTrue(Vector128<long>   value) => AllTrue(value);
+        /// <summary>
+        ///   i64x2.all_true
+        /// </summary>
+        public static bool AllTrue(Vector128<ulong>  value) => AllTrue(value);
+        /// <summary>
+        ///   i32x4.all_true
+        /// </summary>
+        public static bool AllTrue(Vector128<nint>   value) => AllTrue(value);
+        /// <summary>
+        ///   i32x4.all_true
+        /// </summary>
+        public static bool AllTrue(Vector128<nuint>  value) => AllTrue(value);
+
+        // Bitmask extraction
+
+        /// <summary>
         ///   i8x16.bitmask
         /// </summary>
         [Intrinsic]
