@@ -2994,8 +2994,6 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
             DoLclVarsOnly = true,
         };
 
-        bool HasAddrTakenLocal = false;
-
         LocalsWithAddrOpVisitor(Compiler* comp) : GenTreeVisitor(comp)
         {
         }
@@ -3005,7 +3003,6 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
             LclVarDsc* varDsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
             if (varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed())
             {
-                HasAddrTakenLocal = true;
                 return WALK_ABORT;
             }
 
@@ -3014,8 +3011,48 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
     };
 
     LocalsWithAddrOpVisitor visitor(this);
-    visitor.WalkTree(&tree, nullptr);
-    return visitor.HasAddrTakenLocal;
+    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
+}
+
+//------------------------------------------------------------------------------
+// gtHasAddressExposedLocal:
+//   Check if this tree contains locals with IsAddressExposed() flags set. Does
+//   a full tree walk.
+//
+// Paramters:
+//   tree - the tree
+//
+// Return Value:
+//    True if any sub tree is such a local.
+//
+bool Compiler::gtHasAddressExposedLocals(GenTree* tree)
+{
+    struct Visitor : GenTreeVisitor<Visitor>
+    {
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
+
+        Visitor(Compiler* comp) : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            LclVarDsc* varDsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
+            if (varDsc->IsAddressExposed())
+            {
+                return WALK_ABORT;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(this);
+    return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
 }
 
 #ifdef DEBUG
@@ -16329,7 +16366,17 @@ bool Compiler::gtSplitTree(
 
         bool IsValue(const UseInfo& useInf)
         {
-            GenTree* node = (*useInf.Use)->gtEffectiveVal();
+            GenTree* node = *useInf.Use;
+
+            // Some places create void-typed commas that wrap actual values
+            // (e.g. VN-based dead store removal), so we need the double check
+            // here.
+            if (!node->IsValue())
+            {
+                return false;
+            }
+
+            node = node->gtEffectiveVal();
             if (!node->IsValue())
             {
                 return false;
