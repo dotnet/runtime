@@ -991,9 +991,6 @@ namespace System.Runtime.Intrinsics.Wasm
         /// <summary>
         ///   v128.not
         /// </summary>
-        /// <summary>
-        ///   v128.not
-        /// </summary>
         public static Vector128<double> Not(Vector128<double> value) => Not(value);
         /// <summary>
         ///   v128.not
@@ -1012,9 +1009,6 @@ namespace System.Runtime.Intrinsics.Wasm
         ///   v128.andnot
         /// </summary>
         public static Vector128<byte>   AndNot(Vector128<byte>   left, Vector128<byte>   right) => AndNot(left, right);
-        /// <summary>
-        ///   v128.andnot
-        /// </summary>
         /// <summary>
         ///   v128.andnot
         /// </summary>
