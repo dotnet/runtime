@@ -241,6 +241,7 @@ public class ComputeWasmBuildAssets : Task
         switch (extension)
         {
             case ".dll":
+            case ".webcil":
                 if (string.IsNullOrEmpty(candidate.GetMetadata("AssetTraitName")))
                 {
                     candidate.SetMetadata("AssetTraitName", "WasmResource");

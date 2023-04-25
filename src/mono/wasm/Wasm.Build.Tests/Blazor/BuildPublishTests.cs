@@ -197,7 +197,10 @@ public class BuildPublishTests : BuildTestBase
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();
 
-        AddItemsPropertiesToProject(wasmProjectFile, extraItems:@"
+        AddItemsPropertiesToProject(wasmProjectFile, extraItems: UseWebcil ? @"
+            <ProjectReference Include=""..\RazorClassLibrary\RazorClassLibrary.csproj"" />
+            <BlazorWebAssemblyLazyLoad Include=""RazorClassLibrary.webcil"" />
+        " : @"
             <ProjectReference Include=""..\RazorClassLibrary\RazorClassLibrary.csproj"" />
             <BlazorWebAssemblyLazyLoad Include=""RazorClassLibrary.dll"" />
         ");
