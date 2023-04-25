@@ -782,8 +782,8 @@ protected:
         unsigned _idCallAddr : 1;   // IL indirect calls: can make a direct call to iiaAddr
         unsigned _idNoGC : 1;       // Some helpers don't get recorded in GC tables
 #if defined(TARGET_XARCH)
-        unsigned _idEmbBroadcast : 1;
-#endif //  TARGET_XARCH
+        unsigned _idEvexbContext : 1; // does EVEX.b need to be set.
+#endif                                //  TARGET_XARCH
 
 #ifdef TARGET_ARM64
         opSize   _idOpSize : 3;    // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
@@ -1535,15 +1535,15 @@ protected:
         }
 
 #ifdef TARGET_XARCH
-        bool idIsEmbBroadcast() const
+        bool idIsEvexbContext() const
         {
-            return _idEmbBroadcast != 0;
+            return _idEvexbContext != 0;
         }
-        void idSetEmbBroadcast()
+        void idSetEvexbContext()
         {
-            assert(_idEmbBroadcast == 0);
-            _idEmbBroadcast = 1;
-            assert(_idEmbBroadcast == 1);
+            assert(_idEvexbContext == 0);
+            _idEvexbContext = 1;
+            assert(_idEvexbContext == 1);
         }
 #endif
 
@@ -3673,6 +3673,20 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //
 emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
+    emitAttr defaultSize = id->idOpSize();
+
+    if (id->idIsEvexbContext())
+    {
+        // should have the assumption that Evex.b now stands for the embedded broadcast context.
+        switch (id->idIns())
+        {
+            case INS_addps:
+                return EA_4BYTE;
+
+            default:
+                break;
+        }
+    }
     emitAttr    defaultSize = id->idOpSize();
     instruction ins         = id->idIns();
 
@@ -3889,18 +3903,6 @@ emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
             {
                 assert(defaultSize == 16);
                 return EA_8BYTE;
-            }
-        }
-
-        case INS_addps:
-        {
-            if (!id->idIsEmbBroadcast())
-            {
-                return defaultSize;
-            }
-            else
-            {
-                return EA_4BYTE;
             }
         }
 

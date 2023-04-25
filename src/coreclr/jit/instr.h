@@ -187,6 +187,13 @@ enum insFlags : uint64_t
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };
 
+enum insOpts: unsigned
+{
+    INS_OPTS_NONE,
+
+    INS_OPTS_EVEX_b
+};
+
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
 enum insFlags: unsigned

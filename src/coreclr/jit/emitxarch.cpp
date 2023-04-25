@@ -1231,7 +1231,7 @@ bool emitter::TakesEvexPrefix(const instrDesc* id) const
 #define DEFAULT_BYTE_EVEX_PREFIX_MASK 0xFFFFFFFF00000000ULL
 #define LBIT_IN_BYTE_EVEX_PREFIX 0x0000002000000000ULL
 #define LPRIMEBIT_IN_BYTE_EVEX_PREFIX 0x0000004000000000ULL
-#define EMBEDDED_BROADCAST_BIT 0x0000001000000000ULL
+#define EVEX_B_BIT 0x0000001000000000ULL
 
 //------------------------------------------------------------------------
 // AddEvexPrefix: Add default EVEX perfix with only LL' bits set.
@@ -1269,11 +1269,11 @@ emitter::code_t emitter::AddEvexPrefix(instruction ins, code_t code, emitAttr at
     return code;
 }
 
-emitter::code_t emitter::AddEmbeddedBroadcast(const instrDesc* id, code_t code)
+emitter::code_t emitter::AddEvexbBit(const instrDesc* id, code_t code)
 {
-    if (hasEvexPrefix(code) && id->idIsEmbBroadcast())
+    if (hasEvexPrefix(code) && id->idIsEvexbContext())
     {
-        code |= EMBEDDED_BROADCAST_BIT;
+        code |= EVEX_B_BIT;
     }
     return code;
 }
@@ -6794,7 +6794,7 @@ void emitter::emitIns_R_R_C(instruction          ins,
                             regNumber            reg2,
                             CORINFO_FIELD_HANDLE fldHnd,
                             int                  offs,
-                            bool                 isEmbBroadcast)
+                            insOpts              instOptions)
 {
     assert(IsAvx512OrPriorInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins));
@@ -6813,9 +6813,9 @@ void emitter::emitIns_R_R_C(instruction          ins,
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
 #if defined(TARGET_XARCH)
-    if (isEmbBroadcast && UseEvexEncoding())
+    if ((instOptions == INS_OPTS_EVEX_b) && UseEvexEncoding())
     {
-        id->idSetEmbBroadcast();
+        id->idSetEvexbContext();
     }
 #endif //  TARGET_XARCH
 
@@ -6851,7 +6851,7 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
 }
 
 void emitter::emitIns_R_R_S(
-    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs, bool isEmbBroadcast)
+    instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, int varx, int offs, insOpts instOptions)
 {
     assert(IsAvx512OrPriorInstruction(ins));
     assert(IsThreeOperandAVXInstruction(ins));
@@ -6865,9 +6865,9 @@ void emitter::emitIns_R_R_S(
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
 #if defined(TARGET_XARCH)
-    if (isEmbBroadcast && UseEvexEncoding())
+    if ((instOptions == INS_OPTS_EVEX_b) && UseEvexEncoding())
     {
-        id->idSetEmbBroadcast();
+        id->idSetEvexbContext();
     }
 #endif //  TARGET_XARCH
 #ifdef DEBUG
@@ -8185,11 +8185,11 @@ void emitter::emitIns_SIMD_R_R_C(instruction          ins,
                                  regNumber            op1Reg,
                                  CORINFO_FIELD_HANDLE fldHnd,
                                  int                  offs,
-                                 bool                 isEmbBroadcast)
+                                 insOpts              instOptions)
 {
     if (UseSimdEncoding())
     {
-        emitIns_R_R_C(ins, attr, targetReg, op1Reg, fldHnd, offs, isEmbBroadcast);
+        emitIns_R_R_C(ins, attr, targetReg, op1Reg, fldHnd, offs, instOptions);
     }
     else
     {
@@ -8247,11 +8247,11 @@ void emitter::emitIns_SIMD_R_R_R(
 //    offs      -- The offset added to the memory address from varx
 //
 void emitter::emitIns_SIMD_R_R_S(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs, bool isEmbBroadcast)
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs, insOpts instOptions)
 {
     if (UseSimdEncoding())
     {
-        emitIns_R_R_S(ins, attr, targetReg, op1Reg, varx, offs, isEmbBroadcast);
+        emitIns_R_R_S(ins, attr, targetReg, op1Reg, varx, offs, instOptions);
     }
     else
     {
@@ -8428,7 +8428,7 @@ void emitter::emitIns_SIMD_R_R_R_C(instruction          ins,
     assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
     emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
-    emitIns_R_R_C(ins, attr, targetReg, op2Reg, fldHnd, offs, /*isEB*/ false);
+    emitIns_R_R_C(ins, attr, targetReg, op2Reg, fldHnd, offs, INS_OPTS_NONE);
 }
 
 //------------------------------------------------------------------------
@@ -8521,7 +8521,7 @@ void emitter::emitIns_SIMD_R_R_R_S(
     assert((op2Reg != targetReg) || (op1Reg == targetReg));
 
     emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
-    emitIns_R_R_S(ins, attr, targetReg, op2Reg, varx, offs, false);
+    emitIns_R_R_S(ins, attr, targetReg, op2Reg, varx, offs, INS_OPTS_NONE);
 }
 
 //------------------------------------------------------------------------
@@ -16938,7 +16938,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             code = insCodeRM(ins);
             code = AddSimdPrefixIfNeeded(id, code, size);
-            code = AddEmbeddedBroadcast(id, code);
+            code = AddEvexbBit(id, code);
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
@@ -17181,7 +17181,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             code = insCodeRM(ins);
             code = AddSimdPrefixIfNeeded(id, code, size);
-            code = AddEmbeddedBroadcast(id, code);
+            code = AddEvexbBit(id, code);
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 

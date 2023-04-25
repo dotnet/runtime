@@ -1162,15 +1162,20 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
 //                the result is returned in register
 //
 // Arguments:
-//    ins       -- The instruction being emitted
-//    size      -- The emit size attribute
-//    targetReg -- The target register
-//    op1Reg    -- The first operand register
-//    op2       -- The second operand, which may be a memory node or a node producing a register
-//    isRMW     -- true if the instruction is RMW; otherwise, false
-//
-void CodeGen::inst_RV_RV_TT(
-    instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW)
+//    ins          -- The instruction being emitted
+//    size         -- The emit size attribute
+//    targetReg    -- The target register
+//    op1Reg       -- The first operand register
+//    op2          -- The second operand, which may be a memory node or a node producing a register
+//    isRMW        -- true if the instruction is RMW; otherwise, false
+//    simdBaseType -- the base data type for this intrinsic.
+void CodeGen::inst_RV_RV_TT(instruction ins,
+                            emitAttr    size,
+                            regNumber   targetReg,
+                            regNumber   op1Reg,
+                            GenTree*    op2,
+                            bool        isRMW,
+                            var_types   simdBaseType)
 {
     emitter* emit = GetEmitter();
     noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
@@ -1178,23 +1183,27 @@ void CodeGen::inst_RV_RV_TT(
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
-    OperandDesc op2Desc        = genOperandDesc(op2);
-    bool        IsEmbBroadcast = false;
+    OperandDesc op2Desc     = genOperandDesc(op2);
+    insOpts     instOptions = INS_OPTS_NONE;
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
-    IsEmbBroadcast = CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2);
-    if (IsEmbBroadcast && op2->OperIs(GT_CNS_VEC) && op2->AsVecCon()->IsCreatedFromScalar())
+    bool IsEmbBroadcast = CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2);
+    if (IsEmbBroadcast)
     {
-        switch (ins)
+        instOptions = INS_OPTS_EVEX_b;
+        if (op2->OperIs(GT_CNS_VEC))
         {
-            case INS_addps:
+            switch (simdBaseType)
             {
-                float scalar = static_cast<float>(op2->AsVecCon()->gtSimd32Val.f32[0]);
-                op2Desc      = OperandDesc(emit->emitFltOrDblConst(*reinterpret_cast<float*>(&scalar), EA_4BYTE));
-                break;
-            }
+                case TYP_FLOAT:
+                {
+                    float scalar = static_cast<float>(op2->AsVecCon()->gtSimd32Val.f32[0]);
+                    op2Desc      = OperandDesc(emit->emitFltOrDblConst(*reinterpret_cast<float*>(&scalar), EA_4BYTE));
+                    break;
+                }
 
-            default:
-                break;
+                default:
+                    break;
+            }
         }
     }
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
@@ -1202,12 +1211,12 @@ void CodeGen::inst_RV_RV_TT(
     {
         case OperandKind::ClsVar:
         {
-            emit->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0, IsEmbBroadcast);
+            emit->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0, instOptions);
             break;
         }
         case OperandKind::Local:
             emit->emitIns_SIMD_R_R_S(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset(),
-                                     IsEmbBroadcast);
+                                     instOptions);
             break;
 
         case OperandKind::Indir:
