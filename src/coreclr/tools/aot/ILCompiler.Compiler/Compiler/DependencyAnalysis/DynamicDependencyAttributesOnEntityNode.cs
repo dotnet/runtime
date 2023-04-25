@@ -54,15 +54,15 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            (TypeDesc owningType, IEnumerable<CustomAttributeValue<TypeDesc>> attributes) = _entity switch
-            {
-                EcmaMethod method => (method.OwningType, method.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute")),
-                _ => (((EcmaField)_entity).OwningType, ((EcmaField)_entity).GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute")),
-            };
-
             DependencyList dependencies = null;
             try
             {
+                (TypeDesc owningType, IEnumerable<CustomAttributeValue<TypeDesc>> attributes) = _entity switch
+                {
+                    EcmaMethod method => (method.OwningType, method.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute")),
+                    _ => (((EcmaField)_entity).OwningType, ((EcmaField)_entity).GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute")),
+                };
+
                 foreach (CustomAttributeValue<TypeDesc> attribute in attributes)
                 {
                     AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, _entity, owningType, attribute);
