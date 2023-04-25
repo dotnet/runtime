@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
 using System.CodeDom.Compiler;
-using Xunit;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Globalization;
-using System.Collections.Generic;
+using Xunit;
 
 namespace System.CodeDom.Tests
 {
@@ -239,6 +240,14 @@ namespace System.CodeDom.Tests
             {
                 Task result = base.FlushAsync();
                 LastCalledMethod = nameof(FlushAsync);
+
+                return result;
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                Task result = base.FlushAsync();
+                LastCalledMethod = nameof(FlushAsync) + "Cancelable";
 
                 return result;
             }
@@ -559,7 +568,6 @@ namespace System.CodeDom.Tests
         private const string TabString = "   ";
         private const string NewLine = "\n";
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(WriteAsync_MemberData))]
         public async Task WriteAsync_WithoutIndents_CallsInnerWriteAsync(Func<IndentedTextWriter, Task> callWriteAsync, string expected)
@@ -574,7 +582,6 @@ namespace System.CodeDom.Tests
             Assert.Equal(expected, indicator.GetStringBuilder().ToString());
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(WriteAsync_MemberData))]
         public async Task WriteAsync_WithIndents_WritesTabsAfterWriteLineAsync(Func<IndentedTextWriter, Task> callWriteAsync, string expected)
@@ -763,7 +770,6 @@ namespace System.CodeDom.Tests
             Assert.Equal($"{prefix}{NewLine}{TabString}{expected}", indicator.GetStringBuilder().ToString());
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
         public async Task FlushAsync_CallsUnderlyingFlushAsync()
         {
@@ -773,6 +779,43 @@ namespace System.CodeDom.Tests
             await itw.FlushAsync();
 
             Assert.Equal(nameof(IndentedTextWriter.FlushAsync), indicator.LastCalledMethod);
+        }
+
+        [Fact]
+        public async Task FlushAsync_Cancellation_CallsUnderlyingFlushAsync()
+        {
+            var indicator = new IndicatingTextWriter();
+            var itw = new IndentedTextWriter(indicator);
+
+            await itw.FlushAsync(new CancellationTokenSource().Token);
+            Assert.Equal(nameof(IndentedTextWriter.FlushAsync) + "Cancelable", indicator.LastCalledMethod);
+
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            Task t = itw.FlushAsync(cts.Token);
+            Assert.Equal(TaskStatus.Canceled, t.Status);
+            Assert.Equal(cts.Token, (await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t)).CancellationToken);
+        }
+
+        [Fact]
+        public async Task FlushAsync_DerivedIndentedTextWriter_NonCancelableFlushAsyncInvoked()
+        {
+            var itw = new DerivedIndentedTextWriter(TextWriter.Null);
+            await itw.FlushAsync(new CancellationTokenSource().Token);
+            Assert.True(itw.NonCancelableFlushAsyncInvoked);
+        }
+
+        private sealed class DerivedIndentedTextWriter : IndentedTextWriter
+        {
+            public bool NonCancelableFlushAsyncInvoked;
+
+            public DerivedIndentedTextWriter(TextWriter writer) : base(writer) { }
+
+            public override Task FlushAsync()
+            {
+                NonCancelableFlushAsyncInvoked = true;
+                return Task.CompletedTask;
+            }
         }
 
         [Fact]
