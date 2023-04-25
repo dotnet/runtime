@@ -1,8 +1,29 @@
 # Builds and copies library artifacts into target dotnet sdk image
-ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-f39df28-20191023143754
+ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:7.0-bullseye-slim
 
 FROM $BUILD_BASE_IMAGE as corefxbuild
+
+# Enable openssl legacy provider in system openssl config
+RUN fixOpensslConf=$(mktemp) && \
+    printf "#!/usr/bin/env sh\n\
+        sed -i '\n\
+            # Append 'legacy = legacy_sect' after 'default = default_sect' under [provider_sect]
+            /^default = default_sect/a legacy = legacy_sect\n\
+            # Search for [default_sect]
+            /\[default_sect\]/ {\n\
+                # Go to next line
+                n\n\
+                # Uncomment '# activate = 1'
+                s/# //\n\
+                # Append new [legacy_sect], with 'activate = 1'
+                a\n\
+                a [legacy_sect]\n\
+                a activate = 1\n\
+            }\n\
+            ' /etc/ssl/openssl.cnf\n" > $fixOpensslConf && \
+    sh $fixOpensslConf && \
+    rm $fixOpensslConf
 
 ARG CONFIGURATION=Release
 
