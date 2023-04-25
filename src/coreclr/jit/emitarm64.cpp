@@ -5689,7 +5689,8 @@ void emitter::emitIns_R_R_I(
         }
 
         // Try to optimize a load/store with an alternative instruction.
-        if (isLdrStr && emitComp->opts.OptimizationEnabled() && OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt))
+        if (isLdrStr && emitComp->opts.OptimizationEnabled() &&
+            OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, false, -1, -1 DEBUG_ARG(false)))
         {
             return;
         }
@@ -7735,8 +7736,9 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     disp = base + offs;
     assert((scale >= 0) && (scale <= 4));
 
-    regNumber reg2 = FPbased ? REG_FPBASE : REG_SPBASE;
-    reg2           = encodingSPtoZR(reg2);
+    bool      useRegForImm = false;
+    regNumber reg2         = FPbased ? REG_FPBASE : REG_SPBASE;
+    reg2                   = encodingSPtoZR(reg2);
 
     if (ins == INS_lea)
     {
@@ -7764,9 +7766,8 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
     }
     else
     {
-        bool    useRegForImm = false;
-        ssize_t mask         = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
-        imm                  = disp;
+        ssize_t mask = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+        imm          = disp;
         if (imm == 0)
         {
             fmt = IF_LS_2A;
@@ -7808,7 +7809,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
     // Try to optimize a load/store with an alternative instruction.
     if (isLdrStr && emitComp->opts.OptimizationEnabled() &&
-        OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs))
+        OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs DEBUG_ARG(useRegForImm)))
     {
         return;
     }
@@ -8042,7 +8043,7 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
     // Try to optimize a store with an alternative instruction.
     if (isStr && emitComp->opts.OptimizationEnabled() &&
-        OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs))
+        OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, true, varx, offs DEBUG_ARG(useRegForImm)))
     {
         return;
     }
@@ -16500,7 +16501,7 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
     // For LDR/ STR, there are 9 bits, so we need to limit the range explicitly in software.
     if ((imm < -64) || (imm > 63) || (prevImm < -64) || (prevImm > 63))
     {
-        // Then one or more of the immediate values is out of range, so we cannot optimise.
+        // Then one or more of the immediate values is out of range, so we cannot optimize.
         return eRO_none;
     }
 
