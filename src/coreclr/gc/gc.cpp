@@ -1398,7 +1398,6 @@ static const int32_t lock_decommissioned = 1;
 
 // If our heap got decommissioned, we need to try an existing heap.
 //inline
-#pragma optimize("", off)
 bool gc_heap::should_move_heap (GCSpinLock* msl)
 {
 #ifdef MULTIPLE_HEAPS
@@ -1411,16 +1410,23 @@ bool gc_heap::should_move_heap (GCSpinLock* msl)
     return false;
 #endif //MULTIPLE_HEAPS
 }
-#pragma optimize("", on)
+
+static uint64_t enter_spin_lock_msl_wait_time = 0;
+static uint64_t enter_spin_lock_msl_wait_count = 0;
 
 // All the places where we could be stopped because there was a suspension should call should_move_heap to check if we need to return
 // so we can try another heap or we can continue the allocation on the same heap.
+NOINLINE
 enter_msl_status gc_heap::enter_spin_lock_msl (GCSpinLock* msl)
 {
 retry:
 
     if (Interlocked::CompareExchange (&msl->lock, lock_taken, lock_free) != lock_free)
     {
+        uint64_t start = GetHighPrecisionTimeStamp();
+
+        enter_spin_lock_msl_wait_count++;
+
         unsigned int i = 0;
         while (VolatileLoad (&msl->lock) != lock_free)
         {
@@ -1458,6 +1464,8 @@ retry:
                 WaitLongerNoInstru (i);
             }
         }
+        uint64_t end = GetHighPrecisionTimeStamp();
+        Interlocked::ExchangeAdd64(&enter_spin_lock_msl_wait_time, end - start);
         goto retry;
     }
 
@@ -6940,9 +6948,7 @@ bool gc_heap::create_gc_thread ()
     return GCToEEInterface::CreateThread(gc_thread_stub, this, false, ".NET Server GC");
 }
 
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
 static size_t prev_change_heap_count_gc_index;
-#endif //STRESS_DYNAMIC_HEAP_COUNT
 
 #ifdef _MSC_VER
 #pragma warning(disable:4715) //IA64 xcompiler recognizes that without the 'break;' the while(1) will never end and therefore not return a value for that code path
@@ -7088,28 +7094,73 @@ void gc_heap::gc_thread_function ()
             {
                 gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
             }
-#ifdef STRESS_DYNAMIC_HEAP_COUNT
-            // quick hack for initial testing
+#ifdef DYNAMIC_HEAP_COUNT
             if ((settings.gc_index >= (prev_change_heap_count_gc_index + 20))
-                && !gc_heap::background_running_p())
+                && !gc_heap::background_running_p()
+                && GCConfig::GetHeapCount() == 0)
             {
                 // can't have threads allocating while we change the number of heaps
                 GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
 
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+            // quick hack for initial testing
                 int new_n_heaps = (int)gc_rand::get_rand (n_max_heaps - 1) + 1;
+#else //STRESS_DYNAMIC_HEAP_COUNT
+                // as a rough approximation, just use the total number of allocating threads
+                int total_alloc_contexts_used = 0;
+                for (int i = 0; i < n_heaps; i++)
+                {
+                    total_alloc_contexts_used += (int)g_heaps[i]->alloc_contexts_used;
+                }
+                int extra_heaps = 1 + (n_max_heaps >= 32);
+                int new_n_heaps = total_alloc_contexts_used;
+                if (new_n_heaps > n_heaps)
+                {
+                    // we want to increase the heap count gradually
+                    int step_up = max (2, n_max_heaps/10);
+                    if (new_n_heaps - n_heaps >= step_up)
+                    {
+                        new_n_heaps = n_heaps + step_up;
+                        new_n_heaps = min (new_n_heaps, n_max_heaps-extra_heaps);
+                    }
+                    else
+                    {
+                        new_n_heaps = n_heaps;
+                    }
+                }
+                else if (new_n_heaps < n_heaps)
+                {
+                    // we want to decrease the heap count gradually
+                    int step_down = max (2, n_max_heaps/10);
+                    if (n_heaps - new_n_heaps >= step_down)
+                    {
+                        new_n_heaps = n_heaps - step_down;
+                        new_n_heaps = max (new_n_heaps, 1);
+                    }
+                    else
+                    {
+                        new_n_heaps = n_heaps;
+                    }
+                }
+#endif //STRESS_DYNAMIC_HEAP_COUNT
 
                 // if we are adjusting down, make sure we adjust lower than the lowest uoh msl heap
                 if ((new_n_heaps < n_heaps) && (lowest_heap_with_msl_uoh != -1))
                 {
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
                     new_n_heaps = min (lowest_heap_with_msl_uoh, new_n_heaps);
+#endif //STRESS_DYNAMIC_HEAP_COUNT
                     new_n_heaps = max (new_n_heaps, 1);
                 }
-                change_heap_count (new_n_heaps);
+                if (new_n_heaps != n_heaps)
+                {
+                    change_heap_count (new_n_heaps);
+                }
                 prev_change_heap_count_gc_index = settings.gc_index;
 
                 GCToEEInterface::RestartEE(TRUE);
             }
-#endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_HEAP_COUNT
         }
         else
         {
@@ -24291,9 +24342,8 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
             if (heap_segment_rw (generation_start_segment (gen)) == nullptr)
             {
                 size_t size = gen_idx > max_generation ? global_region_allocator.get_large_region_alignment() : 0;
-                heap_segment* start_region = hp->get_free_region (gen_idx, size);
+                heap_segment* start_region = hp->get_new_region (gen_idx, size);
                 assert (start_region);
-                hp->thread_start_region (gen, start_region);
             }
 
             hp->verify_regions (gen_idx, true, true);
@@ -24313,7 +24363,7 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
 #endif //MULTIPLE_HEAPS
 }
 
-#ifdef MULTIPLE_HEAPS
+#ifdef DYNAMIC_HEAP_COUNT
 
 // check that the fields of a decommissioned heap have their expected values,
 // i.e. were not inadvertently modified
@@ -24801,7 +24851,10 @@ bool gc_heap::change_heap_count (int new_n_heaps)
     {
         gc_heap* hp = g_heaps[i];
 
-        hp->fix_allocation_contexts (TRUE);
+        if (GCScan::GetGcRuntimeStructuresValid())
+        {
+            hp->fix_allocation_contexts (TRUE);
+        }
         dprintf (REGIONS_LOG, ("heap %d: ephemeral region %zx set allocated to %zx",
             i,
             hp->ephemeral_heap_segment,
@@ -24972,14 +25025,17 @@ bool gc_heap::change_heap_count (int new_n_heaps)
         hp->decommission_heap();
     }
 
-    // make sure no allocation contexts point to idle heaps
-    fix_allocation_contexts_heaps();
+    if (GCScan::GetGcRuntimeStructuresValid())
+    {
+        // make sure no allocation contexts point to idle heaps
+        fix_allocation_contexts_heaps();
+    }
 
-    GCConfig::s_HeapVerifyLevel = 1;
+//    GCConfig::s_HeapVerifyLevel = 1;
 
     return true;
 }
-#endif //MULTIPLE_HEAPS
+#endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
 
 
@@ -33181,8 +33237,16 @@ heap_segment* gc_heap::get_new_region (int gen_number, size_t size)
         }
 
         generation* gen = generation_of (gen_number);
-        heap_segment_next (generation_tail_region (gen)) = new_region;
-        generation_tail_region (gen) = new_region;
+        heap_segment* prev_region = generation_tail_region (gen);
+        if (prev_region != nullptr)
+        {
+            heap_segment_next (prev_region) = new_region;
+            generation_tail_region (gen) = new_region;
+        }
+        else
+        {
+            thread_start_region (gen, new_region);
+        }
 
         verify_regions (gen_number, false, settings.concurrent);
     }
@@ -47132,6 +47196,14 @@ HRESULT GCHeap::Initialize()
 #endif //USE_REGIONS
     if (hr == S_OK)
     {
+#ifdef DYNAMIC_HEAP_COUNT
+        // if no heap count was specified...
+        if (GCConfig::GetHeapCount() == 0)
+        {
+            // ... start with only 1 heap
+            gc_heap::change_heap_count (1);
+        }
+#endif //DYNAMIC_HEAP_COUNT
         GCScan::GcRuntimeStructuresValid (TRUE);
 
         GCToEEInterface::DiagUpdateGenerationBounds();

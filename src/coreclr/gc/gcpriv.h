@@ -145,10 +145,11 @@ inline void FATAL_GC_ERROR()
 #define SPINLOCK_HISTORY
 #define RECORD_LOH_STATE
 
-#ifdef USE_REGIONS
+#if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
 // can only change heap count with regions
+#define DYNAMIC_HEAP_COUNT
 //#define STRESS_DYNAMIC_HEAP_COUNT
-#endif
+#endif //USE_REGIONS && MULTIPLE_HEAPS
 
 #ifdef USE_REGIONS
 // Currently this -
@@ -233,7 +234,7 @@ inline void FATAL_GC_ERROR()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-//#define TRACE_GC
+#define TRACE_GC
 //#define SIMPLE_DPRINTF
 
 //#define JOIN_STATS         //amount of time spent in the join
