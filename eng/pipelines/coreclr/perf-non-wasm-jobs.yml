@@ -170,7 +170,7 @@ jobs:
   #       - osx_x64
   #     variables:
   #       - name: mauiVersion
-  #         value: $[ dependencies.Build_ios_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ]
+  #         value: $[ dependencies.Build_ios_arm64_release_PerfBDNAppNet6.outputs['getMauiVersion.mauiVersion'] ]
   #     jobParameters:
   #       testGroup: perf
   #       runtimeType: iOSMobileNet6
@@ -353,7 +353,7 @@ jobs:
         extraStepsParameters:
           name: MonoRuntimePacks
 
-  # build maui apps
+  # build PerfBDN app
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -365,16 +365,16 @@ jobs:
         dependsOn:
          - Build_android_arm64_release_Mono_Packs
         buildArgs: -s mono -c $(_BuildConfig)
-        nameSuffix: MACiOSAndroidMaui
+        nameSuffix: PerfBDNApp
         isOfficialBuild: false
         pool:
           vmImage: 'macos-12'
-        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps-main.yml
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-bdn-app.yml
         extraStepsParameters:
           rootFolder: '$(Build.SourcesDirectory)/artifacts/'
           includeRootFolder: true
-          displayName: MAC, iOS, and Android Maui Artifacts
-          artifactName: MACiOSAndroidMauiArm
+          displayName: Android BDN App Artifacts
+          artifactName: PerfBDNAppArm
           archiveExtension: '.tar.gz'
           archiveType: tar
           tarCompression: gz
