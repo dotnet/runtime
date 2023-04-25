@@ -112,7 +112,6 @@
     <CommonPath>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', 'src'))</CommonPath>
     <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
     <NativeAotSourcesRoot>$(MSBuildThisFileDirectory)..\nativeaot\System.Private.CoreLib\src</NativeAotSourcesRoot>
-    <AotCommonPath>$(NativeAotSourcesRoot)\..\..\Common\src</AotCommonPath>
   </PropertyGroup>
 
   <!-- Compilation options -->
@@ -296,9 +295,9 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.CoreCLR.Windows.cs" />
     <Compile Include="$(NativeAotSourcesRoot)\Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\System\Threading\Win32ThreadPoolNativeOverlapped.OverlappedData.cs" />
     <Compile Include="$(NativeAotSourcesRoot)\System\Threading\Win32ThreadPoolNativeOverlapped.cs" />
     <Compile Include="$(NativeAotSourcesRoot)\System\Threading\Win32ThreadPoolNativeOverlapped.ExecutionContextCallbackArgs.cs" />
+    <Compile Include="$(NativeAotSourcesRoot)\System\Threading\Win32ThreadPoolNativeOverlapped.OverlappedData.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadPoolIO.cs">
       <Link>Interop\Windows\Kernel32\Interop.ThreadPoolIO.cs</Link>
     </Compile>
