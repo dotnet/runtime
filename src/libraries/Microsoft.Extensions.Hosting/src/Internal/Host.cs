@@ -70,15 +70,22 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             if (_options.ServicesStartConcurrently)
             {
-                Task tasks = Task.WhenAll(_hostedServices.Select(service => Task.Run(() => StartAndTryToExecuteAsync(service, combinedCancellationToken), cancellationToken)));
+                List<Task> tasks = new List<Task>();
+
+                foreach (IHostedService hostedService in _hostedServices)
+                {
+                    tasks.Add(Task.Run(() => StartAndTryToExecuteAsync(hostedService, combinedCancellationToken), combinedCancellationToken));
+                }
+
+                Task groupedTasks = Task.WhenAll(tasks);
 
                 try
                 {
-                    await tasks.ConfigureAwait(false);
+                    await groupedTasks.ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    exceptions.AddRange(tasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
+                    exceptions.AddRange(groupedTasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
                 }
             }
             else
@@ -182,15 +189,22 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                     if (_options.ServicesStopConcurrently)
                     {
-                        Task tasks = Task.WhenAll(hostedServices.Select(service => Task.Run(() => service.StopAsync(token), cancellationToken)));
+                        List<Task> tasks = new List<Task>();
+
+                        foreach (IHostedService hostedService in hostedServices)
+                        {
+                            tasks.Add(Task.Run(() => hostedService.StopAsync(token), token));
+                        }
+
+                        Task groupedTasks = Task.WhenAll(tasks);
 
                         try
                         {
-                            await tasks.ConfigureAwait(false);
+                            await groupedTasks.ConfigureAwait(false);
                         }
                         catch (Exception ex)
                         {
-                            exceptions.AddRange(tasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
+                            exceptions.AddRange(groupedTasks.Exception?.InnerExceptions ?? new[] { ex }.AsEnumerable());
                         }
                     }
                     else
