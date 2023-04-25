@@ -11864,7 +11864,7 @@ SKIP_GC_UPDATE:
         if (emitInsWritesToLclVarStackLocPair(id))
         {
             int      varNum2 = varNum;
-            unsigned ofs2    = ofs + size;
+            unsigned ofs2    = ofs + TARGET_POINTER_SIZE;
             int      adr2    = adr;
 
             if (id->idIsLclVarPair())
@@ -11884,7 +11884,7 @@ SKIP_GC_UPDATE:
                 // If there are 2 GC vars in this instrDesc, get the 2nd variable
                 // that should be tracked.
                 adr2 = emitComp->lvaFrameAddress(varNum2, &FPbased2);
-                ofs2 = AlignDown(ofs2, TARGET_POINTER_SIZE);
+                ofs2 = AlignDown(ofs2, size);
 #ifdef DEBUG
                 assert(FPbased == FPbased2);
                 if (FPbased)
@@ -11896,7 +11896,12 @@ SKIP_GC_UPDATE:
                     assert(id->idReg3() == REG_SP);
                 }
                 assert(varNum2 != -1);
+                assert((adr + ofs + size) == (adr2 + ofs2));
 #endif // DEBUG
+            }
+            else
+            {
+                assert((adr + ofs + TARGET_POINTER_SIZE) == (adr2 + ofs2));
             }
 
             if (id->idGCrefReg2() != GCT_NONE)
