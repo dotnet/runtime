@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.Http.Logging
                 }
             }
         }
-        
+
 #if NET5_0_OR_GREATER
         /// <inheritdoc />
         /// <remarks>Logs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.Http.Logging
                 return response;
             }
         }
-#endif        
+#endif
 
         // Used in tests
         internal static class Log
