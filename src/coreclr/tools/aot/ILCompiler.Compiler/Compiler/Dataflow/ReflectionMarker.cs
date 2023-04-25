@@ -148,9 +148,9 @@ namespace ILCompiler.Dataflow
                 return;
 
             if (property.GetMethod != null)
-                MarkMethod(origin, property.GetMethod, reason);
+                MarkMethod(origin, property.GetMethod, reason, accessKind);
             if (property.SetMethod != null)
-                MarkMethod(origin, property.SetMethod, reason);
+                MarkMethod(origin, property.SetMethod, reason, accessKind);
         }
 
         private void MarkEvent(in MessageOrigin origin, EventPseudoDesc @event, string reason, AccessKind accessKind = AccessKind.Unspecified)
@@ -159,9 +159,9 @@ namespace ILCompiler.Dataflow
                 return;
 
             if (@event.AddMethod != null)
-                MarkMethod(origin, @event.AddMethod, reason);
+                MarkMethod(origin, @event.AddMethod, reason, accessKind);
             if (@event.RemoveMethod != null)
-                MarkMethod(origin, @event.RemoveMethod, reason);
+                MarkMethod(origin, @event.RemoveMethod, reason, accessKind);
         }
 
         internal void MarkConstructorsOnType(in MessageOrigin origin, TypeDesc type, Func<MethodDesc, bool>? filter, string reason, BindingFlags? bindingFlags = null)
@@ -279,10 +279,10 @@ namespace ILCompiler.Dataflow
             // PERF: Avoid precomputing this as this method is relatively expensive. Only call it once we're about to produce a warning.
             static bool ShouldSkipWarningsForOverride(TypeSystemEntity entity, AccessKind accessKind)
             {
-                if (accessKind != AccessKind.DynamicallyAccessedMembersMark || entity is not MethodDesc method || !method.IsVirtual)
+                if (accessKind != AccessKind.DynamicallyAccessedMembersMark)
                     return false;
 
-                return MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method) != method;
+                return IsMethodOverride(entity);
             }
         }
 
@@ -342,12 +342,27 @@ namespace ILCompiler.Dataflow
             // (else we will produce warning IL2046 or IL2092 or some other warning).
             // When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
             static bool ShouldSkipWarningsForOverride(TypeSystemEntity entity)
-            {
-                if (entity is not MethodDesc method || !method.IsVirtual)
-                    return false;
+                => IsMethodOverride(entity);
+        }
 
-                return MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method) != method;
+        private static bool IsMethodOverride(TypeSystemEntity entity)
+        {
+            if (entity is not MethodDesc method || !method.IsVirtual || method.IsAbstract)
+                return false;
+
+            foreach (var interfaceType in method.OwningType.RuntimeInterfaces)
+            {
+                foreach (var interfaceMethod in interfaceType.GetVirtualMethods())
+                {
+                    if (method.OwningType.ResolveInterfaceMethodTarget(interfaceMethod) == method)
+                        return true;
+                }
             }
+
+            if (MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method) != method)
+                return true;
+
+            return false;
         }
 
         private void ReportRequires(in MessageOrigin origin, TypeSystemEntity entity, string requiresAttributeName, in CustomAttributeValue<TypeDesc> requiresAttribute)
