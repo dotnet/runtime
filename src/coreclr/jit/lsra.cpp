@@ -1304,15 +1304,7 @@ PhaseStatus LinearScan::doLinearScan()
 
     DBEXEC(VERBOSE, lsraDumpIntervals("after buildIntervals"));
 
-    if (!enregisterLocalVars)
-    {
-        inVarToRegMaps  = nullptr;
-        outVarToRegMaps = nullptr;
-    }
-    else
-    {
-        initVarRegMaps();
-    }
+    initVarRegMaps();
 
 #ifdef TARGET_ARM64
     if (compiler->info.compNeedsConsecutiveRegisters)
