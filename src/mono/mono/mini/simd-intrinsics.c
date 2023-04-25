@@ -3335,7 +3335,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_PolynomialMultiply, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_PMUL},
 	{SN_PolynomialMultiplyWideningLower, OP_ARM64_PMULL},
 	{SN_PolynomialMultiplyWideningUpper, OP_ARM64_PMULL2},
-	{SN_PopCount, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_CNT},
+	{SN_PopCount, OP_XOP_OVR_X_X, INTRINS_SIMD_POPCNT},
 	{SN_ReciprocalEstimate, None, None, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_URECPE, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPE},
 	{SN_ReciprocalEstimateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPE},
 	{SN_ReciprocalExponentScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPX},
@@ -4965,9 +4965,13 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Add},
 	{SN_AddPairwiseWidening},
 	{SN_AddSaturate},
+	{SN_AllTrue},
 	{SN_And, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_AND},
+	{SN_AndNot},
+	{SN_AnyTrue},
 	{SN_AverageRounded},
 	{SN_Bitmask, OP_WASM_SIMD_BITMASK},
+	{SN_BitwiseSelect, OP_BSL},
 	{SN_CompareEqual},
 	{SN_CompareNotEqual},
 	{SN_ConvertNarrowingSignedSaturate},
@@ -4981,6 +4985,9 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_MultiplyWideningLower, OP_WASM_EXTMUL_LOWER, 0, OP_WASM_EXTMUL_LOWER_U},
 	{SN_MultiplyWideningUpper, OP_WASM_EXTMUL_UPPER, 0, OP_WASM_EXTMUL_UPPER_U},
 	{SN_Negate},
+	{SN_Not, OP_WASM_ONESCOMPLEMENT},
+	{SN_Or, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_OR},
+	{SN_PopCount, OP_XOP_OVR_X_X, INTRINS_SIMD_POPCNT},
 	{SN_ReplaceLane},
 	{SN_ShiftLeft, OP_SIMD_SHL},
 	{SN_ShiftRightArithmetic, OP_SIMD_SSHR},
@@ -4990,6 +4997,7 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Subtract},
 	{SN_SubtractSaturate},
 	{SN_Swizzle, OP_WASM_SIMD_SWIZZLE},
+	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_XOR},
 	{SN_get_IsSupported},
 };
 
@@ -5071,6 +5079,72 @@ emit_wasm_supported_intrinsics (
 				return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 			case SN_Negate:
 				return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
+			case SN_AndNot: {
+				/* Swap lhs and rhs because Vector128 needs lhs & !rhs
+				whereas SSE2 does !lhs & rhs */
+				MonoInst *tmp = args[0];
+				args[0] = args[1];
+				args[1] = tmp;
+				op = OP_VECTOR_ANDN;
+				// continue with default emit
+				break;
+			}
+			case SN_AnyTrue: {
+				op = OP_XOP_X_X;
+
+				switch (arg0_type) {
+				case MONO_TYPE_U1:
+				case MONO_TYPE_I1:
+						c0 = INTRINS_WASM_ANYTRUE_V16;
+						break;
+				case MONO_TYPE_U2:
+				case MONO_TYPE_I2:
+						c0 = INTRINS_WASM_ANYTRUE_V8;
+						break;
+				case MONO_TYPE_U4:
+				case MONO_TYPE_I4:
+						c0 = INTRINS_WASM_ANYTRUE_V4;
+						break;
+				case MONO_TYPE_U8:
+				case MONO_TYPE_I8:
+						c0 = INTRINS_WASM_ANYTRUE_V2;
+						break;
+				}
+
+				// continue with default emit
+				if (c0 != 0)
+						break;
+
+				return NULL;
+			}
+			case SN_AllTrue: {
+				op = OP_XOP_X_X;
+
+				switch (arg0_type) {
+				case MONO_TYPE_U1:
+				case MONO_TYPE_I1:
+						c0 = INTRINS_WASM_ALLTRUE_V16;
+						break;
+				case MONO_TYPE_U2:
+				case MONO_TYPE_I2:
+						c0 = INTRINS_WASM_ALLTRUE_V8;
+						break;
+				case MONO_TYPE_U4:
+				case MONO_TYPE_I4:
+						c0 = INTRINS_WASM_ALLTRUE_V4;
+						break;
+				case MONO_TYPE_U8:
+				case MONO_TYPE_I8:
+						c0 = INTRINS_WASM_ALLTRUE_V2;
+						break;
+				}
+
+				// continue with default emit
+				if (c0 != 0)
+						break;
+
+				return NULL;
+			}
 			case SN_AddPairwiseWidening: {
 				op = OP_XOP_X_X;
 

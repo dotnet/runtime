@@ -254,6 +254,9 @@ INTRINS_OVR(SSE_UADD_SATI8, uadd_sat, Generic, v128_i1_t)
 INTRINS_OVR(SSE_SADD_SATI16, sadd_sat, Generic, v128_i2_t)
 INTRINS_OVR(SSE_UADD_SATI16, uadd_sat, Generic, v128_i2_t)
 #endif
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
+INTRINS_OVR_TAG(SIMD_POPCNT, ctpop, Generic, V64 | V128 | I1)
+#endif
 #if defined(TARGET_WASM)
 INTRINS_OVR(WASM_EXTADD_PAIRWISE_SIGNED_V16, wasm_extadd_pairwise_signed, Wasm, sse_i2_t)
 INTRINS_OVR(WASM_EXTADD_PAIRWISE_SIGNED_V8, wasm_extadd_pairwise_signed, Wasm, sse_i4_t)
@@ -419,8 +422,6 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_PMUL, aarch64_neon_pmul, Arm64, V64 | V128 | I1
 INTRINS_OVR(AARCH64_ADV_SIMD_PMULL, aarch64_neon_pmull, Arm64, v128_i2_t)
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FMULX, aarch64_neon_fmulx, Arm64, Scalar | V64 | V128 | R4 | R8)
-
-INTRINS_OVR_TAG(AARCH64_ADV_SIMD_CNT, ctpop, Generic, V64 | V128 | I1)
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_URECPE, aarch64_neon_urecpe, Arm64, V64 | V128 | I4)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRECPE, aarch64_neon_frecpe, Arm64, Scalar | V64 | V128 | R4 | R8)

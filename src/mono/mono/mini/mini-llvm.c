@@ -8704,6 +8704,12 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
 			break;
 		}
+		case OP_XOP_OVR_X_X: {
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "");
+			break;
+		}
 #endif
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -11457,12 +11463,6 @@ MONO_RESTORE_WARNING
 			}
 			llvm_ovr_tag_t ovr_tag = (LLVMGetVectorSize (LLVMTypeOf (indexes_val)) == 8 ? INTRIN_vector64 : INTRIN_vector128) | INTRIN_int8;
 			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
-			break;
-		}
-		case OP_XOP_OVR_X_X: {
-			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
-			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
-			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "");
 			break;
 		}
 		case OP_XOP_OVR_X_X_X: {
