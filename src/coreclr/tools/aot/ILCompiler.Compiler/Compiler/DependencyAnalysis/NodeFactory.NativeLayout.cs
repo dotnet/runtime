@@ -185,6 +185,12 @@ namespace ILCompiler.DependencyAnalysis
                     type = ((ParameterizedType)type).ParameterType;
                 }
 
+                // We stripped byrefs, pointers and arrays above. If we're left with a function pointer,
+                // we are done. No templates needed for function pointers since their MethodTables
+                // don't carry anything interesting.
+                if (type.IsFunctionPointer)
+                    yield break;
+
                 TypeDesc canonicalType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
                 yield return _factory.MaximallyConstructableType(canonicalType);
 
@@ -236,12 +242,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     GenericParameterDesc genericParameter = ((RuntimeDeterminedType)type).RuntimeDeterminedDetailsType;
                     type = _factory.TypeSystemContext.GetSignatureVariable(genericParameter.Index, method: (genericParameter.Kind == GenericParameterKind.Method));
-                }
-
-                if (type.Category == TypeFlags.FunctionPointer)
-                {
-                    // Pretend for now it's an IntPtr, may need to be revisited depending on https://github.com/dotnet/runtime/issues/11354
-                    type = _factory.TypeSystemContext.GetWellKnownType(WellKnownType.IntPtr);
                 }
 
                 return _typeSignatures.GetOrAdd(type);
