@@ -30,7 +30,7 @@ namespace System.IO.Compression.Tests
         [Fact]
         public void ExtractToDirectoryNull()
         {
-            AssertExtensions.Throws<ArgumentNullException>("sourceArchiveFileName", () => ZipFile.ExtractToDirectory(null, GetTestFilePath()));
+            AssertExtensions.Throws<ArgumentNullException>("sourceArchiveFileName", () => ZipFile.ExtractToDirectory(sourceArchiveFileName: null, GetTestFilePath()));
         }
 
         [Fact]
@@ -197,11 +197,11 @@ namespace System.IO.Compression.Tests
 
         [Fact]
         public void DirectoryEntryWithData()
-            {
+        {
             string archivePath = GetTestFilePath();
             using (ZipArchive archive = ZipFile.Open(archivePath, ZipArchiveMode.Create))
             using (StreamWriter writer = new StreamWriter(archive.CreateEntry("testdir" + Path.DirectorySeparatorChar, CompressionLevel.Optimal).Open()))
-                {
+            {
                 writer.Write("This is a test.");
             }
             Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(archivePath, GetTestFilePath()));
