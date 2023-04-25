@@ -102,7 +102,10 @@ namespace System.Threading
 
         void IDeferredDisposable.OnFinalRelease(bool disposed)
         {
-            IDeferredDisposableOnFinalReleaseCore(disposed);
+            if (ThreadPool.UseWindowsThreadPool)
+            {
+                IDeferredDisposableOnFinalReleaseCore(disposed);
+            }
         }
     }
 }
