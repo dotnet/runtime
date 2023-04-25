@@ -15551,9 +15551,9 @@ ssize_t emitter::TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspI
             disp8Compression = inputSize * 4;
             break;
         case INS_TT_TUPLE8:
-            // N = input size in bytes * 4, 32bit for 512 only
+            // N = input size in bytes * 8, 32bit for 512 only
             assert((inputSize == 4 && vectorLength >= 64));
-            disp8Compression = inputSize * 4;
+            disp8Compression = inputSize * 8;
             break;
         case INS_TT_HALF_MEM:
             // N = vector length in bytes / 2
