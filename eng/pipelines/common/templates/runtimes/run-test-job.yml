@@ -647,6 +647,13 @@ jobs:
           displayName: 'Upload artifacts SuperPMI $(CollectionName)-$(CollectionType) collection'
           condition: always()
 
+      # Add authenticated pip feed
+      - task: PipAuthenticate@1
+        displayName: 'Pip Authenticate'
+        inputs:
+          artifactFeeds: public/dotnet-public-pypi
+          onlyAddExtraIndex: false
+
       # Ensure the Python azure-storage-blob package is installed before doing the upload.
       - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
         displayName: Upgrade Pip to latest and install azure-storage-blob Python package
