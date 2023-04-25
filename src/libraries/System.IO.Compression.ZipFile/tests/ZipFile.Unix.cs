@@ -184,7 +184,7 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)] // browser doesn't have libc mkfifo.
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no normal file permissions")]
         public void ZipNamedPipeIsNotSupported()
         {
