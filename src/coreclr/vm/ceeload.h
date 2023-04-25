@@ -90,6 +90,8 @@ class EnCEEClassData;
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
 #elif defined(HOST_LOONGARCH64)
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.loongarch64.dll")
+#elif defined(HOST_RISCV64)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.riscv64.dll")
 #endif
 
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;

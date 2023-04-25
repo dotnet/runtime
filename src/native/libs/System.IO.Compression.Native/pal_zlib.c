@@ -9,7 +9,11 @@
     #ifdef  _WIN32
         #define c_static_assert(e) static_assert((e),"")
     #endif
-    #include <external/zlib/zlib.h>
+    #ifdef INTERNAL_ZLIB_INTEL
+        #include <external/zlib-intel/zlib.h>
+    #else
+        #include <external/zlib/zlib.h>
+    #endif
 #else
     #include "pal_utilities.h"
     #include <zlib.h>
@@ -39,14 +43,11 @@ Initializes the PAL_ZStream by creating and setting its underlying z_stream.
 */
 static int32_t Init(PAL_ZStream* stream)
 {
-    z_stream* zStream = (z_stream*)malloc(sizeof(z_stream));
+    z_stream* zStream = (z_stream*)calloc(1, sizeof(z_stream));
     stream->internalState = zStream;
 
     if (zStream != NULL)
     {
-        zStream->zalloc = Z_NULL;
-        zStream->zfree = Z_NULL;
-        zStream->opaque = Z_NULL;
         return PAL_Z_OK;
     }
     else
@@ -137,17 +138,6 @@ int32_t CompressionNative_Deflate(PAL_ZStream* stream, int32_t flush)
     return result;
 }
 
-int32_t CompressionNative_DeflateReset(PAL_ZStream* stream)
-{
-    assert(stream != NULL);
-
-    z_stream* zStream = GetCurrentZStream(stream);
-    int32_t result = deflateReset(zStream);
-    TransferStateToPalZStream(zStream, stream);
-
-    return result;
-}
-
 int32_t CompressionNative_DeflateEnd(PAL_ZStream* stream)
 {
     assert(stream != NULL);
@@ -180,17 +170,6 @@ int32_t CompressionNative_Inflate(PAL_ZStream* stream, int32_t flush)
 
     z_stream* zStream = GetCurrentZStream(stream);
     int32_t result = inflate(zStream, flush);
-    TransferStateToPalZStream(zStream, stream);
-
-    return result;
-}
-
-int32_t CompressionNative_InflateReset(PAL_ZStream* stream)
-{
-    assert(stream != NULL);
-
-    z_stream* zStream = GetCurrentZStream(stream);
-    int32_t result = inflateReset(zStream);
     TransferStateToPalZStream(zStream, stream);
 
     return result;

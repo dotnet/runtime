@@ -637,7 +637,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
             srcCount = BuildBlockStore(tree->AsBlk());
             break;
@@ -764,7 +763,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_JCC:
         case GT_SETCC:
         case GT_MEMORYBARRIER:
-        case GT_OBJ:
             srcCount = BuildSimple(tree);
             break;
 

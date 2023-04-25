@@ -86,6 +86,19 @@ namespace System
             SetEnvironmentVariableFromRegistry(variable, value, fromMachine: fromMachine);
         }
 
+#if !MONO
+        internal static string[]? s_commandLineArgs;
+
+        public static string[] GetCommandLineArgs()
+        {
+            // s_commandLineArgs is expected to be initialize with application command line arguments
+            // during startup. GetCommandLineArgsNative fallback is used for hosted libraries.
+            return s_commandLineArgs != null ?
+                (string[])s_commandLineArgs.Clone() :
+                GetCommandLineArgsNative();
+        }
+#endif
+
         public static string CommandLine => PasteArguments.Paste(GetCommandLineArgs(), pasteFirstArgumentUsingArgV0Rules: true);
 
         public static string CurrentDirectory

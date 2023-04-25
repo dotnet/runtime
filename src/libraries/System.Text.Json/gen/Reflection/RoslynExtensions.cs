@@ -10,7 +10,7 @@ namespace System.Text.Json.Reflection
 {
     internal static class RoslynExtensions
     {
-        [return: NotNullIfNotNull("typeSymbol")]
+        [return: NotNullIfNotNull(nameof(typeSymbol))]
         public static Type? AsType(this ITypeSymbol? typeSymbol, MetadataLoadContextInternal metadataLoadContext)
         {
             if (typeSymbol == null)

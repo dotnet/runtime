@@ -7,6 +7,7 @@
 // access, due to it being removed, private or something similar.
 ////////////////////////////////////////////////////////////////////////////////
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System
@@ -42,6 +43,8 @@ namespace System
             HResult = HResults.COR_E_MEMBERACCESS;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected MemberAccessException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

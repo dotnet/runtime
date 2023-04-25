@@ -39,65 +39,17 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
 
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates calling via reflection works, using Load
-                    test.RunReflectionScenario_Load();
-                }
-
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates passing a static member works, using pinning and Load
-                    test.RunClsVarScenario_Load();
-                }
-
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
-
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates passing a local works, using Load
-                    test.RunLclVarScenario_Load();
-                }
-
-                // Validates passing the field of a local class works
-                test.RunClassLclFldScenario();
-
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates passing the field of a local class works, using pinning and Load
-                    test.RunClassLclFldScenario_Load();
-                }
 
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
 
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates passing an instance member of a class works, using pinning and Load
-                    test.RunClassFldScenario_Load();
-                }
-
                 // Validates passing the field of a local struct works
                 test.RunStructLclFldScenario();
 
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates passing the field of a local struct works, using pinning and Load
-                    test.RunStructLclFldScenario_Load();
-                }
-
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
-
-                if ({LoadIsa}.IsSupported)
-                {
-                    // Validates passing an instance member of a struct works, using pinning and Load
-                    test.RunStructFldScenario_Load();
-                }
             }
             else
             {
@@ -179,16 +131,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 testClass.ValidateResult(_fld1, testClass._dataTable.outArrayPtr);
             }
-
-            public void RunStructFldScenario_Load(StoreSelectedScalarTest__{TestName} testClass)
-            {
-                fixed ({Op1VectorType}<{Op1BaseType}>* pFld1 = &_fld1)
-                {
-                    {Isa}.{Method}(({RetBaseType}*)testClass._dataTable.outArrayPtr, {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pFld1)), {ElementIndex});
-
-                    testClass.ValidateResult(_fld1, testClass._dataTable.outArrayPtr);
-                }
-            }
         }
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
@@ -199,17 +141,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
 
-        private static {Op1VectorType}<{Op1BaseType}> _clsVar1;
-
         private {Op1VectorType}<{Op1BaseType}> _fld1;
 
         private DataTable _dataTable;
-
-        static StoreSelectedScalarTest__{TestName}()
-        {
-            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _clsVar1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-        }
 
         public StoreSelectedScalarTest__{TestName}()
         {
@@ -257,40 +191,6 @@ namespace JIT.HardwareIntrinsics.Arm
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
         }
 
-        public void RunReflectionScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
-
-            typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({RetBaseType}*), typeof({Op1VectorType}<{Op1BaseType}>), typeof(byte) })
-                                     .Invoke(null, new object[] {
-                                        Pointer.Box(_dataTable.outArrayPtr, typeof({RetBaseType}*)),
-                                        {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArray1Ptr)),
-                                        ElementIndex });
-
-            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
-        }
-
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            {Isa}.{Method}(({RetBaseType}*)_dataTable.outArrayPtr, _clsVar1, {ElementIndex});
-
-            ValidateResult(_clsVar1, _dataTable.outArrayPtr);
-        }
-
-        public void RunClsVarScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario_Load));
-
-            fixed ({Op1VectorType}<{Op1BaseType}>* pClsVar1 = &_clsVar1)
-            {
-                {Isa}.{Method}(({Op1BaseType}*)_dataTable.outArrayPtr, {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pClsVar1)), {ElementIndex});
-
-                ValidateResult(_clsVar1, _dataTable.outArrayPtr);
-            }
-        }
-
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
@@ -301,40 +201,6 @@ namespace JIT.HardwareIntrinsics.Arm
             ValidateResult(op1, _dataTable.outArrayPtr);
         }
 
-        public void RunLclVarScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
-
-            var op1 = {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(_dataTable.inArray1Ptr));
-            {Isa}.{Method}(({RetBaseType}*)_dataTable.outArrayPtr, op1, {ElementIndex});
-
-            ValidateResult(op1, _dataTable.outArrayPtr);
-        }
-
-        public void RunClassLclFldScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
-
-            var test = new StoreSelectedScalarTest__{TestName}();
-            {Isa}.{Method}(({RetBaseType}*)_dataTable.outArrayPtr, test._fld1, {ElementIndex});
-
-            ValidateResult(test._fld1, _dataTable.outArrayPtr);
-        }
-
-        public void RunClassLclFldScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
-
-            var test = new StoreSelectedScalarTest__{TestName}();
-
-            fixed ({Op1VectorType}<{Op1BaseType}>* pFld1 = &test._fld1)
-            {
-                {Isa}.{Method}(({RetBaseType}*)_dataTable.outArrayPtr, {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pFld1)), {ElementIndex});
-
-                ValidateResult(test._fld1, _dataTable.outArrayPtr);
-            }
-        }
-
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
@@ -342,18 +208,6 @@ namespace JIT.HardwareIntrinsics.Arm
             {Isa}.{Method}(({RetBaseType}*)_dataTable.outArrayPtr, _fld1, {ElementIndex});
 
             ValidateResult(_fld1, _dataTable.outArrayPtr);
-        }
-
-        public void RunClassFldScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario_Load));
-
-            fixed ({Op1VectorType}<{Op1BaseType}>* pFld1 = &_fld1)
-            {
-                {Isa}.{Method}(({RetBaseType}*)_dataTable.outArrayPtr, {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(pFld1)), {ElementIndex});
-
-                ValidateResult(_fld1, _dataTable.outArrayPtr);
-            }
         }
 
         public void RunStructLclFldScenario()
@@ -366,30 +220,12 @@ namespace JIT.HardwareIntrinsics.Arm
             ValidateResult(test._fld1, _dataTable.outArrayPtr);
         }
 
-        public void RunStructLclFldScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
-
-            var test = TestStruct.Create();
-            {Isa}.{Method}(({RetBaseType}*)_dataTable.outArrayPtr, {LoadIsa}.Load{Op1VectorType}(({Op1BaseType}*)(&test._fld1)), {ElementIndex});
-
-            ValidateResult(test._fld1, _dataTable.outArrayPtr);
-        }
-
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
 
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
-        }
-
-        public void RunStructFldScenario_Load()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario_Load));
-
-            var test = TestStruct.Create();
-            test.RunStructFldScenario_Load(this);
         }
 
         public void RunUnsupportedScenario()

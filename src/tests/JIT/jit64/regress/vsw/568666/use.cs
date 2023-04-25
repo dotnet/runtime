@@ -5,10 +5,12 @@ extern alias Library1;
 extern alias Library2;
 
 using System;
+using Xunit;
 
-internal static class Use
+public static class Use
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = 100;
         Console.WriteLine(Library1.Library.Name);

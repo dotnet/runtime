@@ -22,6 +22,7 @@ namespace Internal.Reflection
         public override MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress) => null;
         public override Type GetNamedTypeForHandle(RuntimeTypeHandle typeHandle, bool isGenericTypeDefinition) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
         public override Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
+        public override Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
         public override RuntimeTypeHandle GetTypeHandleIfAvailable(Type type) => type.TypeHandle;
         public override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle) => false;
         public override bool SupportsReflection(Type type) => false;

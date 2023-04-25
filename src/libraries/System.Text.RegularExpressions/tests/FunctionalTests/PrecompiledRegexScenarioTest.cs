@@ -120,7 +120,9 @@ namespace RegexTestNamespace
             capslist[1] = "1";
             capslist[2] = "output";
             capsize = 3;
+#pragma warning disable SYSLIB0052 // Type or member is obsolete
             base.InitializeReferences();
+#pragma warning restore SYSLIB0052 // Type or member is obsolete
         }
 
         public RegexTestClass(TimeSpan timeSpan) : this()

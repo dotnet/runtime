@@ -284,7 +284,6 @@ source "$__RepoRootDir/eng/native/init-os-and-arch.sh"
 __TargetArch=$arch
 __TargetOS=$os
 __HostOS=$os
-__BuildOS=$os
 __OutputRid=''
 
 # Get the number of processors available to the scheduler
@@ -473,6 +472,7 @@ while :; do
         hostarch|-hostarch)
             if [[ -n "$2" ]]; then
                 __HostArch="$2"
+                __ExplicitHostArch=1
                 shift
             else
                 echo "ERROR: 'hostarch' requires a non-empty option argument"
@@ -536,12 +536,17 @@ if [[ "$__CrossBuild" == 1 ]]; then
     fi
 fi
 
-# init the target distro name
+# init the target distro name (__DistroRid) and target portable os (__PortableTargetOS).
 initTargetDistroRid
-
 if [ -z "$__OutputRid" ]; then
-    __OutputRid="$(echo $__DistroRid | tr '[:upper:]' '[:lower:]')"
+    if [[ "$__PortableBuild" == 0 ]]; then
+        __OutputRid="$__DistroRid"
+    else
+        __OutputRid="$__PortableTargetOS-$__TargetArch"
+    fi
 fi
+export __OutputRid
+echo "__OutputRid: ${__OutputRid}"
 
 # When the host runs on an unknown rid, it falls back to the output rid
 __HostFallbackOS="${__OutputRid%-*}" # Strip architecture
