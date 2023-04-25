@@ -162,14 +162,12 @@ export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStri
         const needle = string_decoder.decode(<any>str1, <any>(str1 + 2*str1Length));
         // no need to look for an empty string
         if (clean_string(needle).length == 0)
-        {
-            return fromBeginning ? 0 : clean_string(string_decoder.decode(<any>str2, <any>(str2 + 2*str2Length))).length;
-        }
+            return fromBeginning ? 0 : str2Length;
 
         const source = string_decoder.decode(<any>str2, <any>(str2 + 2*str2Length));
         // no need to look in an empty string
         if (clean_string(source).length == 0)
-            return 0;
+            return fromBeginning ? 0 : str2Length;
         const cultureName = conv_string_root(cultureRoot);
         const locale = cultureName ? cultureName : undefined;
         const casePicker = (options & 0x1f);
@@ -178,7 +176,7 @@ export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStri
         const needleSegments = Array.from(segmenter.segment(needle)).map(s => s.segment);
         let i = 0;
         let stop = false;
-        let index = -1;
+        let result = -1;
         while (!stop)
         {
             const iteratorSrc = segmenter.segment(source)[Symbol.iterator]();
@@ -193,34 +191,36 @@ export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStri
                 stop = true;
                 break;
             }
-            index = srcNext.value.index;
-            let srcDone = false;
+            const index = srcNext.value.index;
+            let matchFound = true;
             for(let j=0; j<needleSegments.length; j++)
             {
-                if (srcDone)
-                {
-                    index = -1;
-                    stop = true;
-                    break;
-                }
                 if (compare_strings(srcNext.value.segment, needleSegments[j], locale, casePicker) !== 0)
                 {
-                    index = -1;
+                    matchFound = false;
                     break;
                 }
                 srcNext = iteratorSrc.next();
-                if (srcNext.done)
+                if (srcNext.done && j + 1 < needleSegments.length)
                 {
-                    srcDone = true;
+                    matchFound = false;
+                    stop = true;
+                    break;
                 }
             }
-            if (fromBeginning && index !== -1)
+            if (matchFound && fromBeginning)
             {
+                result = index;
                 break;
             }
             i++;
+            if (matchFound && !fromBeginning)
+            {
+                result = index;
+                continue;
+            }
         }
-        return index;
+        return result;
     }
     catch (ex: any) {
         pass_exception_details(ex, exceptionMessage);

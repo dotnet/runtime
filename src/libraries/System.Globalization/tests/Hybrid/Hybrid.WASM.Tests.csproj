@@ -13,6 +13,6 @@
     <Compile Include="..\CompareInfo\CompareInfoTests.IsPrefix.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.IsSuffix.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.IndexOf.cs" />
-    <!-- <Compile Include="..\CompareInfo\CompareInfoTests.LastIndexOf.cs" /> -->
+    <Compile Include="..\CompareInfo\CompareInfoTests.LastIndexOf.cs" />
   </ItemGroup>
 </Project>
