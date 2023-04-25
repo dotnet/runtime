@@ -572,7 +572,6 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_STORE_BLK:
-        case GT_STORE_OBJ:
             if (node->AsBlk()->Data()->IsCall())
             {
                 LowerStoreSingleRegCallStruct(node->AsBlk());
@@ -1054,7 +1053,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 //                 |____ (switchIndex) (The temp variable)
                 //                 |____ (ICon)        (The actual case constant)
                 GenTree* gtCaseCond = comp->gtNewOperNode(GT_EQ, TYP_INT, comp->gtNewLclvNode(tempLclNum, tempLclType),
-                                                          comp->gtNewIconNode(i, tempLclType));
+                                                          comp->gtNewIconNode(i, genActualType(tempLclType)));
                 GenTree*   gtCaseBranch = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, gtCaseCond);
                 LIR::Range caseRange    = LIR::SeqTree(comp, gtCaseBranch);
                 currentBBRange->InsertAtEnd(std::move(caseRange));
@@ -1826,7 +1825,6 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
 
             // TODO-CQ: Try to create an addressing mode
             GenTreeIndir* srcBlk = comp->gtNewIndir(TYP_STRUCT, srcAddr);
-            srcBlk->gtFlags |= GTF_GLOB_REF;
             srcBlk->SetContained();
 
             GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
@@ -1907,16 +1905,18 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
             GenTree* lArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             GenTree* rArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
-            ssize_t MaxUnrollSize = 16;
-#ifdef FEATURE_SIMD
-            MaxUnrollSize = 32;
-#ifdef TARGET_XARCH
-            if (comp->compOpportunisticallyDependsOn(InstructionSet_Vector256))
+            ssize_t MaxUnrollSize = comp->IsBaselineSimdIsaSupported() ? 32 : 16;
+
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+            if (comp->compOpportunisticallyDependsOn(InstructionSet_Vector512))
             {
+                MaxUnrollSize = 128;
+            }
+            else if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                // We need AVX2 for NI_Vector256_op_Equality, fallback to Vector128 if only AVX is available
                 MaxUnrollSize = 64;
             }
-// TODO-XARCH-AVX512: Consider enabling this for AVX512
-#endif
 #endif
 
             if (cnsSize <= MaxUnrollSize)
@@ -1951,6 +1951,11 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                 {
                     loadWidth = 32;
                     loadType  = TYP_SIMD32;
+                }
+                else if ((loadWidth == 64) || (MaxUnrollSize == 128))
+                {
+                    loadWidth = 64;
+                    loadType  = TYP_SIMD64;
                 }
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
@@ -3769,7 +3774,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
         jtrue->AsCC()->gtCondition = condCode;
     }
 
-    JITDUMP("Result:\n");
+    JITDUMP("Lowering JTRUE Result:\n");
     DISPTREERANGE(BlockRange(), jtrue);
     JITDUMP("\n");
 
@@ -3870,6 +3875,10 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
 //
 bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* cond)
 {
+    JITDUMP("Lowering condition:\n");
+    DISPTREERANGE(BlockRange(), condition);
+    JITDUMP("\n");
+
     if (condition->OperIsCompare())
     {
         if (!IsInvariantInRange(condition, parent))
@@ -4354,7 +4363,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             addr->gtFlags |= lclStore->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEASG);
 
             // Create the assignment node.
-            lclStore->ChangeOper(GT_STORE_OBJ);
+            lclStore->ChangeOper(GT_STORE_BLK);
             GenTreeBlk* objStore = lclStore->AsBlk();
             objStore->gtFlags    = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
             objStore->Initialize(layout);
@@ -4628,7 +4637,6 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
             case GT_RETURN:
             case GT_STORE_LCL_VAR:
             case GT_STORE_BLK:
-            case GT_STORE_OBJ:
                 // Leave as is, the user will handle it.
                 assert(user->TypeIs(origType) || varTypeIsSIMD(user->TypeGet()));
                 break;
@@ -4718,12 +4726,7 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
         // Other 64 bites ABI-s support passing 5, 6, 7 byte structs.
         unreached();
 #else  // !WINDOWS_AMD64_ABI
-        if (store->OperIs(GT_STORE_OBJ))
-        {
-            store->SetOper(GT_STORE_BLK);
-        }
-        store->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-
+        store->gtBlkOpKind         = GenTreeBlk::BlkOpKindUnroll;
         GenTreeLclVar* spilledCall = SpillStructCallResult(call);
         store->SetData(spilledCall);
         LowerBlockStoreCommon(store);
@@ -4951,7 +4954,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     GenTree* newThisAddr = new (comp, GT_LEA)
         GenTreeAddrMode(TYP_BYREF, thisExpr, nullptr, 0, comp->eeGetEEInfo()->offsetOfDelegateInstance);
 
-    GenTree* newThis = comp->gtNewOperNode(GT_IND, TYP_REF, newThisAddr);
+    GenTree* newThis = comp->gtNewIndir(TYP_REF, newThisAddr);
 
     BlockRange().InsertAfter(thisExpr, newThisAddr, newThis);
 
@@ -5812,7 +5815,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
             GenTree* tmpTree = comp->gtNewLclvNode(lclNumTmp, result->TypeGet());
             tmpTree          = Offset(tmpTree, vtabOffsOfIndirection);
 
-            tmpTree       = comp->gtNewOperNode(GT_IND, TYP_I_IMPL, tmpTree);
+            tmpTree       = Ind(tmpTree);
             GenTree* offs = comp->gtNewIconNode(vtabOffsOfIndirection + vtabOffsAfterIndirection, TYP_INT);
             result = comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, comp->gtNewLclvNode(lclNumTmp, result->TypeGet()), offs);
 
@@ -7953,16 +7956,13 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
 #if defined(TARGET_ARM64)
         // Verify containment safety before creating an LEA that must be contained.
         //
-        const bool isContainable = (ind->Addr() != nullptr) && IsInvariantInRange(ind->Addr(), ind);
+        const bool isContainable = IsInvariantInRange(ind->Addr(), ind);
 #else
         const bool isContainable         = true;
 #endif
 
-        if (!ind->OperIs(GT_NOP))
-        {
-            TryCreateAddrMode(ind->Addr(), isContainable, ind);
-            ContainCheckIndir(ind);
-        }
+        TryCreateAddrMode(ind->Addr(), isContainable, ind);
+        ContainCheckIndir(ind);
 
 #ifdef TARGET_XARCH
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
@@ -7973,7 +7973,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
     }
     else
     {
-        // If the `ADDR` node under `STORE_OBJ(dstAddr, IND(struct(ADDR))`
+        // If the `ADDR` node under `STORE_BLK(dstAddr, IND(struct(ADDR))`
         // is a complex one it could benefit from an `LEA` that is not contained.
         const bool isContainable = false;
         TryCreateAddrMode(ind->Addr(), isContainable, ind);
@@ -8010,15 +8010,6 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     //
     assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK));
 
-    GenTree* const addr = ind->Addr();
-    if (!comp->fgAddrCouldBeNull(addr))
-    {
-        addr->SetUnusedValue();
-        ind->gtBashToNOP();
-        JITDUMP("bash an unused indir [%06u] to NOP.\n", comp->dspTreeID(ind));
-        return;
-    }
-
     ind->ChangeType(comp->gtTypeForNullCheck(ind));
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -8026,7 +8017,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 #elif defined(TARGET_ARM)
     bool           useNullCheck          = false;
 #else  // TARGET_XARCH
-    bool useNullCheck = !addr->isContained();
+    bool useNullCheck = !ind->Addr()->isContained();
     ind->ClearDontExtend();
 #endif // !TARGET_XARCH
 
@@ -8107,14 +8098,14 @@ void Lowering::LowerLclHeap(GenTree* node)
 }
 
 //------------------------------------------------------------------------
-// LowerBlockStoreCommon: a common logic to lower STORE_OBJ/BLK/DYN_BLK.
+// LowerBlockStoreCommon: a common logic to lower STORE_BLK/DYN_BLK.
 //
 // Arguments:
 //    blkNode - the store blk/obj node we are lowering.
 //
 void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
-    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
+    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
 
     // Lose the type information stored in the source - we no longer need it.
     if (blkNode->Data()->OperIs(GT_BLK))
@@ -8132,7 +8123,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 }
 
 //------------------------------------------------------------------------
-// TryTransformStoreObjAsStoreInd: try to replace STORE_OBJ/BLK as STOREIND.
+// TryTransformStoreObjAsStoreInd: try to replace STORE_BLK as STOREIND.
 //
 // Arguments:
 //    blkNode - the store node.
@@ -8143,11 +8134,11 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 // Notes:
 //    TODO-CQ: this method should do the transformation when possible
 //    and STOREIND should always generate better or the same code as
-//    STORE_OBJ/BLK for the same copy.
+//    STORE_BLK for the same copy.
 //
 bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 {
-    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
+    assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
     if (!comp->opts.OptimizationEnabled())
     {
         return false;
@@ -8158,13 +8149,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
-    ClassLayout* layout = blkNode->GetLayout();
-    if (layout == nullptr)
-    {
-        return false;
-    }
-
-    var_types regType = layout->GetRegisterType();
+    var_types regType = blkNode->GetLayout()->GetRegisterType();
     if (regType == TYP_UNDEF)
     {
         return false;
@@ -8180,7 +8165,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     if (varTypeIsGC(regType))
     {
         // TODO-CQ: STOREIND does not try to contain src if we need a barrier,
-        // STORE_OBJ generates better code currently.
+        // STORE_BLK generates better code currently.
         return false;
     }
 
@@ -8189,7 +8174,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
-    JITDUMP("Replacing STORE_OBJ with STOREIND for [%06u]\n", blkNode->gtTreeID);
+    JITDUMP("Replacing STORE_BLK with STOREIND for [%06u]\n", blkNode->gtTreeID);
     blkNode->ChangeOper(GT_STOREIND);
     blkNode->ChangeType(regType);
 

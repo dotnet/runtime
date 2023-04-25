@@ -10,23 +10,34 @@ DEFINE_FIELD       (internal_root_array,                uint8_t*)
 DEFINE_FIELD       (internal_root_array_index,          size_t)
 DEFINE_FIELD       (heap_analyze_success,               BOOL)
 DEFINE_FIELD       (card_table,                         uint32_t*)
+
 #if defined(ALL_FIELDS) || defined(BACKGROUND_GC)
 DEFINE_FIELD       (mark_array,                         uint32_t*)
 DEFINE_FIELD       (next_sweep_obj,                     uint8_t*)    
 DEFINE_FIELD       (background_saved_lowest_address,    uint8_t*)
 DEFINE_FIELD       (background_saved_highest_address,   uint8_t*)
+DEFINE_DPTR_FIELD  (freeable_soh_segment,               dac_heap_segment)
+DEFINE_DPTR_FIELD  (freeable_uoh_segment,               dac_heap_segment)
 #if defined(ALL_FIELDS) || !defined(USE_REGIONS)
 DEFINE_DPTR_FIELD  (saved_sweep_ephemeral_seg,          dac_heap_segment)
 DEFINE_FIELD       (saved_sweep_ephemeral_start,        uint8_t*)
 #else
 DEFINE_MISSING_FIELD(saved_sweep_ephemeral_seg)
 DEFINE_MISSING_FIELD(saved_sweep_ephemeral_start)
-#endif
+#endif // defined(ALL_FIELDS) || !defined(USE_REGIONS)
 #else
 DEFINE_MISSING_FIELD(mark_array)
 DEFINE_MISSING_FIELD(next_sweep_obj)
 DEFINE_MISSING_FIELD(background_saved_lowest_address)
 DEFINE_MISSING_FIELD(background_saved_highest_address)
+DEFINE_MISSING_FIELD(freeable_soh_segment)
+DEFINE_MISSING_FIELD(freeable_uoh_segment)
 DEFINE_MISSING_FIELD(saved_sweep_ephemeral_seg)
 DEFINE_MISSING_FIELD(saved_sweep_ephemeral_start)
-#endif
+#endif // defined(ALL_FIELDS) || defined(BACKGROUND_GC)
+
+#if defined(ALL_FIELDS) ||  defined(USE_REGIONS)
+DEFINE_ARRAY_FIELD (free_regions,                        dac_region_free_list, FREE_REGION_KINDS)
+#else
+DEFINE_MISSING_FIELD(free_regions)
+#endif // ALL_FIELDS

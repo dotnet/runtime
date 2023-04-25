@@ -59,14 +59,18 @@ jobs:
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.tvos-*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.tvossimulator-*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.wasi-wasm*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.Current.Manifest*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net6.Manifest*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Workload.Mono.ToolChain.net7.Manifest*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoTargets.Sdk*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoAOTCompiler.Task*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Sdk*.nupkg
+          IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Wasi*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Templates*.nupkg
           IntermediateArtifacts/windows_arm/Shipping/Microsoft.NETCore.App.Runtime.win-arm*.nupkg
           IntermediateArtifacts/windows_arm64/Shipping/Microsoft.NETCore.App.Runtime.win-arm64*.nupkg

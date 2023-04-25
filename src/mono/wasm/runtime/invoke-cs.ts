@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
 import { Module, runtimeHelpers } from "./imports";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { marshal_exception_to_js, bind_arg_marshal_to_js } from "./marshal-to-js";
@@ -299,6 +300,7 @@ export async function mono_wasm_get_assembly_exports(assembly: string): Promise<
                 }
             }
         } else {
+            mono_assert(!MonoWasmThreads, "JSExport is not supported with assemblies generated with Net7 SDK and multi-threading");
             // this needs to stay here for compatibility with assemblies generated in Net7
             // it doesn't have the __GeneratedInitializer class
             cwraps.mono_wasm_runtime_run_module_cctor(asm);

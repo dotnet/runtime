@@ -1905,7 +1905,7 @@ protected:
     ssize_t emitGetInsCIdisp(instrDesc* id);
     unsigned emitGetInsCIargs(instrDesc* id);
 
-    inline static emitAttr emitGetMemOpSize(instrDesc* id);
+    inline emitAttr emitGetMemOpSize(instrDesc* id) const;
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -3456,11 +3456,12 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //  Arguments:
 //       id - Instruction descriptor
 //
-/* static */ emitAttr emitter::emitGetMemOpSize(instrDesc* id)
+emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
-    emitAttr defaultSize = id->idOpSize();
+    emitAttr    defaultSize = id->idOpSize();
+    instruction ins         = id->idIns();
 
-    switch (id->idIns())
+    switch (ins)
     {
         case INS_pextrb:
         case INS_pinsrb:
@@ -3570,9 +3571,6 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 
         case INS_cvtdq2pd:
         case INS_cvtps2pd:
-        case INS_vpmovdw:
-        case INS_vpmovqd:
-        case INS_vpmovwb:
         {
             if (defaultSize == 64)
             {
@@ -3587,6 +3585,57 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
                 assert(defaultSize == 16);
                 return EA_8BYTE;
             }
+        }
+
+        case INS_vpmovdb:
+        case INS_vpmovdw:
+        case INS_vpmovqb:
+        case INS_vpmovqd:
+        case INS_vpmovqw:
+        case INS_vpmovwb:
+        case INS_vpmovsdb:
+        case INS_vpmovsdw:
+        case INS_vpmovsqb:
+        case INS_vpmovsqd:
+        case INS_vpmovsqw:
+        case INS_vpmovswb:
+        case INS_vpmovusdb:
+        case INS_vpmovusdw:
+        case INS_vpmovusqb:
+        case INS_vpmovusqd:
+        case INS_vpmovusqw:
+        case INS_vpmovuswb:
+        {
+            insTupleType tupleType = insTupleTypeInfo(ins);
+            unsigned     memSize   = 0;
+
+            switch (tupleType)
+            {
+                case INS_TT_HALF_MEM:
+                {
+                    memSize = defaultSize / 2;
+                    break;
+                }
+
+                case INS_TT_QUARTER_MEM:
+                {
+                    memSize = defaultSize / 4;
+                    break;
+                }
+
+                case INS_TT_EIGHTH_MEM:
+                {
+                    memSize = defaultSize / 8;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            return EA_ATTR(memSize);
         }
 
         case INS_vbroadcastf128:
@@ -3613,7 +3662,11 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 
         case INS_movddup:
         {
-            if (defaultSize == 32)
+            if (defaultSize == 64)
+            {
+                return EA_64BYTE;
+            }
+            else if (defaultSize == 32)
             {
                 return EA_32BYTE;
             }

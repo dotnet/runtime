@@ -6,6 +6,10 @@ namespace System.Threading.Tasks
     /// <summary>
     /// Provide extensions methods for <see cref="Task"/> operations with <see cref="TimeProvider"/>.
     /// </summary>
+    /// <remarks>
+    /// The Microsoft.Bcl.TimeProvider library interfaces are intended solely for use in building against pre-.NET 8 surface area.
+    /// If your code is being built against .NET 8 or higher, then this library should not be utilized.
+    /// </remarks>
     public static class TimeProviderTaskExtensions
     {
 #if !NET8_0_OR_GREATER
@@ -64,32 +68,34 @@ namespace System.Threading.Tasks
 
             DelayState state = new();
 
-            // To prevent a race condition where the timer may fire before being assigned to s.Timer,
-            // we initialize it with an InfiniteTimeSpan and then set it to the state variable, followed by calling Time.Change.
             state.Timer = timeProvider.CreateTimer(delayState =>
             {
-                DelayState s = (DelayState)delayState;
+                DelayState s = (DelayState)delayState!;
                 s.TrySetResult(true);
                 s.Registration.Dispose();
-                s.Timer.Dispose();
-            }, state, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
-
-            state.Timer.Change(delay, Timeout.InfiniteTimeSpan);
+                s?.Timer.Dispose();
+            }, state, delay, Timeout.InfiniteTimeSpan);
 
             state.Registration = cancellationToken.Register(delayState =>
             {
-                DelayState s = (DelayState)delayState;
+                DelayState s = (DelayState)delayState!;
                 s.TrySetCanceled(cancellationToken);
-                s.Timer.Dispose();
                 s.Registration.Dispose();
+                s?.Timer.Dispose();
             }, state);
 
-            // To prevent a race condition where the timer fires after we have attached the cancellation callback
-            // but before the registration is stored in state.Registration, we perform a subsequent check to ensure
-            // that the registration is not left dangling.
+            // There are race conditions where the timer fires after we have attached the cancellation callback but before the
+            // registration is stored in state.Registration, or where cancellation is requested prior to the registration being
+            // stored into state.Registration, or where the timer could fire after it's been createdbut before it's been stored
+            // in state.Timer. In such cases, the cancellation registration and/or the Timer might be stored into state after the
+            // callbacks and thus left undisposed.  So, we do a subsequent check here. If the task isn't completed by this point,
+            // then the callbacks won't have called TrySetResult (the callbacks invoke TrySetResult before disposing of the fields),
+            // in which case it will see both the timer and registration set and be able to Dispose them. If the task is completed
+            // by this point, then this is guaranteed to see s.Timer as non-null because it was deterministically set above.
             if (state.Task.IsCompleted)
             {
                 state.Registration.Dispose();
+                state.Timer.Dispose();
             }
 
             return state.Task;
@@ -149,8 +155,6 @@ namespace System.Threading.Tasks
 
             var state = new WaitAsyncState();
 
-            // To prevent a race condition where the timer may fire before being assigned to s.Timer,
-            // we initialize it with an InfiniteTimeSpan and then set it to the state variable, followed by calling Time.Change.
             state.Timer = timeProvider.CreateTimer(static s =>
             {
                 var state = (WaitAsyncState)s!;
@@ -160,8 +164,7 @@ namespace System.Threading.Tasks
                 state.Registration.Dispose();
                 state.Timer!.Dispose();
                 state.ContinuationCancellation.Cancel();
-            }, state, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
-            state.Timer.Change(timeout, Timeout.InfiniteTimeSpan);
+            }, state, timeout, Timeout.InfiniteTimeSpan);
 
             _ = task.ContinueWith(static (t, s) =>
             {
@@ -185,12 +188,11 @@ namespace System.Threading.Tasks
                 state.ContinuationCancellation.Cancel();
             }, state);
 
-            // To prevent a race condition where the timer fires after we have attached the cancellation callback
-            // but before the registration is stored in state.Registration, we perform a subsequent check to ensure
-            // that the registration is not left dangling.
+            // See explanation in Delay for this final check
             if (state.Task.IsCompleted)
             {
                 state.Registration.Dispose();
+                state.Timer.Dispose();
             }
 
             return state.Task;
@@ -218,5 +220,57 @@ namespace System.Threading.Tasks
             return task.Result;
         }
 #endif // NET8_0_OR_GREATER
+
+        /// <summary>Initializes a new instance of the <see cref="CancellationTokenSource"/> class that will be canceled after the specified <see cref="TimeSpan"/>. </summary>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret the <paramref name="delay"/>. </param>
+        /// <param name="delay">The time interval to wait before canceling this <see cref="CancellationTokenSource"/>. </param>
+        /// <exception cref="ArgumentOutOfRangeException"> The <paramref name="delay"/> is negative and not equal to <see cref="Timeout.InfiniteTimeSpan" /> or greater than maximum allowed timer duration.</exception>
+        /// <returns><see cref="CancellationTokenSource"/> that will be canceled after the specified <paramref name="delay"/>.</returns>
+        /// <remarks>
+        /// <para>
+        /// The countdown for the delay starts during the call to the constructor. When the delay expires,
+        /// the constructed <see cref="CancellationTokenSource"/> is canceled if it has
+        /// not been canceled already.
+        /// </para>
+        /// <para>
+        /// If running on .NET versions earlier than .NET 8.0, there is a constraint when invoking <see cref="CancellationTokenSource.CancelAfter(TimeSpan)"/> on the resultant object.
+        /// This action will not terminate the initial timer indicated by <paramref name="delay"/>. However, this restriction does not apply on .NET 8.0 and later versions.
+        /// </para>
+        /// </remarks>
+        public static CancellationTokenSource CreateCancellationTokenSource(this TimeProvider timeProvider, TimeSpan delay)
+        {
+#if NET8_0_OR_GREATER
+            return new CancellationTokenSource(delay, timeProvider);
+#else
+            if (timeProvider is null)
+            {
+                throw new ArgumentNullException(nameof(timeProvider));
+            }
+
+            if (delay != Timeout.InfiniteTimeSpan && delay < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(delay));
+            }
+
+            if (timeProvider == TimeProvider.System)
+            {
+                return new CancellationTokenSource(delay);
+            }
+
+            var cts = new CancellationTokenSource();
+
+            ITimer timer = timeProvider.CreateTimer(s =>
+            {
+                try
+                {
+                    ((CancellationTokenSource)s).Cancel();
+                }
+                catch (ObjectDisposedException) { }
+            }, cts, delay, Timeout.InfiniteTimeSpan);
+
+            cts.Token.Register(t => ((ITimer)t).Dispose(), timer);
+            return cts;
+#endif // NET8_0_OR_GREATER
+        }
     }
 }

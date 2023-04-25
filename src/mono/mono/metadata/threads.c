@@ -91,6 +91,11 @@ mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle);
 #include <errno.h>
 #endif
 
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+#include <mono/utils/mono-threads-wasm.h>
+#include <emscripten/eventloop.h>
+#endif
+
 #include "icall-decl.h"
 
 /*#define THREAD_DEBUG(a) do { a; } while (0)*/
@@ -1109,6 +1114,7 @@ fire_attach_profiler_events (MonoNativeThreadId tid)
 		(gpointer)(gsize) tid,
 		"Handle Stack"));
 }
+
 
 static guint32 WINAPI
 start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
@@ -4946,20 +4952,115 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (void)
 void
 ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr)
 {
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_delete (sem);
+	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
+	switch (sem->kind) {
+	case LIFO_SEMAPHORE_NORMAL:
+		mono_lifo_semaphore_delete ((LifoSemaphore*)sem);
+		break;
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+	case LIFO_SEMAPHORE_ASYNCWAIT:
+		mono_lifo_semaphore_asyncwait_delete ((LifoSemaphoreAsyncWait*)sem);
+		break;
+#endif
+	default:
+		g_assert_not_reached();
+	}
 }
 
 gint32
 ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms)
 {
 	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
+	g_assert (sem->base.kind == LIFO_SEMAPHORE_NORMAL);
 	return mono_lifo_semaphore_timed_wait (sem, timeout_ms);
 }
 
 void
 ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
 {
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_release (sem, count);
+	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
+	switch (sem->kind) {
+	case LIFO_SEMAPHORE_NORMAL:
+		mono_lifo_semaphore_release ((LifoSemaphore*)sem, count);
+		break;
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+	case LIFO_SEMAPHORE_ASYNCWAIT:
+		mono_lifo_semaphore_asyncwait_release ((LifoSemaphoreAsyncWait*)sem, count);
+		break;
+#endif
+	default:
+		g_assert_not_reached();
+	}
 }
+
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+gpointer
+ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal (void)
+{
+	return (gpointer)mono_lifo_semaphore_asyncwait_init ();
+}
+
+void
+ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
+{
+	LifoSemaphoreAsyncWait *sem = (LifoSemaphoreAsyncWait *)sem_ptr;
+	g_assert (sem->base.kind == LIFO_SEMAPHORE_ASYNCWAIT);
+	mono_lifo_semaphore_asyncwait_prepare_wait (sem, timeout_ms, (LifoSemaphoreAsyncWaitCallbackFn)success_cb, (LifoSemaphoreAsyncWaitCallbackFn)timedout_cb, user_data);
+}
+
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
+{
+	emscripten_runtime_keepalive_push();
+}
+
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
+{
+	emscripten_runtime_keepalive_pop();
+}
+
+extern int mono_wasm_eventloop_has_unsettled_interop_promises(void);
+
+MonoBoolean
+ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void)
+{
+	return !!mono_wasm_eventloop_has_unsettled_interop_promises();
+}
+
+#endif /* HOST_BROWSER && !DISABLE_THREADS */
+
+/* for the AOT cross compiler with --print-icall-table these don't need to be callable, they just
+ * need to be defined */
+#if defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP)
+gpointer
+ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_InitInternal (void)
+{
+	g_assert_not_reached ();
+}
+
+void
+ves_icall_System_Threading_LowLevelLifoAsyncWaitSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
+{
+	g_assert_not_reached ();
+}
+
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
+{
+	g_assert_not_reached();
+}
+
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
+{
+	g_assert_not_reached();
+}
+
+MonoBoolean
+ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void)
+{
+	g_assert_not_reached();
+}
+#endif /* defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP) */
+

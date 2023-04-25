@@ -106,6 +106,10 @@ namespace Internal.Reflection.Core.NonPortable
             {
                 return callbacks.GetPointerTypeForHandle(runtimeTypeHandle);
             }
+            else if (eeType.IsFunctionPointer)
+            {
+                return callbacks.GetFunctionPointerTypeForHandle(runtimeTypeHandle);
+            }
             else if (eeType.IsByRef)
             {
                 return callbacks.GetByRefTypeForHandle(runtimeTypeHandle);

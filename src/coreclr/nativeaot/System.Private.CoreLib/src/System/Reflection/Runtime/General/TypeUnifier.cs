@@ -390,6 +390,58 @@ namespace System.Reflection.Runtime.TypeInfos
     }
 
     //-----------------------------------------------------------------------------------------------------------
+    // TypeInfos for function pointer types.
+    //-----------------------------------------------------------------------------------------------------------
+    internal sealed partial class RuntimeFunctionPointerTypeInfo
+    {
+        internal static RuntimeFunctionPointerTypeInfo GetFunctionPointerTypeInfo(RuntimeTypeInfo returnType, RuntimeTypeInfo[] parameterTypes, bool isUnmanaged)
+        {
+            RuntimeTypeHandle precomputedTypeHandle = GetRuntimeTypeHandleIfAny(returnType, parameterTypes, isUnmanaged);
+            return GetFunctionPointerTypeInfo(returnType, parameterTypes, isUnmanaged, precomputedTypeHandle);
+        }
+
+        internal static RuntimeFunctionPointerTypeInfo GetFunctionPointerTypeInfo(RuntimeTypeInfo returnType, RuntimeTypeInfo[] parameterTypes, bool isUnmanaged, RuntimeTypeHandle typeHandle)
+        {
+            UnificationKey key = new UnificationKey(returnType, parameterTypes, isUnmanaged, typeHandle);
+            RuntimeFunctionPointerTypeInfo type = FunctionPointerTypeTable.Table.GetOrAdd(key);
+            type.EstablishDebugName();
+            return type;
+        }
+
+        private static RuntimeTypeHandle GetRuntimeTypeHandleIfAny(RuntimeTypeInfo returnType, RuntimeTypeInfo[] parameterTypes, bool isUnmanaged)
+        {
+            RuntimeTypeHandle returnTypeHandle = returnType.InternalTypeHandleIfAvailable;
+            if (returnTypeHandle.IsNull())
+                return default(RuntimeTypeHandle);
+
+            int count = parameterTypes.Length;
+            RuntimeTypeHandle[] parameterTypeHandles = new RuntimeTypeHandle[count];
+            for (int i = 0; i < count; i++)
+            {
+                RuntimeTypeHandle parameterHandle = parameterTypes[i].InternalTypeHandleIfAvailable;
+                if (parameterHandle.IsNull())
+                    return default(RuntimeTypeHandle);
+                parameterTypeHandles[i] = parameterHandle;
+            }
+
+            if (ReflectionCoreExecution.ExecutionEnvironment.TryGetFunctionPointerTypeForComponents(returnTypeHandle, parameterTypeHandles, isUnmanaged, out RuntimeTypeHandle typeHandle))
+                return typeHandle;
+
+            return default(RuntimeTypeHandle);
+        }
+
+        private sealed class FunctionPointerTypeTable : ConcurrentUnifierWKeyed<UnificationKey, RuntimeFunctionPointerTypeInfo>
+        {
+            protected sealed override RuntimeFunctionPointerTypeInfo Factory(UnificationKey key)
+            {
+                return new RuntimeFunctionPointerTypeInfo(key);
+            }
+
+            public static readonly FunctionPointerTypeTable Table = new FunctionPointerTypeTable();
+        }
+    }
+
+    //-----------------------------------------------------------------------------------------------------------
     // TypeInfos for Constructed generic types ("Foo<int>")
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeConstructedGenericTypeInfo : RuntimeTypeInfo, IKeyedItem<RuntimeConstructedGenericTypeInfo.UnificationKey>
