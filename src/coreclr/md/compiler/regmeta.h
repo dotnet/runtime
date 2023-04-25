@@ -1291,8 +1291,12 @@ public:
         char        *separator,             // [OUT] Separator used in path string, NULL if none.
         ULONG       *partsCount);           // [OUT] Number of parts separated by the separator.
 
-    STDMETHODIMP ComputePdbGuid(            // S_OK or error.
-        HRESULT (*computeHash)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize));
+    STDMETHODIMP ComputeSha256PdbChecksum(  // S_OK or error.
+        HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize),
+        BYTE (&checksum)[32]);
+
+    STDMETHODIMP ChangePdbGuid(             // S_OK or error.
+        REFGUID newGuid);                   // GUID to use as the PDB GUID
 #endif
 
 //*****************************************************************************

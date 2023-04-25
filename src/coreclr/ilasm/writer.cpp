@@ -81,9 +81,9 @@ HRESULT Assembler::InitMetaData()
             m_pPortablePdbWriter->SetGuid(GUID());
             m_pPortablePdbWriter->SetTimestamp(0);
 
-            hr = m_pPortablePdbWriter->GetEmitter()->QueryInterface(IID_IMDInternalEmit, (void**)&m_pInternalEmitForDeterministicPdbGuid);
+            hr = m_pPortablePdbWriter->GetEmitter()->QueryInterface(IID_IMDInternalEmit, (void**)&m_pInternalEmitForDeterministicPdb);
 
-            if (FAILED(hr) || (m_pInternalEmitForDeterministicPdbGuid == NULL))
+            if (FAILED(hr) || (m_pInternalEmitForDeterministicPdb == NULL))
             {
                 fprintf(stderr, "Unexpected: Failed to query the required PDB GUID determinism interface: %X\n",hr);
                 hr = E_FAIL;
@@ -1333,8 +1333,14 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
 
         if (m_fDeterministic)
         {
-            _ASSERTE(m_pInternalEmitForDeterministicPdbGuid != NULL);
-            m_pInternalEmitForDeterministicPdbGuid->ComputePdbGuid(Sha256Hash);
+            _ASSERTE(m_pInternalEmitForDeterministicPdb != NULL);
+
+            BYTE pdbChecksum[32];
+            if (FAILED(hr = m_pInternalEmitForDeterministicPdb->ComputeSha256PdbChecksum(Sha256Hash, pdbChecksum))) goto exit;
+
+            GUID pdbGuid = *((GUID*)&pdbChecksum);
+            if (FAILED(hr = m_pInternalEmitForDeterministicPdb->ChangePdbGuid(pdbGuid))) goto exit;
+            m_pPortablePdbWriter->SetGuid(pdbGuid);
         }
     }
 

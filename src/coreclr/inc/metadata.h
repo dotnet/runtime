@@ -1119,8 +1119,12 @@ DECLARE_INTERFACE_(IMDInternalEmit, IUnknown)
         ULONG updateMode, ULONG *pPreviousUpdateMode) PURE;
 
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
-    STDMETHOD(ComputePdbGuid)(              // S_OK or error.
-        HRESULT (*computeHash)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize));
+    STDMETHOD(ComputeSha256PdbChecksum)(    // S_OK or error.
+        HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize),
+        BYTE (&checksum)[32]);
+
+    STDMETHOD(ChangePdbGuid)(               // S_OK or error.
+        REFGUID newGuid);                   // GUID to use as the PDB GUID
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 }; // IMDInternalEmit

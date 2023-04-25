@@ -762,7 +762,7 @@ public:
     IMetaDataDispenserEx2 *m_pDisp;
     IMetaDataEmit3      *m_pEmitter;
     IMDInternalEmit     *m_pInternalEmitForDeterministicMvid;
-    IMDInternalEmit     *m_pInternalEmitForDeterministicPdbGuid;
+    IMDInternalEmit     *m_pInternalEmitForDeterministicPdb;
     ICeeFileGen        *m_pCeeFileGen;
     IMetaDataImport2    *m_pImporter;			// Import interface.
     HCEEFILE m_pCeeFile;
