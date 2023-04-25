@@ -185,11 +185,19 @@ namespace ILCompiler.DependencyAnalysis
                     type = ((ParameterizedType)type).ParameterType;
                 }
 
-                // We stripped byrefs, pointers and arrays above. If we're left with a function pointer,
-                // we are done. No templates needed for function pointers since their MethodTables
-                // don't carry anything interesting.
                 if (type.IsFunctionPointer)
+                {
+                    MethodSignature sig = ((FunctionPointerType)type).Signature;
+                    foreach (var dependency in TemplateConstructableTypes(sig.ReturnType))
+                        yield return dependency;
+
+                    foreach (var param in sig)
+                        foreach (var dependency in TemplateConstructableTypes(param))
+                            yield return dependency;
+
+                    // Nothing else to do for function pointers
                     yield break;
+                }
 
                 TypeDesc canonicalType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
                 yield return _factory.MaximallyConstructableType(canonicalType);

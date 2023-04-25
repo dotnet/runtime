@@ -2459,7 +2459,7 @@ class Generics
             public Type GrabUnmanagedStdcallSuppressGCFnptr() => typeof(delegate* unmanaged[Stdcall, SuppressGCTransition]<T>);
             public Array GetFunctionPointerArray() => new delegate*<T[,]>[1];
             public Array GetFunctionPointerMdArray() => new delegate*<T[,]>[1, 1];
-            public Type GrabManagedFnptrOverAlsoGen() => typeof(delegate*<AlsoGen<T>, MyGen<T>>);
+            public Type GrabManagedFnptrOverAlsoGen() => typeof(delegate*<MyGen<T>, AlsoGen<T>>);
             public Type GrabManagedFnptrOverAlsoAlsoGen() => typeof(delegate*<AlsoAlsoGen<T>, MyGen<T>>);
         }
 
@@ -2520,7 +2520,7 @@ class Generics
 
             {
                 Type t = o.GrabManagedFnptrOverAlsoAlsoGen();
-                if (!t.TypeHandle.Equals(typeof(delegate*<AlsoAlsoGen<Atom>, MyGen<Atom>>)))
+                if (!t.TypeHandle.Equals(typeof(delegate*<AlsoAlsoGen<Atom>, MyGen<Atom>>).TypeHandle))
                     throw new Exception();
             }
         }

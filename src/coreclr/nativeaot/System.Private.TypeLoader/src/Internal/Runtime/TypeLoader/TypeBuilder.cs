@@ -248,9 +248,9 @@ namespace Internal.Runtime.TypeLoader
             }
             else if (type is FunctionPointerType functionPointerType)
             {
-                PrepareType(functionPointerType.Signature.ReturnType);
+                RegisterForPreparation(functionPointerType.Signature.ReturnType);
                 foreach (TypeDesc paramType in functionPointerType.Signature)
-                    PrepareType(paramType);
+                    RegisterForPreparation(paramType);
             }
             else
             {
