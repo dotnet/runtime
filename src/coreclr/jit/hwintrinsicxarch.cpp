@@ -52,6 +52,10 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX512F_X64;
         case InstructionSet_AVX512F_VL:
             return InstructionSet_AVX512F_VL_X64;
+        case InstructionSet_AVX512VBMI:
+            return InstructionSet_AVX512VBMI_X64;
+        case InstructionSet_AVX512VBMI_VL:
+            return InstructionSet_AVX512VBMI_VL_X64;
         case InstructionSet_AVXVNNI:
             return InstructionSet_AVXVNNI_X64;
         case InstructionSet_AES:
@@ -95,6 +99,8 @@ static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX512DQ_VL;
         case InstructionSet_AVX512F:
             return InstructionSet_AVX512F_VL;
+        case InstructionSet_AVX512VBMI:
+            return InstructionSet_AVX512VBMI_VL;
         default:
             return InstructionSet_NONE;
     }
@@ -140,6 +146,10 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         if (strcmp(className, "Avx512F") == 0)
         {
             return InstructionSet_AVX512F;
+        }
+        if (strcmp(className, "Avx512Vbmi") == 0)
+        {
+            return InstructionSet_AVX512VBMI;
         }
         if (strcmp(className, "AvxVnni") == 0)
         {
@@ -447,6 +457,10 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX512DQ_VL:
         case InstructionSet_AVX512DQ_VL_X64:
         case InstructionSet_AVX512DQ_X64:
+        case InstructionSet_AVX512VBMI:
+        case InstructionSet_AVX512VBMI_VL:
+        case InstructionSet_AVX512VBMI_VL_X64:
+        case InstructionSet_AVX512VBMI_X64:
         case InstructionSet_AVXVNNI:
         case InstructionSet_AVXVNNI_X64:
         case InstructionSet_BMI1:
@@ -612,6 +626,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     {
         case NI_Vector128_Abs:
         case NI_Vector256_Abs:
+        case NI_Vector512_Abs:
         {
             assert(sig->numArgs == 1);
 
@@ -960,11 +975,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Ceiling:
         case NI_Vector256_Ceiling:
+        case NI_Vector512_Ceiling:
         {
             assert(sig->numArgs == 1);
             assert(varTypeIsFloating(simdBaseType));
 
-            if ((simdSize != 32) && !compExactlyDependsOn(InstructionSet_SSE41))
+            if ((simdSize < 32) && !compExactlyDependsOn(InstructionSet_SSE41))
             {
                 // Ceiling is only supported for floating-point types on SSE4.1 or later
                 break;
@@ -977,6 +993,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_ConditionalSelect:
         case NI_Vector256_ConditionalSelect:
+        case NI_Vector512_ConditionalSelect:
         {
             assert(sig->numArgs == 3);
 
@@ -1252,7 +1269,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             {
                 op1                 = nodeBuilder.GetOperand(0);
                 GenTree* op1Address = CreateAddressNodeForSimdHWIntrinsicCreate(op1, simdBaseType, simdSize);
-                retNode             = gtNewOperNode(GT_IND, retType, op1Address);
+                retNode             = gtNewIndir(retType, op1Address);
             }
             else
             {
@@ -1388,25 +1405,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector512_EqualsAll:
-        case NI_Vector512_op_Equality:
-        {
-            assert(sig->numArgs == 2);
-            assert(IsBaselineVector512IsaSupportedDebugOnly());
-
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdCmpOpAllNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector128_EqualsAll:
         case NI_Vector256_EqualsAll:
+        case NI_Vector512_EqualsAll:
         case NI_Vector128_op_Equality:
         case NI_Vector256_op_Equality:
+        case NI_Vector512_op_Equality:
         {
             assert(sig->numArgs == 2);
 
@@ -1422,23 +1426,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Vector512_EqualsAny:
-        {
-            assert(sig->numArgs == 2);
-            assert(simdSize == 64);
-            assert(IsBaselineVector512IsaSupportedDebugOnly());
-
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            op2 = impSIMDPopStack();
-            op1 = impSIMDPopStack();
-
-            retNode = gtNewSimdCmpOpAnyNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize);
-            break;
-        }
-
         case NI_Vector128_EqualsAny:
         case NI_Vector256_EqualsAny:
+        case NI_Vector512_EqualsAny:
         {
             assert(sig->numArgs == 2);
 
@@ -1594,13 +1584,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Floor:
         case NI_Vector256_Floor:
+        case NI_Vector512_Floor:
         {
             assert(sig->numArgs == 1);
             assert(varTypeIsFloating(simdBaseType));
 
-            if ((simdSize != 32) && !compExactlyDependsOn(InstructionSet_SSE41))
+            if ((simdSize < 32) && !compExactlyDependsOn(InstructionSet_SSE41))
             {
-                // Ceiling is only supported for floating-point types on SSE4.1 or later
+                // Floor is only supported for floating-point types on SSE4.1 or later
                 break;
             }
 
@@ -1677,6 +1668,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_GreaterThan:
         case NI_Vector256_GreaterThan:
+        case NI_Vector512_GreaterThan:
         {
             assert(sig->numArgs == 2);
 
@@ -1692,6 +1684,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_GreaterThanAll:
         case NI_Vector256_GreaterThanAll:
+        case NI_Vector512_GreaterThanAll:
         {
             assert(sig->numArgs == 2);
 
@@ -1709,6 +1702,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_GreaterThanAny:
         case NI_Vector256_GreaterThanAny:
+        case NI_Vector512_GreaterThanAny:
         {
             assert(sig->numArgs == 2);
 
@@ -1726,6 +1720,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_GreaterThanOrEqual:
         case NI_Vector256_GreaterThanOrEqual:
+        case NI_Vector512_GreaterThanOrEqual:
         {
             assert(sig->numArgs == 2);
 
@@ -1741,6 +1736,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_GreaterThanOrEqualAll:
         case NI_Vector256_GreaterThanOrEqualAll:
+        case NI_Vector512_GreaterThanOrEqualAll:
         {
             assert(sig->numArgs == 2);
 
@@ -1758,6 +1754,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_GreaterThanOrEqualAny:
         case NI_Vector256_GreaterThanOrEqualAny:
+        case NI_Vector512_GreaterThanOrEqualAny:
         {
             assert(sig->numArgs == 2);
 
@@ -1775,6 +1772,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_LessThan:
         case NI_Vector256_LessThan:
+        case NI_Vector512_LessThan:
         {
             assert(sig->numArgs == 2);
 
@@ -1790,6 +1788,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_LessThanAll:
         case NI_Vector256_LessThanAll:
+        case NI_Vector512_LessThanAll:
         {
             assert(sig->numArgs == 2);
 
@@ -1807,6 +1806,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_LessThanAny:
         case NI_Vector256_LessThanAny:
+        case NI_Vector512_LessThanAny:
         {
             assert(sig->numArgs == 2);
 
@@ -1824,6 +1824,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_LessThanOrEqual:
         case NI_Vector256_LessThanOrEqual:
+        case NI_Vector512_LessThanOrEqual:
         {
             assert(sig->numArgs == 2);
 
@@ -1839,6 +1840,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_LessThanOrEqualAll:
         case NI_Vector256_LessThanOrEqualAll:
+        case NI_Vector512_LessThanOrEqualAll:
         {
             assert(sig->numArgs == 2);
 
@@ -1856,6 +1858,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_LessThanOrEqualAny:
         case NI_Vector256_LessThanOrEqualAny:
+        case NI_Vector512_LessThanOrEqualAny:
         {
             assert(sig->numArgs == 2);
 
@@ -1949,6 +1952,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Max:
         case NI_Vector256_Max:
+        case NI_Vector512_Max:
         {
             assert(sig->numArgs == 2);
 
@@ -1964,6 +1968,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Min:
         case NI_Vector256_Min:
+        case NI_Vector512_Min:
         {
             assert(sig->numArgs == 2);
 
@@ -2050,8 +2055,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Negate:
         case NI_Vector256_Negate:
+        case NI_Vector512_Negate:
         case NI_Vector128_op_UnaryNegation:
         case NI_Vector256_op_UnaryNegation:
+        case NI_Vector512_op_UnaryNegation:
         {
             assert(sig->numArgs == 1);
 
@@ -2112,6 +2119,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_op_UnaryPlus:
         case NI_Vector256_op_UnaryPlus:
+        case NI_Vector512_op_UnaryPlus:
         {
             assert(sig->numArgs == 1);
             retNode = impSIMDPopStack();
@@ -2139,8 +2147,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_ShiftLeft:
         case NI_Vector256_ShiftLeft:
+        case NI_Vector512_ShiftLeft:
         case NI_Vector128_op_LeftShift:
         case NI_Vector256_op_LeftShift:
+        case NI_Vector512_op_LeftShift:
         {
             assert(sig->numArgs == 2);
 
@@ -2162,8 +2172,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_ShiftRightArithmetic:
         case NI_Vector256_ShiftRightArithmetic:
+        case NI_Vector512_ShiftRightArithmetic:
         case NI_Vector128_op_RightShift:
         case NI_Vector256_op_RightShift:
+        case NI_Vector512_op_RightShift:
         {
             assert(sig->numArgs == 2);
 
@@ -2196,8 +2208,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_ShiftRightLogical:
         case NI_Vector256_ShiftRightLogical:
+        case NI_Vector512_ShiftRightLogical:
         case NI_Vector128_op_UnsignedRightShift:
         case NI_Vector256_op_UnsignedRightShift:
+        case NI_Vector512_op_UnsignedRightShift:
         {
             assert(sig->numArgs == 2);
 
@@ -2219,9 +2233,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Shuffle:
         case NI_Vector256_Shuffle:
+        case NI_Vector512_Shuffle:
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
-            assert((simdSize == 16) || (simdSize == 32));
+            assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
 
             GenTree* indices = impStackTop(0).val;
 
@@ -2277,6 +2292,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                     }
                 }
             }
+            else if (simdSize == 64)
+            {
+                if (varTypeIsByte(simdBaseType))
+                {
+                    // TYP_BYTE, TYP_UBYTE need AVX512VBMI.
+                    break;
+                }
+            }
             else
             {
                 assert(simdSize == 16);
@@ -2300,6 +2323,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Sqrt:
         case NI_Vector256_Sqrt:
+        case NI_Vector512_Sqrt:
         {
             assert(sig->numArgs == 1);
 
@@ -2872,6 +2896,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_AVX2_PermuteVar8x32:
+        case NI_AVX512BW_PermuteVar32x16:
+        case NI_AVX512BW_VL_PermuteVar8x16:
+        case NI_AVX512BW_VL_PermuteVar16x16:
+        case NI_AVX512F_PermuteVar8x64:
+        case NI_AVX512F_PermuteVar16x32:
+        case NI_AVX512F_VL_PermuteVar4x64:
+        case NI_AVX512VBMI_PermuteVar64x8:
+        case NI_AVX512VBMI_VL_PermuteVar16x8:
+        case NI_AVX512VBMI_VL_PermuteVar32x8:
         {
             simdBaseJitType = getBaseJitTypeOfSIMDType(sig->retTypeSigClass);
 
@@ -2879,11 +2912,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             // swap the two operands
-            GenTree* indexVector  = impSIMDPopStack();
-            GenTree* sourceVector = impSIMDPopStack();
+            GenTree* idxVector = impSIMDPopStack();
+            GenTree* srcVector = impSIMDPopStack();
 
-            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD32, indexVector, sourceVector, NI_AVX2_PermuteVar8x32,
-                                               simdBaseJitType, 32);
+            retNode = gtNewSimdHWIntrinsicNode(retType, idxVector, srcVector, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 

@@ -80,6 +80,7 @@
 #include <mono/mini/trace.h>
 
 #include <mono/metadata/components.h>
+#include <mono/metadata/loader-internals.h>
 
 #ifdef TARGET_ARM
 #include <mono/mini/mini-arm.h>
@@ -8588,7 +8589,6 @@ metadata_update_prepare_to_invalidate (void)
 	/* (2) invalidate all the registered imethods */
 }
 
-
 static void
 interp_invalidate_transformed (void)
 {
@@ -8599,16 +8599,26 @@ interp_invalidate_transformed (void)
                 need_stw_restart = TRUE;
         }
 
-	// FIXME: Enumerate all memory managers
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	GPtrArray *alcs = mono_alc_get_all ();
 
-	jit_mm_lock (jit_mm);
-	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, invalidate_transform, NULL);
-	jit_mm_unlock (jit_mm);
+	if (alcs) {
+		MonoAssemblyLoadContext* alc;
+		for (guint i = 0; i < alcs->len; ++i) {
+			alc = (MonoAssemblyLoadContext*)g_ptr_array_index (alcs, i);
+			MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)(alc->memory_manager->runtime_info);
+
+			jit_mm_lock (jit_mm);
+			mono_internal_hash_table_apply (&jit_mm->interp_code_hash, invalidate_transform, NULL);
+			jit_mm_unlock (jit_mm);
+		}
+		
+		g_ptr_array_free (alcs, TRUE);
+	}
 
 	if (need_stw_restart)
 		mono_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC);
 }
+
 
 typedef struct {
 	MonoJitInfo **jit_info_array;
@@ -8627,27 +8637,34 @@ interp_copy_jit_info_func (gpointer imethod, gpointer user_data)
 static void
 interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 {
-	InterpCopyJitInfoFuncUserData copy_jit_info_data;
+	GPtrArray *alcs = mono_alc_get_all ();
 
-	// FIXME: Enumerate all memory managers
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	if (alcs) {
+		MonoAssemblyLoadContext* alc;
+		for (guint i = 0; i < alcs->len; ++i) {
+			alc = (MonoAssemblyLoadContext*)g_ptr_array_index (alcs, i);
+			MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)(alc->memory_manager->runtime_info);
+			InterpCopyJitInfoFuncUserData copy_jit_info_data;
+			// Can't keep memory manager lock while iterating and calling callback since it might take other locks
+			// causing poential deadlock situations. Instead, create copy of interpreter imethod jinfo pointers into
+			// plain array and use pointers from array when when running callbacks.
+			copy_jit_info_data.size = mono_atomic_load_i32 (&(jit_mm->interp_code_hash.num_entries));
+			copy_jit_info_data.next = 0;
+			copy_jit_info_data.jit_info_array = (MonoJitInfo**) g_new (MonoJitInfo*, copy_jit_info_data.size);
+			if (copy_jit_info_data.jit_info_array) {
+				jit_mm_lock (jit_mm);
+				mono_internal_hash_table_apply (&jit_mm->interp_code_hash, interp_copy_jit_info_func, &copy_jit_info_data);
+				jit_mm_unlock (jit_mm);
+			}
 
-	// Can't keep memory manager lock while iterating and calling callback since it might take other locks
-	// causing poential deadlock situations. Instead, create copy of interpreter imethod jinfo pointers into
-	// plain array and use pointers from array when when running callbacks.
-	copy_jit_info_data.size = mono_atomic_load_i32 (&(jit_mm->interp_code_hash.num_entries));
-	copy_jit_info_data.next = 0;
-	copy_jit_info_data.jit_info_array = (MonoJitInfo**) g_new (MonoJitInfo*, copy_jit_info_data.size);
-	if (copy_jit_info_data.jit_info_array) {
-		jit_mm_lock (jit_mm);
-		mono_internal_hash_table_apply (&jit_mm->interp_code_hash, interp_copy_jit_info_func, &copy_jit_info_data);
-		jit_mm_unlock (jit_mm);
-	}
-
-	if (copy_jit_info_data.jit_info_array) {
-		for (int i = 0; i < copy_jit_info_data.next; ++i)
-			func (copy_jit_info_data.jit_info_array [i], user_data);
-		g_free (copy_jit_info_data.jit_info_array);
+			if (copy_jit_info_data.jit_info_array) {
+				for (int j = 0; j < copy_jit_info_data.next; ++j)
+					func (copy_jit_info_data.jit_info_array [j], user_data);
+				g_free (copy_jit_info_data.jit_info_array);
+			}
+		}
+		
+		g_ptr_array_free (alcs, TRUE);
 	}
 }
 

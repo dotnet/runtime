@@ -248,13 +248,13 @@ namespace System.Text.Json.SourceGeneration.Tests
     public class ClassWithCustomConverterFactoryProperty
     {
         [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
-        public Serialization.Tests.SampleEnum MyEnum { get; set; }
+        public SourceGenSampleEnum MyEnum { get; set; }
     }
 
     public struct StructWithCustomConverterFactoryProperty
     {
         [JsonConverter(typeof(JsonStringEnumConverter))] // This converter is a JsonConverterFactory
-        public Serialization.Tests.SampleEnum MyEnum { get; set; }
+        public SourceGenSampleEnum MyEnum { get; set; }
     }
 
     [JsonConverter(typeof(CustomConverter_StructWithCustomConverter))] // Invalid
@@ -267,5 +267,12 @@ namespace System.Text.Json.SourceGeneration.Tests
     public struct StructWithBadCustomConverter
     {
         public int MyInt { get; set; }
+    }
+
+    public enum SourceGenSampleEnum
+    {
+        MinZero = 0,
+        One = 1,
+        Two = 2
     }
 }

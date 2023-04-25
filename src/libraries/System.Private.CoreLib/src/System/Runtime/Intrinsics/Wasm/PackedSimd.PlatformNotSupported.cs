@@ -123,6 +123,43 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<int>    AddPairwiseWidening(Vector128<short>  value) { throw new PlatformNotSupportedException(); }
         public static Vector128<uint>   AddPairwiseWidening(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
 
+        // Saturating integer arithmetic
+
+        public static Vector128<sbyte>  AddSaturate(Vector128<sbyte>  left, Vector128<sbyte>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte>   AddSaturate(Vector128<byte>   left, Vector128<byte>   right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short>  AddSaturate(Vector128<short>  left, Vector128<short>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> AddSaturate(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<sbyte>  SubtractSaturate(Vector128<sbyte>  left, Vector128<sbyte>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte>   SubtractSaturate(Vector128<byte>   left, Vector128<byte>   right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short>  SubtractSaturate(Vector128<short>  left, Vector128<short>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> SubtractSaturate(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<short> MultiplyRoundedSaturateQ15(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<sbyte>  Min(Vector128<sbyte>  left, Vector128<sbyte>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte>   Min(Vector128<byte>   left, Vector128<byte>   right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short>  Min(Vector128<short>  left, Vector128<short>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> Min(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    Min(Vector128<int>    left, Vector128<int>    right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   Min(Vector128<uint>   left, Vector128<uint>   right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<sbyte>  Max(Vector128<sbyte>  left, Vector128<sbyte>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte>   Max(Vector128<byte>   left, Vector128<byte>   right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short>  Max(Vector128<short>  left, Vector128<short>  right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> Max(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    Max(Vector128<int>    left, Vector128<int>    right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   Max(Vector128<uint>   left, Vector128<uint>   right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<byte>   AverageRounded(Vector128<byte>   left, Vector128<byte>   right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> AverageRounded(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<sbyte> Abs(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> Abs(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>   Abs(Vector128<int>   value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>  Abs(Vector128<long>  value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nint>  Abs(Vector128<nint>  value) { throw new PlatformNotSupportedException(); }
+
         // Bit shifts
 
         public static Vector128<sbyte>  ShiftLeft(Vector128<sbyte>  value, int count) { throw new PlatformNotSupportedException(); }

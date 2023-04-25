@@ -748,6 +748,68 @@ namespace Internal.Runtime
 #endif
         }
 
+        internal uint NumFunctionPointerParameters
+        {
+            get
+            {
+                Debug.Assert(IsFunctionPointerType);
+                return _uBaseSize & ~FunctionPointerFlags.FlagsMask;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsFunctionPointerType);
+                _uBaseSize = value | (_uBaseSize & FunctionPointerFlags.FlagsMask);
+            }
+#endif
+        }
+
+        internal bool IsUnmanagedFunctionPointer
+        {
+            get
+            {
+                Debug.Assert(IsFunctionPointerType);
+                return (_uBaseSize & FunctionPointerFlags.IsUnmanaged) != 0;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsFunctionPointerType);
+                if (value)
+                    _uBaseSize |= FunctionPointerFlags.IsUnmanaged;
+                else
+                    _uBaseSize &= ~FunctionPointerFlags.IsUnmanaged;
+            }
+#endif
+        }
+
+        internal MethodTableList FunctionPointerParameters
+        {
+            get
+            {
+                void* pStart = (byte*)Unsafe.AsPointer(ref this) + GetFieldOffset(EETypeField.ETF_FunctionPointerParameters);
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return new MethodTableList((MethodTable*)pStart);
+                return new MethodTableList((RelativePointer<MethodTable>*)pStart);
+            }
+        }
+
+        internal MethodTable* FunctionPointerReturnType
+        {
+            get
+            {
+                Debug.Assert(IsFunctionPointerType);
+                return _relatedType._pRelatedParameterType;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsDynamicType && IsFunctionPointerType);
+                _relatedType._pRelatedParameterType = value;
+            }
+#endif
+        }
+
         internal bool IsRelatedTypeViaIAT
         {
             get
@@ -945,18 +1007,13 @@ namespace Internal.Runtime
         {
             get
             {
-                if (IsParameterizedType)
+                if (!IsCanonical)
                 {
                     if (IsArray)
                         return GetArrayEEType();
                     else
                         return null;
                 }
-
-                // Function pointers naturally set the base type field to null.
-                Debug.Assert(!IsFunctionPointerType || (!IsRelatedTypeViaIAT && _relatedType._pBaseType == null));
-
-                Debug.Assert(IsCanonical);
 
                 if (IsRelatedTypeViaIAT)
                     return *_relatedType._ppBaseTypeViaIAT;
@@ -1449,6 +1506,16 @@ namespace Internal.Runtime
                 cbOffset += relativeOrFullPointerOffset;
             }
 
+            if (eField == EETypeField.ETF_FunctionPointerParameters)
+            {
+                Debug.Assert(IsFunctionPointerType);
+                return cbOffset;
+            }
+            if (IsFunctionPointerType)
+            {
+                cbOffset += NumFunctionPointerParameters * relativeOrFullPointerOffset;
+            }
+
             if (eField == EETypeField.ETF_DynamicTemplateType)
             {
                 Debug.Assert(IsDynamicType);
@@ -1501,6 +1568,7 @@ namespace Internal.Runtime
             bool fRequiresOptionalFields,
             bool fHasSealedVirtuals,
             bool fHasGenericInfo,
+            int cFunctionPointerTypeParameters,
             bool fHasNonGcStatics,
             bool fHasGcStatics,
             bool fHasThreadStatics)
@@ -1513,6 +1581,7 @@ namespace Internal.Runtime
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
+                cFunctionPointerTypeParameters * sizeof(IntPtr) +
                 (fHasGenericInfo ? sizeof(IntPtr)*2 : 0) + // pointers to GenericDefinition and GenericComposition
                 (fHasNonGcStatics ? sizeof(IntPtr) : 0) + // pointer to data
                 (fHasGcStatics ? sizeof(IntPtr) : 0) +  // pointer to data
@@ -1640,6 +1709,48 @@ namespace Internal.Runtime
                     return *(T**)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + (_value & ~IndirectionConstants.IndirectionCellPointer));
                 }
             }
+        }
+    }
+
+    // Abstracts a list of MethodTable pointers that could either be relative
+    // pointers or full pointers. We store the IsRelative bit in the lowest
+    // bit so this assumes the list is at least 2 byte aligned.
+    internal readonly unsafe struct MethodTableList
+    {
+        private const int IsRelative = 1;
+
+        private readonly void* _pFirst;
+
+        public MethodTableList(MethodTable* pFirst)
+        {
+            // If the first element is not aligned, we don't have the spare bit we need
+            Debug.Assert(((nint)pFirst & IsRelative) == 0);
+            _pFirst = pFirst;
+        }
+
+        public MethodTableList(RelativePointer<MethodTable>* pFirst)
+        {
+            // If the first element is not aligned, we don't have the spare bit we need
+            Debug.Assert(((nint)pFirst & IsRelative) == 0);
+            _pFirst = (void*)((nint)pFirst | IsRelative);
+        }
+
+        public MethodTable* this[int index]
+        {
+            get
+            {
+                if (((nint)_pFirst & IsRelative) != 0)
+                    return (((RelativePointer<MethodTable>*)((nint)_pFirst - IsRelative)) + index)->Value;
+
+                return *(MethodTable**)_pFirst + index;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(((nint)_pFirst & IsRelative) == 0);
+                *((MethodTable**)_pFirst + index) = value;
+            }
+#endif
         }
     }
 }

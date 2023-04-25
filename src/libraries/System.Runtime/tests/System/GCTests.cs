@@ -35,6 +35,9 @@ namespace System.Tests
             {
                 GC.Collect(i);
             }
+            // Also, expect GC.Collect(int.MaxValue) to work without exception since int.MaxValue represents
+            // a nongc heap generation (that is exactly what GC.GetGeneration returns for a non-gc heap object)
+            GC.Collect(int.MaxValue);
         }
 
         [Fact]
