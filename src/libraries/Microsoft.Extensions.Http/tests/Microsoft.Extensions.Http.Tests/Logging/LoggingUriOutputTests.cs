@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Http.Tests.Logging
             Assert.Equal("HTTP GET http://api.example.com/search?term=Western%20Australia", message.Scope.ToString());
         }
 
-if NET5_0_OR_GREATER
+#if NET5_0_OR_GREATER
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         [Fact]
         public void LoggingHttpMessageHandler_LogsAbsoluteUri_Sync()
