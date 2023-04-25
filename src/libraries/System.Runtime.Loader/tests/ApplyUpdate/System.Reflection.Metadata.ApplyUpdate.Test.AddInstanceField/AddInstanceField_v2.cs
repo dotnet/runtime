@@ -85,6 +85,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             return Accumulator;
         }
 
-        public double AddedFirstProp {get => 0.0; set { Console.WriteLine (value); } }
+        public double AddedFirstProp {get => 0.0; set { Console.WriteLine (value+value); } }
+        public short AddedSecondProp {get; set; }
     }
 }
