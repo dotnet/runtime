@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text;
 using System.IO.Enumeration;
 
@@ -352,6 +349,16 @@ namespace System.IO.Compression
                                                CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding) =>
             DoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding);
 
+        public static void CreateFromDirectory(string sourceDirectoryName, Stream destination) =>
+           DoCreateFromDirectory(sourceDirectoryName, destination, compressionLevel: null, includeBaseDirectory: false, entryNameEncoding: null);
+
+        public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, CompressionLevel compressionLevel, bool includeBaseDirectory) =>
+            DoCreateFromDirectory(sourceDirectoryName, destination, compressionLevel, includeBaseDirectory, entryNameEncoding: null);
+
+        public static void CreateFromDirectory(string sourceDirectoryName, Stream destination,
+                                               CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding) =>
+            DoCreateFromDirectory(sourceDirectoryName, destination, compressionLevel, includeBaseDirectory, entryNameEncoding);
+
         private static void DoCreateFromDirectory(string sourceDirectoryName, string destinationArchiveFileName,
                                                   CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding)
 
@@ -364,17 +371,42 @@ namespace System.IO.Compression
             sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
             destinationArchiveFileName = Path.GetFullPath(destinationArchiveFileName);
 
-            using (ZipArchive archive = Open(destinationArchiveFileName, ZipArchiveMode.Create, entryNameEncoding))
+            using ZipArchive archive = Open(destinationArchiveFileName, ZipArchiveMode.Create, entryNameEncoding);
+            CreateZipArchiveFromDirectory(sourceDirectoryName, archive, compressionLevel, includeBaseDirectory);
+        }
+
+        private static void DoCreateFromDirectory(string sourceDirectoryName, Stream destination,
+                                                  CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding)
+        {
+            ArgumentNullException.ThrowIfNull(destination, nameof(destination));
+            if (!destination.CanWrite)
             {
-                bool directoryIsEmpty = true;
+                throw new IOException("stream is unwritable");
+            }
 
-                //add files and directories
-                DirectoryInfo di = new DirectoryInfo(sourceDirectoryName);
+            // Rely on Path.GetFullPath for validation of sourceDirectoryName and destinationArchive
 
-                string basePath = di.FullName;
+            // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
+            // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.
 
-                if (includeBaseDirectory && di.Parent != null)
-                    basePath = di.Parent.FullName;
+            sourceDirectoryName = Path.GetFullPath(sourceDirectoryName);
+
+            using ZipArchive archive = new ZipArchive(destination, ZipArchiveMode.Create, leaveOpen: true, entryNameEncoding);
+            CreateZipArchiveFromDirectory(sourceDirectoryName, archive, compressionLevel, includeBaseDirectory);
+        }
+
+        private static void CreateZipArchiveFromDirectory(string sourceDirectoryName, ZipArchive archive,
+                                                          CompressionLevel? compressionLevel, bool includeBaseDirectory)
+        {
+            bool directoryIsEmpty = true;
+
+            //add files and directories
+            DirectoryInfo di = new DirectoryInfo(sourceDirectoryName);
+
+            string basePath = di.FullName;
+
+            if (includeBaseDirectory && di.Parent != null)
+                basePath = di.Parent.FullName;
 
                 FileSystemEnumerable<(string, CreateEntryType)> fse = CreateEnumerableForCreate(di.FullName);
 

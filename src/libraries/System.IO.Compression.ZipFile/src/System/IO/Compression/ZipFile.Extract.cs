@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Text;
 
 namespace System.IO.Compression
@@ -189,6 +186,27 @@ namespace System.IO.Compression
             {
                 archive.ExtractToDirectory(destinationDirectoryName, overwriteFiles);
             }
+        }
+
+        public static void ExtractToDirectory(Stream source, string destinationDirectoryName) =>
+            ExtractToDirectory(source, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false);
+
+        public static void ExtractToDirectory(Stream source, string destinationDirectoryName, bool overwriteFiles) =>
+            ExtractToDirectory(source, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles);
+
+        public static void ExtractToDirectory(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding) =>
+            ExtractToDirectory(source, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwriteFiles: false);
+
+        public static void ExtractToDirectory(Stream source, string destinationDirectoryName, Encoding? entryNameEncoding, bool overwriteFiles)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            if (!source.CanRead)
+            {
+                throw new IOException("Stream is unreadable");
+            }
+
+            using ZipArchive archive = new ZipArchive(source, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding);
+            archive.ExtractToDirectory(destinationDirectoryName, overwriteFiles);
         }
     }
 }
