@@ -986,7 +986,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     ObjectData nodeContents = node.GetData(factory);
 
-                    dumper?.DumpObjectNode(factory.NameMangler, node, nodeContents);
+                    dumper?.DumpObjectNode(factory, node, nodeContents);
 
 #if DEBUG
                     foreach (ISymbolNode definedSymbol in nodeContents.DefinedSymbols)
@@ -1157,7 +1157,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (logger.IsVerbose)
                         logger.LogMessage($"Freeing up memory");
 
-                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive);
+                    GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
                 }
 
                 if (logger.IsVerbose)

@@ -161,6 +161,7 @@ jobs:
               - jitstressregs0x10
               - jitstressregs0x80
               - jitstressregs0x1000
+              - jitstressregs0x2000
             ${{ if in(parameters.coreclrTestGroup, 'jitstress2-jitstressregs') }}:
               scenarios:
               - jitstress2_jitstressregs1
@@ -171,6 +172,7 @@ jobs:
               - jitstress2_jitstressregs0x10
               - jitstress2_jitstressregs0x80
               - jitstress2_jitstressregs0x1000
+              - jitstress2_jitstressregs0x2000
             ${{ if in(parameters.coreclrTestGroup, 'gcstress0x3-gcstress0xc') }}:
               scenarios:
               # Disable gcstress0x3 for now; it causes lots of test timeouts. Investigate this after
@@ -201,3 +203,5 @@ jobs:
                 - jitosr_stress
                 - jitosr_stress_random
                 - syntheticpgo
+                - syntheticpgo_blend
+

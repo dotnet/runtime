@@ -4,11 +4,12 @@
 import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
+import { parseSymbolMapFile } from "./logging";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { createPromiseController, PromiseAndController } from "./promise-controller";
 import { delay } from "./promise-utils";
-import { abort_startup, beforeOnRuntimeInitialized } from "./startup";
+import { abort_startup, beforeOnRuntimeInitialized, memorySnapshotSkippedOrDone } from "./startup";
 import { AssetBehaviours, AssetEntry, AssetEntryInternal, LoadingResource, mono_assert, ResourceRequest } from "./types";
 import { InstantiateWasmSuccessCallback, VoidPtr } from "./types/emscripten";
 
@@ -36,7 +37,21 @@ const skipBufferByAssetTypes: {
     [k: string]: boolean
 } = {
     "dotnetwasm": true,
+    "symbols": true,
 };
+
+const containedInSnapshotByAssetTypes: {
+    [k: string]: boolean
+} = {
+    "resource": true,
+    "assembly": true,
+    "pdb": true,
+    "heap": true,
+    "icu": true,
+    "js-module-threads": true,
+    "dotnetwasm": true,
+};
+
 
 // these assets are instantiated differently than the main flow
 const skipInstantiateByAssetTypes: {
@@ -44,6 +59,7 @@ const skipInstantiateByAssetTypes: {
 } = {
     "js-module-threads": true,
     "dotnetwasm": true,
+    "symbols": true,
 };
 
 export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
@@ -63,8 +79,10 @@ export async function mono_download_assets(): Promise<void> {
     runtimeHelpers.maxParallelDownloads = runtimeHelpers.config.maxParallelDownloads || runtimeHelpers.maxParallelDownloads;
     runtimeHelpers.enableDownloadRetry = runtimeHelpers.config.enableDownloadRetry || runtimeHelpers.enableDownloadRetry;
     try {
+        const alwaysLoadedAssets: AssetEntryInternal[] = [];
+        const containedInSnapshotAssets: AssetEntryInternal[] = [];
         const promises_of_assets: Promise<AssetEntryInternal>[] = [];
-        // start fetching and instantiating all assets in parallel
+
         for (const a of runtimeHelpers.config.assets!) {
             const asset: AssetEntryInternal = a;
             mono_assert(typeof asset === "object", "asset must be object");
@@ -73,6 +91,14 @@ export async function mono_download_assets(): Promise<void> {
             mono_assert(!asset.resolvedUrl || typeof asset.resolvedUrl === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.hash || typeof asset.hash === "string", "asset resolvedUrl could be string");
             mono_assert(!asset.pendingDownload || typeof asset.pendingDownload === "object", "asset pendingDownload could be object");
+            if (containedInSnapshotByAssetTypes[asset.behavior]) {
+                containedInSnapshotAssets.push(asset);
+            } else {
+                alwaysLoadedAssets.push(asset);
+            }
+        }
+
+        const countAndStartDownload = (asset: AssetEntryInternal) => {
             if (!skipInstantiateByAssetTypes[asset.behavior] && shouldLoadIcuAsset(asset)) {
                 expected_instantiated_assets_count++;
             }
@@ -80,7 +106,34 @@ export async function mono_download_assets(): Promise<void> {
                 expected_downloaded_assets_count++;
                 promises_of_assets.push(start_asset_download(asset));
             }
+        };
+
+        // start fetching assets in parallel, only assets which are not part of memory snapshot
+        for (const asset of alwaysLoadedAssets) {
+            countAndStartDownload(asset);
         }
+
+        // continue after we know if memory snapshot is available or not
+        await memorySnapshotSkippedOrDone.promise;
+
+        // start fetching assets in parallel, only if memory snapshot is not available.
+        for (const asset of containedInSnapshotAssets) {
+            if (!runtimeHelpers.loadedMemorySnapshot) {
+                countAndStartDownload(asset);
+            } else {
+                // Otherwise cleanup in case we were given pending download. It would be even better if we could abort the download.
+                cleanupAsset(asset);
+                // tell the debugger it is loaded
+                if (asset.behavior == "resource" || asset.behavior == "assembly" || asset.behavior == "pdb") {
+                    const url = resolve_path(asset, "");
+                    const virtualName: string = typeof (asset.virtualPath) === "string"
+                        ? asset.virtualPath
+                        : asset.name;
+                    loaded_files.push({ url: url, file: virtualName });
+                }
+            }
+        }
+
         allDownloadsQueued.promise_control.resolve();
 
         const promises_of_asset_instantiation: Promise<void>[] = [];
@@ -92,13 +145,16 @@ export async function mono_download_assets(): Promise<void> {
                         const url = asset.pendingDownloadInternal!.url;
                         mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array or buffer like");
                         const data = new Uint8Array(asset.buffer!);
-                        asset.pendingDownloadInternal = null as any; // GC
-                        asset.pendingDownload = null as any; // GC
-                        asset.buffer = null as any; // GC
+                        cleanupAsset(asset);
 
+                        // wait till after onRuntimeInitialized and after memory snapshot is loaded or skipped
+                        await memorySnapshotSkippedOrDone.promise;
                         await beforeOnRuntimeInitialized.promise;
-                        // this is after onRuntimeInitialized
                         _instantiate_asset(asset, url, data);
+                    }
+                    if (asset.behavior === "symbols") {
+                        await instantiate_symbols_asset(asset);
+                        cleanupAsset(asset);
                     }
                 } else {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
@@ -362,6 +418,7 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
     switch (asset.behavior) {
         case "dotnetwasm":
         case "js-module-threads":
+        case "symbols":
             // do nothing
             break;
         case "resource":
@@ -463,6 +520,18 @@ export async function instantiate_wasm_asset(
     successCallback(compiledInstance, compiledModule);
 }
 
+export async function instantiate_symbols_asset(
+    pendingAsset: AssetEntryInternal,
+): Promise<void> {
+    try {
+        const response = await pendingAsset.pendingDownloadInternal!.response;
+        const text = await response.text();
+        parseSymbolMapFile(text);
+    } catch (error: any) {
+        console.log(`MONO_WASM: Error loading symbol file ${pendingAsset.name}: ${JSON.stringify(error)}`);
+    }
+}
+
 // used from Blazor
 export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): boolean {
     if (data.length < 8)
@@ -526,4 +595,11 @@ export async function wait_for_all_assets() {
 // Used by the debugger to enumerate loaded dlls and pdbs
 export function mono_wasm_get_loaded_files(): string[] {
     return runtimeHelpers.loadedFiles;
+}
+
+export function cleanupAsset(asset: AssetEntryInternal) {
+    // give GC chance to collect resources
+    asset.pendingDownloadInternal = null as any; // GC
+    asset.pendingDownload = null as any; // GC
+    asset.buffer = null as any; // GC
 }

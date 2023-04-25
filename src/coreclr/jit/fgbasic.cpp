@@ -43,12 +43,12 @@ void Compiler::fgInit()
 
     /* Initialize the basic block list */
 
-    fgFirstBB                     = nullptr;
-    fgLastBB                      = nullptr;
-    fgFirstColdBlock              = nullptr;
-    fgEntryBB                     = nullptr;
-    fgOSREntryBB                  = nullptr;
-    fgOSROriginalEntryBBProtected = false;
+    fgFirstBB          = nullptr;
+    fgLastBB           = nullptr;
+    fgFirstColdBlock   = nullptr;
+    fgEntryBB          = nullptr;
+    fgOSREntryBB       = nullptr;
+    fgEntryBBExtraRefs = 0;
 
 #if defined(FEATURE_EH_FUNCLETS)
     fgFirstFuncletBB  = nullptr;
@@ -62,7 +62,6 @@ void Compiler::fgInit()
     fgBBOrder          = nullptr;
 #endif // DEBUG
 
-    fgBBNumMin        = compIsForInlining() ? impInlineRoot()->fgBBNumMax + 1 : 1;
     fgBBNumMax        = 0;
     fgEdgeCount       = 0;
     fgDomBBcount      = 0;
@@ -1195,7 +1194,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector256_Create:
                             case NI_Vector512_Create:
                             case NI_Vector256_CreateScalar:
+                            case NI_Vector512_CreateScalar:
                             case NI_Vector256_CreateScalarUnsafe:
+                            case NI_Vector512_CreateScalarUnsafe:
                             case NI_VectorT256_CreateBroadcast:
                             case NI_X86Base_BitScanForward:
                             case NI_X86Base_X64_BitScanForward:
@@ -1481,6 +1482,19 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_VectorT256_AsVectorUInt32:
                             case NI_VectorT256_AsVectorUInt64:
                             case NI_VectorT256_op_UnaryPlus:
+                            case NI_Vector512_As:
+                            case NI_Vector512_AsByte:
+                            case NI_Vector512_AsDouble:
+                            case NI_Vector512_AsInt16:
+                            case NI_Vector512_AsInt32:
+                            case NI_Vector512_AsInt64:
+                            case NI_Vector512_AsNInt:
+                            case NI_Vector512_AsNUInt:
+                            case NI_Vector512_AsSByte:
+                            case NI_Vector512_AsSingle:
+                            case NI_Vector512_AsUInt16:
+                            case NI_Vector512_AsUInt32:
+                            case NI_Vector512_AsUInt64:
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
                             case NI_SRCS_UNSAFE_As:
@@ -1519,6 +1533,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector256_get_AllBitsSet:
                             case NI_Vector256_get_One:
                             case NI_Vector256_get_Zero:
+                            case NI_Vector512_get_AllBitsSet:
+                            case NI_Vector512_get_One:
+                            case NI_Vector512_get_Zero:
                             case NI_VectorT256_get_AllBitsSet:
                             case NI_VectorT256_get_One:
                             case NI_VectorT256_get_Zero:
@@ -2785,6 +2802,7 @@ void Compiler::fgLinkBasicBlocks()
                 // We do it in impFixPredLists.
                 break;
 
+            case BBJ_EHFAULTRET:
             case BBJ_THROW:
             case BBJ_RETURN:
                 break;
@@ -3047,6 +3065,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                 break;
 
             case CEE_ENDFINALLY:
+                // Start with BBJ_EHFINALLYRET; change to BBJ_EHFAULTRET later if it's in a 'fault' clause.
                 jmpKind = BBJ_EHFINALLYRET;
                 break;
 
@@ -3765,6 +3784,13 @@ void Compiler::fgFindBasicBlocks()
             if (!block->hasHndIndex())
             {
                 block->setHndIndex(XTnum);
+
+                // If the most nested EH handler region of this block is a 'fault' region, then change any
+                // BBJ_EHFINALLYRET that were imported to BBJ_EHFAULTRET.
+                if ((hndBegBB->bbCatchTyp == BBCT_FAULT) && block->KindIs(BBJ_EHFINALLYRET))
+                {
+                    block->bbJumpKind = BBJ_EHFAULTRET;
+                }
             }
 
             // All blocks in a catch handler or filter are rarely run, except the entry
@@ -4043,6 +4069,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
                 break;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_EHFILTERRET:
 
                 if (!blk->hasHndIndex()) // must be part of a handler
@@ -4060,17 +4087,28 @@ void Compiler::fgCheckBasicBlockControlFlow()
                         BADCODE("Unexpected endfilter");
                     }
                 }
-                // endfinally allowed only in a finally/fault block
-                else if (!HBtab->HasFinallyOrFaultHandler())
+                else if (blk->bbJumpKind == BBJ_EHFILTERRET)
                 {
-                    BADCODE("Unexpected endfinally");
+                    // endfinally allowed only in a finally block
+                    if (!HBtab->HasFinallyHandler())
+                    {
+                        BADCODE("Unexpected endfinally");
+                    }
+                }
+                else if (blk->bbJumpKind == BBJ_EHFAULTRET)
+                {
+                    // 'endfault' (alias of IL 'endfinally') allowed only in a fault block
+                    if (!HBtab->HasFaultHandler())
+                    {
+                        BADCODE("Unexpected endfault");
+                    }
                 }
 
                 // The handler block should be the innermost block
                 // Exception blocks are listed, innermost first.
                 if (blk->hasTryIndex() && (blk->getTryIndex() < blk->getHndIndex()))
                 {
-                    BADCODE("endfinally / endfilter in nested try block");
+                    BADCODE("endfinally / endfault / endfilter in nested try block");
                 }
 
                 break;
@@ -4619,6 +4657,64 @@ BasicBlock* Compiler::fgSplitBlockAfterStatement(BasicBlock* curr, Statement* st
 }
 
 //------------------------------------------------------------------------------
+// fgSplitBlockBeforeTree : Split the given block right before the given tree
+//
+// Arguments:
+//    block        - The block containing the statement.
+//    stmt         - The statement containing the tree.
+//    splitPoint   - A tree inside the statement.
+//    firstNewStmt - [out] The first new statement that was introduced.
+//                   [firstNewStmt..stmt) are the statements added by this function.
+//    splitNodeUse - The use of the tree to split at.
+//
+// Returns:
+//    The last block after split
+//
+// Notes:
+//    See comments in gtSplitTree
+//
+BasicBlock* Compiler::fgSplitBlockBeforeTree(
+    BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse)
+{
+    gtSplitTree(block, stmt, splitPoint, firstNewStmt, splitNodeUse);
+
+    BasicBlockFlags originalFlags = block->bbFlags;
+    BasicBlock*     prevBb        = block;
+
+    // We use fgSplitBlockAfterStatement() API here to split the block, however, we want to split
+    // it *Before* rather than *After* so if the current statement is the first in the
+    // current block - invoke fgSplitBlockAtBeginning
+    if (stmt == block->firstStmt())
+    {
+        block = fgSplitBlockAtBeginning(prevBb);
+    }
+    else
+    {
+        assert(stmt->GetPrevStmt() != block->lastStmt());
+        JITDUMP("Splitting " FMT_BB " after statement " FMT_STMT "\n", prevBb->bbNum, stmt->GetPrevStmt()->GetID());
+        block = fgSplitBlockAfterStatement(prevBb, stmt->GetPrevStmt());
+    }
+
+    // We split a block, possibly, in the middle - we need to propagate some flags
+    prevBb->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
+    block->bbFlags |=
+        originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
+
+    if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+    {
+        block->bbNatLoopNum = prevBb->bbNatLoopNum;
+
+        // Update lpBottom after block split
+        if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
+        {
+            optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
+        }
+    }
+
+    return block;
+}
+
+//------------------------------------------------------------------------------
 // fgSplitBlockAfterNode - Split the given block, with all code after
 //                         the given node going into the second block.
 //                         This function is only used in LIR.
@@ -4906,6 +5002,8 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
     BasicBlock* bPrev = block->bbPrev;
 
     JITDUMP("fgRemoveBlock " FMT_BB ", unreachable=%s\n", block->bbNum, dspBool(unreachable));
+
+    assert(unreachable || !optLoopsRequirePreHeaders || ((block->bbFlags & BBF_LOOP_PREHEADER) == 0));
 
     // If we've cached any mappings from switch blocks to SwitchDesc's (which contain only the
     // *unique* successors of the switch block), invalidate that cache, since an entry in one of
@@ -5388,7 +5486,7 @@ bool Compiler::fgRenumberBlocks()
 
     bool     renumbered  = false;
     bool     newMaxBBNum = false;
-    unsigned num         = fgBBNumMin;
+    unsigned num         = 1;
 
     for (BasicBlock* block : Blocks())
     {
@@ -5404,7 +5502,7 @@ bool Compiler::fgRenumberBlocks()
         if (block->bbNext == nullptr)
         {
             fgLastBB  = block;
-            fgBBcount = num - fgBBNumMin + 1;
+            fgBBcount = num;
             if (fgBBNumMax != num)
             {
                 fgBBNumMax  = num;
@@ -6014,6 +6112,40 @@ BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool
     return newBlk;
 }
 
+//------------------------------------------------------------------------
+// fgNewBBFromTreeAfter: Create a basic block from the given tree and insert it
+//    after the specified block.
+//
+// Arguments:
+//    jumpKind          - jump kind for the new block.
+//    block             - insertion point.
+//    tree              - tree that will be wrapped into a statement and
+//                        inserted in the new block.
+//    debugInfo         - debug info to propagate into the new statement.
+//    updateSideEffects - update side effects for the whole statement.
+//
+// Return Value:
+//    The new block
+//
+// Notes:
+//    The new block will have BBF_INTERNAL flag and EH region will be extended
+//
+BasicBlock* Compiler::fgNewBBFromTreeAfter(
+    BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects)
+{
+    BasicBlock* newBlock = fgNewBBafter(jumpKind, block, true);
+    newBlock->bbFlags |= BBF_INTERNAL;
+    Statement* stmt = fgNewStmtFromTree(tree, debugInfo);
+    fgInsertStmtAtEnd(newBlock, stmt);
+    newBlock->bbCodeOffs    = block->bbCodeOffsEnd;
+    newBlock->bbCodeOffsEnd = block->bbCodeOffsEnd;
+    if (updateSideEffects)
+    {
+        gtUpdateStmtSideEffects(stmt);
+    }
+    return newBlock;
+}
+
 /*****************************************************************************
  *  Inserts basic block before existing basic block.
  *
@@ -6232,8 +6364,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
 #endif // DEBUG
 
     JITDUMP("fgFindInsertPoint(regionIndex=%u, putInTryRegion=%s, startBlk=" FMT_BB ", endBlk=" FMT_BB
-            ", nearBlk=" FMT_BB ", "
-            "jumpBlk=" FMT_BB ", runRarely=%s)\n",
+            ", nearBlk=" FMT_BB ", jumpBlk=" FMT_BB ", runRarely=%s)\n",
             regionIndex, dspBool(putInTryRegion), startBlk->bbNum, (endBlk == nullptr) ? 0 : endBlk->bbNum,
             (nearBlk == nullptr) ? 0 : nearBlk->bbNum, (jumpBlk == nullptr) ? 0 : jumpBlk->bbNum, dspBool(runRarely));
 
@@ -6631,10 +6762,10 @@ _FoundAfterBlk:;
     /* We have decided to insert the block after 'afterBlk'. */
     noway_assert(afterBlk != nullptr);
 
-    JITDUMP("fgNewBBinRegion(jumpKind=%u, tryIndex=%u, hndIndex=%u, putInFilter=%s, runRarely=%s, insertAtEnd=%s): "
+    JITDUMP("fgNewBBinRegion(jumpKind=%s, tryIndex=%u, hndIndex=%u, putInFilter=%s, runRarely=%s, insertAtEnd=%s): "
             "inserting after " FMT_BB "\n",
-            jumpKind, tryIndex, hndIndex, dspBool(putInFilter), dspBool(runRarely), dspBool(insertAtEnd),
-            afterBlk->bbNum);
+            BBjumpKindNames[jumpKind], tryIndex, hndIndex, dspBool(putInFilter), dspBool(runRarely),
+            dspBool(insertAtEnd), afterBlk->bbNum);
 
     return fgNewBBinRegionWorker(jumpKind, afterBlk, regionIndex, putInTryRegion);
 }

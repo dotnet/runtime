@@ -13,6 +13,20 @@ namespace System.Text.Json
         internal const string SerializationUnreferencedCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.";
         internal const string SerializationRequiresDynamicCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.";
 
+        /// <summary>
+        /// Indicates whether unconfigured <see cref="JsonSerializerOptions"/> instances
+        /// should be set to use the reflection-based <see cref="DefaultJsonTypeInfoResolver"/>.
+        /// </summary>
+        /// <remarks>
+        /// The value of the property is backed by the "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"
+        /// <see cref="AppContext"/> setting and defaults to <see langword="true"/> if unset.
+        /// </remarks>
+        public static bool IsReflectionEnabledByDefault { get; } =
+            AppContext.TryGetSwitch(
+                switchName: "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault",
+                isEnabled: out bool value)
+            ? value : true;
+
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         private static JsonTypeInfo GetTypeInfo(JsonSerializerOptions? options, Type inputType)
@@ -21,9 +35,9 @@ namespace System.Text.Json
 
             options ??= JsonSerializerOptions.Default;
 
-            if (!options.IsInitializedForReflectionSerializer)
+            if (!options.IsConfiguredForJsonSerializer)
             {
-                options.InitializeForReflectionSerializer();
+                options.ConfigureForJsonSerializer();
             }
 
             // In order to improve performance of polymorphic root-level object serialization,

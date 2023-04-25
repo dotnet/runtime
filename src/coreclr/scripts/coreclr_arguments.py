@@ -63,7 +63,7 @@ class CoreclrArguments:
         self.require_built_core_root = require_built_core_root
         self.require_built_test_dir = require_built_test_dir
 
-        self.valid_arches = ["x64", "x86", "arm", "arm64", "loongarch64", "wasm"]
+        self.valid_arches = ["x64", "x86", "arm", "arm64", "loongarch64", "riscv64", "wasm"]
         self.valid_build_types = ["Debug", "Checked", "Release"]
         self.valid_host_os = ["windows", "osx", "linux", "illumos", "solaris", "browser", "android", "wasi"]
 

@@ -25,7 +25,8 @@ namespace System
           IComparable,
           IComparable<Guid>,
           IEquatable<Guid>,
-          ISpanParsable<Guid>
+          ISpanParsable<Guid>,
+          IUtf8SpanFormattable
     {
         public static readonly Guid Empty;
 
@@ -306,7 +307,7 @@ namespace System
             if (format.Length != 1)
             {
                 // all acceptable format strings are of length 1
-                throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
+                ThrowBadGuidFormatSpecification();
             }
 
             input = input.Trim();
@@ -338,7 +339,7 @@ namespace System
 
         public static bool TryParseExact(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format, out Guid result)
         {
-            if (format.Length != 1)
+            if (format.Length != 1 || input.Length < 32) // Minimal length we can parse ('N' format)
             {
                 result = default;
                 return false;
@@ -387,7 +388,7 @@ namespace System
         {
             guidString = guidString.Trim(); // Remove whitespace from beginning and end
 
-            if (guidString.Length == 0)
+            if (guidString.Length < 32) // Minimal length we can parse ('N' format)
             {
                 result.SetFailure(ParseFailure.Format_GuidUnrecognized);
                 return false;
@@ -396,10 +397,10 @@ namespace System
             return (guidString[0]) switch
             {
                 '(' => TryParseExactP(guidString, ref result),
-                '{' => guidString.Contains('-') ?
+                '{' => guidString[9] == '-' ?
                         TryParseExactB(guidString, ref result) :
                         TryParseExactX(guidString, ref result),
-                _ => guidString.Contains('-') ?
+                _ => guidString[8] == '-' ?
                         TryParseExactD(guidString, ref result) :
                         TryParseExactN(guidString, ref result),
             };
@@ -490,7 +491,7 @@ namespace System
                                 result._fg = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((ushort)uintTmp) : (ushort)uintTmp;
 
                                 // Unlike the other components, this one never allowed 0x or +, so we can parse it as straight hex.
-                                if (Number.TryParseUInt32HexNumberStyle(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, out uintTmp) == Number.ParsingStatus.OK) // _h, _i, _j, _k
+                                if (Number.TryParseBinaryIntegerHexNumberStyle(guidString.Slice(28, 8), NumberStyles.AllowHexSpecifier, out uintTmp) == Number.ParsingStatus.OK) // _h, _i, _j, _k
                                 {
                                     result._hijk = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(uintTmp) : uintTmp;
                                     return true;
@@ -883,9 +884,6 @@ namespace System
             return true;
         }
 
-        // Returns the guid in "registry" format.
-        public override string ToString() => ToString("D", null);
-
         public override int GetHashCode()
         {
             // Simply XOR all the bits of the GUID 32 bits at a time.
@@ -1054,192 +1052,221 @@ namespace System
 
         public static bool operator !=(Guid a, Guid b) => !EqualsCore(a, b);
 
-        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format)
+        private static unsafe int HexsToChars<TChar>(TChar* guidChars, int a, int b) where TChar : unmanaged, IUtfChar<TChar>
         {
-            return ToString(format, null);
-        }
+            guidChars[0] = TChar.CastFrom(HexConverter.ToCharLower(a >> 4));
+            guidChars[1] = TChar.CastFrom(HexConverter.ToCharLower(a));
 
-        private static unsafe int HexsToChars(char* guidChars, int a, int b)
-        {
-            guidChars[0] = HexConverter.ToCharLower(a >> 4);
-            guidChars[1] = HexConverter.ToCharLower(a);
-
-            guidChars[2] = HexConverter.ToCharLower(b >> 4);
-            guidChars[3] = HexConverter.ToCharLower(b);
+            guidChars[2] = TChar.CastFrom(HexConverter.ToCharLower(b >> 4));
+            guidChars[3] = TChar.CastFrom(HexConverter.ToCharLower(b));
 
             return 4;
         }
 
-        private static unsafe int HexsToCharsHexOutput(char* guidChars, int a, int b)
+        private static unsafe int HexsToCharsHexOutput<TChar>(TChar* guidChars, int a, int b) where TChar : unmanaged, IUtfChar<TChar>
         {
-            guidChars[0] = '0';
-            guidChars[1] = 'x';
+            guidChars[0] = TChar.CastFrom('0');
+            guidChars[1] = TChar.CastFrom('x');
 
-            guidChars[2] = HexConverter.ToCharLower(a >> 4);
-            guidChars[3] = HexConverter.ToCharLower(a);
+            guidChars[2] = TChar.CastFrom(HexConverter.ToCharLower(a >> 4));
+            guidChars[3] = TChar.CastFrom(HexConverter.ToCharLower(a));
 
-            guidChars[4] = ',';
-            guidChars[5] = '0';
-            guidChars[6] = 'x';
+            guidChars[4] = TChar.CastFrom(',');
+            guidChars[5] = TChar.CastFrom('0');
+            guidChars[6] = TChar.CastFrom('x');
 
-            guidChars[7] = HexConverter.ToCharLower(b >> 4);
-            guidChars[8] = HexConverter.ToCharLower(b);
+            guidChars[7] = TChar.CastFrom(HexConverter.ToCharLower(b >> 4));
+            guidChars[8] = TChar.CastFrom(HexConverter.ToCharLower(b));
 
             return 9;
+        }
+
+        // Returns the guid in "registry" format.
+        public override string ToString() => ToString("d", null);
+
+        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format)
+        {
+            return ToString(format, null);
         }
 
         // IFormattable interface
         // We currently ignore provider
         public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format, IFormatProvider? provider)
         {
+            int guidSize;
             if (string.IsNullOrEmpty(format))
             {
-                format = "D";
+                guidSize = 36;
             }
-
-            // all acceptable format strings are of length 1
-            if (format.Length != 1)
+            else
             {
-                throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
-            }
+                // all acceptable format strings are of length 1
+                if (format.Length != 1)
+                {
+                    ThrowBadGuidFormatSpecification();
+                }
 
-            int guidSize;
-            switch (format[0])
-            {
-                case 'D':
-                case 'd':
-                    guidSize = 36;
-                    break;
-                case 'N':
-                case 'n':
-                    guidSize = 32;
-                    break;
-                case 'B':
-                case 'b':
-                case 'P':
-                case 'p':
-                    guidSize = 38;
-                    break;
-                case 'X':
-                case 'x':
-                    guidSize = 68;
-                    break;
-                default:
-                    throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
+                switch (format[0] | 0x20)
+                {
+                    case 'd':
+                        guidSize = 36;
+                        break;
+
+                    case 'n':
+                        guidSize = 32;
+                        break;
+
+                    case 'b' or 'p':
+                        guidSize = 38;
+                        break;
+
+                    case 'x':
+                        guidSize = 68;
+                        break;
+
+                    default:
+                        guidSize = 0;
+                        ThrowBadGuidFormatSpecification();
+                        break;
+                };
             }
 
             string guidString = string.FastAllocateString(guidSize);
 
-            bool result = TryFormat(new Span<char>(ref guidString.GetRawStringData(), guidString.Length), out int bytesWritten, format);
+            bool result = TryFormatCore(new Span<char>(ref guidString.GetRawStringData(), guidString.Length), out int bytesWritten, format);
             Debug.Assert(result && bytesWritten == guidString.Length, "Formatting guid should have succeeded.");
 
             return guidString;
         }
 
-        // Returns whether the guid is successfully formatted as a span.
-        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format = default)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format = default) =>
+            TryFormatCore(destination, out charsWritten, format);
+
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            // Provider is ignored.
+            TryFormatCore(destination, out charsWritten, format);
+
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format = default) =>
+            TryFormatCore(utf8Destination, out bytesWritten, format);
+
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            // Provider is ignored.
+            TryFormatCore(utf8Destination, out bytesWritten, format);
+
+        // TryFormatCore accepts an `int flags` composed of:
+        // - Lowest byte: required length
+        // - Second byte: opening brace char, or 0 if no braces
+        // - Third byte: closing brace char, or 0 if no braces
+        // - Highest bit: 1 if use dashes, else 0
+        internal const int TryFormatFlags_UseDashes = unchecked((int)0x80000000);
+        internal const int TryFormatFlags_CurlyBraces = ('}' << 16) | ('{' << 8);
+        internal const int TryFormatFlags_Parens = (')' << 16) | ('(' << 8);
+
+        private bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten, ReadOnlySpan<char> format) where TChar : unmanaged, IUtfChar<TChar>
         {
+            int flags;
+
             if (format.Length == 0)
             {
-                format = "D";
+                flags = 36 + TryFormatFlags_UseDashes;
             }
-            // all acceptable format strings are of length 1
-            if (format.Length != 1)
+            else
             {
-                throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
+                if (format.Length != 1)
+                {
+                    ThrowBadGuidFormatSpecification();
+                }
+
+                switch (format[0] | 0x20)
+                {
+                    case 'd':
+                        flags = 36 + TryFormatFlags_UseDashes;
+                        break;
+
+                    case 'p':
+                        flags = 38 + TryFormatFlags_UseDashes + TryFormatFlags_Parens;
+                        break;
+
+                    case 'b':
+                        flags = 38 + TryFormatFlags_UseDashes + TryFormatFlags_CurlyBraces;
+                        break;
+
+                    case 'n':
+                        flags = 32;
+                        break;
+
+                    case 'x':
+                        return TryFormatX(destination, out charsWritten);
+
+                    default:
+                        flags = 0;
+                        ThrowBadGuidFormatSpecification();
+                        break;
+                }
             }
 
-            bool dash = true;
-            bool hex = false;
-            int braces = 0;
+            return TryFormatCore(destination, out charsWritten, flags);
+        }
 
-            int guidSize;
-
-            switch (format[0])
-            {
-                case 'D':
-                case 'd':
-                    guidSize = 36;
-                    break;
-                case 'N':
-                case 'n':
-                    dash = false;
-                    guidSize = 32;
-                    break;
-                case 'B':
-                case 'b':
-                    braces = '{' + ('}' << 16);
-                    guidSize = 38;
-                    break;
-                case 'P':
-                case 'p':
-                    braces = '(' + (')' << 16);
-                    guidSize = 38;
-                    break;
-                case 'X':
-                case 'x':
-                    braces = '{' + ('}' << 16);
-                    dash = false;
-                    hex = true;
-                    guidSize = 68;
-                    break;
-                default:
-                    throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
-            }
-
-            if (destination.Length < guidSize)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // only used from two callers
+        internal unsafe bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten, int flags) where TChar : unmanaged, IUtfChar<TChar>
+        {
+            // The low byte of flags contains the required length.
+            if ((byte)flags > destination.Length)
             {
                 charsWritten = 0;
                 return false;
             }
 
-            unsafe
+            charsWritten = (byte)flags;
+            flags >>= 8;
+
+            fixed (TChar* guidChars = &MemoryMarshal.GetReference(destination))
             {
-                fixed (char* guidChars = &MemoryMarshal.GetReference(destination))
+                TChar* p = guidChars;
+
+                // The low byte of flags now contains the opening brace char (if any)
+                if ((byte)flags != 0)
                 {
-                    char* p = guidChars;
+                    *p++ = TChar.CastFrom((byte)flags);
+                }
+                flags >>= 8;
 
-                    if (braces != 0)
-                        *p++ = (char)braces;
+                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
+                {
+                    // Vectorized implementation for D, N, P and B formats:
+                    // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+                    (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) = FormatGuidVector128Utf8(this, flags < 0 /* dash */);
 
-                    if (hex)
+                    if (typeof(TChar) == typeof(byte))
                     {
-                        // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
-                        *p++ = '0';
-                        *p++ = 'x';
-                        p += HexsToChars(p, _a >> 24, _a >> 16);
-                        p += HexsToChars(p, _a >> 8, _a);
-                        *p++ = ',';
-                        *p++ = '0';
-                        *p++ = 'x';
-                        p += HexsToChars(p, _b >> 8, _b);
-                        *p++ = ',';
-                        *p++ = '0';
-                        *p++ = 'x';
-                        p += HexsToChars(p, _c >> 8, _c);
-                        *p++ = ',';
-                        *p++ = '{';
-                        p += HexsToCharsHexOutput(p, _d, _e);
-                        *p++ = ',';
-                        p += HexsToCharsHexOutput(p, _f, _g);
-                        *p++ = ',';
-                        p += HexsToCharsHexOutput(p, _h, _i);
-                        *p++ = ',';
-                        p += HexsToCharsHexOutput(p, _j, _k);
-                        *p++ = '}';
+                        byte* pChar = (byte*)p;
+                        if (flags < 0 /* dash */)
+                        {
+                            // We need to merge these vectors in this order:
+                            // xxxxxxxxxxxxxxxx
+                            //                     yyyyyyyyyyyyyyyy
+                            //         zzzzzzzzzzzzzzzz
+                            vecX.Store(pChar);
+                            vecY.Store(pChar + 20);
+                            vecZ.Store(pChar + 8);
+                            p += 36;
+                        }
+                        else
+                        {
+                            // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
+                            vecX.Store(pChar);
+                            vecY.Store(pChar + 16);
+                            p += 32;
+                        }
                     }
-                    else if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
+                    else
                     {
-                        // Vectorized implementation for D, N, P and B formats:
-                        // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-                        (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) =
-                            Buffers.Text.Utf8Formatter.FormatGuidVector128Utf8(this, dash);
-
                         // Expand to UTF-16
                         (Vector128<ushort> x0, Vector128<ushort> x1) = Vector128.Widen(vecX);
                         (Vector128<ushort> y0, Vector128<ushort> y1) = Vector128.Widen(vecY);
                         ushort* pChar = (ushort*)p;
-                        if (dash)
+                        if (flags < 0 /* dash */)
                         {
                             (Vector128<ushort> z0, Vector128<ushort> z1) = Vector128.Widen(vecZ);
 
@@ -1247,7 +1274,7 @@ namespace System
                             // xxxxxxxxxxxxxxxx
                             //                     yyyyyyyyyyyyyyyy
                             //         zzzzzzzzzzzzzzzz
-                            x0.Store(pChar + 0);
+                            x0.Store(pChar);
                             y0.Store(pChar + 20);
                             y1.Store(pChar + 28);
                             z0.Store(pChar + 8); // overlaps x1
@@ -1257,54 +1284,153 @@ namespace System
                         else
                         {
                             // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
-                            x0.Store(pChar + 0);
+                            x0.Store(pChar);
                             x1.Store(pChar + 8);
                             y0.Store(pChar + 16);
                             y1.Store(pChar + 24);
                             p += 32;
                         }
-                        if (braces != 0)
-                            *p = (char)(braces >> 16);
-                        charsWritten = guidSize;
-                        return true;
                     }
-                    else
-                    {
-                        // Non-vectorized fallback for D, N, P and B formats:
-                        // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
-                        p += HexsToChars(p, _a >> 24, _a >> 16);
-                        p += HexsToChars(p, _a >> 8, _a);
-                        if (dash)
-                            *p++ = '-';
-                        p += HexsToChars(p, _b >> 8, _b);
-                        if (dash)
-                            *p++ = '-';
-                        p += HexsToChars(p, _c >> 8, _c);
-                        if (dash)
-                            *p++ = '-';
-                        p += HexsToChars(p, _d, _e);
-                        if (dash)
-                            *p++ = '-';
-                        p += HexsToChars(p, _f, _g);
-                        p += HexsToChars(p, _h, _i);
-                        p += HexsToChars(p, _j, _k);
-                    }
-
-                    if (braces != 0)
-                        *p++ = (char)(braces >> 16);
-
-                    Debug.Assert(p - guidChars == guidSize);
                 }
+                else
+                {
+                    // Non-vectorized fallback for D, N, P and B formats:
+                    // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+                    p += HexsToChars(p, _a >> 24, _a >> 16);
+                    p += HexsToChars(p, _a >> 8, _a);
+                    if (flags < 0 /* dash */)
+                    {
+                        *p++ = TChar.CastFrom('-');
+                    }
+                    p += HexsToChars(p, _b >> 8, _b);
+                    if (flags < 0 /* dash */)
+                    {
+                        *p++ = TChar.CastFrom('-');
+                    }
+                    p += HexsToChars(p, _c >> 8, _c);
+                    if (flags < 0 /* dash */)
+                    {
+                        *p++ = TChar.CastFrom('-');
+                    }
+                    p += HexsToChars(p, _d, _e);
+                    if (flags < 0 /* dash */)
+                    {
+                        *p++ = TChar.CastFrom('-');
+                    }
+                    p += HexsToChars(p, _f, _g);
+                    p += HexsToChars(p, _h, _i);
+                    p += HexsToChars(p, _j, _k);
+                }
+
+                // The low byte of flags now contains the closing brace char (if any)
+                if ((byte)flags != 0)
+                {
+                    *p = TChar.CastFrom((byte)flags);
+                }
+
+                Debug.Assert(p == guidChars + charsWritten - ((byte)flags != 0 ? 1 : 0));
             }
 
-            charsWritten = guidSize;
             return true;
         }
 
-        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format, IFormatProvider? provider)
+        private unsafe bool TryFormatX<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IUtfChar<TChar>
         {
-            // Like with the IFormattable implementation, provider is ignored.
-            return TryFormat(destination, out charsWritten, format);
+            if (destination.Length < 68)
+            {
+                charsWritten = 0;
+                return false;
+            }
+            charsWritten = 68;
+
+            fixed (TChar* guidChars = &MemoryMarshal.GetReference(destination))
+            {
+                TChar* p = guidChars;
+
+                // {0xdddddddd,0xdddd,0xdddd,{0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd,0xdd}}
+                *p++ = TChar.CastFrom('{');
+                *p++ = TChar.CastFrom('0');
+                *p++ = TChar.CastFrom('x');
+                p += HexsToChars(p, _a >> 24, _a >> 16);
+                p += HexsToChars(p, _a >> 8, _a);
+                *p++ = TChar.CastFrom(',');
+                *p++ = TChar.CastFrom('0');
+                *p++ = TChar.CastFrom('x');
+                p += HexsToChars(p, _b >> 8, _b);
+                *p++ = TChar.CastFrom(',');
+                *p++ = TChar.CastFrom('0');
+                *p++ = TChar.CastFrom('x');
+                p += HexsToChars(p, _c >> 8, _c);
+                *p++ = TChar.CastFrom(',');
+                *p++ = TChar.CastFrom('{');
+                p += HexsToCharsHexOutput(p, _d, _e);
+                *p++ = TChar.CastFrom(',');
+                p += HexsToCharsHexOutput(p, _f, _g);
+                *p++ = TChar.CastFrom(',');
+                p += HexsToCharsHexOutput(p, _h, _i);
+                *p++ = TChar.CastFrom(',');
+                p += HexsToCharsHexOutput(p, _j, _k);
+                *p++ = TChar.CastFrom('}');
+                *p = TChar.CastFrom('}');
+
+                Debug.Assert(p == guidChars + charsWritten - 1);
+            }
+
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static (Vector128<byte>, Vector128<byte>, Vector128<byte>) FormatGuidVector128Utf8(Guid value, bool useDashes)
+        {
+            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
+            // Vectorized implementation for D, N, P and B formats:
+            // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+
+            Vector128<byte> hexMap = Vector128.Create(
+                (byte)'0', (byte)'1', (byte)'2', (byte)'3',
+                (byte)'4', (byte)'5', (byte)'6', (byte)'7',
+                (byte)'8', (byte)'9', (byte)'a', (byte)'b',
+                (byte)'c', (byte)'d', (byte)'e', (byte)'f');
+
+            Vector128<byte> srcVec = Unsafe.As<Guid, Vector128<byte>>(ref value);
+            (Vector128<byte> hexLow, Vector128<byte> hexHigh) =
+                HexConverter.AsciiToHexVector128(srcVec, hexMap);
+
+            // because of Guid's layout (int _a, short _b, _c, <8 byte fields>)
+            // we have to shuffle some bytes for _a, _b and _c
+            hexLow = Vector128.Shuffle(hexLow.AsInt16(), Vector128.Create(3, 2, 1, 0, 5, 4, 7, 6)).AsByte();
+
+            if (useDashes)
+            {
+                // We divide 16 bytes into 3 x Vector128<byte>:
+                //
+                // ________-____-____-____-____________
+                // xxxxxxxxxxxxxxxx
+                //                     yyyyyyyyyyyyyyyy
+                //         zzzzzzzzzzzzzzzz
+                //
+                // Vector "x" - just one dash, shift all elements after it.
+                Vector128<byte> vecX = Vector128.Shuffle(hexLow,
+                    Vector128.Create(0x706050403020100, 0xD0CFF0B0A0908FF).AsByte());
+
+                // Vector "y" - same here.
+                Vector128<byte> vecY = Vector128.Shuffle(hexHigh,
+                    Vector128.Create(0x7060504FF030201, 0xF0E0D0C0B0A0908).AsByte());
+
+                // Vector "z" - we need to merge some elements of hexLow with hexHigh and add 4 dashes.
+                Vector128<byte> mid1 = Vector128.Shuffle(hexLow,
+                    Vector128.Create(0x0D0CFF0B0A0908FF, 0xFFFFFFFFFFFF0F0E).AsByte());
+                Vector128<byte> mid2 = Vector128.Shuffle(hexHigh,
+                    Vector128.Create(0xFFFFFFFFFFFFFFFF, 0xFF03020100FFFFFF).AsByte());
+                Vector128<byte> dashesMask = Vector128.Shuffle(Vector128.CreateScalarUnsafe((byte)'-'),
+                    Vector128.Create(0xFFFF00FFFFFFFF00, 0x00FFFFFFFF00FFFF).AsByte());
+
+                Vector128<byte> vecZ = (mid1 | mid2 | dashesMask);
+                return (vecX, vecY, vecZ);
+            }
+
+            // N format - no dashes.
+            return (hexLow, hexHigh, default);
         }
 
         //
@@ -1574,5 +1700,9 @@ namespace System
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Guid result) => TryParse(s, out result);
+
+        [DoesNotReturn]
+        private static void ThrowBadGuidFormatSpecification() =>
+            throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
     }
 }

@@ -5,6 +5,51 @@
 
 //! This is not considered public API with backward compatibility guarantees. 
 
+interface BootJsonData {
+    readonly entryAssembly: string;
+    readonly resources: ResourceGroups;
+    /** Gets a value that determines if this boot config was produced from a non-published build (i.e. dotnet build or dotnet run) */
+    readonly debugBuild: boolean;
+    readonly linkerEnabled: boolean;
+    readonly cacheBootResources: boolean;
+    readonly config: string[];
+    readonly icuDataMode: ICUDataMode;
+    readonly startupMemoryCache: boolean | undefined;
+    readonly runtimeOptions: string[] | undefined;
+    modifiableAssemblies: string | null;
+    aspnetCoreBrowserTools: string | null;
+}
+type BootJsonDataExtension = {
+    [extensionName: string]: ResourceList;
+};
+interface ResourceGroups {
+    readonly assembly: ResourceList;
+    readonly lazyAssembly: ResourceList;
+    readonly pdb?: ResourceList;
+    readonly runtime: ResourceList;
+    readonly satelliteResources?: {
+        [cultureName: string]: ResourceList;
+    };
+    readonly libraryInitializers?: ResourceList;
+    readonly extensions?: BootJsonDataExtension;
+    readonly runtimeAssets: ExtendedResourceList;
+}
+type ResourceList = {
+    [name: string]: string;
+};
+type ExtendedResourceList = {
+    [name: string]: {
+        hash: string;
+        behavior: string;
+    };
+};
+declare enum ICUDataMode {
+    Sharded = 0,
+    All = 1,
+    Invariant = 2,
+    Custom = 3
+}
+
 interface DotnetHostBuilder {
     withConfig(config: MonoConfig): DotnetHostBuilder;
     withConfigSrc(configSrc: string): DotnetHostBuilder;
@@ -18,6 +63,7 @@ interface DotnetHostBuilder {
     withDebugging(level: number): DotnetHostBuilder;
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
     withApplicationArgumentsFromQuery(): DotnetHostBuilder;
+    withStartupMemoryCache(value: boolean): DotnetHostBuilder;
     create(): Promise<RuntimeAPI>;
     run(): Promise<number>;
 }
@@ -38,6 +84,7 @@ declare interface EmscriptenModule {
     HEAP8: Int8Array;
     HEAP16: Int16Array;
     HEAP32: Int32Array;
+    HEAP64: BigInt64Array;
     HEAPU8: Uint8Array;
     HEAPU16: Uint16Array;
     HEAPU32: Uint32Array;
@@ -57,7 +104,6 @@ declare interface EmscriptenModule {
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
-    FS_readFile(filename: string, opts: any): any;
     addFunction(fn: Function, signature: string): number;
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
@@ -129,9 +175,17 @@ type MonoConfig = {
      */
     pthreadPoolSize?: number;
     /**
+     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is false.
+     */
+    startupMemoryCache?: boolean;
+    /**
      * hash of assets
      */
     assetsHash?: string;
+    /**
+     * application environment
+     */
+    applicationEnvironment?: string;
 };
 interface ResourceRequest {
     name: string;
@@ -172,9 +226,10 @@ interface AssetEntry extends ResourceRequest {
      */
     pendingDownload?: LoadingResource;
 }
-type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads";
+type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "symbols";
 type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
 "invariant" | //  operate in invariant globalization mode.
+"hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
 "auto";
 type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
@@ -182,6 +237,8 @@ type DotnetModuleConfig = {
     configSrc?: string;
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
+    onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
+    getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
     imports?: any;
     exports?: string[];
     downloadResource?: (request: ResourceRequest) => LoadingResource | undefined;
@@ -274,4 +331,4 @@ declare global {
 declare const dotnet: ModuleAPI["dotnet"];
 declare const exit: ModuleAPI["exit"];
 
-export { AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { AssetEntry, BootJsonData, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, ICUDataMode, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

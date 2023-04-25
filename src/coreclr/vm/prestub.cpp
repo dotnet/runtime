@@ -2303,7 +2303,7 @@ PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     if (hasRetBuffArg)
     {
         return GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg);
@@ -2587,7 +2587,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                     token = DispatchToken::CreateDispatchToken(slot);
 
                 StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
-                pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, VirtualCallStubManager::SK_LOOKUP);
+                pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, STUB_CODE_BLOCK_VSD_LOOKUP_STUB);
             }
             else
             {
@@ -2843,9 +2843,8 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
 
     TADDR genericContextPtr = *(TADDR*)GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
-    pResult->testForFixup = pResult->testForNull = false;
     pResult->signature = NULL;
-
+    pResult->testForNull = false;
     pResult->indirectFirstOffset = 0;
     pResult->indirectSecondOffset = 0;
     // Dictionary size checks skipped by default, unless we decide otherwise

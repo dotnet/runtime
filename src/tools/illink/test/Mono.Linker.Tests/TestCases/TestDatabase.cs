@@ -174,6 +174,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("Serialization");
 		}
 
+		public static IEnumerable<TestCaseData> SingleFileTests ()
+		{
+			return NUnitCasesBySuiteName ("SingleFile");
+		}
+
 		public static IEnumerable<TestCaseData> StaticsTests ()
 		{
 			return NUnitCasesBySuiteName ("Statics");

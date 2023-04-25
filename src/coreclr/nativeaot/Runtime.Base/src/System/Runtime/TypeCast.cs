@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
+using System.Threading;
 using Internal.Runtime;
 
 namespace System.Runtime
@@ -52,6 +52,7 @@ namespace System.Runtime
             MethodTable* pObjType = obj.GetMethodTable();
 
             Debug.Assert(!pTargetType->IsParameterizedType, "IsInstanceOfClass called with parameterized MethodTable");
+            Debug.Assert(!pTargetType->IsFunctionPointerType, "IsInstanceOfClass called with function pointer MethodTable");
             Debug.Assert(!pTargetType->IsInterface, "IsInstanceOfClass called with interface MethodTable");
 
             // Quick check if both types are good for simple casting: canonical, no related type via IAT, no generic variance
@@ -80,16 +81,6 @@ namespace System.Runtime
 
         private static unsafe object IsInstanceOfClass_Helper(MethodTable* pTargetType, object obj, MethodTable* pObjType)
         {
-            if (pTargetType->IsCloned)
-            {
-                pTargetType = pTargetType->CanonicalEEType;
-            }
-
-            if (pObjType->IsCloned)
-            {
-                pObjType = pObjType->CanonicalEEType;
-            }
-
             // if the EETypes pointers match, we're done
             if (pObjType == pTargetType)
             {
@@ -107,7 +98,7 @@ namespace System.Runtime
                 // parameters are compatible.
 
                 // NOTE: using general assignable path for the cache because of the cost of the variance checks
-                if (CastCache.AreTypesAssignableInternal(pObjType, pTargetType, AssignmentVariation.BoxedSource, null))
+                if (AreTypesAssignableInternal(pObjType, pTargetType, AssignmentVariation.BoxedSource, null))
                     return obj;
                 return null;
             }
@@ -138,9 +129,6 @@ namespace System.Runtime
                 {
                     return null;
                 }
-
-                if (pObjType->IsCloned)
-                    pObjType = pObjType->CanonicalEEType;
 
                 if (pObjType == pTargetType)
                 {
@@ -180,7 +168,6 @@ namespace System.Runtime
             MethodTable* pObjType = obj.GetMethodTable();
 
             Debug.Assert(pTargetType->IsArray, "IsInstanceOfArray called with non-array MethodTable");
-            Debug.Assert(!pTargetType->IsCloned, "cloned array types are disallowed");
 
             // if the types match, we are done
             if (pObjType == pTargetType)
@@ -194,8 +181,6 @@ namespace System.Runtime
                 return null;
             }
 
-            Debug.Assert(!pObjType->IsCloned, "cloned array types are disallowed");
-
             // compare the array types structurally
 
             if (pObjType->ParameterizedTypeShape != pTargetType->ParameterizedTypeShape)
@@ -207,7 +192,7 @@ namespace System.Runtime
                 }
             }
 
-            if (CastCache.AreTypesAssignableInternal(pObjType->RelatedParameterType, pTargetType->RelatedParameterType,
+            if (AreTypesAssignableInternal(pObjType->RelatedParameterType, pTargetType->RelatedParameterType,
                 AssignmentVariation.AllowSizeEquivalence, null))
             {
                 return obj;
@@ -246,7 +231,7 @@ namespace System.Runtime
 
             MethodTable* pObjType = obj.GetMethodTable();
 
-            if (CastCache.AreTypesAssignableInternal_SourceNotTarget_BoxedSource(pObjType, pTargetType, null))
+            if (AreTypesAssignableInternal_SourceNotTarget_BoxedSource(pObjType, pTargetType, null))
                 return obj;
 
             // If object type implements IDynamicInterfaceCastable then there's one more way to check whether it implements
@@ -267,25 +252,14 @@ namespace System.Runtime
         internal static unsafe bool ImplementsInterface(MethodTable* pObjType, MethodTable* pTargetType, EETypePairList* pVisited)
         {
             Debug.Assert(!pTargetType->IsParameterizedType, "did not expect parameterized type");
+            Debug.Assert(!pTargetType->IsFunctionPointerType, "did not expect function pointer type");
             Debug.Assert(pTargetType->IsInterface, "IsInstanceOfInterface called with non-interface MethodTable");
-
-            // This can happen with generic interface types
-            // Debug.Assert(!pTargetType->IsCloned, "cloned interface types are disallowed");
-
-            // canonicalize target type
-            if (pTargetType->IsCloned)
-                pTargetType = pTargetType->CanonicalEEType;
 
             int numInterfaces = pObjType->NumInterfaces;
             EEInterfaceInfo* interfaceMap = pObjType->InterfaceMap;
             for (int i = 0; i < numInterfaces; i++)
             {
                 MethodTable* pInterfaceType = interfaceMap[i].InterfaceType;
-
-                // canonicalize the interface type
-                if (pInterfaceType->IsCloned)
-                    pInterfaceType = pInterfaceType->CanonicalEEType;
-
                 if (pInterfaceType == pTargetType)
                 {
                     return true;
@@ -441,7 +415,7 @@ namespace System.Runtime
                         //   class Foo : ICovariant<Bar> is ICovariant<IBar>
                         //   class Foo : ICovariant<IBar> is ICovariant<Object>
 
-                        if (!CastCache.AreTypesAssignableInternal(pSourceArgType, pTargetArgType, AssignmentVariation.Normal, pVisited))
+                        if (!AreTypesAssignableInternal(pSourceArgType, pTargetArgType, AssignmentVariation.Normal, pVisited))
                             return false;
 
                         break;
@@ -456,7 +430,7 @@ namespace System.Runtime
 
                         // This call is just like the call for Covariance above except true is passed
                         // to the fAllowSizeEquivalence parameter to allow the int/uint matching to work
-                        if (!CastCache.AreTypesAssignableInternal(pSourceArgType, pTargetArgType, AssignmentVariation.AllowSizeEquivalence, pVisited))
+                        if (!AreTypesAssignableInternal(pSourceArgType, pTargetArgType, AssignmentVariation.AllowSizeEquivalence, pVisited))
                             return false;
 
                         break;
@@ -471,7 +445,7 @@ namespace System.Runtime
                         //   class Foo : IContravariant<IBar> is IContravariant<Bar>
                         //   class Foo : IContravariant<Object> is IContravariant<IBar>
 
-                        if (!CastCache.AreTypesAssignableInternal(pTargetArgType, pSourceArgType, AssignmentVariation.Normal, pVisited))
+                        if (!AreTypesAssignableInternal(pTargetArgType, pSourceArgType, AssignmentVariation.Normal, pVisited))
                             return false;
 
                         break;
@@ -513,7 +487,7 @@ namespace System.Runtime
                 return AreTypesEquivalent(pSourceType, pNullableType);
             }
 
-            return CastCache.AreTypesAssignableInternal(pSourceType, pTargetType, AssignmentVariation.BoxedSource, null);
+            return AreTypesAssignableInternal(pSourceType, pTargetType, AssignmentVariation.BoxedSource, null);
         }
 
         // Internally callable version of the export method above. Has two additional flags:
@@ -521,7 +495,7 @@ namespace System.Runtime
         //                            compatible with Object, ValueType and Enum (if applicable)
         //  fAllowSizeEquivalence   : allow identically sized integral types and enums to be considered
         //                            equivalent (currently used only for array element types)
-        internal static unsafe bool AreTypesAssignableInternal(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation, EETypePairList* pVisited)
+        internal static unsafe bool AreTypesAssignableInternalUncached(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation, EETypePairList* pVisited)
         {
             bool fBoxedSource = ((variation & AssignmentVariation.BoxedSource) == AssignmentVariation.BoxedSource);
             bool fAllowSizeEquivalence = ((variation & AssignmentVariation.AllowSizeEquivalence) == AssignmentVariation.AllowSizeEquivalence);
@@ -564,8 +538,9 @@ namespace System.Runtime
                 if (pSourceType->IsParameterizedType
                     && (pTargetType->ParameterizedTypeShape == pSourceType->ParameterizedTypeShape))
                 {
+                    MethodTable* pSourceRelatedParameterType = pSourceType->RelatedParameterType;
                     // Source type is also a parameterized type. Are the parameter types compatible?
-                    if (pSourceType->RelatedParameterType->IsPointerType)
+                    if (pSourceRelatedParameterType->IsPointerType)
                     {
                         // If the parameter types are pointers, then only exact matches are correct.
                         // As we've already called AreTypesEquivalent at the start of this function,
@@ -573,11 +548,18 @@ namespace System.Runtime
                         // int** is not compatible with uint**, nor is int*[] oompatible with uint*[].
                         return false;
                     }
-                    else if (pSourceType->RelatedParameterType->IsByRefType)
+                    else if (pSourceRelatedParameterType->IsByRefType)
                     {
                         // Only allow exact matches for ByRef types - same as pointers above. This should
                         // be unreachable and it's only a defense in depth. ByRefs can't be parameters
                         // of any parameterized type.
+                        return false;
+                    }
+                    else if (pSourceRelatedParameterType->IsFunctionPointerType)
+                    {
+                        // If the parameter types are function pointers, then only exact matches are correct.
+                        // As we've already called AreTypesEquivalent at the start of this function,
+                        // return false as the exact match case has already been handled.
                         return false;
                     }
                     else
@@ -585,7 +567,7 @@ namespace System.Runtime
                         // Note that using AreTypesAssignableInternal with AssignmentVariation.AllowSizeEquivalence
                         // here handles array covariance as well as IFoo[] -> Foo[] etc.  We are not using
                         // AssignmentVariation.BoxedSource because int[] is not assignable to object[].
-                        return CastCache.AreTypesAssignableInternal(pSourceType->RelatedParameterType,
+                        return AreTypesAssignableInternal(pSourceType->RelatedParameterType,
                             pTargetType->RelatedParameterType, AssignmentVariation.AllowSizeEquivalence, pVisited);
                     }
                 }
@@ -593,12 +575,23 @@ namespace System.Runtime
                 // Can't cast a non-parameter type to a parameter type or a parameter type of different shape to a parameter type
                 return false;
             }
+
+            if (pTargetType->IsFunctionPointerType)
+            {
+                // Function pointers only cast if source and target are equivalent types.
+                return false;
+            }
+
             if (pSourceType->IsArray)
             {
                 // Target type is not an array. But we can still cast arrays to Object or System.Array.
                 return WellKnownEETypes.IsSystemObject(pTargetType) || WellKnownEETypes.IsSystemArray(pTargetType);
             }
             else if (pSourceType->IsParameterizedType)
+            {
+                return false;
+            }
+            else if (pSourceType->IsFunctionPointerType)
             {
                 return false;
             }
@@ -663,7 +656,7 @@ namespace System.Runtime
 
             MethodTable* pObjType = obj.GetMethodTable();
 
-            if (CastCache.AreTypesAssignableInternal_SourceNotTarget_BoxedSource(pObjType, pTargetType, null))
+            if (AreTypesAssignableInternal_SourceNotTarget_BoxedSource(pObjType, pTargetType, null))
                 return obj;
 
             // If object type implements IDynamicInterfaceCastable then there's one more way to check whether it implements
@@ -690,7 +683,7 @@ namespace System.Runtime
             Debug.Assert(array.GetMethodTable()->IsArray, "first argument must be an array");
 
             MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
-            if (CastCache.AreTypesAssignableInternal(obj.GetMethodTable(), arrayElemType, AssignmentVariation.BoxedSource, null))
+            if (AreTypesAssignableInternal(obj.GetMethodTable(), arrayElemType, AssignmentVariation.BoxedSource, null))
                 return;
 
             // If object type implements IDynamicInterfaceCastable then there's one more way to check whether it implements
@@ -774,11 +767,11 @@ namespace System.Runtime
             if (elementType != obj.GetMethodTable())
                 goto notExactMatch;
 
-doWrite:
+        doWrite:
             InternalCalls.RhpAssignRef(ref element, obj);
             return;
 
-assigningNull:
+        assigningNull:
             element = null;
             return;
 
@@ -795,7 +788,7 @@ assigningNull:
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe void StelemRef_Helper(ref object element, MethodTable* elementType, object obj)
         {
-            if (CastCache.AreTypesAssignableInternal(obj.GetMethodTable(), elementType, AssignmentVariation.BoxedSource, null))
+            if (AreTypesAssignableInternal(obj.GetMethodTable(), elementType, AssignmentVariation.BoxedSource, null))
             {
                 InternalCalls.RhpAssignRef(ref element, obj);
             }
@@ -857,23 +850,19 @@ assigningNull:
         {
             Debug.Assert(!pDerivedType->IsArray, "did not expect array type");
             Debug.Assert(!pDerivedType->IsParameterizedType, "did not expect parameterType");
+            Debug.Assert(!pDerivedType->IsFunctionPointerType, "did not expect function pointer");
             Debug.Assert(!pBaseType->IsArray, "did not expect array type");
             Debug.Assert(!pBaseType->IsInterface, "did not expect interface type");
             Debug.Assert(!pBaseType->IsParameterizedType, "did not expect parameterType");
-            Debug.Assert(pBaseType->IsCanonical || pBaseType->IsCloned || pBaseType->IsGenericTypeDefinition, "unexpected MethodTable");
-            Debug.Assert(pDerivedType->IsCanonical || pDerivedType->IsCloned || pDerivedType->IsGenericTypeDefinition, "unexpected MethodTable");
+            Debug.Assert(!pBaseType->IsFunctionPointerType, "did not expect function pointer");
+            Debug.Assert(pBaseType->IsCanonical || pBaseType->IsGenericTypeDefinition, "unexpected MethodTable");
+            Debug.Assert(pDerivedType->IsCanonical || pDerivedType->IsGenericTypeDefinition, "unexpected MethodTable");
 
             // If a generic type definition reaches this function, then the function should return false unless the types are equivalent.
             // This works as the NonClonedNonArrayBaseType of a GenericTypeDefinition is always null.
 
-            if (pBaseType->IsCloned)
-                pBaseType = pBaseType->CanonicalEEType;
-
             do
             {
-                if (pDerivedType->IsCloned)
-                    pDerivedType = pDerivedType->CanonicalEEType;
-
                 if (pDerivedType == pBaseType)
                     return true;
 
@@ -897,15 +886,6 @@ assigningNull:
             if (pType1 == pType2)
                 return true;
 
-            if (pType1->IsCloned)
-                pType1 = pType1->CanonicalEEType;
-
-            if (pType2->IsCloned)
-                pType2 = pType2->CanonicalEEType;
-
-            if (pType1 == pType2)
-                return true;
-
             if (pType1->IsParameterizedType && pType2->IsParameterizedType)
                 return AreTypesEquivalent(pType1->RelatedParameterType, pType2->RelatedParameterType) && pType1->ParameterizedTypeShape == pType2->ParameterizedTypeShape;
 
@@ -922,7 +902,7 @@ assigningNull:
                 return IsInstanceOfArray(pTargetType, obj);
             else if (pTargetType->IsInterface)
                 return IsInstanceOfInterface(pTargetType, obj);
-            else if (pTargetType->IsParameterizedType)
+            else if (pTargetType->IsParameterizedType || pTargetType->IsFunctionPointerType)
                 return null; // We handled arrays above so this is for pointers and byrefs only.
             else
                 return IsInstanceOfClass(pTargetType, obj);
@@ -938,12 +918,6 @@ assigningNull:
 
             MethodTable* pObjType = obj.GetMethodTable();
 
-            if (pTargetType->IsCloned)
-                pTargetType = pTargetType->CanonicalEEType;
-
-            if (pObjType->IsCloned)
-                pObjType = pObjType->CanonicalEEType;
-
             if (pObjType == pTargetType)
                 return true;
 
@@ -956,9 +930,6 @@ assigningNull:
                 pObjType = pObjType->NonClonedNonArrayBaseType;
                 if (pObjType == null)
                     return false;
-
-                if (pObjType->IsCloned)
-                    pObjType = pObjType->CanonicalEEType;
 
                 if (pObjType == pTargetType)
                     return true;
@@ -973,13 +944,13 @@ assigningNull:
                 return CheckCastArray(pTargetType, obj);
             else if (pTargetType->IsInterface)
                 return CheckCastInterface(pTargetType, obj);
-            else if (pTargetType->IsParameterizedType)
-                return CheckCastNonArrayParameterizedType(pTargetType, obj);
+            else if (pTargetType->IsParameterizedType || pTargetType->IsFunctionPointerType)
+                return CheckCastNonboxableType(pTargetType, obj);
             else
                 return CheckCastClass(pTargetType, obj);
         }
 
-        private static unsafe object CheckCastNonArrayParameterizedType(MethodTable* pTargetType, object obj)
+        private static unsafe object CheckCastNonboxableType(MethodTable* pTargetType, object obj)
         {
             // a null value can be cast to anything
             if (obj == null)
@@ -1034,304 +1005,64 @@ assigningNull:
             }
         }
 
-        // source type + target type + assignment variation -> true/false
-        [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
-        private static class CastCache
+        public static unsafe bool AreTypesAssignableInternal(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation, EETypePairList* pVisited)
+        {
+            // Important special case -- it breaks infinite recursion
+            if (pSourceType == pTargetType)
+                return true;
+
+            nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
+            CastResult result = CastCache.TryGet(sourceAndVariation, (nuint)(pTargetType));
+            if (result != CastResult.MaybeCast)
+            {
+                return result == CastResult.CanCast;
+            }
+
+            return CacheMiss(pSourceType, pTargetType, variation, pVisited);
+        }
+
+        // This method is an optimized and customized version of AreTypesAssignable that achieves better performance
+        // than AreTypesAssignableInternal through 2 significant changes
+        // 1. Removal of sourceType to targetType check (This property must be known before calling this function. At time
+        //    of writing, this is true as its is only used if sourceType is from an object, and targetType is an interface.)
+        // 2. Force inlining (This particular variant is only used in a small number of dispatch scenarios that are particularly
+        //    high in performance impact.)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool AreTypesAssignableInternal_SourceNotTarget_BoxedSource(MethodTable* pSourceType, MethodTable* pTargetType, EETypePairList* pVisited)
+        {
+            Debug.Assert(pSourceType != pTargetType, "target is source");
+            nuint sourceAndVariation = (nuint)pSourceType + (int)AssignmentVariation.BoxedSource;
+            CastResult result = CastCache.TryGet(sourceAndVariation, (nuint)(pTargetType));
+            if (result != CastResult.MaybeCast)
+            {
+                return result == CastResult.CanCast;
+            }
+
+            return CacheMiss(pSourceType, pTargetType, AssignmentVariation.BoxedSource, pVisited);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe bool CacheMiss(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation, EETypePairList* pVisited)
         {
             //
-            // Cache size parameters
+            // First, check if we previously visited the input types pair, to avoid infinite recursions
             //
-
-            // Start with small cache size so that the cache entries used by startup one-time only initialization
-            // will get flushed soon
-            private const int InitialCacheSize = 128; // MUST BE A POWER OF TWO
-            private const int DefaultCacheSize = 1024;
-            private const int MaximumCacheSize = 128 * 1024;
+            if (EETypePairList.Exists(pVisited, pSourceType, pTargetType))
+                return false;
 
             //
-            // Cache state
+            // Call into the type cast code to calculate the result
             //
-            private static Entry[] s_cache = new Entry[InitialCacheSize];   // Initialize the cache eagerly to avoid null checks.
-            private static UnsafeGCHandle s_previousCache;
-            private static ulong s_tickCountOfLastOverflow = InternalCalls.RhpGetTickCount64();
-            private static int s_entries;
-            private static bool s_roundRobinFlushing;
+            EETypePairList newList = new EETypePairList(pSourceType, pTargetType, pVisited);
+            bool result = TypeCast.AreTypesAssignableInternalUncached(pSourceType, pTargetType, variation, &newList);
 
+            //
+            // Update the cache
+            //
+            nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
+            CastCache.TrySet(sourceAndVariation, (nuint)pTargetType, result);
 
-            private sealed class Entry
-            {
-                public Entry Next;
-                public Key Key;
-                public bool Result;     // @TODO: consider storing this bit in the Key -- there is room
-            }
-
-            private unsafe struct Key
-            {
-                private IntPtr _sourceTypeAndVariation;
-                private IntPtr _targetType;
-
-                public Key(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation)
-                {
-                    Debug.Assert((((long)pSourceType) & 3) == 0, "misaligned MethodTable!");
-                    Debug.Assert(((uint)variation) <= 3, "variation enum has an unexpectedly large value!");
-
-                    _sourceTypeAndVariation = (IntPtr)(((byte*)pSourceType) + ((int)variation));
-                    _targetType = (IntPtr)pTargetType;
-                }
-
-                private static int GetHashCode(IntPtr intptr)
-                {
-                    return unchecked((int)((long)intptr));
-                }
-
-                public int CalculateHashCode()
-                {
-                    return ((GetHashCode(_targetType) >> 4) ^ GetHashCode(_sourceTypeAndVariation));
-                }
-
-                public bool Equals(ref Key other)
-                {
-                    return (_sourceTypeAndVariation == other._sourceTypeAndVariation) && (_targetType == other._targetType);
-                }
-
-                public AssignmentVariation Variation
-                {
-                    get { return (AssignmentVariation)(unchecked((int)(long)_sourceTypeAndVariation) & 3); }
-                }
-
-                public MethodTable* SourceType { get { return (MethodTable*)(((long)_sourceTypeAndVariation) & ~3L); } }
-                public MethodTable* TargetType { get { return (MethodTable*)_targetType; } }
-            }
-
-            public static unsafe bool AreTypesAssignableInternal(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation, EETypePairList* pVisited)
-            {
-                // Important special case -- it breaks infinite recursion in CastCache itself!
-                if (pSourceType == pTargetType)
-                    return true;
-
-                Key key = new Key(pSourceType, pTargetType, variation);
-                Entry? entry = LookupInCache(s_cache, ref key);
-                if (entry == null)
-                    return CacheMiss(ref key, pVisited);
-
-                return entry.Result;
-            }
-
-            // This method is an optimized and customized version of AreTypesAssignable that achieves better performance
-            // than AreTypesAssignableInternal through 2 significant changes
-            // 1. Removal of sourceType to targetType check (This property must be known before calling this function. At time
-            //    of writing, this is true as its is only used if sourceType is from an object, and targetType is an interface.)
-            // 2. Force inlining (This particular variant is only used in a small number of dispatch scenarios that are particularly
-            //    high in performance impact.)
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static unsafe bool AreTypesAssignableInternal_SourceNotTarget_BoxedSource(MethodTable* pSourceType, MethodTable* pTargetType, EETypePairList* pVisited)
-            {
-                Debug.Assert(pSourceType != pTargetType, "target is source");
-                Key key = new Key(pSourceType, pTargetType, AssignmentVariation.BoxedSource);
-                Entry? entry = LookupInCache(s_cache, ref key);
-                if (entry == null)
-                    return CacheMiss(ref key, pVisited);
-
-                return entry.Result;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static Entry? LookupInCache(Entry[] cache, ref Key key)
-            {
-                int entryIndex = key.CalculateHashCode() & (cache.Length - 1);
-                Entry entry = cache[entryIndex];
-                while (entry != null)
-                {
-                    if (entry.Key.Equals(ref key))
-                        break;
-                    entry = entry.Next;
-                }
-                return entry;
-            }
-
-            private static unsafe bool CacheMiss(ref Key key, EETypePairList* pVisited)
-            {
-                //
-                // First, check if we previously visited the input types pair, to avoid infinite recursions
-                //
-                if (EETypePairList.Exists(pVisited, key.SourceType, key.TargetType))
-                    return false;
-
-                bool result = false;
-                bool previouslyCached = false;
-
-                //
-                // Try to find the entry in the previous version of the cache that is kept alive by weak reference
-                //
-                if (s_previousCache.IsAllocated)
-                {
-                    // Unchecked cast to avoid recursive dependency on array casting
-                    Entry[] previousCache = Unsafe.As<Entry[]>(s_previousCache.Target);
-                    if (previousCache != null)
-                    {
-                        Entry? previousEntry = LookupInCache(previousCache, ref key);
-                        if (previousEntry != null)
-                        {
-                            result = previousEntry.Result;
-                            previouslyCached = true;
-                        }
-                    }
-                }
-
-                //
-                // Call into the type cast code to calculate the result
-                //
-                if (!previouslyCached)
-                {
-                    EETypePairList newList = new EETypePairList(key.SourceType, key.TargetType, pVisited);
-                    result = TypeCast.AreTypesAssignableInternal(key.SourceType, key.TargetType, key.Variation, &newList);
-                }
-
-                //
-                // Update the cache under the lock
-                //
-                InternalCalls.RhpAcquireCastCacheLock();
-                try
-                {
-                    try
-                    {
-                        // Avoid duplicate entries
-                        Entry? existingEntry = LookupInCache(s_cache, ref key);
-                        if (existingEntry != null)
-                            return existingEntry.Result;
-
-                        // Resize cache as necessary
-                        Entry[] cache = ResizeCacheForNewEntryAsNecessary();
-
-                        int entryIndex = key.CalculateHashCode() & (cache.Length - 1);
-
-                        Entry newEntry = new Entry() { Key = key, Result = result, Next = cache[entryIndex] };
-
-                        // BEWARE: Array store check can lead to infinite recursion. We avoid this by making certain
-                        // that the cache trivially answers the case of equivalent types without triggering the cache
-                        // miss path. (See CastCache.AreTypesAssignableInternal)
-                        cache[entryIndex] = newEntry;
-                        return newEntry.Result;
-                    }
-                    catch (OutOfMemoryException)
-                    {
-                        // Entry allocation failed -- but we can still return the correct cast result.
-                        return result;
-                    }
-                }
-                finally
-                {
-                    InternalCalls.RhpReleaseCastCacheLock();
-                }
-            }
-
-            private static Entry[] ResizeCacheForNewEntryAsNecessary()
-            {
-                Entry[] cache = s_cache;
-
-                int entries = s_entries++;
-
-                // If the cache has spare space, we are done
-                if (2 * entries < cache.Length)
-                {
-                    if (s_roundRobinFlushing)
-                    {
-                        cache[2 * entries] = null;
-                        cache[2 * entries + 1] = null;
-                    }
-                    return cache;
-                }
-
-                //
-                // Now, we have cache that is overflowing with results. We need to decide whether to resize it or start
-                // flushing the old entries instead
-                //
-
-                // Start over counting the entries
-                s_entries = 0;
-
-                // See how long it has been since the last time the cache was overflowing
-                ulong tickCount = InternalCalls.RhpGetTickCount64();
-                int tickCountSinceLastOverflow = (int)(tickCount - s_tickCountOfLastOverflow);
-                s_tickCountOfLastOverflow = tickCount;
-
-                bool shrinkCache = false;
-                bool growCache = false;
-
-                if (cache.Length < DefaultCacheSize)
-                {
-                    // If the cache have not reached the default size, just grow it without thinking about it much
-                    growCache = true;
-                }
-                else
-                {
-                    if (tickCountSinceLastOverflow < cache.Length)
-                    {
-                        // We 'overflow' when 2*entries == cache.Length, so we have cache.Length / 2 entries that were
-                        // filled in tickCountSinceLastOverflow ms, which is 2ms/entry
-
-                        // If the fill rate of the cache is faster than ~2ms per entry, grow it
-                        if (cache.Length < MaximumCacheSize)
-                            growCache = true;
-                    }
-                    else
-                    if (tickCountSinceLastOverflow > cache.Length * 16)
-                    {
-                        // We 'overflow' when 2*entries == cache.Length, so we have ((cache.Length*16) / 2) entries that
-                        // were filled in tickCountSinceLastOverflow ms, which is 32ms/entry
-
-                        // If the fill rate of the cache is slower than 32ms per entry, shrink it
-                        if (cache.Length > DefaultCacheSize)
-                            shrinkCache = true;
-                    }
-                    // Otherwise, keep the current size and just keep flushing the entries round robin
-                }
-
-                Entry[]? newCache = null;
-                if (growCache || shrinkCache)
-                {
-                    try
-                    {
-                        newCache = new Entry[shrinkCache ? (cache.Length / 2) : (cache.Length * 2)];
-                    }
-                    catch (OutOfMemoryException)
-                    {
-                        // Failed to allocate a bigger/smaller cache.  That is fine, keep the old one.
-                    }
-                }
-
-                if (newCache != null)
-                {
-                    s_roundRobinFlushing = false;
-
-                    // Keep the reference to the old cache in a weak handle. We will try to use it to avoid hitting the
-                    // cache miss path until the GC collects it.
-                    if (s_previousCache.IsAllocated)
-                    {
-                        s_previousCache.Target = cache;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            s_previousCache = UnsafeGCHandle.Alloc(cache, GCHandleType.Weak);
-                        }
-                        catch (OutOfMemoryException)
-                        {
-                            // Failed to allocate the handle to utilize the old cache, that is fine, we will just miss
-                            // out on repopulating the new cache from the old cache.
-                            s_previousCache = default(UnsafeGCHandle);
-                        }
-                    }
-
-                    return s_cache = newCache;
-                }
-                else
-                {
-                    s_roundRobinFlushing = true;
-                    return cache;
-                }
-            }
+            return result;
         }
     }
 }

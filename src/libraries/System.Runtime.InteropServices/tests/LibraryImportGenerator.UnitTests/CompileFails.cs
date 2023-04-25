@@ -189,11 +189,11 @@ namespace LibraryImportGenerator.UnitTests
         [Fact]
         public async Task ValidateDisableRuntimeMarshallingForBlittabilityCheckFromAssemblyReference()
         {
-            string assemblySource = $@"
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-{CodeSnippets.ValidateDisableRuntimeMarshalling.NonBlittableUserDefinedTypeWithNativeType}
-";
+            string assemblySource = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                {{CodeSnippets.ValidateDisableRuntimeMarshalling.NonBlittableUserDefinedTypeWithNativeType}}
+                """;
             Compilation assemblyComp = await TestUtils.CreateCompilation(assemblySource);
             TestUtils.AssertPreSourceGeneratorCompilation(assemblyComp);
 

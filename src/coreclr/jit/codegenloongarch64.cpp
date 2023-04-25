@@ -2580,183 +2580,168 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
         assert(varTypeIsFloating(tree->gtOp1));
         assert(varTypeIsFloating(tree->gtOp2));
         assert(tree->gtOper == GT_DIV);
-        // genCodeForBinary(tree);
+
         instruction ins = genGetInsForOper(tree);
         emit->emitIns_R_R_R(ins, emitActualTypeSize(targetType), tree->GetRegNum(), tree->gtOp1->GetRegNum(),
                             tree->gtOp2->GetRegNum());
     }
-    else // an integer divide operation
+    else // an integer divide operation.
     {
-        GenTree* divisorOp = tree->gtGetOp2();
+        GenTree*  divisorOp  = tree->gtGetOp2();
+        regNumber divisorReg = divisorOp->GetRegNum();
+
         // divisorOp can be immed or reg
+        assert(!tree->gtOp1->isContained() && !tree->gtOp1->isContainedIntOrIImmed());
         assert(!divisorOp->isContained() || divisorOp->isContainedIntOrIImmed());
 
-        if (divisorOp->IsIntegralConst(0) || divisorOp->GetRegNum() == REG_R0)
+        ExceptionSetFlags exSetFlags = tree->OperExceptions(compiler);
+
+        if ((exSetFlags & ExceptionSetFlags::DivideByZeroException) != ExceptionSetFlags::None)
         {
-            // We unconditionally throw a divide by zero exception
-            genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
-        }
-        else // the divisor is not the constant zero
-        {
-            GenTree* src1     = tree->gtOp1;
-            unsigned TypeSize = genTypeSize(genActualType(tree->TypeGet()));
-            emitAttr size     = EA_ATTR(TypeSize);
-
-            assert(TypeSize >= genTypeSize(genActualType(src1->TypeGet())) &&
-                   TypeSize >= genTypeSize(genActualType(divisorOp->TypeGet())));
-
-            // ssize_t intConstValue = divisorOp->AsIntCon()->gtIconVal;
-            regNumber   Reg1       = src1->GetRegNum();
-            regNumber   divisorReg = divisorOp->GetRegNum();
-            instruction ins;
-
-            // Check divisorOp first as we can always allow it to be a contained immediate
-            if (divisorOp->isContainedIntOrIImmed())
+            if (divisorOp->IsIntegralConst(0) || (divisorReg == REG_R0))
             {
-                ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
-                divisorReg       = REG_R21;
-                emit->emitIns_I_la(EA_PTRSIZE, REG_R21, intConst);
+                // We unconditionally throw a divide by zero exception
+                genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
+
+                // We still need to call genProduceReg
+                genProduceReg(tree);
+
+                return;
             }
-            // Only for commutative operations do we check src1 and allow it to be a contained immediate
-            else if (tree->OperIsCommutative())
+            else
             {
-                // src1 can be immed or reg
-                assert(!src1->isContained() || src1->isContainedIntOrIImmed());
+                assert(emitter::isGeneralRegister(divisorReg));
 
-                // Check src1 and allow it to be a contained immediate
-                if (src1->isContainedIntOrIImmed())
+                // Check if the divisor is zero throw a DivideByZeroException
+                genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
+            }
+        }
+
+        GenTree* src1 = tree->gtOp1;
+        emitAttr size = EA_ATTR(genTypeSize(genActualType(tree->TypeGet())));
+
+        assert(!divisorOp->IsIntegralConst(0));
+
+        regNumber   Reg1 = src1->GetRegNum();
+        instruction ins;
+
+        // Check divisorOp first as we can always allow it to be a contained immediate
+        if (divisorOp->isContainedIntOrIImmed())
+        {
+            ssize_t intConst = (int)(divisorOp->AsIntCon()->gtIconVal);
+            divisorReg       = emitter::isGeneralRegister(divisorReg) ? divisorReg : REG_R21;
+            emit->emitIns_I_la(EA_PTRSIZE, divisorReg, intConst);
+        }
+        else
+        {
+            // src1 can only be a reg
+            assert(!src1->isContained());
+            assert(emitter::isGeneralRegister(Reg1));
+            assert(emitter::isGeneralRegister(divisorReg));
+        }
+
+        // check (MinInt / -1) => ArithmeticException
+        if (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD)
+        {
+            if ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None)
+            {
+                // Check if the divisor is not -1 branch to 'sdivLabel'
+                emit->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_SCRATCH, REG_R0, -1);
+                BasicBlock* sdivLabel = genCreateTempLabel(); // can optimize for loongarch64.
+                emit->emitIns_J_cond_la(INS_bne, sdivLabel, REG_SCRATCH, divisorReg);
+
+                // If control flow continues past here the 'divisorReg' is known to be -1
+                regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
+
+                // At this point the divisor is known to be -1
+                //
+                // Whether dividendReg is MinInt or not
+                //
+                if (size == EA_4BYTE)
                 {
-                    assert(!divisorOp->isContainedIntOrIImmed());
-                    ssize_t intConst = (int)(src1->AsIntCon()->gtIconVal);
-                    Reg1             = REG_R21;
-                    emit->emitIns_I_la(EA_PTRSIZE, REG_R21, intConst);
+                    // MinInt=0x80000000
+                    emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, REG_SCRATCH, REG_SCRATCH, 31);
+                }
+                else
+                {
+                    assert(size == EA_8BYTE);
+                    // MinInt=0x8000000000000000
+                    emit->emitIns_R_R_I(INS_slli_d, EA_8BYTE, REG_SCRATCH, REG_SCRATCH, 63);
+                }
+                genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, REG_SCRATCH, nullptr, dividendReg);
+                genDefineTempLabel(sdivLabel);
+            }
+
+            // Generate the sdiv instruction
+            if (size == EA_4BYTE)
+            {
+                if (tree->OperGet() == GT_DIV)
+                {
+                    ins = INS_div_w;
+                }
+                else
+                {
+                    ins = INS_mod_w;
                 }
             }
             else
             {
-                // src1 can only be a reg
-                assert(!src1->isContained());
-            }
-
-            // Generate the require runtime checks for GT_DIV or GT_UDIV
-            if (tree->gtOper == GT_DIV || tree->gtOper == GT_MOD)
-            {
-                // Two possible exceptions:
-                //     (AnyVal /  0) => DivideByZeroException
-                //     (MinInt / -1) => ArithmeticException
-                //
-                bool checkDividend = true;
-
-                // Do we have an immediate for the 'divisorOp'?
-                //
-                if (divisorOp->IsCnsIntOrI())
+                if (tree->OperGet() == GT_DIV)
                 {
-                    ssize_t intConstValue = divisorOp->AsIntCon()->gtIconVal;
-                    // assert(intConstValue != 0); // already checked above by IsIntegralConst(0)
-                    if (intConstValue != -1)
-                    {
-                        checkDividend = false; // We statically know that the dividend is not -1
-                    }
-                }
-                else // insert check for division by zero
-                {
-                    // Check if the divisor is zero throw a DivideByZeroException
-                    genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
-                }
-
-                if (checkDividend)
-                {
-                    // Check if the divisor is not -1 branch to 'sdivLabel'
-                    emit->emitIns_R_R_I(INS_addi_d, EA_PTRSIZE, REG_R21, REG_R0, -1);
-                    BasicBlock* sdivLabel = genCreateTempLabel(); // can optimize for loongarch64.
-                    emit->emitIns_J_cond_la(INS_bne, sdivLabel, REG_R21, divisorReg);
-
-                    // If control flow continues past here the 'divisorReg' is known to be -1
-                    regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
-                    // At this point the divisor is known to be -1
-                    //
-                    // Whether dividendReg is MinInt or not
-                    //
-
-                    emit->emitIns_J_cond_la(INS_beq, sdivLabel, dividendReg, REG_R0);
-
-                    emit->emitIns_R_R_R(size == EA_4BYTE ? INS_add_w : INS_add_d, size, REG_R21, dividendReg,
-                                        dividendReg);
-                    genJumpToThrowHlpBlk_la(SCK_ARITH_EXCPN, INS_beq, REG_R21);
-                    genDefineTempLabel(sdivLabel);
-                }
-
-                // Generate the sdiv instruction
-                if (size == EA_4BYTE)
-                {
-                    if (tree->OperGet() == GT_DIV)
-                    {
-                        ins = INS_div_w;
-                    }
-                    else
-                    {
-                        ins = INS_mod_w;
-                    }
+                    ins = INS_div_d;
                 }
                 else
                 {
-                    if (tree->OperGet() == GT_DIV)
-                    {
-                        ins = INS_div_d;
-                    }
-                    else
-                    {
-                        ins = INS_mod_d;
-                    }
+                    ins = INS_mod_d;
                 }
-
-                emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
             }
-            else // if (tree->gtOper == GT_UDIV) GT_UMOD
+
+            emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
+        }
+        else // if (tree->gtOper == GT_UDIV) GT_UMOD
+        {
+            // Only one possible exception
+            //     (AnyVal /  0) => DivideByZeroException
+            //
+            // Note that division by the constant 0 was already checked for above by the
+            // op2->IsIntegralConst(0) check
+            //
+
+            if (!divisorOp->IsCnsIntOrI())
             {
-                // Only one possible exception
-                //     (AnyVal /  0) => DivideByZeroException
+                // divisorOp is not a constant, so it could be zero
                 //
-                // Note that division by the constant 0 was already checked for above by the
-                // op2->IsIntegralConst(0) check
-                //
+                genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
+            }
 
-                if (!divisorOp->IsCnsIntOrI())
+            if (size == EA_4BYTE)
+            {
+                if (tree->OperGet() == GT_UDIV)
                 {
-                    // divisorOp is not a constant, so it could be zero
-                    //
-                    genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
-                }
-
-                if (size == EA_4BYTE)
-                {
-                    if (tree->OperGet() == GT_UDIV)
-                    {
-                        ins = INS_div_wu;
-                    }
-                    else
-                    {
-                        ins = INS_mod_wu;
-                    }
-
-                    // TODO-LOONGARCH64: here is just for signed-extension ?
-                    emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, Reg1, Reg1, 0);
-                    emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, divisorReg, divisorReg, 0);
+                    ins = INS_div_wu;
                 }
                 else
                 {
-                    if (tree->OperGet() == GT_UDIV)
-                    {
-                        ins = INS_div_du;
-                    }
-                    else
-                    {
-                        ins = INS_mod_du;
-                    }
+                    ins = INS_mod_wu;
                 }
 
-                emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
+                // TODO-LOONGARCH64: here is just for signed-extension ?
+                emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, Reg1, Reg1, 0);
+                emit->emitIns_R_R_I(INS_slli_w, EA_4BYTE, divisorReg, divisorReg, 0);
             }
+            else
+            {
+                if (tree->OperGet() == GT_UDIV)
+                {
+                    ins = INS_div_du;
+                }
+                else
+                {
+                    ins = INS_mod_du;
+                }
+            }
+
+            emit->emitIns_R_R_R(ins, size, tree->GetRegNum(), Reg1, divisorReg);
         }
     }
     genProduceReg(tree);
@@ -2788,7 +2773,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        assert(dstAddr->OperIsLocalAddr());
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -2901,7 +2886,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 // bl CORINFO_HELP_ASSIGN_BYREF
 // ld tempReg, 8(A5)
 // sd tempReg, 8(A6)
-void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
+void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
     GenTree*  dstAddr       = cpObjNode->Addr();
     GenTree*  source        = cpObjNode->Data();
@@ -2921,7 +2906,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIsLocalAddr();
+    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -2957,7 +2942,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF);
     }
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile CpObj operation
         instGen_MemoryBarrier();
@@ -3065,7 +3050,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(gcPtrCount == 0);
     }
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a INS_BARRIER_RMB after a volatile CpObj operation
         // TODO-LOONGARCH64: there is only BARRIER_FULL for LOONGARCH64.
@@ -5000,9 +4985,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForBitCast(treeNode->AsOp());
             break;
 
-        case GT_LCL_FLD_ADDR:
-        case GT_LCL_VAR_ADDR:
-            genCodeForLclAddr(treeNode->AsLclVarCommon());
+        case GT_LCL_ADDR:
+            genCodeForLclAddr(treeNode->AsLclFld());
             break;
 
         case GT_LCL_FLD:
@@ -5207,7 +5191,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             emit->emitIns_R_L(INS_ld_d, EA_PTRSIZE, genPendingCallLabel, targetReg);
             break;
 
-        case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
         case GT_STORE_BLK:
             genCodeForStoreBlk(treeNode->AsBlk());
@@ -5478,9 +5461,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         {
             genPutArgStkFieldList(treeNode, varNumOut);
         }
-        else // We must have a GT_OBJ or a GT_LCL_VAR
+        else // We must have a GT_BLK or a GT_LCL_VAR
         {
-            noway_assert((source->OperGet() == GT_LCL_VAR) || (source->OperGet() == GT_OBJ));
+            noway_assert((source->OperGet() == GT_LCL_VAR) || (source->OperGet() == GT_BLK));
 
             var_types targetType = source->TypeGet();
             noway_assert(varTypeIsStruct(targetType));
@@ -5497,21 +5480,21 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             {
                 varNode = source->AsLclVarCommon();
             }
-            else // we must have a GT_OBJ
+            else // we must have a GT_BLK
             {
-                assert(source->OperGet() == GT_OBJ);
+                assert(source->OperGet() == GT_BLK);
 
                 addrNode = source->AsOp()->gtOp1;
 
-                // addrNode can either be a GT_LCL_VAR_ADDR or an address expression
+                // addrNode can either be a GT_LCL_ADDR<0> or an address expression
                 //
-                if (addrNode->OperGet() == GT_LCL_VAR_ADDR)
+                if (addrNode->IsLclVarAddr())
                 {
-                    // We have a GT_OBJ(GT_LCL_VAR_ADDR)
+                    // We have a GT_BLK(GT_LCL_ADDR<0>)
                     //
                     // We will treat this case the same as above
                     // (i.e if we just had this GT_LCL_VAR directly as the source)
-                    // so update 'source' to point this GT_LCL_VAR_ADDR node
+                    // so update 'source' to point this GT_LCL_ADDR node
                     // and continue to the codegen for the LCL_VAR node below
                     //
                     varNode  = addrNode->AsLclVarCommon();
@@ -5550,18 +5533,16 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                                             // as that is how much stack is allocated for this LclVar
                 layout = varDsc->GetLayout();
             }
-            else // we must have a GT_OBJ
+            else // we must have a GT_BLK
             {
-                assert(source->OperGet() == GT_OBJ);
+                assert(source->OperGet() == GT_BLK);
 
-                // If the source is an OBJ node then we need to use the type information
+                // If the source is an BLK node then we need to use the type information
                 // it provides (size and GC layout) even if the node wraps a lclvar. Due
                 // to struct reinterpretation (e.g. Unsafe.As<X, Y>) it is possible that
-                // the OBJ node has a different type than the lclvar.
-                CORINFO_CLASS_HANDLE objClass = source->AsObj()->GetLayout()->GetClassHandle();
-
-                srcSize = compiler->info.compCompHnd->getClassSize(objClass);
-                layout  = source->AsObj()->GetLayout();
+                // the BLK node has a different type than the lclvar.
+                layout  = source->AsBlk()->GetLayout();
+                srcSize = layout->GetSize();
             }
 
             unsigned structSize;
@@ -5767,7 +5748,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     else
     {
         var_types targetType = source->TypeGet();
-        assert(source->OperGet() == GT_OBJ);
+        assert(source->OperGet() == GT_BLK);
         assert(varTypeIsStruct(targetType));
 
         regNumber baseReg = treeNode->ExtractTempReg();
@@ -5778,15 +5759,15 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
         addrNode = source->AsOp()->gtOp1;
 
-        // addrNode can either be a GT_LCL_VAR_ADDR or an address expression
+        // addrNode can either be a GT_LCL_ADDR<0> or an address expression
         //
-        if (addrNode->OperGet() == GT_LCL_VAR_ADDR)
+        if (addrNode->IsLclVarAddr())
         {
-            // We have a GT_OBJ(GT_LCL_VAR_ADDR)
+            // We have a GT_BLK(GT_LCL_ADDR<0>)
             //
             // We will treat this case the same as above
             // (i.e if we just had this GT_LCL_VAR directly as the source)
-            // so update 'source' to point this GT_LCL_VAR_ADDR node
+            // so update 'source' to point this GT_LCL_ADDR node
             // and continue to the codegen for the LCL_VAR node below
             //
             varNode  = addrNode->AsLclVarCommon();
@@ -5819,12 +5800,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             // Because the candidate mask for the internal baseReg does not include any of the target register,
             // we can ensure that baseReg, addrReg, and the last target register are not all same.
             assert(baseReg != addrReg);
-
-            // We don't split HFA struct
-            assert(!compiler->IsHfa(source->AsObj()->GetLayout()->GetClassHandle()));
         }
 
-        ClassLayout* layout = source->AsObj()->GetLayout();
+        ClassLayout* layout = source->AsBlk()->GetLayout();
 
         // Put on stack first
         unsigned structOffset  = treeNode->gtNumRegs * TARGET_POINTER_SIZE;
@@ -6185,14 +6163,14 @@ void CodeGen::genCodeForShift(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForLclAddr: Generates the code for GT_LCL_FLD_ADDR/GT_LCL_VAR_ADDR.
+// genCodeForLclAddr: Generates the code for GT_LCL_ADDR.
 //
 // Arguments:
 //    tree - the node.
 //
-void CodeGen::genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode)
+void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 {
-    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR, GT_LCL_VAR_ADDR));
+    assert(lclAddrNode->OperIs(GT_LCL_ADDR));
 
     var_types targetType = lclAddrNode->TypeGet();
     emitAttr  size       = emitTypeSize(targetType);
@@ -6432,7 +6410,7 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
     // genConsumeBlockOp takes care of this for us.
     genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
-    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpBlkNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile CpBlk operation
         instGen_MemoryBarrier();
@@ -6440,7 +6418,7 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 
     genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
 
-    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpBlkNode->IsVolatile())
     {
         // issue a INS_BARRIER_RMB after a volatile CpBlk operation
         instGen_MemoryBarrier(BARRIER_FULL);
@@ -6481,7 +6459,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     }
     else
     {
-        assert(dstAddr->OperIsLocalAddr());
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -6514,7 +6492,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
         }
         else
         {
-            assert(srcAddr->OperIsLocalAddr());
+            assert(srcAddr->OperIs(GT_LCL_ADDR));
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
             srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
@@ -6645,7 +6623,7 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
     // genConsumeBlockOp takes care of this for us.
     genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
-    if (initBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (initBlkNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile initBlock Operation
         instGen_MemoryBarrier();
@@ -6661,9 +6639,9 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
 {
     emitter* emit = GetEmitter();
 
-    if (base->OperIsLocalAddr())
+    if (base->OperIs(GT_LCL_ADDR))
     {
-        if (base->gtOper == GT_LCL_FLD_ADDR)
+        if (base->gtOper == GT_LCL_ADDR)
         {
             offset += base->AsLclFld()->GetLclOffs();
         }
@@ -7550,31 +7528,29 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
 }
 
 //------------------------------------------------------------------------
-// genCodeForStoreBlk: Produce code for a GT_STORE_OBJ/GT_STORE_DYN_BLK/GT_STORE_BLK node.
+// genCodeForStoreBlk: Produce code for a GT_STORE_DYN_BLK/GT_STORE_BLK node.
 //
 // Arguments:
 //    tree - the node
 //
 void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
-    assert(blkOp->OperIs(GT_STORE_OBJ, GT_STORE_DYN_BLK, GT_STORE_BLK));
+    assert(blkOp->OperIs(GT_STORE_DYN_BLK, GT_STORE_BLK));
 
-    if (blkOp->OperIs(GT_STORE_OBJ))
-    {
-        assert(!blkOp->gtBlkOpGcUnsafe);
-        assert(blkOp->OperIsCopyBlkOp());
-        assert(blkOp->AsObj()->GetLayout()->HasGCPtr());
-        genCodeForCpObj(blkOp->AsObj());
-        return;
-    }
     if (blkOp->gtBlkOpGcUnsafe)
     {
         GetEmitter()->emitDisableGC();
     }
+
     bool isCopyBlk = blkOp->OperIsCopyBlkOp();
 
     switch (blkOp->gtBlkOpKind)
     {
+        case GenTreeBlk::BlkOpKindCpObjUnroll:
+            assert(!blkOp->gtBlkOpGcUnsafe);
+            genCodeForCpObj(blkOp->AsBlk());
+            break;
+
         case GenTreeBlk::BlkOpKindHelper:
             if (isCopyBlk)
             {
@@ -8584,7 +8560,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
 
     unsigned varNum;
     unsigned regArgMaskIsInt = 0;
-    unsigned regArgNum       = 0;
+    int      regArgNum       = 0;
     // Process any circular dependencies
     unsigned regArg[MAX_REG_ARG * 2]     = {0};
     unsigned regArgInit[MAX_REG_ARG * 2] = {0};
@@ -8934,75 +8910,83 @@ void CodeGen::genFnPrologCalleeRegArgs()
                 assert(genIsValidIntReg((regNumber)regArg[i]));
                 assert(genIsValidIntReg((regNumber)regArgInit[i]));
 
-                regArgNum--;
-                regArgMaskLive &= ~genRegMask((regNumber)regArg[i]);
-                if ((regArgMaskIsInt & (1 << regArg[i])) != 0)
+                unsigned tmpRegs[MAX_REG_ARG] = {0};
+
+                unsigned tmpArg  = regArg[i];
+                unsigned nextReg = regArgInit[i] - REG_ARG_FIRST;
+
+                assert(tmpArg <= REG_ARG_LAST);
+                assert(nextReg < MAX_REG_ARG);
+                assert(nextReg != i);
+
+                regArg[i] = 0;
+                int count = 0;
+
+                while (regArg[nextReg] != 0)
                 {
-                    ins = INS_slli_w;
+                    tmpRegs[count] = nextReg;
+                    nextReg        = regArgInit[nextReg] - REG_ARG_FIRST;
+                    assert(nextReg < MAX_REG_ARG);
+
+                    for (int count2 = 0; count2 < count; count2++)
+                    {
+                        if (nextReg == tmpRegs[count2])
+                        {
+                            NYI_LOONGARCH64("-----------CodeGen::genFnPrologCalleeRegArgs() error: intRegs!");
+                        }
+                    }
+
+                    count++;
+                }
+
+                if (nextReg == i)
+                {
+                    GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, REG_R21, (regNumber)tmpArg, 0);
+                    regArgMaskLive &= ~genRegMask((regNumber)tmpArg);
+                    assert(count > 0);
+                }
+                else if (count == 0)
+                {
+                    tmpRegs[0] = i;
+                    regArg[i]  = tmpArg;
                 }
                 else
                 {
-                    ins = INS_ori;
+                    count--;
                 }
 
-                if (regArgNum == 0)
+                do
                 {
-                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
-                    break;
-                }
-                else if (regArgInit[i] > regArg[i])
-                {
-                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
-                }
-                else
-                {
-                    assert(i > 0);
-                    assert(regArgNum > 0);
+                    tmpArg = tmpRegs[count];
 
-                    int j = regArgInit[i] - REG_ARG_FIRST;
-                    assert((j >= 0) && (j < MAX_REG_ARG));
-                    if (regArg[j] == 0)
-                    {
-                        GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i], 0);
-                    }
-                    else
-                    {
-                        int k = regArgInit[j] - REG_ARG_FIRST;
-                        assert((k >= 0) && (k < MAX_REG_ARG));
-                        instruction ins2 = (regArgMaskIsInt & (1 << regArg[j])) != 0 ? INS_slli_w : INS_ori;
-                        if ((regArg[k] == 0) || (k > i))
-                        {
-                            GetEmitter()->emitIns_R_R_I(ins2, EA_PTRSIZE, (regNumber)regArgInit[j],
-                                                        (regNumber)regArg[j], 0);
-                            GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], (regNumber)regArg[i],
-                                                        0);
-                            regArgNum--;
-                            regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
-                            if (regArgNum == 0)
-                            {
-                                break;
-                            }
-                        }
-                        else if (k == i)
-                        {
-                            GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, REG_R21, (regNumber)regArg[i], 0);
-                            GetEmitter()->emitIns_R_R_I(ins2, EA_PTRSIZE, (regNumber)regArgInit[j],
-                                                        (regNumber)regArg[j], 0);
-                            GetEmitter()->emitIns_R_R_I(INS_ori, EA_PTRSIZE, (regNumber)regArgInit[i], REG_R21, 0);
-                            regArgNum--;
-                            regArgMaskLive &= ~genRegMask((regNumber)regArg[j]);
-                            regArg[j] = 0;
-                            if (regArgNum == 0)
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            NYI_LOONGARCH64("-----------CodeGen::genFnPrologCalleeRegArgs() error!--");
-                        }
-                    }
+                    instruction ins = (regArgMaskIsInt & (1 << regArg[tmpArg])) != 0 ? INS_slli_w : INS_ori;
+                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[tmpArg],
+                                                (regNumber)regArg[tmpArg], 0);
+
+                    regArgMaskLive &= ~genRegMask((regNumber)regArg[tmpArg]);
+                    regArg[tmpArg] = 0;
+                    count--;
+                    regArgNum--;
+                    assert(regArgNum >= 0);
+                } while (count >= 0);
+
+                if (nextReg == i)
+                {
+                    instruction ins = (regArgMaskIsInt & (1 << regArg[i])) != 0 ? INS_slli_w : INS_ori;
+                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i], REG_R21, 0);
+                    regArgNum--;
+                    assert(regArgNum >= 0);
                 }
+                else if (tmpRegs[0] != i)
+                {
+                    instruction ins = (regArgMaskIsInt & (1 << (i + REG_ARG_FIRST))) != 0 ? INS_slli_w : INS_ori;
+                    GetEmitter()->emitIns_R_R_I(ins, EA_PTRSIZE, (regNumber)regArgInit[i],
+                                                (regNumber)(i + REG_ARG_FIRST), 0);
+
+                    regArgMaskLive &= ~genRegMask((regNumber)(i + REG_ARG_FIRST));
+                    regArgNum--;
+                }
+                assert(regArgNum >= 0);
             }
         }
 
@@ -9113,75 +9097,4 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         return;
     }
 }
-
-// return size
-// alignmentWB is out param
-unsigned CodeGenInterface::InferOpSizeAlign(GenTree* op, unsigned* alignmentWB)
-{
-    unsigned alignment = 0;
-    unsigned opSize    = 0;
-
-    if (op->gtType == TYP_STRUCT || op->OperIsCopyBlkOp())
-    {
-        opSize = InferStructOpSizeAlign(op, &alignment);
-    }
-    else
-    {
-        alignment = genTypeAlignments[op->TypeGet()];
-        opSize    = genTypeSizes[op->TypeGet()];
-    }
-
-    assert(opSize != 0);
-    assert(alignment != 0);
-
-    (*alignmentWB) = alignment;
-    return opSize;
-}
-
-// return size
-// alignmentWB is out param
-unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignmentWB)
-{
-    unsigned alignment = 0;
-    unsigned opSize    = 0;
-
-    while (op->gtOper == GT_COMMA)
-    {
-        op = op->AsOp()->gtOp2;
-    }
-
-    if (op->gtOper == GT_OBJ)
-    {
-        CORINFO_CLASS_HANDLE clsHnd = op->AsObj()->GetLayout()->GetClassHandle();
-        opSize                      = op->AsObj()->GetLayout()->GetSize();
-        alignment = roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
-    }
-    else if (op->gtOper == GT_LCL_VAR)
-    {
-        const LclVarDsc* varDsc = compiler->lvaGetDesc(op->AsLclVarCommon());
-        assert(varDsc->lvType == TYP_STRUCT);
-        opSize = varDsc->lvSize();
-        {
-            alignment = TARGET_POINTER_SIZE;
-        }
-    }
-    else if (op->gtOper == GT_MKREFANY)
-    {
-        opSize    = TARGET_POINTER_SIZE * 2;
-        alignment = TARGET_POINTER_SIZE;
-    }
-    else
-    {
-        assert(!"Unhandled gtOper");
-        opSize    = TARGET_POINTER_SIZE;
-        alignment = TARGET_POINTER_SIZE;
-    }
-
-    assert(opSize != 0);
-    assert(alignment != 0);
-
-    (*alignmentWB) = alignment;
-    return opSize;
-}
-
 #endif // TARGET_LOONGARCH64

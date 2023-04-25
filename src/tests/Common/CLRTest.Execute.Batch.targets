@@ -136,7 +136,7 @@ IF NOT "%CrossGen2SynthesizePgo"=="" (
 
       <BatchCLRTestExitCodePrep Condition="$(_CLRTestNeedsToRun)">
         <![CDATA[
-if not defined CLRTestExpectedExitCode (set CLRTestExpectedExitCode=$(CLRTestExitCode))
+set CLRTestExpectedExitCode=$(CLRTestExitCode)
 ECHO BEGIN EXECUTION
       ]]>
       </BatchCLRTestExitCodePrep>
@@ -298,7 +298,7 @@ if defined DoLink (
       </PropertyGroup>
       <PropertyGroup>
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs) %__DotEnvArg%</CLRTestRunFile>
-      <WatcherRunFile>"%CORE_ROOT%\watchdog.exe" 300</WatcherRunFile>
+      <WatcherRunFile>"%CORE_ROOT%\watchdog.exe" %_WatcherTimeoutMins%</WatcherRunFile>
 
       <BatchCopyCoreShimLocalCmds Condition="'$(CLRTestScriptLocalCoreShim)' == 'true'"><![CDATA[
 REM Local CoreShim requested - see MSBuild property 'CLRTestScriptLocalCoreShim'
@@ -439,6 +439,19 @@ set "lockFolder=%~dp0\lock"
 pushd %~dp0
 set "scriptPath=%~dp0"
 set /A _RunWithWatcher=0
+set /A _WatcherTimeoutMins=10
+
+IF NOT "%__TestCollectionTimeoutMins%"=="" (
+    set /A _WatcherTimeoutMins=%__TestCollectionTimeoutMins%
+)
+
+REM The watcher needs a bit of time to start up, capture dumps, clean up, and so on.
+REM Because of this, we pass a smaller timeout than the test collection one.
+REM For simplicity purposes, we will assume there are no work items with just
+REM a one-minute max timeout.
+IF %_WatcherTimeoutMins% GTR 1 (
+    set /A _WatcherTimeoutMins-=1
+)
 
 $(BatchCLRTestArgPrep)
 $(BatchCLRTestExitCodePrep)

@@ -20,7 +20,7 @@ export const MainThread: PThreadInfo = {
 let browser_thread_id_lazy: pthread_ptr | undefined;
 export function getBrowserThreadID(): pthread_ptr {
     if (browser_thread_id_lazy === undefined) {
-        browser_thread_id_lazy = (<any>Module)["_emscripten_main_browser_thread_id"]() as pthread_ptr;
+        browser_thread_id_lazy = (<any>Module)["_emscripten_main_runtime_thread_id"]() as pthread_ptr;
     }
     return browser_thread_id_lazy;
 }

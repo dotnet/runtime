@@ -3,10 +3,12 @@
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_70124
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Problem(Vector2.One, Vector2.One) != new Vector2(3, 3) ? 101 : 100;
     }

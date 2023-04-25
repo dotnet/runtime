@@ -1,26 +1,31 @@
 <Project Sdk="Microsoft.Build.Traversal" DefaultTargets="Pack">
-  <ItemGroup Condition="'$(TargetOS)' == 'android'">
+  <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.Android.Sample.Mono\Microsoft.NET.Runtime.Android.Sample.Mono.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'browser'">
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.wasm.Sample.Mono\Microsoft.NET.Runtime.wasm.Sample.Mono.pkgproj" />
     <ProjectReference Include="Microsoft.NETCore.BrowserDebugHost.Transport\Microsoft.NETCore.BrowserDebugHost.Transport.pkgproj" />
     <ProjectReference Include="Microsoft.NET.Runtime.WebAssembly.Sdk\Microsoft.NET.Runtime.WebAssembly.Sdk.pkgproj" />
     <ProjectReference Include="..\wasm\templates\Microsoft.NET.Runtime.WebAssembly.Templates.csproj" />
+    <ProjectReference Include="Microsoft.NET.Sdk.WebAssembly.Pack\Microsoft.NET.Sdk.WebAssembly.Pack.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'wasi'">
+  <ItemGroup Condition="'$(TargetsWasi)' == 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk\Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk.pkgproj" />
     <ProjectReference Include="..\wasm\templates\Microsoft.NET.Runtime.WebAssembly.Templates.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'">
+  <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetsiOSSimulator)' == 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.iOS.Sample.Mono\Microsoft.NET.Runtime.iOS.Sample.Mono.pkgproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsMobile)' == 'true'">
     <ProjectReference Include="Microsoft.NET.Runtime.MonoAOTCompiler.Task\Microsoft.NET.Runtime.MonoAOTCompiler.Task.pkgproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetsAndroid)' == 'true'">
+    <ProjectReference Include="Microsoft.NET.Runtime.LibraryBuilder.Sdk\Microsoft.NET.Runtime.LibraryBuilder.Sdk.pkgproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">

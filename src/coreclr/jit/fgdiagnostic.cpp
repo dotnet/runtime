@@ -105,6 +105,7 @@ void Compiler::fgDebugCheckUpdate()
             {
                 case BBJ_CALLFINALLY:
                 case BBJ_EHFINALLYRET:
+                case BBJ_EHFAULTRET:
                 case BBJ_EHFILTERRET:
                 case BBJ_RETURN:
                 /* for BBJ_ALWAYS is probably just a GOTO, but will have to be treated */
@@ -874,7 +875,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     // that size, even though it means allocating a block map possibly much bigger than what's required for just
     // the inlinee blocks.
 
-    unsigned  blkMapSize   = 1 + impInlineRoot()->fgBBNumMax;
+    unsigned  blkMapSize   = 1 + fgBBNumMax;
     unsigned  blockOrdinal = 1;
     unsigned* blkMap       = new (this, CMK_DebugOnly) unsigned[blkMapSize];
     memset(blkMap, 0, sizeof(unsigned) * blkMapSize);
@@ -1830,7 +1831,7 @@ void Compiler::fgDispDoms()
 void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 */)
 {
     const unsigned __int64 flags            = block->bbFlags;
-    unsigned               bbNumMax         = impInlineRoot()->fgBBNumMax;
+    unsigned               bbNumMax         = fgBBNumMax;
     int                    maxBlockNumWidth = CountDigits(bbNumMax);
     maxBlockNumWidth                        = max(maxBlockNumWidth, 2);
     int blockNumWidth                       = CountDigits(block->bbNum);
@@ -1992,6 +1993,10 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
 
             case BBJ_EHFINALLYRET:
                 printf("%*s        (finret)", maxBlockNumWidth - 2, "");
+                break;
+
+            case BBJ_EHFAULTRET:
+                printf("%*s        (falret)", maxBlockNumWidth - 2, "");
                 break;
 
             case BBJ_EHFILTERRET:
@@ -2261,7 +2266,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         ibcColWidth = max(ibcColWidth, 3) + 1; // + 1 for the leading space
     }
 
-    unsigned bbNumMax         = impInlineRoot()->fgBBNumMax;
+    unsigned bbNumMax         = fgBBNumMax;
     int      maxBlockNumWidth = CountDigits(bbNumMax);
     maxBlockNumWidth          = max(maxBlockNumWidth, 2);
     int padWidth              = maxBlockNumWidth - 2; // Account for functions with a large number of blocks.
@@ -2633,9 +2638,10 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             assert(CheckEHFinallyRet(blockPred, block));
             return true;
 
+        case BBJ_EHFAULTRET:
         case BBJ_THROW:
         case BBJ_RETURN:
-            assert(!"THROW and RETURN block cannot be in the predecessor list!");
+            assert(!"EHFAULTRET, THROW, and RETURN block cannot be in the predecessor list!");
             break;
 
         case BBJ_SWITCH:
@@ -2888,11 +2894,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             blockRefs += 1;
         }
 
-        // Under OSR, if we also are keeping the original method entry around,
-        // mark that as implicitly referenced as well.
-        if (opts.IsOSR() && (block == fgEntryBB) && fgOSROriginalEntryBBProtected)
+        // Under OSR, if we also are keeping the original method entry around
+        // via artifical ref counts, account for those.
+        //
+        if (opts.IsOSR() && (block == fgEntryBB))
         {
-            blockRefs += 1;
+            blockRefs += fgEntryBBExtraRefs;
         }
 
         /* Check the bbRefs */
@@ -3147,6 +3154,71 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             expectedFlags |= (GTF_GLOB_REF | GTF_ASG);
             break;
 
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+            if (hwintrinsic->OperIsMemoryLoad())
+            {
+                assert(tree->OperMayThrow(this));
+                expectedFlags |= GTF_GLOB_REF;
+            }
+            else if (hwintrinsic->OperIsMemoryStore())
+            {
+                assert(tree->OperRequiresAsgFlag());
+                assert(tree->OperMayThrow(this));
+                expectedFlags |= GTF_GLOB_REF;
+            }
+            else if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
+            {
+                switch (intrinsicId)
+                {
+#if defined(TARGET_XARCH)
+                    case NI_SSE_StoreFence:
+                    case NI_SSE2_LoadFence:
+                    case NI_SSE2_MemoryFence:
+                    case NI_X86Serialize_Serialize:
+                    {
+                        assert(tree->OperRequiresAsgFlag());
+                        expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+
+                    case NI_X86Base_Pause:
+                    case NI_SSE_Prefetch0:
+                    case NI_SSE_Prefetch1:
+                    case NI_SSE_Prefetch2:
+                    case NI_SSE_PrefetchNonTemporal:
+                    {
+                        assert(tree->OperRequiresCallFlag(this));
+                        expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+                    case NI_ArmBase_Yield:
+                    {
+                        assert(tree->OperRequiresCallFlag(this));
+                        expectedFlags |= GTF_GLOB_REF;
+                        break;
+                    }
+#endif // TARGET_ARM64
+
+                    default:
+                    {
+                        assert(!"Unhandled HWIntrinsic with special side effect");
+                        break;
+                    }
+                }
+            }
+
+            break;
+        }
+#endif // FEATURE_HW_INTRINSICS
+
         default:
             break;
     }
@@ -3364,7 +3436,7 @@ void Compiler::fgDebugCheckLinkedLocals()
 
         bool ShouldLink(GenTree* node)
         {
-            return node->OperIsLocal() || node->OperIsLocalAddr();
+            return node->OperIsLocal() || node->OperIs(GT_LCL_ADDR);
         }
 
     public:
@@ -3452,7 +3524,7 @@ void Compiler::fgDebugCheckLinkedLocals()
             int nodeIndex = 0;
             for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
             {
-                success &= cur->OperIsLocal() || cur->OperIsLocalAddr();
+                success &= cur->OperIsLocal() || cur->OperIs(GT_LCL_ADDR);
                 success &= (nodeIndex < expected->Height()) && (cur == expected->Bottom(nodeIndex));
                 nodeIndex++;
             }
@@ -3635,7 +3707,7 @@ void Compiler::fgDebugCheckBlockLinks()
             {
                 // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
                 // about the BlockSet epoch.
-                BitVecTraits bitVecTraits(impInlineRoot()->fgBBNumMax + 1, this);
+                BitVecTraits bitVecTraits(fgBBNumMax + 1, this);
                 BitVec       succBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
                 for (BasicBlock* const bTarget : block->SwitchTargets())
                 {
@@ -4294,7 +4366,7 @@ void Compiler::fgDebugCheckSsa()
         }
     };
 
-    // Visit the blocks that SSA intially renamed
+    // Visit the blocks that SSA initially renamed
     //
     SsaCheckVisitor        scv(this);
     SsaCheckDomTreeVisitor visitor(this, scv);
@@ -4334,6 +4406,7 @@ void Compiler::fgDebugCheckSsa()
 //    - All basic blocks with loop numbers set have a corresponding loop in the table
 //    - All basic blocks without a loop number are not in a loop
 //    - All parents of the loop with the block contain that block
+//    - If optLoopsRequirePreHeaders is true, the loop has a pre-header
 //    - If the loop has a pre-header, it is valid
 //    - The loop flags are valid
 //    - no loop shares `top` with any of its children
@@ -4362,7 +4435,7 @@ void Compiler::fgDebugCheckLoopTable()
     // `blockNumMap[bbNum] == 0` if the `bbNum` block was deleted and blocks haven't been renumbered since
     // the deletion.
 
-    unsigned bbNumMax = impInlineRoot()->fgBBNumMax;
+    unsigned bbNumMax = fgBBNumMax;
 
     // blockNumMap[old block number] => new block number
     size_t    blockNumBytes = (bbNumMax + 1) * sizeof(unsigned);
@@ -4592,6 +4665,11 @@ void Compiler::fgDebugCheckLoopTable()
             }
         }
 
+        if (optLoopsRequirePreHeaders)
+        {
+            assert((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0);
+        }
+
         // If the loop has a pre-header, ensure the pre-header form is correct.
         if ((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0)
         {
@@ -4651,6 +4729,32 @@ void Compiler::fgDebugCheckLoopTable()
         {
             loop.VERIFY_lpIterTree();
             loop.VERIFY_lpTestTree();
+        }
+
+        // If we have dominators, we check more things:
+        // 1. The pre-header dominates the entry (if pre-headers are required).
+        // 2. The entry dominates the exit.
+        // 3. The IDom tree from the exit reaches the entry.
+        if (fgDomsComputed)
+        {
+            if (optLoopsRequirePreHeaders)
+            {
+                assert(fgDominate(loop.lpHead, loop.lpEntry));
+            }
+
+            if (loop.lpExitCnt == 1)
+            {
+                assert(loop.lpExit != nullptr);
+                assert(fgDominate(loop.lpEntry, loop.lpExit));
+
+                BasicBlock* cur = loop.lpExit;
+                while ((cur != nullptr) && (cur != loop.lpEntry))
+                {
+                    assert(fgDominate(cur, loop.lpExit));
+                    cur = cur->bbIDom;
+                }
+                assert(cur == loop.lpEntry); // We must be able to reach the entry from the exit via the IDom tree.
+            }
         }
     }
 

@@ -4,6 +4,7 @@
       <!-- Methods are used to register and unregister frozen segments. They are private and experimental. -->
       <method name="_RegisterFrozenSegment" />
       <method name="_UnregisterFrozenSegment" />
+      <method name="_RefreshMemoryLimit" />
     </type>
     <!-- Accessed via native code. -->
     <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerable" />

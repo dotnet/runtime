@@ -503,6 +503,22 @@ size_t MyICJI::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
     return jitInstance->mc->repGetClassModuleIdForStatics(cls, pModule, ppIndirection);
 }
 
+bool MyICJI::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE  cls,
+                                         CORINFO_CONST_LOOKUP* addr,
+                                         int*                  offset)
+{
+    jitInstance->mc->cr->AddCall("getIsClassInitedFlagAddress");
+    return jitInstance->mc->repGetIsClassInitedFlagAddress(cls, addr, offset);
+}
+
+bool MyICJI::getStaticBaseAddress(CORINFO_CLASS_HANDLE  cls,
+                                  bool                  isGc,
+                                  CORINFO_CONST_LOOKUP* addr)
+{
+    jitInstance->mc->cr->AddCall("getStaticBaseAddress");
+    return jitInstance->mc->repGetStaticBaseAddress(cls, isGc, addr);
+}
+
 // return the number of bytes needed by an instance of the class
 unsigned MyICJI::getClassSize(CORINFO_CLASS_HANDLE cls)
 {
@@ -908,6 +924,18 @@ void MyICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     jitInstance->mc->repGetFieldInfo(pResolvedToken, callerHandle, flags, pResult);
 }
 
+uint32_t MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+{
+    jitInstance->mc->cr->AddCall("getThreadLocalFieldInfo");
+    return jitInstance->mc->repGetThreadLocalFieldInfo(field);
+}
+
+void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    jitInstance->mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
+    jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo);
+}
+
 // Returns true iff "fldHnd" represents a static field.
 bool MyICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 {
@@ -1270,6 +1298,12 @@ uint32_t MyICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE st
 {
     jitInstance->mc->cr->AddCall("getLoongArch64PassStructInRegisterFlags");
     return jitInstance->mc->repGetLoongArch64PassStructInRegisterFlags(structHnd);
+}
+
+uint32_t MyICJI::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    jitInstance->mc->cr->AddCall("getRISCV64PassStructInRegisterFlags");
+    return jitInstance->mc->repGetRISCV64PassStructInRegisterFlags(structHnd);
 }
 
 // Stuff on ICorDynamicInfo
@@ -1657,7 +1691,7 @@ void MyICJI::allocMem(AllocMemArgs* pArgs)
         {
             roDataAlignment = 64;
         }
-        if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+        else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
         {
             roDataAlignment = 32;
         }

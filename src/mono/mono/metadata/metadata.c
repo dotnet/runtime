@@ -3734,12 +3734,14 @@ publish_anon_gparam_fast (MonoImage *image, MonoGenericContainer *container, gin
 	if (!*cache) {
 		mono_image_lock (image);
 		if (!*cache) {
-			*cache = (MonoGenericParam*)mono_image_alloc0 (image, sizeof (MonoGenericParam) * FAST_GPARAM_CACHE_SIZE);
+			MonoGenericParam *new_cache = (MonoGenericParam*)mono_image_alloc0 (image, sizeof (MonoGenericParam) * FAST_GPARAM_CACHE_SIZE);
 			for (guint16 i = 0; i < FAST_GPARAM_CACHE_SIZE; ++i) {
-				MonoGenericParam *param = &(*cache)[i];
+				MonoGenericParam *param = &new_cache[i];
 				param->owner = container;
 				param->num = i;
 			}
+			mono_memory_barrier ();
+			*cache = new_cache;
 		}
 		mono_image_unlock (image);
 	}
@@ -7027,17 +7029,26 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 	if (num_overrides)
 		*num_overrides = 0;
 
-	if (!tdef->base)
+	if (!tdef->base && !image->has_updates)
 		return;
 
 	loc.t = tdef;
 	loc.col_idx = MONO_METHODIMPL_CLASS;
 	loc.idx = mono_metadata_token_index (type_token);
+	loc.result = 0;
 
-	/* FIXME metadata-update */
+	gboolean found = tdef->base && mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator) != NULL;
 
-	if (!mono_binary_search (&loc, tdef->base, table_info_get_rows (tdef), tdef->row_size, table_locator))
+	if (!found && !image->has_updates)
 		return;
+
+	if (G_UNLIKELY (image->has_updates))  {
+		if (!found && !mono_metadata_update_metadata_linear_search (image, tdef, &loc, table_locator)) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "NO Found interfaces for class 0x%08x", type_token);
+			return;
+		}
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "Found interfaces for class 0x%08x starting at 0x%08x", type_token, loc.result);
+	}
 
 	start = loc.result;
 	end = start + 1;
@@ -7050,7 +7061,7 @@ mono_class_get_overrides_full (MonoImage *image, guint32 type_token, MonoMethod 
 		else
 			break;
 	}
-	guint32 rows = table_info_get_rows (tdef);
+	guint32 rows = mono_metadata_table_num_rows (image, MONO_TABLE_METHODIMPL);
 	while (end < rows) {
 		if (loc.idx == mono_metadata_decode_row_col (tdef, end, MONO_METHODIMPL_CLASS))
 			end++;

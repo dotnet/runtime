@@ -74,7 +74,7 @@ jobs:
             - (Fedora.36.Amd64.Open)ubuntu.1804.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-36-helix
             - Ubuntu.2204.Amd64.Open
             - (Debian.11.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
-            - (Mariner.1.0.Amd64.Open)ubuntu.1804.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-1.0-helix
+            - (Mariner.2.0.Amd64.Open)ubuntu.1804.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-helix-amd64
             - (openSUSE.15.2.Amd64.Open)ubuntu.1804.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:opensuse-15.2-helix-amd64
           - ${{ if or(ne(parameters.jobParameters.isExtraPlatforms, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
             - (Centos.7.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-mlnet-helix
@@ -125,11 +125,7 @@ jobs:
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
-      # split traffic for runtime-extra-platforms (which mostly runs on rolling builds)
-      - ${{ if ne(parameters.jobParameters.isExtraPlatforms, true) }}:
-        - OSX.1015.Amd64.AppleTV.Open
-      - ${{ if eq(parameters.jobParameters.isExtraPlatforms, true) }}:
-        - OSX.1100.Amd64.AppleTV.Open
+      - OSX.13.Amd64.AppleTV.Open
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
@@ -201,6 +197,6 @@ jobs:
 
     # Browser WebAssembly windows
     - ${{ if in(parameters.platform, 'browser_wasm_win', 'wasi_wasm_win') }}:
-      - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly-net8
+      - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly-net8-20230327150108-4404b5c
 
     ${{ insert }}: ${{ parameters.jobParameters }}

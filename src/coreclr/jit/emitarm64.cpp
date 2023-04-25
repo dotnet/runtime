@@ -444,7 +444,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_DR_2D: // DR_2D   X..........nnnnn cccc..nnnnnmmmmm      Rd Rn    cond
             assert(isValidGeneralDatasize(id->idOpSize()));
             assert(isGeneralRegister(id->idReg1()));
-            assert(isGeneralRegister(id->idReg2()));
+            assert(isGeneralRegisterOrZR(id->idReg2()));
             assert(isValidImmCond(emitGetInsSC(id)));
             break;
 
@@ -4185,7 +4185,7 @@ void emitter::emitIns_Mov(
 
         case INS_sxtw:
         {
-            assert(size == EA_8BYTE);
+            assert((size == EA_8BYTE) || (size == EA_4BYTE));
             FALLTHROUGH;
         }
 
@@ -7315,7 +7315,7 @@ void emitter::emitIns_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, r
         case INS_cinv:
         case INS_cneg:
             assert(isGeneralRegister(reg1));
-            assert(isGeneralRegister(reg2));
+            assert(isGeneralRegisterOrZR(reg2));
             cfi.cond = cond;
             fmt      = IF_DR_2D;
             break;
@@ -13804,7 +13804,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR, GT_LEA));
+        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR, GT_LEA) || (addr->IsIconHandle(GTF_ICON_TLS_HDL)));
 
         int   offset = 0;
         DWORD lsl    = 0;
@@ -13913,7 +13913,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 regNumber addrReg = indir->GetSingleTempReg();
                 emitIns_R_C(ins, attr, dataReg, addrReg, addr->AsClsVar()->gtClsVarHnd, 0);
             }
-            else if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+            else if (addr->OperIs(GT_LCL_ADDR))
             {
                 GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
                 unsigned             lclNum  = varNode->GetLclNum();
@@ -13926,6 +13926,11 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 {
                     emitIns_R_S(ins, attr, dataReg, lclNum, offset);
                 }
+            }
+            else if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
+            {
+                // On Arm64, TEB is in r18, so load from the r18 as base.
+                emitIns_R_R_I(ins, attr, dataReg, REG_R18, addr->AsIntCon()->IconValue());
             }
             else if (emitIns_valid_imm_for_ldst_offset(offset, emitTypeSize(indir->TypeGet())))
             {
@@ -13948,7 +13953,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
     else // addr is not contained, so we evaluate it into a register
     {
 #ifdef DEBUG
-        if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+        if (addr->OperIs(GT_LCL_ADDR))
         {
             // If the local var is a gcref or byref, the local var better be untracked, because we have
             // no logic here to track local variable lifetime changes, like we do in the contained case
@@ -16183,7 +16188,7 @@ bool emitter::IsRedundantLdStr(
 //     ins      - The instruction code
 //     reg1Attr - The emit attribute for register 1
 //     reg1     - Register 1
-//     reg2     - Encoded register 2
+//     reg2     - Register 2
 //     imm      - Immediate offset, prior to scaling by operand size
 //     size     - Operand size
 //     fmt      - Instruction format
@@ -16194,9 +16199,6 @@ bool emitter::IsRedundantLdStr(
 bool emitter::ReplaceLdrStrWithPairInstr(
     instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
-    // Register 2 needs conversion to unencoded value.
-    reg2 = encodingZRtoSP(reg2);
-
     RegisterOrder optimizationOrder = IsOptimizableLdrStrWithPair(ins, reg1, reg2, imm, size, fmt);
 
     if (optimizationOrder != eRO_none)
@@ -16222,6 +16224,16 @@ bool emitter::ReplaceLdrStrWithPairInstr(
 
         // Remove the last instruction written.
         emitRemoveLastInstruction();
+
+        // Combine two 32 bit stores of value zero into one 64 bit store
+        if (ins == INS_str && reg1 == REG_ZR && oldReg1 == REG_ZR && size == EA_4BYTE)
+        {
+
+            // The first register is at the lower offset for the ascending order
+            ssize_t offset = (optimizationOrder == eRO_ascending ? oldImm : imm) * size;
+            emitIns_R_R_I(INS_str, EA_8BYTE, REG_ZR, reg2, offset, INS_OPTS_NONE);
+            return true;
+        }
 
         // Emit the new instruction. Make sure to scale the immediate value by the operand size.
         if (optimizationOrder == eRO_ascending)
@@ -16250,6 +16262,12 @@ bool emitter::ReplaceLdrStrWithPairInstr(
 //
 //                      ldr     w1, [x20, #0x14]
 //                      ldr     w2, [x20, #0x10]    =>  ldp     w2, w1, [x20, #0x10]
+//
+//                      ldr     w1, [x20]
+//                      ldr     w2, [x20, #0x04]    =>  ldp     w1, w2, [x20]
+//
+//                      ldr     q1, [x0, #0x20]
+//                      ldr     q2, [x0, #0x30]     =>  ldp     q1, q2, [x0, #0x20]
 //
 // Arguments:
 //     ins  - The instruction code
@@ -16294,16 +16312,21 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
         return eRO_none;
     }
 
-    if ((!isGeneralRegisterOrZR(reg1)) || (!isGeneralRegisterOrZR(prevReg1)))
+    if ((reg1 == REG_SP) || (prevReg1 == REG_SP) || (isGeneralRegisterOrZR(reg1) != isGeneralRegisterOrZR(prevReg1)))
     {
-        // Either register 1 is not a general register or previous register 1 is not a general register
-        // or the zero register, so we cannot optimise.
+        // We cannot optimise when one of the following conditions are met
+        // 1. reg1 or prevReg1 is SP
+        // 2. both reg1 and prevReg1 are not of the same type (SIMD or non-SIMD)
         return eRO_none;
     }
 
-    if (lastInsFmt != fmt)
+    const bool compatibleFmt = (lastInsFmt == fmt) || (lastInsFmt == IF_LS_2B && fmt == IF_LS_2A) ||
+                               (lastInsFmt == IF_LS_2A && fmt == IF_LS_2B);
+    if (!compatibleFmt)
     {
-        // The formats of the two instructions differ.
+        // We cannot optimise when all of the following conditions are met
+        // 1. instruction formats differ
+        // 2. instructions are not using "base" or "base plus immediate offset" addressing modes
         return eRO_none;
     }
 
@@ -16367,4 +16390,82 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
     return optimisationOrder;
 }
 
+//-----------------------------------------------------------------------------------
+// IsOptimizableLdrToMov: Check if it is possible to optimize a second "ldr"
+//                        instruction into a cheaper "mov" instruction.
+//
+// Examples:            ldr     w1, [x20, #0x10]
+//                      ldr     w2, [x20, #0x10]    =>  mov     w2, w1
+//
+// Arguments:
+//     ins  - The instruction code
+//     reg1 - Register 1 number
+//     reg2 - Register 2 number
+//     imm  - Immediate offset, prior to scaling by operand size
+//     size - Operand size
+//     fmt  - Instruction format
+//
+// Return Value:
+//    true       - Optimization of the second instruction is possible
+//
+bool emitter::IsOptimizableLdrToMov(
+    instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
+{
+    if (ins != INS_ldr)
+    {
+        // This instruction is not an "ldr" instruction.
+        return false;
+    }
+
+    if (ins != emitLastIns->idIns())
+    {
+        // Not successive "ldr" instructions.
+        return false;
+    }
+
+    regNumber prevReg1   = emitLastIns->idReg1();
+    regNumber prevReg2   = encodingZRtoSP(emitLastIns->idReg2());
+    insFormat lastInsFmt = emitLastIns->idInsFmt();
+    emitAttr  prevSize   = emitLastIns->idOpSize();
+    ssize_t   prevImm    = emitGetInsSC(emitLastIns);
+
+    if ((reg2 != prevReg2) || !isGeneralRegisterOrSP(reg2))
+    {
+        // The "register 2" should be same as previous instruction and
+        // should either be a general register or stack pointer.
+        return false;
+    }
+
+    if (prevImm != imm)
+    {
+        // Then we are loading from a different immediate offset.
+        return false;
+    }
+
+    if (!isGeneralRegister(reg1) || !isGeneralRegister(prevReg1))
+    {
+        // We cannot optimise when register 1 or previous register 1 is a general register.
+        return false;
+    }
+
+    if (lastInsFmt != fmt)
+    {
+        // The formats of the two instructions differ.
+        return false;
+    }
+
+    if (prevReg1 == prevReg2)
+    {
+        // Then the previous load overwrote the register that we are indexing against.
+        return false;
+    }
+
+    if (prevSize != size)
+    {
+        // Operand sizes differ.
+        return false;
+    }
+
+    return true;
+}
 #endif // defined(TARGET_ARM64)

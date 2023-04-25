@@ -1,9 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Reflection\Emit\AssemblyBuilderImpl.cs" />
+    <Compile Include="System\Reflection\Emit\FieldBuilderImpl.cs" />
+    <Compile Include="System\Reflection\Emit\MethodBuilderImpl.cs" />
+    <Compile Include="System\Reflection\Emit\ModuleBuilderImpl.cs" />
+    <Compile Include="System\Reflection\Emit\TypeBuilderImpl.cs" />
+    <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Runtime\src\System.Runtime.csproj" />
   </ItemGroup>
 </Project>

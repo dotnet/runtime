@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly sideeffects
+.assembly 'SideEffects'
 {
 }
-.class SideEffects
+.class public SideEffects
 {
   .field public static int32 m_i
   .field public static int32 s_i
@@ -228,6 +229,9 @@ ERROR_EXIT:
 
   .method public static int32 main() il managed
   {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 	.maxstack 10
 	.locals (int32,int32,int32)

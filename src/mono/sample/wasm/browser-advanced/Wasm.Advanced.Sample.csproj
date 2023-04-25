@@ -3,7 +3,11 @@
   <PropertyGroup>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
+    <WasmEnableLegacyJsInterop>false</WasmEnableLegacyJsInterop>
     <WasmEnableWebcil>true</WasmEnableWebcil>
+    <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
+    <EmccEnableAssertions>true</EmccEnableAssertions>
+    <EmccEnvironment>web,worker</EmccEnvironment>
     <!-- add OpenGL emulation -->
     <EmccExtraLDFlags> -s USE_CLOSURE_COMPILER=1 -s LEGACY_GL_EMULATION=1 -lGL -lSDL -lidbfs.js</EmccExtraLDFlags>
     <!-- just to prove we don't do JS eval() -->

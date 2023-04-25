@@ -165,6 +165,7 @@
     <PlatformManifestFileEntry Include="API-MS-Win-core-xstate-l2-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="ucrtbase.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="msquic.dll" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" />
+    <PlatformManifestFileEntry Include="libmsquic.dylib" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" Condition="'$(Configuration)' == 'Debug' or '$(LibrariesConfiguration)' == 'Debug'"/>
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump" IsNative="true" />
@@ -173,6 +174,18 @@
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.amd64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
+    <!-- NativeAOT specific files -->
+    <PlatformManifestFileEntry Include="libbootstrapper.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbootstrapperdll.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libeventpipe-disabled.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libeventpipe-enabled.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libRuntime.ServerGC.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libRuntime.WorkstationGC.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libstdc++compat.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="System.Private.DisabledReflection.dll" />
+    <PlatformManifestFileEntry Include="System.Private.Reflection.Execution.dll" />
+    <PlatformManifestFileEntry Include="System.Private.StackTraceMetadata.dll" />
+    <PlatformManifestFileEntry Include="System.Private.TypeLoader.dll" />
     <!-- Mono-specific files -->
     <PlatformManifestFileEntry Include="monosgen-2.0.lib" IsNative="true" />
     <PlatformManifestFileEntry Include="libmonosgen-2.0.a" IsNative="true" />
@@ -252,7 +265,7 @@
     <PlatformManifestFileEntry Include="emcc-props.json" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.NoWasmIntrinsics.xml" IsNative="true" />
-    <PlatformManifestFileEntry Include="ILLink.Descriptors.LegacyJsInterop.xml" IsNative="true" />
+    <PlatformManifestFileEntry Include="ILLink.Substitutions.LegacyJsInterop.xml" IsNative="true" />
     <!-- wasi specific -->
     <PlatformManifestFileEntry Include="main.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.h" IsNative="true" />

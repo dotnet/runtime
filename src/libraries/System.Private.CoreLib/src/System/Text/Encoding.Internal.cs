@@ -485,7 +485,7 @@ namespace System.Text
         /// If the destination buffer is not large enough to hold the entirety of the transcoded data.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private protected unsafe int GetBytesWithFallback(char* pOriginalChars, int originalCharCount, byte* pOriginalBytes, int originalByteCount, int charsConsumedSoFar, int bytesWrittenSoFar)
+        private protected unsafe int GetBytesWithFallback(char* pOriginalChars, int originalCharCount, byte* pOriginalBytes, int originalByteCount, int charsConsumedSoFar, int bytesWrittenSoFar, bool throwForDestinationOverflow = true)
         {
             // This is a stub method that's marked "no-inlining" so that it we don't stack-spill spans
             // into our immediate caller. Doing so increases the method prolog in what's supposed to
@@ -499,7 +499,8 @@ namespace System.Text
                 originalCharsLength: originalCharCount,
                 bytes: new Span<byte>(pOriginalBytes, originalByteCount).Slice(bytesWrittenSoFar),
                 originalBytesLength: originalByteCount,
-                encoder: null);
+                encoder: null,
+                throwForDestinationOverflow);
         }
 
         /// <summary>
@@ -508,7 +509,7 @@ namespace System.Text
         /// and <paramref name="bytesWrittenSoFar"/> signal where in the provided buffers the fallback loop
         /// should begin operating. The behavior of this method is to drain any leftover data in the
         /// <see cref="EncoderNLS"/> instance, then to invoke the <see cref="GetBytesFast"/> virtual method
-        /// after data has been drained, then to call <see cref="GetBytesWithFallback(ReadOnlySpan{char}, int, Span{byte}, int, EncoderNLS)"/>.
+        /// after data has been drained, then to call <see cref="GetBytesWithFallback(ReadOnlySpan{char}, int, Span{byte}, int, EncoderNLS, bool)"/>.
         /// </summary>
         /// <returns>
         /// The total number of bytes written to <paramref name="pOriginalBytes"/>, including <paramref name="bytesWrittenSoFar"/>.
@@ -582,7 +583,7 @@ namespace System.Text
         /// implementation, deferring to the base implementation if needed. This method calls <see cref="ThrowBytesOverflow"/>
         /// if necessary.
         /// </remarks>
-        private protected virtual unsafe int GetBytesWithFallback(ReadOnlySpan<char> chars, int originalCharsLength, Span<byte> bytes, int originalBytesLength, EncoderNLS? encoder)
+        private protected virtual unsafe int GetBytesWithFallback(ReadOnlySpan<char> chars, int originalCharsLength, Span<byte> bytes, int originalBytesLength, EncoderNLS? encoder, bool throwForDestinationOverflow = true)
         {
             Debug.Assert(!chars.IsEmpty, "Caller shouldn't invoke this method with an empty input buffer.");
             Debug.Assert(originalCharsLength >= 0, "Caller provided invalid parameter.");
@@ -678,8 +679,15 @@ namespace System.Text
                     // The line below will also throw if the encoder couldn't make any progress at all
                     // because the output buffer wasn't large enough to contain the result of even
                     // a single scalar conversion or fallback.
-
-                    ThrowBytesOverflow(encoder, nothingEncoded: bytes.Length == originalBytesLength);
+                    if (throwForDestinationOverflow)
+                    {
+                        ThrowBytesOverflow(encoder, nothingEncoded: bytes.Length == originalBytesLength);
+                    }
+                    else
+                    {
+                        Debug.Assert(encoder is null);
+                        return -1;
+                    }
                 }
 
                 // If an EncoderNLS instance is active, update its "total consumed character count" value.
@@ -1073,7 +1081,7 @@ namespace System.Text
         /// If the destination buffer is not large enough to hold the entirety of the transcoded data.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private protected unsafe int GetCharsWithFallback(byte* pOriginalBytes, int originalByteCount, char* pOriginalChars, int originalCharCount, int bytesConsumedSoFar, int charsWrittenSoFar)
+        private protected unsafe int GetCharsWithFallback(byte* pOriginalBytes, int originalByteCount, char* pOriginalChars, int originalCharCount, int bytesConsumedSoFar, int charsWrittenSoFar, bool throwForDestinationOverflow = true)
         {
             // This is a stub method that's marked "no-inlining" so that it we don't stack-spill spans
             // into our immediate caller. Doing so increases the method prolog in what's supposed to
@@ -1087,7 +1095,8 @@ namespace System.Text
                 originalBytesLength: originalByteCount,
                 chars: new Span<char>(pOriginalChars, originalCharCount).Slice(charsWrittenSoFar),
                 originalCharsLength: originalCharCount,
-                decoder: null);
+                decoder: null,
+                throwForDestinationOverflow);
         }
 
         /// <summary>
@@ -1096,7 +1105,7 @@ namespace System.Text
         /// and <paramref name="charsWrittenSoFar"/> signal where in the provided buffers the fallback loop
         /// should begin operating. The behavior of this method is to drain any leftover data in the
         /// <see cref="DecoderNLS"/> instance, then to invoke the <see cref="GetCharsFast"/> virtual method
-        /// after data has been drained, then to call <see cref="GetCharsWithFallback(ReadOnlySpan{byte}, int, Span{char}, int, DecoderNLS)"/>.
+        /// after data has been drained, then to call GetCharsWithFallback(ReadOnlySpan{byte}, int, Span{char}, int, DecoderNLS, out bool)/>.
         /// </summary>
         /// <returns>
         /// The total number of chars written to <paramref name="pOriginalChars"/>, including <paramref name="charsWrittenSoFar"/>.
@@ -1175,7 +1184,7 @@ namespace System.Text
         /// implementation, deferring to the base implementation if needed. This method calls <see cref="ThrowCharsOverflow"/>
         /// if necessary.
         /// </remarks>
-        private protected virtual unsafe int GetCharsWithFallback(ReadOnlySpan<byte> bytes, int originalBytesLength, Span<char> chars, int originalCharsLength, DecoderNLS? decoder)
+        private protected virtual unsafe int GetCharsWithFallback(ReadOnlySpan<byte> bytes, int originalBytesLength, Span<char> chars, int originalCharsLength, DecoderNLS? decoder, bool throwForDestinationOverflow = true)
         {
             Debug.Assert(!bytes.IsEmpty, "Caller shouldn't invoke this method with an empty input buffer.");
             Debug.Assert(originalBytesLength >= 0, "Caller provided invalid parameter.");
@@ -1264,11 +1273,18 @@ namespace System.Text
 
                 if (!bytes.IsEmpty)
                 {
-                    // The line below will also throw if the decoder couldn't make any progress at all
-                    // because the output buffer wasn't large enough to contain the result of even
-                    // a single scalar conversion or fallback.
-
-                    ThrowCharsOverflow(decoder, nothingDecoded: chars.Length == originalCharsLength);
+                    if (throwForDestinationOverflow)
+                    {
+                        // The line below will also throw if the decoder couldn't make any progress at all
+                        // because the output buffer wasn't large enough to contain the result of even
+                        // a single scalar conversion or fallback.
+                        ThrowCharsOverflow(decoder, nothingDecoded: chars.Length == originalCharsLength);
+                    }
+                    else
+                    {
+                        Debug.Assert(decoder is null);
+                        return -1;
+                    }
                 }
 
                 // If a DecoderNLS instance is active, update its "total consumed byte count" value.

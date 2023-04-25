@@ -122,17 +122,17 @@
     <None Include="System\Net\Security\TlsCipherSuiteNameParser.ttinclude" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
-    <Compile Include="System\Net\Security\TlsCipherSuiteData.Lookup.cs">
+    <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>TlsCipherSuiteData.Lookup.tt</DependentUpon>
+      <DependentUpon>SslConnectionInfo.Unix.tt</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <None Include="System\Net\Security\TlsCipherSuiteData.Lookup.cs">
+    <None Include="System\Net\Security\SslConnectionInfo.Unix.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>TlsCipherSuiteData.Lookup.tt</DependentUpon>
+      <DependentUpon>SslConnectionInfo.Unix.tt</DependentUpon>
     </None>
   </ItemGroup>
   <ItemGroup Condition="'$(AllowTlsCipherSuiteGeneration)' == 'true'">
@@ -140,14 +140,14 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>TlsCipherSuite.cs</LastGenOutput>
     </None>
-    <None Include="System\Net\Security\TlsCipherSuiteData.Lookup.tt">
+    <None Include="System\Net\Security\SslConnectionInfo.Unix.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>TlsCipherSuiteData.Lookup.cs</LastGenOutput>
+      <LastGenOutput>SslConnectionInfo.Unix.cs</LastGenOutput>
     </None>
   </ItemGroup>
   <ItemGroup Condition="'$(AllowTlsCipherSuiteGeneration)' != 'true'">
     <None Include="System\Net\Security\TlsCipherSuite.tt" />
-    <None Include="System\Net\Security\TlsCipherSuiteData.Lookup.tt" />
+    <None Include="System\Net\Security\SslConnectionInfo.Unix.tt" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Net\CertificateValidationPal.Windows.cs" />
@@ -201,6 +201,18 @@
              Link="Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgEncodingType.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.Interop.MsgEncodingType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertContextPropId.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertContextPropId.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContex.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty_NO_NULLABLE.cs"
+                 Link="Common\Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty_NO_NULLABLE.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCrypt32Handle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCrypt32Handle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs"
+                 Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCertContextHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCertContextHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"
@@ -273,8 +285,6 @@
              Link="Common\System\Net\Security\Unix\SecChannelBindings.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\EndpointChannelBindingToken.cs" />
     <Compile Include="System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs" />
-    <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs" />
-    <Compile Include="System\Net\Security\TlsCipherSuiteData.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseManagedNtlm)' != 'true'">
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"

@@ -49,6 +49,46 @@
         <Method Name="Min_Generic_HasExpectedOutput" Dynamic="Required All">
           <GenericArgument Name="System.Int32,System.Runtime" />
         </Method>
+
+        <Method Name="Min_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Byte,System.Runtime" />
+        </Method>
+        <Method Name="Min_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.SByte,System.Runtime" />
+        </Method>
+        <Method Name="Min_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.UInt16,System.Runtime" />
+        </Method>
+        <Method Name="Min_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Int16,System.Runtime" />
+        </Method>
+        <Method Name="Min_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32,System.Runtime" />
+        </Method>
+        <Method Name="Min_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Int32,System.Runtime" />
+        </Method>
+        <Method Name="Min_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64,System.Runtime" />
+        </Method>
+        <Method Name="Min_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Int64,System.Runtime" />
+        </Method>
+        <Method Name="Min_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Single,System.Runtime" />
+        </Method>
+        <Method Name="Min_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Double,System.Runtime" />
+        </Method>
+        <Method Name="Min_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Decimal,System.Runtime" />
+        </Method>
+        <Method Name="Min_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.IntPtr,System.Runtime" />
+        </Method>
+        <Method Name="Min_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.UIntPtr,System.Runtime" />
+        </Method>
       </Type>
 
       <Type Name="System.Linq.Tests.MaxTests">
@@ -100,6 +140,45 @@
           <GenericArgument Name="System.Int32,System.Runtime" />
         </Method>
 
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Byte,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.SByte,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.UInt16,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Int16,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.UInt32,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Int32,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.UInt64,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Int64,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Single,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Double,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.Decimal,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.IntPtr,System.Runtime" />
+        </Method>
+        <Method Name="Max_AllTypes" Dynamic="Required All">
+          <GenericArgument Name="System.UIntPtr,System.Runtime" />
+        </Method>
       </Type>
 
       <Type Name="System.Linq.Tests.CountTests">

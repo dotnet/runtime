@@ -17,6 +17,8 @@ parameters:
 # 'libraries' -- libraries tests
 # 'cet' -- machines supporting CET technology
 # 'superpmi' -- for TeamProject 'internal', a smaller set of queues (one per architecture, not several) for SuperPMI collection
+# Many of these values are unused below, as we use the same queues for many of the scenarios.
+# However, having these options allows us to easily tune the queues we use for each scenario as needed based on new hardware support.
 
 jobs:
 - template: ${{ parameters.jobTemplate }}
@@ -32,9 +34,13 @@ jobs:
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     helixQueues:
 
-    # iOS/tvOS simulator x64/x86
-    - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64') }}:
-      - OSX.1015.Amd64.Open
+    # iOS Simulator/Mac Catalyst arm64
+    - ${{ if in(parameters.platform, 'maccatalyst_arm64', 'iossimulator_arm64') }}:
+      - OSX.1200.Arm64.Open
+
+    # iOS/tvOS Simulator x64 & MacCatalyst x64
+    - ${{ if in(parameters.platform, 'iossimulator_x64', 'tvossimulator_x64', 'maccatalyst_x64') }}:
+      - OSX.1200.Amd64.Open
 
     # Android arm64
     - ${{ if in(parameters.platform, 'android_arm64') }}:
@@ -46,31 +52,32 @@ jobs:
 
     # Browser wasm
     - ${{ if eq(parameters.platform, 'browser_wasm') }}:
-      - Ubuntu.1804.Amd64.Open
+      - (Ubuntu.1804.Amd64)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-webassembly
+
+    # iOS devices
+    - ${{ if in(parameters.platform, 'ios_arm64') }}:
+      # split traffic for runtime-extra-platforms (which mostly runs on rolling builds)
+      - ${{ if ne(parameters.jobParameters.isExtraPlatforms, true) }}:
+        - OSX.1015.Amd64.Iphone.Open
+      - ${{ if eq(parameters.jobParameters.isExtraPlatforms, true) }}:
+        - OSX.1200.Amd64.Iphone.Open
+
+    # tvOS devices
+    - ${{ if in(parameters.platform, 'tvos_arm64') }}:
+        - OSX.13.Amd64.AppleTV.Open
 
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Ubuntu.1804.Arm32.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7
-      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
-        - (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7
-      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), notIn(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
-        - (Debian.10.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm32v7
-        - (Debian.11.Arm32)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm32v7
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7
 
     # Linux arm64
     - ${{ if eq(parameters.platform, 'linux_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Ubuntu.1804.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
-        - (Debian.10.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8
-        - (Debian.11.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm64v8
-      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
-        - (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8
-      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), notIn(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
-        - (Debian.10.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8
-        - (Debian.11.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm64v8
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8
 
     # Linux musl x64
@@ -96,27 +103,14 @@ jobs:
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - Ubuntu.1804.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
-        - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64
-        - (Debian.11.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
-        - Ubuntu.1804.Amd64.Open
-        - (Centos.8.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix
-        - RedHat.7.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Ubuntu.1804.Amd64
-      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), notIn(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
-        - (Debian.10.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64
-        - (Debian.11.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
-        - Ubuntu.1804.Amd64
-        - (Centos.7.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-helix
-        - (Fedora.36.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-36-helix
-        - RedHat.7.Amd64
 
     # OSX arm64
     - ${{ if eq(parameters.platform, 'osx_arm64') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - OSX.1200.ARM64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - OSX.1200.ARM64
@@ -130,49 +124,32 @@ jobs:
 
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.helixQueueGroup, 'cet')) }}:
         - Windows.10.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
-        - ${{ if eq(parameters.jobParameters.helixQueueGroup, 'cet') }}:
-          - Windows.11.Amd64.Cet.Open
-        - ${{ if ne(parameters.jobParameters.helixQueueGroup, 'cet') }}:
-          - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64
-          - Windows.7.Amd64.Open
-          - Windows.10.Amd64.Open
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'cet')) }}:
+        - Windows.11.Amd64.Cet.Open
       - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
         - Windows.10.Amd64.X86.Rt
       - ${{ if and(eq(variables['System.TeamProject'], 'internal'), notIn(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
-        - Windows.7.Amd64
-        - Windows.81.Amd64
         - Windows.10.Amd64
-        - Windows.10.Amd64.Core
-        - (Windows.Nano.1809.Amd64)windows.10.amd64.serverrs5@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64
 
     # windows x86
     - ${{ if eq(parameters.platform, 'windows_x86') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - Windows.10.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
-        - Windows.7.Amd64.Open
-        - Windows.10.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.10.Amd64.X86.Rt
-      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), notIn(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
-        - Windows.7.Amd64
-        - Windows.81.Amd64
-        - Windows.10.Amd64
-        - Windows.10.Amd64.Core
 
     # windows arm
     - ${{ if eq(parameters.platform, 'windows_arm') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - Windows.11.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.11.Arm64
 
     # windows arm64
     - ${{ if eq(parameters.platform, 'windows_arm64') }}:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - Windows.11.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.11.Arm64

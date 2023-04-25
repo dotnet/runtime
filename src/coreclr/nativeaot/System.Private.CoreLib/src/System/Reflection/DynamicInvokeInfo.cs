@@ -36,7 +36,8 @@ namespace System.Reflection
             Nullable = 0x0002,
             Pointer = 0x0004,
             Reference = 0x0008,
-            AllocateReturnBox = 0x0010,
+            FunctionPointer = 0x0010,
+            AllocateReturnBox = 0x0020,
         }
 
         private readonly struct ArgumentInfo
@@ -98,6 +99,12 @@ namespace System.Reflection
 
                         transform |= Transform.Pointer;
                     }
+                    else if (eeArgumentType.IsFunctionPointer)
+                    {
+                        Debug.Assert(argumentType.IsFunctionPointer);
+
+                        transform |= Transform.FunctionPointer;
+                    }
                     else
                     {
                         transform |= Transform.Reference;
@@ -148,6 +155,14 @@ namespace System.Reflection
                     Debug.Assert(returnType.IsPointer);
 
                     transform |= Transform.Pointer;
+                    if ((transform & Transform.ByRef) == 0)
+                        transform |= Transform.AllocateReturnBox;
+                }
+                else if (eeReturnType.IsFunctionPointer)
+                {
+                    Debug.Assert(returnType.IsFunctionPointer);
+
+                    transform |= Transform.FunctionPointer;
                     if ((transform & Transform.ByRef) == 0)
                         transform |= Transform.AllocateReturnBox;
                 }
@@ -208,7 +223,7 @@ namespace System.Reflection
             if ((_returnTransform & Transform.AllocateReturnBox) != 0)
             {
                 returnObject = RuntimeImports.RhNewObject(
-                    (_returnTransform & Transform.Pointer) != 0 ?
+                    (_returnTransform & (Transform.Pointer | Transform.FunctionPointer)) != 0 ?
                         EETypePtr.EETypePtrOf<IntPtr>() : _returnType);
                 ret = ref returnObject.GetRawData();
             }
@@ -257,7 +272,7 @@ namespace System.Reflection
                 }
             }
 
-            return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.ByRef)) != 0) ?
+            return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.FunctionPointer | Transform.ByRef)) != 0) ?
                 ReturnTransform(ref ret, wrapInTargetInvocationException) : returnObject;
         }
 
@@ -348,7 +363,7 @@ namespace System.Reflection
                     // null is substituded by zero-initialized value for non-reference type
                     if ((argumentInfo.Transform & Transform.Reference) == 0)
                         arg = RuntimeImports.RhNewObject(
-                            (argumentInfo.Transform & Transform.Pointer) != 0 ?
+                            (argumentInfo.Transform & (Transform.Pointer | Transform.FunctionPointer)) != 0 ?
                                 EETypePtr.EETypePtrOf<IntPtr>() : argumentInfo.Type);
                 }
                 else
@@ -426,13 +441,17 @@ namespace System.Reflection
 
                 object obj = Unsafe.Add(ref copyOfParameters, i);
 
-                if ((transform & (Transform.Pointer | Transform.Nullable)) != 0)
+                if ((transform & (Transform.Pointer | Transform.FunctionPointer | Transform.Nullable)) != 0)
                 {
                     if ((transform & Transform.Pointer) != 0)
                     {
                         Type type = Type.GetTypeFromEETypePtr(argumentInfo.Type);
                         Debug.Assert(type.IsPointer);
                         obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
+                    }
+                    if ((transform & Transform.FunctionPointer) != 0)
+                    {
+                        obj = RuntimeImports.RhBox(EETypePtr.EETypePtrOf<IntPtr>(), ref obj.GetRawData());
                     }
                     else
                     {
@@ -482,27 +501,17 @@ namespace System.Reflection
         // and pass it to CheckArguments().
         // For argument count > MaxStackAllocArgCount, do a stackalloc of void* pointers along with
         // GCReportingRegistration to safely track references.
-        [StructLayout(LayoutKind.Sequential)]
+        [InlineArray(MaxStackAllocArgCount)]
         private ref struct StackAllocedArguments
         {
             internal object? _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private object? _arg1;
-            private object? _arg2;
-            private object? _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051
         }
 
         // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.
-        [StructLayout(LayoutKind.Sequential)]
+        [InlineArray(MaxStackAllocArgCount)]
         private ref struct StackAllocatedByRefs
         {
             internal ref byte _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private ref byte _arg1;
-            private ref byte _arg2;
-            private ref byte _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051
         }
     }
 }

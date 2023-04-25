@@ -10,7 +10,7 @@
   .ver 4:0:0:0
 }
 .assembly stfldstatic2 {}
-.class private auto ansi beforefieldinit stfldstatic2
+.class public auto ansi beforefieldinit stfldstatic2
        extends [mscorlib]System.Object
 {
   .field private static int32 s1
@@ -25,7 +25,7 @@
   .field private static valuetype [mscorlib]System.Decimal s10
   .field private static string s11
   .field private int32 a
-  .method private hidebysig static int32  Main() cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

@@ -1375,8 +1375,15 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
                             CORDbg_BREAK_INSTRUCTION_SIZE,
                             PAGE_EXECUTE_READWRITE, &oldProt))
         {
-            _ASSERTE(!"VirtualProtect of code page failed");
-            return false;
+            // we may be seeing unwriteable directly mapped executable memory.
+            // let's try copy-on-write instead,
+            if (!VirtualProtect(baseAddress,
+                CORDbg_BREAK_INSTRUCTION_SIZE,
+                PAGE_EXECUTE_WRITECOPY, &oldProt))
+            {
+                _ASSERTE(!"VirtualProtect of code page failed");
+                return false;
+            }
         }
 #endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
 
@@ -1407,8 +1414,12 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
         if (!VirtualProtect((void *) patch->address, 2,
                             PAGE_EXECUTE_READWRITE, &oldProt))
         {
-            _ASSERTE(!"VirtualProtect of code page failed");
-            return false;
+            if (!VirtualProtect((void*)patch->address, 2,
+                PAGE_EXECUTE_WRITECOPY, &oldProt))
+            {
+                _ASSERTE(!"VirtualProtect of code page failed");
+                return false;
+            }
         }
 
         patch->opcode =
@@ -1471,13 +1482,18 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
                             CORDbg_BREAK_INSTRUCTION_SIZE,
                             PAGE_EXECUTE_READWRITE, &oldProt))
         {
-            //
-            // We may be trying to remove a patch from memory
-            // which has been unmapped. We can ignore the
-            // error in this case.
-            //
-            InitializePRD(&(patch->opcode));
-            return false;
+            if (!VirtualProtect(baseAddress,
+                CORDbg_BREAK_INSTRUCTION_SIZE,
+                PAGE_EXECUTE_WRITECOPY, &oldProt))
+            {
+                //
+                // We may be trying to remove a patch from memory
+                // which has been unmapped. We can ignore the
+                // error in this case.
+                //
+                InitializePRD(&(patch->opcode));
+                return false;
+            }
         }
 #endif // !defined(HOST_OSX) || !defined(HOST_ARM64)
 
@@ -1505,13 +1521,17 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
         if (!VirtualProtect((void *) patch->address, 2,
                             PAGE_EXECUTE_READWRITE, &oldProt))
         {
-            //
-            // We may be trying to remove a patch from memory
-            // which has been unmapped. We can ignore the
-            // error in this case.
-            //
-            InitializePRD(&(patch->opcode));
-            return false;
+            if (!VirtualProtect((void*)patch->address, 2,
+                PAGE_EXECUTE_WRITECOPY, &oldProt))
+            {
+                //
+                // We may be trying to remove a patch from memory
+                // which has been unmapped. We can ignore the
+                // error in this case.
+                //
+                InitializePRD(&(patch->opcode));
+                return false;
+            }
         }
 
         //

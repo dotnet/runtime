@@ -54,6 +54,9 @@ function(create_standalone_jit)
   elseif(TARGETDETAILS_ARCH STREQUAL "loongarch64")
     set(JIT_ARCH_SOURCES ${JIT_LOONGARCH64_SOURCES})
     set(JIT_ARCH_HEADERS ${JIT_LOONGARCH64_HEADERS})
+  elseif(TARGETDETAILS_ARCH STREQUAL "riscv64")
+    set(JIT_ARCH_SOURCES ${JIT_RISCV64_SOURCES})
+    set(JIT_ARCH_HEADERS ${JIT_RISCV64_HEADERS})
   else()
     clr_unknown_arch()
   endif()
@@ -126,6 +129,7 @@ set( JIT_SOURCES
   hwintrinsic.cpp
   hostallocator.cpp
   ifconversion.cpp
+  helperexpansion.cpp
   indirectcalltransformer.cpp
   importercalls.cpp
   importer.cpp
@@ -150,9 +154,11 @@ set( JIT_SOURCES
   morphblock.cpp
   objectalloc.cpp
   optcse.cpp
+  optimizebools.cpp
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
+  promotion.cpp
   rangecheck.cpp
   rationalize.cpp
   redundantbranchopts.cpp
@@ -259,6 +265,15 @@ set( JIT_LOONGARCH64_SOURCES
   unwindloongarch64.cpp
 )
 
+set( JIT_RISCV64_SOURCES
+  codegenriscv64.cpp
+  emitriscv64.cpp
+  lowerriscv64.cpp
+  lsrariscv64.cpp
+  targetriscv64.cpp
+  unwindriscv64.cpp
+)
+
 # We include the headers here for better experience in IDEs.
 set( JIT_HEADERS
   ../inc/corinfo.h
@@ -334,6 +349,7 @@ set( JIT_HEADERS
   objectalloc.h
   opcode.h
   phase.h
+  promotion.h
   rangecheck.h
   rationalize.h
   regalloc.h
@@ -417,6 +433,13 @@ set( JIT_LOONGARCH64_HEADERS
     registerloongarch64.h
 )
 
+set( JIT_RISCV64_HEADERS
+    emitriscv64.h
+    emitfmtsriscv64.h
+    instrsriscv64.h
+    registerriscv64.h
+)
+
 convert_to_absolute_path(JIT_SOURCES ${JIT_SOURCES})
 convert_to_absolute_path(JIT_HEADERS ${JIT_HEADERS})
 convert_to_absolute_path(JIT_RESOURCES ${JIT_RESOURCES})
@@ -437,6 +460,8 @@ convert_to_absolute_path(JIT_S390X_SOURCES ${JIT_S390X_SOURCES})
 convert_to_absolute_path(JIT_S390X_HEADERS ${JIT_S390X_HEADERS})
 convert_to_absolute_path(JIT_LOONGARCH64_SOURCES ${JIT_LOONGARCH64_SOURCES})
 convert_to_absolute_path(JIT_LOONGARCH64_HEADERS ${JIT_LOONGARCH64_HEADERS})
+convert_to_absolute_path(JIT_RISCV64_SOURCES ${JIT_RISCV64_SOURCES})
+convert_to_absolute_path(JIT_RISCV64_HEADERS ${JIT_RISCV64_HEADERS})
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
   set(JIT_ARCH_SOURCES ${JIT_AMD64_SOURCES})
@@ -463,6 +488,8 @@ elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
   set(JIT_ARCH_SOURCES ${JIT_LOONGARCH64_SOURCES})
   set(JIT_ARCH_HEADERS ${JIT_LOONGARCH64_HEADERS})
 elseif(CLR_CMAKE_TARGET_ARCH_RISCV64)
+  set(JIT_ARCH_SOURCES ${JIT_RISCV64_SOURCES})
+  set(JIT_ARCH_HEADERS ${JIT_RISCV64_HEADERS})
 else()
   clr_unknown_arch()
 endif()
@@ -593,10 +620,8 @@ else()
   set(TARGET_OS_NAME win)
 endif()
 
-if (NOT CLR_CMAKE_TARGET_ARCH_RISCV64)
-  create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} DESTINATIONS . sharedFramework)
-  install_clr(TARGETS clrjit DESTINATIONS . sharedFramework COMPONENT jit)
-endif()
+create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} DESTINATIONS . sharedFramework)
+install_clr(TARGETS clrjit DESTINATIONS . sharedFramework COMPONENT jit)
 
 # Enable profile guided optimization
 add_pgo(clrjit)
@@ -611,22 +636,26 @@ if (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
   create_standalone_jit(TARGET clrjit_unix_loongarch64_${ARCH_HOST_NAME} OS unix ARCH loongarch64 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
 
-create_standalone_jit(TARGET clrjit_universal_arm_${ARCH_HOST_NAME} OS universal ARCH arm DESTINATIONS .)
-target_compile_definitions(clrjit_universal_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
-create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86 DESTINATIONS .)
+if (CLR_CMAKE_TARGET_ARCH_RISCV64)
+  create_standalone_jit(TARGET clrjit_unix_riscv64_${ARCH_HOST_NAME} OS unix ARCH riscv64 DESTINATIONS .)
+else()
+  create_standalone_jit(TARGET clrjit_universal_arm_${ARCH_HOST_NAME} OS universal ARCH arm DESTINATIONS .)
+  target_compile_definitions(clrjit_universal_arm_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP CONFIGURABLE_ARM_ABI)
+  create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86 DESTINATIONS .)
+endif (CLR_CMAKE_TARGET_ARCH_RISCV64)
 
 if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
   create_standalone_jit(TARGET clrjit_unix_x86_${ARCH_HOST_NAME} OS unix ARCH x86 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
 
-if (CLR_CMAKE_TARGET_UNIX AND NOT CLR_CMAKE_TARGET_ARCH_RISCV64)
-    if (NOT ARCH_TARGET_NAME STREQUAL s390x AND NOT ARCH_TARGET_NAME STREQUAL armv6 AND NOT ARCH_TARGET_NAME STREQUAL ppc64le)
+if (CLR_CMAKE_TARGET_UNIX)
+    if (NOT ARCH_TARGET_NAME STREQUAL s390x AND NOT ARCH_TARGET_NAME STREQUAL armv6 AND NOT ARCH_TARGET_NAME STREQUAL ppc64le AND NOT ARCH_TARGET_NAME STREQUAL riscv64)
       if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
         install_clr(TARGETS clrjit_universal_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
       else()
         install_clr(TARGETS clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
       endif()
-    endif(NOT ARCH_TARGET_NAME STREQUAL s390x AND NOT ARCH_TARGET_NAME STREQUAL armv6 AND NOT ARCH_TARGET_NAME STREQUAL ppc64le)
+    endif(NOT ARCH_TARGET_NAME STREQUAL s390x AND NOT ARCH_TARGET_NAME STREQUAL armv6 AND NOT ARCH_TARGET_NAME STREQUAL ppc64le AND NOT ARCH_TARGET_NAME STREQUAL riscv64)
 endif()
 
 if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_PGO_INSTRUMENT)

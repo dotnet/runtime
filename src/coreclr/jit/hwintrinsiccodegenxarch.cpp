@@ -386,6 +386,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX:
         case InstructionSet_AVX2:
         case InstructionSet_AVX512F:
+        case InstructionSet_AVX512BW:
             genAvxFamilyIntrinsic(node);
             break;
         case InstructionSet_AES:
@@ -475,27 +476,104 @@ void CodeGen::genHWIntrinsic_R_RM(
             }
             else
             {
-                if (varTypeIsIntegral(rmOp) && ((node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector128) ||
-                                                (node->GetHWIntrinsicId() == NI_AVX512F_BroadcastScalarToVector512) ||
-                                                (node->GetHWIntrinsicId() == NI_AVX512BW_BroadcastScalarToVector512) ||
-                                                (node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector256)))
+                if (varTypeIsIntegral(rmOp))
                 {
-                    // In lowering we had the special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
-                    //
-                    // This is one of the only instructions where it supports taking integer types from
-                    // a SIMD register or directly as a scalar from memory. Most other instructions, in
-                    // comparison, take such values from general-purpose registers instead.
-                    //
-                    // Because of this, we removed the CreateScalarUnsafe and tried to contain op1 directly
-                    // that failed and we either didn't get marked regOptional or we did and didn't get spilled
-                    //
-                    // As such, we need to emulate the removed CreateScalarUnsafe to ensure that op1 is in a
-                    // SIMD register so the broadcast instruction can execute succesfully. We'll just move
-                    // the value into the target register and then broadcast it out from that.
+                    bool needsBroadcastFixup   = false;
+                    bool needsInstructionFixup = false;
 
-                    emitAttr movdAttr = emitActualTypeSize(node->GetSimdBaseType());
-                    emit->emitIns_Mov(INS_movd, movdAttr, reg, rmOpReg, /* canSkip */ false);
-                    rmOpReg = reg;
+                    switch (node->GetHWIntrinsicId())
+                    {
+                        case NI_AVX2_BroadcastScalarToVector128:
+                        case NI_AVX2_BroadcastScalarToVector256:
+                        {
+                            if (varTypeIsSmall(node->GetSimdBaseType()))
+                            {
+                                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL))
+                                {
+                                    needsInstructionFixup = true;
+                                }
+                                else
+                                {
+                                    needsBroadcastFixup = true;
+                                }
+                            }
+                            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                            {
+                                needsInstructionFixup = true;
+                            }
+                            else
+                            {
+                                needsBroadcastFixup = true;
+                            }
+                            break;
+                        }
+
+                        case NI_AVX512F_BroadcastScalarToVector512:
+                        case NI_AVX512BW_BroadcastScalarToVector512:
+                        {
+                            needsInstructionFixup = true;
+                            break;
+                        }
+
+                        default:
+                        {
+                            break;
+                        }
+                    }
+
+                    if (needsBroadcastFixup)
+                    {
+                        // In lowering we had the special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
+                        //
+                        // This is one of the only instructions where it supports taking integer types from
+                        // a SIMD register or directly as a scalar from memory. Most other instructions, in
+                        // comparison, take such values from general-purpose registers instead.
+                        //
+                        // Because of this, we removed the CreateScalarUnsafe and tried to contain op1 directly
+                        // that failed and we either didn't get marked regOptional or we did and didn't get spilled
+                        //
+                        // As such, we need to emulate the removed CreateScalarUnsafe to ensure that op1 is in a
+                        // SIMD register so the broadcast instruction can execute succesfully. We'll just move
+                        // the value into the target register and then broadcast it out from that.
+
+                        emitAttr movdAttr = emitActualTypeSize(node->GetSimdBaseType());
+                        emit->emitIns_Mov(INS_movd, movdAttr, reg, rmOpReg, /* canSkip */ false);
+                        rmOpReg = reg;
+                    }
+                    else if (needsInstructionFixup)
+                    {
+                        switch (ins)
+                        {
+                            case INS_vpbroadcastb:
+                            {
+                                ins = INS_vpbroadcastb_gpr;
+                                break;
+                            }
+
+                            case INS_vpbroadcastd:
+                            {
+                                ins = INS_vpbroadcastd_gpr;
+                                break;
+                            }
+
+                            case INS_vpbroadcastq:
+                            {
+                                ins = INS_vpbroadcastq_gpr;
+                                break;
+                            }
+
+                            case INS_vpbroadcastw:
+                            {
+                                ins = INS_vpbroadcastw_gpr;
+                                break;
+                            }
+
+                            default:
+                            {
+                                unreached();
+                            }
+                        }
+                    }
                 }
 
                 emit->emitIns_R_R(ins, attr, reg, rmOpReg);
@@ -901,6 +979,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
     {
         case NI_Vector128_CreateScalarUnsafe:
         case NI_Vector256_CreateScalarUnsafe:
+        case NI_Vector512_CreateScalarUnsafe:
         {
             if (varTypeIsIntegral(baseType))
             {
@@ -927,6 +1006,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
 
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
+        case NI_Vector512_GetElement:
         {
             if (simdType == TYP_SIMD12)
             {
@@ -1083,10 +1163,9 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector128_AsVector3:
         case NI_Vector128_ToScalar:
         case NI_Vector256_ToScalar:
+        case NI_Vector512_ToScalar:
         {
             assert(varTypeIsFloating(baseType));
-
-            attr = emitTypeSize(TYP_SIMD16);
 
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
@@ -1101,12 +1180,21 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         }
 
         case NI_Vector128_ToVector256:
+        case NI_Vector128_ToVector512:
+        case NI_Vector256_ToVector512:
         {
             // ToVector256 has zero-extend semantics in order to ensure it is deterministic
             // We always emit a move to the target register, even when op1Reg == targetReg,
             // in order to ensure that Bits MAXVL-1:128 are zeroed.
 
-            attr = emitTypeSize(TYP_SIMD16);
+            if (intrinsicId == NI_Vector256_ToVector512)
+            {
+                attr = emitTypeSize(TYP_SIMD32);
+            }
+            else
+            {
+                attr = emitTypeSize(TYP_SIMD16);
+            }
 
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
@@ -1123,6 +1211,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector128_ToVector256Unsafe:
         case NI_Vector256_ToVector512Unsafe:
         case NI_Vector256_GetLower:
+        case NI_Vector512_GetLower:
+        case NI_Vector512_GetLower128:
         {
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
@@ -1130,8 +1220,15 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
                 //
                 // For ToVector256Unsafe the upper bits don't matter and for GetLower we
                 // only actually need the lower 16-bytes, so we can just be "more efficient"
-
-                genHWIntrinsic_R_RM(node, ins, EA_16BYTE, targetReg, op1);
+                if ((intrinsicId == NI_Vector512_GetLower) || (intrinsicId == NI_Vector256_ToVector512Unsafe))
+                {
+                    attr = emitTypeSize(TYP_SIMD32);
+                }
+                else
+                {
+                    attr = emitTypeSize(TYP_SIMD16);
+                }
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
             }
             else
             {
@@ -1142,7 +1239,15 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
                 // so the upper bits aren't impactful either allowing the same.
 
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
-                emit->emitIns_Mov(INS_movaps, EA_32BYTE, targetReg, op1Reg, /* canSkip */ true);
+                if ((intrinsicId == NI_Vector128_ToVector256Unsafe) || (intrinsicId == NI_Vector256_GetLower))
+                {
+                    attr = emitTypeSize(TYP_SIMD32);
+                }
+                else
+                {
+                    attr = emitTypeSize(TYP_SIMD64);
+                }
+                emit->emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
             }
             break;
         }
@@ -1710,12 +1815,142 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
                     unreached();
             }
 
-            // TODO-XARCH-AVX512 remove REG_K1 check when all K registers possible for
-            // allocation.
-            assert(emitter::isMaskReg(maskReg) && maskReg == REG_K1);
+            assert(emitter::isMaskReg(maskReg));
 
             emit->emitIns_R_R(maskIns, attr, maskReg, op1Reg);
             emit->emitIns_Mov(kmovIns, EA_8BYTE, targetReg, maskReg, INS_FLAGS_DONT_CARE);
+            break;
+        }
+
+        case NI_AVX512F_CompareEqualSpecial:
+        {
+            GenTree* op2     = node->Op(2);
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+
+            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareEqualSpecial, baseType);
+
+            assert(compareIns != INS_invalid);
+            assert(emitter::isMaskReg(targetReg));
+
+            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 0);
+            break;
+        }
+
+        case NI_AVX512F_CompareGreaterThanOrEqualSpecial:
+        {
+            GenTree* op2     = node->Op(2);
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+
+            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareGreaterThanOrEqualSpecial, baseType);
+
+            assert(compareIns != INS_invalid);
+            assert(emitter::isMaskReg(targetReg));
+
+            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 5);
+            break;
+        }
+
+        case NI_AVX512F_CompareGreaterThanSpecial:
+        {
+            GenTree* op2     = node->Op(2);
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+
+            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareGreaterThanSpecial, baseType);
+
+            assert(compareIns != INS_invalid);
+            assert(emitter::isMaskReg(targetReg));
+
+            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 6);
+            break;
+        }
+        case NI_AVX512F_CompareLessThanOrEqualSpecial:
+        {
+            GenTree* op2     = node->Op(2);
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+
+            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareLessThanOrEqualSpecial, baseType);
+
+            assert(compareIns != INS_invalid);
+            assert(emitter::isMaskReg(targetReg));
+
+            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 2);
+            break;
+        }
+
+        case NI_AVX512F_CompareLessThanSpecial:
+        {
+            GenTree* op2     = node->Op(2);
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
+
+            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareLessThanSpecial, baseType);
+
+            assert(compareIns != INS_invalid);
+            assert(emitter::isMaskReg(targetReg));
+
+            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 1);
+            break;
+        }
+        case NI_AVX512F_MoveMaskToVectorSpecial:
+        {
+            op1Reg = op1->GetRegNum();
+
+            instruction maskMovIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_MoveMaskToVectorSpecial, baseType);
+
+            assert(maskMovIns != INS_invalid);
+            assert(emitter::isMaskReg(op1Reg));
+
+            emit->emitIns_R_R(maskMovIns, attr, targetReg, op1Reg);
+            break;
+        }
+
+        case NI_AVX512F_KORTEST:
+        {
+            op1Reg = op1->GetRegNum();
+
+            instruction testIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_KORTEST, baseType);
+
+            assert(testIns != INS_invalid);
+            assert(emitter::isMaskReg(op1Reg));
+
+            emit->emitIns_R_R(testIns, EA_8BYTE, op1Reg, op1Reg);
+            break;
+        }
+
+        case NI_AVX512F_ConvertToVector256Int32:
+        {
+            if (varTypeIsFloating(baseType))
+            {
+                instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
+                break;
+            }
+            FALLTHROUGH;
+        }
+
+        case NI_AVX512F_ConvertToVector128Int16:
+        case NI_AVX512F_ConvertToVector128Int32:
+        case NI_AVX512F_ConvertToVector128UInt16:
+        case NI_AVX512F_ConvertToVector128UInt32:
+        case NI_AVX512F_ConvertToVector256Int16:
+        case NI_AVX512F_ConvertToVector256UInt16:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        case NI_AVX512BW_ConvertToVector128Byte:
+        case NI_AVX512BW_ConvertToVector128SByte:
+        case NI_AVX512BW_ConvertToVector256Byte:
+        case NI_AVX512BW_ConvertToVector256SByte:
+        {
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+
+            // These instructions are RM_R and so we need to ensure the targetReg
+            // is passed in as the RM register and op1 is passed as the R register
+
+            op1Reg = op1->GetRegNum();
+            emit->emitIns_R_R(ins, attr, op1Reg, targetReg);
             break;
         }
 

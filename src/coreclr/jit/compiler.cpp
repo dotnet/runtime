@@ -26,14 +26,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 extern ICorJitHost* g_jitHost;
 
-#if defined(DEBUG)
-// Column settings for DOTNET_JitDumpIR.  We could(should) make these programmable.
-#define COLUMN_OPCODE 30
-#define COLUMN_OPERANDS (COLUMN_OPCODE + 25)
-#define COLUMN_KINDS 110
-#define COLUMN_FLAGS (COLUMN_KINDS + 32)
-#endif
-
 unsigned Compiler::jitTotalMethodCompiled = 0;
 
 #if defined(DEBUG)
@@ -114,25 +106,25 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 #endif // which host OS
 
 const BYTE genTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) sz,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeAlignments[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) al,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) al,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeStSzs[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) st,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) st,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genActualTypes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) jitType,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) jitType,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -296,6 +288,15 @@ Histogram bbCntTable(bbCntBuckets);
 
 unsigned  bbSizeBuckets[] = {1, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 0};
 Histogram bbOneBBSizeTable(bbSizeBuckets);
+
+unsigned  domsChangedIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
+Histogram domsChangedIterationTable(domsChangedIterationBuckets);
+
+unsigned  computeReachabilitySetsIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
+Histogram computeReachabilitySetsIterationTable(computeReachabilitySetsIterationBuckets);
+
+unsigned  computeReachabilityIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
+Histogram computeReachabilityIterationTable(computeReachabilityIterationBuckets);
 
 #endif // COUNT_BASIC_BLOCKS
 
@@ -535,12 +536,12 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             useType = TYP_SHORT;
             break;
 
-#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
         case 3:
             useType = TYP_INT;
             break;
 
-#endif // !TARGET_XARCH || UNIX_AMD64_ABI || TARGET_LOONGARCH64
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI
 
 #ifdef TARGET_64BIT
         case 4:
@@ -548,14 +549,14 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             useType = TYP_INT;
             break;
 
-#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
         case 5:
         case 6:
         case 7:
             useType = TYP_I_IMPL;
             break;
 
-#endif // !TARGET_XARCH || UNIX_AMD64_ABI || TARGET_LOONGARCH64
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI
 #endif // TARGET_64BIT
 
         case TARGET_POINTER_SIZE:
@@ -747,7 +748,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     useType         = TYP_UNKNOWN;
                 }
 
-#elif defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
                 // Otherwise we pass this struct by value on the stack
                 // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
@@ -775,7 +776,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             howToPassStruct = SPK_ByValue;
             useType         = TYP_STRUCT;
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
             // Otherwise we pass this struct by reference to a copy
             // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
@@ -900,7 +901,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
-#elif TARGET_LOONGARCH64
+#elif defined(TARGET_LOONGARCH64)
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
         uint32_t floatFieldFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(clsHnd);
@@ -916,6 +917,24 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
             useType           = TYP_STRUCT;
         }
     }
+
+#elif defined(TARGET_RISCV64)
+    if (structSize <= (TARGET_POINTER_SIZE * 2))
+    {
+        uint32_t floatFieldFlags = info.compCompHnd->getRISCV64PassStructInRegisterFlags(clsHnd);
+
+        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+        {
+            howToReturnStruct = SPK_PrimitiveType;
+            useType           = (structSize > 4) ? TYP_DOUBLE : TYP_FLOAT;
+        }
+        else if (floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
+        {
+            howToReturnStruct = SPK_ByValue;
+            useType           = TYP_STRUCT;
+        }
+    }
+
 #endif
     if (TargetOS::IsWindows && !TargetArchitecture::IsArm32 && callConvIsInstanceMethodCallConv(callConv) &&
         !isNativePrimitiveStructType(clsHnd))
@@ -1058,7 +1077,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 howToReturnStruct = SPK_ByReference;
                 useType           = TYP_UNKNOWN;
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
                 // On LOONGARCH64 struct that is 1-16 bytes is returned by value in one/two register(s)
                 howToReturnStruct = SPK_ByValue;
@@ -1257,17 +1276,6 @@ void DisplayNowayAssertMap()
 }
 
 #endif // MEASURE_NOWAY
-
-/*****************************************************************************
- * variables to keep track of how many iterations we go in a dataflow pass
- */
-
-#if DATAFLOW_ITER
-
-unsigned CSEiterCount; // counts the # of iteration for the CSE dataflow
-unsigned CFiterCount;  // counts the # of iteration for the Const Folding dataflow
-
-#endif // DATAFLOW_ITER
 
 #if MEASURE_BLOCK_SIZE
 size_t genFlowNodeSize;
@@ -1560,6 +1568,25 @@ void Compiler::compShutdown()
     fprintf(fout, "--------------------------------------------------\n");
     bbOneBBSizeTable.dump(fout);
     fprintf(fout, "--------------------------------------------------\n");
+
+    fprintf(fout, "--------------------------------------------------\n");
+    fprintf(fout, "fgComputeDoms `while (change)` iterations:\n");
+    fprintf(fout, "--------------------------------------------------\n");
+    domsChangedIterationTable.dump(fout);
+    fprintf(fout, "--------------------------------------------------\n");
+
+    fprintf(fout, "--------------------------------------------------\n");
+    fprintf(fout, "fgComputeReachabilitySets `while (change)` iterations:\n");
+    fprintf(fout, "--------------------------------------------------\n");
+    computeReachabilitySetsIterationTable.dump(fout);
+    fprintf(fout, "--------------------------------------------------\n");
+
+    fprintf(fout, "--------------------------------------------------\n");
+    fprintf(fout, "fgComputeReachability `while (change)` iterations:\n");
+    fprintf(fout, "--------------------------------------------------\n");
+    computeReachabilityIterationTable.dump(fout);
+    fprintf(fout, "--------------------------------------------------\n");
+
 #endif // COUNT_BASIC_BLOCKS
 
 #if COUNT_LOOPS
@@ -1588,14 +1615,6 @@ void Compiler::compShutdown()
     fprintf(fout, "--------------------------------------------------\n");
 
 #endif // COUNT_LOOPS
-
-#if DATAFLOW_ITER
-
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Total number of iterations in the CSE dataflow loop is %5u\n", CSEiterCount);
-    fprintf(fout, "Total number of iterations in the  CF dataflow loop is %5u\n", CFiterCount);
-
-#endif // DATAFLOW_ITER
 
 #if MEASURE_NODE_SIZE
 
@@ -1951,6 +1970,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     vnStore                    = nullptr;
     m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
+    m_signatureToLookupInfoMap = nullptr;
     fgSsaPassesCompleted       = 0;
     fgSsaChecksEnabled         = false;
     fgVNPassesCompleted        = 0;
@@ -2241,6 +2261,8 @@ void Compiler::compSetProcessor()
         info.genCPU = CPU_X86;
 #elif defined(TARGET_LOONGARCH64)
     info.genCPU                   = CPU_LOONGARCH64;
+#elif defined(TARGET_RISCV64)
+    info.genCPU = CPU_RISCV64;
 #endif
 
     //
@@ -2274,43 +2296,55 @@ void Compiler::compSetProcessor()
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
     }
+
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX))
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
-    // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL and
-    // AVX512F/AVX512BW/AVX512CD/AVX512DQ/VX512VL have been shipped together historically.
-    // It is therefore unlikely that future CPUs only support "just one" and
-    // not worth the additional complexity in the JIT to support.
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ))
+
+    // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
+    // These have been shipped together historically and at the time of this writing
+    // there exists no hardware which doesn't support the entire feature set. To simplify
+    // the overall JIT implementation, we currently require the entire set of ISAs to be
+    // supported and disable AVX512 support otherwise.
+
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL))
     {
-        if (!DoJitStressEvexEncoding())
-        {
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
+
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
+    }
+    else
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL);
+
 #ifdef TARGET_AMD64
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512VBMI_VL_X64);
 #endif // TARGET_AMD64
-        }
-        else
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
-        }
     }
 #elif defined(TARGET_ARM64)
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
@@ -2326,17 +2360,17 @@ void Compiler::compSetProcessor()
 #ifdef TARGET_XARCH
     if (!compIsForInlining())
     {
-        if (canUseEvexEncoding())
-        {
-            codeGen->GetEmitter()->SetUseEvexEncoding(true);
-            // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
-        }
         if (canUseVexEncoding())
         {
             codeGen->GetEmitter()->SetUseVEXEncoding(true);
             // Assume each JITted method does not contain AVX instruction at first
             codeGen->GetEmitter()->SetContainsAVX(false);
             codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
+        }
+        if (canUseEvexEncoding())
+        {
+            codeGen->GetEmitter()->SetUseEvexEncoding(true);
+            // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
         }
     }
 #endif // TARGET_XARCH
@@ -3237,10 +3271,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 #endif // FEATURE_CFI_SUPPORT
 
-#ifdef TARGET_LOONGARCH64
-    // Hot/cold splitting is not being tested on LoongArch64.
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     opts.compProcedureSplitting = false;
-#endif // TARGET_LOONGARCH64
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #ifdef DEBUG
     opts.compProcedureSplittingEH = opts.compProcedureSplitting;
@@ -3377,7 +3410,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
     cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
 
-    if (DoJitStressEvexEncoding())
+    if (canUseEvexEncoding())
     {
         rbmAllFloat |= RBM_HIGHFLOAT;
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
@@ -3992,7 +4025,7 @@ _SetMinOpts:
     fgCanRelocateEHRegions = true;
 }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 // Function compRsvdRegCheck:
 //  given a curState to use for calculating the total frame size
 //  it will return true if the REG_OPT_RSVD should be reserved so
@@ -4039,6 +4072,10 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 
 #elif defined(TARGET_LOONGARCH64)
     JITDUMP(" Returning true (LOONGARCH64)\n\n");
+    return true; // just always assume we'll need it, for now
+
+#elif defined(TARGET_RISCV64)
+    JITDUMP(" Returning true (RISCV64)\n\n");
     return true; // just always assume we'll need it, for now
 
 #else  // TARGET_ARM
@@ -4164,7 +4201,7 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     return false;
 #endif // TARGET_ARM
 }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 //------------------------------------------------------------------------
 // compGetTieringName: get a string describing tiered compilation settings
@@ -4704,6 +4741,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_EARLY_LIVENESS, &Compiler::fgEarlyLiveness);
 
+    // Promote struct locals based on primitive access patterns
+    //
+    DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
+
     // Run a simple forward substitution pass.
     //
     DoPhase(this, PHASE_FWD_SUB, &Compiler::fgForwardSub);
@@ -4826,14 +4867,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // IMPORTANT, after this point, locals are ref counted.
     // However, ref counts are not kept incrementally up to date.
     assert(lvaLocalVarRefCounted());
-
-    if (opts.OptimizationEnabled())
-    {
-        // Introduce copies for some single-def locals to make them more
-        // amenable to optimization
-        //
-        DoPhase(this, PHASE_OPTIMIZE_ADD_COPIES, &Compiler::optAddCopies);
-    }
 
     // Figure out the order in which operators are to be evaluated
     //
@@ -4993,12 +5026,25 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Dominator and reachability sets are no longer valid.
     // The loop table is no longer valid.
-    fgDomsComputed    = false;
-    optLoopTableValid = false;
+    fgDomsComputed            = false;
+    optLoopTableValid         = false;
+    optLoopsRequirePreHeaders = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
 #endif
+
+    // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
+    DoPhase(this, PHASE_EXPAND_RTLOOKUPS, &Compiler::fgExpandRuntimeLookups);
+
+    // Partially inline static initializations
+    DoPhase(this, PHASE_EXPAND_STATIC_INIT, &Compiler::fgExpandStaticInit);
+
+    if (TargetOS::IsWindows)
+    {
+        // Currently this is only applicable for Windows
+        DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
+    }
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -5205,6 +5251,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 //
 PhaseStatus Compiler::placeLoopAlignInstructions()
 {
+    // Add align only if there were any loops that needed alignment
     if (loopAlignCandidates == 0)
     {
         return PhaseStatus::MODIFIED_NOTHING;
@@ -5212,7 +5259,6 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
 
     JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
-    // Add align only if there were any loops that needed alignment
     bool                   madeChanges           = false;
     weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
     BasicBlock*            bbHavingAlign         = nullptr;
@@ -6011,6 +6057,56 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
         }
+
+        if (JitConfig.EnableAVX512F() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512F);
+        }
+
+        if (JitConfig.EnableAVX512F_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512F_VL);
+        }
+
+        if (JitConfig.EnableAVX512BW() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BW);
+        }
+
+        if (JitConfig.EnableAVX512BW_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BW_VL);
+        }
+
+        if (JitConfig.EnableAVX512CD() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512CD);
+        }
+
+        if (JitConfig.EnableAVX512CD_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512CD_VL);
+        }
+
+        if (JitConfig.EnableAVX512DQ() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512DQ);
+        }
+
+        if (JitConfig.EnableAVX512DQ_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512DQ_VL);
+        }
+
+        if (JitConfig.EnableAVX512VBMI() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI);
+        }
+
+        if (JitConfig.EnableAVX512VBMI_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512VBMI_VL);
+        }
 #endif
 
         // These calls are important and explicitly ordered to ensure that the flags are correct in
@@ -6663,6 +6759,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     compGenTreeID    = 0;
     compStatementID  = 0;
     compBasicBlockID = 0;
+#endif
+
+#ifdef TARGET_ARM64
+    info.compNeedsConsecutiveRegisters = false;
 #endif
 
     /* Initialize emitter */
@@ -9552,9 +9652,8 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
         switch (op)
         {
             case GT_LCL_VAR:
-            case GT_LCL_VAR_ADDR:
             case GT_LCL_FLD:
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
                 if (tree->gtFlags & GTF_VAR_DEF)
@@ -9853,25 +9952,17 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             }
             break;
 
-            case GT_OBJ:
-            case GT_STORE_OBJ:
-                if (tree->AsObj()->GetLayout()->HasGCPtr())
-                {
-                    chars += printf("[BLK_HASGCPTR]");
-                }
-                FALLTHROUGH;
-
             case GT_BLK:
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
 
-                if (tree->gtFlags & GTF_BLK_VOLATILE)
+                if (tree->gtFlags & GTF_IND_VOLATILE)
                 {
-                    chars += printf("[BLK_VOLATILE]");
+                    chars += printf("[IND_VOLATILE]");
                 }
-                if (tree->AsBlk()->IsUnaligned())
+                if (tree->gtFlags & GTF_IND_UNALIGNED)
                 {
-                    chars += printf("[BLK_UNALIGNED]");
+                    chars += printf("[IND_UNALIGNED]");
                 }
                 break;
 
@@ -10232,11 +10323,10 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 //
 void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
-    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
+    assert(tree->OperIs(GT_FIELD, GT_IND, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
-    assert(fgAddrCouldBeNull(tree->gtGetOp1()));
-    tree->gtFlags |= GTF_EXCEPT;
+    tree->SetIndirExceptionFlags(this);
     block->bbFlags |= BBF_HAS_NULLCHECK;
     optMethodFlags |= OMF_HAS_NULLCHECK;
 }

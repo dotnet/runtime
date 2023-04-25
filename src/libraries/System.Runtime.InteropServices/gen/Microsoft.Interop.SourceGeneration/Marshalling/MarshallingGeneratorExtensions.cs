@@ -50,16 +50,17 @@ namespace Microsoft.Interop
         private const string ParameterIdentifierSuffix = "param";
 
         /// <summary>
-        /// Gets a parameter for the unmanaged signature that represents the provided <paramref name="info"/>.
+        /// Gets a parameter for the unmanaged signature that represents the provided <paramref name="info"/> in the given <paramref name="context"/>.
         /// </summary>
         /// <param name="generator">The marshalling generator for this <paramref name="info"/></param>
         /// <param name="info">Object to marshal</param>
+        /// <param name="context">The stub marshalling context</param>
         public static ParameterSyntax AsParameter(this IMarshallingGenerator generator, TypePositionInfo info, StubCodeContext context)
         {
             SignatureBehavior behavior = generator.GetNativeSignatureBehavior(info);
             if (behavior == SignatureBehavior.ManagedTypeAndAttributes)
             {
-                return GenerateForwardingParameter(info);
+                return GenerateForwardingParameter(info, context.GetIdentifiers(info).managed);
             }
             string identifierName;
             if (context.Direction == MarshalDirection.ManagedToUnmanaged)
@@ -99,9 +100,9 @@ namespace Microsoft.Interop
                 });
         }
 
-        private static ParameterSyntax GenerateForwardingParameter(TypePositionInfo info)
+        private static ParameterSyntax GenerateForwardingParameter(TypePositionInfo info, string identifier)
         {
-            ParameterSyntax param = Parameter(Identifier(info.InstanceIdentifier))
+            ParameterSyntax param = Parameter(Identifier(identifier))
                 .WithModifiers(TokenList(Token(info.RefKindSyntax)))
                 .WithType(info.ManagedType.Syntax);
 

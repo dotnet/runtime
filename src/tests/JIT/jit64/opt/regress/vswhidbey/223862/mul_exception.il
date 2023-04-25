@@ -10,8 +10,8 @@
 
 .assembly 'mul_exception' {}
 .assembly extern mscorlib{auto}
-.class cprop_test {
-.method static int32 Main() {
+.class public cprop_test {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

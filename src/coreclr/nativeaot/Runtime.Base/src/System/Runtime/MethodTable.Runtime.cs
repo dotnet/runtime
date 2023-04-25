@@ -45,43 +45,6 @@ namespace Internal.Runtime
             return (IntPtr)InternalCalls.RhpGetClasslibFunctionFromEEType((MethodTable*)Unsafe.AsPointer(ref this), id);
         }
 
-        // Returns an address in the module most closely associated with this MethodTable that can be handed to
-        // EH.GetClasslibException and use to locate the compute the correct exception type. In most cases
-        // this is just the MethodTable pointer itself, but when this type represents a generic that has been
-        // unified at runtime (and thus the MethodTable pointer resides in the process heap rather than a specific
-        // module) we need to do some work.
-        internal unsafe MethodTable* GetAssociatedModuleAddress()
-        {
-            fixed (MethodTable* pThis = &this)
-            {
-                if (!IsDynamicType)
-                    return pThis;
-
-                // There are currently four types of runtime allocated EETypes, arrays, pointers, byrefs, and generic types.
-                // Arrays/Pointers/ByRefs can be handled by looking at their element type.
-                if (IsParameterizedType)
-                    return pThis->RelatedParameterType->GetAssociatedModuleAddress();
-
-                if (!IsGeneric)
-                {
-                    // No way to resolve module information for a non-generic dynamic type.
-                    return null;
-                }
-
-                // Generic types are trickier. Often we could look at the parent type (since eventually it
-                // would derive from the class library's System.Object which is definitely not runtime
-                // allocated). But this breaks down for generic interfaces. Instead we fetch the generic
-                // instantiation information and use the generic type definition, which will always be module
-                // local. We know this lookup will succeed since we're dealing with a unified generic type
-                // and the unification process requires this metadata.
-                MethodTable* pGenericType = pThis->GenericDefinition;
-
-                Debug.Assert(pGenericType != null, "Generic type expected");
-
-                return pGenericType;
-            }
-        }
-
         /// <summary>
         /// Return true if type is good for simple casting : canonical, no related type via IAT, no generic variance
         /// </summary>
@@ -98,6 +61,14 @@ namespace Internal.Runtime
             return ((pThis->_uFlags | pOther->_uFlags) & (uint)EETypeFlags.ComplexCastingMask) == 0;
         }
 
+        internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2)
+        {
+            if (mt1 == mt2)
+                return true;
+
+            return mt1->IsEquivalentTo(mt2);
+        }
+
         internal bool IsEquivalentTo(MethodTable* pOtherEEType)
         {
             fixed (MethodTable* pThis = &this)
@@ -106,12 +77,6 @@ namespace Internal.Runtime
                     return true;
 
                 MethodTable* pThisEEType = pThis;
-
-                if (pThisEEType->IsCloned)
-                    pThisEEType = pThisEEType->CanonicalEEType;
-
-                if (pOtherEEType->IsCloned)
-                    pOtherEEType = pOtherEEType->CanonicalEEType;
 
                 if (pThisEEType == pOtherEEType)
                     return true;

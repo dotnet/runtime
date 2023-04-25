@@ -25,9 +25,6 @@ namespace Internal.Runtime.Augments
     [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class ReflectionExecutionDomainCallbacks
     {
-        // Api's that are exposed in System.Runtime but are really reflection apis.
-        public abstract Type GetType(string typeName, Func<AssemblyName, Assembly?>? assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase, string defaultAssembly);
-
         public abstract IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle);
 
         public abstract bool IsReflectionBlocked(RuntimeTypeHandle typeHandle);
@@ -40,6 +37,7 @@ namespace Internal.Runtime.Augments
         public abstract Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle);
         public abstract Type GetMdArrayTypeForHandle(RuntimeTypeHandle typeHandle, int rank);
         public abstract Type GetPointerTypeForHandle(RuntimeTypeHandle typeHandle);
+        public abstract Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle);
         public abstract Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle);
         public abstract Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle);
 

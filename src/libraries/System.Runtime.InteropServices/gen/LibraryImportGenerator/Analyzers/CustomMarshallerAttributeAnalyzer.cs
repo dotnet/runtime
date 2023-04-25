@@ -14,6 +14,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
+using Microsoft.CodeAnalysis.Operations;
 using static Microsoft.Interop.Analyzers.AnalyzerDiagnostics;
 
 namespace Microsoft.Interop.Analyzers
@@ -613,10 +614,7 @@ namespace Microsoft.Interop.Analyzers
             if (context.Compilation.GetBestTypeByMetadataName(TypeNames.CustomMarshallerAttribute) is not null)
             {
                 var perCompilationAnalyzer = new PerCompilationAnalyzer(context.Compilation);
-
-                // TODO: Change this from a SyntaxNode action to an operation attribute once attribute application is represented in the
-                // IOperation tree by Roslyn.
-                context.RegisterSyntaxNodeAction(perCompilationAnalyzer.AnalyzeAttribute, SyntaxKind.Attribute);
+                context.RegisterOperationAction(perCompilationAnalyzer.AnalyzeAttribute, OperationKind.Attribute);
             }
         }
 
@@ -632,56 +630,61 @@ namespace Microsoft.Interop.Analyzers
                 _spanOfT = compilation.GetBestTypeByMetadataName(TypeNames.System_Span_Metadata);
                 _readOnlySpanOfT = compilation.GetBestTypeByMetadataName(TypeNames.System_ReadOnlySpan_Metadata);
             }
-
-            public void AnalyzeAttribute(SyntaxNodeAnalysisContext context)
+            public void AnalyzeAttribute(OperationAnalysisContext context)
             {
-                AttributeSyntax syntax = (AttributeSyntax)context.Node;
-                ISymbol attributedSymbol = context.ContainingSymbol!;
-
-                AttributeData? attr = syntax.FindAttributeData(attributedSymbol);
-                if (attr?.AttributeClass?.ToDisplayString() == TypeNames.CustomMarshallerAttribute
-                    && attr.AttributeConstructor is not null)
+                IAttributeOperation attr = (IAttributeOperation)context.Operation;
+                if (attr.Operation is IObjectCreationOperation attrCreation
+                    && attrCreation.Type.ToDisplayString() == TypeNames.CustomMarshallerAttribute)
                 {
-                    DiagnosticReporter managedTypeReporter = DiagnosticReporter.CreateForLocation(syntax.FindArgumentWithNameOrArity("managedType", 0).FindTypeExpressionOrNullLocation(), context.ReportDiagnostic);
-                    INamedTypeSymbol entryType = (INamedTypeSymbol)attributedSymbol;
-
-                    ITypeSymbol? managedTypeInAttribute = (ITypeSymbol?)attr.ConstructorArguments[0].Value;
-                    if (managedTypeInAttribute is null)
+                    INamedTypeSymbol entryType = (INamedTypeSymbol)context.ContainingSymbol!;
+                    IArgumentOperation? managedTypeArgument = attrCreation.GetArgumentByOrdinal(0);
+                    if (managedTypeArgument.Value.IsNullLiteralOperation())
                     {
+                        DiagnosticReporter managedTypeReporter = DiagnosticReporter.CreateForLocation(managedTypeArgument.Value.Syntax.GetLocation(), context.ReportDiagnostic);
                         managedTypeReporter.CreateAndReportDiagnostic(ManagedTypeMustBeNonNullRule, entryType.ToDisplayString());
-                        return;
                     }
+                    else if (managedTypeArgument.Value is ITypeOfOperation managedTypeOfOp)
+                    {
+                        DiagnosticReporter managedTypeReporter = DiagnosticReporter.CreateForLocation(((TypeOfExpressionSyntax)managedTypeOfOp.Syntax).Type.GetLocation(), context.ReportDiagnostic);
 
-                    if (!ManualTypeMarshallingHelper.TryResolveManagedType(
-                        entryType,
-                        ManualTypeMarshallingHelper.ReplaceGenericPlaceholderInType(managedTypeInAttribute, entryType, context.Compilation),
-                        ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType),
-                        (entryType, managedType) => managedTypeReporter.CreateAndReportDiagnostic(ManagedTypeMustBeClosedOrMatchArityRule, managedType, entryType), out ITypeSymbol managedType))
-                    {
-                        return;
-                    }
-                    DiagnosticReporter marshallerTypeReporter = DiagnosticReporter.CreateForLocation(syntax.FindArgumentWithNameOrArity("marshallerType", 2).FindTypeExpressionOrNullLocation(), context.ReportDiagnostic);
-                    ITypeSymbol? marshallerTypeInAttribute = (ITypeSymbol?)attr.ConstructorArguments[2].Value;
-                    if (marshallerTypeInAttribute is null)
-                    {
-                        marshallerTypeReporter.CreateAndReportDiagnostic(MarshallerTypeMustBeNonNullRule);
-                        return;
-                    }
-                    if (!ManualTypeMarshallingHelper.TryResolveMarshallerType(
-                        entryType,
-                        marshallerTypeInAttribute,
-                        (entryType, marshallerType) => marshallerTypeReporter.CreateAndReportDiagnostic(MarshallerTypeMustBeClosedOrMatchArityRule, marshallerType, entryType),
-                        out ITypeSymbol marshallerType))
-                    {
-                        return;
-                    }
+                        ITypeSymbol managedTypeInAttribute = managedTypeOfOp.TypeOperand;
 
-                    AnalyzeMarshallerType(
-                        marshallerTypeReporter,
-                        managedType,
-                        (MarshalMode)attr.ConstructorArguments[1].Value,
-                        (INamedTypeSymbol)marshallerType,
-                        ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType));
+                        if (!ManualTypeMarshallingHelper.TryResolveManagedType(
+                            entryType,
+                            ManualTypeMarshallingHelper.ReplaceGenericPlaceholderInType(managedTypeInAttribute, entryType, context.Compilation),
+                            ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType),
+                            (entryType, managedType) => managedTypeReporter.CreateAndReportDiagnostic(ManagedTypeMustBeClosedOrMatchArityRule, managedType, entryType), out ITypeSymbol managedType))
+                        {
+                            return;
+                        }
+
+                        IArgumentOperation? marshallerTypeArgument = attrCreation.GetArgumentByOrdinal(2);
+                        if (marshallerTypeArgument.Value.IsNullLiteralOperation())
+                        {
+                            DiagnosticReporter marshallerTypeReporter = DiagnosticReporter.CreateForLocation(marshallerTypeArgument.Value.Syntax.GetLocation(), context.ReportDiagnostic);
+                            marshallerTypeReporter.CreateAndReportDiagnostic(MarshallerTypeMustBeNonNullRule, entryType.ToDisplayString());
+                        }
+                        else if (marshallerTypeArgument.Value is ITypeOfOperation marshallerTypeOfOp)
+                        {
+                            DiagnosticReporter marshallerTypeReporter = DiagnosticReporter.CreateForLocation(((TypeOfExpressionSyntax)marshallerTypeOfOp.Syntax).Type.GetLocation(), context.ReportDiagnostic);
+                            ITypeSymbol? marshallerTypeInAttribute = marshallerTypeOfOp.TypeOperand;
+                            if (!ManualTypeMarshallingHelper.TryResolveMarshallerType(
+                                entryType,
+                                marshallerTypeInAttribute,
+                                (entryType, marshallerType) => marshallerTypeReporter.CreateAndReportDiagnostic(MarshallerTypeMustBeClosedOrMatchArityRule, marshallerType, entryType),
+                                out ITypeSymbol marshallerType))
+                            {
+                                return;
+                            }
+
+                            AnalyzeMarshallerType(
+                                marshallerTypeReporter,
+                                managedType,
+                                (MarshalMode)attrCreation.GetArgumentByOrdinal(1).Value.ConstantValue.Value,
+                                (INamedTypeSymbol)marshallerType,
+                                ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryType));
+                        }
+                    }
                 }
             }
 

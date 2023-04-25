@@ -154,10 +154,13 @@
     <Compile Include="System\Reflection\Metadata\AssemblyExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataUpdater.cs" />
     <Compile Include="System\Reflection\ModifiedType.NativeAot.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.UnificationKey.cs" />
     <Compile Include="System\Runtime\InteropServices\CriticalHandle.NativeAot.cs" />
     <Compile Include="System\Activator.NativeAot.cs" />
     <Compile Include="System\AppContext.NativeAot.cs" />
     <Compile Include="System\ArgIterator.cs" />
+    <Compile Include="System\Attribute.NativeAot.cs" />
     <Compile Include="System\Buffer.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\ArraySortHelper.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\Comparer.NativeAot.cs" />
@@ -509,10 +512,7 @@
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.CoreGetDeclared.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.InvokeMember.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.TypeComponentsCache.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeParsing\GetTypeOptions.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeParsing\TypeName.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeParsing\TypeLexer.cs" />
-    <Compile Include="System\Reflection\Runtime\TypeParsing\TypeParser.cs" />
+    <Compile Include="System\Reflection\TypeNameParser.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />

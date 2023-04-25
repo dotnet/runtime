@@ -67,6 +67,9 @@ namespace Internal.IL.Stubs
             TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
             MethodDesc methodTableOfMethod = methodTableType.GetKnownMethod("Of", null);
 
+            ILToken rawDataToken = owningType.IsValueType ? default :
+                emitter.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetKnownField("Data"));
+
             var switchStream = emitter.NewCodeStream();
             var getFieldStream = emitter.NewCodeStream();
 
@@ -107,6 +110,10 @@ namespace Internal.IL.Stubs
 
                 getFieldStream.EmitLdArg(0);
 
+                // If this is a reference type, we subtract from the first field. Otherwise subtract from `ref this`.
+                if (!owningType.IsValueType)
+                    getFieldStream.Emit(ILOpcode.ldflda, rawDataToken);
+
                 getFieldStream.Emit(ILOpcode.sub);
 
                 getFieldStream.Emit(ILOpcode.ret);
@@ -118,9 +125,38 @@ namespace Internal.IL.Stubs
                 switchStream.EmitSwitch(fieldGetters.ToArray());
             }
 
-            switchStream.EmitLdc(fieldGetters.Count);
-
-            switchStream.Emit(ILOpcode.ret);
+            if (!owningType.IsValueType
+                && MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(this) is MethodDesc slotMethod
+                && owningType.BaseType.FindVirtualFunctionTargetMethodOnObjectType(slotMethod) is MethodDesc baseMethod
+                && slotMethod != baseMethod)
+            {
+                // On reference types, we recurse into base implementation too, handling both the case of asking
+                // for number of fields (add number of fields on the current class before returning), and
+                // handling field indices higher than what we handle (subtract number of fields handled here first).
+                switchStream.EmitLdArg(0);
+                switchStream.EmitLdArg(1);
+                switchStream.EmitLdc(fieldGetters.Count);
+                switchStream.Emit(ILOpcode.sub);
+                switchStream.EmitLdArg(2);
+                switchStream.Emit(ILOpcode.call, emitter.NewToken(baseMethod));
+                switchStream.EmitLdArg(1);
+                switchStream.EmitLdc(0);
+                ILCodeLabel lGotBaseFieldAddress = emitter.NewCodeLabel();
+                switchStream.Emit(ILOpcode.bge, lGotBaseFieldAddress);
+                switchStream.EmitLdc(fieldGetters.Count);
+                ILCodeLabel lGotNumFieldsInBase = emitter.NewCodeLabel();
+                switchStream.Emit(ILOpcode.br, lGotNumFieldsInBase);
+                switchStream.EmitLabel(lGotBaseFieldAddress);
+                switchStream.EmitLdc(0);
+                switchStream.EmitLabel(lGotNumFieldsInBase);
+                switchStream.Emit(ILOpcode.add);
+                switchStream.Emit(ILOpcode.ret);
+            }
+            else
+            {
+                switchStream.EmitLdc(fieldGetters.Count);
+                switchStream.Emit(ILOpcode.ret);
+            }
 
             return emitter.Link(this);
         }

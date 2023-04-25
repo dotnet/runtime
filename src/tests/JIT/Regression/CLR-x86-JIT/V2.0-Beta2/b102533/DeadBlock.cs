@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 public struct AA
 {
     public static void f()
@@ -36,7 +37,8 @@ public struct AA
 
 public class App
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

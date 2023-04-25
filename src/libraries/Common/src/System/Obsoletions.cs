@@ -156,5 +156,17 @@ namespace System
 
         internal const string RsaEncryptDecryptValueMessage = "RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.";
         internal const string RsaEncryptDecryptDiagId = "SYSLIB0048";
+
+        internal const string JsonSerializerOptionsAddContextMessage = "JsonSerializerOptions.AddContext is obsolete. To register a JsonSerializerContext, use either the TypeInfoResolver or TypeInfoResolverChain properties.";
+        internal const string JsonSerializerOptionsAddContextDiagId = "SYSLIB0049";
+
+        internal const string LegacyFormatterMessage = "Formatter-based serialization is obsolete and should not be used.";
+        internal const string LegacyFormatterDiagId = "SYSLIB0050";
+
+        internal const string LegacyFormatterImplMessage = "This API supports obsolete formatter-based serialization. It should not be called or extended by application code.";
+        internal const string LegacyFormatterImplDiagId = "SYSLIB0051";
+
+        internal const string RegexExtensibilityImplMessage = "This API supports obsolete mechanisms for Regex extensibility. It is not supported.";
+        internal const string RegexExtensibilityDiagId = "SYSLIB0052";
     }
 }

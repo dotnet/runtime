@@ -168,7 +168,8 @@
 
     <ItemGroup>
       <_WasmCommonCFlags Include="-DGEN_PINVOKE=1" />
-      <_WasmCommonCFlags Condition="'$(WasmSingleFileBundle)' == 'true'" Include="-DBUNDLED_ASSEMBLIES=1" />
+      <_WasmCommonCFlags Condition="'$(WasmSingleFileBundle)' == 'true'" Include="-DWASM_SINGLE_FILE=1" />
+      <_WasmCommonCFlags Condition="'$(InvariantGlobalization)' == 'true'" Include="-DINVARIANT_GLOBALIZATION=1" />
 
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <!--<_EmccCFlags Include="$(EmccCompileOptimizationFlag)" />-->
@@ -178,7 +179,6 @@
       <!--<_EmccCFlags Include="-DDISABLE_PERFTRACING_LISTEN_PORTS=1" />-->
       <!--<_EmccCFlags Include="-DENABLE_AOT=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />-->
       <!--<_EmccCFlags Include="-DDRIVER_GEN=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />-->
-      <!--<_EmccCFlags Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />-->
       <!--<_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />-->
       <!--<_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />-->
       <!--<_EmccCFlags Include="-DENABLE_BROWSER_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />-->
@@ -291,8 +291,6 @@
       <!--<_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-js.a</_WasmEHLib>-->
       <!--<_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-js.a</_WasmEHLibToExclude>-->
       <!--<_WasmEHLibToExclude Condition="'$(WasmEnableExceptionHandling)' != 'true'">libmono-wasm-eh-wasm.a</_WasmEHLibToExclude>-->
-      <!--<_EmccExportedRuntimeMethods>&quot;[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]&quot;</_EmccExportedRuntimeMethods>-->
-      <!--<_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>-->
     <!--</PropertyGroup>-->
     <!--<ItemGroup>-->
       <!--[> order matters <]-->
@@ -344,19 +342,28 @@
   <!--</Target>-->
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmitWasmBundleObjectFiles" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <Target Name="_GenerateAssemblyObjectFiles" Returns="@(_WasiObjectFilesForBundle)">
+  <Target Name="_GenerateAssemblyObjectFiles" Returns="@(_WasiObjectFilesForBundle)"
+    Condition="'$(WasmSingleFileBundle)' == 'true'"
+  >
     <!-- Get the file hashes of everything in @(_WasmBundleFiles), then pass it all to EmitWasmBundleObjectFiles. This
          will emit corresponding .o files for anything we don't already have on disk. -->
     <PropertyGroup>
       <_WasmAssembliesBundleObjectFile>$(_WasmIntermediateOutputPath)wasi_bundled_assemblies.o</_WasmAssembliesBundleObjectFile>
+      <_WasmIcuBundleObjectFile>$(_WasmIntermediateOutputPath)wasi_bundled_icu.o</_WasmIcuBundleObjectFile>
     </PropertyGroup>
     <GetFileHash Files="@(_WasmAssembliesInternal)">
       <Output TaskParameter="Items" ItemName="WasmBundleAssembliesWithHashes" />
+    </GetFileHash>
+    <GetFileHash Files="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat">
+      <Output TaskParameter="Items" ItemName="WasmBundleIcuWithHashes" />
     </GetFileHash>
     <ItemGroup>
       <WasmBundleAssembliesWithHashes Update="@(WasmBundleAssembliesWithHashes)">
         <DestinationFile>$(_WasmIntermediateOutputPath)%(WasmBundleAssembliesWithHashes.Filename)%(WasmBundleAssembliesWithHashes.Extension).$([System.String]::Copy(%(WasmBundleAssembliesWithHashes.FileHash)).Substring(0, 8)).o</DestinationFile>
       </WasmBundleAssembliesWithHashes>
+      <WasmBundleIcuWithHashes Update="@(WasmBundleIcuWithHashes)">
+        <DestinationFile>$(_WasmIntermediateOutputPath)%(WasmBundleIcuWithHashes.Filename)%(WasmBundleIcuWithHashes.Extension).$([System.String]::Copy(%(WasmBundleIcuWithHashes.FileHash)).Substring(0, 8)).o</DestinationFile>
+      </WasmBundleIcuWithHashes>
     </ItemGroup>
     <!-- TODO make this incremental compilation -->
     <EmitWasmBundleObjectFiles
@@ -378,6 +385,26 @@
       <WasmBundleFileToDelete Remove="$(_WasmAssembliesBundleObjectFile)" />
       <WasmBundleFileToDelete Remove="%(WasmBundleAssembliesWithHashes.DestinationFile)" />
     </ItemGroup>
+
+    <EmitWasmBundleObjectFiles
+      Condition="'$(InvariantGlobalization)' != 'true'"
+      FilesToBundle="@(WasmBundleIcuWithHashes)"
+      ClangExecutable="$(WasiClang)"
+      BundleName="icu"
+      BundleFile="$(_WasmIcuBundleObjectFile)"
+      RegistrationCallbackFunctionName="mono_wasm_add_bundled_file"
+      />
+
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
+      <_WasiObjectFilesForBundle Include="$(_WasmIcuBundleObjectFile)" />
+      <_WasiObjectFilesForBundle Include="%(WasmBundleIcuWithHashes.DestinationFile)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
+      <WasmBundleFileToDelete Remove="$(_WasmIcuBundleObjectFile)" />
+      <WasmBundleFileToDelete Remove="%(WasmBundleIcuWithHashes.DestinationFile)" />
+    </ItemGroup>
+    
     <Delete Files="@(WasmBundleFileToDelete)" />
   </Target>
 
@@ -392,7 +419,13 @@
     </PropertyGroup>
     <WriteLinesToFile File="$(_WasiGetEntrypointCFile)"
               Overwrite="true"
+              Condition="'$(WasmSingleFileBundle)' == 'true'"
               Lines="const char* dotnet_wasi_getentrypointassemblyname() { return &quot;$(WasmMainAssemblyFileName)&quot;%3B }"
+              WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(_WasiGetEntrypointCFile)"
+              Overwrite="true"
+              Condition="'$(WasmSingleFileBundle)' != 'true'"
+              Lines="const char* dotnet_wasi_getentrypointassemblyname() { return &quot;managed/$(WasmMainAssemblyFileName)&quot;%3B }"
               WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <!--<_WasmNativeFileForLinking Include="$(_WasiObjectFilesForBundle)" />-->

@@ -48,9 +48,14 @@ Removing specific feature data might result in an exception that starts with `[C
   ./build.sh /p:TargetOS=Android /p:TargetArchitecture=x64 /p:IcuTracing=true
   ```
 
-Output from both builds will be located in subdirectories of `artifacts/bin`. Copy the generated `.dat` files to a suitable location and provide the full path to it in the `.csproj`, e.g.:
+Output from both builds will be located in subdirectories of `artifacts/bin`. Copy the generated `.dat` files to your project location and provide the path to it in the `.csproj`, e.g.:
+
 ```xml
-<WasmIcuDataFileName>C:\Users\wasmUser\icuSources\customIcu.dat</WasmIcuDataFileName>
+<!-- relative path -->
+<WasmIcuDataFileName>icudt_custom.dat</WasmIcuDataFileName>
+
+<!-- OR absolute -->
+<WasmIcuDataFileName>$(MSBuildThisFileDirectory)icudt_custom.dat</WasmIcuDataFileName>
 ```
 
 ## Blazor
@@ -60,4 +65,4 @@ To force the full data to be loaded, add this to your `.csproj`:
 ```xml
 <BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
 ```
-Custom files loading for Blazor is not possible.
+Custom files loading for Blazor is supported **only** for files with names starting with `icudt`, e.g. `icudt_custom.dat`. To load the file use `BlazorIcuDataFileName` property with either a path relative to your project or a full path, like for `WasmIcuDataFileName`.

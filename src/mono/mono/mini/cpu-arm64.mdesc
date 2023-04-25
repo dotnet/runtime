@@ -122,7 +122,7 @@ r8const: dest:f len:20
 label: len:0
 store_membase_imm: dest:b len:20
 store_membase_reg: dest:b src1:i len:20
-storex_membase: dest:b src1:x len:12
+storex_membase: dest:b src1:x len:16
 storei1_membase_imm: dest:b len:20
 storei1_membase_reg: dest:b src1:i len:12
 storei2_membase_imm: dest:b len:20
@@ -136,7 +136,7 @@ storei1_memindex: dest:b src1:i src2:i len:4
 storei2_memindex: dest:b src1:i src2:i len:4
 storei4_memindex: dest:b src1:i src2:i len:4
 load_membase: dest:i src1:b len:20
-loadx_membase: dest:x src1:b len:12
+loadx_membase: dest:x src1:b len:16
 loadi1_membase: dest:i src1:b len:32
 loadu1_membase: dest:i src1:b len:32
 loadi2_membase: dest:i src1:b len:32
@@ -495,16 +495,56 @@ atomic_store_i8: dest:b src1:i len:20
 atomic_store_u8: dest:b src1:i len:20
 atomic_store_r4: dest:b src1:f len:28
 atomic_store_r8: dest:b src1:f len:24
-xbinop: dest:x src1:x src2:x len:4
+xbinop: dest:x src1:x src2:x len:8 clob:1
 xzero: dest:x len:4
+xones: dest:x len:8
 xmove: dest:x src1:x len:4
 xconst: dest:x len:10
 xcompare: dest:x src1:x src2:x len:4
 xcompare_fp: dest:x src1:x src2:x len:4
 negate: dest:x src1:x len:4
 ones_complement: dest:x src1:x len:4
+xextract: dest:i src1:x len:12
+xbinop_forceint: dest:x src1:x src2:x len:4
+xcast: dest:x src1:x len:4 clob:1
+extract_i1: dest:i src1:x len:4
+extract_i2: dest:i src1:x len:4
+extract_i4: dest:i src1:x len:4
+extract_i8: dest:i src1:x len:4
+extract_r4: dest:f src1:x len:4
+extract_r8: dest:f src1:x len:4
+arm64_xaddv: dest:x src1:x len:8
+xop_ovr_x_x: dest:x src1:x len:4
+expand_i1: dest:x src1:i len:4
+expand_i2: dest:x src1:i len:4
+expand_i4: dest:x src1:i len:4
+expand_i8: dest:x src1:i len:4
+expand_r4: dest:x src1:f len:4
+expand_r8: dest:x src1:f len:4
+insert_i1: dest:x src1:i len:4
+insert_i2: dest:x src1:i len:4
+insert_i4: dest:x src1:i len:4
+insert_i8: dest:x src1:i len:4
+insert_r4: dest:x src1:f len:4
+insert_r8: dest:x src1:f len:4
+create_scalar_int: dest:x src1:i len:8
+create_scalar_float: dest:x src1:f len:12
+create_scalar_unsafe_int: dest:x src1:i len:4
+create_scalar_unsafe_float: dest:x src1:f len:4
+arm64_bic: dest:x src1:x src2:x len:4
+bitwise_select: dest:x src1:x src2:x src3:x len:12
+xextract_i8: dest:i src1:x src2:i len:16
+xextract_r8: dest:f src1:x src2:i len:16
+arm64_xtn: dest:x src1:x len:4
+arm64_xtn2: dest:x src1:x src2:x len:4 clob:1
+arm64_fcvtn: dest:x src1:x len:4
+arm64_fcvtn2: dest:x src1:x src2:x len:4 clob:1
+xunop: dest:x src1:x len:4
+arm64_ushl: dest:x src1:x src2:x len:4
+arm64_ext_imm: dest:x src1:x src2:x len:4
 
 generic_class_init: src1:a len:44 clob:c
 gc_safe_point: src1:i len:12 clob:c
+init_mrgctx: src1:a src2:i len:44 clob:c
 
 fill_prof_call_ctx: src1:i len:128
