@@ -3028,9 +3028,9 @@ insTupleType emitter::insTupleTypeInfo(instruction ins) const
 // Return true if the instruction uses the SSE38 or SSE3A macro in instrsXArch.h.
 bool emitter::EncodedBySSE38orSSE3A(instruction ins) const
 {
-    const size_t SSE38 = 0x0F660038;
-    const size_t SSE3A = 0x0F66003A;
-    const size_t MASK  = 0xFFFF00FF;
+    const size_t SSE38 = 0x0F000038;
+    const size_t SSE3A = 0x0F00003A;
+    const size_t MASK  = 0xFF0000FF;
 
     size_t insCode = 0;
 
@@ -3052,8 +3052,19 @@ bool emitter::EncodedBySSE38orSSE3A(instruction ins) const
         insCode = insCodeMR(ins);
     }
 
-    insCode &= MASK;
-    return insCode == SSE38 || insCode == SSE3A;
+    size_t mskCode = insCode & MASK;
+
+    if ((mskCode != SSE38) && (mskCode != SSE3A))
+    {
+        return false;
+    }
+
+#if defined(DEBUG)
+    insCode = (insCode >> 16) & 0xFF;
+    assert((insCode == 0x66) || (insCode == 0xF2) || (insCode == 0xF3));
+#endif // DEBUG
+
+    return true;
 }
 
 /*****************************************************************************
