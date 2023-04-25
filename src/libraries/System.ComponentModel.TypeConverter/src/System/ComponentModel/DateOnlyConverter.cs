@@ -4,7 +4,6 @@
 using System.ComponentModel.Design.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Reflection;
 
 namespace System.ComponentModel
 {
@@ -95,7 +94,7 @@ namespace System.ComponentModel
 
                 string format = formatInfo!.ShortDatePattern;
 
-                return dateOnly.ToString(format, CultureInfo.CurrentCulture);
+                return dateOnly.ToString(format, culture);
             }
 
             if (destinationType == typeof(InstanceDescriptor) && value is DateOnly date)
