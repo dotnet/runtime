@@ -1673,6 +1673,11 @@ public:
                     // Overlap with last entry starting before offs.
                     firstIndex--;
                 }
+                else if (firstIndex >= replacements.size())
+                {
+                    // Starts after last replacement ends.
+                    return false;
+                }
             }
 
             const Replacement& first = replacements[firstIndex];
@@ -1683,7 +1688,7 @@ public:
             }
         }
 
-        assert(replacements[firstIndex].Overlaps(offs, size));
+        assert((firstIndex < replacements.size()) && replacements[firstIndex].Overlaps(offs, size));
         *firstReplacement = &replacements[firstIndex];
 
         if (endReplacement != nullptr)
