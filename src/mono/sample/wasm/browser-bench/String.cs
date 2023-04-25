@@ -29,6 +29,7 @@ namespace Sample
                 new StringStartsWithMeasurement(),
                 new StringEndsWithMeasurement(),
                 new StringIndexOfMeasurement(),
+                new StringLastIndexOfMeasurement(),
             };
         }
 
@@ -133,17 +134,19 @@ namespace Sample
         {
             protected string strAsciiSuffix;
             protected string strAsciiPrefix;
-            protected string halfStrLenAsciiSuffix;
+            protected string needleSameAsStrEnd;
+            protected string needleSameAsStrStart;
 
             public void InitializeStringsForComparison()
             {
                 InitializeString();
+                needleSameAsStrEnd = new string(new ArraySegment<char>(data, len - 10, 10));
+                needleSameAsStrStart = new string(new ArraySegment<char>(data, 0, 10));
                 // worst case: strings may differ only with the last/first char
                 char originalLastChar = data[len-1];
                 data[len-1] = (char)random.Next(0x80);
                 strAsciiSuffix = new string(data);
                 int middleIdx = (int)(len/2);
-                halfStrLenAsciiSuffix = new string(new ArraySegment<char>(data, middleIdx, len - middleIdx));
                 data[len-1] = originalLastChar;
                 data[0] = (char)random.Next(0x80);
                 strAsciiPrefix = new string(data);
@@ -257,7 +260,21 @@ namespace Sample
                 return Task.CompletedTask;
             }
             public override string Name => "String IndexOf";
-            public override void RunStep() => compareInfo.IndexOf(str, halfStrLenAsciiSuffix, CompareOptions.None);
+            public override void RunStep() => compareInfo.IndexOf(str, needleSameAsStrEnd, CompareOptions.None);
+        }
+
+        public class StringLastIndexOfMeasurement : StringsCompare
+        {
+            protected CompareInfo compareInfo;
+
+            public override Task BeforeBatch()
+            {
+                compareInfo = new CultureInfo("nb-NO").CompareInfo;
+                InitializeStringsForComparison();
+                return Task.CompletedTask;
+            }
+            public override string Name => "String LastIndexOf";
+            public override void RunStep() => compareInfo.LastIndexOf(str, needleSameAsStrStart, CompareOptions.None);
         }
     }
 }

@@ -48,7 +48,7 @@ extern void mono_wasm_change_case(MonoString **exceptionMessage, MonoString **cu
 extern int mono_wasm_compare_string(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
 extern mono_bool mono_wasm_starts_with(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
 extern mono_bool mono_wasm_ends_with(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
-extern int mono_wasm_index_of(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
+extern int mono_wasm_index_of(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning);
 
 void bindings_initialize_internals (void)
 {

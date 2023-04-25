@@ -121,9 +121,7 @@ namespace System.Globalization
                 fixed (char* pSource = &MemoryMarshal.GetReference(source))
                 fixed (char* pTarget = &MemoryMarshal.GetReference(target))
                 {
-                    idx = fromBeginning ?
-                        Interop.JsGlobalization.IndexOf(out exceptionMessage, m_name, pTarget, target.Length, pSource, source.Length, options) :
-                        Interop.JsGlobalization.IndexOf(out exceptionMessage, m_name, pTarget, target.Length, pSource, source.Length, options);
+                    idx = Interop.JsGlobalization.IndexOf(out exceptionMessage, m_name, pTarget, target.Length, pSource, source.Length, options, fromBeginning);
                 }
             }
 
@@ -238,9 +236,7 @@ namespace System.Globalization
                 return -1;
 
             InteropCall:
-                return fromBeginning ?
-                    Interop.JsGlobalization.IndexOf(out exceptionMessage, m_name, b, target.Length, a, source.Length, options) :
-                    Interop.JsGlobalization.IndexOf(out exceptionMessage, m_name, b, target.Length, a, source.Length, options);
+                return Interop.JsGlobalization.IndexOf(out exceptionMessage, m_name, b, target.Length, a, source.Length, options, fromBeginning);
             }
         }
 
@@ -332,9 +328,7 @@ namespace System.Globalization
                 return -1;
 
             InteropCall:
-                return fromBeginning ?
-                    Interop.JsGlobalization.IndexOf(out exceptionMessage, m_name, b, target.Length, a, source.Length, options) :
-                    Interop.JsGlobalization.IndexOf(out exceptionMessage, m_name, b, target.Length, a, source.Length, options);
+                return Interop.JsGlobalization.IndexOf(out exceptionMessage, m_name, b, target.Length, a, source.Length, options, fromBeginning);
             }
         }
 

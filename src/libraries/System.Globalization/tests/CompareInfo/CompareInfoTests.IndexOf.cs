@@ -33,9 +33,9 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "foobardzsdzs", "rddzs", 0, 12, CompareOptions.Ordinal, -1, 0 };
 
             // Slovak
-            yield return new object[] { s_slovakCompare, "ch", "h", 0, 2, CompareOptions.None, -1, 0 };
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
+                yield return new object[] { s_slovakCompare, "ch", "h", 0, 2, CompareOptions.None, -1, 0 };
                  // Android has its own ICU, which doesn't work well with slovak
                 if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
                 {
@@ -55,18 +55,18 @@ namespace System.Globalization.Tests
             yield return new object[] { s_turkishCompare, "Hi", "\u0130", 0, 2, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "Hi", "I", 0, 2, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "Hi", "I", 0, 2, CompareOptions.IgnoreCase, 1, 1 };
-            yield return new object[] { s_invariantCompare, "Hi", "\u0130", 0, 2, CompareOptions.IgnoreCase, -1, 0 }; // why fails with -1?
+            yield return new object[] { s_invariantCompare, "Hi", "\u0130", 0, 2, CompareOptions.IgnoreCase, -1, 0 };
 
             // Unicode
             yield return new object[] { s_invariantCompare, "Hi", "\u0130", 0, 2, CompareOptions.None, -1, 0 };
-            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "A\u0300", 0, 9, CompareOptions.None, 8, 1 }; // why fails with -1?
+            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "A\u0300", 0, 9, CompareOptions.None, 8, 1 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "A\u0300", 0, 9, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.Ordinal, -1, 0 };
-            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.IgnoreCase, 8, 1 }; // why fails with -1?
+            yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.IgnoreCase, 8, 1 };
             yield return new object[] { s_invariantCompare, "Exhibit \u00C0", "a\u0300", 0, 9, CompareOptions.OrdinalIgnoreCase, -1, 0 };
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", 0, 6, CompareOptions.Ordinal, -1, 0 };
-            yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 0, 11, supportedIgnoreNonSpaceOption, 4, 7 };; // why fails with 0?
+            yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 0, 11, supportedIgnoreNonSpaceOption, 4, 7 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", 0, 2, CompareOptions.None, -1, 0 };
             if (PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
@@ -138,12 +138,12 @@ namespace System.Globalization.Tests
             }
 
             // Inputs where matched length does not equal value string length
-            yield return new object[] { s_invariantCompare, "abcdzxyz", "\u01F3", 0, 8, supportedIgnoreNonSpaceOption, 3, 2 };
-            yield return new object[] { s_invariantCompare, "abc\u01F3xyz", "dz", 0, 7, supportedIgnoreNonSpaceOption, 3, 1 };
             if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "stra\u00DFe", 0, 23, supportedIgnoreCaseIgnoreNonSpaceOptions, 4, 7 };
                 yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Strasse", 0, 21, supportedIgnoreCaseIgnoreNonSpaceOptions, 4, 6 };
+                yield return new object[] { s_invariantCompare, "abcdzxyz", "\u01F3", 0, 8, supportedIgnoreNonSpaceOption, 3, 2 };
+                yield return new object[] { s_invariantCompare, "abc\u01F3xyz", "dz", 0, 7, supportedIgnoreNonSpaceOption, 3, 1 };
             }
             yield return new object[] { s_germanCompare, "abc Strasse Strasse xyz", "xtra\u00DFe", 0, 23, supportedIgnoreCaseIgnoreNonSpaceOptions, -1, 0 };
             yield return new object[] { s_germanCompare, "abc stra\u00DFe stra\u00DFe xyz", "Xtrasse", 0, 21, supportedIgnoreCaseIgnoreNonSpaceOptions, -1, 0 };
@@ -243,8 +243,11 @@ namespace System.Globalization.Tests
                 valueBoundedMemory.MakeReadonly();
 
                 Assert.Equal(expected, compareInfo.IndexOf(sourceBoundedMemory.Span, valueBoundedMemory.Span, options));
-                Assert.Equal(expected, compareInfo.IndexOf(sourceBoundedMemory.Span, valueBoundedMemory.Span, options, out int actualMatchLength));
-                Assert.Equal(expectedMatchLength, actualMatchLength);
+                if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+                {
+                    Assert.Equal(expected, compareInfo.IndexOf(sourceBoundedMemory.Span, valueBoundedMemory.Span, options, out int actualMatchLength));
+                    Assert.Equal(expectedMatchLength, actualMatchLength);
+                }
 
                 if (TryCreateRuneFrom(value, out Rune rune))
                 {

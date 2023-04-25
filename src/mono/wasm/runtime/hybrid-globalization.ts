@@ -156,13 +156,15 @@ function clean_string(str: string)
     return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
 }
 
-export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number): number{
+export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, fromBeginning: number): number{
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
-        const target = string_decoder.decode(<any>str1, <any>(str1 + 2*str1Length));
+        const needle = string_decoder.decode(<any>str1, <any>(str1 + 2*str1Length));
         // no need to look for an empty string
-        if (clean_string(target).length == 0)
-            return 0;
+        if (clean_string(needle).length == 0)
+        {
+            return fromBeginning ? 0 : clean_string(string_decoder.decode(<any>str2, <any>(str2 + 2*str2Length))).length;
+        }
 
         const source = string_decoder.decode(<any>str2, <any>(str2 + 2*str2Length));
         // no need to look in an empty string
@@ -173,15 +175,18 @@ export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStri
         const casePicker = (options & 0x1f);
 
         const segmenter = new Intl.Segmenter(locale, { granularity: "grapheme" });
+        const needleSegments = Array.from(segmenter.segment(needle)).map(s => s.segment);
         let i = 0;
         let stop = false;
         let index = -1;
         while (!stop)
         {
-            const iteratorSrc = segmenter.segment(source.slice(i, str2Length - i))[Symbol.iterator]();
+            const iteratorSrc = segmenter.segment(source)[Symbol.iterator]();
             let srcNext = iteratorSrc.next();
-            const iteratorTrg = segmenter.segment(target)[Symbol.iterator](); // do we have to make a new one every time?
-            let trgNext = iteratorTrg.next();
+            for (let j=0; j<i; j++)
+            {
+                srcNext = iteratorSrc.next();
+            }
 
             if (srcNext.done)
             {
@@ -189,19 +194,28 @@ export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStri
                 break;
             }
             index = srcNext.value.index;
-            while (!trgNext.done && !srcNext.done)
+            let srcDone = false;
+            for(let j=0; j<needleSegments.length; j++)
             {
-                if (compare_strings(srcNext.value.segment, trgNext.value.segment, locale, casePicker) !== 0)
+                if (srcDone)
+                {
+                    index = -1;
+                    stop = true;
+                    break;
+                }
+                if (compare_strings(srcNext.value.segment, needleSegments[j], locale, casePicker) !== 0)
                 {
                     index = -1;
                     break;
                 }
-                trgNext = iteratorTrg.next();
                 srcNext = iteratorSrc.next();
+                if (srcNext.done)
+                {
+                    srcDone = true;
+                }
             }
-            if (trgNext.done || srcNext.done)
+            if (fromBeginning && index !== -1)
             {
-                stop = true;
                 break;
             }
             i++;
