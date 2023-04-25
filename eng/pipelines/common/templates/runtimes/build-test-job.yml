@@ -88,6 +88,13 @@ jobs:
           - name: testTreeFilterArg
             value: 'tree GC/Scenarios/GCSimulator'
 
+      - name: buildAsStandaloneArg
+        value: ''
+
+      - ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc', 'gcstress-extra')}}:
+        - name: buildAsStandaloneArg
+          value: '/p:BuildAsStandalone=true'
+
     steps:
 
     # Install test build dependencies
@@ -106,7 +113,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build managed test components
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) $(testTreeFilterArg) ci /p:TargetOS=AnyOS
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) $(testTreeFilterArg) ci /p:TargetOS=AnyOS $(buildAsStandaloneArg)
       displayName: Build managed test components
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
