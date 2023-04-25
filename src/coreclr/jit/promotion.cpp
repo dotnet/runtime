@@ -1051,6 +1051,13 @@ private:
             }
 
             statements->AddStatement(m_compiler->gtNewBlkOpNode(m_dst, m_src));
+
+            if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            {
+                // We will introduce uses of the source below so this struct
+                // copy is no longer the last use if it was before.
+                m_src->gtFlags &= ~GTF_VAR_DEATH;
+            }
         }
 
         if (needsNullCheck)
@@ -1517,8 +1524,8 @@ public:
             {
                 if ((srcDsc != nullptr) && srcDsc->lvPromoted)
                 {
-                    unsigned   srcOffs     = srcLcl->GetLclOffs() + (dstRep->Offset - dstBaseOffs);
-                    unsigned   fieldLcl    = m_compiler->lvaGetFieldLocal(srcDsc, srcOffs);
+                    unsigned srcOffs  = srcLcl->GetLclOffs() + (dstRep->Offset - dstBaseOffs);
+                    unsigned fieldLcl = m_compiler->lvaGetFieldLocal(srcDsc, srcOffs);
 
                     if ((fieldLcl != BAD_VAR_NUM) && m_compiler->lvaGetDesc(fieldLcl)->lvType == dstRep->AccessType)
                     {
