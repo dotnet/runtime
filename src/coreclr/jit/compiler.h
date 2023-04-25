@@ -1063,6 +1063,7 @@ public:
     unsigned short lvRefCnt(RefCountState state = RCS_NORMAL) const;
     void incLvRefCnt(unsigned short delta, RefCountState state = RCS_NORMAL);
     void setLvRefCnt(unsigned short newValue, RefCountState state = RCS_NORMAL);
+    void incLvRefCntSaturating(unsigned short delta, RefCountState state = RCS_NORMAL);
 
     weight_t lvRefCntWtd(RefCountState state = RCS_NORMAL) const;
     void incLvRefCntWtd(weight_t delta, RefCountState state = RCS_NORMAL);
@@ -2829,6 +2830,8 @@ public:
 
     GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
+    void gtInitializeIndirNode(GenTreeIndir* indir, GenTreeFlags indirFlags);
+
     GenTreeBlk* gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
@@ -2942,6 +2945,7 @@ public:
     static bool gtHasRef(GenTree* tree, unsigned lclNum);
 
     bool gtHasLocalsWithAddrOp(GenTree* tree);
+    bool gtHasAddressExposedLocals(GenTree* tree);
 
     unsigned gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCostEx, int* callCostSz);
     unsigned gtSetMultiOpOrder(GenTreeMultiOp* multiOp);
@@ -3858,7 +3862,8 @@ protected:
     GenTree* impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         CORINFO_ACCESS_FLAGS    access,
                                         CORINFO_FIELD_INFO*     pFieldInfo,
-                                        var_types               lclTyp);
+                                        var_types               lclTyp,
+                                        /* OUT */ bool*         pIsHoistable = nullptr);
 
     static void impBashVarAddrsToI(GenTree* tree1, GenTree* tree2 = nullptr);
 
@@ -5864,7 +5869,8 @@ private:
     // small; hence the other fields of MorphAddrContext.
     struct MorphAddrContext
     {
-        size_t m_totalOffset = 0; // Sum of offsets between the top-level indirection and here (current context).
+        size_t m_totalOffset = 0;     // Sum of offsets between the top-level indirection and here (current context).
+        bool   m_used        = false; // Whether this context was used to elide a null check.
     };
 
 #ifdef FEATURE_SIMD

@@ -12,6 +12,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Reflection
 {
 	[ExpectedNoWarnings]
+	[SkipKeptItemsValidation (By = Tool.NativeAot)]
 	public class TypeHierarchyReflectionWarnings
 	{
 		public static void Main ()
@@ -236,10 +237,10 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			public delegate void MyEventHandler (object sender, int i);
 
 			[Kept]
-			// We always keep event methods when an event is kept, so this generates warnings
+			// ILLink always keeps event methods when an event is kept, so this generates warnings
 			// on the event itself (since an event access is considered to reference the annotated add method),
 			// and on the add method (if it is accessed through reflection).
-			[ExpectedWarning ("IL2026", "--RUC on add_RUCEvent--")]
+			[ExpectedWarning ("IL2026", "--RUC on add_RUCEvent--", ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", "--RUC on add_RUCEvent--", ProducedBy = Tool.Trimmer)]
 			[ExpectedWarning ("IL2026", "--RUC on add_RUCEvent--", ProducedBy = Tool.Trimmer)]
 			public event MyEventHandler RUCEvent {
@@ -273,6 +274,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 			// This should produce a warning: https://github.com/dotnet/linker/issues/2161
+			[ExpectedWarning("IL2112", "--RUC on AnnotatedInterfaces.UnusedMethod--", ProducedBy = Tool.NativeAot)]
 			[RequiresUnreferencedCode ("--RUC on AnnotatedInterfaces.UnusedMethod--")]
 			public void RUCMethod () { }
 		}
@@ -307,7 +309,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--")]
-			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2112", "--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[RequiresUnreferencedCode ("--RUC on DerivedFromAnnotatedPublicParameterlessConstructor()--")]
 			public DerivedFromAnnotatedPublicParameterlessConstructor () { }
 
@@ -618,13 +620,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[KeptBaseType (typeof (Base))]
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			[ExpectedWarning ("IL2113", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
-			// https://github.com/dotnet/linker/issues/2815
-			// [ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
 			public class Derived : Base
 			{
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--")]
+				// https://github.com/dotnet/linker/issues/2815
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Derived.RUCVirtualMethod--", ProducedBy = Tool.NativeAot)]
 				public virtual void RUCVirtualMethod () { }
 			}
 

@@ -5,8 +5,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
-    <JitOptimizationSensitive>true</JitOptimizationSensitive>
+    <!-- Tracing tests routinely time out with jitstress and gcstress -->
     <GCStressIncompatible>true</GCStressIncompatible>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GCEvents.cs" />

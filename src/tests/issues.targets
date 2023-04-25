@@ -886,9 +886,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/*">
             <Issue>https://github.com/dotnet/runtime/issues/81103</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CctorsWithSideEffects/CctorForWrite/*">
-            <Issue>https://github.com/dotnet/runtime/issues/84007</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Crossgen2 x86 specific excludes -->
@@ -984,12 +981,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/SafeArray/SafeArrayTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: SAFEARRAY</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/API/ComWrappersTests/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74620</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/API/ComWrappersTestsBuiltInComDisabled/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74620</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/WeakReference/WeakReferenceTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/74620</Issue>

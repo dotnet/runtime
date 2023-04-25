@@ -17,7 +17,7 @@ public class WasiAppBuilder : WasmAppBuilderBaseTask
         if (!base.ValidateArguments())
             return false;
 
-        if (!InvariantGlobalization && (IcuDataFileNames == null || IcuDataFileNames.Length == 0))
+        if (!InvariantGlobalization && !IsSingleFileBundle && (IcuDataFileNames == null || IcuDataFileNames.Length == 0))
             throw new LogAsErrorException($"{nameof(IcuDataFileNames)} property shouldn't be empty when {nameof(InvariantGlobalization)}=false");
 
         if (Assemblies.Length == 0 && !IsSingleFileBundle)

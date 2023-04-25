@@ -84,12 +84,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     }
     CONTRACTL_END
 
-
-#ifdef _DEBUG
-    _ASSERTE(!IsDestroyed());
-    SetDestroyed();
-#endif
-
 #ifdef PROFILING_SUPPORTED
     // If profiling, then notify the class is getting unloaded.
     {
@@ -257,8 +251,7 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
     CONTRACTL
     {
         THROWS;
-        MODE_COOPERATIVE;
-        WRAPPER(GC_TRIGGERS);
+        GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -274,7 +267,7 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
         {
             szFieldName = "Invalid FieldDef record";
         }
-        LOG((LF_ENC, LL_INFO100, "EEClass::FixupFieldDescForEnC %08x %s\n", fieldDef, szFieldName));
+        LOG((LF_ENC, LL_INFO100, "EEClass::FixupFieldDescForEnC '%s' (0x%08x)\n", szFieldName, fieldDef));
     }
 #endif //LOGGING
 
@@ -291,17 +284,21 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
     // once this function is out of scope.
     ACQUIRE_STACKING_ALLOCATOR(pStackingAllocator);
 
-    MethodTableBuilder::bmtMetaDataInfo bmtMetaData;
-    bmtMetaData.cFields = 1;
-    bmtMetaData.pFields = (mdToken*)_alloca(sizeof(mdToken));
-    bmtMetaData.pFields[0] = fieldDef;
-    bmtMetaData.pFieldAttrs = (DWORD*)_alloca(sizeof(DWORD));
-    IfFailThrow(pImport->GetFieldDefProps(fieldDef, &bmtMetaData.pFieldAttrs[0]));
+    // Collect the attributes for the field
+    mdToken fieldDefs[1] = { fieldDef };
+    DWORD fieldAttrs[1];
+    IfFailThrow(pImport->GetFieldDefProps(fieldDefs[0], &fieldAttrs[0]));
 
-    MethodTableBuilder::bmtMethAndFieldDescs bmtMFDescs;
+    MethodTableBuilder::bmtMetaDataInfo bmtMetaData;
+    bmtMetaData.cFields = ARRAY_SIZE(fieldDefs);
+    bmtMetaData.pFields = fieldDefs;
+    bmtMetaData.pFieldAttrs = fieldAttrs;
+
     // We need to alloc the memory, but don't have to fill it in.  InitializeFieldDescs
     // will copy pFD (1st arg) into here.
-    bmtMFDescs.ppFieldDescList = (FieldDesc**)_alloca(sizeof(FieldDesc*));
+    FieldDesc* fieldDescs[1];
+    MethodTableBuilder::bmtMethAndFieldDescs bmtMFDescs;
+    bmtMFDescs.ppFieldDescList = fieldDescs;
 
     MethodTableBuilder::bmtFieldPlacement bmtFP;
 
@@ -329,37 +326,31 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
     }
     else
     {
+        _ASSERTE(!pMT->IsValueType());
         bmtEnumFields.dwNumInstanceFields = 1;
     }
 
     // We shouldn't have to fill this in b/c we're not allowed to EnC value classes, or
     // anything else with layout info associated with it.
-    LayoutRawFieldInfo *pLayoutRawFieldInfos = (LayoutRawFieldInfo*)_alloca((2) * sizeof(LayoutRawFieldInfo));
+    // Provide 2, 1 placeholder and 1 for the actual field - see BuildMethodTableThrowing().
+    LayoutRawFieldInfo layoutRawFieldInfos[2];
 
     // If not NULL, it means there are some by-value fields, and this contains an entry for each instance or static field,
     // which is NULL if not a by value field, and points to the EEClass of the field if a by value field.  Instance fields
     // come first, statics come second.
-    MethodTable **pByValueClassCache = NULL;
-
-    EEClass * pClass = pMT->GetClass();
-
-    // InitializeFieldDescs are going to change these numbers to something wrong,
-    // even though we already have the right numbers.  Save & restore after.
-    WORD   wNumInstanceFields = pMT->GetNumInstanceFields();
-    WORD   wNumStaticFields = pMT->GetNumStaticFields();
-    unsigned totalDeclaredFieldSize = 0;
+    MethodTable** pByValueClassCache = NULL;
 
     AllocMemTracker dummyAmTracker;
 
-    BaseDomain * pDomain = pMT->GetDomain();
+    EEClass* pClass = pMT->GetClass();
     MethodTableBuilder builder(pMT, pClass,
                                pStackingAllocator,
                                &dummyAmTracker);
 
+    TypeHandle thisTH(pMT);
+    SigTypeContext typeContext(thisTH);
     MethodTableBuilder::bmtGenericsInfo genericsInfo;
-
-    OBJECTREF pThrowable = NULL;
-    GCPROTECT_BEGIN(pThrowable);
+    genericsInfo.typeContext = typeContext;
 
     builder.SetBMTData(pMT->GetLoaderAllocator(),
                        &bmtError,
@@ -377,11 +368,11 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
                        &genericsInfo,
                        &bmtEnumFields);
 
-    EX_TRY
     {
         GCX_PREEMP();
+        unsigned totalDeclaredFieldSize = 0;
         builder.InitializeFieldDescs(pFD,
-                                 pLayoutRawFieldInfos,
+                                 layoutRawFieldInfos,
                                  &bmtInternal,
                                  &genericsInfo,
                                  &bmtMetaData,
@@ -392,28 +383,8 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
                                  &bmtFP,
                                  &totalDeclaredFieldSize);
     }
-    EX_CATCH_THROWABLE(&pThrowable);
 
     dummyAmTracker.SuppressRelease();
-
-    // Restore now
-    pClass->SetNumInstanceFields(wNumInstanceFields);
-    pClass->SetNumStaticFields(wNumStaticFields);
-
-    // PERF: For now, we turn off the fast equality check for valuetypes when a
-    // a field is modified by EnC. Consider doing a check and setting the bit only when
-    // necessary.
-    if (pMT->IsValueType())
-    {
-        pClass->SetIsNotTightlyPacked();
-    }
-
-    if (pThrowable != NULL)
-    {
-        COMPlusThrow(pThrowable);
-    }
-
-    GCPROTECT_END();
 
     pFD->SetMethodTable(pMT);
 
@@ -435,16 +406,19 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
 // Here we just create the FieldDesc and link it to the class.  The actual storage will
 // be created lazily on demand.
 //
-HRESULT EEClass::AddField(MethodTable * pMT, mdFieldDef fieldDef, EnCFieldDesc **ppNewFD)
+HRESULT EEClass::AddField(MethodTable* pMT, mdFieldDef fieldDef, FieldDesc** ppNewFD)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
+        PRECONDITION(pMT != NULL);
+        PRECONDITION(ppNewFD != NULL);
     }
     CONTRACTL_END;
 
+    HRESULT hr;
     Module * pModule = pMT->GetModule();
     IMDInternalImport *pImport = pModule->GetMDImport();
 
@@ -456,7 +430,7 @@ HRESULT EEClass::AddField(MethodTable * pMT, mdFieldDef fieldDef, EnCFieldDesc *
         {
             szFieldName = "Invalid FieldDef record";
         }
-        LOG((LF_ENC, LL_INFO100, "EEClass::AddField %s\n", szFieldName));
+        LOG((LF_ENC, LL_INFO100, "EEClass::AddField '%s' tok:0x%08x\n", szFieldName, fieldDef));
     }
 #endif //LOGGING
 
@@ -472,6 +446,101 @@ HRESULT EEClass::AddField(MethodTable * pMT, mdFieldDef fieldDef, EnCFieldDesc *
     DWORD dwFieldAttrs;
     IfFailThrow(pImport->GetFieldDefProps(fieldDef, &dwFieldAttrs));
 
+    FieldDesc* pNewFD;
+    if (FAILED(hr = AddFieldDesc(pMT, fieldDef, dwFieldAttrs, &pNewFD)))
+    {
+        LOG((LF_ENC, LL_INFO100, "EEClass::AddField failed: 0x%08x\n", hr));
+        return hr;
+    }
+
+    // Store the FieldDesc into the module's field list
+    // This should not be done for instantiated types. Only fields on the
+    // open type are added to the module directly. This check is a
+    // consequence of calling AddField() for EnC static fields on generics.
+    if (!pMT->HasInstantiation())
+    {
+        pModule->EnsureFieldDefCanBeStored(fieldDef);
+        pModule->EnsuredStoreFieldDef(fieldDef, pNewFD);
+    }
+    LOG((LF_ENC, LL_INFO100, "EEClass::AddField Added pFD:%p for token 0x%08x\n",
+        pNewFD, fieldDef));
+
+    // If the type is generic, then we need to update all existing instantiated types
+    if (pMT->IsGenericTypeDefinition())
+    {
+        LOG((LF_ENC, LL_INFO100, "EEClass::AddField Looking for existing instantiations in all assemblies\n"));
+
+        PTR_AppDomain pDomain = AppDomain::GetCurrentDomain();
+        AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
+
+        bool isStaticField = !!pNewFD->IsStatic();
+        CollectibleAssemblyHolder<DomainAssembly*> pDomainAssembly;
+        while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
+        {
+            Module* pMod = pDomainAssembly->GetModule();
+            LOG((LF_ENC, LL_INFO100, "EEClass::AddField Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
+
+            EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
+            EETypeHashTable::Iterator it(paramTypes);
+            EETypeHashEntry* pEntry;
+            while (paramTypes->FindNext(&it, &pEntry))
+            {
+                TypeHandle th = pEntry->GetTypeHandle();
+                if (th.IsTypeDesc())
+                    continue;
+
+                // For instance fields we only update instantiations of the generic MethodTable we updated above.
+                // For static fields we update the the canonical version and instantiations.
+                MethodTable* pMTMaybe = th.AsMethodTable();
+                if ((!isStaticField && !pMTMaybe->IsCanonicalMethodTable())
+                    || !pMT->HasSameTypeDefAs(pMTMaybe))
+                {
+                    continue;
+                }
+
+                FieldDesc* pNewFDUnused;
+                if (FAILED(AddFieldDesc(pMTMaybe, fieldDef, dwFieldAttrs, &pNewFDUnused)))
+                {
+                    LOG((LF_ENC, LL_INFO100, "EEClass::AddField failed: 0x%08x\n", hr));
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST,
+                        W("Failed to add field to existing instantiated type instance"));
+                    return E_FAIL;
+                }
+            }
+        }
+    }
+
+    // Success, return the new FieldDesc
+    *ppNewFD = pNewFD;
+
+    return S_OK;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// AddFieldDesc - called when a new FieldDesc needs to be created and added for EnC
+//
+HRESULT EEClass::AddFieldDesc(
+    MethodTable* pMT,
+    mdMethodDef fieldDef,
+    DWORD dwFieldAttrs,
+    FieldDesc** ppNewFD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(pMT != NULL);
+        PRECONDITION(ppNewFD != NULL);
+    }
+    CONTRACTL_END;
+
+    LOG((LF_ENC, LL_INFO100, "EEClass::AddFieldDesc pMT:%p, %s <- tok:0x%08x attrs:%u\n",
+        pMT, pMT->debug_m_szClassName, fieldDef, dwFieldAttrs));
+
+    Module* pModule = pMT->GetModule();
+    IMDInternalImport* pImport = pModule->GetMDImport();
     LoaderAllocator* pAllocator = pMT->GetLoaderAllocator();
 
     // Here we allocate a FieldDesc and set just enough info to be able to fix it up later
@@ -489,26 +558,26 @@ HRESULT EEClass::AddField(MethodTable * pMT, mdFieldDef fieldDef, EnCFieldDesc *
     // Get the EnCEEClassData for this class
     // Don't adjust EEClass stats b/c EnC fields shouldn't touch EE data structures.
     // We'll just update our private EnC structures instead.
-    EnCEEClassData *pEnCClass = ((EditAndContinueModule*)pModule)->GetEnCEEClassData(pMT);
-    if (! pEnCClass)
+    _ASSERTE(pModule->IsEditAndContinueEnabled());
+    EnCEEClassData* pEnCClass = ((EditAndContinueModule*)pModule)->GetEnCEEClassData(pMT);
+    if (!pEnCClass)
         return E_FAIL;
 
     // Add the field element to the list of added fields for this class
     pEnCClass->AddField(pAddedField);
-
-    // Store the FieldDesc into the module's field list
-    {
-        CONTRACT_VIOLATION(ThrowsViolation); // B#25680 (Fix Enc violations): Must handle OOM's from Ensure
-        pModule->EnsureFieldDefCanBeStored(fieldDef);
-    }
-    pModule->EnsuredStoreFieldDef(fieldDef, pNewFD);
     pNewFD->SetMethodTable(pMT);
 
+    // Record that we are adding a new static field. Static generic fields
+    // are added for currently non-instantiated types during type construction.
+    // We want to limit the cost of making the check at that time so we use
+    // a bit on the EEClass to indicate we've added a static field and it should
+    // be checked.
+    if (IsFdStatic(dwFieldAttrs))
+        pMT->GetClass()->SetHasEnCStaticFields();
+
     // Success, return the new FieldDesc
-    if (ppNewFD)
-    {
-        *ppNewFD = pNewFD;
-    }
+    *ppNewFD = pNewFD;
+
     return S_OK;
 }
 
@@ -517,20 +586,25 @@ HRESULT EEClass::AddField(MethodTable * pMT, mdFieldDef fieldDef, EnCFieldDesc *
 // AddMethod - called when a new method is added by EnC
 //
 // The method has already been added to the metadata with token methodDef.
-// Create a new MethodDesc for the method.
+// Create a new MethodDesc for the method, add to the associated EEClass and
+// update any existing Generic instantiations if the MethodTable represents a
+// generic type.
 //
-HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA, MethodDesc **ppMethod)
+HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc** ppMethod)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
+        PRECONDITION(pMT != NULL);
+        PRECONDITION(methodDef != mdTokenNil);
     }
     CONTRACTL_END;
 
-    Module * pModule = pMT->GetModule();
-    IMDInternalImport *pImport = pModule->GetMDImport();
+    HRESULT hr;
+    Module* pModule = pMT->GetModule();
+    IMDInternalImport* pImport = pModule->GetMDImport();
 
 #ifdef LOGGING
     if (LoggingEnabled())
@@ -540,26 +614,23 @@ HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA,
         {
             szMethodName = "Invalid MethodDef record";
         }
-        LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod %s\n", szMethodName));
+        LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod '%s' tok:0x%08x\n", szMethodName, methodDef));
     }
 #endif //LOGGING
 
     DWORD dwDescrOffset;
     DWORD dwImplFlags;
-    HRESULT hr = S_OK;
-
     if (FAILED(pImport->GetMethodImplProps(methodDef, &dwDescrOffset, &dwImplFlags)))
-    {
         return COR_E_BADIMAGEFORMAT;
-    }
 
     DWORD dwMemberAttrs;
-    IfFailThrow(pImport->GetMethodDefProps(methodDef, &dwMemberAttrs));
+    if (FAILED(pImport->GetMethodDefProps(methodDef, &dwMemberAttrs)))
+        return COR_E_BADIMAGEFORMAT;
 
     // Refuse to add other special cases
-    if (IsReallyMdPinvokeImpl(dwMemberAttrs)  ||
-         (pMT->IsInterface() && !IsMdStatic(dwMemberAttrs)) ||
-         IsMiRuntime(dwImplFlags))
+    if (IsReallyMdPinvokeImpl(dwMemberAttrs)
+        || (pMT->IsInterface() && !IsMdStatic(dwMemberAttrs))
+        || IsMiRuntime(dwImplFlags))
     {
         _ASSERTE(! "**Error** EEClass::AddMethod only IL private non-virtual methods are supported");
         LOG((LF_ENC, LL_INFO100, "**Error** EEClass::AddMethod only IL private non-virtual methods are supported\n"));
@@ -569,7 +640,7 @@ HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA,
 #ifdef _DEBUG
     // Validate that this methodDef correctly has a parent typeDef
     mdTypeDef   parentTypeDef;
-    if (FAILED(hr = pImport->GetParentToken(methodDef, &parentTypeDef)))
+    if (FAILED(pImport->GetParentToken(methodDef, &parentTypeDef)))
     {
         _ASSERTE(! "**Error** EEClass::AddMethod parent token not found");
         LOG((LF_ENC, LL_INFO100, "**Error** EEClass::AddMethod parent token not found\n"));
@@ -577,75 +648,173 @@ HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA,
     }
 #endif // _DEBUG
 
-    EEClass * pClass = pMT->GetClass();
+    MethodDesc* pNewMD;
+    if (FAILED(hr = AddMethodDesc(pMT, methodDef, dwImplFlags, dwMemberAttrs, &pNewMD)))
+    {
+        LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod failed: 0x%08x\n", hr));
+        return hr;
+    }
 
-    // @todo: OOM: InitMethodDesc will allocate loaderheap memory but leak it
-    //   on failure. This AllocMemTracker should be replaced with a real one.
-    AllocMemTracker dummyAmTracker;
+    // Store the new MethodDesc into the collection for this class
+    pModule->EnsureMethodDefCanBeStored(methodDef);
+    pModule->EnsuredStoreMethodDef(methodDef, pNewMD);
+
+    LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Added pMD:%p for token 0x%08x\n",
+        pNewMD, methodDef));
+
+    // If the type is generic, then we need to update all existing instantiated types
+    if (pMT->IsGenericTypeDefinition())
+    {
+        LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Looking for existing instantiations in all assemblies\n"));
+
+        PTR_AppDomain pDomain = AppDomain::GetCurrentDomain();
+        AppDomain::AssemblyIterator appIt = pDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
+
+        CollectibleAssemblyHolder<DomainAssembly*> pDomainAssembly;
+        while (appIt.Next(pDomainAssembly.This()) && SUCCEEDED(hr))
+        {
+            Module* pMod = pDomainAssembly->GetModule();
+            LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod Checking: %s mod:%p\n", pMod->GetDebugName(), pMod));
+
+            EETypeHashTable* paramTypes = pMod->GetAvailableParamTypes();
+            EETypeHashTable::Iterator it(paramTypes);
+            EETypeHashEntry* pEntry;
+            while (paramTypes->FindNext(&it, &pEntry))
+            {
+                TypeHandle th = pEntry->GetTypeHandle();
+                if (th.IsTypeDesc())
+                    continue;
+
+                // Only update instantiations of the generic MethodTable we updated above.
+                MethodTable* pMTMaybe = th.AsMethodTable();
+                if (!pMTMaybe->IsCanonicalMethodTable() || !pMT->HasSameTypeDefAs(pMTMaybe))
+                {
+                    continue;
+                }
+
+                MethodDesc* pNewMDUnused;
+                if (FAILED(AddMethodDesc(pMTMaybe, methodDef, dwImplFlags, dwMemberAttrs, &pNewMDUnused)))
+                {
+                    LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod failed: 0x%08x\n", hr));
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST,
+                        W("Failed to add method to existing instantiated type instance"));
+                    return E_FAIL;
+                }
+            }
+        }
+    }
+
+    // Success - return the new MethodDesc
+    if (ppMethod)
+        *ppMethod = pNewMD;
+
+    return S_OK;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// AddMethodDesc - called when a new MethodDesc needs to be created and added for EnC
+//
+HRESULT EEClass::AddMethodDesc(
+    MethodTable* pMT,
+    mdMethodDef methodDef,
+    DWORD dwImplFlags,
+    DWORD dwMemberAttrs,
+    MethodDesc** ppNewMD)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+        PRECONDITION(pMT != NULL);
+        PRECONDITION(methodDef != mdTokenNil);
+        PRECONDITION(ppNewMD != NULL);
+    }
+    CONTRACTL_END;
+
+    LOG((LF_ENC, LL_INFO100, "EEClass::AddMethodDesc pMT:%p, %s <- tok:0x%08x flags:%u attrs:%u\n",
+        pMT, pMT->debug_m_szClassName, methodDef, dwImplFlags, dwMemberAttrs));
+
+    HRESULT hr;
+    Module* pModule = pMT->GetModule();
+    IMDInternalImport* pImport = pModule->GetMDImport();
+
+    // Check if signature is generic.
+    ULONG sigLen;
+    PCCOR_SIGNATURE sig;
+    if (FAILED(hr = pImport->GetSigOfMethodDef(methodDef, &sigLen, &sig)))
+        return hr;
+    uint32_t callConv = CorSigUncompressData(sig);
+    DWORD classification = (callConv & IMAGE_CEE_CS_CALLCONV_GENERIC)
+        ? mcInstantiated
+        : mcIL;
 
     LoaderAllocator* pAllocator = pMT->GetLoaderAllocator();
 
-    DWORD classification = mcIL;
+    // [TODO] OOM: InitMethodDesc will allocate loaderheap memory but leak it
+    //   on failure. This AllocMemTracker should be replaced with a real one.
+    AllocMemTracker dummyAmTracker;
 
-    // Create a new MethodDescChunk to hold the new MethodDesc
-    // Create the chunk somewhere we'll know is within range of the VTable
+    // Create a new MethodDescChunk to hold the new MethodDesc.
+    // Create the chunk somewhere we'll know is within range of the VTable.
     MethodDescChunk *pChunk = MethodDescChunk::CreateChunk(pAllocator->GetHighFrequencyHeap(),
-                                                           1,               // methodDescCount
-                                                           classification,
-                                                           TRUE /* fNonVtableSlot */,
-                                                           TRUE /* fNativeCodeSlot */,
-                                                           pMT,
-                                                           &dummyAmTracker);
+                                                            1,   // methodDescCount
+                                                            classification,
+                                                            TRUE, // fNonVtableSlot
+                                                            TRUE, // fNativeCodeSlot
+                                                            pMT,
+                                                            &dummyAmTracker);
 
     // Get the new MethodDesc (Note: The method desc memory is zero initialized)
-    MethodDesc *pNewMD = pChunk->GetFirstMethodDesc();
+    MethodDesc* pNewMD = pChunk->GetFirstMethodDesc();
 
+    EEClass* pClass = pMT->GetClass();
 
-    // Initialize the new MethodDesc
-
-     // This method runs on a debugger thread. Debugger threads do not have Thread object that caches StackingAllocator.
-     // Use a local StackingAllocator instead.
+        // This method runs on a debugger thread. Debugger threads do not have Thread object
+        // that caches StackingAllocator, use a local StackingAllocator instead.
     StackingAllocator stackingAllocator;
 
     MethodTableBuilder::bmtInternalInfo bmtInternal;
-    bmtInternal.pModule = pMT->GetModule();
+    bmtInternal.pModule = pModule;
     bmtInternal.pInternalImport = NULL;
     bmtInternal.pParentMT = NULL;
 
     MethodTableBuilder builder(pMT,
-                               pClass,
-                               &stackingAllocator,
-                               &dummyAmTracker);
+                                pClass,
+                                &stackingAllocator,
+                                &dummyAmTracker);
 
     builder.SetBMTData(pMT->GetLoaderAllocator(),
-                       NULL,
-                       NULL,
-                       NULL,
-                       NULL,
-                       NULL,
-                       NULL,
-                       NULL,
-                       NULL,
-                       NULL,
-                       &bmtInternal);
+                        NULL,
+                        NULL,
+                        NULL,
+                        NULL,
+                        NULL,
+                        NULL,
+                        NULL,
+                        NULL,
+                        NULL,
+                        &bmtInternal);
 
+    // Initialize the new MethodDesc
     EX_TRY
     {
-        INDEBUG(LPCSTR debug_szFieldName);
-        INDEBUG(if (FAILED(pImport->GetNameOfMethodDef(methodDef, &debug_szFieldName))) { debug_szFieldName = "Invalid MethodDef record"; });
+        INDEBUG(LPCSTR debug_szMethodName);
+        INDEBUG(if (FAILED(pImport->GetNameOfMethodDef(methodDef, &debug_szMethodName))) { debug_szMethodName = "Invalid MethodDef record"; });
         builder.InitMethodDesc(pNewMD,
-                               classification,
-                               methodDef,
-                               dwImplFlags,
-                               dwMemberAttrs,
-                               TRUE,    // fEnC
-                               newRVA,
-                               pImport,
-                               NULL
-                               COMMA_INDEBUG(debug_szFieldName)
-                               COMMA_INDEBUG(pMT->GetDebugClassName())
-                               COMMA_INDEBUG(NULL)
-                              );
+                                classification,
+                                methodDef,
+                                dwImplFlags,
+                                dwMemberAttrs,
+                                TRUE,   // fEnC
+                                0,      // RVA - non-zero only for NDirect
+                                pImport,
+                                NULL
+                                COMMA_INDEBUG(debug_szMethodName)
+                                COMMA_INDEBUG(pMT->GetDebugClassName())
+                                COMMA_INDEBUG(NULL)
+                                );
 
         pNewMD->SetTemporaryEntryPoint(pAllocator, &dummyAmTracker);
 
@@ -665,18 +834,8 @@ HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA,
 
     pClass->AddChunk(pChunk);
 
-    // Store the new MethodDesc into the collection for this class
-    pModule->EnsureMethodDefCanBeStored(methodDef);
-    pModule->EnsuredStoreMethodDef(methodDef, pNewMD);
+    *ppNewMD = pNewMD;
 
-    LOG((LF_ENC, LL_INFO100, "EEClass::AddMethod new methoddesc %p for token %p\n", pNewMD, methodDef));
-
-    // Success - return the new MethodDesc
-    _ASSERTE( SUCCEEDED(hr) );
-    if (ppMethod)
-    {
-        *ppMethod = pNewMD;
-    }
     return S_OK;
 }
 
@@ -936,6 +1095,81 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
 #endif //_DEBUG
 } // ClassLoader::LoadExactParentAndInterfacesTransitively
 
+namespace
+{
+#ifdef EnC_SUPPORTED
+    void CreateAllEnCStaticFields(MethodTable* pMT, MethodTable* pMTCanon, EditAndContinueModule* pModule)
+    {
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(CheckPointer(pMT));
+            PRECONDITION(pMT->HasInstantiation());
+            PRECONDITION(CheckPointer(pMTCanon));
+            PRECONDITION(pMTCanon->IsCanonicalMethodTable());
+            PRECONDITION(CheckPointer(pModule));
+        }
+        CONTRACTL_END;
+
+        LOG((LF_ENC, LL_INFO100, "CreateAllEnCStaticFields: pMT:%p pMTCanon:%p\n", pMT, pMTCanon));
+
+#ifdef _DEBUG
+        // Sanity check there is relevant EnC data.
+        EnCEEClassData* pEnCClass = pModule->GetEnCEEClassData(pMTCanon);
+        _ASSERTE(pEnCClass != NULL && pEnCClass->GetAddedStaticFields() > 0);
+#endif // _DEBUG
+
+        // Iterate over the Canonical MethodTable and see if there are any EnC static fields
+        // we need to add to the current MethodTable.
+        EncApproxFieldDescIterator canonFieldIter(
+            pMTCanon,
+            ApproxFieldDescIterator::STATIC_FIELDS,
+            (EncApproxFieldDescIterator::FixUpEncFields | EncApproxFieldDescIterator::OnlyEncFields));
+        PTR_FieldDesc pCanonFD;
+        while ((pCanonFD = canonFieldIter.Next()) != NULL)
+        {
+            mdFieldDef canonTok = pCanonFD->GetMemberDef();
+
+            // Check if the current MethodTable already has an entry for
+            // this FieldDesc.
+            bool shouldAdd = true;
+            EncApproxFieldDescIterator mtFieldIter(
+                pMT,
+                ApproxFieldDescIterator::STATIC_FIELDS,
+                (EncApproxFieldDescIterator::FixUpEncFields | EncApproxFieldDescIterator::OnlyEncFields));
+            PTR_FieldDesc pFD;
+            while ((pFD = mtFieldIter.Next()) != NULL)
+            {
+                mdFieldDef tok = pFD->GetMemberDef();
+                if (tok == canonTok)
+                {
+                    shouldAdd = false;
+                    break;
+                }
+            }
+
+            // The FieldDesc already exists, no need to add.
+            if (!shouldAdd)
+                continue;
+
+            LOG((LF_ENC, LL_INFO100, "CreateAllEnCStaticFields: Must add pCanonFD:%p\n", pCanonFD));
+
+            {
+                GCX_COOP();
+                PTR_FieldDesc pNewFD;
+                HRESULT hr = EEClass::AddField(pMT, canonTok, &pNewFD);
+                if (FAILED(hr))
+                {
+                    LOG((LF_ENC, LL_INFO100, "CreateAllEnCStaticFields failed: 0x%08x\n", hr));
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST,
+                        W("Failed to add static field to instantiated type instance"));
+                }
+            }
+        }
+    }
+#endif // EnC_SUPPORTED
+}
+
 // CLASS_LOAD_EXACTPARENTS phase of loading:
 // * Load the base class at exact instantiation
 // * Recurse LoadExactParents up parent hierarchy
@@ -943,7 +1177,7 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
 // * Fixup vtable
 //
 /*static*/
-void ClassLoader::LoadExactParents(MethodTable *pMT)
+void ClassLoader::LoadExactParents(MethodTable* pMT)
 {
     CONTRACT_VOID
     {
@@ -965,6 +1199,23 @@ void ClassLoader::LoadExactParents(MethodTable *pMT)
     MethodTableBuilder::CopyExactParentSlots(pMT, pApproxParentMT);
 
     PropagateCovariantReturnMethodImplSlots(pMT);
+
+#ifdef EnC_SUPPORTED
+    // Generics for EnC - create static FieldDescs.
+    // Instance FieldDescs don't need to be created here because they
+    // are added during type load by reading the updated metadata tables.
+    if (pMT->HasInstantiation())
+    {
+        // Check if the MethodTable has any EnC static fields
+        PTR_MethodTable pMTCanon = pMT->GetCanonicalMethodTable();
+        if (pMTCanon->GetClass()->HasEnCStaticFields())
+        {
+            Module* pModule = pMT->GetModule();
+            if (pModule->IsEditAndContinueEnabled())
+                CreateAllEnCStaticFields(pMT, pMTCanon, (EditAndContinueModule*)pModule);
+        }
+    }
+#endif // EnC_SUPPORTED
 
     // We can now mark this type as having exact parents
     pMT->SetHasExactParent();

@@ -63,6 +63,7 @@ namespace System.Text.Json.SourceGeneration
 
         public JsonNumberHandling? NumberHandling { get; private set; }
         public JsonUnmappedMemberHandling? UnmappedMemberHandling { get; private set; }
+        public JsonObjectCreationHandling? PreferredPropertyObjectCreationHandling { get; private set; }
 
         public List<PropertyGenerationSpec>? PropertyGenSpecList { get; private set; }
 
@@ -131,6 +132,7 @@ namespace System.Text.Json.SourceGeneration
             ClassType classType,
             JsonNumberHandling? numberHandling,
             JsonUnmappedMemberHandling? unmappedMemberHandling,
+            JsonObjectCreationHandling? preferredPropertyObjectCreationHandling,
             List<PropertyGenerationSpec>? propertyGenSpecList,
             ParameterGenerationSpec[]? ctorParamGenSpecArray,
             List<PropertyInitializerGenerationSpec>? propertyInitializerSpecList,
@@ -156,6 +158,7 @@ namespace System.Text.Json.SourceGeneration
             IsPolymorphic = isPolymorphic;
             NumberHandling = numberHandling;
             UnmappedMemberHandling = unmappedMemberHandling;
+            PreferredPropertyObjectCreationHandling = preferredPropertyObjectCreationHandling;
             PropertyGenSpecList = propertyGenSpecList;
             PropertyInitializerSpecList = propertyInitializerSpecList;
             CtorParamGenSpecArray = ctorParamGenSpecArray;
