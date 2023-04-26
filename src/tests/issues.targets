@@ -3333,6 +3333,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/**">
+            <Issue>https://github.com/dotnet/runtime/issues/85316</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
+            <Issue>https://github.com/dotnet/runtime/issues/85316</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsWindows)' != 'true' " >

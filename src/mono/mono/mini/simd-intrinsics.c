@@ -1349,12 +1349,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!(!strcmp (m_class_get_name (cmethod->klass), "Vector128") || !strcmp (m_class_get_name (cmethod->klass), "Vector")))
 			return NULL;
 		switch (id) {
-		case SN_ConvertToDouble:
-		case SN_ConvertToInt32:
-		case SN_ConvertToInt64:
-		case SN_ConvertToSingle:
-		case SN_ConvertToUInt32:
-		case SN_ConvertToUInt64:
 		case SN_Create:
 		case SN_GetLower:
 		case SN_GetUpper:
@@ -1484,9 +1478,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_ConvertToDouble: {
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		if ((arg0_type != MONO_TYPE_I8) && (arg0_type != MONO_TYPE_U8))
 			return NULL;
+#if defined(TARGET_ARM64)
+		if (!COMPILE_LLVM (cfg)) {
+			return emit_simd_ins_for_sig (cfg, klass, OP_XUNOP, 
+				arg0_type == MONO_TYPE_I8 ? OP_CVT_SI_FP : OP_CVT_UI_FP, 
+				MONO_TYPE_R8, fsig, args);
+		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
 		int op = -1;
@@ -1501,9 +1502,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_ConvertToInt32: 
 	case SN_ConvertToUInt32: {
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		if (arg0_type != MONO_TYPE_R4)
 			return NULL;
+#if defined(TARGET_ARM64)
+		if (!COMPILE_LLVM (cfg)) {
+			return emit_simd_ins_for_sig (cfg, klass, OP_XUNOP, 
+				id == SN_ConvertToInt32 ? OP_CVT_FP_SI : OP_CVT_FP_UI, 
+				id == SN_ConvertToInt32 ? MONO_TYPE_I4 : MONO_TYPE_U4, 
+				fsig, args);
+		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		int op = id == SN_ConvertToInt32 ? OP_CVT_FP_SI : OP_CVT_FP_UI;
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
 #else
@@ -1512,9 +1521,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_ConvertToInt64:
 	case SN_ConvertToUInt64: {
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		if (arg0_type != MONO_TYPE_R8)
 			return NULL;
+#if defined(TARGET_ARM64)
+		if (!COMPILE_LLVM (cfg)) {
+			return emit_simd_ins_for_sig (cfg, klass, OP_XUNOP, 
+				id == SN_ConvertToInt64 ? OP_CVT_FP_SI : OP_CVT_FP_UI, 
+				id == SN_ConvertToInt64 ? MONO_TYPE_I8 : MONO_TYPE_U8, 
+				fsig, args);
+		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
 		int op = -1;
@@ -1528,9 +1545,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_ConvertToSingle: {
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		if ((arg0_type != MONO_TYPE_I4) && (arg0_type != MONO_TYPE_U4))
 			return NULL;
+#if defined(TARGET_ARM64)
+		if (!COMPILE_LLVM (cfg)) {
+			return emit_simd_ins_for_sig (cfg, klass, OP_XUNOP, 
+				arg0_type == MONO_TYPE_I4 ? OP_CVT_SI_FP : OP_CVT_UI_FP, 
+				MONO_TYPE_R4, fsig, args);
+		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		int op = arg0_type == MONO_TYPE_I4 ? OP_CVT_SI_FP : OP_CVT_UI_FP;
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
 #else
