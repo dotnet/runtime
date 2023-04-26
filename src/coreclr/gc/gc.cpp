@@ -6959,6 +6959,10 @@ void gc_heap::gc_thread_function ()
     assert (gc_start_event.IsValid());
     dprintf (3, ("gc thread started"));
 
+    const unsigned ALLOC_CONTEXTS_USED_SAMPLE_SIZE = 3;
+    int alloc_contexts_used_samples[ALLOC_CONTEXTS_USED_SAMPLE_SIZE];
+    unsigned sample_index = 0;
+
     heap_select::init_cpu_mapping(heap_number);
 
     while (1)
@@ -7095,7 +7099,14 @@ void gc_heap::gc_thread_function ()
                 gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
             }
 #ifdef DYNAMIC_HEAP_COUNT
-            if ((settings.gc_index >= (prev_change_heap_count_gc_index + 20))
+            int total_alloc_contexts_used = 0;
+            for (int i = 0; i < n_heaps; i++)
+            {
+                total_alloc_contexts_used += (int)g_heaps[i]->alloc_contexts_used;
+            }
+            alloc_contexts_used_samples[sample_index] = total_alloc_contexts_used;
+            sample_index = (sample_index + 1) % ALLOC_CONTEXTS_USED_SAMPLE_SIZE;
+            if ((settings.gc_index >= (prev_change_heap_count_gc_index + ALLOC_CONTEXTS_USED_SAMPLE_SIZE))
                 && !gc_heap::background_running_p()
                 && GCConfig::GetHeapCount() == 0)
             {
@@ -7106,14 +7117,26 @@ void gc_heap::gc_thread_function ()
             // quick hack for initial testing
                 int new_n_heaps = (int)gc_rand::get_rand (n_max_heaps - 1) + 1;
 #else //STRESS_DYNAMIC_HEAP_COUNT
-                // as a rough approximation, just use the total number of allocating threads
-                int total_alloc_contexts_used = 0;
-                for (int i = 0; i < n_heaps; i++)
+
+                // use the median of the number of allocating threads in the last 3 cycles
+                int max_alloc_contexts_used = 0;
+                int min_alloc_contexts_used = 1000;
+                for (size_t i = 0; i < ALLOC_CONTEXTS_USED_SAMPLE_SIZE; i++)
                 {
-                    total_alloc_contexts_used += (int)g_heaps[i]->alloc_contexts_used;
+                    max_alloc_contexts_used = max (max_alloc_contexts_used, alloc_contexts_used_samples[i]);
+                    min_alloc_contexts_used = min (min_alloc_contexts_used, alloc_contexts_used_samples[i]);
                 }
+                int median_alloc_contexts_used = min_alloc_contexts_used;
+                for (size_t i = 0; i < ALLOC_CONTEXTS_USED_SAMPLE_SIZE; i++)
+                {
+                    if (min_alloc_contexts_used < alloc_contexts_used_samples[i] && alloc_contexts_used_samples[i] < max_alloc_contexts_used)
+                    {
+                        median_alloc_contexts_used = alloc_contexts_used_samples[i];
+                    }
+                }
+
                 int extra_heaps = 1 + (n_max_heaps >= 32);
-                int new_n_heaps = total_alloc_contexts_used;
+                int new_n_heaps = median_alloc_contexts_used;
                 if (new_n_heaps > n_heaps)
                 {
                     // we want to increase the heap count gradually
@@ -10885,7 +10908,7 @@ void gc_heap::grow_mark_list ()
 #endif //USE_VXSORT
 
     size_t new_mark_list_size = min (mark_list_size * 2, MAX_MARK_LIST_SIZE);
-    size_t new_mark_list_total_size = mark_list_size*n_heaps;
+    size_t new_mark_list_total_size = new_mark_list_size*n_heaps;
     if (new_mark_list_total_size == g_mark_list_total_size)
         return;
 
@@ -14203,7 +14226,12 @@ gc_heap::init_semi_shared()
 
 #ifdef MULTIPLE_HEAPS
     mark_list_size = min (100*1024, max (8192, soh_segment_size/(2*10*32)));
+#ifdef DYNAMIC_HEAP_COUNT
+    // we'll actually start with one heap in this case
+    g_mark_list_total_size = mark_list_size;
+#else //DYNAMIC_HEAP_COUNT
     g_mark_list_total_size = mark_list_size*n_heaps;
+#endif //DYNAMIC_HEAP_COUNT
     g_mark_list = make_mark_list (g_mark_list_total_size);
 
     min_balance_threshold = alloc_quantum_balance_units * CLR_SIZE * 2;
@@ -28191,7 +28219,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         if (g_mark_list_piece != nullptr)
         {
 #ifdef MULTIPLE_HEAPS
-            // two arrays with alloc_count entries per heap
+            // two arrays with g_mark_list_piece_size entries per heap
             mark_list_piece_start = &g_mark_list_piece[heap_number * 2 * g_mark_list_piece_size];
             mark_list_piece_end = &mark_list_piece_start[g_mark_list_piece_size];
 #endif //MULTIPLE_HEAPS
@@ -50338,7 +50366,7 @@ bool CFinalize::SplitFinalizationData (CFinalize* other_fq)
         }
         delete[] other_fq->m_Array;
         other_fq->m_Array = newArray;
-        other_fq->m_EndArray = &m_Array[otherNeededArraySize];
+        other_fq->m_EndArray = &other_fq->m_Array[otherNeededArraySize];
     }
 
     // move half of the items in each section over to the other queue
