@@ -4584,7 +4584,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
                                 assert(shiftOp2->isContained());
 
                                 emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), shiftOp1->GetRegNum(),
-                                                    shiftOp2->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(oper));
+                                                    shiftOp2->AsIntConCommon()->IntegralValue(),
+                                                    ShiftOpToInsOpts(oper));
                             }
                             break;
 
