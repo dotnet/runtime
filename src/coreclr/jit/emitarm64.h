@@ -853,16 +853,16 @@ void emitIns_S_S_R_R(
     instruction ins, emitAttr attr, emitAttr attr2, regNumber ireg, regNumber ireg2, int varx, int offs);
 
 void emitIns_R_R_R_I_LdStPair(instruction ins,
-                        emitAttr    attr,
-                        emitAttr    attr2,
-                        regNumber   reg1,
-                        regNumber   reg2,
-                        regNumber   reg3,
-                        ssize_t     imm,
-                        int         varx1 = -1,
-                        int         varx2 = -1,
-                        int         offs1 = -1,
-                        int         offs2 = -1);
+                              emitAttr    attr,
+                              emitAttr    attr2,
+                              regNumber   reg1,
+                              regNumber   reg2,
+                              regNumber   reg3,
+                              ssize_t     imm,
+                              int         varx1 = -1,
+                              int         varx2 = -1,
+                              int         offs1 = -1,
+                              int         offs2 = -1);
 
 void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 

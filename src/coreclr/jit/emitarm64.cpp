@@ -6499,7 +6499,7 @@ void emitter::emitIns_R_R_R(
 
 /*****************************************************************************
  *
- *  
+ *
  */
 //-----------------------------------------------------------------------------------
 // emitIns_R_R_R_I_LdStPair: Add an instruction storing 2 registers into a memory
@@ -6519,16 +6519,16 @@ void emitter::emitIns_R_R_R(
 //     offs2    - Memory offset of lclvar number 2
 //
 void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
-                                 emitAttr    attr,
-                                 emitAttr    attr2,
-                                 regNumber   reg1,
-                                 regNumber   reg2,
-                                 regNumber   reg3,
-                                 ssize_t     imm,
-                                 int         varx1,
-                                 int         varx2,
-                                 int         offs1,
-                                 int         offs2)
+                                       emitAttr    attr,
+                                       emitAttr    attr2,
+                                       regNumber   reg1,
+                                       regNumber   reg2,
+                                       regNumber   reg3,
+                                       ssize_t     imm,
+                                       int         varx1,
+                                       int         varx2,
+                                       int         offs1,
+                                       int         offs2)
 {
     assert((ins == INS_stp) || (ins == INS_ldp));
     emitAttr  size  = EA_SIZE(attr);
@@ -11878,7 +11878,7 @@ SKIP_GC_UPDATE:
         }
         if (emitInsWritesToLclVarStackLocPair(id))
         {
-            int      varNum2 = varNum;            
+            int      varNum2 = varNum;
             int      adr2    = adr;
             unsigned ofs2    = ofs;
             unsigned ofs2Dist;
@@ -11900,7 +11900,7 @@ SKIP_GC_UPDATE:
                 // If there are 2 GC vars in this instrDesc, get the 2nd variable
                 // that should be tracked.
                 adr2     = emitComp->lvaFrameAddress(varNum2, &FPbased2);
-                ofs2Dist = EA_SIZE_IN_BYTES(size);                
+                ofs2Dist = EA_SIZE_IN_BYTES(size);
 #ifdef DEBUG
                 assert(FPbased == FPbased2);
                 if (FPbased)
@@ -11911,7 +11911,7 @@ SKIP_GC_UPDATE:
                 {
                     assert(id->idReg3() == REG_SP);
                 }
-                assert(varNum2 != -1);                
+                assert(varNum2 != -1);
 #endif // DEBUG
             }
             else
@@ -16529,13 +16529,13 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
 
     if (optimizationOrder == eRO_ascending)
     {
-        emitIns_R_R_R_I_LdStPair(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum,
-                           varx, prevOffset, offs);
+        emitIns_R_R_R_I_LdStPair(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum, varx,
+                                 prevOffset, offs);
     }
     else
     {
-        emitIns_R_R_R_I_LdStPair(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, varx, prevLclVarNum, offs,
-                           prevOffset);
+        emitIns_R_R_R_I_LdStPair(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, varx, prevLclVarNum,
+                                 offs, prevOffset);
     }
 
     return true;
