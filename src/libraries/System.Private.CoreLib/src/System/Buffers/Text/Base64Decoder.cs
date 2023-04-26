@@ -351,7 +351,6 @@ namespace System.Buffers.Text
             }
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
         private static unsafe void Avx2Decode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)

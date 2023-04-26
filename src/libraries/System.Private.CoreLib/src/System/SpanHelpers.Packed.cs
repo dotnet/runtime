@@ -785,7 +785,6 @@ namespace System
             return -1;
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
         private static Vector256<byte> PackSources(Vector256<short> source0, Vector256<short> source1)
@@ -828,7 +827,6 @@ namespace System
             return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeFirstIndex(ref short searchSpace, ref short current, Vector256<byte> equals)
         {
@@ -851,7 +849,6 @@ namespace System
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeFirstIndexOverlapped(ref short searchSpace, ref short current0, ref short current1, Vector256<byte> equals)
         {
@@ -866,7 +863,6 @@ namespace System
             return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
         }
 
-        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [System.Runtime.BypassReadyToRunForIntrinsicsHelperUse(typeof(Avx2))]
         private static Vector256<byte> FixUpPackedVector256Result(Vector256<byte> result)
