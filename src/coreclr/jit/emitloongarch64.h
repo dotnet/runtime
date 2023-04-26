@@ -20,14 +20,9 @@ struct CnsVal
 };
 
 #ifdef DEBUG
-
 /************************************************************************/
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
-
-const char* emitFPregName(unsigned reg, bool varName = true);
-const char* emitVectorRegName(regNumber reg);
-
 void emitDisInsName(code_t code, const BYTE* addr, instrDesc* id);
 #endif // DEBUG
 
