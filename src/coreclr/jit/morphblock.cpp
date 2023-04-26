@@ -1304,102 +1304,11 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
     bool useAsg = m_asg->OperIs(GT_ASG);
     for (unsigned i = 0; i < fieldCnt; ++i)
     {
-        GenTree* dstFld;
-        if (m_dstDoFldAsg)
+        if (m_dstDoFldAsg && m_comp->fgGlobalMorph && m_dstLclNode->IsLastUse(i))
         {
-            noway_assert((m_dstLclNum != BAD_VAR_NUM) && (dstAddr == nullptr));
-
-            unsigned dstFieldLclNum = m_comp->lvaGetDesc(m_dstLclNum)->lvFieldLclStart + i;
-            if (m_comp->fgGlobalMorph && m_dstLclNode->IsLastUse(i))
-            {
-                JITDUMP("Field-by-field copy skipping write to dead field V%02u\n", dstFieldLclNum);
-                continue;
-            }
-
-            dstFld = m_comp->gtNewLclvNode(dstFieldLclNum, m_comp->lvaGetDesc(dstFieldLclNum)->TypeGet());
-
-            // If it had been labeled a "USEASG", assignments to the individual promoted fields are not.
-            dstFld->gtFlags |= m_dstLclNode->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK);
-
-            // Don't CSE the lhs of an assignment.
-            dstFld->gtFlags |= GTF_DONT_CSE;
-        }
-        else
-        {
-            noway_assert(m_srcDoFldAsg);
-
-            if (m_dstSingleLclVarAsg)
-            {
-                noway_assert(fieldCnt == 1);
-                noway_assert(m_dstVarDsc != nullptr);
-                noway_assert(addrSpill == nullptr);
-
-                dstFld = m_comp->gtNewLclvNode(m_dstLclNum, m_dstVarDsc->TypeGet());
-            }
-            else
-            {
-                GenTree* dstAddrClone = nullptr;
-                if (!m_dstUseLclFld)
-                {
-                    // Need address of the destination.
-                    if (addrSpill)
-                    {
-                        assert(addrSpillTemp != BAD_VAR_NUM);
-                        dstAddrClone = m_comp->gtNewLclvNode(addrSpillTemp, TYP_BYREF);
-                    }
-                    else
-                    {
-                        if (result == nullptr)
-                        {
-                            // Reuse the original "dstAddr" tree for the first field.
-                            dstAddrClone = dstAddr;
-                        }
-                        else
-                        {
-                            // We can't clone multiple copies of a tree with persistent side effects
-                            noway_assert((dstAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
-
-                            dstAddrClone = m_comp->gtCloneExpr(dstAddr);
-                            noway_assert(dstAddrClone != nullptr);
-
-                            JITDUMP("dstAddr - Multiple Fields Clone created:\n");
-                            DISPTREE(dstAddrClone);
-
-                            // Morph the newly created tree
-                            dstAddrClone = m_comp->fgMorphTree(dstAddrClone);
-                        }
-                    }
-                }
-
-                LclVarDsc* srcVarDsc      = m_comp->lvaGetDesc(m_srcLclNum);
-                unsigned   srcFieldLclNum = srcVarDsc->lvFieldLclStart + i;
-                LclVarDsc* srcFieldVarDsc = m_comp->lvaGetDesc(srcFieldLclNum);
-                unsigned   srcFieldOffset = srcFieldVarDsc->lvFldOffset;
-                var_types  srcType        = srcFieldVarDsc->TypeGet();
-
-                if (!m_dstUseLclFld)
-                {
-                    if (srcFieldOffset != 0)
-                    {
-                        GenTree* fieldOffsetNode = m_comp->gtNewIconNode(srcFieldVarDsc->lvFldOffset, TYP_I_IMPL);
-                        dstAddrClone = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, dstAddrClone, fieldOffsetNode);
-                    }
-
-                    dstFld = m_comp->gtNewIndir(srcType, dstAddrClone);
-                }
-                else
-                {
-                    assert(dstAddrClone == nullptr);
-
-                    // If the dst was a struct type field "B" in a struct "A" then we add
-                    // add offset of ("B" in "A") + current offset in "B".
-                    unsigned totalOffset = m_dstLclOffset + srcFieldOffset;
-                    dstFld               = m_comp->gtNewLclFldNode(m_dstLclNum, srcType, totalOffset);
-
-                    // TODO-1stClassStructs: remove this and implement storing to a field in a struct in a reg.
-                    m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
-                }
-            }
+            INDEBUG(unsigned dstFieldLclNum = m_comp->lvaGetDesc(m_dstLclNum)->lvFieldLclStart + i);
+            JITDUMP("Field-by-field copy skipping write to dead field V%02u\n", dstFieldLclNum);
+            continue;
         }
 
         GenTree* srcFld = nullptr;
@@ -1512,6 +1421,98 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             }
         }
         assert(srcFld != nullptr);
+
+        GenTree* dstFld;
+        if (m_dstDoFldAsg)
+        {
+            noway_assert((m_dstLclNum != BAD_VAR_NUM) && (dstAddr == nullptr));
+
+            unsigned dstFieldLclNum = m_comp->lvaGetDesc(m_dstLclNum)->lvFieldLclStart + i;
+            dstFld = m_comp->gtNewLclvNode(dstFieldLclNum, m_comp->lvaGetDesc(dstFieldLclNum)->TypeGet());
+
+            // If it had been labeled a "USEASG", assignments to the individual promoted fields are not.
+            dstFld->gtFlags |= m_dstLclNode->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK);
+
+            // Don't CSE the lhs of an assignment.
+            dstFld->gtFlags |= GTF_DONT_CSE;
+        }
+        else
+        {
+            noway_assert(m_srcDoFldAsg);
+
+            if (m_dstSingleLclVarAsg)
+            {
+                noway_assert(fieldCnt == 1);
+                noway_assert(m_dstVarDsc != nullptr);
+                noway_assert(addrSpill == nullptr);
+
+                dstFld = m_comp->gtNewLclvNode(m_dstLclNum, m_dstVarDsc->TypeGet());
+            }
+            else
+            {
+                GenTree* dstAddrClone = nullptr;
+                if (!m_dstUseLclFld)
+                {
+                    // Need address of the destination.
+                    if (addrSpill)
+                    {
+                        assert(addrSpillTemp != BAD_VAR_NUM);
+                        dstAddrClone = m_comp->gtNewLclvNode(addrSpillTemp, TYP_BYREF);
+                    }
+                    else
+                    {
+                        if (result == nullptr)
+                        {
+                            // Reuse the original "dstAddr" tree for the first field.
+                            dstAddrClone = dstAddr;
+                        }
+                        else
+                        {
+                            // We can't clone multiple copies of a tree with persistent side effects
+                            noway_assert((dstAddr->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0);
+
+                            dstAddrClone = m_comp->gtCloneExpr(dstAddr);
+                            noway_assert(dstAddrClone != nullptr);
+
+                            JITDUMP("dstAddr - Multiple Fields Clone created:\n");
+                            DISPTREE(dstAddrClone);
+
+                            // Morph the newly created tree
+                            dstAddrClone = m_comp->fgMorphTree(dstAddrClone);
+                        }
+                    }
+                }
+
+                LclVarDsc* srcVarDsc      = m_comp->lvaGetDesc(m_srcLclNum);
+                unsigned   srcFieldLclNum = srcVarDsc->lvFieldLclStart + i;
+                LclVarDsc* srcFieldVarDsc = m_comp->lvaGetDesc(srcFieldLclNum);
+                unsigned   srcFieldOffset = srcFieldVarDsc->lvFldOffset;
+                var_types  srcType        = srcFieldVarDsc->TypeGet();
+
+                if (!m_dstUseLclFld)
+                {
+                    if (srcFieldOffset != 0)
+                    {
+                        GenTree* fieldOffsetNode = m_comp->gtNewIconNode(srcFieldOffset, TYP_I_IMPL);
+                        dstAddrClone = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, dstAddrClone, fieldOffsetNode);
+                    }
+
+                    dstFld = m_comp->gtNewIndir(srcType, dstAddrClone);
+                }
+                else
+                {
+                    assert(dstAddrClone == nullptr);
+
+                    // If the dst was a struct type field "B" in a struct "A" then we add
+                    // add offset of ("B" in "A") + current offset in "B".
+                    unsigned totalOffset = m_dstLclOffset + srcFieldOffset;
+                    dstFld               = m_comp->gtNewLclFldNode(m_dstLclNum, srcType, totalOffset);
+
+                    // TODO-1stClassStructs: remove this and implement storing to a field in a struct in a reg.
+                    m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+                }
+            }
+        }
         noway_assert(dstFld->TypeGet() == srcFld->TypeGet());
 
         GenTreeOp* storeOneFld = m_comp->gtNewAssignNode(dstFld, srcFld);
