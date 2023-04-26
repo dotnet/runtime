@@ -69,6 +69,13 @@ DECLARE_INTERFACE_(IMetaDataEmit3, IMetaDataEmit2)
         USHORT      index,                  // [IN] Variable index (slot).
         char        *name,                  // [IN] Variable name.
         mdLocalVariable *locVarToken) PURE; // [OUT] Token of the defined variable.
+
+    STDMETHOD(ComputeSha256PdbStreamChecksum)(                                          // S_OK or error.
+        HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize), // [IN]
+        BYTE (&checksum)[32]) PURE;                                                     // [OUT] 256-bit Pdb checksum
+
+    STDMETHOD(ChangePdbStreamGuid)(         // S_OK or error.
+        REFGUID newGuid) PURE;              // [IN] GUID to use as the PDB GUID
 };
 
 //-------------------------------------

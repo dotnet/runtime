@@ -1132,6 +1132,13 @@ public:
         USHORT      index,                  // [IN] Variable index (slot).
         char        *name,                  // [IN] Variable name.
         mdLocalVariable *locVarToken);      // [OUT] Token of the defined variable.
+
+    STDMETHODIMP ComputeSha256PdbStreamChecksum(                                        // S_OK or error.
+        HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize), // [IN]
+        BYTE (&checksum)[32]);                                                          // [OUT] 256-bit Pdb checksum
+
+    STDMETHODIMP ChangePdbStreamGuid(       // S_OK or error.
+        REFGUID newGuid);                   // [IN] GUID to use as the PDB GUID
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 //*****************************************************************************
@@ -1290,13 +1297,6 @@ public:
         char        *path,                  // [IN] Path string to search.
         char        *separator,             // [OUT] Separator used in path string, NULL if none.
         ULONG       *partsCount);           // [OUT] Number of parts separated by the separator.
-
-    STDMETHODIMP ComputeSha256PdbChecksum(  // S_OK or error.
-        HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize),
-        BYTE (&checksum)[32]);
-
-    STDMETHODIMP ChangePdbGuid(             // S_OK or error.
-        REFGUID newGuid);                   // GUID to use as the PDB GUID
 #endif
 
 //*****************************************************************************

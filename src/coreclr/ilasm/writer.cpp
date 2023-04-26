@@ -80,15 +80,6 @@ HRESULT Assembler::InitMetaData()
             // Default values for determinism.
             m_pPortablePdbWriter->SetGuid(GUID());
             m_pPortablePdbWriter->SetTimestamp(0);
-
-            hr = m_pPortablePdbWriter->GetEmitter()->QueryInterface(IID_IMDInternalEmit, (void**)&m_pInternalEmitForDeterministicPdb);
-
-            if (FAILED(hr) || (m_pInternalEmitForDeterministicPdb == NULL))
-            {
-                fprintf(stderr, "Unexpected: Failed to query the required PDB GUID determinism interface: %X\n",hr);
-                hr = E_FAIL;
-                goto exit;
-            }
         }
     }
 
@@ -1331,16 +1322,13 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
         if (FAILED(hr = m_pCeeFileGen->GetEntryPoint(m_pCeeFile, &entryPoint))) goto exit;
         if (FAILED(hr = m_pPortablePdbWriter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
 
+        BYTE pdbChecksum[32];
+        if (FAILED(hr = m_pPortablePdbWriter->ComputeSha256PdbStreamChecksum(pdbChecksum))) goto exit;
+
         if (m_fDeterministic)
         {
-            _ASSERTE(m_pInternalEmitForDeterministicPdb != NULL);
-
-            BYTE pdbChecksum[32];
-            if (FAILED(hr = m_pInternalEmitForDeterministicPdb->ComputeSha256PdbChecksum(Sha256Hash, pdbChecksum))) goto exit;
-
             GUID pdbGuid = *((GUID*)&pdbChecksum);
-            if (FAILED(hr = m_pInternalEmitForDeterministicPdb->ChangePdbGuid(pdbGuid))) goto exit;
-            m_pPortablePdbWriter->SetGuid(pdbGuid);
+            if (FAILED(hr = m_pPortablePdbWriter->ChangePdbStreamGuid(pdbGuid))) goto exit;
         }
     }
 
@@ -1669,8 +1657,8 @@ exit:
 HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
 #if !defined(_WIN32)
-    // TODO: Use openssl.
-    return 0;
+    // TODO: Use openssl?
+    return S_OK;
 #else
     NTSTATUS status;
     

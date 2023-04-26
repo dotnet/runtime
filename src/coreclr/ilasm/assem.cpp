@@ -29,7 +29,6 @@ Assembler::Assembler()
     m_pDisp = NULL;
     m_pEmitter = NULL;
     m_pInternalEmitForDeterministicMvid = NULL;
-    m_pInternalEmitForDeterministicPdb = NULL;
     m_pImporter = NULL;
 
     char* pszFQN = new char[16];
@@ -214,11 +213,6 @@ Assembler::~Assembler()
     {
         m_pInternalEmitForDeterministicMvid->Release();
         m_pInternalEmitForDeterministicMvid = NULL;
-    }
-    if (m_pInternalEmitForDeterministicPdb != NULL)
-    {
-        m_pInternalEmitForDeterministicPdb->Release();
-        m_pInternalEmitForDeterministicPdb = NULL;
     }
     if (m_pPortablePdbWriter != NULL)
     {

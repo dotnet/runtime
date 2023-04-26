@@ -415,31 +415,6 @@ RegMeta::GetPathSeparator(
     return S_OK;
 } // RegMeta::GetPathSeparator
 
-//*******************************************************************************
-// helper to compute the checksum for the PDB
-//
-// Implements internal API code:IMDInternalEmit::ComputeSha256Checksum.
-//*******************************************************************************
-HRESULT
-RegMeta::ComputeSha256PdbChecksum(            // S_OK or error.
-        HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize),
-        BYTE (&checksum)[32])
-{
-    return m_pStgdb->m_pPdbHeap->ComputeSha256Checksum(computeSha256, checksum);
-}
-
-//*******************************************************************************
-// helper to set the PDB GUID
-//
-// Implements internal API code:IMDInternalEmit::ComputePdbGuid.
-//*******************************************************************************
-HRESULT
-RegMeta::ChangePdbGuid(            // S_OK or error.
-        REFGUID newGuid)
-{
-    return m_pStgdb->m_pPdbHeap->SetDataGuid(newGuid);
-}
-
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 #endif //FEATURE_METADATA_EMIT && FEATURE_METADATA_INTERNAL_APIS

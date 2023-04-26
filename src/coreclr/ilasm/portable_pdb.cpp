@@ -153,6 +153,17 @@ exit:
     return hr;
 }
 
+HRESULT PortablePdbWriter::ComputeSha256PdbStreamChecksum(BYTE(&checksum)[32])
+{
+    return m_pdbEmitter->ComputeSha256PdbStreamChecksum(Sha256Hash, checksum);
+}
+
+HRESULT PortablePdbWriter::ChangePdbStreamGuid(REFGUID newGuid)
+{
+    m_pdbStream.id.pdbGuid = newGuid;
+    return m_pdbEmitter->ChangePdbStreamGuid(newGuid);
+}
+
 HRESULT PortablePdbWriter::DefineDocument(char* name, GUID* language)
 {
     HRESULT hr = S_OK;
