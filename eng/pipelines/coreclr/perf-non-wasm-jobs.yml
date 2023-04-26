@@ -111,7 +111,7 @@ jobs:
       platforms:
       - ios-arm64
       jobParameters:
-        buildArgs: -s mono+libs -c $(_BuildConfig)
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: iOSNativeAOT
         isOfficialBuild: false
         extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
@@ -183,20 +183,20 @@ jobs:
   #       iOSLlvmBuild: True
 
   # run NativeAOT iOS scenarios scenarios
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-        - osx_x64
-      jobParameters:
-        testGroup: perf
-        runtimeType: iOSNativeAOT
-        projectFile: ios_nativeaot_scenarios.proj
-        runKind: ios_scenarios
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        logicalmachine: 'perfiphone12mini'
+  # - template: /eng/pipelines/common/platform-matrix.yml
+  #   parameters:
+  #     jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+  #     buildConfig: release
+  #     runtimeFlavor: coreclr
+  #     platforms:
+  #       - osx_x64
+  #     jobParameters:
+  #       testGroup: perf
+  #       runtimeType: iOSNativeAOT
+  #       projectFile: ios_nativeaot_scenarios.proj
+  #       runKind: ios_scenarios
+  #       runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+  #       logicalmachine: 'perfiphone12mini'
 
   # # run mono microbenchmarks perf job
   # - template: /eng/pipelines/common/platform-matrix.yml
