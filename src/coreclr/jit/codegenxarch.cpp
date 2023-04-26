@@ -3482,7 +3482,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         // Get the largest SIMD register available if the size is large enough
         unsigned regSize = compiler->roundDownSIMDSize(size);
-        if ((size < ZMM_RECOMMENDED_THRESHOLD)) && (regSize == ZMM_REGSIZE_BYTES))
+        if ((size < ZMM_RECOMMENDED_THRESHOLD) && (regSize == ZMM_REGSIZE_BYTES))
         {
             // If the size is less than the recommended threshold then use YMM registers
             // instead of ZMM registers to avoid AVX512 downclocking.
