@@ -2455,6 +2455,12 @@ PhaseStatus Compiler::fgInstrumentMethod()
         }
     }
 
+    // Even though we haven't yet instrumented, we may have made changes in anticipation...
+    //
+    const bool madeAnticipatoryChanges = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
+    const PhaseStatus earlyExitPhaseStatus =
+        madeAnticipatoryChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+
     // Optionally, when jitting, if there were no class probes and only one count probe,
     // suppress instrumentation.
     //
@@ -2478,13 +2484,14 @@ PhaseStatus Compiler::fgInstrumentMethod()
     {
         JITDUMP(
             "Not instrumenting method: minimal probing enabled, and method has only one counter and no class probes\n");
-        return PhaseStatus::MODIFIED_NOTHING;
+
+        return earlyExitPhaseStatus;
     }
 
     if (schema.size() == 0)
     {
         JITDUMP("Not instrumenting method: no schemas were created\n");
-        return PhaseStatus::MODIFIED_NOTHING;
+        return earlyExitPhaseStatus;
     }
 
     JITDUMP("Instrumenting method: %d count probes and %d class probes\n", fgCountInstrumentor->SchemaCount(),
@@ -2515,13 +2522,9 @@ PhaseStatus Compiler::fgInstrumentMethod()
         if (res != E_NOTIMPL)
         {
             noway_assert(!"Error: unexpected hresult from allocPgoInstrumentationBySchema");
-            return PhaseStatus::MODIFIED_NOTHING;
         }
 
-        // We may have modified control flow preparing for instrumentation.
-        //
-        const bool modifiedFlow = fgCountInstrumentor->ModifiedFlow() || fgHistogramInstrumentor->ModifiedFlow();
-        return modifiedFlow ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+        return earlyExitPhaseStatus;
     }
 
     JITDUMP("Instrumentation data base address is %p\n", dspPtr(profileMemory));
