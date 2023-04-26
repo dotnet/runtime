@@ -182,7 +182,7 @@ jobs:
   #       logicalmachine: 'perfiphone12mini'
   #       iOSLlvmBuild: True
 
-  # run NativeAOT iOS scenarios scenarios
+  # run NativeAOT iOS scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
