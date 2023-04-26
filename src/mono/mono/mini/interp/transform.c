@@ -9122,7 +9122,7 @@ interp_fold_unop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 	return ins;
 }
 
-#define INTERP_FOLD_UNOP_BR(_opcode,_local_type,_cond) \
+#define INTERP_FOLD_UNOP_BR(_opcode,_cond) \
 	case _opcode: \
 		if (_cond) { \
 			ins->opcode = MINT_BR; \
@@ -9144,18 +9144,30 @@ interp_fold_unop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue *
 	int sreg = ins->sregs [0];
 	LocalValue *val = &local_defs [sreg];
 
-	if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8)
+	if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8 && val->type != LOCAL_VALUE_NON_NULL)
 		return ins;
 
-	// Top of the stack is a constant
-	switch (ins->opcode) {
-		INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I4, LOCAL_VALUE_I4, val->i == 0);
-		INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I8, LOCAL_VALUE_I8, val->l == 0);
-		INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I4, LOCAL_VALUE_I4, val->i != 0);
-		INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I8, LOCAL_VALUE_I8, val->l != 0);
+	if (val->type == LOCAL_VALUE_NON_NULL) {
+		switch (ins->opcode) {
+			INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I4, FALSE);
+			INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I8, FALSE);
+			INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I4, TRUE);
+			INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I8, TRUE);
 
-		default:
-			return ins;
+			default:
+				return ins;
+		}
+	} else {
+		// Top of the stack is a constant
+		switch (ins->opcode) {
+			INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I4, val->i == 0);
+			INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I8, val->l == 0);
+			INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I4, val->i != 0);
+			INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I8, val->l != 0);
+
+			default:
+				return ins;
+		}
 	}
 
 	if (td->verbose_level) {
@@ -9921,6 +9933,9 @@ retry:
 					ins->opcode = MINT_MOV_P;
 					needs_retry = TRUE;
 				}
+			} else if (opcode == MINT_BOX) {
+				// TODO Add more relevant opcodes
+				local_defs [dreg].type = LOCAL_VALUE_NON_NULL;
 			}
 
 			ins_index++;
