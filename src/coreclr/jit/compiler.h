@@ -5101,7 +5101,7 @@ public:
     // assignment.)
     void fgValueNumberTree(GenTree* tree);
 
-    void fgValueNumberAssignment(GenTreeOp* tree);
+    void fgValueNumberStore(GenTree* tree);
 
     void fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl);
 
