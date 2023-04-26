@@ -1002,6 +1002,71 @@ namespace System.Numerics
             }
         }
 
+        private static string? FormatBigIntegerToBin(BigInteger value, int digits)
+        {
+            // Get the bytes that make up the BigInteger.
+            byte[]? arrayToReturnToPool = null;
+            Span<byte> bits = stackalloc byte[64]; // arbitrary threshold
+            if (!value.TryWriteOrCountBytes(bits, out int bytesWrittenOrNeeded))
+            {
+                bits = arrayToReturnToPool = ArrayPool<byte>.Shared.Rent(bytesWrittenOrNeeded);
+                bool success = value.TryWriteBytes(bits, out bytesWrittenOrNeeded);
+                Debug.Assert(success);
+            }
+            bits = bits.Slice(0, bytesWrittenOrNeeded);
+
+            Debug.Assert(!bits.IsEmpty);
+
+            byte highByte = bits[bits.Length - 1];
+            int charCount = highByte == 0 ? 1 : 8 - byte.LeadingZeroCount(highByte);
+            charCount += (bits.Length - 1) * 8;
+            if (digits > charCount)
+            {
+                charCount = digits;
+            }
+
+            // each byte is typically eight chars
+            var sb = new ValueStringBuilder(stackalloc char[Math.Min(charCount, 512)]);
+
+            if (charCount > 512)
+            {
+                sb = new ValueStringBuilder(charCount);
+            }
+
+            if (digits > charCount)
+            {
+                sb.Append(value._sign >= 0 ? '0' : '1', digits - charCount);
+            }
+
+            if (highByte == 0)
+            {
+                sb.Append('0');
+            }
+            else
+            {
+                AppendByte(ref sb, highByte, 7 - byte.LeadingZeroCount(highByte));
+            }
+
+            for (int i = bits.Length - 2; i >= 0; i--)
+            {
+                AppendByte(ref sb, bits[i]);
+            }
+
+            if (arrayToReturnToPool is not null)
+            {
+                ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
+            }
+            return sb.ToString();
+
+            static void AppendByte(ref ValueStringBuilder sb, byte b, int startHighBit = 7)
+            {
+                for (int i = startHighBit; i >= 0; i--)
+                {
+                    sb.Append((char)('0' + ((b >> i) & 0x1)));
+                }
+            }
+        }
+
         internal static string FormatBigInteger(BigInteger value, string? format, NumberFormatInfo info)
         {
             return FormatBigInteger(targetSpan: false, value, format, format, info, default, out _, out _)!;
