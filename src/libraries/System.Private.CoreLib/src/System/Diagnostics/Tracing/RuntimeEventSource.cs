@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
@@ -36,21 +37,40 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _timerCounter;
         private PollingCounter? _fragmentationCounter;
 
-#if !NATIVEAOT // TODO shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
         private PollingCounter? _committedCounter;
+#if !NATIVEAOT // TODO shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
         private IncrementingPollingCounter? _exceptionCounter;
+#endif // !NATIVEAOT
         private PollingCounter? _gcTimeCounter;
         private PollingCounter? _gen0SizeCounter;
         private PollingCounter? _gen1SizeCounter;
         private PollingCounter? _gen2SizeCounter;
         private PollingCounter? _lohSizeCounter;
         private PollingCounter? _pohSizeCounter;
+#if !NATIVEAOT // TODO shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
         private PollingCounter? _assemblyCounter;
 #endif // !NATIVEAOT
 
         private PollingCounter? _ilBytesJittedCounter;
         private PollingCounter? _methodsJittedCounter;
         private IncrementingPollingCounter? _jitTimeCounter;
+
+#if NATIVEAOT
+        /// <summary>
+        /// If EventSource feature is enabled, RuntimeEventSource needs to be initialized
+        /// In CoreCLR, this is done via StartupHookProvider.CoreCLR.cs
+        /// </summary>
+#pragma warning disable CA2255
+        [ModuleInitializer]
+        internal static void NativeAOTtartupHook()
+        {
+            if (EventSource.IsSupported)
+            {
+                Initialize();
+            }
+        }
+#pragma warning restore CA2255
+#endif
 
         public static void Initialize()
         {
@@ -71,13 +91,23 @@ namespace System.Diagnostics.Tracing
         }
 
         [Event((int)EventId.AppContextSwitch, Level = EventLevel.Informational, Keywords = Keywords.AppContext)]
-        internal void LogAppContextSwitch(string switchName, int value)
+#if NATIVEAOT
+        public
+#else
+        internal
+#endif
+        void LogAppContextSwitch(string switchName, int value)
         {
             base.WriteEvent((int)EventId.AppContextSwitch, switchName, value);
         }
 
         [Event((int)EventId.ProcessorCount, Level = EventLevel.Informational, Keywords = Keywords.ProcessorCount)]
-        internal void ProcessorCount(int processorCount)
+#if NATIVEAOT
+        public
+#else
+        internal
+#endif
+        void ProcessorCount(int processorCount)
         {
             base.WriteEvent((int)EventId.ProcessorCount, processorCount);
         }
@@ -108,15 +138,17 @@ namespace System.Diagnostics.Tracing
                     return gcInfo.HeapSizeBytes != 0 ? gcInfo.FragmentedBytes * 100d / gcInfo.HeapSizeBytes : 0;
                  }) { DisplayName = "GC Fragmentation", DisplayUnits = "%" };
 
-#if !NATIVEAOT // TODO
                 _committedCounter ??= new PollingCounter("gc-committed", this, () => ((double)GC.GetGCMemoryInfo().TotalCommittedBytes / 1_000_000)) { DisplayName = "GC Committed Bytes", DisplayUnits = "MB" };
+#if !NATIVEAOT // TODO
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
+#endif // !NATIVEAOT
                 _gcTimeCounter ??= new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };
                 _gen0SizeCounter ??= new PollingCounter("gen-0-size", this, () => GC.GetGenerationSize(0)) { DisplayName = "Gen 0 Size", DisplayUnits = "B" };
                 _gen1SizeCounter ??= new PollingCounter("gen-1-size", this, () => GC.GetGenerationSize(1)) { DisplayName = "Gen 1 Size", DisplayUnits = "B" };
                 _gen2SizeCounter ??= new PollingCounter("gen-2-size", this, () => GC.GetGenerationSize(2)) { DisplayName = "Gen 2 Size", DisplayUnits = "B" };
                 _lohSizeCounter ??= new PollingCounter("loh-size", this, () => GC.GetGenerationSize(3)) { DisplayName = "LOH Size", DisplayUnits = "B" };
                 _pohSizeCounter ??= new PollingCounter("poh-size", this, () => GC.GetGenerationSize(4)) { DisplayName = "POH (Pinned Object Heap) Size", DisplayUnits = "B" };
+#if !NATIVEAOT // TODO
                 _assemblyCounter ??= new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
 #endif // !NATIVEAOT
 

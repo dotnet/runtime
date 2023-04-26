@@ -70,6 +70,16 @@ namespace System
             return RuntimeImports.RhGetGeneration(obj);
         }
 
+        public static int GetGenerationSize(int gen)
+        {
+            return RuntimeImports.RhGetGenerationSize(gen);
+        }
+
+        public static int GetLastGCPercentTimeInGC()
+        {
+            return RuntimeImports.RhGetLastGCPercentTimeInGC();
+        }
+
         /// <summary>
         /// Returns the current generation number of the target
         /// of a specified <see cref="System.WeakReference"/>.
