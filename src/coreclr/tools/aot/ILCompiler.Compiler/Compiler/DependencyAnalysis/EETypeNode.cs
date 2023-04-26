@@ -738,16 +738,6 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeFlags.IDynamicInterfaceCastableFlag;
             }
 
-            ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
-
-            // If the related type (base type / array element type / pointee type) is not part of this compilation group, and
-            // the output binaries will be multi-file (not multiple object files linked together), indicate to the runtime
-            // that it should indirect through the import address table
-            if (relatedTypeNode != null && relatedTypeNode.RepresentsIndirectionCell)
-            {
-                flags |= (uint)EETypeFlags.RelatedTypeViaIATFlag;
-            }
-
             if (HasOptionalFields)
             {
                 flags |= (uint)EETypeFlags.OptionalFieldsFlag;
@@ -1074,7 +1064,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var itf in _type.RuntimeInterfaces)
             {
-                objData.EmitPointerRelocOrIndirectionReference(GetInterfaceTypeNode(factory, itf));
+                objData.EmitPointerReloc(GetInterfaceTypeNode(factory, itf));
             }
         }
 

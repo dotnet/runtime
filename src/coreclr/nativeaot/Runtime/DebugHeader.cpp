@@ -270,7 +270,6 @@ extern "C" void PopulateDebugHeaders()
     DotNetRuntimeDebugHeader.GlobalEntries = &s_GlobalEntries;
 
     static_assert(MethodTable::Flags::EETypeKindMask         == 0x00030000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
-    static_assert(MethodTable::Flags::RelatedTypeViaIATFlag  == 0x00040000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
     static_assert(MethodTable::Flags::HasFinalizerFlag       == 0x00100000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
     static_assert(MethodTable::Flags::HasPointersFlag        == 0x00200000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
     static_assert(MethodTable::Flags::GenericVarianceFlag    == 0x00800000, "The debugging data contract has a hard coded dependency on this value of MethodTable::Flags. If you change this value you must bump major_version_number.");
