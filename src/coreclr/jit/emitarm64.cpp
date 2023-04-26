@@ -11863,9 +11863,10 @@ SKIP_GC_UPDATE:
         }
         if (emitInsWritesToLclVarStackLocPair(id))
         {
-            int      varNum2 = varNum;
-            unsigned ofs2    = ofs + TARGET_POINTER_SIZE;
+            int      varNum2 = varNum;            
             int      adr2    = adr;
+            unsigned ofs2    = ofs;
+            unsigned ofs2Dist;
 
             if (id->idIsLclVarPair())
             {
@@ -11883,8 +11884,8 @@ SKIP_GC_UPDATE:
 
                 // If there are 2 GC vars in this instrDesc, get the 2nd variable
                 // that should be tracked.
-                adr2 = emitComp->lvaFrameAddress(varNum2, &FPbased2);
-                ofs2 = AlignDown(ofs2, size);
+                adr2     = emitComp->lvaFrameAddress(varNum2, &FPbased2);
+                ofs2Dist = EA_SIZE_IN_BYTES(size);                
 #ifdef DEBUG
                 assert(FPbased == FPbased2);
                 if (FPbased)
@@ -11895,17 +11896,28 @@ SKIP_GC_UPDATE:
                 {
                     assert(id->idReg3() == REG_SP);
                 }
-                assert(varNum2 != -1);
-                assert((adr + ofs + size) == (adr2 + ofs2));
+                assert(varNum2 != -1);                
 #endif // DEBUG
             }
             else
             {
-                assert((adr + ofs + TARGET_POINTER_SIZE) == (adr2 + ofs2));
+                ofs2Dist = TARGET_POINTER_SIZE;
+                ofs2 += ofs2Dist;
             }
+
+            ofs2 = AlignDown(ofs2, ofs2Dist);
 
             if (id->idGCrefReg2() != GCT_NONE)
             {
+#ifdef DEBUG
+                if (id->idGCref() != GCT_NONE)
+                {
+                    // If 1st register was a gc-var, then make sure the offset
+                    // are correctly set for the 2nd register that is holding
+                    // another gc-var.
+                    assert((adr + ofs + ofs2Dist) == (adr2 + ofs2));
+                }
+#endif
                 emitGCvarLiveUpd(adr2 + ofs2, varNum2, id->idGCrefReg2(), dst DEBUG_ARG(varNum2));
             }
             else
