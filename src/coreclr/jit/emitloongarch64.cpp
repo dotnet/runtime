@@ -5960,13 +5960,26 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
     }
 }
 
+/*****************************************************************************
+ *
+ * For LoongArch64, the `emitter::emitDispIns` only supports
+ * the `COMPlus_JitDump` and `DOTNET_JitDump`.
+ */
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
 {
-    // LA implements this similar by `emitter::emitDisInsName`.
-    // For LA maybe the `emitDispIns` is over complicate.
-    // The `emitter::emitDisInsName` is focused on the most important for debugging.
-    NYI_LOONGARCH64("LA not used the emitter::emitDispIns");
+    if (ig)
+    {
+        BYTE* addr = emitCodeBlock + offset + writeableOffset;
+
+        unsigned int size = id->idCodeSize();
+        while (size > 0)
+        {
+            emitDisInsName(*(code_t*)addr, addr, id);
+            addr += 4;
+            size -= 4;
+        }
+    }
 }
 
 /*****************************************************************************
