@@ -78,6 +78,14 @@ public class ConvertDllsToWebCil : Task
                 webcilItem.SetMetadata("RelativePath", Path.ChangeExtension(candidate.GetMetadata("RelativePath"), ".webcil"));
                 webcilItem.SetMetadata("OriginalItemSpec", finalWebcil);
 
+                if (webcilItem.GetMetadata("AssetTraitName") == "Culture")
+                {
+                    string relatedAsset = webcilItem.GetMetadata("RelatedAsset");
+                    relatedAsset = Path.ChangeExtension(relatedAsset, ".webcil");
+                    webcilItem.SetMetadata("RelatedAsset", relatedAsset);
+                    Log.LogMessage(MessageImportance.Low, $"Changing related asset of {webcilItem} to {relatedAsset}.");
+                }
+
                 webCilCandidates.Add(webcilItem);
             }
             else
