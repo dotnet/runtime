@@ -106,7 +106,7 @@ steps:
       $lineNumber = $targetLine.LineNumber
       $benchmarksDroidConfigFileContent[$lineNumber-1] += "
       <!-- Change AfterTargets back to 'UpdateTargetingAndRuntimePack' when reenabling pack injection -->
-      <Target Name=`"PrintRuntimePackLocation`" AfterTargets=`"ResolveFrameworkReferences`">
+      <Target Name=`"PrintRuntimePackLocation`" AfterTargets=`"UpdateTargetingAndRuntimePack`">
         <Message Text=`"Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)`" Importance=`"high`" />
       </Target>
 
