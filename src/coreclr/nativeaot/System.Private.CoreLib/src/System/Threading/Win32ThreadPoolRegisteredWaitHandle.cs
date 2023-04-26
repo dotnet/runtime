@@ -57,10 +57,6 @@ namespace System.Threading
             }
         }
 
-        [UnmanagedCallersOnly]
-        internal static void RegisteredWaitCallback(IntPtr instance, IntPtr context, IntPtr wait, uint waitResult) =>
-            RegisteredWaitCallbackCore(instance, context, wait, waitResult);
-
         internal unsafe void RestartWait() => RestartWaitCore();
 
         public bool Unregister(WaitHandle waitObject) => UnregisterCore(waitObject);

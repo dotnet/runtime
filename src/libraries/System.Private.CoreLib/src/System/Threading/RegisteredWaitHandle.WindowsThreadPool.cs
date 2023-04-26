@@ -16,11 +16,11 @@ namespace System.Threading
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
 #pragma warning disable IDE0060
-        private static void RegisteredWaitCallbackCore(IntPtr instance, IntPtr context, IntPtr wait, uint waitResult)
+        [UnmanagedCallersOnly]
+        internal static void RegisteredWaitCallback(IntPtr instance, IntPtr context, IntPtr wait, uint waitResult)
         {
-            // PR-Comment: Assuming this is no longer necessary, might be wrong about this
+            // Commenting this one might be wrong, not sure yet
             // var wrapper = ThreadPoolCallbackWrapper.Enter();
-
             GCHandle handle = (GCHandle)context;
             RegisteredWaitHandle registeredWaitHandle = (RegisteredWaitHandle)handle.Target!;
             Debug.Assert((handle == registeredWaitHandle._gcHandle) && (wait == registeredWaitHandle._tpWait));
@@ -34,7 +34,7 @@ namespace System.Threading
 
         private void PerformCallbackCore(bool timedOut)
         {
-
+            // New logic might be wrong here, not sure yet
             // If another thread is running Unregister, no need to restart the timer or clean up
             lock (_lock!)
             {

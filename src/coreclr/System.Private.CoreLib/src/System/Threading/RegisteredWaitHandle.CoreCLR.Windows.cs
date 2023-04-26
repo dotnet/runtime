@@ -134,10 +134,6 @@ namespace System.Threading
         /// </summary>
         internal PortableThreadPool.WaitThread? WaitThread { get; set; }
 
-        [UnmanagedCallersOnly]
-        internal static void RegisteredWaitCallback(IntPtr instance, IntPtr context, IntPtr wait, uint waitResult) =>
-            RegisteredWaitCallbackCore(instance, context, wait, waitResult);
-
         internal unsafe void RestartWait()
         {
             Debug.Assert(ThreadPool.UseWindowsThreadPool);
