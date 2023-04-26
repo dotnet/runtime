@@ -6536,12 +6536,8 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     assert(hoistExpr != origExpr);
     assert(hoistExpr->gtFlags & GTF_MAKE_CSE);
 
-    GenTree* hoist = hoistExpr;
-    // The value of the expression isn't used (unless it's an assignment).
-    if (hoistExpr->OperGet() != GT_ASG)
-    {
-        hoist = gtUnusedValNode(hoistExpr);
-    }
+    // The value of the expression isn't used.
+    GenTree* hoist = gtUnusedValNode(hoistExpr);
 
     /* Put the statement in the preheader */
 
@@ -7482,15 +7478,13 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             GenTree* tree = *use;
             JITDUMP("----- PostOrderVisit for [%06u] %s\n", dspTreeID(tree), GenTree::OpName(tree->OperGet()));
 
-            if (tree->OperIsLocal())
+            if (tree->OperIsLocalRead())
             {
                 GenTreeLclVarCommon* lclVar = tree->AsLclVarCommon();
                 unsigned             lclNum = lclVar->GetLclNum();
 
-                // To be invariant a LclVar node must not be the LHS of an assignment ...
-                bool isInvariant = !user->OperIs(GT_ASG) || (user->AsOp()->gtGetOp1() != tree);
-                // and the variable must be in SSA ...
-                isInvariant = isInvariant && lclVar->HasSsaName();
+                // To be invariant the variable must be in SSA ...
+                bool isInvariant = lclVar->HasSsaName();
                 // and the SSA definition must be outside the loop we're hoisting from ...
                 isInvariant = isInvariant &&
                               !m_compiler->optLoopTable[m_loopNum].lpContains(
@@ -7734,12 +7728,11 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 }
                 else if (tree->OperRequiresAsgFlag())
                 {
-                    // Assume all stores except "ASG(non-addr-exposed LCL, ...)" are globally visible.
-                    GenTreeLclVarCommon* lclNode;
-                    bool                 isGloballyVisibleStore;
-                    if (tree->OperIs(GT_ASG) && tree->DefinesLocal(m_compiler, &lclNode))
+                    // Assume all stores except "STORE_LCL_VAR<non-addr-exposed lcl>(...)" are globally visible.
+                    bool isGloballyVisibleStore;
+                    if (tree->OperIsLocalStore())
                     {
-                        isGloballyVisibleStore = m_compiler->lvaGetDesc(lclNode)->IsAddressExposed();
+                        isGloballyVisibleStore = m_compiler->lvaGetDesc(tree->AsLclVarCommon())->IsAddressExposed();
                     }
                     else
                     {
