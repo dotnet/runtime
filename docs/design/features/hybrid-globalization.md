@@ -210,10 +210,14 @@ Affected public APIs:
 
 Web API does not expose locale-sensitive indexing function. There is a discussion on adding it: https://github.com/tc39/ecma402/issues/506. In the current state, as a workaround, locale-sensitive string segmenter combined with locale-sensitive comparison is used. This approach, beyond having the same compare option limitations as described under **String comparison**, has additional limitations connected with the workaround used. Information about additional limitations:
 
+- Support depends on [`Intl.segmenter's support`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter#browser_compatibility).
+
 - `IgnoreSymbols`
+
 Only comparisons that ignore types of characters but do not skip them are allowed. E.g. `IgnoreCase` ignores type (case) of characters but `IgnoreSymbols` skips symbol-chars in comparison/indexing. All `CompareOptions` combinations that include `IgnoreSymbols` throw `PlatformNotSupportedException`.
 
 - Some letters consist of more than one grapheme.
+
 Using locale-sensitive segmenter `Intl.Segmenter(locale, { granularity: "grapheme" })` does not guarantee that string will be segmented by letters but by graphemes. E.g. in `cs-CZ` and `sk-SK` "ch" is 1 letter, 2 graphemes. The following code with `HybridGlobalization` switched off returns -1 (not found) while with `HybridGlobalization` switched on, it returns 1.
 
 ``` C#
