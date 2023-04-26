@@ -35,6 +35,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="..\Common\JsonKebabCaseUpperNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKebabCaseUpperNamingPolicy.cs" />
     <Compile Include="..\Common\JsonKnownNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonKnownNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNumberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonNumberHandling.cs" />
+    <Compile Include="..\Common\JsonObjectCreationHandling.cs" Link="Common\System\Text\Json\Serialization\JsonObjectCreationHandling.cs" />
     <Compile Include="..\Common\JsonUnmappedMemberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnmappedMemberHandling.cs" />
     <Compile Include="..\Common\JsonSeparatorNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSeparatorNamingPolicy.cs" />
     <Compile Include="..\Common\JsonSerializableAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSerializableAttribute.cs" />
@@ -97,6 +98,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.TryGet.cs" />
     <Compile Include="System\Text\Json\Serialization\Arguments.cs" />
     <Compile Include="System\Text\Json\Serialization\ArgumentState.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonObjectCreationHandlingAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonConstructorAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonConverterAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonDerivedTypeAttribute.cs" />
@@ -399,15 +401,8 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj"
-                      ReferenceOutputAssembly="false"
-                      PackAsAnalyzer="true"
-                      Condition="'$(DotNetBuildFromSource)' != 'true'" />
-    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj"
-                      ReferenceOutputAssembly="false"
-                      PackAsAnalyzer="true" />
-    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.4.csproj"
-                      ReferenceOutputAssembly="false"
-                      PackAsAnalyzer="true" />
+    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
+    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.4.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
   </ItemGroup>
 </Project>

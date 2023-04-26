@@ -84,7 +84,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_XOR:
                 return emitter::isValidUimm12(immVal);
             case GT_JCMP:
-                assert(((parentNode->gtFlags & GTF_JCMP_TST) == 0) ? (immVal == 0) : isPow2(immVal));
+                assert(immVal == 0);
                 return true;
 
             case GT_STORE_LCL_FLD:
@@ -179,12 +179,10 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     // for LA64's integer compare and condition-branch instructions,
     // it's very similar to the IL instructions.
-    jtrue->SetOper(GT_JCMP);
-    jtrue->gtOp1 = cmpOp1;
-    jtrue->gtOp2 = cmpOp2;
-
-    jtrue->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_MASK);
-    jtrue->gtFlags |= (GenTreeFlags)(cond.GetCode() << 25);
+    jtrue->ChangeOper(GT_JCMP);
+    jtrue->gtOp1                 = cmpOp1;
+    jtrue->gtOp2                 = cmpOp2;
+    jtrue->AsOpCC()->gtCondition = cond;
 
     if (cmpOp2->IsCnsIntOrI())
     {

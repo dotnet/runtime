@@ -4311,7 +4311,7 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 // genCodeForJumpCompare: Generates code for jmpCompare statement.
 //
 // A GT_JCMP node is created for an integer-comparison's conditional branch.
-void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
+void CodeGen::genCodeForJumpCompare(GenTreeOpCC* tree)
 {
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
 
@@ -4337,10 +4337,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     instruction ins  = INS_invalid;
     int         regs = 0;
 
-    int cond = ((int)tree->gtFlags >> 25) & 0xf; // GenCondition::Code.
-    assert((((int)tree->gtFlags >> 25) & GenCondition::Float) == 0);
-
-    bool IsUnsigned = (cond & GenCondition::Unsigned) != 0;
+    GenCondition cond = tree->gtCondition;
 
     emitAttr  cmpSize = EA_ATTR(genTypeSize(op1Type));
     regNumber regOp1  = op1->GetRegNum();
@@ -4354,7 +4351,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
             switch (cmpSize)
             {
                 case EA_4BYTE:
-                    if (IsUnsigned)
+                    if (cond.IsUnsigned())
                     {
                         imm = static_cast<uint32_t>(imm);
 
@@ -4371,7 +4368,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
                 case EA_8BYTE:
                     break;
                 case EA_1BYTE:
-                    if (IsUnsigned)
+                    if (cond.IsUnsigned())
                     {
                         imm = static_cast<uint8_t>(imm);
                     }
@@ -4388,7 +4385,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
             regs = (int)REG_RA << 5;
         }
 
-        switch (cond)
+        switch (cond.GetCode())
         {
             case GenCondition::EQ:
                 regs |= ((int)regOp1);
@@ -4401,22 +4398,22 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
             case GenCondition::UGE:
             case GenCondition::SGE:
                 regs |= ((int)regOp1);
-                ins = IsUnsigned ? INS_bgeu : INS_bge;
+                ins = cond.IsUnsigned() ? INS_bgeu : INS_bge;
                 break;
             case GenCondition::UGT:
             case GenCondition::SGT:
                 regs = imm ? ((((int)regOp1) << 5) | (int)REG_RA) : (((int)regOp1) << 5);
-                ins  = IsUnsigned ? INS_bltu : INS_blt;
+                ins  = cond.IsUnsigned() ? INS_bltu : INS_blt;
                 break;
             case GenCondition::ULT:
             case GenCondition::SLT:
                 regs |= ((int)regOp1);
-                ins = IsUnsigned ? INS_bltu : INS_blt;
+                ins = cond.IsUnsigned() ? INS_bltu : INS_blt;
                 break;
             case GenCondition::ULE:
             case GenCondition::SLE:
                 regs = imm ? ((((int)regOp1) << 5) | (int)REG_RA) : (((int)regOp1) << 5);
-                ins  = IsUnsigned ? INS_bgeu : INS_bge;
+                ins  = cond.IsUnsigned() ? INS_bgeu : INS_bge;
                 break;
             default:
                 NO_WAY("unexpected condition type");
@@ -4433,7 +4430,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
             assert(regOp1 != tmpRegOp2);
             assert(regOp2 != tmpRegOp2);
 
-            if (IsUnsigned)
+            if (cond.IsUnsigned())
             {
                 emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, tmpRegOp1, regOp1, 31, 0);
                 emit->emitIns_R_R_I_I(INS_bstrpick_d, EA_8BYTE, tmpRegOp2, regOp2, 31, 0);
@@ -4448,7 +4445,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
             regOp2 = tmpRegOp2;
         }
 
-        switch (cond)
+        switch (cond.GetCode())
         {
             case GenCondition::EQ:
                 regs = (((int)regOp1) << 5) | (int)regOp2;
@@ -4461,22 +4458,22 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
             case GenCondition::UGE:
             case GenCondition::SGE:
                 regs = ((int)regOp1 | ((int)regOp2 << 5));
-                ins  = IsUnsigned ? INS_bgeu : INS_bge;
+                ins  = cond.IsUnsigned() ? INS_bgeu : INS_bge;
                 break;
             case GenCondition::UGT:
             case GenCondition::SGT:
                 regs = (((int)regOp1) << 5) | (int)regOp2;
-                ins  = IsUnsigned ? INS_bltu : INS_blt;
+                ins  = cond.IsUnsigned() ? INS_bltu : INS_blt;
                 break;
             case GenCondition::ULT:
             case GenCondition::SLT:
                 regs = ((int)regOp1 | ((int)regOp2 << 5));
-                ins  = IsUnsigned ? INS_bltu : INS_blt;
+                ins  = cond.IsUnsigned() ? INS_bltu : INS_blt;
                 break;
             case GenCondition::ULE:
             case GenCondition::SLE:
                 regs = (((int)regOp1) << 5) | (int)regOp2;
-                ins  = IsUnsigned ? INS_bgeu : INS_bge;
+                ins  = cond.IsUnsigned() ? INS_bgeu : INS_bge;
                 break;
             default:
                 NO_WAY("unexpected condition type-regs");
@@ -5075,7 +5072,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         break;
 
         case GT_JCMP:
-            genCodeForJumpCompare(treeNode->AsOp());
+            genCodeForJumpCompare(treeNode->AsOpCC());
             break;
 
         case GT_RETURNTRAP:

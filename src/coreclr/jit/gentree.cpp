@@ -3577,13 +3577,10 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
         GenTreeCC* cc   = tree->AsCC();
         cc->gtCondition = GenCondition::Reverse(cc->gtCondition);
     }
-    else if (tree->OperIs(GT_JCMP))
+    else if (tree->OperIs(GT_JCMP, GT_JTEST))
     {
-        // Flip the GTF_JCMP_EQ
-        // On ARM64, this causes switching
-        //     cbz <=> cbnz
-        //     tbz <=> tbnz
-        tree->gtFlags ^= GTF_JCMP_EQ;
+        GenTreeOpCC* opCC = tree->AsOpCC();
+        opCC->gtCondition = GenCondition::Reverse(opCC->gtCondition);
     }
     else
     {
@@ -10762,11 +10759,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 }
                 goto DASH;
 
-            case GT_JCMP:
-                printf((tree->gtFlags & GTF_JCMP_TST) ? "T" : "C");
-                printf((tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
-                goto DASH;
-
             case GT_CNS_INT:
                 if (tree->IsIconHandle())
                 {
@@ -11829,8 +11821,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             printf(" cond=%s", tree->AsCC()->gtCondition.Name());
             break;
         case GT_JCMP:
-            printf(" cond=%s%s", (tree->gtFlags & GTF_JCMP_TST) ? "TEST_" : "",
-                   (tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
+        case GT_JTEST:
+            printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
             break;
 
         default:
@@ -19072,6 +19064,18 @@ bool GenTree::isContainableHWIntrinsic() const
             return true;
         }
 
+        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        case NI_AVX512F_VL_ConvertToVector128UInt32:
+        case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
+        {
+            if (varTypeIsFloating(AsHWIntrinsic()->GetSimdBaseType()))
+            {
+                return false;
+            }
+            FALLTHROUGH;
+        }
+
         case NI_Vector128_GetElement:
         case NI_SSE2_ConvertToInt32:
         case NI_SSE2_ConvertToUInt32:
@@ -19086,18 +19090,38 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX2_ExtractVector128:
         case NI_AVX512F_ExtractVector128:
         case NI_AVX512F_ExtractVector256:
+        case NI_AVX512F_ConvertToVector128Byte:
+        case NI_AVX512F_ConvertToVector128ByteWithSaturation:
         case NI_AVX512F_ConvertToVector128Int16:
-        case NI_AVX512F_ConvertToVector128Int32:
+        case NI_AVX512F_ConvertToVector128Int16WithSaturation:
+        case NI_AVX512F_ConvertToVector128SByte:
+        case NI_AVX512F_ConvertToVector128SByteWithSaturation:
         case NI_AVX512F_ConvertToVector128UInt16:
-        case NI_AVX512F_ConvertToVector128UInt32:
+        case NI_AVX512F_ConvertToVector128UInt16WithSaturation:
         case NI_AVX512F_ConvertToVector256Int16:
-        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256Int16WithSaturation:
+        case NI_AVX512F_ConvertToVector256Int32WithSaturation:
         case NI_AVX512F_ConvertToVector256UInt16:
-        case NI_AVX512F_ConvertToVector256UInt32:
-        case NI_AVX512BW_ConvertToVector128Byte:
-        case NI_AVX512BW_ConvertToVector128SByte:
+        case NI_AVX512F_ConvertToVector256UInt16WithSaturation:
+        case NI_AVX512F_ConvertToVector256UInt32WithSaturation:
+        case NI_AVX512F_VL_ConvertToVector128Byte:
+        case NI_AVX512F_VL_ConvertToVector128ByteWithSaturation:
+        case NI_AVX512F_VL_ConvertToVector128Int16:
+        case NI_AVX512F_VL_ConvertToVector128Int16WithSaturation:
+        case NI_AVX512F_VL_ConvertToVector128Int32:
+        case NI_AVX512F_VL_ConvertToVector128Int32WithSaturation:
+        case NI_AVX512F_VL_ConvertToVector128SByte:
+        case NI_AVX512F_VL_ConvertToVector128SByteWithSaturation:
+        case NI_AVX512F_VL_ConvertToVector128UInt16:
+        case NI_AVX512F_VL_ConvertToVector128UInt16WithSaturation:
         case NI_AVX512BW_ConvertToVector256Byte:
+        case NI_AVX512BW_ConvertToVector256ByteWithSaturation:
         case NI_AVX512BW_ConvertToVector256SByte:
+        case NI_AVX512BW_ConvertToVector256SByteWithSaturation:
+        case NI_AVX512BW_VL_ConvertToVector128Byte:
+        case NI_AVX512BW_VL_ConvertToVector128ByteWithSaturation:
+        case NI_AVX512BW_VL_ConvertToVector128SByte:
+        case NI_AVX512BW_VL_ConvertToVector128SByteWithSaturation:
         case NI_AVX512DQ_ExtractVector128:
         case NI_AVX512DQ_ExtractVector256:
         {
@@ -22749,7 +22773,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
                 else
                 {
-                    intrinsicId = NI_AVX512BW_ConvertToVector128SByte;
+                    intrinsicId = NI_AVX512BW_VL_ConvertToVector128SByte;
                 }
 
                 opBaseJitType = CORINFO_TYPE_SHORT;
@@ -22764,7 +22788,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
                 else
                 {
-                    intrinsicId = NI_AVX512BW_ConvertToVector128Byte;
+                    intrinsicId = NI_AVX512BW_VL_ConvertToVector128Byte;
                 }
 
                 opBaseJitType = CORINFO_TYPE_USHORT;
@@ -22779,7 +22803,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
                 else
                 {
-                    intrinsicId = NI_AVX512F_ConvertToVector128Int16;
+                    intrinsicId = NI_AVX512F_VL_ConvertToVector128Int16;
                 }
 
                 opBaseJitType = CORINFO_TYPE_INT;
@@ -22794,7 +22818,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
                 else
                 {
-                    intrinsicId = NI_AVX512F_ConvertToVector128UInt16;
+                    intrinsicId = NI_AVX512F_VL_ConvertToVector128UInt16;
                 }
 
                 opBaseJitType = CORINFO_TYPE_UINT;
@@ -22809,7 +22833,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
                 else
                 {
-                    intrinsicId = NI_AVX512F_ConvertToVector128Int32;
+                    intrinsicId = NI_AVX512F_VL_ConvertToVector128Int32;
                 }
 
                 opBaseJitType = CORINFO_TYPE_LONG;
@@ -22824,7 +22848,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
                 else
                 {
-                    intrinsicId = NI_AVX512F_ConvertToVector128UInt32;
+                    intrinsicId = NI_AVX512F_VL_ConvertToVector128UInt32;
                 }
 
                 opBaseJitType = CORINFO_TYPE_ULONG;
@@ -25780,7 +25804,7 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, Ge
     {
         assert((gtHWIntrinsicId >= NI_AVX512F_FusedMultiplyAdd) &&
                (gtHWIntrinsicId <= NI_AVX512F_FusedMultiplySubtractNegated));
-        assert((NI_AVX512F_FusedMultiplySubtractNegated - NI_AVX512F_FusedMultiplyAdd) == 6);
+        assert((NI_AVX512F_FusedMultiplySubtractNegated - NI_AVX512F_FusedMultiplyAdd) + 1 == 6);
     }
 #endif // DEBUG
 

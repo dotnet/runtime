@@ -165,12 +165,10 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     // for RISCV64's compare and condition-branch instructions,
     // it's very similar to the IL instructions.
-    jtrue->SetOper(GT_JCMP);
-    jtrue->gtOp1 = cmpOp1;
-    jtrue->gtOp2 = cmpOp2;
-
-    jtrue->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_MASK);
-    jtrue->gtFlags |= (GenTreeFlags)(cond.GetCode() << 25);
+    jtrue->ChangeOper(GT_JCMP);
+    jtrue->gtOp1                 = cmpOp1;
+    jtrue->gtOp2                 = cmpOp2;
+    jtrue->AsOpCC()->gtCondition = cond;
 
     if (cmpOp2->IsCnsIntOrI())
     {

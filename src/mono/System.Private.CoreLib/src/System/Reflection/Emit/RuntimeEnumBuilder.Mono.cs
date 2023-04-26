@@ -447,14 +447,9 @@ namespace System.Reflection.Emit
             return SymbolType.FormCompoundType("*", this, 0)!;
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            _tb.SetCustomAttribute(customBuilder);
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
+            _tb.SetCustomAttribute(con, binaryAttribute);
         }
 
         internal override bool IsUserType

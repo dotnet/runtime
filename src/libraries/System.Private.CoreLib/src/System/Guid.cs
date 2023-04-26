@@ -1052,6 +1052,7 @@ namespace System
 
         public static bool operator !=(Guid a, Guid b) => !EqualsCore(a, b);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe int HexsToChars<TChar>(TChar* guidChars, int a, int b) where TChar : unmanaged, IUtfChar<TChar>
         {
             guidChars[0] = TChar.CastFrom(HexConverter.ToCharLower(a >> 4));
