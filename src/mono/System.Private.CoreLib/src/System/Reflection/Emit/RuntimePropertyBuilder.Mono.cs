@@ -159,15 +159,17 @@ namespace System.Reflection.Emit
             def_value = defaultValue;
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             typeb.check_not_created();
-            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
+            string? attrname = con.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.SpecialNameAttribute")
             {
                 attrs |= PropertyAttributes.SpecialName;
                 return;
             }
+
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
 
             if (cattrs != null)
             {
@@ -181,11 +183,6 @@ namespace System.Reflection.Emit
                 cattrs = new CustomAttributeBuilder[1];
                 cattrs[0] = customBuilder;
             }
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         protected override void SetGetMethodCore(MethodBuilder mdBuilder)
