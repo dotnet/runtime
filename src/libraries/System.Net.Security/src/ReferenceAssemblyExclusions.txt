@@ -1,2 +1,0 @@
-# Used internally by System.Net.Quic
-C:System.Net.Security.SslClientHelloInfo.SslClientHelloInfo
