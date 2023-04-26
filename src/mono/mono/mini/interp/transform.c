@@ -3297,6 +3297,50 @@ interp_realign_simd_params (TransformData *td, StackInfo *sp_params, int num_arg
 	}
 }
 
+static GENERATE_GET_CLASS_WITH_CACHE (iequatable, "System", "IEquatable`1")
+static GENERATE_GET_CLASS_WITH_CACHE (geqcomparer, "System.Collections.Generic", "GenericEqualityComparer`1");
+
+// Provide more specific type information about the return value of a special
+// call, so that we can devirtualize future calls on this object.
+//
+// Equivalent to jit's handle_call_res_devirt
+static void
+interp_handle_call_res_devirt (TransformData *td, MonoMethod *cmethod)
+{
+	if (m_class_get_image (cmethod->klass) == mono_defaults.corlib &&
+                !strcmp (m_class_get_name (cmethod->klass), "EqualityComparer`1") &&
+                !strcmp (cmethod->name, "get_Default")) {
+
+                MonoType *param_type = mono_class_get_generic_class (cmethod->klass)->context.class_inst->type_argv [0];
+                MonoClass *inst;
+                MonoGenericContext ctx;
+                ERROR_DECL (error);
+
+                memset (&ctx, 0, sizeof (ctx));
+
+                MonoType *args [ ] = { param_type };
+                ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+
+                inst = mono_class_inflate_generic_class_checked (mono_class_get_iequatable_class (), &ctx, error);
+                mono_error_assert_ok (error);
+
+		if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type_internal (param_type)) && param_type->type != MONO_TYPE_U1 && param_type->type != MONO_TYPE_STRING) {
+                        MonoClass *gcomparer_inst;
+
+                        memset (&ctx, 0, sizeof (ctx));
+
+                        args [0] = param_type;
+                        ctx.class_inst = mono_metadata_get_generic_inst (1, args);
+
+                        MonoClass *gcomparer = mono_class_get_geqcomparer_class ();
+                        g_assert (gcomparer);
+                        gcomparer_inst = mono_class_inflate_generic_class_checked (gcomparer, &ctx, error);
+                        if (is_ok (error))
+				td->sp [-1].klass = gcomparer_inst;
+                }
+        }
+}
+
 /* Return FALSE if error, including inline failure */
 static gboolean
 interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoGenericContext *generic_context, MonoClass *constrained_class, gboolean readonly, MonoError *error, gboolean check_visibility, gboolean save_last_error, gboolean tailcall)
@@ -3555,7 +3599,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 		if (interp_inline_method (td, target_method, mheader, error)) {
 			td->ip += 5;
-			return TRUE;
+			goto done;
 		}
 	}
 
@@ -3809,6 +3853,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		g_assert (call_offset == -1);
 	}
 
+
+done:
+	if (csignature->ret->type != MONO_TYPE_VOID && target_method)
+		interp_handle_call_res_devirt (td, target_method);
 	return TRUE;
 }
 
