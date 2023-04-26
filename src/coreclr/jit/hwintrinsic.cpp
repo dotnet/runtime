@@ -86,150 +86,6 @@ CorInfoType Compiler::getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrins
     return simdBaseJitType;
 }
 
-CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, CorInfoType simdBaseJitType)
-{
-    assert(varTypeIsSIMD(simdType));
-
-    if (m_simdHandleCache == nullptr)
-    {
-        return NO_CLASS_HANDLE;
-    }
-    if (simdType == TYP_SIMD16)
-    {
-        switch (simdBaseJitType)
-        {
-            case CORINFO_TYPE_FLOAT:
-                return m_simdHandleCache->Vector128FloatHandle;
-            case CORINFO_TYPE_DOUBLE:
-                return m_simdHandleCache->Vector128DoubleHandle;
-            case CORINFO_TYPE_INT:
-                return m_simdHandleCache->Vector128IntHandle;
-            case CORINFO_TYPE_USHORT:
-                return m_simdHandleCache->Vector128UShortHandle;
-            case CORINFO_TYPE_UBYTE:
-                return m_simdHandleCache->Vector128UByteHandle;
-            case CORINFO_TYPE_SHORT:
-                return m_simdHandleCache->Vector128ShortHandle;
-            case CORINFO_TYPE_BYTE:
-                return m_simdHandleCache->Vector128ByteHandle;
-            case CORINFO_TYPE_LONG:
-                return m_simdHandleCache->Vector128LongHandle;
-            case CORINFO_TYPE_UINT:
-                return m_simdHandleCache->Vector128UIntHandle;
-            case CORINFO_TYPE_ULONG:
-                return m_simdHandleCache->Vector128ULongHandle;
-            case CORINFO_TYPE_NATIVEINT:
-                return m_simdHandleCache->Vector128NIntHandle;
-            case CORINFO_TYPE_NATIVEUINT:
-                return m_simdHandleCache->Vector128NUIntHandle;
-            default:
-                assert(!"Didn't find a class handle for simdType");
-        }
-    }
-#if defined(TARGET_XARCH)
-    else if (simdType == TYP_SIMD32)
-    {
-        switch (simdBaseJitType)
-        {
-            case CORINFO_TYPE_FLOAT:
-                return m_simdHandleCache->Vector256FloatHandle;
-            case CORINFO_TYPE_DOUBLE:
-                return m_simdHandleCache->Vector256DoubleHandle;
-            case CORINFO_TYPE_INT:
-                return m_simdHandleCache->Vector256IntHandle;
-            case CORINFO_TYPE_USHORT:
-                return m_simdHandleCache->Vector256UShortHandle;
-            case CORINFO_TYPE_UBYTE:
-                return m_simdHandleCache->Vector256UByteHandle;
-            case CORINFO_TYPE_SHORT:
-                return m_simdHandleCache->Vector256ShortHandle;
-            case CORINFO_TYPE_BYTE:
-                return m_simdHandleCache->Vector256ByteHandle;
-            case CORINFO_TYPE_LONG:
-                return m_simdHandleCache->Vector256LongHandle;
-            case CORINFO_TYPE_UINT:
-                return m_simdHandleCache->Vector256UIntHandle;
-            case CORINFO_TYPE_ULONG:
-                return m_simdHandleCache->Vector256ULongHandle;
-            case CORINFO_TYPE_NATIVEINT:
-                return m_simdHandleCache->Vector256NIntHandle;
-            case CORINFO_TYPE_NATIVEUINT:
-                return m_simdHandleCache->Vector256NUIntHandle;
-            default:
-                assert(!"Didn't find a class handle for simdType");
-        }
-    }
-    else if (simdType == TYP_SIMD64)
-    {
-        switch (simdBaseJitType)
-        {
-            case CORINFO_TYPE_FLOAT:
-                return m_simdHandleCache->Vector512FloatHandle;
-            case CORINFO_TYPE_DOUBLE:
-                return m_simdHandleCache->Vector512DoubleHandle;
-            case CORINFO_TYPE_INT:
-                return m_simdHandleCache->Vector512IntHandle;
-            case CORINFO_TYPE_USHORT:
-                return m_simdHandleCache->Vector512UShortHandle;
-            case CORINFO_TYPE_UBYTE:
-                return m_simdHandleCache->Vector512UByteHandle;
-            case CORINFO_TYPE_SHORT:
-                return m_simdHandleCache->Vector512ShortHandle;
-            case CORINFO_TYPE_BYTE:
-                return m_simdHandleCache->Vector512ByteHandle;
-            case CORINFO_TYPE_LONG:
-                return m_simdHandleCache->Vector512LongHandle;
-            case CORINFO_TYPE_UINT:
-                return m_simdHandleCache->Vector512UIntHandle;
-            case CORINFO_TYPE_ULONG:
-                return m_simdHandleCache->Vector512ULongHandle;
-            case CORINFO_TYPE_NATIVEINT:
-                return m_simdHandleCache->Vector512NIntHandle;
-            case CORINFO_TYPE_NATIVEUINT:
-                return m_simdHandleCache->Vector512NUIntHandle;
-            default:
-                assert(!"Didn't find a class handle for simdType");
-        }
-    }
-#endif // TARGET_XARCH
-#ifdef TARGET_ARM64
-    else if (simdType == TYP_SIMD8)
-    {
-        switch (simdBaseJitType)
-        {
-            case CORINFO_TYPE_FLOAT:
-                return m_simdHandleCache->Vector64FloatHandle;
-            case CORINFO_TYPE_DOUBLE:
-                return m_simdHandleCache->Vector64DoubleHandle;
-            case CORINFO_TYPE_INT:
-                return m_simdHandleCache->Vector64IntHandle;
-            case CORINFO_TYPE_USHORT:
-                return m_simdHandleCache->Vector64UShortHandle;
-            case CORINFO_TYPE_UBYTE:
-                return m_simdHandleCache->Vector64UByteHandle;
-            case CORINFO_TYPE_SHORT:
-                return m_simdHandleCache->Vector64ShortHandle;
-            case CORINFO_TYPE_BYTE:
-                return m_simdHandleCache->Vector64ByteHandle;
-            case CORINFO_TYPE_UINT:
-                return m_simdHandleCache->Vector64UIntHandle;
-            case CORINFO_TYPE_LONG:
-                return m_simdHandleCache->Vector64LongHandle;
-            case CORINFO_TYPE_ULONG:
-                return m_simdHandleCache->Vector64ULongHandle;
-            case CORINFO_TYPE_NATIVEINT:
-                return m_simdHandleCache->Vector64NIntHandle;
-            case CORINFO_TYPE_NATIVEUINT:
-                return m_simdHandleCache->Vector64NUIntHandle;
-            default:
-                assert(!"Didn't find a class handle for simdType");
-        }
-    }
-#endif // TARGET_ARM64
-
-    return NO_CLASS_HANDLE;
-}
-
 //------------------------------------------------------------------------
 // vnEncodesResultTypeForHWIntrinsic(NamedIntrinsic hwIntrinsicID):
 //
@@ -325,8 +181,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported                         = comp->compSupportsHWIntrinsic(isa);
-    bool isBaselineVector512IsaUsedAndSupported = false;
+    bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
 
     bool isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
 #ifdef TARGET_XARCH
@@ -346,7 +201,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         }
         else if (strcmp(className, "Vector512") == 0)
         {
-            isBaselineVector512IsaUsedAndSupported = comp->IsBaselineVector512IsaSupported();
+            isa = InstructionSet_Vector512;
         }
     }
 #endif
@@ -381,7 +236,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
         if (isIsaSupported)
         {
-            if (comp->compExactlyDependsOn(isa) || isBaselineVector512IsaUsedAndSupported)
+            if (comp->compExactlyDependsOn(isa))
             {
                 return NI_IsSupported_True;
             }
@@ -598,12 +453,19 @@ GenTree* Compiler::getArgForHWIntrinsic(var_types            argType,
 
         if (newobjThis == nullptr)
         {
-            arg = impSIMDPopStack(argType, expectAddr);
-            assert(varTypeIsSIMD(arg->TypeGet()));
+            if (expectAddr)
+            {
+                arg = gtNewLoadValueNode(argType, impPopStack().val);
+            }
+            else
+            {
+                arg = impSIMDPopStack();
+            }
+            assert(varTypeIsSIMD(arg));
         }
         else
         {
-            assert(newobjThis->OperIs(GT_LCL_VAR_ADDR));
+            assert(newobjThis->IsLclVarAddr());
             arg = newobjThis;
 
             // push newobj result on type stack
@@ -776,7 +638,7 @@ static bool isSupportedBaseType(NamedIntrinsic intrinsic, CorInfoType baseJitTyp
 #ifdef DEBUG
     CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrinsic);
 #ifdef TARGET_XARCH
-    assert((isa == InstructionSet_Vector256) || (isa == InstructionSet_Vector128));
+    assert((isa == InstructionSet_Vector512) || (isa == InstructionSet_Vector256) || (isa == InstructionSet_Vector128));
 #endif // TARGET_XARCH
 #ifdef TARGET_ARM64
     assert((isa == InstructionSet_Vector64) || (isa == InstructionSet_Vector128));
@@ -1120,11 +982,23 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         assert(numArgs >= 0);
 
-        if (!isScalar && ((HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType) == INS_invalid) ||
-                          ((simdSize != 8) && (simdSize != 16) && (simdSize != 32))))
+        if (!isScalar)
         {
-            assert(!"Unexpected HW Intrinsic");
-            return nullptr;
+            if (HWIntrinsicInfo::lookupIns(intrinsic, simdBaseType) == INS_invalid)
+            {
+                assert(!"Unexpected HW intrinsic");
+                return nullptr;
+            }
+
+#if defined(TARGET_ARM64)
+            if ((simdSize != 8) && (simdSize != 16))
+#elif defined(TARGET_XARCH)
+            if ((simdSize != 16) && (simdSize != 32) && (simdSize != 64))
+#endif // TARGET_*
+            {
+                assert(!"Unexpected SIMD size");
+                return nullptr;
+            }
         }
 
         GenTree* op1 = nullptr;

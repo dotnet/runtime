@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 
 using Internal.IL;
+using Internal.IL.Stubs;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
@@ -69,6 +70,20 @@ namespace ILCompiler.DependencyAnalysis
         protected bool? _mightHaveInterfaceDispatchMap;
         private bool _hasConditionalDependenciesFromMetadataManager;
 
+        protected readonly VirtualMethodAnalysisFlags _virtualMethodAnalysisFlags;
+
+        [Flags]
+        protected enum VirtualMethodAnalysisFlags
+        {
+            None = 0,
+
+            NeedsGvmEntries = 0x0001,
+            InterestingForDynamicDependencies = 0x0002,
+
+            AllFlags = NeedsGvmEntries
+                | InterestingForDynamicDependencies,
+        }
+
         public EETypeNode(NodeFactory factory, TypeDesc type)
         {
             if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
@@ -82,13 +97,98 @@ namespace ILCompiler.DependencyAnalysis
             _writableDataNode = factory.Target.SupportsRelativePointers ? new WritableDataNode(this) : null;
             _hasConditionalDependenciesFromMetadataManager = factory.MetadataManager.HasConditionalDependenciesDueToEETypePresence(type);
 
+            if (EmitVirtualSlotsAndInterfaces)
+                _virtualMethodAnalysisFlags = AnalyzeVirtualMethods(type);
+
             factory.TypeSystemContext.EnsureLoadableType(type);
+        }
 
-            // We don't have a representation for function pointers right now
-            if (WithoutParameterizeTypes(type).IsFunctionPointer)
-                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+        private static VirtualMethodAnalysisFlags AnalyzeVirtualMethods(TypeDesc type)
+        {
+            var result = VirtualMethodAnalysisFlags.None;
 
-            static TypeDesc WithoutParameterizeTypes(TypeDesc t) => t is ParameterizedType pt ? WithoutParameterizeTypes(pt.ParameterType) : t;
+            // Interface EETypes not relevant to virtual method analysis at this time.
+            if (type.IsInterface)
+                return result;
+
+            DefType defType = type.GetClosestDefType();
+
+            foreach (MethodDesc method in defType.GetAllVirtualMethods())
+            {
+                // First, check if this type has any GVM that overrides a GVM on a parent type. If that's the case, this makes
+                // the current type interesting for GVM analysis (i.e. instantiate its overriding GVMs for existing GVMDependenciesNodes
+                // of the instantiated GVM on the parent types).
+                if (method.HasInstantiation)
+                {
+                    result |= VirtualMethodAnalysisFlags.NeedsGvmEntries;
+
+                    MethodDesc slotDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                    if (slotDecl != method)
+                        result |= VirtualMethodAnalysisFlags.InterestingForDynamicDependencies;
+                }
+
+                // Early out if we set all the flags we could have set
+                if ((result & VirtualMethodAnalysisFlags.AllFlags) == VirtualMethodAnalysisFlags.AllFlags)
+                    return result;
+            }
+
+            //
+            // Check if the type implements any interface, where the method implementations could be on
+            // base types.
+            // Example:
+            //      interface IFace {
+            //          void IFaceGVMethod<U>();
+            //      }
+            //      class BaseClass {
+            //          public virtual void IFaceGVMethod<U>() { ... }
+            //      }
+            //      public class DerivedClass : BaseClass, IFace { }
+            //
+            foreach (DefType interfaceImpl in defType.RuntimeInterfaces)
+            {
+                foreach (MethodDesc method in interfaceImpl.GetAllVirtualMethods())
+                {
+                    if (!method.HasInstantiation)
+                        continue;
+
+                    // We found a GVM on one of the implemented interfaces. Find if the type implements this method.
+                    // (Note, do this comparison against the generic definition of the method, not the specific method instantiation
+                    MethodDesc slotDecl = method.Signature.IsStatic ?
+                        defType.ResolveInterfaceMethodToStaticVirtualMethodOnType(method)
+                        : defType.ResolveInterfaceMethodTarget(method);
+                    if (slotDecl != null)
+                    {
+                        // If the type doesn't introduce this interface method implementation (i.e. the same implementation
+                        // already exists in the base type), do not consider this type interesting for GVM analysis just yet.
+                        //
+                        // We need to limit the number of types that are interesting for GVM analysis at all costs since
+                        // these all will be looked at for every unique generic virtual method call in the program.
+                        // Having a long list of interesting types affects the compilation throughput heavily.
+                        if (slotDecl.OwningType == defType ||
+                            defType.BaseType.ResolveInterfaceMethodTarget(method) != slotDecl)
+                        {
+                            result |= VirtualMethodAnalysisFlags.InterestingForDynamicDependencies
+                                | VirtualMethodAnalysisFlags.NeedsGvmEntries;
+                        }
+                    }
+                    else
+                    {
+                        // The method could be implemented by a default interface method
+                        var resolution = defType.ResolveInterfaceMethodToDefaultImplementationOnType(method, out _);
+                        if (resolution == DefaultInterfaceMethodResolution.DefaultImplementation)
+                        {
+                            result |= VirtualMethodAnalysisFlags.InterestingForDynamicDependencies
+                                | VirtualMethodAnalysisFlags.NeedsGvmEntries;
+                        }
+                    }
+
+                    // Early out if we set all the flags we could have set
+                    if ((result & VirtualMethodAnalysisFlags.AllFlags) == VirtualMethodAnalysisFlags.AllFlags)
+                        return result;
+                }
+            }
+
+            return result;
         }
 
         protected bool MightHaveInterfaceDispatchMap(NodeFactory factory)
@@ -135,78 +235,7 @@ namespace ILCompiler.DependencyAnalysis
         protected virtual bool EmitVirtualSlotsAndInterfaces => false;
 
         public override bool InterestingForDynamicDependencyAnalysis
-        {
-            get
-            {
-                if (!EmitVirtualSlotsAndInterfaces)
-                    return false;
-
-                if (_type.IsInterface)
-                    return false;
-
-                if (_type.IsDefType)
-                {
-                    // First, check if this type has any GVM that overrides a GVM on a parent type. If that's the case, this makes
-                    // the current type interesting for GVM analysis (i.e. instantiate its overriding GVMs for existing GVMDependenciesNodes
-                    // of the instantiated GVM on the parent types).
-                    foreach (var method in _type.GetAllVirtualMethods())
-                    {
-                        Debug.Assert(method.IsVirtual);
-
-                        if (method.HasInstantiation)
-                        {
-                            MethodDesc slotDecl = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
-                            if (slotDecl != method)
-                                return true;
-                        }
-                    }
-
-                    // Second, check if this type has any GVMs that implement any GVM on any of the implemented interfaces. This would
-                    // make the current type interesting for dynamic dependency analysis to that we can instantiate its GVMs.
-                    foreach (DefType interfaceImpl in _type.RuntimeInterfaces)
-                    {
-                        foreach (var method in interfaceImpl.GetAllVirtualMethods())
-                        {
-                            Debug.Assert(method.IsVirtual);
-
-                            if (method.HasInstantiation)
-                            {
-                                // We found a GVM on one of the implemented interfaces. Find if the type implements this method.
-                                // (Note, do this comparison against the generic definition of the method, not the specific method instantiation
-                                MethodDesc genericDefinition = method.GetMethodDefinition();
-                                MethodDesc slotDecl = genericDefinition.Signature.IsStatic ?
-                                    _type.ResolveInterfaceMethodToStaticVirtualMethodOnType(genericDefinition)
-                                    : _type.ResolveInterfaceMethodTarget(genericDefinition);
-                                if (slotDecl != null)
-                                {
-                                    // If the type doesn't introduce this interface method implementation (i.e. the same implementation
-                                    // already exists in the base type), do not consider this type interesting for GVM analysis just yet.
-                                    //
-                                    // We need to limit the number of types that are interesting for GVM analysis at all costs since
-                                    // these all will be looked at for every unique generic virtual method call in the program.
-                                    // Having a long list of interesting types affects the compilation throughput heavily.
-                                    if (slotDecl.OwningType == _type ||
-                                        _type.BaseType.ResolveInterfaceMethodTarget(genericDefinition) != slotDecl)
-                                    {
-                                        return true;
-                                    }
-                                }
-                                else
-                                {
-                                    // The method could be implemented by a default interface method
-                                    var resolution = _type.ResolveInterfaceMethodToDefaultImplementationOnType(genericDefinition, out slotDecl);
-                                    if (resolution == DefaultInterfaceMethodResolution.DefaultImplementation)
-                                    {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                return false;
-            }
-        }
+            => (_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.InterestingForDynamicDependencies) != 0;
 
         internal bool HasOptionalFields
         {
@@ -555,7 +584,7 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(factory.VTable(intface), "Interface vtable slice");
 
                 // Generated type contains generic virtual methods that will get added to the GVM tables
-                if (TypeGVMEntriesNode.TypeNeedsGVMTableEntries(_type))
+                if ((_virtualMethodAnalysisFlags & VirtualMethodAnalysisFlags.NeedsGvmEntries) != 0)
                 {
                     dependencies.Add(new DependencyListEntry(factory.TypeGVMEntries(_type.GetTypeDefinition()), "Type with generic virtual methods"));
 
@@ -603,6 +632,9 @@ namespace ILCompiler.DependencyAnalysis
                 if(_type is MetadataType mdType)
                     ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
             }
+
+            if (_type.IsFunctionPointer)
+                FunctionPointerMapNode.GetHashtableDependencies(ref dependencies, factory, (FunctionPointerType)_type);
 
             return dependencies;
         }
@@ -661,6 +693,7 @@ namespace ILCompiler.DependencyAnalysis
             OutputOptionalFields(factory, ref objData);
             OutputSealedVTable(factory, relocsOnly, ref objData);
             OutputGenericInstantiationDetails(factory, ref objData);
+            OutputFunctionPointerParameters(factory, ref objData);
 
             return objData.ToObjectData();
         }
@@ -720,11 +753,6 @@ namespace ILCompiler.DependencyAnalysis
                 flags |= (uint)EETypeFlags.OptionalFieldsFlag;
             }
 
-            if (this is ClonedConstructedEETypeNode)
-            {
-                flags |= (uint)EETypeKind.ClonedEEType;
-            }
-
             if (_type.IsArray || _type.IsString)
             {
                 flags |= (uint)EETypeFlags.HasComponentSizeFlag;
@@ -745,7 +773,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     int elementSize = elementType.GetElementSize().AsInt;
                     // We validated that this will fit the short when the node was constructed. No need for nice messages.
-                    flags |= (uint)elementSize;
+                    flags |= (uint)checked((ushort)elementSize);
                 }
             }
             else if (_type.IsString)
@@ -805,6 +833,16 @@ namespace ILCompiler.DependencyAnalysis
                     // These never get boxed and don't have a base size. Use a sentinel value recognized by the runtime.
                     return ParameterizedTypeShapeConstants.ByRef;
                 }
+                else if (_type.IsFunctionPointer)
+                {
+                    // These never get boxed and don't have a base size. We store the 'unmanaged' flag and number of parameters.
+                    MethodSignature sig = ((FunctionPointerType)_type).Signature;
+                    return (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) switch
+                    {
+                        0 => sig.Length,
+                        _ => sig.Length | unchecked((int)FunctionPointerFlags.IsUnmanaged),
+                    };
+                }
                 else
                     throw new NotImplementedException();
 
@@ -852,6 +890,10 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     relatedTypeNode = factory.NecessaryTypeSymbol(parameterType);
                 }
+            }
+            else if (_type.IsFunctionPointer)
+            {
+                relatedTypeNode = factory.NecessaryTypeSymbol(((FunctionPointerType)_type).Signature.ReturnType);
             }
             else
             {
@@ -926,9 +968,21 @@ namespace ILCompiler.DependencyAnalysis
                     || implType.IsCanonicalSubtype(CanonicalFormKind.Universal)
                     || factory.LazyGenericsPolicy.UsesLazyGenerics(declType)
                     || isInterfaceWithAnEmptySlot)
+                {
                     objData.EmitZeroPointer();
+                }
                 else
-                    objData.EmitPointerReloc(factory.TypeGenericDictionary(declType));
+                {
+                    TypeGenericDictionaryNode dictionaryNode = factory.TypeGenericDictionary(declType);
+                    DictionaryLayoutNode layoutNode = dictionaryNode.GetDictionaryLayout(factory);
+
+                    // Don't bother emitting a reloc to an empty dictionary. We'll only know whether the dictionary is
+                    // empty at final object emission time, so don't ask if we're not emitting yet.
+                    if (!relocsOnly && layoutNode.IsEmpty)
+                        objData.EmitZeroPointer();
+                    else
+                        objData.EmitPointerReloc(dictionaryNode);
+                }
             }
 
             VTableSliceNode declVTable = factory.VTable(declType);
@@ -944,6 +998,9 @@ namespace ILCompiler.DependencyAnalysis
             // type, pretending there was an extra virtual slot.
             if (_type.IsInterface)
                 return;
+
+            bool isAsyncStateMachineValueType = implType.IsValueType
+                && factory.TypeSystemContext.IsAsyncStateMachineType((MetadataType)implType);
 
             // Actual vtable slots follow
             IReadOnlyList<MethodDesc> virtualSlots = declVTable.Slots;
@@ -967,7 +1024,21 @@ namespace ILCompiler.DependencyAnalysis
                 if (declMethod.CanMethodBeInSealedVTable() && !declType.IsArrayTypeWithoutGenericInterfaces())
                     continue;
 
-                if (!implMethod.IsAbstract)
+                bool shouldEmitImpl = !implMethod.IsAbstract;
+
+                // We do a size optimization that removes support for built-in ValueType Equals/GetHashCode
+                // Null out the vtable slot associated with built-in support to catch if it ever becomes illegal.
+                // We also null out Equals/GetHashCode - that's just a marginal size/startup optimization.
+                if (isAsyncStateMachineValueType)
+                {
+                    if ((declType.IsObject && declMethod.Name is "Equals" or "GetHashCode" && implMethod.OwningType.IsWellKnownType(WellKnownType.ValueType))
+                        || (declType.IsWellKnownType(WellKnownType.ValueType) && declMethod.Name == ValueTypeGetFieldHelperMethodOverride.MetadataName))
+                    {
+                        shouldEmitImpl = false;
+                    }
+                }
+
+                if (shouldEmitImpl)
                 {
                     MethodDesc canonImplMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
 
@@ -1098,6 +1169,22 @@ namespace ILCompiler.DependencyAnalysis
                     objData.EmitReloc(compositionNode, RelocType.IMAGE_REL_BASED_RELPTR32);
                 else
                     objData.EmitPointerReloc(compositionNode);
+            }
+        }
+
+        private void OutputFunctionPointerParameters(NodeFactory factory, ref ObjectDataBuilder objData)
+        {
+            if (_type.IsFunctionPointer)
+            {
+                MethodSignature sig = ((FunctionPointerType)_type).Signature;
+                foreach (TypeDesc paramType in sig)
+                {
+                    ISymbolNode paramTypeNode = factory.NecessaryTypeSymbol(paramType);
+                    if (factory.Target.SupportsRelativePointers)
+                        objData.EmitReloc(paramTypeNode, RelocType.IMAGE_REL_BASED_RELPTR32);
+                    else
+                        objData.EmitPointerReloc(paramTypeNode);
+                }
             }
         }
 

@@ -56,7 +56,8 @@ namespace System.Net.Http.Headers
                 return idx - startIndex;
             }
 
-            if (idx == value.Length || value[idx++] != '=')
+            // Make sure we have at least 2 characters and first one being an '='.
+            if (idx + 1 >= value.Length || value[idx++] != '=')
             {
                 parsedValue = null;
                 return 0;

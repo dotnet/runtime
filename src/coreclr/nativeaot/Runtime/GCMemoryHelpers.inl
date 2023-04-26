@@ -19,32 +19,33 @@ static const int card_byte_shift = 10;
 #endif
 
 
-// This function fills a piece of memory in a GC safe way.  It makes the guarantee
-// that it will fill memory in at least pointer sized chunks whenever possible.
+// This function clears a piece of memory in a GC safe way.
+// Object-aligned memory is zeroed with no smaller than pointer-size granularity.
+// We must make this guarantee whenever we clear memory in the GC heap that could contain object
+// references.  The GC or other user threads can read object references at any time, clearing them bytewise can result
+// in a read on another thread getting incorrect data.
 // Unaligned memory at the beginning and remaining bytes at the end are written bytewise.
-// We must make this guarantee whenever we clear memory in the GC heap that could contain
-// object references.  The GC or other user threads can read object references at any time,
-// clearing them bytewise can result in a read on another thread getting incorrect data.
-FORCEINLINE void InlineGCSafeFillMemory(void * mem, size_t size, size_t pv)
+// USAGE:  The caller is responsible for null-checking the reference.
+FORCEINLINE void InlineGcSafeZeroMemory(void * mem, size_t size)
 {
     uint8_t * memBytes = (uint8_t *)mem;
     uint8_t * endBytes = &memBytes[size];
 
     // handle unaligned bytes at the beginning
     while (!IS_ALIGNED(memBytes, sizeof(void *)) && (memBytes < endBytes))
-        *memBytes++ = (uint8_t)pv;
+        *memBytes++ = 0;
 
     // now write pointer sized pieces
     // volatile ensures that this doesn't get optimized back into a memset call
     size_t nPtrs = (endBytes - memBytes) / sizeof(void *);
     volatile uintptr_t* memPtr = (uintptr_t*)memBytes;
     for (size_t i = 0; i < nPtrs; i++)
-        *memPtr++ = pv;
+        *memPtr++ = 0;
 
     // handle remaining bytes at the end
     memBytes = (uint8_t*)memPtr;
     while (memBytes < endBytes)
-        *memBytes++ = (uint8_t)pv;
+        *memBytes++ = 0;
 }
 
 // These functions copy memory in a GC safe way.  They makes the guarantee

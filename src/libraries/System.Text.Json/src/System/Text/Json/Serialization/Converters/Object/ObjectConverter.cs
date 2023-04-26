@@ -111,4 +111,29 @@ namespace System.Text.Json.Serialization.Converters
             runtimeConverter.WriteAsPropertyNameCoreAsObject(writer, value, options, isWritingExtensionDataProperty);
         }
     }
+
+    /// <summary>
+    /// A placeholder ObjectConverter used for driving object root value
+    /// serialization only and does not root JsonNode/JsonDocument.
+    /// </summary>
+    internal sealed class ObjectConverterSlim : JsonConverter<object?>
+    {
+        private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Object;
+
+        public ObjectConverterSlim()
+        {
+            CanBePolymorphic = true;
+        }
+
+        public override object? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Fail("Converter should only be used to drive root-level object serialization.");
+            return null;
+        }
+
+        public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
+        {
+            Debug.Fail("Converter should only be used to drive root-level object serialization.");
+        }
+    }
 }

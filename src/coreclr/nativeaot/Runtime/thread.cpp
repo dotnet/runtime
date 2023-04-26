@@ -285,7 +285,6 @@ void Thread::Construct()
     // Everything else should be initialized to 0 via the static initialization of tls_CurrentThread.
 
     ASSERT(m_pThreadLocalModuleStatics == NULL);
-    ASSERT(m_numThreadLocalModuleStatics == 0);
 
     ASSERT(m_pGCFrameRegistrations == NULL);
 
@@ -348,18 +347,6 @@ void Thread::Destroy()
 
     if (m_hPalThread != INVALID_HANDLE_VALUE)
         PalCloseHandle(m_hPalThread);
-
-    if (m_pThreadLocalModuleStatics != NULL)
-    {
-        for (uint32_t i = 0; i < m_numThreadLocalModuleStatics; i++)
-        {
-            if (m_pThreadLocalModuleStatics[i] != NULL)
-            {
-                RhHandleFree(m_pThreadLocalModuleStatics[i]);
-            }
-        }
-        delete[] m_pThreadLocalModuleStatics;
-    }
 
 #ifdef STRESS_LOG
     ThreadStressLog* ptsl = reinterpret_cast<ThreadStressLog*>(GetThreadStressLog());
@@ -935,6 +922,12 @@ bool Thread::IsHijacked()
     return m_pvHijackedReturnAddress != NULL;
 }
 
+void* Thread::GetHijackedReturnAddress()
+{
+    ASSERT(ThreadStore::GetCurrentThread() == this);
+    return m_pvHijackedReturnAddress;
+}
+
 void Thread::SetState(ThreadStateFlags flags)
 {
     PalInterlockedOr(&m_ThreadStateFlags, flags);
@@ -1004,6 +997,8 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 // Standard calling convention variant and actual implementation for RhpGcPoll
 EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 {
+    ASSERT(!Thread::IsHijackTarget(pFrame->m_RIP));
+
     Thread* pThread = ThreadStore::GetCurrentThread();
     pFrame->m_pThread = pThread;
 
@@ -1269,78 +1264,15 @@ COOP_PINVOKE_HELPER(Object *, RhpGetThreadAbortException, ())
     return pCurThread->GetThreadAbortException();
 }
 
-Object* Thread::GetThreadStaticStorageForModule(uint32_t moduleIndex)
+Object** Thread::GetThreadStaticStorage()
 {
-    // Return a pointer to the TLS storage if it has already been
-    // allocated for the specified module.
-    if (moduleIndex < m_numThreadLocalModuleStatics)
-    {
-        Object** threadStaticsStorageHandle = (Object**)m_pThreadLocalModuleStatics[moduleIndex];
-        if (threadStaticsStorageHandle != NULL)
-        {
-            return *threadStaticsStorageHandle;
-        }
-    }
-
-    return NULL;
+    return &m_pThreadLocalModuleStatics;
 }
 
-bool Thread::SetThreadStaticStorageForModule(Object * pStorage, uint32_t moduleIndex)
-{
-    // Grow thread local storage if needed.
-    if (m_numThreadLocalModuleStatics <= moduleIndex)
-    {
-        uint32_t newSize = moduleIndex + 1;
-        if (newSize < moduleIndex)
-        {
-            return false;
-        }
-
-        PTR_PTR_VOID pThreadLocalModuleStatics = new (nothrow) PTR_VOID[newSize];
-        if (pThreadLocalModuleStatics == NULL)
-        {
-            return false;
-        }
-
-        memset(&pThreadLocalModuleStatics[m_numThreadLocalModuleStatics], 0, sizeof(PTR_VOID) * (newSize - m_numThreadLocalModuleStatics));
-
-        if (m_pThreadLocalModuleStatics != NULL)
-        {
-            memcpy(pThreadLocalModuleStatics, m_pThreadLocalModuleStatics, sizeof(PTR_VOID) * m_numThreadLocalModuleStatics);
-            delete[] m_pThreadLocalModuleStatics;
-        }
-
-        m_pThreadLocalModuleStatics = pThreadLocalModuleStatics;
-        m_numThreadLocalModuleStatics = newSize;
-    }
-
-    if (m_pThreadLocalModuleStatics[moduleIndex] != NULL)
-    {
-        RhHandleSet(m_pThreadLocalModuleStatics[moduleIndex], pStorage);
-    }
-    else
-    {
-        void* threadStaticsStorageHandle = RhpHandleAlloc(pStorage, 2 /* Normal */);
-        if (threadStaticsStorageHandle == NULL)
-        {
-            return false;
-        }
-        m_pThreadLocalModuleStatics[moduleIndex] = threadStaticsStorageHandle;
-    }
-
-    return true;
-}
-
-COOP_PINVOKE_HELPER(Object*, RhGetThreadStaticStorageForModule, (uint32_t moduleIndex))
+COOP_PINVOKE_HELPER(Object**, RhGetThreadStaticStorage, ())
 {
     Thread * pCurrentThread = ThreadStore::RawGetCurrentThread();
-    return pCurrentThread->GetThreadStaticStorageForModule(moduleIndex);
-}
-
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhSetThreadStaticStorageForModule, (Array * pStorage, uint32_t moduleIndex))
-{
-    Thread * pCurrentThread = ThreadStore::RawGetCurrentThread();
-    FC_RETURN_BOOL(pCurrentThread->SetThreadStaticStorageForModule((Object*)pStorage, moduleIndex));
+    return pCurrentThread->GetThreadStaticStorage();
 }
 
 // This is function is used to quickly query a value that can uniquely identify a thread

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -350,6 +351,7 @@ namespace System.Buffers.Text
             }
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe void Avx2Decode(ref byte* srcBytes, ref byte* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, byte* destStart)
         {
@@ -477,20 +479,17 @@ namespace System.Buffers.Text
             destBytes = dest;
         }
 
-        // This can be replaced once https://github.com/dotnet/runtime/issues/63331 is implemented.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector128<byte> SimdShuffle(Vector128<byte> left, Vector128<byte> right, Vector128<byte> mask8F)
         {
             Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
 
-            if (Ssse3.IsSupported)
+            if (AdvSimd.Arm64.IsSupported)
             {
-                return Ssse3.Shuffle(left, right);
+                right &= mask8F;
             }
-            else
-            {
-                return AdvSimd.Arm64.VectorTableLookup(left, Vector128.BitwiseAnd(right, mask8F));
-            }
+
+            return Vector128.ShuffleUnsafe(left, right);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

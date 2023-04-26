@@ -6,10 +6,10 @@
 /// <reference path="./types/node.d.ts" />
 
 import type { CreateDotnetRuntimeType, DotnetModule, RuntimeAPI, EarlyExports, EarlyImports, ModuleAPI, RuntimeHelpers } from "./types";
-import type { EmscriptenModule } from "./types/emscripten";
+import type { EmscriptenModule, EmscriptenModuleInternal } from "./types/emscripten";
 
 // these are our public API (except internal)
-export let Module: EmscriptenModule & DotnetModule;
+export let Module: EmscriptenModule & DotnetModule & EmscriptenModuleInternal;
 export let INTERNAL: any;
 export let IMPORTS: any;
 
@@ -22,6 +22,10 @@ export let ENVIRONMENT_IS_PTHREAD: boolean;
 export const exportedRuntimeAPI: RuntimeAPI = {} as any;
 export const moduleExports: ModuleAPI = {} as any;
 export let emscriptenEntrypoint: CreateDotnetRuntimeType;
+
+// this is when we link with workload tools. The consts:WasmEnableLegacyJsInterop is when we compile with rollup.
+export let disableLegacyJsInterop = false;
+
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function set_imports_exports(
     imports: EarlyImports,
@@ -36,6 +40,7 @@ export function set_imports_exports(
     ENVIRONMENT_IS_WEB = imports.isWeb;
     ENVIRONMENT_IS_WORKER = imports.isWorker;
     ENVIRONMENT_IS_PTHREAD = imports.isPThread;
+    disableLegacyJsInterop = imports.disableLegacyJsInterop;
     runtimeHelpers.quit = imports.quit_;
     runtimeHelpers.ExitStatus = imports.ExitStatus;
     runtimeHelpers.requirePromise = imports.requirePromise;
@@ -51,7 +56,6 @@ export function set_emscripten_entrypoint(
 const initialRuntimeHelpers: Partial<RuntimeHelpers> =
 {
     javaScriptExports: {} as any,
-    mono_wasm_load_runtime_done: false,
     mono_wasm_bindings_is_ready: false,
     maxParallelDownloads: 16,
     enableDownloadRetry: true,

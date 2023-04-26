@@ -2763,6 +2763,18 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0015</DiagnosticId>
+    <Target>M:System.Reflection.Metadata.MetadataUpdateHandlerAttribute.#ctor(System.Type)$0:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net7.0/System.Runtime.Loader.dll</Left>
+    <Right>net8.0/System.Runtime.Loader.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
+    <Target>P:System.Reflection.Metadata.MetadataUpdateHandlerAttribute.HandlerType:[T:System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute]</Target>
+    <Left>net7.0/System.Runtime.Loader.dll</Left>
+    <Right>net8.0/System.Runtime.Loader.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0015</DiagnosticId>
     <Target>M:System.Runtime.Serialization.Formatter.Deserialize(System.IO.Stream):[T:System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute]</Target>
     <Left>net7.0/System.Runtime.Serialization.Formatters.dll</Left>
     <Right>net8.0/System.Runtime.Serialization.Formatters.dll</Right>

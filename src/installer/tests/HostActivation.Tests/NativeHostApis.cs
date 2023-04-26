@@ -523,12 +523,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                     // On non-Windows, we can't just P/Invoke to already loaded hostfxr, so copy it next to the app dll.
                     var fixture = HostApiInvokerAppFixture;
-                    var hostfxr = Path.Combine(
-                        fixture.BuiltDotnet.GreatestVersionHostFxrPath,
-                        RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
-
                     FileUtils.CopyIntoDirectory(
-                        hostfxr,
+                        fixture.BuiltDotnet.GreatestVersionHostFxrFilePath,
                         Path.GetDirectoryName(fixture.TestProject.AppDll));
                 }
             }

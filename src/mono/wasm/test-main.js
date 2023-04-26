@@ -23,6 +23,16 @@ if (is_node && process.versions.node.split(".")[0] < 14) {
     throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
 }
 
+if (is_node) {
+    // the emscripten 3.1.34 stopped handling these when MODULARIZE is enabled
+    process.on('uncaughtException', function (ex) {
+        // ignore UnhandledPromiseRejection exceptions with exit status
+        if (ex !== 'unwind' && (ex.name !== "UnhandledPromiseRejection" || !ex.message.includes('"#<ExitStatus>"'))) {
+            throw ex;
+        }
+    });
+}
+
 if (!is_node && !is_browser && typeof globalThis.crypto === 'undefined') {
     // **NOTE** this is a simple insecure polyfill for testing purposes only
     // /dev/random doesn't work on js shells, so define our own
@@ -66,8 +76,7 @@ async function getArgs() {
     let runArgsJson;
     // ToDo: runArgs should be read for all kinds of hosts, but
     // fetch is added to node>=18 and current Windows's emcc node<18
-    if (is_browser)
-    {
+    if (is_browser) {
         const response = await globalThis.fetch('./runArgs.json');
         if (response.ok) {
             runArgsJson = initRunArgs(await response.json());
@@ -93,6 +102,7 @@ function initRunArgs(runArgs) {
     runArgs.configSrc = runArgs.configSrc === undefined ? './mono-config.json' : runArgs.configSrc;
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
+    runArgs.memorySnapshot = runArgs.memorySnapshot === undefined ? true : runArgs.memorySnapshot;
 
     return runArgs;
 }
@@ -124,6 +134,8 @@ function processArguments(incomingArguments, runArgs) {
             runArgs.debugging = true;
         } else if (currentArg == "--no-forward-console") {
             runArgs.forwardConsole = false;
+        } else if (currentArg == "--no-memory-snapshot") {
+            runArgs.memorySnapshot = false;
         } else if (currentArg.startsWith("--fetch-random-delay=")) {
             const arg = currentArg.substring("--fetch-random-delay=".length);
             if (is_browser) {
@@ -243,53 +255,99 @@ const App = {
 };
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
 
+function configureRuntime(dotnet, runArgs, INTERNAL) {
+    dotnet
+        .withVirtualWorkingDirectory(runArgs.workingDirectory)
+        .withEnvironmentVariables(runArgs.environmentVariables)
+        .withDiagnosticTracing(runArgs.diagnosticTracing)
+        .withExitOnUnhandledError()
+        .withExitCodeLogging()
+        .withElementOnExit();
+
+    if (is_node) {
+        dotnet
+            .withEnvironmentVariable("NodeJSPlatform", process.platform)
+            .withAsyncFlushOnExit();
+
+        const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
+        if (modulesToLoad) {
+            dotnet.withModuleConfig({
+                onConfigLoaded: (config) => {
+                    loadNodeModules(config, INTERNAL.require, modulesToLoad)
+                }
+            })
+        }
+    }
+    if (is_browser) {
+        if (runArgs.memorySnapshot) {
+            dotnet.withStartupMemoryCache(true);
+        }
+        dotnet.withEnvironmentVariable("IsWebSocketSupported", "true");
+    }
+    if (runArgs.runtimeArgs.length > 0) {
+        dotnet.withRuntimeOptions(runArgs.runtimeArgs);
+    }
+    if (runArgs.debugging) {
+        dotnet.withDebugging(-1);
+        dotnet.withWaitingForDebugger(-1);
+    }
+    if (runArgs.forwardConsole) {
+        dotnet.withConsoleForwarding();
+    }
+}
+
+async function dry_run(runArgs) {
+    try {
+        console.log("Silently starting separate runtime instance as another ES6 module to populate caches...");
+        // this separate instance of the ES6 module, in which we just populate the caches
+        const { dotnet, exit, INTERNAL } = await loadDotnet('./dotnet.js?dry_run=true');
+        mono_exit = exit;
+        configureRuntime(dotnet, runArgs, INTERNAL);
+        // silent minimal startup
+        await dotnet.withConfig({
+            forwardConsoleLogsToWS: false,
+            diagnosticTracing: false,
+            appendElementOnExit: false,
+            logExitCode: false,
+            pthreadPoolSize: 0,
+            // this just means to not continue startup after the snapshot is taken. 
+            // If there was previously a matching snapshot, it will be used.
+            exitAfterSnapshot: true
+        }).create();
+    } catch (err) {
+        if (err && err.status !== 0) {
+            return false;
+        }
+    }
+    console.log("Separate runtime instance finished loading.");
+    return true;
+}
+
 async function run() {
     try {
+        const runArgs = await getArgs();
+        console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
+
+        if (is_browser && runArgs.memorySnapshot) {
+            const dryOk = await dry_run(runArgs);
+            if (!dryOk) {
+                mono_exit(1, "Failed during dry run");
+                return;
+            }
+        }
+
+        // this is subsequent run with the actual tests. It will use whatever was cached in the previous run. 
+        // This way, we are testing that the cached version works.
         const { dotnet, exit, INTERNAL } = await loadDotnet('./dotnet.js');
         mono_exit = exit;
 
-        const runArgs = await getArgs();
         if (runArgs.applicationArguments.length == 0) {
             mono_exit(1, "Missing required --run argument");
             return;
         }
-        console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
 
-        dotnet
-            .withVirtualWorkingDirectory(runArgs.workingDirectory)
-            .withEnvironmentVariables(runArgs.environmentVariables)
-            .withDiagnosticTracing(runArgs.diagnosticTracing)
-            .withExitOnUnhandledError()
-            .withExitCodeLogging()
-            .withElementOnExit();
+        configureRuntime(dotnet, runArgs, INTERNAL);
 
-        if (is_node) {
-            dotnet
-                .withEnvironmentVariable("NodeJSPlatform", process.platform)
-                .withAsyncFlushOnExit();
-
-            const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
-            if (modulesToLoad) {
-                dotnet.withModuleConfig({
-                    onConfigLoaded: (config) => {
-                        loadNodeModules(config, INTERNAL.require, modulesToLoad)
-                    }
-                })
-            }
-        }
-        if (is_browser) {
-            dotnet.withEnvironmentVariable("IsWebSocketSupported", "true");
-        }
-        if (runArgs.runtimeArgs.length > 0) {
-            dotnet.withRuntimeOptions(runArgs.runtimeArgs);
-        }
-        if (runArgs.debugging) {
-            dotnet.withDebugging(-1);
-            dotnet.withWaitingForDebugger(-1);
-        }
-        if (runArgs.forwardConsole) {
-            dotnet.withConsoleForwarding();
-        }
         App.runtime = await dotnet.create();
         App.runArgs = runArgs
 
@@ -329,6 +387,7 @@ async function run() {
                 const main_assembly_name = runArgs.applicationArguments[1];
                 const app_args = runArgs.applicationArguments.slice(2);
                 const result = await App.runtime.runMain(main_assembly_name, app_args);
+                console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result}`);
                 mono_exit(result);
             } catch (error) {
                 if (error.name != "ExitStatus") {

@@ -177,7 +177,7 @@ namespace Internal.Runtime.TypeLoader
                     runtimeInterfacesLength = checked((ushort)state.RuntimeInterfaces.Length);
                 }
 
-                baseSize = (int)pTemplateEEType->BaseSize;
+                baseSize = (int)pTemplateEEType->RawBaseSize;
                 isValueType = pTemplateEEType->IsValueType;
                 hasFinalizer = pTemplateEEType->IsFinalizable;
                 isNullable = pTemplateEEType->IsNullable;
@@ -189,6 +189,7 @@ namespace Internal.Runtime.TypeLoader
 
                 flags |= (uint)EETypeFlags.IsDynamicTypeFlag;
 
+                int numFunctionPointerTypeParameters = 0;
                 if (state.TypeBeingBuilt.IsMdArray)
                 {
                     // If we're building an MDArray, the template is object[,] and we
@@ -196,6 +197,17 @@ namespace Internal.Runtime.TypeLoader
                     baseSize = IntPtr.Size + // sync block
                         2 * IntPtr.Size + // EETypePtr + Length
                         state.ArrayRank.Value * sizeof(int) * 2; // 2 ints per rank for bounds
+                }
+                else if (state.TypeBeingBuilt.IsFunctionPointer)
+                {
+                    // Base size encodes number of parameters and calling convention
+                    MethodSignature sig = ((FunctionPointerType)state.TypeBeingBuilt).Signature;
+                    baseSize = (sig.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) switch
+                    {
+                        0 => sig.Length,
+                        _ => sig.Length | unchecked((int)FunctionPointerFlags.IsUnmanaged),
+                    };
+                    numFunctionPointerTypeParameters = sig.Length;
                 }
 
                 // Optional fields encoding
@@ -250,6 +262,7 @@ namespace Internal.Runtime.TypeLoader
                         cbOptionalFieldsSize > 0,
                         (rareFlags & (int)EETypeRareFlags.HasSealedVTableEntriesFlag) != 0,
                         isGeneric,
+                        numFunctionPointerTypeParameters,
                         allocatedNonGCDataSize != 0,
                         state.GcDataSize != 0,
                         state.ThreadDataSize != 0);
@@ -269,7 +282,7 @@ namespace Internal.Runtime.TypeLoader
 
                     // Set basic MethodTable fields
                     pEEType->Flags = flags;
-                    pEEType->BaseSize = (uint)baseSize;
+                    pEEType->RawBaseSize = (uint)baseSize;
                     pEEType->NumVtableSlots = numVtableSlots;
                     pEEType->NumInterfaces = runtimeInterfacesLength;
                     pEEType->HashCode = hashCodeOfNewType;
@@ -279,7 +292,7 @@ namespace Internal.Runtime.TypeLoader
                     bool isSzArray = isArray ? state.ArrayRank < 1 : false;
                     int arrayRank = isArray ? state.ArrayRank.Value : 0;
                     CreateInstanceGCDesc(state, pTemplateEEType, pEEType, baseSize, cbGCDesc, isValueType, isArray, isSzArray, arrayRank);
-                    Debug.Assert(pEEType->HasGCPointers == (cbGCDesc != 0));
+                    Debug.Assert(pEEType->ContainsGCPointers == (cbGCDesc != 0));
 
                     // Copy the encoded optional fields buffer to the newly allocated memory, and update the OptionalFields field on the MethodTable
                     if (cbOptionalFieldsSize > 0)
@@ -397,12 +410,15 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (cbGCDesc != 0)
                 {
-                    pEEType->HasGCPointers = true;
-                    if (state.IsArrayOfReferenceTypes)
+                    pEEType->ContainsGCPointers = true;
+                    if (state.IsArrayOfReferenceTypes || IsAllGCPointers(gcBitfield))
                     {
                         IntPtr* gcDescStart = (IntPtr*)((byte*)pEEType - cbGCDesc);
+                        // Series size
                         gcDescStart[0] = new IntPtr(-baseSize);
+                        // Series offset
                         gcDescStart[1] = new IntPtr(baseSize - sizeof(IntPtr));
+                        // NumSeries
                         gcDescStart[2] = new IntPtr(1);
                     }
                     else
@@ -412,29 +428,29 @@ namespace Internal.Runtime.TypeLoader
                 }
                 else
                 {
-                    pEEType->HasGCPointers = false;
+                    pEEType->ContainsGCPointers = false;
                 }
             }
             else if (gcBitfield != null)
             {
                 if (cbGCDesc != 0)
                 {
-                    pEEType->HasGCPointers = true;
+                    pEEType->ContainsGCPointers = true;
                     CreateGCDesc(gcBitfield, baseSize, isValueType, false, ((void**)pEEType) - 1);
                 }
                 else
                 {
-                    pEEType->HasGCPointers = false;
+                    pEEType->ContainsGCPointers = false;
                 }
             }
             else if (pTemplateEEType != null)
             {
                 Buffer.MemoryCopy((byte*)pTemplateEEType - cbGCDesc, (byte*)pEEType - cbGCDesc, cbGCDesc, cbGCDesc);
-                pEEType->HasGCPointers = pTemplateEEType->HasGCPointers;
+                pEEType->ContainsGCPointers = pTemplateEEType->ContainsGCPointers;
             }
             else
             {
-                pEEType->HasGCPointers = false;
+                pEEType->ContainsGCPointers = false;
             }
         }
 
@@ -443,9 +459,10 @@ namespace Internal.Runtime.TypeLoader
             var gcBitfield = state.InstanceGCLayout;
             if (isArray)
             {
-                if (state.IsArrayOfReferenceTypes)
+                if (state.IsArrayOfReferenceTypes ||
+                    (gcBitfield != null && IsAllGCPointers(gcBitfield)))
                 {
-                    // Reference type arrays have a GC desc the size of 3 pointers
+                    // For efficiency this is special cased and encoded as one serie
                     return 3 * sizeof(IntPtr);
                 }
                 else
@@ -470,6 +487,20 @@ namespace Internal.Runtime.TypeLoader
             {
                 return 0;
             }
+        }
+
+        private static bool IsAllGCPointers(LowLevelList<bool> bitfield)
+        {
+            int count = bitfield.Count;
+            Debug.Assert(count > 0);
+
+            for (int i = 0; i < count; i++)
+            {
+                if (!bitfield[i])
+                    return false;
+            }
+
+            return true;
         }
 
         private static unsafe int CreateArrayGCDesc(LowLevelList<bool> bitfield, int rank, bool isSzArray, void* gcdesc)
@@ -648,7 +679,7 @@ namespace Internal.Runtime.TypeLoader
 
             MethodTable* pTemplateEEType;
 
-            if (type is PointerType || type is ByRefType)
+            if (type is PointerType || type is ByRefType || type is FunctionPointerType)
             {
                 Debug.Assert(0 == state.NonGcDataSize);
                 Debug.Assert(false == state.HasStaticConstructor);
@@ -657,8 +688,17 @@ namespace Internal.Runtime.TypeLoader
                 Debug.Assert(IntPtr.Zero == state.GcStaticDesc);
                 Debug.Assert(IntPtr.Zero == state.ThreadStaticDesc);
 
-                // Pointers and ByRefs only differ by the ParameterizedTypeShape and ElementType value.
-                RuntimeTypeHandle templateTypeHandle = typeof(void*).TypeHandle;
+                RuntimeTypeHandle templateTypeHandle;
+                if (type is FunctionPointerType)
+                {
+                    // There's still differences to paper over, but `delegate*<void>` is close enough.
+                    templateTypeHandle = typeof(delegate*<void>).TypeHandle;
+                }
+                else
+                {
+                    // Pointers and ByRefs only differ by the ParameterizedTypeShape and ElementType value.
+                    templateTypeHandle = typeof(void*).TypeHandle;
+                }
 
                 pTemplateEEType = templateTypeHandle.ToEETypePtr();
             }

@@ -10,7 +10,6 @@ trigger:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - '**.md'
     - eng/Version.Details.xml
@@ -37,7 +36,6 @@ pr:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - '**.md'
     - eng/Version.Details.xml
@@ -76,6 +74,7 @@ extends:
           - linux_x64
           - linux_arm
           - linux_arm64
+          - linux_riscv64
           - linux_musl_arm
           - linux_musl_arm64
           - linux_musl_x64
@@ -102,11 +101,9 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
-          - linux_x64
-          container: debian-11-gcc12-amd64
+          - gcc_linux_x64
           jobParameters:
             testGroup: innerloop
-            compilerName: gcc
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -248,7 +245,7 @@ extends:
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             extraStepsParameters:
               creator: dotnet-bot
-              testBuildArgs: nativeaot tree nativeaot /p:BuildNativeAotFrameworkObjects=true
+              testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;" /p:BuildNativeAotFrameworkObjects=true'
               liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
             extraVariablesTemplates:
@@ -479,14 +476,17 @@ extends:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
 
-      # BUILD ONLY - Wasm Threading Legs
-      - template: /eng/pipelines/common/templates/wasm-build-only.yml
+      # Build and Smoke Tests only - Wasm Threading Legs
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
             - browser_wasm
-          nameSuffix: _Threading
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread
+          nameSuffix: _Threading_Smoke
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8
+          shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
+          scenarios:
+            - WasmTestOnBrowser
 
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
         parameters:
@@ -1234,6 +1234,7 @@ extends:
             extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
             extraStepsParameters:
               creator: dotnet-bot
+              llvmAotStepContainer: linux_x64_llvmaot
             testRunNamePrefixSuffix: Mono_Release
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

@@ -11,8 +11,14 @@ System.IO.Hashing.XxHash32</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="System\ThrowHelper.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
     <Compile Include="System\IO\Hashing\Crc32.cs" />
+    <Compile Include="System\IO\Hashing\Crc32.Arm.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))" />
     <Compile Include="System\IO\Hashing\Crc32.Table.cs" />
+    <Compile Include="System\IO\Hashing\Crc32.Vectorized.cs"
+             Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))" />
     <Compile Include="System\IO\Hashing\Crc64.cs" />
     <Compile Include="System\IO\Hashing\Crc64.Table.cs" />
     <Compile Include="System\IO\Hashing\XxHash128.cs" />

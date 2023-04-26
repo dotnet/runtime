@@ -7,8 +7,8 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
 
-import { ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, moduleExports, set_emscripten_entrypoint, set_imports_exports } from "./imports";
-import { DotnetModule, is_nullish, EarlyImports, EarlyExports, EarlyReplacements, RuntimeAPI, CreateDotnetRuntimeType } from "./types";
+import { ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, disableLegacyJsInterop, moduleExports, set_emscripten_entrypoint, set_imports_exports } from "./imports";
+import { is_nullish, EarlyImports, EarlyExports, EarlyReplacements, RuntimeAPI, CreateDotnetRuntimeType, DotnetModuleInternal } from "./types";
 import { configure_emscripten_startup, mono_wasm_pthread_worker_init } from "./startup";
 
 import { create_weak_ref } from "./weak-ref";
@@ -37,18 +37,18 @@ function initializeImportsAndExports(
     replacements: EarlyReplacements,
     callbackAPI: any
 ): RuntimeAPI {
-    const module = exports.module as DotnetModule;
+    const module = exports.module as DotnetModuleInternal;
     const globalThisAny = globalThis as any;
 
     // we want to have same instance of MONO, BINDING and Module in dotnet iife
     set_imports_exports(imports, exports);
-    if (WasmEnableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
         set_legacy_exports(exports);
     }
     init_polyfills(replacements);
 
     // here we merge methods from the local objects into exported objects
-    if (WasmEnableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
         Object.assign(exports.mono, export_mono_api());
         Object.assign(exports.binding, export_binding_api());
         Object.assign(exports.internal, export_internal_api());
@@ -67,7 +67,7 @@ function initializeImportsAndExports(
         },
         ...API,
     });
-    if (WasmEnableLegacyJsInterop) {
+    if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
         Object.assign(exportedRuntimeAPI, {
             MONO: exports.mono,
             BINDING: exports.binding,
@@ -80,11 +80,11 @@ function initializeImportsAndExports(
         module.configSrc = "./mono-config.json";
     }
 
-    if (!module.print) {
-        module.print = console.log.bind(console);
+    if (!module.out) {
+        module.out = console.log.bind(console);
     }
-    if (!module.printErr) {
-        module.printErr = console.error.bind(console);
+    if (!module.err) {
+        module.err = console.error.bind(console);
     }
 
     if (typeof module.disableDotnet6Compatibility === "undefined") {
@@ -94,7 +94,7 @@ function initializeImportsAndExports(
     if (imports.isGlobal || !module.disableDotnet6Compatibility) {
         Object.assign(module, exportedRuntimeAPI);
 
-        if (WasmEnableLegacyJsInterop) {
+        if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
             // backward compatibility
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore

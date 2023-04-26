@@ -4,6 +4,7 @@
 //testing common sub-expression elimination
 
 using System;
+using Xunit;
 public class CL
 {
     public int item;
@@ -104,7 +105,8 @@ public class CSE1
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result;
         s_sa = 0;

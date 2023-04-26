@@ -39,6 +39,8 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, converter, options);
             typeInfo.NumberHandling = GetNumberHandlingForType(typeInfo.Type);
+            typeInfo.PreferredPropertyObjectCreationHandling = GetObjectCreationHandlingForType(typeInfo.Type);
+
             if (typeInfo.Kind == JsonTypeInfoKind.Object)
             {
                 typeInfo.UnmappedMemberHandling = GetUnmappedMemberHandling(typeInfo.Type);
@@ -234,7 +236,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter? customConverter;
             try
             {
-                customConverter = DefaultJsonTypeInfoResolver.GetCustomConverterForMember(typeToConvert, memberInfo, options);
+                customConverter = GetCustomConverterForMember(typeToConvert, memberInfo, options);
             }
             catch (InvalidOperationException) when (ignoreCondition == JsonIgnoreCondition.Always)
             {
@@ -251,6 +253,12 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonNumberHandlingAttribute? numberHandlingAttribute = type.GetUniqueCustomAttribute<JsonNumberHandlingAttribute>(inherit: false);
             return numberHandlingAttribute?.Handling;
+        }
+
+        private static JsonObjectCreationHandling? GetObjectCreationHandlingForType(Type type)
+        {
+            JsonObjectCreationHandlingAttribute? creationHandlingAttribute = type.GetUniqueCustomAttribute<JsonObjectCreationHandlingAttribute>(inherit: false);
+            return creationHandlingAttribute?.Handling;
         }
 
         private static JsonUnmappedMemberHandling? GetUnmappedMemberHandling(Type type)
@@ -351,6 +359,9 @@ namespace System.Text.Json.Serialization.Metadata
 
             JsonNumberHandlingAttribute? numberHandlingAttr = memberInfo.GetCustomAttribute<JsonNumberHandlingAttribute>(inherit: false);
             propertyInfo.NumberHandling = numberHandlingAttr?.Handling;
+
+            JsonObjectCreationHandlingAttribute? objectCreationHandlingAttr = memberInfo.GetCustomAttribute<JsonObjectCreationHandlingAttribute>(inherit: false);
+            propertyInfo.ObjectCreationHandling = objectCreationHandlingAttr?.Handling;
         }
 
         private static void DeterminePropertyName(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)
@@ -399,13 +410,13 @@ namespace System.Text.Json.Serialization.Metadata
                     MethodInfo? getMethod = propertyInfo.GetMethod;
                     if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
                     {
-                        jsonPropertyInfo.Get = DefaultJsonTypeInfoResolver.MemberAccessor.CreatePropertyGetter<T>(propertyInfo);
+                        jsonPropertyInfo.Get = MemberAccessor.CreatePropertyGetter<T>(propertyInfo);
                     }
 
                     MethodInfo? setMethod = propertyInfo.SetMethod;
                     if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
                     {
-                        jsonPropertyInfo.Set = DefaultJsonTypeInfoResolver.MemberAccessor.CreatePropertySetter<T>(propertyInfo);
+                        jsonPropertyInfo.Set = MemberAccessor.CreatePropertySetter<T>(propertyInfo);
                     }
 
                     break;
@@ -413,11 +424,11 @@ namespace System.Text.Json.Serialization.Metadata
                 case FieldInfo fieldInfo:
                     Debug.Assert(fieldInfo.IsPublic);
 
-                    jsonPropertyInfo.Get = DefaultJsonTypeInfoResolver.MemberAccessor.CreateFieldGetter<T>(fieldInfo);
+                    jsonPropertyInfo.Get = MemberAccessor.CreateFieldGetter<T>(fieldInfo);
 
                     if (!fieldInfo.IsInitOnly)
                     {
-                        jsonPropertyInfo.Set = DefaultJsonTypeInfoResolver.MemberAccessor.CreateFieldSetter<T>(fieldInfo);
+                        jsonPropertyInfo.Set = MemberAccessor.CreateFieldSetter<T>(fieldInfo);
                     }
 
                     break;

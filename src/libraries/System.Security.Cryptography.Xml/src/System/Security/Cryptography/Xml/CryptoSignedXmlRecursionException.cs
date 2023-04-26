@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Xml;
 
@@ -19,6 +20,10 @@ namespace System.Security.Cryptography.Xml
         public CryptoSignedXmlRecursionException() : base() { }
         public CryptoSignedXmlRecursionException(string message) : base(message) { }
         public CryptoSignedXmlRecursionException(string message, Exception inner) : base(message, inner) { }
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected CryptoSignedXmlRecursionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

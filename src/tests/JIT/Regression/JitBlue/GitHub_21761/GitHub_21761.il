@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Numerics.Vectors { }
 .assembly GitHub_21761 { }
 .assembly extern xunit.core {}
@@ -276,6 +276,8 @@ FAIL:
     ret
 }
 
+.class public auto ansi Test
+{
 .method public hidebysig static int32 Main() cil managed
 {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -319,4 +321,5 @@ FAIL:
  FAIL:
     ldc.i4 1
     ret
+}
 }

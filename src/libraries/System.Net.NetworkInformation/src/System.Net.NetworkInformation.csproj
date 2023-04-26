@@ -51,6 +51,7 @@
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformation.cs" Link="Common\System\Net\NetworkInformation\HostInformation.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\NetworkInformationException.cs" Link="Common\System\Net\NetworkInformation\NetworkInformationException.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <!-- Interop -->

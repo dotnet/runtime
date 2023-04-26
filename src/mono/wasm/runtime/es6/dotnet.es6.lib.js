@@ -4,9 +4,18 @@
 
 "use strict";
 
-const monoWasmThreads = process.env.MonoWasmThreads == "true";
-const WasmEnableLegacyJsInterop = process.env.WasmEnableLegacyJsInterop === "true";
-const isPThread = monoWasmThreads ? "ENVIRONMENT_IS_PTHREAD" : "false";
+// USE_PTHREADS is emscripten's define symbol, which is passed to acorn optimizer, so we could use it here
+#if USE_PTHREADS
+const monoWasmThreads = true;
+const isPThread = `ENVIRONMENT_IS_PTHREAD`;
+#else
+const monoWasmThreads = false;
+const isPThread = "false";
+#endif
+
+// because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
+const DISABLE_LEGACY_JS_INTEROP = process.env.DISABLE_LEGACY_JS_INTEROP === "1";
+const disableLegacyJsInterop = DISABLE_LEGACY_JS_INTEROP ? "true" : "false";
 
 const DotnetSupportLib = {
     $DOTNET: {},
@@ -24,15 +33,15 @@ __dotnet_replacement_PThread.loadWasmModuleToWorker = PThread.loadWasmModuleToWo
 __dotnet_replacement_PThread.threadInitTLS = PThread.threadInitTLS;
 __dotnet_replacement_PThread.allocateUnusedWorker = PThread.allocateUnusedWorker;
 ` : ''}
-let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateGlobalBufferAndViews, pthreadReplacements: __dotnet_replacement_PThread};
+let __dotnet_replacements = {scriptUrl: import.meta.url, fetch: globalThis.fetch, require, updateMemoryViews, pthreadReplacements: __dotnet_replacement_PThread};
 if (ENVIRONMENT_IS_NODE) {
     __dotnet_replacements.requirePromise = __requirePromise;
 }
 let __dotnet_exportedAPI = __initializeImportsAndExports(
-    { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
+    { isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isWorker:ENVIRONMENT_IS_WORKER, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, isPThread:${isPThread}, disableLegacyJsInterop:${disableLegacyJsInterop}, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module, marshaled_imports: IMPORTS },
     __dotnet_replacements, __callbackAPI);
-updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
+updateMemoryViews = __dotnet_replacements.updateMemoryViews;
 fetch = __dotnet_replacements.fetch;
 _scriptDir = __dirname = scriptDirectory = __dotnet_replacements.scriptDirectory;
 if (ENVIRONMENT_IS_NODE) {
@@ -89,22 +98,28 @@ let linked_functions = [
     "mono_wasm_invoke_import",
     "mono_wasm_bind_cs_function",
     "mono_wasm_marshal_promise",
+    "mono_wasm_change_case_invariant",
+    "mono_wasm_change_case",
+    "mono_wasm_compare_string",
+    "mono_wasm_starts_with",
+    "mono_wasm_ends_with",
 
-    // pal_icushim_static.c
-    "mono_wasm_load_icu_data",
+    "icudt68_dat",
 ];
 
 if (monoWasmThreads) {
     linked_functions = [...linked_functions,
         /// mono-threads-wasm.c
         "mono_wasm_pthread_on_pthread_attached",
+        // threads.c
+        "mono_wasm_eventloop_has_unsettled_interop_promises",
         // diagnostics_server.c
         "mono_wasm_diagnostic_server_on_server_thread_created",
         "mono_wasm_diagnostic_server_on_runtime_server_init",
         "mono_wasm_diagnostic_server_stream_signal_work_available",
     ]
 }
-if (WasmEnableLegacyJsInterop) {
+if (!DISABLE_LEGACY_JS_INTEROP) {
     linked_functions = [...linked_functions,
         "mono_wasm_invoke_js_with_args_ref",
         "mono_wasm_get_object_property_ref",

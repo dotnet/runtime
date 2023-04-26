@@ -146,8 +146,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
                                            comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
             }
 
-            GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, addr);
-            indir->gtFlags |= GTF_IND_INVARIANT;
+            GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, addr, GTF_IND_INVARIANT);
             return indir;
         }
         case MethodAddr:
@@ -160,9 +159,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
         {
             GenTreeIntCon* slot = comp->gtNewIconHandleNode((size_t)methAddr, GTF_ICON_FTN_ADDR);
             INDEBUG(slot->gtTargetHandle = (size_t)targetMethHnd);
-            GenTree* indir = comp->gtNewIndir(TYP_I_IMPL, slot);
-            indir->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-            indir->gtFlags &= ~GTF_EXCEPT;
+            GenTree* indir = comp->gtNewIndir(TYP_I_IMPL, slot, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
             return indir;
         }
         default:
@@ -213,7 +210,15 @@ GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb, bool invert)
     GenTree* op1Tree = op1.ToGenTree(comp, bb);
     GenTree* op2Tree = op2.ToGenTree(comp, bb);
     assert(genTypeSize(genActualType(op1Tree->TypeGet())) == genTypeSize(genActualType(op2Tree->TypeGet())));
-    return comp->gtNewOperNode(invert ? GenTree::ReverseRelop(oper) : oper, TYP_INT, op1Tree, op2Tree);
+
+    GenTree* result = comp->gtNewOperNode(invert ? GenTree::ReverseRelop(oper) : oper, TYP_INT, op1Tree, op2Tree);
+
+    if (compareUnsigned)
+    {
+        result->gtFlags |= GTF_UNSIGNED;
+    }
+
+    return result;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -963,12 +968,14 @@ void LC_ArrayDeref::DeriveLevelConditions(JitExpandArrayStack<JitExpandArrayStac
     }
     else
     {
-        // Adjust for level0 having just 1 condition and push condition (i < a.len).
+        // Adjust for level0 having just 1 condition and push conditions (i >= 0) && (i < a.len).
+        // We fold the two compares into one using unsigned compare, since we know a.len is non-negative.
+        //
         LC_Array arrLen = array;
         arrLen.oper     = LC_Array::ArrLen;
         arrLen.dim      = level - 1;
-        (*conds)[level * 2 - 1]->Push(
-            LC_Condition(GT_LT, LC_Expr(LC_Ident::CreateVar(Lcl())), LC_Expr(LC_Ident::CreateArrAccess(arrLen))));
+        (*conds)[level * 2 - 1]->Push(LC_Condition(GT_LT, LC_Expr(LC_Ident::CreateVar(Lcl())),
+                                                   LC_Expr(LC_Ident::CreateArrAccess(arrLen)), /*unsigned*/ true));
 
         // Push condition (a[i] != null)
         LC_Array arrTmp = array;
@@ -1524,7 +1531,7 @@ bool Compiler::optComputeDerefConditions(unsigned loopNum, LoopCloneContext* con
         assert(maxRank != -1);
 
         // First level will always yield the null-check, since it is made of the array base variables.
-        // All other levels (dimensions) will yield two conditions ex: (i < a.length && a[i] != null)
+        // All other levels (dimensions) will yield two conditions ex: ((unsigned) i < a.length && a[i] != null)
         // So add 1 after rank * 2.
         const unsigned condBlocks = (unsigned)maxRank * 2 + 1;
 
@@ -1961,81 +1968,6 @@ BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
 }
 
 //------------------------------------------------------------------------
-// OptEnsureUniqueHead: Ensure that loop "loopInd" has a unique head block.
-// If the existing entry has non-loop predecessors other than the head entry,
-// create a new, empty block that goes (only) to the entry, and redirects the
-// preds of the entry to this new block. Sets the weight of the newly created
-// block to "ambientWeight".
-//
-// NOTE: this is currently dead code, because it is only called by loop cloning,
-// and loop cloning only works with single-entry loops where the immediately
-// preceding head block is the only predecessor of the loop entry.
-//
-// Arguments:
-//    loopInd       - index of loop to process
-//    ambientWeight - weight to give the new head, if created.
-//
-void Compiler::optEnsureUniqueHead(unsigned loopInd, weight_t ambientWeight)
-{
-    LoopDsc& loop = optLoopTable[loopInd];
-
-    BasicBlock* h = loop.lpHead;
-    BasicBlock* t = loop.lpTop;
-    BasicBlock* e = loop.lpEntry;
-    BasicBlock* b = loop.lpBottom;
-
-    // If "h" dominates the entry block, then it is the unique header.
-    if (fgDominate(h, e))
-    {
-        return;
-    }
-
-    // Otherwise, create a new empty header block, make it the pred of the entry block,
-    // and redirect the preds of the entry block to go to this.
-
-    BasicBlock* beforeTop = t->bbPrev;
-    assert(!beforeTop->bbFallsThrough() || (beforeTop->bbNext == e));
-
-    // Make sure that the new block is in the same region as the loop.
-    // (We will only create loops that are entirely within a region.)
-    BasicBlock* h2 = fgNewBBafter(BBJ_NONE, beforeTop, /*extendRegion*/ true);
-    assert(beforeTop->bbNext == h2);
-
-    // This is in the containing loop.
-    h2->bbNatLoopNum = loop.lpParent;
-    h2->bbWeight     = h2->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-
-    if (h2->bbNext != e)
-    {
-        h2->bbJumpKind = BBJ_ALWAYS;
-        h2->bbJumpDest = e;
-    }
-    BlockSetOps::Assign(this, h2->bbReach, e->bbReach);
-
-    fgAddRefPred(e, h2);
-
-    // Redirect paths from preds of "e" to go to "h2" instead of "e".
-    BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
-    blockMap->Set(e, h2);
-
-    for (BasicBlock* const predBlock : e->PredBlocks())
-    {
-        // Skip if predBlock is in the loop.
-        if (t->bbNum <= predBlock->bbNum && predBlock->bbNum <= b->bbNum)
-        {
-            continue;
-        }
-
-        optRedirectBlock(predBlock, blockMap);
-
-        fgAddRefPred(h2, predBlock);
-        fgRemoveRefPred(e, predBlock);
-    }
-
-    optUpdateLoopHead(loopInd, h, h2);
-}
-
-//------------------------------------------------------------------------
 // optCloneLoop: Perform the mechanical cloning of the specified loop
 //
 // Arguments:
@@ -2077,12 +2009,9 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // the loop being cloned.
     unsigned char ambientLoop = loop.lpParent;
 
-    // First, make sure that the loop has a unique header block, creating an empty one if necessary.
-    optEnsureUniqueHead(loopInd, ambientWeight);
-
     // We're going to transform this loop:
     //
-    // H --> E    (or, H conditionally branches around the loop and has fall-through to T == E)
+    // H --> E    (if T == E, H falls through to T/E)
     // T
     // E
     // B ?-> T
@@ -2091,11 +2020,11 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // to this pair of loops:
     //
     // H ?-> H3   (all loop failure conditions branch to new slow path loop head)
-    // H2--> E    (Optional; if T == E, let H fall through to T/E)
+    // H2 --> E   (if T == E, H2 will fall through to T/E)
     // T
     // E
     // B  ?-> T
-    // X2--> X
+    // X2 --> X   (only need this if B -> is conditional, not BBJ_ALWAYS)
     // H3 --> E2  (aka slowHead. Or, H3 falls through to T2 == E2)
     // T2
     // E2
@@ -2103,28 +2032,38 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     // X
 
     BasicBlock* h = loop.lpHead;
-    if (!h->KindIs(BBJ_NONE, BBJ_ALWAYS))
+    assert((h->bbFlags & BBF_LOOP_PREHEADER) != 0);
+
+    // Make a new pre-header block 'h2' for the loop. 'h' will fall through to 'h2'.
+    JITDUMP("Create new header block for loop\n");
+
+    BasicBlock* h2 = fgNewBBafter(BBJ_NONE, h, /*extendRegion*/ true);
+    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", h2->bbNum, h->bbNum);
+    h2->bbWeight     = h2->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    h2->bbNatLoopNum = ambientLoop;
+    h2->bbFlags |= BBF_LOOP_PREHEADER;
+
+    if (h->bbJumpKind != BBJ_NONE)
     {
-        // Make a new block to be the unique entry to the loop.
-        JITDUMP("Create new unique single-successor entry to loop\n");
-        assert((h->bbJumpKind == BBJ_COND) && (h->bbNext == loop.lpEntry));
-        BasicBlock* newH = fgNewBBafter(BBJ_NONE, h, /*extendRegion*/ true);
-        JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", newH->bbNum, h->bbNum);
-        newH->bbWeight = newH->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-        BlockSetOps::Assign(this, newH->bbReach, h->bbReach);
-        // This is in the scope of a surrounding loop, if one exists -- the parent of the loop we're cloning.
-        newH->bbNatLoopNum = ambientLoop;
-        optUpdateLoopHead(loopInd, h, newH);
-
-        fgAddRefPred(newH, h); // Add h->newH pred edge
-        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", h->bbNum, newH->bbNum);
-        fgReplacePred(newH->bbNext, h, newH); // Replace pred in COND fall-through block.
-        JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", h->bbNum, newH->bbNext->bbNum,
-                newH->bbNum, newH->bbNext->bbNum);
-
-        h = newH;
+        assert(h->bbJumpKind == BBJ_ALWAYS);
+        assert(h->bbJumpDest == loop.lpEntry);
+        h2->bbJumpKind = BBJ_ALWAYS;
+        h2->bbJumpDest = loop.lpEntry;
     }
-    assert(h == loop.lpHead);
+
+    fgReplacePred(loop.lpEntry, h, h2);
+    JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", h->bbNum, loop.lpEntry->bbNum,
+            h2->bbNum, loop.lpEntry->bbNum);
+
+    // 'h' is no longer the loop head; 'h2' is!
+    h->bbFlags &= ~BBF_LOOP_PREHEADER;
+    optUpdateLoopHead(loopInd, h, h2);
+
+    // Make 'h' fall through to 'h2' (if it didn't already).
+    // Don't add the h->h2 edge because we're going to insert the cloning conditions between 'h' and 'h2', and
+    // optInsertLoopChoiceConditions() will add the edge.
+    h->bbJumpKind = BBJ_NONE;
+    h->bbJumpDest = nullptr;
 
     // Make X2 after B, if necessary.  (Not necessary if B is a BBJ_ALWAYS.)
     // "newPred" will be the predecessor of the blocks of the cloned loop.
@@ -2158,41 +2097,21 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         }
     }
 
-    // We're going to create a new loop head for the slow loop immediately before the slow loop itself. All failed
-    // conditions will branch to the slow head. The slow head will either fall through to the entry, or unconditionally
-    // branch to the slow path entry. This puts the slow loop in the canonical loop form.
-    BasicBlock* slowHeadPrev = newPred;
-
-    // Now we'll make "h2", after "h" to go to "e" -- unless the loop is a do-while,
-    // so that "h" already falls through to "e" (e == t).
-    // It might look like this code is unreachable, since "h" must be a BBJ_ALWAYS, but
-    // later we will change "h" to a BBJ_COND along with a set of loop conditions.
-    // Cloning is currently restricted to "do-while" loop forms, where this case won't occur.
-    // However, it can occur in OSR methods.
-    BasicBlock* h2 = nullptr;
-    if (h->bbNext != loop.lpEntry)
-    {
-        assert(h->bbJumpKind == BBJ_ALWAYS);
-        JITDUMP("Create branch to entry of optimized loop\n");
-        h2 = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true);
-        JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", h2->bbNum, h->bbNum);
-        h2->bbWeight = h2->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-
-        // This is in the scope of a surrounding loop, if one exists -- the parent of the loop we're cloning.
-        h2->bbNatLoopNum = ambientLoop;
-
-        h2->bbJumpDest = loop.lpEntry;
-        fgReplacePred(loop.lpEntry, h, h2);
-        JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", h->bbNum, loop.lpEntry->bbNum,
-                h2->bbNum, loop.lpEntry->bbNum);
-
-        optUpdateLoopHead(loopInd, h, h2);
-
-        // NOTE: 'h' is no longer the loop head; 'h2' is!
-    }
+    // Create a new loop head for the slow loop immediately before the slow loop itself. All failed
+    // conditions will branch to the slow head. The slow head will either fall through or unconditionally
+    // branch to the slow path entry. The slowHead will be a loop pre-header, however we don't put the slow loop
+    // in the loop table, so it isn't marked as a pre-header (if we re-built the loop table after cloning, slowHead
+    // would end up in the loop table as a pre-header without creating any new pre-header block). This puts the
+    // slow loop in the canonical loop form.
+    JITDUMP("Create unique head block for slow path loop\n");
+    BasicBlock* slowHead = fgNewBBafter(BBJ_NONE, newPred, /*extendRegion*/ true);
+    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowHead->bbNum, newPred->bbNum);
+    slowHead->bbWeight = newPred->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    slowHead->scaleBBWeight(slowPathWeightScaleFactor);
+    slowHead->bbNatLoopNum = ambientLoop;
+    newPred                = slowHead;
 
     // Now we'll clone the blocks of the loop body. These cloned blocks will be the slow path.
-    BasicBlock* newFirst = nullptr;
 
     BlockToBlockMap* blockMap = new (getAllocator(CMK_LoopClone)) BlockToBlockMap(getAllocator(CMK_LoopClone));
     for (BasicBlock* const blk : loop.LoopBlocks())
@@ -2219,22 +2138,28 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         // If the original loop is aligned, do not align the cloned loop because cloned loop will be executed in
         // rare scenario. Additionally, having to align cloned loop will force us to disable some VEX prefix encoding
         // and adding compensation for over-estimated instructions.
-        if (blk->isLoopAlign())
+        if (newBlk->isLoopAlign())
         {
             newBlk->bbFlags &= ~BBF_LOOP_ALIGN;
             JITDUMP("Removing LOOP_ALIGN flag from cloned loop in " FMT_BB "\n", newBlk->bbNum);
         }
 #endif
 
+        // If the loop we're cloning contains nested loops, we need to clear the pre-header bit on
+        // any nested loop pre-header blocks, since they will no longer be loop pre-headers. (This is because
+        // we don't add the slow loop or its child loops to the loop table. It would be simplest to
+        // just re-build the loop table if we want to enable loop optimization of the slow path loops.)
+        if ((newBlk->bbFlags & BBF_LOOP_PREHEADER) != 0)
+        {
+            JITDUMP("Removing BBF_LOOP_PREHEADER flag from nested cloned loop block " FMT_BB "\n", newBlk->bbNum);
+            newBlk->bbFlags &= ~BBF_LOOP_PREHEADER;
+        }
+
         // TODO-Cleanup: The above clones the bbNatLoopNum, which is incorrect.  Eventually, we should probably insert
         // the cloned loop in the loop table.  For now, however, we'll just make these blocks be part of the surrounding
         // loop, if one exists -- the parent of the loop we're cloning.
         newBlk->bbNatLoopNum = loop.lpParent;
 
-        if (newFirst == nullptr)
-        {
-            newFirst = newBlk;
-        }
         newPred = newBlk;
         blockMap->Set(blk, newBlk);
     }
@@ -2311,44 +2236,25 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     //      !cond1        -?> slowHead
     //      ...
     //      !condn        -?> slowHead
-    //      h2/entry (fast)
+    //      h2            -?> e (fast loop pre-header branch or fall-through to e)
     //      ...
-    //      slowHead      -?> e2 (slowHead) branch or fall-through to e2
+    //      slowHead      -?> e2 (slow loop pre-header branch or fall-through to e2)
     //
     // We should always have block conditions.
 
     assert(context->HasBlockConditions(loopInd));
-
-    if (h->bbJumpKind == BBJ_NONE)
-    {
-        assert(h->bbNext == loop.lpEntry);
-        fgRemoveRefPred(h->bbNext, h);
-    }
-    else
-    {
-        assert(h->bbJumpKind == BBJ_ALWAYS);
-        assert(h->bbJumpDest == loop.lpEntry);
-        assert(h2 != nullptr);
-        h->bbJumpKind = BBJ_NONE;
-        h->bbJumpDest = nullptr;
-    }
+    assert(h->bbJumpKind == BBJ_NONE);
+    assert(h->bbNext == h2);
 
     // If any condition is false, go to slowHead (which branches or falls through to e2).
     BasicBlock* e2      = nullptr;
     bool        foundIt = blockMap->Lookup(loop.lpEntry, &e2);
     assert(foundIt && e2 != nullptr);
 
-    // Create a unique header for the slow path.
-    JITDUMP("Create unique head block for slow path loop\n");
-    BasicBlock* slowHead = fgNewBBafter(BBJ_NONE, slowHeadPrev, /*extendRegion*/ true);
-    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowHead->bbNum, slowHeadPrev->bbNum);
-    slowHead->bbWeight = slowHeadPrev->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
-    slowHead->scaleBBWeight(slowPathWeightScaleFactor);
-    slowHead->bbNatLoopNum = ambientLoop;
-
     if (slowHead->bbNext != e2)
     {
         // We can't just fall through to the slow path entry, so make it an unconditional branch.
+        assert(slowHead->bbJumpKind == BBJ_NONE); // This is how we created it above.
         slowHead->bbJumpKind = BBJ_ALWAYS;
         slowHead->bbJumpDest = e2;
     }
@@ -2363,12 +2269,6 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     assert(condLast->bbJumpKind == BBJ_COND);
     JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", condLast->bbNum, condLast->bbNext->bbNum);
     fgAddRefPred(condLast->bbNext, condLast);
-
-    // If h2 is present it is already the head. Else, replace 'h' as the loop head by 'condLast'.
-    if (h2 == nullptr)
-    {
-        optUpdateLoopHead(loopInd, loop.lpHead, condLast);
-    }
 
     // Don't unroll loops that we've cloned -- the unroller expects any loop it should unroll to
     // initialize the loop counter immediately before entering the loop, but we've left a shared
@@ -3162,6 +3062,7 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
 // Return Value:
 //      true if loop cloning is allowed, false if disallowed.
 //
+// static
 bool Compiler::optLoopCloningEnabled()
 {
 #ifdef DEBUG

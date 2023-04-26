@@ -5,11 +5,12 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <DisableRarCache>true</DisableRarCache>
     <DisablePackageAssetsCache>true</DisablePackageAssetsCache>
-    <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(OutputRid)</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-arm;win-arm64;win-x64;win-x86;$(OutputRID)</RuntimeIdentifiers>
     <IncludeOOBLibraries>true</IncludeOOBLibraries>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tools.RuntimeClient" Version="$(MicrosoftDiagnosticsToolsRuntimeClientVersion)" />
+    <PackageReference Include="xunit.analyzers" Version="$(XUnitAnalyzersVersion)" />
   </ItemGroup>
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />

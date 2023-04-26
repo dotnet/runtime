@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 //(((a+(b*((c*c)-(c+d))))-(((a*a)+a)+(a*b)))*(((abc+c)-(a-(ad*a)))+r))
 
 //permutations for  (((a+(b*((c*c)-(c+d))))-(((a*a)+a)+(a*b)))*(((abc+c)-(a-(ad*a)))+r))
@@ -119,7 +120,8 @@ namespace CseTest
     public class Test_Main
     {
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int ret = 100;
             int d = return_int(false, -36);

@@ -393,15 +393,8 @@ private:
             asg                      = inlinee;
         }
 
-        // Block morphing does not support (promoted) locals under commas, as such, instead of "COMMA(asg, lcl)" we
-        // do "OBJ(COMMA(asg, ADDR(LCL)))". TODO-1stClassStructs: improve block morphing and delete this workaround.
-        //
-        GenTree* lcl  = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
-        GenTree* addr = m_compiler->gtNewOperNode(GT_ADDR, TYP_I_IMPL, lcl);
-        addr          = m_compiler->gtNewOperNode(GT_COMMA, addr->TypeGet(), asg, addr);
-        GenTree* obj  = m_compiler->gtNewObjNode(varDsc->GetLayout(), addr);
-
-        return obj;
+        GenTree* lcl = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
+        return m_compiler->gtNewOperNode(GT_COMMA, lcl->TypeGet(), asg, lcl);
     }
 #endif // FEATURE_MULTIREG_RET
 
@@ -1305,8 +1298,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     }
 #endif // DEBUG
 
-    BasicBlock* topBlock    = iciBlock;
-    BasicBlock* bottomBlock = nullptr;
+    BasicBlock* topBlock            = iciBlock;
+    BasicBlock* bottomBlock         = nullptr;
+    bool        insertInlineeBlocks = true;
 
     if (InlineeCompiler->fgBBcount == 1)
     {
@@ -1356,85 +1350,85 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
             // Append statements to null out gc ref locals, if necessary.
             fgInlineAppendStatements(pInlineInfo, iciBlock, stmtAfter);
-
-            goto _Done;
+            insertInlineeBlocks = false;
         }
     }
 
     //
     // ======= Inserting inlinee's basic blocks ===============
     //
-    bottomBlock = fgSplitBlockAfterStatement(topBlock, stmtAfter);
-
-    //
-    // Set the try and handler index and fix the jump types of inlinee's blocks.
-    //
-    for (BasicBlock* const block : InlineeCompiler->Blocks())
+    if (insertInlineeBlocks)
     {
-        noway_assert(!block->hasTryIndex());
-        noway_assert(!block->hasHndIndex());
-        block->copyEHRegion(iciBlock);
-        block->bbFlags |= iciBlock->bbFlags & BBF_BACKWARD_JUMP;
+        bottomBlock              = fgSplitBlockAfterStatement(topBlock, stmtAfter);
+        unsigned const baseBBNum = fgBBNumMax;
 
-        DebugInfo di = iciStmt->GetDebugInfo().GetRoot();
-        if (di.IsValid())
+        //
+        // Set the try and handler index and fix the jump types of inlinee's blocks.
+        //
+        for (BasicBlock* const block : InlineeCompiler->Blocks())
         {
-            block->bbCodeOffs    = di.GetLocation().GetOffset();
-            block->bbCodeOffsEnd = block->bbCodeOffs + 1; // TODO: is code size of 1 some magic number for inlining?
-        }
-        else
-        {
-            block->bbCodeOffs    = 0; // TODO: why not BAD_IL_OFFSET?
-            block->bbCodeOffsEnd = 0;
-            block->bbFlags |= BBF_INTERNAL;
-        }
+            noway_assert(!block->hasTryIndex());
+            noway_assert(!block->hasHndIndex());
+            block->copyEHRegion(iciBlock);
+            block->bbFlags |= iciBlock->bbFlags & BBF_BACKWARD_JUMP;
 
-        if (block->bbJumpKind == BBJ_RETURN)
-        {
-            noway_assert((block->bbFlags & BBF_HAS_JMP) == 0);
-            if (block->bbNext)
+            // Update block nums appropriately
+            //
+            block->bbNum += baseBBNum;
+            fgBBNumMax = max(block->bbNum, fgBBNumMax);
+
+            DebugInfo di = iciStmt->GetDebugInfo().GetRoot();
+            if (di.IsValid())
             {
-                JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
-                        bottomBlock->bbNum);
-                block->bbJumpKind = BBJ_ALWAYS;
-                block->bbJumpDest = bottomBlock;
+                block->bbCodeOffs    = di.GetLocation().GetOffset();
+                block->bbCodeOffsEnd = block->bbCodeOffs + 1; // TODO: is code size of 1 some magic number for inlining?
             }
             else
             {
-                JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
-                block->bbJumpKind = BBJ_NONE;
+                block->bbCodeOffs    = 0; // TODO: why not BAD_IL_OFFSET?
+                block->bbCodeOffsEnd = 0;
+                block->bbFlags |= BBF_INTERNAL;
             }
 
-            fgAddRefPred(bottomBlock, block);
+            if (block->bbJumpKind == BBJ_RETURN)
+            {
+                noway_assert((block->bbFlags & BBF_HAS_JMP) == 0);
+                if (block->bbNext)
+                {
+                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n",
+                            block->bbNum, bottomBlock->bbNum);
+                    block->bbJumpKind = BBJ_ALWAYS;
+                    block->bbJumpDest = bottomBlock;
+                }
+                else
+                {
+                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
+                    block->bbJumpKind = BBJ_NONE;
+                }
+
+                fgAddRefPred(bottomBlock, block);
+            }
         }
+
+        // Inlinee's top block will have an artificial ref count. Remove.
+        assert(InlineeCompiler->fgFirstBB->bbRefs > 0);
+        InlineeCompiler->fgFirstBB->bbRefs--;
+
+        // Insert inlinee's blocks into inliner's block list.
+        topBlock->setNext(InlineeCompiler->fgFirstBB);
+        fgRemoveRefPred(bottomBlock, topBlock);
+        fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);
+        InlineeCompiler->fgLastBB->setNext(bottomBlock);
+
+        //
+        // Add inlinee's block count to inliner's.
+        //
+        fgBBcount += InlineeCompiler->fgBBcount;
+
+        // Append statements to null out gc ref locals, if necessary.
+        fgInlineAppendStatements(pInlineInfo, bottomBlock, nullptr);
+        JITDUMPEXEC(fgDispBasicBlocks(InlineeCompiler->fgFirstBB, InlineeCompiler->fgLastBB, true));
     }
-
-    // Inlinee's top block will have an artificial ref count. Remove.
-    assert(InlineeCompiler->fgFirstBB->bbRefs > 0);
-    InlineeCompiler->fgFirstBB->bbRefs--;
-
-    // Insert inlinee's blocks into inliner's block list.
-    topBlock->setNext(InlineeCompiler->fgFirstBB);
-    fgRemoveRefPred(bottomBlock, topBlock);
-    fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);
-    InlineeCompiler->fgLastBB->setNext(bottomBlock);
-
-    //
-    // Add inlinee's block count to inliner's.
-    //
-    fgBBcount += InlineeCompiler->fgBBcount;
-
-    // Append statements to null out gc ref locals, if necessary.
-    fgInlineAppendStatements(pInlineInfo, bottomBlock, nullptr);
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        fgDispBasicBlocks(InlineeCompiler->fgFirstBB, InlineeCompiler->fgLastBB, true);
-    }
-#endif // DEBUG
-
-_Done:
 
     //
     // At this point, we have successully inserted inlinee's code.
@@ -1452,6 +1446,10 @@ _Done:
     compHasBackwardJump |= InlineeCompiler->compHasBackwardJump;
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
+
+#ifdef TARGET_ARM64
+    info.compNeedsConsecutiveRegisters |= InlineeCompiler->info.compNeedsConsecutiveRegisters;
+#endif
 
     // If the inlinee compiler encounters switch tables, disable hot/cold splitting in the root compiler.
     // TODO-CQ: Implement hot/cold splitting of methods with switch tables.
@@ -1643,8 +1641,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef)
                 {
                     // Change the temp in-place to the actual argument.
-                    // We currently do not support this for struct arguments, so it must not be a GT_OBJ.
-                    assert(argNode->gtOper != GT_OBJ);
+                    // We currently do not support this for struct arguments, so it must not be a GT_BLK.
+                    assert(argNode->gtOper != GT_BLK);
                     argSingleUseNode->ReplaceWith(argNode, this);
                     continue;
                 }
@@ -1660,14 +1658,12 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                     if (varTypeIsStruct(argType))
                     {
-                        structHnd = gtGetStructHandleIfPresent(argNode);
-                        noway_assert((structHnd != NO_CLASS_HANDLE) || (argType != TYP_STRUCT));
+                        structHnd = lclVarInfo[argNum].lclVerTypeInfo.GetClassHandleForValueClass();
+                        assert(structHnd != NO_CLASS_HANDLE);
                     }
 
-                    // Unsafe value cls check is not needed for
-                    // argTmpNum here since in-linee compiler instance
-                    // would have iterated over these and marked them
-                    // accordingly.
+                    // Unsafe value cls check is not needed for argTmpNum here since in-linee compiler instance
+                    // would have iterated over these and marked them accordingly.
                     impAssignTempGen(tmpNum, argNode, structHnd, CHECK_SPILL_NONE, &afterStmt, callDI, block);
 
                     // We used to refine the temp type here based on
@@ -1702,9 +1698,9 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     newStmt     = nullptr;
                     bool append = true;
 
-                    if (argNode->gtOper == GT_OBJ || argNode->gtOper == GT_MKREFANY)
+                    if (argNode->gtOper == GT_BLK || argNode->gtOper == GT_MKREFANY)
                     {
-                        // Don't put GT_OBJ node under a GT_COMMA.
+                        // Don't put GT_BLK node under a GT_COMMA.
                         // Codegen can't deal with it.
                         // Just hang the address here in case there are side-effect.
                         newStmt = gtNewStmt(gtUnusedValNode(argNode->AsOp()->gtOp1), callDI);
@@ -1869,10 +1865,10 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     continue;
                 }
 
-                var_types lclTyp = (var_types)lvaTable[tmpNum].lvType;
+                var_types lclTyp = lvaTable[tmpNum].lvType;
                 noway_assert(lclTyp == lclVarInfo[lclNum + inlineInfo->argCnt].lclTypeInfo);
 
-                if (!varTypeIsStruct(lclTyp))
+                if (lclTyp != TYP_STRUCT)
                 {
                     // Unsafe value cls check is not needed here since in-linee compiler instance would have
                     // iterated over locals and marked accordingly.

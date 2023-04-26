@@ -233,10 +233,6 @@ namespace Internal.JitInterface
         public byte _testForNull;
         public bool testForNull { get { return _testForNull != 0; } set { _testForNull = value ? (byte)1 : (byte)0; } }
 
-        // If set, test the lowest bit and dereference if set (see code:FixupPointer)
-        public byte _testForFixup;
-        public bool testForFixup { get { return _testForFixup != 0; } set { _testForFixup = value ? (byte)1 : (byte)0; } }
-
         public ushort sizeOffset;
         public IntPtr offset0;
         public IntPtr offset1;
@@ -606,7 +602,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_CUSTOMLAYOUT = 0x00800000, // does this struct have custom layout?
         CORINFO_FLG_CONTAINS_GC_PTR = 0x01000000, // does the class contain a gc ptr ?
         CORINFO_FLG_DELEGATE = 0x02000000, // is this a subclass of delegate or multicast delegate ?
-        // CORINFO_FLG_UNUSED = 0x04000000,
+        CORINFO_FLG_INDEXABLE_FIELDS = 0x04000000, // struct fields may be accessed via indexing (used for inline arrays)
         CORINFO_FLG_BYREF_LIKE = 0x08000000, // it is byref-like value type
         CORINFO_FLG_VARIANCE = 0x10000000, // MethodTable::HasVariance (sealed does *not* mean uncast-able)
         CORINFO_FLG_BEFOREFIELDINIT = 0x20000000, // Additional flexibility for when to run .cctor (see code:#ClassConstructionFlags)
@@ -746,7 +742,7 @@ namespace Internal.JitInterface
         CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
         CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
         CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN = 0x00000008, // The read-only data will be 32-byte aligned
-        CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN = 0x00000008, // The read-only data will be 64-byte aligned
+        CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN = 0x00000010, // The read-only data will be 64-byte aligned
     }
 
     public enum CorJitFuncKind
@@ -1116,6 +1112,7 @@ namespace Internal.JitInterface
         CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER, // static field access using the "generic static" helper (argument is MethodTable *)
         CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
         CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
+        CORINFO_FIELD_STATIC_TLS_MANAGED,       // managed TLS access
         CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
         CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access from the data segment
         CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
@@ -1154,6 +1151,14 @@ namespace Internal.JitInterface
 
         // Used by Ready-to-Run
         public CORINFO_CONST_LOOKUP fieldLookup;
+    };
+
+    public unsafe struct CORINFO_THREAD_STATIC_BLOCKS_INFO
+    {
+        public CORINFO_CONST_LOOKUP tlsIndex;
+        public uint offsetOfThreadLocalStoragePointer;
+        public CORINFO_CONST_LOOKUP offsetOfMaxThreadStaticBlocks;
+        public CORINFO_CONST_LOOKUP offsetOfThreadStaticBlocks;
     };
 
     // System V struct passing
@@ -1202,8 +1207,8 @@ namespace Internal.JitInterface
         public byte eightByteOffsets1;
     };
 
-    // StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` API
-    // to convey struct argument passing information.
+    // StructFloadFieldInfoFlags: used on LoongArch64 architecture by `getLoongArch64PassStructInRegisterFlags` and
+    // `getRISCV64PassStructInRegisterFlags` API to convey struct argument passing information.
     //
     // `STRUCT_NO_FLOAT_FIELD` means structs are not passed using the float register(s).
     //

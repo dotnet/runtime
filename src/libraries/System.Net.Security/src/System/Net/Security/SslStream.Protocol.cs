@@ -727,11 +727,7 @@ namespace System.Net.Security
                     // effectively disable caching as it would lead to creating new credentials for each connection. We attempt to recover by creating
                     // a temporary certificate context (which builds a new chain with hopefully more recent chain).
                     //
-                    certificateContext = SslStreamCertificateContext.Create(
-                        certificateContext.Certificate,
-                        new X509Certificate2Collection(certificateContext.IntermediateCertificates),
-                        trust: certificateContext.Trust);
-
+                    certificateContext = certificateContext.Duplicate();
                     cred._expiry = GetExpiryTimestamp(certificateContext);
                 }
 
@@ -848,10 +844,11 @@ namespace System.Net.Security
                     }
                     else
                     {
+                        string hostName = TargetHostNameHelper.NormalizeHostName(_sslAuthenticationOptions.TargetHost);
                         status = SslStreamPal.InitializeSecurityContext(
                                        ref _credentialsHandle!,
                                        ref _securityContext,
-                                       _sslAuthenticationOptions.TargetHost,
+                                       hostName,
                                        inputBuffer,
                                        ref result,
                                        _sslAuthenticationOptions);
@@ -867,7 +864,7 @@ namespace System.Net.Security
                             status = SslStreamPal.InitializeSecurityContext(
                                        ref _credentialsHandle!,
                                        ref _securityContext,
-                                       _sslAuthenticationOptions.TargetHost,
+                                       hostName,
                                        ReadOnlySpan<byte>.Empty,
                                        ref result,
                                        _sslAuthenticationOptions);
@@ -1063,7 +1060,7 @@ namespace System.Net.Security
                         _remoteCertificate,
                         _sslAuthenticationOptions.CheckCertName,
                         _sslAuthenticationOptions.IsServer,
-                        _sslAuthenticationOptions.TargetHost);
+                        TargetHostNameHelper.NormalizeHostName(_sslAuthenticationOptions.TargetHost));
                 }
 
                 if (remoteCertValidationCallback != null)

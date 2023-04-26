@@ -13,9 +13,11 @@
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and $(BuildAsStandalone)">true</DisableProjectBuild>
     <OutputType Condition="('$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)) or '$(RequiresProcessIsolation)' == 'true'">Exe</OutputType>
+
     <CLRTestKind Condition="'$(CLRTestKind)' == '' and '$(OutputType)' == 'Exe'">BuildAndRun</CLRTestKind>
     <CLRTestKind Condition="'$(CLRTestKind)' == ''">BuildOnly</CLRTestKind>
     <CLRTestPriority Condition="'$(CLRTestPriority)' == ''">0</CLRTestPriority>
+
     <!-- Merged test runner assemblies might not have any non-generated sources, and that's okay -->
     <NoWarn Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">$(NoWarn);CS2008</NoWarn>
   </PropertyGroup>
@@ -119,6 +121,19 @@
     <SkipImportILTargets Condition="'$(CLRTestPriority)' &gt; '$(CLRTestPriorityToBuild)'">true</SkipImportILTargets>
     <SkipImportILTargets Condition="'$(CLRTestBuildAllTargets)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestBuildAllTargets)'">true</SkipImportILTargets>
   </PropertyGroup>
+
+  <!-- If a test in a merged test directory (e.g., under JIT\Directed where Directed_1.csproj and siblings -->
+  <!-- represent the groups) has OutputType==Exe set, then it will end up being skipped because the merged -->
+  <!-- groups are supposed to cover all of the tests. The merged groups themselves should be Exes, as      -->
+  <!-- should any test marked RequiresProcessIsolation or BuildAsStandalone. -->
+  <Target Name="CheckForTestOutsideOfGroup" BeforeTargets="Build">
+    <Error Condition="'$(InMergedTestDirectory)' == 'true'
+      and '$(OutputType)' == 'Exe'
+      and '$(RequiresProcessIsolation)' != 'true'
+      and '$(BuildAsStandalone)' != 'true'
+      and '$(IsMergedTestRunnerAssembly)' != 'true'"
+      Text="Tests in merged test directories should not set OutputType to Exe unless they are RequiresProcessIsolation, BuildAsStandalone, or IsMergedTestRunnerAssembly." />
+  </Target>
 
   <Target Name="CopyNativeProjectBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
     <ItemGroup Condition="'$(UseVisualStudioNativeBinariesLayout)' == 'true'">
@@ -448,150 +463,6 @@
     <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
   </ItemGroup>
 
-  <Target Name="CopyDependencyToCoreRoot"
-          DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
-
-    <ItemGroup>
-      <RunTimeDependencyExclude Include="$(CORE_ROOT)\**\*.*"  />
-      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName)%(Extension)')" />
-      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName).ni%(Extension)')" />
-      <RunTimeDependencyExcludeFiles Include="@(RunTimeDependencyExclude -> '%(FileName).pdb')" />
-
-      <AllResolvedRuntimeDependencies Include="@(RuntimeCopyLocalItems -> '%(FileName)%(Extension)');@(NativeCopyLocalItems -> '%(FileName)%(Extension)')">
-        <File>%(Identity)</File>
-      </AllResolvedRuntimeDependencies>
-
-      <RunTimeDependencyCopyLocalFile Include="@(AllResolvedRuntimeDependencies)"  Exclude="@(RunTimeDependencyExcludeFiles)"/>
-      <RunTimeDependencyCopyLocal Include="@(RunTimeDependencyCopyLocalFile -> '%(File)')"  />
-      <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/*" />
-      <RunTimeDependencyCopyLocal Include="$(TargetingPackPath)/xunit.*" TargetDir="xunit/" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <RunTimeArtifactsExcludeFiles Include="PDB/createdump.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/linuxonjit.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/mcs.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/mscordaccore.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/mscordbi.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/mscorrc.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/protononjit.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-collector.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-counter.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/superpmi-shim-simple.pdb" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(MinimalCoreRoot)' == 'true'">
-      <RunTimeArtifactsExcludeFiles Include="PDB/ilasm.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/ildasm.pdb" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <RunTimeArtifactsIncludeFolders Include="/" />
-
-      <!-- Used by the Crossgen comparison job -->
-      <RunTimeArtifactsIncludeFolders Include="IL/" />
-
-      <!-- Used for Crossgen2 R2R tests -->
-      <RunTimeArtifactsIncludeFolders Include="crossgen2/">
-        <IncludeSubFolders>True</IncludeSubFolders>
-      </RunTimeArtifactsIncludeFolders>
-
-      <!-- Used for capturing symbolic stack traces using Watson -->
-      <RunTimeArtifactsIncludeFolders Include="PDB/" />
-
-      <!-- Used by the coreroot_determinism test -->
-      <RunTimeArtifactsIncludeFolders Include="R2RTest/">
-        <IncludeSubFolders>True</IncludeSubFolders>
-      </RunTimeArtifactsIncludeFolders>
-
-      <!-- Used by disasm output verification tests -->
-      <RunTimeArtifactsIncludeFolders Include="SuperFileCheck/">
-        <IncludeSubFolders>True</IncludeSubFolders>
-      </RunTimeArtifactsIncludeFolders>
-
-      <!-- XUnit runner harness assemblies that we don't want to mix in with the framework in Core_Root -->
-      <RunTimeArtifactsIncludeFolders Include="xunit/" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <!-- Add binary dependencies to copy-local items -->
-      <RunTimeDependencyCopyLocal
-          Condition="'%(RuntimeArtifactsIncludeFolders.IncludeSubFolders)' != 'True'"
-          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)*"
-          Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
-          TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
-
-      <RunTimeDependencyCopyLocal
-          Condition="'%(RuntimeArtifactsIncludeFolders.IncludeSubFolders)' == 'True'"
-          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**/*"
-          Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
-          TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
-
-
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
-        <RunTimeDependencyCopyLocal
-          Include="@(RuntimeFiles)"
-          TargetDir="runtimepack/native/"/>
-
-        <!-- This throws everything in 'native', include many non-native assemblies.
-             This is done because LibrariesRuntimeFiles includes some .js files that
-             WasmAppBuilder expects in native/-->
-        <RunTimeDependencyCopyLocal
-          Include="@(LibrariesRuntimeFiles)"
-          TargetDir="runtimepack/native/"/>
-
-       <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsDir)\TargetingPack\**"
-          TargetDir="TargetingPack/"/>
-
-        <!-- Wasm App Builder always builds in Debug -->
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\**"
-          TargetDir="WasmAppBuilder/"/>
-
-        <!-- MonoAOTCompiler always builds in Debug -->
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\MonoAOTCompiler\Debug\$(NetCoreAppToolCurrent)\**"
-          TargetDir="MonoAOTCompiler/"/>
-
-        <!-- MonoTargetsTasks always builds in Debug -->
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\MonoTargetsTasks\Debug\$(NetCoreAppToolCurrent)\**"
-          TargetDir="MonoTargetsTasks/"/>
-
-        <RunTimeDependencyCopyLocal
-          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
-          TargetDir="wasm-test-runner/"/>
-
-        <RunTimeDependencyCopyLocal
-          Include="$(MonoProjectRoot)\wasm\test-main.js"
-          TargetDir="runtime-test/"/>
-
-        <RunTimeDependencyCopyLocal
-          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\index.html"
-          TargetDir="runtime-test/"/>
-
-        <RunTimeDependencyCopyLocal
-          Include="$(MonoProjectRoot)\wasm\build\*"
-          TargetDir="build/"/>
-    </ItemGroup>
-
-    <Copy
-      SourceFiles="@(RunTimeDependencyCopyLocal)"
-      DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)/%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
-      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
-      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
-      Retries="$(CopyRetryCount)"
-      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-    </Copy>
-
-  </Target>
-
   <Target Name="GetProjectsWithDisabledBuild" Returns="@(ProjectWithDisabledBuild)">
     <ItemGroup Condition="'$(_WillCLRTestProjectBuild)' != 'true'">
       <ProjectWithDisabledBuild Include="$(MSBuildProjectFullPath)" />
@@ -660,14 +531,17 @@
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
-    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
 
+    <LinkerFlavor Condition="'$(TargetOS)' == 'linux'">lld</LinkerFlavor>
+    <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <BuildNativeAotFrameworkObjects Condition="'$(IlcMultiModule)' == 'true'">true</BuildNativeAotFrameworkObjects>
     <DisableFrameworkLibGeneration Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">true</DisableFrameworkLibGeneration>
     <FrameworkLibPath Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">$(IlcSdkPath)</FrameworkLibPath>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
     <IlcReference Include="$(TargetingPackPath)/*.dll" />
 
     <!-- xunit calls MakeGenericType to check if something is IEquatable -->
@@ -675,6 +549,16 @@
 
     <!-- Bump the generic cycle tolerance. There's at least one test with a cycle that is reachable at runtime to depth 6 -->
     <IlcArg Include="--maxgenericcycle:7" />
+
+    <!-- We set TrimMode to partial so that we don't trim parts of the tests,
+         but don't make this apply to xunit cruft -->
+    <IlcArg Include="--trim:Microsoft.DotNet.XUnitExtensions" />
+    <IlcArg Include="--trim:xunit.abstractions" />
+    <IlcArg Include="--trim:xunit.assert" />
+    <IlcArg Include="--trim:xunit.console" />
+    <IlcArg Include="--trim:xunit.core" />
+    <IlcArg Include="--trim:xunit.execution.dotnet" />
+    <IlcArg Include="--trim:xunit.abstractions" />
   </ItemGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
