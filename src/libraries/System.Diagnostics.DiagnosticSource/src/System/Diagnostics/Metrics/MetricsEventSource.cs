@@ -118,12 +118,12 @@ namespace System.Diagnostics.Metrics
             WriteEvent(5, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, lastValue);
         }
 
-        [Event(6, Keywords = Keywords.TimeSeriesValues)]
+        [Event(6, Keywords = Keywords.TimeSeriesValues, Version=1)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                             Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
-        public void HistogramValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string quantiles)
+        public void HistogramValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string quantiles, int count, double sum)
         {
-            WriteEvent(6, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, quantiles);
+            WriteEvent(6, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, quantiles, count, sum);
         }
 
         // Sent when we begin to monitor the value of a intrument, either because new session filter arguments changed subscriptions
@@ -435,7 +435,7 @@ namespace System.Diagnostics.Metrics
                 }
                 else if (stats.AggregationStatistics is HistogramStatistics histogramStats)
                 {
-                    Log.HistogramValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels), FormatQuantiles(histogramStats.Quantiles));
+                    Log.HistogramValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels), FormatQuantiles(histogramStats.Quantiles), histogramStats.Count, histogramStats.Sum);
                 }
             }
 
