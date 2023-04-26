@@ -7118,7 +7118,7 @@ void gc_heap::gc_thread_function ()
                 int new_n_heaps = (int)gc_rand::get_rand (n_max_heaps - 1) + 1;
 #else //STRESS_DYNAMIC_HEAP_COUNT
 
-                // use the median of the number of allocating threads in the last 3 cycles
+                // use half the median of the number of allocating threads in the last 3 cycles
                 int max_alloc_contexts_used = 0;
                 int min_alloc_contexts_used = 1000;
                 for (size_t i = 0; i < ALLOC_CONTEXTS_USED_SAMPLE_SIZE; i++)
@@ -7134,9 +7134,9 @@ void gc_heap::gc_thread_function ()
                         median_alloc_contexts_used = alloc_contexts_used_samples[i];
                     }
                 }
+                int new_n_heaps = median_alloc_contexts_used/2;
 
                 int extra_heaps = 1 + (n_max_heaps >= 32);
-                int new_n_heaps = median_alloc_contexts_used;
                 if (new_n_heaps > n_heaps)
                 {
                     // we want to increase the heap count gradually
