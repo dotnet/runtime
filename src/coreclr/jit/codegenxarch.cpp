@@ -3172,9 +3172,13 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
-        unsigned regSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
-                               ? YMM_REGSIZE_BYTES
-                               : XMM_REGSIZE_BYTES;
+        unsigned regSize = compiler->roundDownSIMDSize(size);
+        if ((size < ZMM_RECOMMENDED_THRESHOLD) && (regSize == ZMM_REGSIZE_BYTES))
+        {
+            // If the size is less than the recommended threshold then use YMM registers
+            // instead of ZMM registers to avoid AVX512 downclocking.
+            regSize = YMM_REGSIZE_BYTES;
+        }
 
         bool zeroing = false;
         if (src->gtSkipReloadOrCopy()->IsIntegralConst(0))
@@ -3186,6 +3190,9 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         }
         else
         {
+            // TODO-AVX512-ARCH: Enable AVX-512 for non-zeroing initblk.
+            regSize = min(regSize, YMM_REGSIZE_BYTES);
+
             emit->emitIns_Mov(INS_movd, EA_PTRSIZE, srcXmmReg, srcIntReg, /* canSkip */ false);
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
 #ifdef TARGET_X86
@@ -3232,6 +3239,11 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             dstOffset += regSize;
             bytesWritten += regSize;
 
+            if (!zeroing)
+            {
+                assert(regSize <= YMM_REGSIZE_BYTES);
+            }
+
             if (!zeroing && regSize == YMM_REGSIZE_BYTES && size - bytesWritten < YMM_REGSIZE_BYTES)
             {
                 regSize = XMM_REGSIZE_BYTES;
@@ -3250,8 +3262,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             }
             else
             {
-                // if reminder is <=16 then switch to XMM
-                regSize = size <= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : regSize;
+                // Get optimal register size to cover the whole remainder (with overlapping)
+                regSize = compiler->roundUpSIMDSize(size);
 
                 // Rewind dstOffset so we can fit a vector for the while remainder
                 dstOffset -= (regSize - size);
@@ -3469,9 +3481,13 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         instruction simdMov = simdUnalignedMovIns();
 
         // Get the largest SIMD register available if the size is large enough
-        unsigned regSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
-                               ? YMM_REGSIZE_BYTES
-                               : XMM_REGSIZE_BYTES;
+        unsigned regSize = compiler->roundDownSIMDSize(size);
+        if ((size < (ZMM_RECOMMENDED_THRESHOLD / 2)) && (regSize == ZMM_REGSIZE_BYTES))
+        {
+            // If the size is less than the recommended threshold then use YMM registers
+            // instead of ZMM registers to avoid AVX512 downclocking.
+            regSize = YMM_REGSIZE_BYTES;
+        }
 
         auto emitSimdMovs = [&]() {
             if (srcLclNum != BAD_VAR_NUM)
@@ -3516,8 +3532,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
             }
             else
             {
-                // if reminder is <=16 then switch to XMM
-                regSize = size <= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : regSize;
+                // Get optimal register size to cover the whole remainder (with overlapping)
+                regSize = compiler->roundUpSIMDSize(size);
 
                 // Rewind dstOffset so we can fit a vector for the while remainder
                 srcOffset -= (regSize - size);
