@@ -3341,6 +3341,37 @@ interp_handle_call_res_devirt (TransformData *td, MonoMethod *cmethod)
         }
 }
 
+static MonoMethod*
+interp_try_devirt (MonoClass *this_klass, MonoMethod *target_method)
+{
+	ERROR_DECL(error);
+	// No relevant information about the type
+	if (!this_klass || this_klass == mono_defaults.object_class)
+		return NULL;
+
+	if (mono_class_is_interface (this_klass))
+		return NULL;
+
+	// Make sure first it is valid to lookup method in the vtable
+	gboolean assignable;
+	mono_class_is_assignable_from_checked (target_method->klass, this_klass, &assignable, error);
+	if (!is_ok (error) || !assignable)
+		return NULL;
+
+	MonoMethod *new_target_method = mono_class_get_virtual_method (this_klass, target_method, error);
+	if (!is_ok (error) || !new_target_method)
+		return NULL;
+
+	// TODO We would need to emit unboxing in order to devirtualize call to valuetype method
+	if (m_class_is_valuetype (new_target_method->klass))
+		return NULL;
+
+	if ((new_target_method->flags & METHOD_ATTRIBUTE_FINAL) || m_class_is_sealed (this_klass))
+		return new_target_method;
+
+	return NULL;
+}
+
 /* Return FALSE if error, including inline failure */
 static gboolean
 interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoGenericContext *generic_context, MonoClass *constrained_class, gboolean readonly, MonoError *error, gboolean check_visibility, gboolean save_last_error, gboolean tailcall)
@@ -3575,6 +3606,19 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				++td->ip; /* gobble the CEE_RET if it isn't branched to */
 			td->ip += 5;
 			return TRUE;
+		}
+	}
+
+	// Attempt to devirtualize the call
+	if (is_virtual) {
+		MonoClass *this_klass = (td->sp - 1 - csignature->param_count)->klass;
+		MonoMethod *new_target_method = interp_try_devirt (this_klass, target_method);
+
+		if (new_target_method) {
+			if (td->verbose_level)
+				g_print ("DEVIRTUALIZE %s.%s to %s.%s\n", m_class_get_name (target_method->klass), target_method->name, m_class_get_name (new_target_method->klass), new_target_method->name);
+			target_method = new_target_method;
+			is_virtual = FALSE;
 		}
 	}
 

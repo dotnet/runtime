@@ -2516,13 +2516,11 @@ mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, MonoError *
 		} else {
 			res = vtable [method->slot];
 		}
-    }
+	}
 
-	{
-		if (method->is_inflated) {
-			/* Have to inflate the result */
-			res = mono_class_inflate_generic_method_checked (res, &((MonoMethodInflated*)method)->context, error);
-		}
+	if (method->is_inflated) {
+		/* Have to inflate the result */
+		res = mono_class_inflate_generic_method_checked (res, &((MonoMethodInflated*)method)->context, error);
 	}
 
 	return res;
