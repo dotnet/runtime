@@ -7119,21 +7119,21 @@ void gc_heap::gc_thread_function ()
 #else //STRESS_DYNAMIC_HEAP_COUNT
 
                 // use half the median of the number of allocating threads in the last 3 cycles
-                int max_alloc_contexts_used = 0;
-                int min_alloc_contexts_used = 1000;
-                for (size_t i = 0; i < ALLOC_CONTEXTS_USED_SAMPLE_SIZE; i++)
-                {
-                    max_alloc_contexts_used = max (max_alloc_contexts_used, alloc_contexts_used_samples[i]);
-                    min_alloc_contexts_used = min (min_alloc_contexts_used, alloc_contexts_used_samples[i]);
-                }
-                int median_alloc_contexts_used = min_alloc_contexts_used;
-                for (size_t i = 0; i < ALLOC_CONTEXTS_USED_SAMPLE_SIZE; i++)
-                {
-                    if (min_alloc_contexts_used < alloc_contexts_used_samples[i] && alloc_contexts_used_samples[i] < max_alloc_contexts_used)
-                    {
-                        median_alloc_contexts_used = alloc_contexts_used_samples[i];
-                    }
-                }
+#define compare_and_swap(i, j)  {                                                                                       \
+                                    if (alloc_contexts_used_samples[i] < alloc_contexts_used_samples[j])                \
+                                    {                                                                                   \
+                                        int t = alloc_contexts_used_samples[i];                                         \
+                                                alloc_contexts_used_samples[i] = alloc_contexts_used_samples[j];        \
+                                                                                 alloc_contexts_used_samples[j] = t;    \
+                                    }                                                                                   \
+                                }
+                compare_and_swap (1, 0);
+                compare_and_swap (2, 0);
+                compare_and_swap (2, 1);
+#undef compare_and_swap
+
+                int median_alloc_contexts_used = alloc_contexts_used_samples[1];
+
                 int new_n_heaps = median_alloc_contexts_used/2;
 
                 int extra_heaps = 1 + (n_max_heaps >= 32);
