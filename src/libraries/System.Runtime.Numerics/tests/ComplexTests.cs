@@ -3,8 +3,9 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Runtime.CompilerServices;
-
+using System.Text;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -1730,25 +1731,79 @@ namespace System.Numerics.Tests
         public static void ToStringTest(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);
-
-            string expected = "<" + real.ToString() + "; " + imaginary.ToString() + ">";
-            string actual = complex.ToString();
-            Assert.Equal(expected, actual);
-
             NumberFormatInfo numberFormatInfo = CultureInfo.CurrentCulture.NumberFormat;
-            expected = "<" + real.ToString(numberFormatInfo) + "; " + imaginary.ToString(numberFormatInfo) + ">";
-            actual = complex.ToString(numberFormatInfo);
-            Assert.Equal(expected, complex.ToString(numberFormatInfo));
+
+            Assert.Equal($"<{real}; {imaginary}>", complex.ToString());
+
+            Assert.Equal($"<{real.ToString(numberFormatInfo)}; {imaginary.ToString(numberFormatInfo)}>", complex.ToString(numberFormatInfo));
+            Assert.Equal($"<{real.ToString((string)null)}; {imaginary.ToString((string)null)}>", complex.ToString((string)null));
+            Assert.Equal($"<{real.ToString((string)null, numberFormatInfo)}; {imaginary.ToString((string)null, numberFormatInfo)}>", complex.ToString((string)null, numberFormatInfo));
 
             foreach (string format in s_supportedStandardNumericFormats)
             {
-                expected = "<" + real.ToString(format) + "; " + imaginary.ToString(format) + ">";
-                actual = complex.ToString(format);
-                Assert.Equal(expected, actual);
+                Assert.Equal($"<{real.ToString(format)}; {imaginary.ToString(format)}>", complex.ToString(format));
+                Assert.Equal($"<{real.ToString(format, numberFormatInfo)}; {imaginary.ToString(format, numberFormatInfo)}>", complex.ToString(format, numberFormatInfo));
+            }
+        }
 
-                expected = "<" + real.ToString(format, numberFormatInfo) + "; " + imaginary.ToString(format, numberFormatInfo) + ">";
-                actual = complex.ToString(format, numberFormatInfo);
-                Assert.Equal(expected, actual);
+        [Theory]
+        [MemberData(nameof(Boundaries_2_TestData))]
+        [MemberData(nameof(Primitives_2_TestData))]
+        [MemberData(nameof(Random_2_TestData))]
+        [MemberData(nameof(SmallRandom_2_TestData))]
+        [MemberData(nameof(Invalid_2_TestData))]
+        public static void TryFormatTest(double real, double imaginary)
+        {
+            var complex = new Complex(real, imaginary);
+
+            // UTF16
+            {
+                foreach (NumberFormatInfo numberFormatInfo in new[] { CultureInfo.CurrentCulture.NumberFormat, null })
+                {
+                    foreach (string format in s_supportedStandardNumericFormats.Append(null))
+                    {
+                        string expected = $"<{real.ToString(format, numberFormatInfo)}; {imaginary.ToString(format, numberFormatInfo)}>";
+                        int charsWritten;
+
+                        // Just right or larger than required storage
+                        for (int additional = 0; additional < 2; additional++)
+                        {
+                            char[] chars = new char[expected.Length + additional];
+                            Assert.True(complex.TryFormat(chars, out charsWritten, format, numberFormatInfo));
+                            Assert.Equal(expected.Length, charsWritten);
+                            Assert.Equal(expected, new string(expected.AsSpan(0, expected.Length)));
+                        }
+
+                        // Too small storage
+                        Assert.False(complex.TryFormat(new char[expected.Length - 1], out charsWritten, format, numberFormatInfo));
+                        Assert.Equal(0, charsWritten);
+                    }
+                }
+            }
+
+            // UTF8
+            {
+                foreach (NumberFormatInfo numberFormatInfo in new[] { CultureInfo.CurrentCulture.NumberFormat, null })
+                {
+                    foreach (string format in s_supportedStandardNumericFormats.Append(null))
+                    {
+                        byte[] expected = Encoding.UTF8.GetBytes($"<{real.ToString(format, numberFormatInfo)}; {imaginary.ToString(format, numberFormatInfo)}>");
+                        int bytesWritten;
+
+                        // Just right or larger than required storage
+                        for (int additional = 0; additional < 2; additional++)
+                        {
+                            byte[] bytes = new byte[expected.Length + additional];
+                            Assert.True(complex.TryFormat(bytes, out bytesWritten, format, numberFormatInfo));
+                            Assert.Equal(expected.Length, bytesWritten);
+                            Assert.Equal(expected, bytes.AsSpan(0, expected.Length).ToArray());
+                        }
+
+                        // Too small storage
+                        Assert.False(complex.TryFormat(new byte[expected.Length - 1], out bytesWritten, format, numberFormatInfo));
+                        Assert.Equal(0, bytesWritten);
+                    }
+                }
             }
         }
 

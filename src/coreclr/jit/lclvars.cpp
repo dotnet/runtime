@@ -2119,24 +2119,6 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         JITDUMP("Not promoting multi-reg returned struct local V%02u with holes.\n", lclNum);
         shouldPromote = false;
     }
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) ||            \
-    defined(TARGET_RISCV64)
-    // TODO-PERF - Only do this when the LclVar is used in an argument context
-    // TODO-ARM64 - HFA support should also eliminate the need for this.
-    // TODO-ARM32 - HFA support should also eliminate the need for this.
-    // TODO-LSRA - Currently doesn't support the passing of floating point LCL_VARS in the integer registers
-    //
-    // For now we currently don't promote structs with a single float field
-    // Promoting it can cause us to shuffle it back and forth between the int and
-    //  the float regs when it is used as a argument, which is very expensive for XARCH
-    //
-    else if ((structPromotionInfo.fieldCnt == 1) && varTypeIsFloating(structPromotionInfo.fields[0].fldType))
-    {
-        JITDUMP("Not promoting promotable struct local V%02u: #fields = %d because it is a struct with "
-                "single float field.\n",
-                lclNum, structPromotionInfo.fieldCnt);
-        shouldPromote = false;
-    }
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     else if ((structPromotionInfo.fieldCnt == 2) && (varTypeIsFloating(structPromotionInfo.fields[0].fldType) ||
                                                      varTypeIsFloating(structPromotionInfo.fields[1].fldType)))
@@ -2147,8 +2129,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
                 lclNum, structPromotionInfo.fieldCnt);
         shouldPromote = false;
     }
-#endif
-#endif // TARGET_AMD64 || TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
     else if (varDsc->lvIsParam && !compiler->lvaIsImplicitByRefLocal(lclNum) && !varDsc->lvIsHfa())
     {
 #if FEATURE_MULTIREG_STRUCT_PROMOTE
@@ -2315,20 +2296,14 @@ bool Compiler::StructPromotionHelper::TryPromoteStructField(lvaStructFieldInfo& 
     var_types   fieldVarType = JITtype2varType(fieldCorType);
     unsigned    fieldSize    = genTypeSize(fieldVarType);
 
-    // Do not promote if the field is not a primitive type, is floating-point,
-    // or is not properly aligned.
-    //
-    // TODO-PERF: Structs containing a single floating-point field on Amd64
-    // need to be passed in integer registers. Right now LSRA doesn't support
-    // passing of floating-point LCL_VARS in integer registers.  Enabling promotion
-    // of such structs results in an assert in lsra right now.
+    // Do not promote if the field is not a primitive type or is not properly aligned.
     //
     // TODO-CQ: Right now we only promote an actual SIMD typed field, which would cause
     // a nested SIMD type to fail promotion.
-    if (fieldSize == 0 || fieldSize > TARGET_POINTER_SIZE || varTypeIsFloating(fieldVarType))
+    if (fieldSize == 0 || fieldSize > TARGET_POINTER_SIZE)
     {
         JITDUMP("Promotion blocked: struct contains struct field with one field,"
-                " but that field has invalid size or type.\n");
+                " but that field has invalid size.\n");
         return false;
     }
 
@@ -3355,59 +3330,6 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
 {
     assert(varNum < lvaCount);
     return lvaGetDesc(varNum)->lvExactSize();
-}
-
-// getCalledCount -- get the value used to normalized weights for this method
-//  if we don't have profile data then getCalledCount will return BB_UNITY_WEIGHT (100)
-//  otherwise it returns the number of times that profile data says the method was called.
-//
-// static
-weight_t BasicBlock::getCalledCount(Compiler* comp)
-{
-    // when we don't have profile data then fgCalledCount will be BB_UNITY_WEIGHT (100)
-    weight_t calledCount = comp->fgCalledCount;
-
-    // If we haven't yet reach the place where we setup fgCalledCount it could still be zero
-    // so return a reasonable value to use until we set it.
-    //
-    if (calledCount == 0)
-    {
-        if (comp->fgIsUsingProfileWeights())
-        {
-            // When we use profile data block counts we have exact counts,
-            // not multiples of BB_UNITY_WEIGHT (100)
-            calledCount = 1;
-        }
-        else
-        {
-            calledCount = comp->fgFirstBB->bbWeight;
-
-            if (calledCount == 0)
-            {
-                calledCount = BB_UNITY_WEIGHT;
-            }
-        }
-    }
-    return calledCount;
-}
-
-// getBBWeight -- get the normalized weight of this block
-weight_t BasicBlock::getBBWeight(Compiler* comp)
-{
-    if (this->bbWeight == BB_ZERO_WEIGHT)
-    {
-        return BB_ZERO_WEIGHT;
-    }
-    else
-    {
-        weight_t calledCount = getCalledCount(comp);
-
-        // Normalize the bbWeights by multiplying by BB_UNITY_WEIGHT and dividing by the calledCount.
-        //
-        weight_t fullResult = this->bbWeight * BB_UNITY_WEIGHT / calledCount;
-
-        return fullResult;
-    }
 }
 
 // LclVarDsc "less" comparer used to compare the weight of two locals, when optimizing for small code.

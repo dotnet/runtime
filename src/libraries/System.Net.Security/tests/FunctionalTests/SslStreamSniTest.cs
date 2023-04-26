@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
+using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -44,6 +45,8 @@ namespace System.Net.Security.Tests
                     await TaskTimeoutExtensions.WhenAllOrAnyFailed(new[] { clientJob, server.AuthenticateAsServerAsync(options, CancellationToken.None) });
 
                     Assert.Equal(1, timesCallbackCalled);
+                    Assert.Equal(hostName, server.TargetHostName);
+                    Assert.Equal(hostName, client.TargetHostName);
                 },
                 (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
                 {
@@ -200,6 +203,7 @@ namespace System.Net.Security.Tests
                         server.AuthenticateAsServerAsync(serverOptions, default));
 
             Assert.Equal(string.Empty, server.TargetHostName);
+            Assert.Equal(string.Empty, client.TargetHostName);
         }
 
         [Theory]
@@ -232,6 +236,49 @@ namespace System.Net.Security.Tests
             }
         }
 
+        [Fact]
+        public async Task UnencodedHostName_ValidatesCertificate()
+        {
+            string rawHostname = "räksmörgås.josefsson.org";
+            string punycodeHostname = "xn--rksmrgs-5wao1o.josefsson.org";
+
+            var (serverCert, serverChain) = TestHelper.GenerateCertificates(punycodeHostname);
+            try
+            {
+                SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions()
+                {
+                    ServerCertificateContext = SslStreamCertificateContext.Create(serverCert, serverChain),
+                };
+
+                SslClientAuthenticationOptions clientOptions = new ()
+                {
+                    TargetHost = rawHostname,
+                    CertificateChainPolicy = new X509ChainPolicy()
+                    {
+                        RevocationMode = X509RevocationMode.NoCheck,
+                        TrustMode = X509ChainTrustMode.CustomRootTrust,
+                        CustomTrustStore = { serverChain[serverChain.Count - 1] }
+                    }
+                };
+
+                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+
+                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                                client.AuthenticateAsClientAsync(clientOptions, default),
+                                server.AuthenticateAsServerAsync(serverOptions, default));
+
+                await TestHelper.PingPong(client, server, default);
+                Assert.Equal(rawHostname, server.TargetHostName);
+                Assert.Equal(rawHostname, client.TargetHostName);
+            }
+            finally
+            {
+                serverCert.Dispose();
+                foreach (var c in serverChain) c.Dispose();
+                TestHelper.CleanupCertificates(rawHostname);
+            }
+        }
+
         [Theory]
         [InlineData("www-.volal.cz")]
         [InlineData("www-.colorhexa.com")]
@@ -260,6 +307,7 @@ namespace System.Net.Security.Tests
 
                 await TestHelper.PingPong(client, server, default);
                 Assert.Equal(name, server.TargetHostName);
+                Assert.Equal(name, client.TargetHostName);
             }
         }
 

@@ -4875,22 +4875,28 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     }
 
     // Get hold of the jump target
-    BasicBlock* bTest = block->bbJumpDest;
+    BasicBlock* const bTest = block->bbJumpDest;
 
-    // Does the block consist of 'jtrue(cond) block' ?
+    // Does the bTest consist of 'jtrue(cond) block' ?
     if (bTest->bbJumpKind != BBJ_COND)
     {
         return false;
     }
 
     // bTest must be a backwards jump to block->bbNext
-    if (bTest->bbJumpDest != block->bbNext)
+    // This will be the top of the loop.
+    //
+    BasicBlock* const bTop = bTest->bbJumpDest;
+
+    if (bTop != block->bbNext)
     {
         return false;
     }
 
-    // Since test is a BBJ_COND it will have a bbNext
-    noway_assert(bTest->bbNext != nullptr);
+    // Since bTest is a BBJ_COND it will have a bbNext
+    //
+    BasicBlock* const bJoin = bTest->bbNext;
+    noway_assert(bJoin != nullptr);
 
     // 'block' must be in the same try region as the condition, since we're going to insert a duplicated condition
     // in a new block after 'block', and the condition might include exception throwing code.
@@ -4903,8 +4909,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // The duplicated condition block will branch to bTest->bbNext, so that also better be in the
     // same try region (or no try region) to avoid generating illegal flow.
-    BasicBlock* bTestNext = bTest->bbNext;
-    if (bTestNext->hasTryIndex() && !BasicBlock::sameTryRegion(block, bTestNext))
+    if (bJoin->hasTryIndex() && !BasicBlock::sameTryRegion(block, bJoin))
     {
         return false;
     }
@@ -4919,7 +4924,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     }
 
     // Find the loop termination test at the bottom of the loop.
-    Statement* condStmt = bTest->lastStmt();
+    Statement* const condStmt = bTest->lastStmt();
 
     // Verify the test block ends with a conditional that we can manipulate.
     GenTree* const condTree = condStmt->GetRootNode();
@@ -4928,6 +4933,9 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     {
         return false;
     }
+
+    JITDUMP("Matched flow pattern for loop inversion: block " FMT_BB " bTop " FMT_BB " bTest " FMT_BB "\n",
+            block->bbNum, bTop->bbNum, bTest->bbNum);
 
     // Estimate the cost of cloning the entire test block.
     //
@@ -4956,7 +4964,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     bool           allProfileWeightsAreValid = false;
     weight_t const weightBlock               = block->bbWeight;
     weight_t const weightTest                = bTest->bbWeight;
-    weight_t const weightNext                = block->bbNext->bbWeight;
+    weight_t const weightTop                 = bTop->bbWeight;
 
     // If we have profile data then we calculate the number of times
     // the loop will iterate into loopIterations
@@ -4964,35 +4972,45 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     {
         // Only rely upon the profile weight when all three of these blocks
         // have good profile weights
-        if (block->hasProfileWeight() && bTest->hasProfileWeight() && block->bbNext->hasProfileWeight())
+        if (block->hasProfileWeight() && bTest->hasProfileWeight() && bTop->hasProfileWeight())
         {
             // If this while loop never iterates then don't bother transforming
             //
-            if (weightNext == BB_ZERO_WEIGHT)
+            if (weightTop == BB_ZERO_WEIGHT)
             {
                 return true;
             }
 
-            // We generally expect weightTest == weightNext + weightBlock.
+            // We generally expect weightTest > weightTop
             //
             // Tolerate small inconsistencies...
             //
-            if (!fgProfileWeightsConsistent(weightBlock + weightNext, weightTest))
+            if (!fgProfileWeightsConsistent(weightBlock + weightTop, weightTest))
             {
                 JITDUMP("Profile weights locally inconsistent: block " FMT_WT ", next " FMT_WT ", test " FMT_WT "\n",
-                        weightBlock, weightNext, weightTest);
+                        weightBlock, weightTop, weightTest);
             }
             else
             {
                 allProfileWeightsAreValid = true;
 
-                // Determine iteration count
+                // Determine average iteration count
                 //
-                //   weightNext is the number of time this loop iterates
-                //   weightBlock is the number of times that we enter the while loop
+                //   weightTop is the number of time this loop executes
+                //   weightTest is the number of times that we consider entering or remaining in the loop
                 //   loopIterations is the average number of times that this loop iterates
                 //
-                loopIterations = weightNext / weightBlock;
+                weight_t loopEntries = weightTest - weightTop;
+
+                // If profile is inaccurate, try and use other data to provide a credible estimate.
+                // The value should at least be >= weightBlock.
+                //
+                if (loopEntries < weightBlock)
+                {
+                    loopEntries = weightBlock;
+                }
+
+                loopIterations = weightTop / loopEntries;
             }
         }
         else
@@ -5132,16 +5150,33 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     // Flag the block that received the copy as potentially having various constructs.
     bNewCond->bbFlags |= bTest->bbFlags & BBF_COPY_PROPAGATE;
 
-    bNewCond->bbJumpDest = bTest->bbNext;
+    // Fix flow and profile
+    //
+    bNewCond->bbJumpDest = bJoin;
     bNewCond->inheritWeight(block);
 
-    // Update bbRefs and bbPreds for 'bNewCond', 'bNewCond->bbNext' 'bTest' and 'bTest->bbNext'.
+    if (allProfileWeightsAreValid)
+    {
+        weight_t const delta = weightTest - weightTop;
+
+        // If there is just one outside edge incident on bTest, then ideally delta == block->bbWeight.
+        // But this might not be the case if profile data is inconsistent.
+        //
+        // And if bTest has multiple outside edges we want to account for the weight of them all.
+        //
+        if (delta > block->bbWeight)
+        {
+            bNewCond->setBBProfileWeight(delta);
+        }
+    }
+
+    // Update pred info
+    //
+    fgAddRefPred(bJoin, bNewCond);
+    fgAddRefPred(bTop, bNewCond);
 
     fgAddRefPred(bNewCond, block);
-    fgAddRefPred(bNewCond->bbNext, bNewCond);
-
     fgRemoveRefPred(bTest, block);
-    fgAddRefPred(bTest->bbNext, bNewCond);
 
     // Move all predecessor edges that look like loop entry edges to point to the new cloned condition
     // block, not the existing condition block. The idea is that if we only move `block` to point to
@@ -5151,15 +5186,15 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     // as the proxy for predecessors that are "in" versus "out" of the potential loop. Note that correctness
     // is maintained no matter which condition block we point to, but we'll lose optimization potential
     // (and create spaghetti code) if we get it wrong.
-
+    //
     BlockToBlockMap blockMap(getAllocator(CMK_LoopOpt));
     bool            blockMapInitialized = false;
 
-    unsigned loopFirstNum  = bNewCond->bbNext->bbNum;
-    unsigned loopBottomNum = bTest->bbNum;
+    unsigned const loopFirstNum  = bTop->bbNum;
+    unsigned const loopBottomNum = bTest->bbNum;
     for (BasicBlock* const predBlock : bTest->PredBlocks())
     {
-        unsigned bNum = predBlock->bbNum;
+        unsigned const bNum = predBlock->bbNum;
         if ((loopFirstNum <= bNum) && (bNum <= loopBottomNum))
         {
             // Looks like the predecessor is from within the potential loop; skip it.
@@ -5189,8 +5224,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         // cases of stress modes with inconsistent weights.
         //
         JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", bTest->bbNum, weightTest,
-                weightNext);
-        bTest->inheritWeight(block->bbNext);
+                weightTop);
+        bTest->inheritWeight(bTop);
 
         // Determine the new edge weights.
         //
@@ -5200,23 +5235,23 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         // Note "next" is the loop top block, not bTest's bbNext,
         // we'll call this latter block "after".
         //
-        weight_t const testToNextLikelihood  = min(1.0, weightNext / weightTest);
+        weight_t const testToNextLikelihood  = min(1.0, weightTop / weightTest);
         weight_t const testToAfterLikelihood = 1.0 - testToNextLikelihood;
 
-        // Adjust edges out of bTest (which now has weight weightNext)
+        // Adjust edges out of bTest (which now has weight weightTop)
         //
-        weight_t const testToNextWeight  = weightNext * testToNextLikelihood;
-        weight_t const testToAfterWeight = weightNext * testToAfterLikelihood;
+        weight_t const testToNextWeight  = weightTop * testToNextLikelihood;
+        weight_t const testToAfterWeight = weightTop * testToAfterLikelihood;
 
-        FlowEdge* const edgeTestToNext  = fgGetPredForBlock(bTest->bbJumpDest, bTest);
+        FlowEdge* const edgeTestToNext  = fgGetPredForBlock(bTop, bTest);
         FlowEdge* const edgeTestToAfter = fgGetPredForBlock(bTest->bbNext, bTest);
 
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum,
-                bTest->bbJumpDest->bbNum, testToNextWeight);
+        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum, bTop->bbNum,
+                testToNextWeight);
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (exit loop)\n", bTest->bbNum,
                 bTest->bbNext->bbNum, testToAfterWeight);
 
-        edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight, bTest->bbJumpDest);
+        edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight, bTop);
         edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight, bTest->bbNext);
 
         // Adjust edges out of block, using the same distribution.

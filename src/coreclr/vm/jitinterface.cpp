@@ -980,8 +980,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 EnsureActive(th, pMD);
             }
         }
-        else
-        if (pFD != NULL)
+        else if (pFD != NULL)
         {
             if ((tkType != mdtFieldDef) && (tkType != mdtMemberRef))
                 ThrowBadTokenException(pResolvedToken);
@@ -1021,7 +1020,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     }
     else
     {
-        unsigned metaTOK = pResolvedToken->token;
+        mdToken metaTOK = pResolvedToken->token;
         Module * pModule = (Module *)pResolvedToken->tokenScope;
 
         switch (TypeFromToken(metaTOK))
@@ -1533,9 +1532,18 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
             if (pFieldMT->IsSharedByGenericInstantiations())
             {
-                fieldAccessor = CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
+                if (pField->IsEnCNew())
+                {
+                    fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
 
-                pResult->helper = getGenericStaticsHelper(pField);
+                    pResult->helper = CORINFO_HELP_GETSTATICFIELDADDR;
+                }
+                else
+                {
+                    fieldAccessor = CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
+
+                    pResult->helper = getGenericStaticsHelper(pField);
+                }
             }
             else
             if (pFieldMT->GetModule()->IsSystem() && (flags & CORINFO_ACCESS_GET) &&
@@ -1561,6 +1569,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
 
 #ifdef HOST_WINDOWS
+#ifndef TARGET_ARM
                 bool canOptimizeHelper = (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
                     (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE);
                 // For windows, we convert the TLS access to the optimized helper where we will store
@@ -1571,6 +1580,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
                     pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
                 }
+#endif // !TARGET_ARM
 #endif // HOST_WINDOWS
             }
             else
@@ -5302,7 +5312,6 @@ void CEEInfo::getCallInfo(
                 VirtualCallStubManager *pMgr = pLoaderAllocator->GetVirtualCallStubManager();
 
                 PCODE addr = pMgr->GetCallStub(exactType, pTargetMD);
-                _ASSERTE(pMgr->isStub(addr));
 
                 // Now we want to indirect through a cell so that updates can take place atomically.
                 if (m_pMethodBeingCompiled->IsLCGMethod())
@@ -11242,6 +11251,12 @@ void reservePersonalityRoutineSpace(uint32_t &unwindSize)
 
     // Add space for personality routine, it must be 4-byte aligned.
     unwindSize += sizeof(ULONG);
+#elif defined(TARGET_RISCV64)
+    // The JIT passes in a 4-byte aligned block of unwind data.
+    _ASSERTE(IS_ALIGNED(unwindSize, sizeof(ULONG)));
+
+    // Add space for personality routine, it must be 4-byte aligned.
+    unwindSize += sizeof(ULONG);
 #else
     PORTABILITY_ASSERT("reservePersonalityRoutineSpace");
 #endif // !defined(TARGET_AMD64)
@@ -11459,6 +11474,12 @@ void CEEJitInfo::allocUnwindInfo (
 
 #elif defined(TARGET_LOONGARCH64)
 
+    *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
+
+    ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
+    *pPersonalityRoutineRW = ExecutionManager::GetCLRPersonalityRoutineValue();
+
+#elif defined(TARGET_RISCV64)
     *(LONG *)pUnwindInfoRW |= (1 << 20); // X bit
 
     ULONG * pPersonalityRoutineRW = (ULONG*)((BYTE *)pUnwindInfoRW + ALIGN_UP(unwindSize, sizeof(ULONG)));
@@ -11830,7 +11851,7 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     return result;
 }
 
-bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
     CONTRACTL {
         THROWS;
@@ -11961,6 +11982,40 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
                 }
             }
         }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, int bufferSize, int valueOffset)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    _ASSERT(handle != NULL);
+    _ASSERT(buffer != NULL);
+    _ASSERT(bufferSize > 0);
+    _ASSERT(valueOffset >= 0);
+
+    bool result = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    GCX_COOP();
+    OBJECTREF objRef = getObjectFromJitHandle(handle);
+    _ASSERTE(objRef != NULL);
+
+    // TODO: support types containing GC pointers
+    if (!objRef->GetMethodTable()->ContainsPointers() && bufferSize + valueOffset <= (int)objRef->GetSize())
+    {
+        Object* obj = OBJECTREFToObject(objRef);
+        memcpy(buffer, (uint8_t*)obj + valueOffset, bufferSize);
+        result = true;
     }
 
     EE_TO_JIT_TRANSITION();

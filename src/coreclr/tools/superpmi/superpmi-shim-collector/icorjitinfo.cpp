@@ -1743,11 +1743,19 @@ unsigned interceptor_ICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppI
     return temp;
 }
 
-bool interceptor_ICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+bool interceptor_ICJI::getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
-    mc->cr->AddCall("getReadonlyStaticFieldValue");
-    bool result = original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
-    mc->recGetReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects, result);
+    mc->cr->AddCall("getStaticFieldContent");
+    bool result = original_ICorJitInfo->getStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    mc->recGetStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects, result);
+    return result;
+}
+
+bool interceptor_ICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
+{
+    mc->cr->AddCall("getObjectContent");
+    bool result = original_ICorJitInfo->getObjectContent(obj, buffer, bufferSize, valueOffset);
+    mc->recGetObjectContent(obj, buffer, bufferSize, valueOffset, result);
     return result;
 }
 

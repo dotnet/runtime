@@ -23,7 +23,9 @@ namespace System
           IEquatable<int>,
           IBinaryInteger<int>,
           IMinMaxValue<int>,
-          ISignedNumber<int>
+          ISignedNumber<int>,
+          IUtf8SpanFormattable,
+          IBinaryIntegerParseAndFormatInfo<int>
     {
         private readonly int m_value; // Do not rename (binary serialization)
 
@@ -128,85 +130,50 @@ namespace System
             return Number.TryFormatInt32(m_value, ~0, format, provider, destination, out charsWritten);
         }
 
-        public static int Parse(string s)
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.TryFormatInt32(m_value, ~0, format, provider, utf8Destination, out bytesWritten);
         }
 
-        public static int Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static int Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
 
-        // Parses an integer from a String in the given style. If
-        // a NumberFormatInfo isn't specified, the current culture's
-        // NumberFormatInfo is assumed.
-        //
-        public static int Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
-        }
+        public static int Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        // Parses an integer from a String in the given style. If
-        // a NumberFormatInfo isn't specified, the current culture's
-        // NumberFormatInfo is assumed.
-        //
+        public static int Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
+
         public static int Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static int Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt32(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<int>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        // Parses an integer from a String. Returns false rather
-        // than throwing an exception if input is invalid.
-        //
-        public static bool TryParse([NotNullWhen(true)] string? s, out int result)
-        {
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
+        public static bool TryParse([NotNullWhen(true)] string? s, out int result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-            return Number.TryParseInt32IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out int result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-        public static bool TryParse(ReadOnlySpan<char> s, out int result)
-        {
-            return Number.TryParseInt32IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
-
-        // Parses an integer from a String in the given style. Returns false rather
-        // than throwing an exception if input is invalid.
-        //
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out int result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
-            if (s == null)
+            if (s is null)
             {
                 result = 0;
                 return false;
             }
-
-            return Number.TryParseInt32(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out int result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseInt32(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         //
@@ -1433,5 +1400,25 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static int IUnaryPlusOperators<int, int>.operator +(int value) => +value;
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<int>.IsSigned => true;
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MaxDigitCount => 10; // 2_147_483_647
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MaxHexDigitCount => 8; // 0x7FFF_FFFF
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MaxValueDiv10 => MaxValue / 10;
+
+        static string IBinaryIntegerParseAndFormatInfo<int>.OverflowMessage => SR.Overflow_Int32;
+
+        static bool IBinaryIntegerParseAndFormatInfo<int>.IsGreaterThanAsUnsigned(int left, int right) => (uint)(left) > (uint)(right);
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MultiplyBy10(int value) => value * 10;
+
+        static int IBinaryIntegerParseAndFormatInfo<int>.MultiplyBy16(int value) => value * 16;
     }
 }

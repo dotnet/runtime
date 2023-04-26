@@ -508,12 +508,6 @@ enum GenTreeFlags : unsigned int
     GTF_RELOP_ZTT               = 0x08000000, // GT_<relop> -- Loop test cloned for converting while-loops into do-while
                                               //               with explicit "loop test" in the header block.
 
-    GTF_JCMP_EQ                 = 0x80000000, // GTF_JCMP_EQ  -- Branch on equal rather than not equal
-    GTF_JCMP_TST                = 0x40000000, // GTF_JCMP_TST -- Use bit test instruction rather than compare against zero instruction
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    GTF_JCMP_MASK               = 0x3E000000, // For LoongArch64 and RISCV64, Using the five bits[29:25] to encoding the GenCondition:code.
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
-
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
 
     GTF_QMARK_CAST_INSTOF       = 0x80000000, // GT_QMARK -- Is this a top (not nested) level qmark created for
@@ -1204,6 +1198,11 @@ public:
         return OperIsInitVal(OperGet());
     }
 
+    bool IsInitVal() const
+    {
+        return IsIntegralConst(0) || OperIsInitVal();
+    }
+
     bool IsConstInitVal() const
     {
         return (gtOper == GT_CNS_INT) || (OperIsInitVal() && (gtGetOp1()->gtOper == GT_CNS_INT));
@@ -1225,7 +1224,7 @@ public:
 
     static bool OperIsStoreBlk(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYN_BLK);
+        return StaticOperIs(gtOper, GT_STORE_BLK, GT_STORE_DYN_BLK);
     }
 
     bool OperIsStoreBlk() const
@@ -1547,8 +1546,7 @@ public:
     // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     static bool OperIsIndir(genTreeOps gtOper)
     {
-        static_assert_no_msg(
-            AreContiguous(GT_IND, GT_STOREIND, GT_STORE_OBJ, GT_BLK, GT_STORE_BLK, GT_STORE_DYN_BLK, GT_NULLCHECK));
+        static_assert_no_msg(AreContiguous(GT_IND, GT_STOREIND, GT_BLK, GT_STORE_BLK, GT_STORE_DYN_BLK, GT_NULLCHECK));
         return (GT_IND <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
@@ -1598,6 +1596,8 @@ public:
 
     // Helper function to return the address of an indir or array meta-data node.
     GenTree* GetIndirOrArrMetaDataAddr();
+
+    bool IndirMayFault(Compiler* compiler);
 
     bool OperIsImplicitIndir() const;
 
@@ -1679,7 +1679,7 @@ public:
 
     bool OperIsConditionalJump() const
     {
-        return OperIs(GT_JTRUE, GT_JCMP, GT_JCC);
+        return OperIs(GT_JTRUE, GT_JCMP, GT_JTEST, GT_JCC);
     }
 
     bool OperConsumesFlags() const
@@ -5557,6 +5557,8 @@ struct GenTreeCall final : public GenTree
 
     bool IsHelperCall(Compiler* compiler, unsigned helper) const;
 
+    CorInfoHelpFunc GetHelperNum() const;
+
     bool AreArgsComplete() const;
 
     CorInfoCallConvExtension GetUnmanagedCallConv() const
@@ -7303,6 +7305,10 @@ public:
     enum
     {
         BlkOpKindInvalid,
+        BlkOpKindCpObjUnroll,
+#ifdef TARGET_XARCH
+        BlkOpKindCpObjRepInstr,
+#endif
 #ifndef TARGET_X86
         BlkOpKindHelper,
 #endif

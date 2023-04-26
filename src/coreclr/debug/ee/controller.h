@@ -331,23 +331,23 @@ struct DebuggerFunctionKey1
 
 typedef DebuggerFunctionKey1 UNALIGNED DebuggerFunctionKey;
 
-// IL Master: Breakpoints on IL code may need to be applied to multiple
+// IL Primary: Breakpoints on IL code may need to be applied to multiple
 // copies of code. Historically generics was the only way IL code was JITTed
 // multiple times but more recently the CodeVersionManager and tiered compilation
 // provide more open-ended mechanisms to have multiple native code bodies derived
 // from a single IL method body.
-// The "master" is a patch we keep to record the IL offset or native offset, and
-// is used to create new "slave"patches. For native offsets only offset 0 is allowed
+// The "primary" is a patch we keep to record the IL offset or native offset, and
+// is used to create new "replica" patches. For native offsets only offset 0 is allowed
 // because that is the only one that we think would have a consistent semantic
 // meaning across different code bodies.
 // There can also be multiple IL bodies for the same method given EnC or ReJIT.
-// A given master breakpoint is tightly bound to one particular IL body determined
+// A given primary breakpoint is tightly bound to one particular IL body determined
 // by encVersion. ReJIT + breakpoints isn't currently supported.
 //
 //
-// IL Slave: The slaves created from Master patches. If the master used an IL offset
-// then the slave also initially has an IL offset that will later become a native offset.
-// If the master uses a native offset (0) then the slave will also have a native offset (0).
+// IL Replica: The replicas created from Primary patches. If the primary used an IL offset
+// then the replica also initially has an IL offset that will later become a native offset.
+// If the primary uses a native offset (0) then the replica will also have a native offset (0).
 // These patches always resolve to addresses in jitted code.
 //
 //
@@ -360,7 +360,7 @@ typedef DebuggerFunctionKey1 UNALIGNED DebuggerFunctionKey;
 //
 // NativeUnmanaged: A patch applied to any kind of native code.
 
-enum DebuggerPatchKind { PATCH_KIND_IL_MASTER, PATCH_KIND_IL_SLAVE, PATCH_KIND_NATIVE_MANAGED, PATCH_KIND_NATIVE_UNMANAGED };
+enum DebuggerPatchKind { PATCH_KIND_IL_PRIMARY, PATCH_KIND_IL_REPLICA, PATCH_KIND_NATIVE_MANAGED, PATCH_KIND_NATIVE_UNMANAGED };
 
 // struct DebuggerControllerPatch:  An entry in the patch (hash) table,
 // this should contain all the info that's needed over the course of a
@@ -369,7 +369,8 @@ enum DebuggerPatchKind { PATCH_KIND_IL_MASTER, PATCH_KIND_IL_SLAVE, PATCH_KIND_N
 // FREEHASHENTRY entry:  Three ULONGs, this is required
 //      by the underlying hashtable implementation
 //  DWORD opcode:  A nonzero opcode && address field means that
-//      the patch has been applied to something.
+//      the patch has been applied to something. This may not be a full
+//      opcode, it is possible it is a partial opcode.
 //      A patch with a zero'd opcode field means that the patch isn't
 //      actually tracking a valid break opcode.  See DebuggerPatchTable
 //      for more details.
@@ -405,7 +406,7 @@ enum DebuggerPatchKind { PATCH_KIND_IL_MASTER, PATCH_KIND_IL_SLAVE, PATCH_KIND_N
 //      the method (and version) that this patch is applied to.  This field may
 //      also have the value DebuggerJitInfo::DMI_VERSION_INVALID
 
-// SIZE_T pid:  Within a given patch table, all patches have a
+// SIZE_T patchId:  Within a given patch table, all patches have a
 //      semi-unique ID.  There should be one and only 1 patch for a given
 //      {pid,nVersion} tuple, thus ensuring that we don't duplicate
 //      patches from multiple, previous versions.
@@ -427,40 +428,41 @@ struct DebuggerControllerPatch
     SIZE_T                  offset;
     PTR_CORDB_ADDRESS_TYPE  address;
     FramePointer            fp;
-    PRD_TYPE                opcode; //this name will probably change because it is a misnomer
+    PRD_TYPE                opcode; // See description above.
     BOOL                    fSaveOpcode;
-    PRD_TYPE                opcodeSaved;//also a misnomer
+    PRD_TYPE                opcodeSaved;
     BOOL                    offsetIsIL;
     TraceDestination        trace;
-    MethodDesc*             pMethodDescFilter; // used for IL Master patches that should only bind to jitted
+    MethodDesc*             pMethodDescFilter; // used for IL Primary patches that should only bind to jitted
                                                // code versions for a single generic instantiation
 private:
+    DebuggerPatchKind       kind;
     int                     refCount;
     union
     {
-        SIZE_T     encVersion; // used for Master patches, to record which EnC version this Master applies to
-        DebuggerJitInfo        *dji; // used for Slave and native patches, though only when tracking JIT Info
+        SIZE_T     encVersion; // used for Primary patches, to record which EnC version this Primary applies to
+        DebuggerJitInfo        *dji; // used for Replica and native patches, though only when tracking JIT Info
     };
 
 #ifndef FEATURE_EMULATE_SINGLESTEP
     // this is shared among all the skippers for this controller. see the comments
     // right before the definition of SharedPatchBypassBuffer for lifetime info.
     SharedPatchBypassBuffer* m_pSharedPatchBypassBuffer;
-#endif // TARGET_ARM
+#endif // !FEATURE_EMULATE_SINGLESTEP
 
 public:
-    SIZE_T                  pid;
+    SIZE_T                  patchId;
     AppDomain              *pAppDomain;
 
     BOOL IsNativePatch();
     BOOL IsManagedPatch();
-    BOOL IsILMasterPatch();
-    BOOL IsILSlavePatch();
+    BOOL IsILPrimaryPatch();
+    BOOL IsILReplicaPatch();
     DebuggerPatchKind  GetKind();
 
     // A patch has DJI if it was created with it or if it has been mapped to a
     // function that has been jitted while JIT tracking was on.  It does not
-    // necessarily mean the patch is bound.  ILMaster patches never have DJIs.
+    // necessarily mean the patch is bound.  ILPrimary patches never have DJIs.
     // Patches will never have DJIs if we are not tracking JIT information.
     //
     // Patches can also be unbound, e.g. in UnbindFunctionPatches.  Any DJI gets cleared
@@ -469,27 +471,30 @@ public:
     // we don't skip the patch when we get new code.
     BOOL HasDJI()
     {
-        return (!IsILMasterPatch() && dji != NULL);
+        return (!IsILPrimaryPatch() && dji != NULL);
     }
 
     DebuggerJitInfo *GetDJI()
     {
-        _ASSERTE(!IsILMasterPatch());
+        _ASSERTE(!IsILPrimaryPatch());
         return dji;
     }
+
+    // Determine if the patch is related to EnC remap logic.
+    BOOL IsEnCRemapPatch();
 
     // These tell us which EnC version a patch relates to.  They are used
     // to determine if we are mapping a patch to a new version.
     //
     BOOL HasEnCVersion()
     {
-        return (IsILMasterPatch() || HasDJI());
+        return (IsILPrimaryPatch() || HasDJI());
     }
 
     SIZE_T GetEnCVersion()
     {
         _ASSERTE(HasEnCVersion());
-        return (IsILMasterPatch() ? encVersion : (HasDJI() ? GetDJI()->m_encVersion : CorDB_DEFAULT_ENC_FUNCTION_VERSION));
+        return (IsILPrimaryPatch() ? encVersion : (HasDJI() ? GetDJI()->m_encVersion : CorDB_DEFAULT_ENC_FUNCTION_VERSION));
     }
 
     // We set the DJI explicitly after mapping a patch
@@ -498,7 +503,7 @@ public:
     // should not skip the patch.
     void SetDJI(DebuggerJitInfo *newDJI)
     {
-        _ASSERTE(!IsILMasterPatch());
+        _ASSERTE(!IsILPrimaryPatch());
         dji = newDJI;
     }
 
@@ -516,8 +521,8 @@ public:
             return FALSE;
         }
 
-        // IL Master patches are never bound.
-        _ASSERTE( !IsILMasterPatch() );
+        // IL Primary patches are never bound.
+        _ASSERTE( !IsILPrimaryPatch() );
 
         return TRUE;
     }
@@ -562,10 +567,29 @@ public:
         if (m_pSharedPatchBypassBuffer != NULL)
             m_pSharedPatchBypassBuffer->Release();
     }
-#endif // TARGET_ARM
+#endif // !FEATURE_EMULATE_SINGLESTEP
 
-private:
-    DebuggerPatchKind kind;
+    void LogInstance()
+    {
+        LOG((LF_CORDB, LL_INFO10000, "  DCP: %p\n"
+            "              patchId: 0x%zx\n"
+            "               offset: 0x%zx\n"
+            "              address: %p\n"
+            "           offsetIsIL: %s\n"
+            "             refCount: %d\n"
+            "                 kind: %d\n"
+            "              IsBound: %s\n"
+            "        IsNativePatch: %s\n"
+            "       IsManagedPatch: %s\n"
+            "     IsILPrimaryPatch: %s\n"
+            "     IsILReplicaPatch: %s\n",
+            this, patchId, offset, address, (offsetIsIL ? "true" : "false"), refCount, GetKind(),
+            (IsBound() ? "true" : "false"),
+            (IsNativePatch() ? "true" : "false"),
+            (IsManagedPatch() ? "true" : "false"),
+            (IsILPrimaryPatch() ? "true" : "false"),
+            (IsILReplicaPatch() ? "true" : "false")));
+    }
 };
 
 typedef DPTR(DebuggerControllerPatch) PTR_DebuggerControllerPatch;
@@ -625,7 +649,7 @@ public:
 private:
     //incremented so that we can get DPT-wide unique PIDs.
     // pid = Patch ID.
-    SIZE_T m_pid;
+    SIZE_T m_patchId;
     // Given a patch, retrieves the correct key.  The return value of this function is passed to Cmp(), Find(), etc.
     SIZE_T Key(DebuggerControllerPatch *patch)
     {
@@ -700,8 +724,8 @@ private:
     //Public Members
 public:
     enum {
-        DCP_PID_INVALID,
-        DCP_PID_FIRST_VALID,
+        DCP_PATCHID_INVALID,
+        DCP_PATCHID_FIRST_VALID,
     };
 
 #ifndef DACCESS_COMPILE
@@ -712,7 +736,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        m_pid = DCP_PID_FIRST_VALID;
+        m_patchId = DCP_PATCHID_FIRST_VALID;
 
         SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
         return NewInit(17, sizeof(DebuggerControllerPatch), 101);
@@ -722,7 +746,7 @@ public:
     // GetNextPatch from this patch) are either sorted or NULL, take the given
     // patch (which should be the first patch in the chain).  This
     // is called by AddPatch to make sure that the order of the
-    // patches is what we want for things like E&C, DePatchSkips,etc.
+    // patches is what we want for things like EnC, DePatchSkips,etc.
     void SortPatchIntoPatchList(DebuggerControllerPatch **ppPatch);
 
     void SpliceOutOfList(DebuggerControllerPatch *patch);
@@ -742,7 +766,7 @@ public:
                                       DebuggerPatchKind kind,
                                       FramePointer fp,
                                       AppDomain *pAppDomain,
-                                      SIZE_T masterEnCVersion,
+                                      SIZE_T primaryEnCVersion,
                                       DebuggerJitInfo *dji);
 
     DebuggerControllerPatch *AddPatchForAddress(DebuggerController *controller,
@@ -753,7 +777,7 @@ public:
                                       FramePointer fp,
                                       AppDomain *pAppDomain,
                                       DebuggerJitInfo *dji = NULL,
-                                      SIZE_T pid = DCP_PID_INVALID,
+                                      SIZE_T patchId = DCP_PATCHID_INVALID,
                                       TraceType traceType = DPT_DEFAULT_TRACE_TYPE);
 
     // Set the native address for this patch.
@@ -859,21 +883,17 @@ public:
         return ItemIndex(p);
     }
 
-#ifdef _DEBUG_PATCH_TABLE
+#ifdef _DEBUG
 public:
     // DEBUG An internal debugging routine, it iterates
     //      through the hashtable, stopping at every
-    //      single entry, no matter what it's state.  For this to
-    //      compile, you're going to have to add friend status
-    //      of this class to CHashTableAndData in
-    //      to $\Com99\Src\inc\UtilCode.h
+    //      single entry, no matter what it's state.
     void CheckPatchTable();
-#endif // _DEBUG_PATCH_TABLE
+#endif // _DEBUG
 
     // Count how many patches are in the table.
     // Use for asserts
     int GetNumberOfPatches();
-
 };
 
 typedef VPTR(class DebuggerPatchTable) PTR_DebuggerPatchTable;
@@ -909,8 +929,6 @@ enum DEBUGGER_CONTROLLER_TYPE
 {
     DEBUGGER_CONTROLLER_THREAD_STARTER,
     DEBUGGER_CONTROLLER_ENC,
-    DEBUGGER_CONTROLLER_ENC_PATCH_TO_SKIP, // At any one address,
-                                           // There can be only one!
     DEBUGGER_CONTROLLER_PATCH_SKIP,
     DEBUGGER_CONTROLLER_BREAKPOINT,
     DEBUGGER_CONTROLLER_STEPPER,
@@ -1007,8 +1025,7 @@ inline void VerifyExecutableAddress(const BYTE* address)
 
 // DebuggerController:   DebuggerController serves
 // both as a static class that dispatches exceptions coming from the
-// EE, and as an abstract base class for the five classes that derrive
-// from it.
+// EE, and as an abstract base class for other debugger concepts.
 class DebuggerController
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(DebuggerController);
@@ -1084,9 +1101,6 @@ class DebuggerController
     static bool ModuleHasPatches( Module* pModule );
 
 #if EnC_SUPPORTED
-    static DebuggerControllerPatch *IsXXXPatched(const BYTE *eip,
-            DEBUGGER_CONTROLLER_TYPE dct);
-
     static DebuggerControllerPatch *GetEnCPatch(const BYTE *address);
 #endif //EnC_SUPPORTED
 
@@ -1129,8 +1143,8 @@ class DebuggerController
     // destroys the thread before it fires, then we'd still have an active DTS.
     static void CancelOutstandingThreadStarter(Thread * pThread);
 
-    static void AddRef(DebuggerControllerPatch *patch);
-    static void Release(DebuggerControllerPatch *patch);
+    static void AddRefPatch(DebuggerControllerPatch *patch);
+    static void ReleasePatch(DebuggerControllerPatch *patch);
 
   private:
 
@@ -1177,7 +1191,6 @@ private:
                           CORDB_ADDRESS_TYPE *startAddr);
     static bool ApplyPatch(DebuggerControllerPatch *patch);
     static bool UnapplyPatch(DebuggerControllerPatch *patch);
-    static void UnapplyPatchAt(DebuggerControllerPatch *patch, CORDB_ADDRESS_TYPE *address);
     static bool IsPatched(CORDB_ADDRESS_TYPE *address, BOOL native);
 
     static void ActivatePatch(DebuggerControllerPatch *patch);
@@ -1237,17 +1250,6 @@ public:
     //
 
     Thread *GetThread() { return m_thread; }
-
-    // This one should be made private
-    BOOL AddBindAndActivateILSlavePatch(DebuggerControllerPatch *master,
-                                        DebuggerJitInfo *dji);
-
-    BOOL AddILPatch(AppDomain * pAppDomain, Module *module,
-                    mdMethodDef md,
-                    MethodDesc* pMethodFilter,
-                    SIZE_T encVersion,  // what encVersion does this apply to?
-                    SIZE_T offset,
-                    BOOL offsetIsIL);
 
     // The next two are very similar.  Both work on offsets,
     // but one takes a "patch id".  I don't think these are really needed: the
@@ -1314,16 +1316,26 @@ public:
     void Enqueue();
     void Dequeue();
 
-  private:
+  protected:
     // Helper function that is called on each virtual trace call target to set a trace patch
     static void PatchTargetVisitor(TADDR pVirtualTraceCallTarget, VOID* pUserData);
 
-    DebuggerControllerPatch *AddILMasterPatch(Module *module,
+    DebuggerControllerPatch *AddILPrimaryPatch(Module *module,
                   mdMethodDef md,
                   MethodDesc *pMethodDescFilter,
                   SIZE_T offset,
                   BOOL offsetIsIL,
                   SIZE_T encVersion);
+
+    BOOL AddBindAndActivateILReplicaPatch(DebuggerControllerPatch *primary,
+                                        DebuggerJitInfo *dji);
+
+    BOOL AddILPatch(AppDomain * pAppDomain, Module *module,
+                    mdMethodDef md,
+                    MethodDesc* pMethodFilter,
+                    SIZE_T encVersion,  // what encVersion does this apply to?
+                    SIZE_T offset,
+                    BOOL offsetIsIL);
 
     BOOL AddBindAndActivatePatchForMethodDesc(MethodDesc *fd,
                   DebuggerJitInfo *dji,
@@ -1331,7 +1343,6 @@ public:
                   DebuggerPatchKind kind,
                   FramePointer fp,
                   AppDomain *pAppDomain);
-
 
   protected:
 
@@ -1482,7 +1493,7 @@ public:
         BYTE* patchBypass = m_pSharedPatchBypassBuffer->PatchBypass;
         return (CORDB_ADDRESS_TYPE *)patchBypass;
     }
-#endif // TARGET_ARM
+#endif // !FEATURE_EMULATE_SINGLESTEP
 };
 
 /* ------------------------------------------------------------------------- *
@@ -1911,25 +1922,25 @@ private:
 // DebuggerEnCBreakpoint - used by edit and continue to support remapping
 //
 // When a method is updated, we make no immediate attempt to remap any existing execution
-// of the old method.  Instead we mine the old method with EnC breakpoints, and prompt the
-// debugger whenever one is hit, giving it the opportunity to request a remap to the
+// of the previous version.  Instead we set EnC breakpoints in the previous version, and
+// prompt the debugger whenever one is hit, giving it the opportunity to request a remap to the
 // latest version of the method.
 //
 // Over long debugging sessions which make many edits to large methods, we can create
 // a large number of these breakpoints.  We currently make no attempt to reclaim the
-// code or patch overhead for old methods.  Ideally we'd be able to detect when there are
-// no outstanding references to the old method version and clean up after it.  At the
-// very least, we could remove all but the first patch when there are no outstanding
+// code or patch overhead for previous versions. Ideally we'd be able to detect when there are
+// no outstanding references to older method versions and clean up. At the very least, we
+// could remove all but the first patch when there are no outstanding
 // frames for a specific version of an edited method.
 //
-class DebuggerEnCBreakpoint : public DebuggerController
+class DebuggerEnCBreakpoint final : public DebuggerController
 {
 public:
     // We have two types of EnC breakpoints. The first is the one we
-    // sprinkle through old code to let us know when execution is occurring
-    // in a function that now has a new version. The second is when we've
-    // actually resumed excecution into a remapped function and we need
-    // to then notify the debugger.
+    // sprinkle through previous code versions to let us know when execution
+    // is occurring in a function that now has a new version.
+    // The second is when we've actually resumed excecution into a remapped
+    // function and we need to then notify the debugger.
     enum TriggerType {REMAP_PENDING, REMAP_COMPLETE};
 
     // Create and activate an EnC breakpoint at the specified native offset
@@ -1938,13 +1949,13 @@ public:
                           TriggerType fTriggerType,
                           AppDomain *pAppDomain);
 
-    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void )
+    virtual DEBUGGER_CONTROLLER_TYPE GetDCType( void ) override
         { return DEBUGGER_CONTROLLER_ENC; }
 
 private:
     TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
                       Thread *thread,
-                      TRIGGER_WHY tyWhy);
+                      TRIGGER_WHY tyWhy) override;
 
     TP_RESULT HandleRemapComplete(DebuggerControllerPatch *patch,
                                    Thread *thread,

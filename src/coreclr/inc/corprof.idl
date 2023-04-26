@@ -4245,6 +4245,17 @@ interface ICorProfilerInfo13 : ICorProfilerInfo12
         [out] ObjectID* pObject);
 }
 
+[
+    object,
+    uuid(F460E352-D76D-4FE9-835F-F6AF9D6E862D),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo14 : ICorProfilerInfo13
+{
+    HRESULT EnumerateNonGCObjects([out] ICorProfilerObjectEnum** ppEnum);
+}
+
 /*
 * This interface lets you iterate over methods in the runtime.
 */

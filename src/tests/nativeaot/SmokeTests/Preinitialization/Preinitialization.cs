@@ -986,9 +986,9 @@ class TestSharedCode
         }
 
         {
-            // Expecting this to be a frozen array, and reported as Gen2 by the GC
+            // Expecting this to be a frozen array, and reported as int.MaxValue by the GC
             object val = AccessArray<C1>();
-            Assert.AreEqual(2, GC.GetGeneration(val));
+            Assert.AreEqual(int.MaxValue, GC.GetGeneration(val));
 
             val = typeof(ClassWithTemplate<>).MakeGenericType(typeof(C4)).GetField("Array").GetValue(null);
             Assert.AreEqual(0, GC.GetGeneration(val));
