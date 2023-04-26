@@ -93,7 +93,6 @@ namespace Microsoft.Extensions.Http.Tests.Logging
 
 #if NET5_0_OR_GREATER
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        [Fact]
         public void LoggingHttpMessageHandler_LogsAbsoluteUri_Sync()
         {
             // Arrange
@@ -131,7 +130,6 @@ namespace Microsoft.Extensions.Http.Tests.Logging
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        [Fact]
         public void LoggingScopeHttpMessageHandler_LogsAbsoluteUri_Sync()
         {
             // Arrange
