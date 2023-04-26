@@ -725,7 +725,7 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
             result = PhaseStatus::MODIFIED_EVERYTHING;
 #ifdef DEBUG
             assert(origBlock != block);
-            origBlock = block;   
+            origBlock = block;
 #endif
         }
     }
