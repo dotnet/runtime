@@ -92,5 +92,10 @@ namespace System.Threading
         internal PortableThreadPool.WaitThread? WaitThread { get; set; }
 
         public bool Unregister(WaitHandle waitObject) => UnregisterPortableCore(waitObject);
+
+        internal void PerformCallback(bool timedOut)
+        {
+            PerformCallbackPortableCore(timedOut);
+        }
     }
 }
