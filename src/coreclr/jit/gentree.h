@@ -1789,7 +1789,7 @@ public:
     // The returned pointer might be nullptr if the node is not binary, or if non-null op2 is not required.
     inline GenTree* gtGetOp2IfPresent() const;
 
-    inline GenTree* GetStoreDestination() const;
+    inline GenTree* GetStoreDestination();
 
     inline GenTree*& Data();
 
@@ -9261,7 +9261,7 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
     return op2;
 }
 
-inline GenTree* GenTree::GetStoreDestination() const // TODO-ASG: delete.
+inline GenTree* GenTree::GetStoreDestination() // TODO-ASG: delete.
 {
     assert(OperIs(GT_ASG) || OperIsStore());
     return OperIs(GT_ASG) ? gtGetOp1() : this;

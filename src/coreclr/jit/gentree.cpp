@@ -8122,6 +8122,97 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
     return (type == TYP_STRUCT) ? gtNewBlkIndir(layout, addr, indirFlags) : gtNewIndir(type, addr, indirFlags);
 }
 
+//------------------------------------------------------------------------------
+// gtNewStoreBlkNode : Create an indirect struct store node.
+//
+// Arguments:
+//    layout     - The struct layout
+//    addr       - Destionation address
+//    data       - Value to store
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    The created GT_STORE_BLK node.
+//
+GenTreeBlk* Compiler::gtNewStoreBlkNode(ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags)
+{
+    assert((indirFlags & GTF_IND_INVARIANT) == 0);
+    assert(data->IsInitVal() || ClassLayout::AreCompatible(layout, data->GetLayout(this)));
+
+    GenTreeBlk* store = new (this, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, addr, data, layout);
+    store->gtFlags |= GTF_ASG;
+    gtInitializeIndirNode(store, indirFlags);
+
+    return store;
+}
+
+//------------------------------------------------------------------------------
+// gtNewStoreIndNode : Create an indirect store node.
+//
+// Arguments:
+//    type       - Type of the store
+//    addr       - Destionation address
+//    data       - Value to store
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    The created GT_STOREIND node.
+//
+GenTreeStoreInd* Compiler::gtNewStoreIndNode(var_types type, GenTree* addr, GenTree* data, GenTreeFlags indirFlags)
+{
+    assert((indirFlags & GTF_IND_INVARIANT) == 0);
+    assert((type != TYP_STRUCT) && (genActualType(type) == genActualType(data)));
+
+    GenTreeStoreInd* store = new (this, GT_STOREIND) GenTreeStoreInd(type, addr, data);
+    store->gtFlags |= GTF_ASG;
+    gtInitializeIndirNode(store, indirFlags);
+
+    return store;
+}
+
+//------------------------------------------------------------------------
+// gtNewStoreValueNode: Return a node that represents a store.
+//
+// Arguments:
+//    type       - Type to store
+//    layout     - Struct layout for the store
+//    addr       - Destination address
+//    data       - Value to store
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    A "STORE_BLK/STORE_IND" node, or "STORE_LCL_VAR" if "addr" points to
+//    a compatible local.
+//
+GenTree* Compiler::gtNewStoreValueNode(
+    var_types type, ClassLayout* layout, GenTree* addr, GenTree* data, GenTreeFlags indirFlags)
+{
+    assert((type != TYP_STRUCT) || (layout != nullptr));
+
+    if (((indirFlags & GTF_IND_VOLATILE) == 0) && addr->IsLclVarAddr())
+    {
+        unsigned   lclNum = addr->AsLclFld()->GetLclNum();
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+        if ((varDsc->TypeGet() == type) &&
+            ((type != TYP_STRUCT) || ClassLayout::AreCompatible(layout, varDsc->GetLayout())))
+        {
+            return gtNewStoreLclVarNode(lclNum, data);
+        }
+    }
+
+    GenTree* store;
+    if (type == TYP_STRUCT)
+    {
+        store = gtNewStoreBlkNode(layout, addr, data, indirFlags);
+    }
+    else
+    {
+        store = gtNewStoreIndNode(type, addr, data, indirFlags);
+    }
+
+    return store;
+}
+
 /*****************************************************************************
  *
  *  Create a node that will assign 'src' to 'dst'.

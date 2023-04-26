@@ -556,8 +556,8 @@ void MorphInitBlockHelper::TryPrimitiveInit()
             m_dst->gtFlags |= GTF_VAR_DEF;
 
             m_asg->ChangeType(m_dst->TypeGet());
-            m_asg->gtOp1             = m_dst;
-            m_asg->gtOp2             = m_src;
+            m_asg->AsOp()->gtOp1 = m_dst;
+            m_asg->AsOp()->gtOp2 = m_src;
         }
         else
         {
@@ -1428,13 +1428,20 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
             noway_assert((m_dstLclNum != BAD_VAR_NUM) && (dstAddr == nullptr));
 
             unsigned dstFieldLclNum = m_comp->lvaGetDesc(m_dstLclNum)->lvFieldLclStart + i;
-            dstFld = m_comp->gtNewLclvNode(dstFieldLclNum, m_comp->lvaGetDesc(dstFieldLclNum)->TypeGet());
+            if (useAsg)
+            {
+                dstFld = m_comp->gtNewLclvNode(dstFieldLclNum, m_comp->lvaGetDesc(dstFieldLclNum)->TypeGet());
 
-            // If it had been labeled a "USEASG", assignments to the individual promoted fields are not.
-            dstFld->gtFlags |= m_dstLclNode->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK);
+                // If it had been labeled a "USEASG", assignments to the individual promoted fields are not.
+                dstFld->gtFlags |= m_dstLclNode->gtFlags & ~(GTF_NODE_MASK | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK);
 
-            // Don't CSE the lhs of an assignment.
-            dstFld->gtFlags |= GTF_DONT_CSE;
+                // Don't CSE the lhs of an assignment.
+                dstFld->gtFlags |= GTF_DONT_CSE;
+            }
+            else
+            {
+                dstFld = m_comp->gtNewStoreLclVarNode(dstFieldLclNum, srcFld);
+            }
         }
         else
         {
@@ -1446,7 +1453,14 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 noway_assert(m_dstVarDsc != nullptr);
                 noway_assert(addrSpill == nullptr);
 
-                dstFld = m_comp->gtNewLclvNode(m_dstLclNum, m_dstVarDsc->TypeGet());
+                if (useAsg)
+                {
+                    dstFld = m_comp->gtNewLclvNode(m_dstLclNum, m_dstVarDsc->TypeGet());
+                }
+                else
+                {
+                    dstFld = m_comp->gtNewStoreLclVarNode(m_dstLclNum, srcFld);
+                }
             }
             else
             {
@@ -1497,7 +1511,14 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                         dstAddrClone = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, dstAddrClone, fieldOffsetNode);
                     }
 
-                    dstFld = m_comp->gtNewIndir(srcType, dstAddrClone);
+                    if (useAsg)
+                    {
+                        dstFld = m_comp->gtNewIndir(srcType, dstAddrClone);
+                    }
+                    else
+                    {
+                        dstFld = m_comp->gtNewStoreIndNode(srcType, dstAddrClone, srcFld);
+                    }
                 }
                 else
                 {
@@ -1506,7 +1527,14 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     // If the dst was a struct type field "B" in a struct "A" then we add
                     // add offset of ("B" in "A") + current offset in "B".
                     unsigned totalOffset = m_dstLclOffset + srcFieldOffset;
-                    dstFld               = m_comp->gtNewLclFldNode(m_dstLclNum, srcType, totalOffset);
+                    if (useAsg)
+                    {
+                        dstFld = m_comp->gtNewLclFldNode(m_dstLclNum, srcType, totalOffset);
+                    }
+                    else
+                    {
+                        dstFld = m_comp->gtNewStoreLclFldNode(m_dstLclNum, srcType, totalOffset, srcFld);
+                    }
 
                     // TODO-1stClassStructs: remove this and implement storing to a field in a struct in a reg.
                     m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
@@ -1515,7 +1543,7 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
         }
         noway_assert(dstFld->TypeGet() == srcFld->TypeGet());
 
-        GenTreeOp* storeOneFld = m_comp->gtNewAssignNode(dstFld, srcFld);
+        GenTree* storeOneFld = useAsg ? m_comp->gtNewAssignNode(dstFld, srcFld) : dstFld;
 
         if (m_comp->optLocalAssertionProp)
         {
@@ -1623,10 +1651,7 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
         if ((size != 0) && FitsIn<int32_t>(size))
         {
             ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(size));
-            GenTree*     dst    = gtNewLoadValueNode(layout, tree->Addr(), tree->gtFlags & GTF_IND_FLAGS);
-            dst->gtFlags |= GTF_GLOB_REF;
-
-            GenTree* src = tree->Data();
+            GenTree*     src    = tree->Data();
             if (src->OperIs(GT_IND))
             {
                 assert(src->TypeIs(TYP_STRUCT));
@@ -1634,15 +1659,25 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
                 src->AsBlk()->Initialize(layout);
             }
 
-            GenTree* asg = gtNewAssignNode(dst, src);
-            asg->AddAllEffectsFlags(tree);
-            INDEBUG(asg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+            GenTree* store;
+            if (compAssignmentRationalized)
+            {
+                store = gtNewStoreValueNode(layout, tree->Addr(), src, tree->gtFlags & GTF_IND_FLAGS);
+            }
+            else
+            {
+                GenTree* dst = gtNewLoadValueNode(layout, tree->Addr(), tree->gtFlags & GTF_IND_FLAGS);
+                dst->gtFlags |= GTF_GLOB_REF;
+                store = gtNewAssignNode(dst, src);
+            }
+            store->AddAllEffectsFlags(tree);
+            INDEBUG(store->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
-            fgAssignSetVarDef(asg);
+            fgAssignSetVarDef(store);
 
             JITDUMP("MorphStoreDynBlock: transformed STORE_DYN_BLK into ASG(BLK, Data())\n");
 
-            return tree->OperIsCopyBlkOp() ? fgMorphCopyBlock(asg) : fgMorphInitBlock(asg);
+            return tree->OperIsCopyBlkOp() ? fgMorphCopyBlock(store) : fgMorphInitBlock(store);
         }
     }
 
