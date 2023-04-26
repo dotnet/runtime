@@ -294,7 +294,7 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
 
     if (childNode->OperIs(GT_NEG))
     {
-        // If we have a contained LSH, RSH or RSZ, we can still contain NEG if the parent is a CMP or comparison op.
+        // If we have a contained LSH, RSH or RSZ, we can still contain NEG if the parent is a EQ or NE.
         if (childNode->gtGetOp1()->isContained() && !childNode->gtGetOp1()->OperIs(GT_LSH, GT_RSH, GT_RSZ))
         {
             // Cannot contain if the childs op1 is already contained
@@ -307,7 +307,8 @@ bool Lowering::IsContainableUnaryOrBinaryOp(GenTree* parentNode, GenTree* childN
             return false;
         }
 
-        if (parentNode->OperIs(GT_CMP) || parentNode->OperIsCompare())
+        // EQ and NE are the only valid comparison ops that can contain NEG.
+        if (parentNode->OperIs(GT_EQ, GT_NE))
         {
             if (IsInvariantInRange(childNode, parentNode))
             {
