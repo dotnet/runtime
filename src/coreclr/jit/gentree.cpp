@@ -17436,15 +17436,7 @@ bool GenTree::IsPhiNode()
 
 bool GenTree::IsPhiDefn()
 {
-    if (OperIs(GT_ASG))
-    {
-        return AsOp()->gtOp2->OperIs(GT_PHI);
-    }
-    if (OperIs(GT_STORE_LCL_VAR))
-    {
-        return AsLclVar()->Data()->OperIs(GT_PHI);
-    }
-    return false;
+    return OperIs(GT_STORE_LCL_VAR) && AsLclVar()->Data()->OperIs(GT_PHI);
 }
 
 bool GenTree::IsLclVarAddr() const
