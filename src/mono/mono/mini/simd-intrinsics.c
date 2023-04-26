@@ -2058,6 +2058,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return ins;
 		} 
 
+		if (!COMPILE_LLVM(cfg) && fsig->params [0]->type != MONO_TYPE_GENERICINST) {
+			return NULL;
+		}
+
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
 
