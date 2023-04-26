@@ -730,12 +730,15 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
     switch (OperGet())
     {
         case GT_LCL_VAR:
+        case GT_STORE_LCL_VAR:
             return compiler->lvaGetDesc(AsLclVar())->GetLayout();
 
         case GT_LCL_FLD:
+        case GT_STORE_LCL_FLD:
             return AsLclFld()->GetLayout();
 
         case GT_BLK:
+        case GT_STORE_BLK:
             return AsBlk()->GetLayout();
 
         case GT_COMMA:
