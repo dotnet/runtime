@@ -2661,8 +2661,8 @@ void emitter::emitJumpDistBind()
     }
     if (EMIT_INSTLIST_VERBOSE)
     {
-        printf("\nInstruction list before jump distance binding:\n\n");
-        emitDispIGlist(true);
+        printf("\nInstruction list before jump distance binding:(LA64 don't supports)\n\n");
+        // emitDispIGlist(true);
     }
 #endif
 
