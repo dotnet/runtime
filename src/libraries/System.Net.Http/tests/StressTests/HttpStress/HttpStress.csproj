@@ -19,7 +19,7 @@
 
   <!-- Shared production code -->
   <ItemGroup>
-    <Compile Include="..\..\..\..\System.Net.Quic\src\System\Net\Quic\Interop\*.cs" Link="ProductionCode\System\Net\Quic\Interop\*.cs" />
+    <Compile Include="$(MsQuicInteropIncludes)" LinkBase="MsQuicInterop" />
   </ItemGroup>
 
   <PropertyGroup>
