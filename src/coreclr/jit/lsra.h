@@ -642,7 +642,9 @@ public:
     virtual void recordVarLocationsAtStartOfBB(BasicBlock* bb);
 
     // This does the dataflow analysis and builds the intervals
-    void buildIntervals();
+    template <bool localVarsEnregistered>
+    void           buildIntervals();
+    void           buildIntervals();
 
 // This is where the actual assignment is done
 #ifdef TARGET_ARM64

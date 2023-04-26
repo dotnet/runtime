@@ -1298,7 +1298,9 @@ PhaseStatus LinearScan::doLinearScan()
 #ifdef TARGET_ARM64
     nextConsecutiveRefPositionMap = nullptr;
 #endif
+
     buildIntervals();
+
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_REFPOS));
     compiler->EndPhase(PHASE_LINEAR_SCAN_BUILD);
 
