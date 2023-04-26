@@ -103,8 +103,6 @@ BOOL ProfilerObjectEnum::Init()
     }
     CONTRACTL_END;
 
-    GCX_COOP();
-
     FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
     CrstHolder ch(&foh->m_Crst);
 

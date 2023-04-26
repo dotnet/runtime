@@ -53,8 +53,12 @@ HRESULT STDMETHODCALLTYPE NonGcHeapProfiler::ObjectAllocated(ObjectID objectId, 
     return S_OK;
 }
 
-HRESULT NonGcHeapProfiler::Shutdown()
+HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 {
+    SHUTDOWNGUARD();
+
+    _garbageCollections++;
+
     // Let's make sure we got the same number of objects as we got from the callback
     // by testing the EnumerateNonGCObjects API.
     ICorProfilerObjectEnum* pEnum = NULL;
@@ -78,6 +82,19 @@ HRESULT NonGcHeapProfiler::Shutdown()
             printf("objectAllocated(%d) != _nonGcHeapObjects(%d)\n!", nonGcObjectsEnumerated, (int)_nonGcHeapObjects);
             _failures++;
         }
+    }
+
+    return S_OK;
+}
+
+HRESULT NonGcHeapProfiler::Shutdown()
+{
+    Profiler::Shutdown();
+
+    if (_garbageCollections == 0)
+    {
+        printf("PROFILER TEST FAILS: no garbage collections were triggered\n");
+        _failures++;
     }
 
     if (_nonGcHeapObjects == 0)
