@@ -1361,7 +1361,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_Shuffle:
 		case SN_ToVector128:
 		case SN_ToVector128Unsafe:
-		case SN_WithElement:
 			return NULL;
 		default:
 			break;
@@ -2043,13 +2042,61 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			elems = 4;
 		}
 
+		if (args [1]->opcode == OP_ICONST) {
+			// If the index is provably a constant, we can generate vastly better code.
+			int index = args[1]->inst_c0;
+
+			if (index < 0 || index >= elems) {
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+					MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+			}
+
+			int insert_op = type_to_insert_op (arg0_type);
+			MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
+			ins->inst_c0 = index;
+			ins->inst_c1 = arg0_type;
+			return ins;
+		} 
+
+		if (!COMPILE_LLVM(cfg) && fsig->params [0]->type != MONO_TYPE_GENERICINST) {
+			return NULL;
+		}
+
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
-		int insert_op = type_to_xinsert_op (arg0_type);
-		MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
-		ins->sreg3 = args [1]->dreg;
-		ins->inst_c1 = arg0_type;
-		return ins;
+
+		if (COMPILE_LLVM(cfg) || type_to_width_log2 (arg0_type) == 3) {
+			int insert_op = type_to_xinsert_op (arg0_type);
+			MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
+			ins->sreg3 = args [1]->dreg;
+			ins->inst_c1 = arg0_type;
+			return ins;
+		} else {
+			// Create a blank reg and spill it.
+			// Overwrite memory with original value.
+			// Overwrite [spilled + index << elem_size_log2] with replacement value
+			// Read back.
+			// TODO: on x86, use a LEA
+			MonoInst* scratch = emit_xzero (cfg, args [0]->klass);
+			MonoInst* scratcha;
+			NEW_VARLOADA_VREG (cfg, scratcha, scratch->dreg, fsig->params [0]);
+			MONO_ADD_INS (cfg->cbb, scratcha);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, mono_type_to_store_membase (cfg, fsig->params [0]), scratcha->dreg, 0, args [0]->dreg);
+
+			int offset_reg = alloc_lreg (cfg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, args [1]->dreg, type_to_width_log2 (arg0_type));
+			int addr_reg = alloc_preg (cfg);
+			MONO_EMIT_NEW_BIALU(cfg, OP_PADD, addr_reg, scratcha->dreg, offset_reg);
+
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, mono_type_to_store_membase (cfg, fsig->params [2]), addr_reg, 0, args [2]->dreg);
+
+			MonoInst* ret;
+			NEW_LOAD_MEMBASE (cfg, ret, mono_type_to_load_membase (cfg, fsig->ret), scratch->dreg, scratcha->dreg, 0);
+			MONO_ADD_INS (cfg->cbb, ret);
+
+			return ret;
+		}
+		break;
 	}
 	case SN_WidenLower:
 	case SN_WidenUpper: {
