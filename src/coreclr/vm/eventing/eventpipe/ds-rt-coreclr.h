@@ -302,7 +302,7 @@ ds_rt_server_log_pause_message (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	const char diagPortsName[] = "DOTNET_DiagnosticPorts";
+	const char diagPortsName[] = "DiagnosticPorts";
 	CLRConfigNoCache diagPorts = CLRConfigNoCache::Get(diagPortsName);
 	LPCSTR ports = nullptr;
 	if (diagPorts.IsSet())
