@@ -33,7 +33,7 @@
   <!-- Shared production code -->
   <ItemGroup>
     <Compile Include="..\..\src\System\Net\Quic\QuicDefaults.cs" Link="ProductionCode\System\Net\Quic\QuicDefaults.cs" />
-    <Compile Include="..\..\src\System\Net\Quic\Interop\*.cs" Link="ProductionCode\System\Net\Quic\Interop\*.cs" />
+    <Compile Include="..\..\src\System\Net\Quic\Interop\*.cs" LinkBase="ProductionCode\System\Net\Quic\Interop" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
