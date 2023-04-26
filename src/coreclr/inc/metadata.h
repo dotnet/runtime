@@ -1117,6 +1117,7 @@ DECLARE_INTERFACE_(IMDInternalEmit, IUnknown)
 
     STDMETHOD(SetMDUpdateMode)(
         ULONG updateMode, ULONG *pPreviousUpdateMode) PURE;
+
 }; // IMDInternalEmit
 
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE

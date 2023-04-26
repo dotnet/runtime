@@ -414,7 +414,6 @@ RegMeta::GetPathSeparator(
 
     return S_OK;
 } // RegMeta::GetPathSeparator
-
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
 #endif //FEATURE_METADATA_EMIT && FEATURE_METADATA_INTERNAL_APIS
