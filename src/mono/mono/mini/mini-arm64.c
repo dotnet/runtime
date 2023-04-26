@@ -4041,7 +4041,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		// Enable this when adding support for Narrow and enable support for Create at the same time
+		// This requires Vector64 SIMD support
 		// case OP_XCONCAT:
 		// 	arm_neon_ext_16b(code, dreg, sreg1, sreg2, 8);
 		// 	break;
