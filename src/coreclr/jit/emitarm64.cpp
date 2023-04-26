@@ -16351,6 +16351,71 @@ bool emitter::IsRedundantLdStr(
 }
 
 //-----------------------------------------------------------------------------------
+// OptimizeLdrStr: Try to optimize "ldr" or "str" instruction with an alternative
+//                 instruction.
+//
+// Arguments:
+//     ins      - The instruction code
+//     reg1Attr - The emit attribute for register 1
+//     reg1     - Register 1
+//     reg2     - Register 2
+//     imm      - Immediate offset, prior to scaling by operand size
+//     size     - Operand size
+//     fmt               - Instruction format
+//     localVar          - If current instruction has local var
+//     varx     - LclVarNum if this instruction contains local variable
+//     offs     - Stack offset where it is accessed (loaded / stored).
+//     useRsvdReg     - If this instruction needs reserved register.
+//
+// Return Value:
+//    "true" if the previous instruction has been overwritten.
+//
+bool emitter::OptimizeLdrStr(instruction ins,
+                             emitAttr    reg1Attr,
+                             regNumber   reg1,
+                             regNumber   reg2,
+                             ssize_t     imm,
+                             emitAttr    size,
+                             insFormat   fmt,
+                             bool        localVar,
+                             int         varx,
+                             int offs DEBUG_ARG(bool useRsvdReg))
+{
+    assert(ins == INS_ldr || ins == INS_str);
+
+    if (!emitCanPeepholeLastIns() || (emitLastIns->idIns() != ins))
+    {
+        return false;
+    }
+
+    // Is the ldr/str even necessary?
+    if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
+    {
+        return true;
+    }
+
+    // Register 2 needs conversion to unencoded value for following optimisation checks.
+    reg2 = encodingZRtoSP(reg2);
+
+    // If the previous instruction was a matching load/store, then try to replace it instead of emitting.
+    //
+    if (ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt, localVar, varx, offs))
+    {
+        assert(!useRsvdReg);
+        return true;
+    }
+
+    // If we have a second LDR instruction from the same source, then try to replace it with a MOV.
+    if (IsOptimizableLdrToMov(ins, reg1, reg2, imm, size, fmt))
+    {
+        emitIns_Mov(INS_mov, reg1Attr, reg1, emitLastIns->idReg1(), true);
+        return true;
+    }
+
+    return false;
+}
+
+//-----------------------------------------------------------------------------------
 // ReplaceLdrStrWithPairInstr: Potentially, overwrite a previously-emitted "ldr" or "str"
 //                             instruction with an "ldp" or "stp" instruction.
 //

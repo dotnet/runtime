@@ -141,50 +141,16 @@ bool ReplaceLdrStrWithPairInstr(instruction ins,
 bool IsOptimizableLdrToMov(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 
 // Try to optimize a Ldr or Str with an alternative instruction.
-inline bool OptimizeLdrStr(instruction ins,
-                           emitAttr    reg1Attr,
-                           regNumber   reg1,
-                           regNumber   reg2,
-                           ssize_t     imm,
-                           emitAttr    size,
-                           insFormat   fmt,
-                           bool        localVar = false,
-                           int         varx     = -1,
-                           int offs = -1 DEBUG_ARG(bool useRsvdReg = false))
-{
-    assert(ins == INS_ldr || ins == INS_str);
-
-    if (!emitCanPeepholeLastIns() || (emitLastIns->idIns() != ins))
-    {
-        return false;
-    }
-
-    // Is the ldr/str even necessary?
-    if (IsRedundantLdStr(ins, reg1, reg2, imm, size, fmt))
-    {
-        return true;
-    }
-
-    // Register 2 needs conversion to unencoded value for following optimisation checks.
-    reg2 = encodingZRtoSP(reg2);
-
-    // If the previous instruction was a matching load/store, then try to replace it instead of emitting.
-    //
-    if (ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt, localVar, varx, offs))
-    {
-        assert(!useRsvdReg);
-        return true;
-    }
-
-    // If we have a second LDR instruction from the same source, then try to replace it with a MOV.
-    if (IsOptimizableLdrToMov(ins, reg1, reg2, imm, size, fmt))
-    {
-        emitIns_Mov(INS_mov, reg1Attr, reg1, emitLastIns->idReg1(), true);
-        return true;
-    }
-
-    return false;
-}
+FORCEINLINE bool OptimizeLdrStr(instruction ins,
+                                emitAttr    reg1Attr,
+                                regNumber   reg1,
+                                regNumber   reg2,
+                                ssize_t     imm,
+                                emitAttr    size,
+                                insFormat   fmt,
+                                bool        localVar = false,
+                                int         varx     = -1,
+                                int offs = -1 DEBUG_ARG(bool useRsvdReg = false));
 
 /************************************************************************
 *
