@@ -4569,29 +4569,33 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 
                     ins  = INS_cmn;
                     oper = op2->gtGetOp1()->OperGet();
-                    switch (oper)
+                    if (op2->gtGetOp1()->isContained())
                     {
-                        case GT_LSH:
-                        case GT_RSH:
-                        case GT_RSZ:
+                        switch (oper)
                         {
-                            GenTree* shiftOp1 = op2->gtGetOp1()->gtGetOp1();
-                            GenTree* shiftOp2 = op2->gtGetOp1()->gtGetOp2();
+                            case GT_LSH:
+                            case GT_RSH:
+                            case GT_RSZ:
+                            {
+                                GenTree* shiftOp1 = op2->gtGetOp1()->gtGetOp1();
+                                GenTree* shiftOp2 = op2->gtGetOp1()->gtGetOp2();
 
-                            assert(op2->gtGetOp1()->isContained());
-                            assert(shiftOp2->IsCnsIntOrI());
-                            assert(shiftOp2->isContained());
+                                assert(shiftOp2->IsCnsIntOrI());
+                                assert(shiftOp2->isContained());
 
-                            emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), shiftOp1->GetRegNum(),
-                                                shiftOp2->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(oper));
-                        }
-                        break;
-
-                        default:
-                            assert(!op2->gtGetOp1()->isContained());
-
-                            emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum());
+                                emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), shiftOp1->GetRegNum(),
+                                                    shiftOp2->AsIntConCommon()->IntegralValue(),
+                                                    ShiftOpToInsOpts(oper));
+                            }
                             break;
+
+                            default:
+                                unreached();
+                        }
+                    }
+                    else
+                    {
+                        emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum());
                     }
                     break;
 

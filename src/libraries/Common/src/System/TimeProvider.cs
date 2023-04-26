@@ -73,7 +73,7 @@ namespace System
         /// <remarks>
         /// The default implementation returns <see cref="TimeZoneInfo.Local"/>.
         /// </remarks>
-        public virtual TimeZoneInfo LocalTimeZone { get => TimeZoneInfo.Local; }
+        public virtual TimeZoneInfo LocalTimeZone => TimeZoneInfo.Local;
 
         /// <summary>
         /// Gets the frequency of <see cref="GetTimestamp"/> of high-frequency value per second.
@@ -81,7 +81,7 @@ namespace System
         /// <remarks>
         /// The default implementation returns <see cref="Stopwatch.Frequency"/>. For a given TimeProvider instance, the value must be idempotent and remain unchanged.
         /// </remarks>
-        public virtual long TimestampFrequency { get => Stopwatch.Frequency; }
+        public virtual long TimestampFrequency => Stopwatch.Frequency;
 
         /// <summary>
         /// Gets the current high-frequency value designed to measure small time intervals with high accuracy in the timer mechanism.
@@ -187,13 +187,26 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
                 _timer = new TimerQueueTimer(callback, state, duration, periodTime, flowExecutionContext: true);
 #else
-                // We want to ensure the timer we create will be tracked as long as it is scheduled.
-                // To do that, we call the constructor which track only the callback which will make the time to be tracked by the scheduler
-                // then we call Change on the timer to set the desired duration and period.
-                _timer = new Timer(_ => callback(state));
-                _timer.Change(duration, periodTime);
+                // We need to ensure the timer roots itself. Timer created with a duration and period argument
+                // only roots the state object, so to root the timer we need the state object to reference the
+                // timer recursively.
+                var timerState = new TimerState(callback, state);
+                timerState.Timer = _timer = new Timer(static s =>
+                {
+                    TimerState ts = (TimerState)s!;
+                    ts.Callback(ts.State);
+                }, timerState, duration, periodTime);
 #endif // SYSTEM_PRIVATE_CORELIB
             }
+
+#if !SYSTEM_PRIVATE_CORELIB
+            private sealed class TimerState(TimerCallback callback, object? state)
+            {
+                public TimerCallback Callback { get; } = callback;
+                public object? State { get; } = state;
+                public Timer? Timer { get; set; }
+            }
+#endif
 
             public bool Change(TimeSpan dueTime, TimeSpan period)
             {

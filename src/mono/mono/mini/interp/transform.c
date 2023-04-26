@@ -146,6 +146,7 @@ interp_insert_ins_bb (TransformData *td, InterpBasicBlock *bb, InterpInst *prev_
 	else
 		new_inst->next->prev = new_inst;
 
+	new_inst->il_offset = -1;
 	return new_inst;
 }
 
@@ -10863,6 +10864,9 @@ retry:
 
 	generate_code (td, method, header, generic_context, error);
 	goto_if_nok (error, exit);
+
+	// Any newly created instructions will have undefined il_offset
+	td->current_il_offset = -1;
 
 	g_assert (td->inline_depth == 0);
 

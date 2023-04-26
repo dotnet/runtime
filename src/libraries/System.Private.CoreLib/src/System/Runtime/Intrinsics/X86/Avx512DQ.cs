@@ -32,11 +32,6 @@ namespace System.Runtime.Intrinsics.X86
             ///   VBROADCASTI32x2 xmm1 {k1}{z}, xmm2/m64
             /// </summary>
             public static Vector128<uint> BroadcastPairScalarToVector128(Vector128<uint> value) => BroadcastPairScalarToVector128(value);
-            /// <summary>
-            /// __m128 _mm_broadcast_f32x2 (__m128 a)
-            ///   VBROADCASTF32x2 xmm1 {k1}{z}, xmm2/m64
-            /// </summary>
-            public static Vector128<float> BroadcastPairScalarToVector128(Vector128<float> value) => BroadcastPairScalarToVector128(value);
 
             /// <summary>
             /// __m256i _mm256_broadcast_i32x2 (__m128i a)
@@ -53,6 +48,128 @@ namespace System.Runtime.Intrinsics.X86
             ///   VBROADCASTF32x2 ymm1 {k1}{z}, xmm2/m64
             /// </summary>
             public static Vector256<float> BroadcastPairScalarToVector256(Vector128<float> value) => BroadcastPairScalarToVector256(value);
+
+            /// <summary>
+            /// __m128d _mm_cvtepi64_pd (__m128i a)
+            ///   VCVTQQ2PD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> ConvertToVector128Double(Vector128<long> value) => ConvertToVector128Double(value);
+            /// <summary>
+            /// __m128d _mm_cvtepu64_pd (__m128i a)
+            ///   VCVTUQQ2PD xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<double> ConvertToVector128Double(Vector128<ulong> value) => ConvertToVector128Double(value);
+            /// <summary>
+            /// __m128i _mm_cvtps_epi64 (__m128 a)
+            ///   VCVTPS2QQ xmm1 {k1}{z}, xmm2/m64/m32bcst
+            /// </summary>
+            public static Vector128<long> ConvertToVector128Int64(Vector128<float> value) => ConvertToVector128Int64(value);
+            /// <summary>
+            /// __m128i _mm_cvtpd_epi64 (__m128d a)
+            ///   VCVTPD2QQ xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<long> ConvertToVector128Int64(Vector128<double> value) => ConvertToVector128Int64(value);
+            /// <summary>
+            /// __m128i _mm_cvttps_epi64 (__m128 a)
+            ///   VCVTTPS2QQ xmm1 {k1}{z}, xmm2/m64/m32bcst
+            /// </summary>
+            public static Vector128<long> ConvertToVector128Int64WithTruncation(Vector128<float> value) => ConvertToVector128Int64WithTruncation(value);
+            /// <summary>
+            /// __m128i _mm_cvttpd_epi64 (__m128d a)
+            ///   VCVTTPD2QQ xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<long> ConvertToVector128Int64WithTruncation(Vector128<double> value) => ConvertToVector128Int64WithTruncation(value);
+            /// <summary>
+            /// __m128 _mm_cvtepi64_ps (__m128i a)
+            ///   VCVTQQ2PS xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<float> ConvertToVector128Single(Vector128<long> value) => ConvertToVector128Single(value);
+            /// <summary>
+            /// __m128 _mm256_cvtepi64_ps (__m256i a)
+            ///   VCVTQQ2PS xmm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector128<float> ConvertToVector128Single(Vector256<long> value) => ConvertToVector128Single(value);
+            /// <summary>
+            /// __m128 _mm_cvtepu64_ps (__m128i a)
+            ///   VCVTUQQ2PS xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<float> ConvertToVector128Single(Vector128<ulong> value) => ConvertToVector128Single(value);
+            /// <summary>
+            /// __m128 _mm256_cvtepu64_ps (__m256i a)
+            ///   VCVTUQQ2PS xmm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector128<float> ConvertToVector128Single(Vector256<ulong> value) => ConvertToVector128Single(value);
+            /// <summary>
+            /// __m128i _mm_cvtps_epu64 (__m128 a)
+            ///   VCVTPS2UQQ xmm1 {k1}{z}, xmm2/m64/m32bcst
+            /// </summary>
+            public static Vector128<ulong> ConvertToVector128UInt64(Vector128<float> value) => ConvertToVector128UInt64(value);
+            /// <summary>
+            /// __m128i _mm_cvtpd_epu64 (__m128d a)
+            ///   VCVTPD2UQQ xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> ConvertToVector128UInt64(Vector128<double> value) => ConvertToVector128UInt64(value);
+            /// <summary>
+            /// __m128i _mm_cvttps_epu64 (__m128 a)
+            ///   VCVTTPS2UQQ xmm1 {k1}{z}, xmm2/m64/m32bcst
+            /// </summary>
+            public static Vector128<ulong> ConvertToVector128UInt64WithTruncation(Vector128<float> value) => ConvertToVector128UInt64WithTruncation(value);
+            /// <summary>
+            /// __m128i _mm_cvttpd_epu64 (__m128d a)
+            ///   VCVTTPD2UQQ xmm1 {k1}{z}, xmm2/m128/m64bcst
+            /// </summary>
+            public static Vector128<ulong> ConvertToVector128UInt64WithTruncation(Vector128<double> value) => ConvertToVector128UInt64WithTruncation(value);
+
+            /// <summary>
+            /// __m256d _mm256_cvtepi64_pd (__m256i a)
+            ///   VCVTQQ2PD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> ConvertToVector256Double(Vector256<long> value) => ConvertToVector256Double(value);
+            /// <summary>
+            /// __m256d _mm256_cvtepu64_pd (__m256i a)
+            ///   VCVTUQQ2PD ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<double> ConvertToVector256Double(Vector256<ulong> value) => ConvertToVector256Double(value);
+            /// <summary>
+            /// __m256i _mm256_cvtps_epi64 (__m128 a)
+            ///   VCVTPS2QQ ymm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector256<long> ConvertToVector256Int64(Vector128<float> value) => ConvertToVector256Int64(value);
+            /// <summary>
+            /// __m256i _mm256_cvtpd_epi64 (__m256d a)
+            ///   VCVTPD2QQ ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> ConvertToVector256Int64(Vector256<double> value) => ConvertToVector256Int64(value);
+            /// <summary>
+            /// __m256i _mm256_cvttps_epi64 (__m128 a)
+            ///   VCVTTPS2QQ ymm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector256<long> ConvertToVector256Int64WithTruncation(Vector128<float> value) => ConvertToVector256Int64WithTruncation(value);
+            /// <summary>
+            /// __m256i _mm256_cvttpd_epi64 (__m256d a)
+            ///   VCVTTPD2QQ ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<long> ConvertToVector256Int64WithTruncation(Vector256<double> value) => ConvertToVector256Int64WithTruncation(value);
+            /// <summary>
+            /// __m256i _mm256_cvtps_epu64 (__m128 a)
+            ///   VCVTPS2UQQ ymm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector256<ulong> ConvertToVector256UInt64(Vector128<float> value) => ConvertToVector256UInt64(value);
+            /// <summary>
+            /// __m256i _mm256_cvtpd_epu64 (__m256d a)
+            ///   VCVTPD2UQQ ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> ConvertToVector256UInt64(Vector256<double> value) => ConvertToVector256UInt64(value);
+            /// <summary>
+            /// __m256i _mm256_cvttps_epu64 (__m128 a)
+            ///   VCVTTPS2UQQ ymm1 {k1}{z}, xmm2/m128/m32bcst
+            /// </summary>
+            public static Vector256<ulong> ConvertToVector256UInt64WithTruncation(Vector128<float> value) => ConvertToVector256UInt64WithTruncation(value);
+            /// <summary>
+            /// __m256i _mm256_cvttpd_epu64 (__m256d a)
+            ///   VCVTTPD2UQQ ymm1 {k1}{z}, ymm2/m256/m64bcst
+            /// </summary>
+            public static Vector256<ulong> ConvertToVector256UInt64WithTruncation(Vector256<double> value) => ConvertToVector256UInt64WithTruncation(value);
 
             /// <summary>
             /// __m128i _mm_mullo_epi64 (__m128i a, __m128i b)
@@ -153,6 +270,68 @@ namespace System.Runtime.Intrinsics.X86
         ///   VBROADCASTF32x8 zmm1 {k1}{z}, m256
         /// </summary>
         public static unsafe Vector512<float> BroadcastVector256ToVector512(float* address) => BroadcastVector256ToVector512(address);
+
+        /// <summary>
+        /// __m512 _mm512_cvtepi64_ps (__m512i a)
+        ///   VCVTQQ2PS ymm1 {k1}{z}, zmm2/m512/m64bcst
+        /// </summary>
+        public static Vector256<float> ConvertToVector256Single(Vector512<long> value) => ConvertToVector256Single(value);
+        /// <summary>
+        /// __m512 _mm512_cvtepu64_ps (__m512i a)
+        ///   VCVTUQQ2PS ymm1 {k1}{z}, zmm2/m512/m64bcst
+        /// </summary>
+        public static Vector256<float> ConvertToVector256Single(Vector512<ulong> value) => ConvertToVector256Single(value);
+
+        /// <summary>
+        /// __m512d _mm512_cvtepi64_pd (__m512i a)
+        ///   VCVTQQ2PD zmm1 {k1}{z}, zmm2/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> ConvertToVector512Double(Vector512<long> value) => ConvertToVector512Double(value);
+        /// <summary>
+        /// __m512d _mm512_cvtepu64_pd (__m512i a)
+        ///   VCVTUQQ2PD zmm1 {k1}{z}, zmm2/m512/m64bcst
+        /// </summary>
+        public static Vector512<double> ConvertToVector512Double(Vector512<ulong> value) => ConvertToVector512Double(value);
+        /// <summary>
+        /// __m512i _mm512_cvtps_epi64 (__m512 a)
+        ///   VCVTPS2QQ zmm1 {k1}{z}, ymm2/m256/m32bcst{er}
+        /// </summary>
+        public static Vector512<long> ConvertToVector512Int64(Vector256<float> value) => ConvertToVector512Int64(value);
+        /// <summary>
+        /// __m512i _mm512_cvtpd_epi64 (__m512d a)
+        ///   VCVTPD2QQ zmm1 {k1}{z}, zmm2/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<long> ConvertToVector512Int64(Vector512<double> value) => ConvertToVector512Int64(value);
+        /// <summary>
+        /// __m512i _mm512_cvttps_epi64 (__m512 a)
+        ///   VCVTTPS2QQ zmm1 {k1}{z}, ymm2/m256/m32bcst{er}
+        /// </summary>
+        public static Vector512<long> ConvertToVector512Int64WithTruncation(Vector256<float> value) => ConvertToVector512Int64WithTruncation(value);
+        /// <summary>
+        /// __m512i _mm512_cvttpd_epi64 (__m512 a)
+        ///   VCVTTPD2QQ zmm1 {k1}{z}, zmm2/m512/m64bcst{sae}
+        /// </summary>
+        public static Vector512<long> ConvertToVector512Int64WithTruncation(Vector512<double> value) => ConvertToVector512Int64WithTruncation(value);
+        /// <summary>
+        /// __m512i _mm512_cvtps_epu64 (__m512 a)
+        ///   VCVTPS2UQQ zmm1 {k1}{z}, ymm2/m256/m32bcst{er}
+        /// </summary>
+        public static Vector512<ulong> ConvertToVector512UInt64(Vector256<float> value) => ConvertToVector512UInt64(value);
+        /// <summary>
+        /// __m512i _mm512_cvtpd_epu64 (__m512d a)
+        ///   VCVTPD2UQQ zmm1 {k1}{z}, zmm2/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<ulong> ConvertToVector512UInt64(Vector512<double> value) => ConvertToVector512UInt64(value);
+        /// <summary>
+        /// __m512i _mm512_cvttps_epu64 (__m512 a)
+        ///   VCVTTPS2UQQ zmm1 {k1}{z}, ymm2/m256/m32bcst{er}
+        /// </summary>
+        public static Vector512<ulong> ConvertToVector512UInt64WithTruncation(Vector256<float> value) => ConvertToVector512UInt64WithTruncation(value);
+        /// <summary>
+        /// __m512i _mm512_cvttpd_epu64 (__m512d a)
+        ///   VCVTTPD2UQQ zmm1 {k1}{z}, zmm2/m512/m64bcst{er}
+        /// </summary>
+        public static Vector512<ulong> ConvertToVector512UInt64WithTruncation(Vector512<double> value) => ConvertToVector512UInt64WithTruncation(value);
 
         /// <summary>
         /// __m128i _mm512_extracti64x2_epi64 (__m512i a, const int imm8)

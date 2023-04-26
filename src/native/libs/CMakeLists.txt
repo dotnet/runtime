@@ -163,6 +163,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     endif ()
 
     add_subdirectory(System.Native)
+    add_subdirectory(System.Globalization.Native)
 
     if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         # skip for now
@@ -183,7 +184,6 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     elseif (FORCE_ANDROID_OPENSSL)
         add_subdirectory(System.Security.Cryptography.Native)
     else ()
-        add_subdirectory(System.Globalization.Native)
         add_subdirectory(System.Net.Security.Native)
         add_subdirectory(System.Security.Cryptography.Native)
     endif ()
