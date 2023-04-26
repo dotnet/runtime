@@ -1349,19 +1349,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!(!strcmp (m_class_get_name (cmethod->klass), "Vector128") || !strcmp (m_class_get_name (cmethod->klass), "Vector")))
 			return NULL;
 		switch (id) {
-		case SN_ConvertToDouble:
-		case SN_ConvertToInt32:
-		case SN_ConvertToInt64:
-		case SN_ConvertToSingle:
-		case SN_ConvertToUInt32:
-		case SN_ConvertToUInt64:
 		case SN_Create:
 		case SN_GetLower:
 		case SN_GetUpper:
 		case SN_Shuffle:
 		case SN_ToVector128:
 		case SN_ToVector128Unsafe:
-		case SN_WithElement:
 			return NULL;
 		default:
 			break;
@@ -1485,9 +1478,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_ConvertToDouble: {
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		if ((arg0_type != MONO_TYPE_I8) && (arg0_type != MONO_TYPE_U8))
 			return NULL;
+#if defined(TARGET_ARM64)
+		if (!COMPILE_LLVM (cfg)) {
+			return emit_simd_ins_for_sig (cfg, klass, OP_XUNOP, 
+				arg0_type == MONO_TYPE_I8 ? OP_CVT_SI_FP : OP_CVT_UI_FP, 
+				MONO_TYPE_R8, fsig, args);
+		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
 		int op = -1;
@@ -1502,9 +1502,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_ConvertToInt32: 
 	case SN_ConvertToUInt32: {
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		if (arg0_type != MONO_TYPE_R4)
 			return NULL;
+#if defined(TARGET_ARM64)
+		if (!COMPILE_LLVM (cfg)) {
+			return emit_simd_ins_for_sig (cfg, klass, OP_XUNOP, 
+				id == SN_ConvertToInt32 ? OP_CVT_FP_SI : OP_CVT_FP_UI, 
+				id == SN_ConvertToInt32 ? MONO_TYPE_I4 : MONO_TYPE_U4, 
+				fsig, args);
+		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		int op = id == SN_ConvertToInt32 ? OP_CVT_FP_SI : OP_CVT_FP_UI;
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
 #else
@@ -1513,9 +1521,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 	case SN_ConvertToInt64:
 	case SN_ConvertToUInt64: {
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		if (arg0_type != MONO_TYPE_R8)
 			return NULL;
+#if defined(TARGET_ARM64)
+		if (!COMPILE_LLVM (cfg)) {
+			return emit_simd_ins_for_sig (cfg, klass, OP_XUNOP, 
+				id == SN_ConvertToInt64 ? OP_CVT_FP_SI : OP_CVT_FP_UI, 
+				id == SN_ConvertToInt64 ? MONO_TYPE_I8 : MONO_TYPE_U8, 
+				fsig, args);
+		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
 		int op = -1;
@@ -1529,9 +1545,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_ConvertToSingle: {
-#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		if ((arg0_type != MONO_TYPE_I4) && (arg0_type != MONO_TYPE_U4))
 			return NULL;
+#if defined(TARGET_ARM64)
+		if (!COMPILE_LLVM (cfg)) {
+			return emit_simd_ins_for_sig (cfg, klass, OP_XUNOP, 
+				arg0_type == MONO_TYPE_I4 ? OP_CVT_SI_FP : OP_CVT_UI_FP, 
+				MONO_TYPE_R4, fsig, args);
+		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		int op = arg0_type == MONO_TYPE_I4 ? OP_CVT_SI_FP : OP_CVT_UI_FP;
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
 #else
@@ -2043,13 +2066,61 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			elems = 4;
 		}
 
+		if (args [1]->opcode == OP_ICONST) {
+			// If the index is provably a constant, we can generate vastly better code.
+			int index = args[1]->inst_c0;
+
+			if (index < 0 || index >= elems) {
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
+					MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
+			}
+
+			int insert_op = type_to_insert_op (arg0_type);
+			MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
+			ins->inst_c0 = index;
+			ins->inst_c1 = arg0_type;
+			return ins;
+		} 
+
+		if (!COMPILE_LLVM(cfg) && fsig->params [0]->type != MONO_TYPE_GENERICINST) {
+			return NULL;
+		}
+
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, args [1]->dreg, elems);
 		MONO_EMIT_NEW_COND_EXC (cfg, GE_UN, "ArgumentOutOfRangeException");
-		int insert_op = type_to_xinsert_op (arg0_type);
-		MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
-		ins->sreg3 = args [1]->dreg;
-		ins->inst_c1 = arg0_type;
-		return ins;
+
+		if (COMPILE_LLVM(cfg) || type_to_width_log2 (arg0_type) == 3) {
+			int insert_op = type_to_xinsert_op (arg0_type);
+			MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
+			ins->sreg3 = args [1]->dreg;
+			ins->inst_c1 = arg0_type;
+			return ins;
+		} else {
+			// Create a blank reg and spill it.
+			// Overwrite memory with original value.
+			// Overwrite [spilled + index << elem_size_log2] with replacement value
+			// Read back.
+			// TODO: on x86, use a LEA
+			MonoInst* scratch = emit_xzero (cfg, args [0]->klass);
+			MonoInst* scratcha;
+			NEW_VARLOADA_VREG (cfg, scratcha, scratch->dreg, fsig->params [0]);
+			MONO_ADD_INS (cfg->cbb, scratcha);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, mono_type_to_store_membase (cfg, fsig->params [0]), scratcha->dreg, 0, args [0]->dreg);
+
+			int offset_reg = alloc_lreg (cfg);
+			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHL_IMM, offset_reg, args [1]->dreg, type_to_width_log2 (arg0_type));
+			int addr_reg = alloc_preg (cfg);
+			MONO_EMIT_NEW_BIALU(cfg, OP_PADD, addr_reg, scratcha->dreg, offset_reg);
+
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, mono_type_to_store_membase (cfg, fsig->params [2]), addr_reg, 0, args [2]->dreg);
+
+			MonoInst* ret;
+			NEW_LOAD_MEMBASE (cfg, ret, mono_type_to_load_membase (cfg, fsig->ret), scratch->dreg, scratcha->dreg, 0);
+			MONO_ADD_INS (cfg->cbb, ret);
+
+			return ret;
+		}
+		break;
 	}
 	case SN_WidenLower:
 	case SN_WidenUpper: {
@@ -3335,7 +3406,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_PolynomialMultiply, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_PMUL},
 	{SN_PolynomialMultiplyWideningLower, OP_ARM64_PMULL},
 	{SN_PolynomialMultiplyWideningUpper, OP_ARM64_PMULL2},
-	{SN_PopCount, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_CNT},
+	{SN_PopCount, OP_XOP_OVR_X_X, INTRINS_SIMD_POPCNT},
 	{SN_ReciprocalEstimate, None, None, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_URECPE, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPE},
 	{SN_ReciprocalEstimateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPE},
 	{SN_ReciprocalExponentScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRECPX},
@@ -4965,9 +5036,13 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Add},
 	{SN_AddPairwiseWidening},
 	{SN_AddSaturate},
+	{SN_AllTrue},
 	{SN_And, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_AND},
+	{SN_AndNot},
+	{SN_AnyTrue},
 	{SN_AverageRounded},
 	{SN_Bitmask, OP_WASM_SIMD_BITMASK},
+	{SN_BitwiseSelect, OP_BSL},
 	{SN_CompareEqual},
 	{SN_CompareNotEqual},
 	{SN_ConvertNarrowingSignedSaturate},
@@ -4981,6 +5056,9 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_MultiplyWideningLower, OP_WASM_EXTMUL_LOWER, 0, OP_WASM_EXTMUL_LOWER_U},
 	{SN_MultiplyWideningUpper, OP_WASM_EXTMUL_UPPER, 0, OP_WASM_EXTMUL_UPPER_U},
 	{SN_Negate},
+	{SN_Not, OP_WASM_ONESCOMPLEMENT},
+	{SN_Or, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_OR},
+	{SN_PopCount, OP_XOP_OVR_X_X, INTRINS_SIMD_POPCNT},
 	{SN_ReplaceLane},
 	{SN_ShiftLeft, OP_SIMD_SHL},
 	{SN_ShiftRightArithmetic, OP_SIMD_SSHR},
@@ -4990,6 +5068,7 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Subtract},
 	{SN_SubtractSaturate},
 	{SN_Swizzle, OP_WASM_SIMD_SWIZZLE},
+	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_XOR},
 	{SN_get_IsSupported},
 };
 
@@ -5071,6 +5150,72 @@ emit_wasm_supported_intrinsics (
 				return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 			case SN_Negate:
 				return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
+			case SN_AndNot: {
+				/* Swap lhs and rhs because Vector128 needs lhs & !rhs
+				whereas SSE2 does !lhs & rhs */
+				MonoInst *tmp = args[0];
+				args[0] = args[1];
+				args[1] = tmp;
+				op = OP_VECTOR_ANDN;
+				// continue with default emit
+				break;
+			}
+			case SN_AnyTrue: {
+				op = OP_XOP_X_X;
+
+				switch (arg0_type) {
+				case MONO_TYPE_U1:
+				case MONO_TYPE_I1:
+						c0 = INTRINS_WASM_ANYTRUE_V16;
+						break;
+				case MONO_TYPE_U2:
+				case MONO_TYPE_I2:
+						c0 = INTRINS_WASM_ANYTRUE_V8;
+						break;
+				case MONO_TYPE_U4:
+				case MONO_TYPE_I4:
+						c0 = INTRINS_WASM_ANYTRUE_V4;
+						break;
+				case MONO_TYPE_U8:
+				case MONO_TYPE_I8:
+						c0 = INTRINS_WASM_ANYTRUE_V2;
+						break;
+				}
+
+				// continue with default emit
+				if (c0 != 0)
+						break;
+
+				return NULL;
+			}
+			case SN_AllTrue: {
+				op = OP_XOP_X_X;
+
+				switch (arg0_type) {
+				case MONO_TYPE_U1:
+				case MONO_TYPE_I1:
+						c0 = INTRINS_WASM_ALLTRUE_V16;
+						break;
+				case MONO_TYPE_U2:
+				case MONO_TYPE_I2:
+						c0 = INTRINS_WASM_ALLTRUE_V8;
+						break;
+				case MONO_TYPE_U4:
+				case MONO_TYPE_I4:
+						c0 = INTRINS_WASM_ALLTRUE_V4;
+						break;
+				case MONO_TYPE_U8:
+				case MONO_TYPE_I8:
+						c0 = INTRINS_WASM_ALLTRUE_V2;
+						break;
+				}
+
+				// continue with default emit
+				if (c0 != 0)
+						break;
+
+				return NULL;
+			}
 			case SN_AddPairwiseWidening: {
 				op = OP_XOP_X_X;
 

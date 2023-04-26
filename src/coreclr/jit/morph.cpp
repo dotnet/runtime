@@ -12145,6 +12145,8 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
 
+    optRecordSsaUses(result, compCurBB);
+
     div->CheckDivideByConstOptimized(this);
 
     return result;

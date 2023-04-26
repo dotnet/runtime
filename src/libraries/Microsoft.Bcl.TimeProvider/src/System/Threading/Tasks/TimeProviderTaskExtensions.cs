@@ -15,15 +15,25 @@ namespace System.Threading.Tasks
 #if !NET8_0_OR_GREATER
         private sealed class DelayState : TaskCompletionSource<bool>
         {
-            public DelayState() : base(TaskCreationOptions.RunContinuationsAsynchronously) {}
-            public ITimer Timer { get; set; }
+            public DelayState(CancellationToken cancellationToken) : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            {
+                CancellationToken = cancellationToken;
+            }
+
+            public ITimer? Timer { get; set; }
+            public CancellationToken CancellationToken { get; }
             public CancellationTokenRegistration Registration { get; set; }
         }
 
         private sealed class WaitAsyncState : TaskCompletionSource<bool>
         {
-            public WaitAsyncState() : base(TaskCreationOptions.RunContinuationsAsynchronously) { }
+            public WaitAsyncState(CancellationToken cancellationToken) : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            {
+                CancellationToken = cancellationToken;
+            }
+
             public readonly CancellationTokenSource ContinuationCancellation = new CancellationTokenSource();
+            public CancellationToken CancellationToken { get; }
             public CancellationTokenRegistration Registration;
             public ITimer? Timer;
         }
@@ -66,22 +76,22 @@ namespace System.Threading.Tasks
                 return Task.FromCanceled(cancellationToken);
             }
 
-            DelayState state = new();
+            DelayState state = new(cancellationToken);
 
-            state.Timer = timeProvider.CreateTimer(delayState =>
+            state.Timer = timeProvider.CreateTimer(static delayState =>
             {
                 DelayState s = (DelayState)delayState!;
                 s.TrySetResult(true);
                 s.Registration.Dispose();
-                s?.Timer.Dispose();
+                s.Timer?.Dispose();
             }, state, delay, Timeout.InfiniteTimeSpan);
 
-            state.Registration = cancellationToken.Register(delayState =>
+            state.Registration = cancellationToken.Register(static delayState =>
             {
                 DelayState s = (DelayState)delayState!;
-                s.TrySetCanceled(cancellationToken);
+                s.TrySetCanceled(s.CancellationToken);
                 s.Registration.Dispose();
-                s?.Timer.Dispose();
+                s.Timer?.Dispose();
             }, state);
 
             // There are race conditions where the timer fires after we have attached the cancellation callback but before the
@@ -153,7 +163,7 @@ namespace System.Threading.Tasks
                 return Task.FromCanceled(cancellationToken);
             }
 
-            var state = new WaitAsyncState();
+            WaitAsyncState state = new(cancellationToken);
 
             state.Timer = timeProvider.CreateTimer(static s =>
             {
@@ -162,7 +172,7 @@ namespace System.Threading.Tasks
                 state.TrySetException(new TimeoutException());
 
                 state.Registration.Dispose();
-                state.Timer!.Dispose();
+                state.Timer?.Dispose();
                 state.ContinuationCancellation.Cancel();
             }, state, timeout, Timeout.InfiniteTimeSpan);
 
@@ -182,7 +192,7 @@ namespace System.Threading.Tasks
             {
                 var state = (WaitAsyncState)s!;
 
-                state.TrySetCanceled();
+                state.TrySetCanceled(state.CancellationToken);
 
                 state.Timer?.Dispose();
                 state.ContinuationCancellation.Cancel();
@@ -259,16 +269,16 @@ namespace System.Threading.Tasks
 
             var cts = new CancellationTokenSource();
 
-            ITimer timer = timeProvider.CreateTimer(s =>
+            ITimer timer = timeProvider.CreateTimer(static s =>
             {
                 try
                 {
-                    ((CancellationTokenSource)s).Cancel();
+                    ((CancellationTokenSource)s!).Cancel();
                 }
                 catch (ObjectDisposedException) { }
             }, cts, delay, Timeout.InfiniteTimeSpan);
 
-            cts.Token.Register(t => ((ITimer)t).Dispose(), timer);
+            cts.Token.Register(static t => ((ITimer)t!).Dispose(), timer);
             return cts;
 #endif // NET8_0_OR_GREATER
         }

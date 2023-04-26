@@ -8002,10 +8002,10 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     }
 
     LclVarDsc* terminatorNodeLclVarDsc = nullptr;
-    // Next, if this blocks ends with a switch table, or for Arm64, ends with JCMP instruction,
+    // Next, if this blocks ends with a switch table, or for Arm64, ends with JCMP/JTEST instruction,
     // make sure to not copy into the registers that are consumed at the end of this block.
     //
-    // Note: Only switches and JCMP (for Arm4) have input regs (and so can be fed by copies), so those
+    // Note: Only switches and JCMP/JTEST (for Arm4) have input regs (and so can be fed by copies), so those
     // are the only block-ending branches that need special handling.
     regMaskTP consumedRegs = RBM_NONE;
     if (block->bbJumpKind == BBJ_SWITCH)
@@ -8034,8 +8034,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             consumedRegs |= genRegMask(srcOp1->GetRegNum());
         }
     }
-    // Next, if this blocks ends with a JCMP/JTRUE, we have to make sure:
-    // 1. Not to copy into the register that JCMP/JTRUE uses
+    // Next, if this blocks ends with a JCMP/JTEST/JTRUE, we have to make sure:
+    // 1. Not to copy into the register that JCMP/JTEST/JTRUE uses
     //    e.g. JCMP w21, BRANCH
     // 2. Not to copy into the source of JCMP's operand before it is consumed
     //    e.g. Should not use w0 since it will contain wrong value after resolution
@@ -8051,7 +8051,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     {
         GenTree* lastNode = LIR::AsRange(block).LastNode();
 
-        if (lastNode->OperIs(GT_JTRUE, GT_JCMP))
+        if (lastNode->OperIs(GT_JTRUE, GT_JCMP, GT_JTEST))
         {
             GenTree* op = lastNode->gtGetOp1();
             consumedRegs |= genRegMask(op->GetRegNum());
@@ -8071,7 +8071,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 #if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
             // TODO-LOONGARCH64: Take into account that on LA64, the second
             // operand of a JCMP can be in a register too.
-            assert(!lastNode->OperIs(GT_JCMP) || lastNode->gtGetOp2()->isContained());
+            assert(!lastNode->OperIs(GT_JCMP, GT_JTEST) || lastNode->gtGetOp2()->isContained());
 #endif
         }
     }

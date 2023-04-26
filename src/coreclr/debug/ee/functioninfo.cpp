@@ -383,8 +383,8 @@ DebuggerJitInfo::NativeOffset DebuggerJitInfo::MapILOffsetToNative(DebuggerJitIn
     {
 #endif // FEATURE_EH_FUNCLETS
         PREFIX_ASSUME( map != NULL );
-        LOG((LF_CORDB, LL_INFO10000, "DJI::MILOTN: ilOff 0x%x to nat 0x%x exact:0x%x (Entry IL Off:0x%x)\n",
-             ilOffset.m_ilOffset, map->nativeStartOffset, resultOffset.m_fExact, map->ilOffset));
+        LOG((LF_CORDB, LL_INFO10000, "DJI::MILOTN: ilOffset 0x%zx to nat 0x%x exact:%s (Entry IL Off:0x%x)\n",
+             ilOffset.m_ilOffset, map->nativeStartOffset, (resultOffset.m_fExact ? "true" : "false"), map->ilOffset));
 
         resultOffset.m_nativeOffset = map->nativeStartOffset;
 
@@ -654,7 +654,7 @@ SIZE_T DebuggerJitInfo::MapILOffsetToNativeForSetIP(SIZE_T offsetILTo, int funcl
 // calls MapILOffsetToNative for the startOffset (putting the
 // result into start), and the endOffset (putting the result into end).
 // SIZE_T startOffset:  IL offset from beginning of function.
-// SIZE_T endOffset:  IL offset from beginngin of function,
+// SIZE_T endOffset:  IL offset from beginning of function,
 // or zero to indicate that the end of the function should be used.
 // DebuggerILToNativeMap **start:  Contains start & end
 // native offsets that correspond to startOffset.  Set to NULL if
@@ -892,13 +892,9 @@ void DebuggerJitInfo::LazyInitBounds()
         PRECONDITION(!g_pDebugger->HasDebuggerDataLock());
     } CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_EVERYTHING, "DJI::LazyInitBounds: this=0x%p m_fAttemptInit %s\n", this, m_fAttemptInit == true ? "true": "false"));
-
     // Only attempt lazy-init once
     if (m_fAttemptInit)
-    {
         return;
-    }
 
     EX_TRY
     {
@@ -927,7 +923,8 @@ void DebuggerJitInfo::LazyInitBounds()
             &cMap, &pMap,
             &cVars, &pVars);
 
-        LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=0x%p GetBoundariesAndVars success=0x%x\n", this, fSuccess));
+        LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=%p GetBoundariesAndVars success=%s\n",
+            this, (fSuccess ? "true" : "false")));
 
         // SetBoundaries uses the CodeVersionManager, need to take it now for lock ordering reasons
         CodeVersionManager::LockHolder codeVersioningLockHolder;
@@ -951,7 +948,7 @@ void DebuggerJitInfo::LazyInitBounds()
     }
     EX_CATCH
     {
-        LOG((LF_CORDB,LL_WARNING, "DJI::LazyInitBounds: this=0x%x Exception was thrown and caught\n", this));
+        LOG((LF_CORDB,LL_WARNING, "DJI::LazyInitBounds: this=%p Exception was thrown and caught\n", this));
         // Just catch the exception. The DJI maps may or may-not be initialized,
         // but they should still be in a consistent state, so we should be ok.
     }
@@ -1016,7 +1013,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB,LL_EVERYTHING, "DJI::SetBoundaries: this=0x%p cMap=0x%x pMap=0x%p\n", this, cMap, pMap));
+    LOG((LF_CORDB,LL_EVERYTHING, "DJI::sB: this=%p cMap=%u pMap=%p\n", this, cMap, pMap));
     _ASSERTE((cMap == 0) == (pMap == NULL));
     _ASSERTE(m_sequenceMap == NULL);
 
@@ -1043,7 +1040,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     // like the DebuggerJitInfo's.</TODO>
     //
     m_sequenceMap = (DebuggerILToNativeMap *)new (interopsafe) DebuggerILToNativeMap[cMap];
-    LOG((LF_CORDB,LL_EVERYTHING, "DJI::SetBoundaries: this=0x%p m_sequenceMap=0x%x\n", this, m_sequenceMap));
+    LOG((LF_CORDB,LL_EVERYTHING, "DJI::sB: this=%p m_sequenceMap=%p\n", this, m_sequenceMap));
     _ASSERTE(m_sequenceMap != NULL); // we'll throw on null
 
     m_sequenceMapCount = cMap;
@@ -1186,42 +1183,46 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     m_callsiteMap = m_sequenceMap + m_sequenceMapCount;
     m_callsiteMapCount -= m_sequenceMapCount;
 
-    LOG((LF_CORDB, LL_INFO100000, "DJI::SetBoundaries: this=0x%p boundary count is %d (%d callsites)\n",
+    LOG((LF_CORDB, LL_INFO100000, "DJI::sB: this=%p boundary count is %u (%u callsites)\n",
          this, m_sequenceMapCount, m_callsiteMapCount));
 
 #ifdef LOGGING
-    for (unsigned int count = 0; count < m_sequenceMapCount + m_callsiteMapCount; count++)
+    for (unsigned count = 0; count < m_sequenceMapCount + m_callsiteMapCount; count++)
     {
-        if( m_sequenceMap[count].ilOffset ==
-            (ULONG) ICorDebugInfo::PROLOG )
-            LOG((LF_CORDB, LL_INFO1000000,
-                 "D::sB: PROLOG               --> 0x%08x -- 0x%08x",
-                 m_sequenceMap[count].nativeStartOffset,
-                 m_sequenceMap[count].nativeEndOffset));
-        else if ( m_sequenceMap[count].ilOffset ==
-                  (ULONG) ICorDebugInfo::EPILOG )
-            LOG((LF_CORDB, LL_INFO1000000,
-                 "D::sB: EPILOG              --> 0x%08x -- 0x%08x",
-                 m_sequenceMap[count].nativeStartOffset,
-                 m_sequenceMap[count].nativeEndOffset));
-        else if ( m_sequenceMap[count].ilOffset ==
-                  (ULONG) ICorDebugInfo::NO_MAPPING )
-            LOG((LF_CORDB, LL_INFO1000000,
-                 "D::sB: NO MAP              --> 0x%08x -- 0x%08x",
-                 m_sequenceMap[count].nativeStartOffset,
-                 m_sequenceMap[count].nativeEndOffset));
-        else
-            LOG((LF_CORDB, LL_INFO1000000,
-                 "D::sB: 0x%04x (Real:0x%04x) --> 0x%08x -- 0x%08x",
-                 m_sequenceMap[count].ilOffset,
-                 m_methodInfo->TranslateToInstIL(&mapping,
-                                                 m_sequenceMap[count].ilOffset,
-                                                 bOriginalToInstrumented),
-                 m_sequenceMap[count].nativeStartOffset,
-                 m_sequenceMap[count].nativeEndOffset));
+        const DebuggerILToNativeMap& entry = m_sequenceMap[count];
+        switch (entry.ilOffset)
+        {
+            case (ULONG) ICorDebugInfo::PROLOG:
+                LOG((LF_CORDB, LL_INFO1000000,
+                    "DJI::sB: PROLOG               --> 0x%08x -- 0x%08x",
+                    entry.nativeStartOffset,
+                    entry.nativeEndOffset));
+                break;
+            case (ULONG) ICorDebugInfo::EPILOG:
+                LOG((LF_CORDB, LL_INFO1000000,
+                    "DJI::sB: EPILOG               --> 0x%08x -- 0x%08x",
+                    entry.nativeStartOffset,
+                    entry.nativeEndOffset));
+                break;
+            case (ULONG) ICorDebugInfo::NO_MAPPING:
+                LOG((LF_CORDB, LL_INFO1000000,
+                    "DJI::sB: NO MAP               --> 0x%08x -- 0x%08x",
+                    entry.nativeStartOffset,
+                    entry.nativeEndOffset));
+                break;
+            default:
+                LOG((LF_CORDB, LL_INFO1000000,
+                    "DJI::sB: 0x%04x (Real:0x%04x) --> 0x%08x -- 0x%08x",
+                    entry.ilOffset,
+                    m_methodInfo->TranslateToInstIL(&mapping,
+                                                    entry.ilOffset,
+                                                    bOriginalToInstrumented),
+                    entry.nativeStartOffset,
+                    entry.nativeEndOffset));
+                break;
+        }
 
-        LOG((LF_CORDB, LL_INFO1000000, " Src:0x%x\n", m_sequenceMap[count].source));
-
+        LOG((LF_CORDB, LL_INFO1000000, " Src:0x%x\n", entry.source));
     }
 #endif //LOGGING
 }
@@ -1246,17 +1247,18 @@ void DebuggerJitInfo::Init(TADDR newAddress)
     this->InitFuncletAddress();
 #endif // FEATURE_EH_FUNCLETS
 
-    LOG((LF_CORDB,LL_INFO10000,"De::JITCo:Got DJI 0x%p(V %d),"
-         "Hot section from 0x%p to 0x%p "
-         "Cold section from 0x%p to 0x%p "
-         "varCount=%d  seqCount=%d\n",
+    LOG((LF_CORDB,LL_INFO10000,"De::JITCo:Got DJI %p (encVersion: %zx),"
+         "Hot section from %p to %p "
+         "Cold section from %p to %p "
+         "Code from %p to %p "
+         "varCount=%u  seqCount=%u\n",
          this, this->m_encVersion,
          this->m_codeRegionInfo.getAddrOfHotCode(),
          this->m_codeRegionInfo.getAddrOfHotCode() + this->m_codeRegionInfo.getSizeOfHotCode(),
          this->m_codeRegionInfo.getAddrOfColdCode(),
          this->m_codeRegionInfo.getAddrOfColdCode() + this->m_codeRegionInfo.getSizeOfColdCode(),
-         (ULONG)this->m_addrOfCode,
-         (ULONG)this->m_addrOfCode+(ULONG)this->m_sizeOfCode,
+         this->m_addrOfCode,
+         this->m_addrOfCode+(ULONG)this->m_sizeOfCode,
          this->GetVarNativeInfoCount(),
          this->GetSequenceMapCount()));
 
@@ -1717,7 +1719,7 @@ DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(NativeCodeVersion n
     // We've now added a new DJI into the table and released the lock. Thus any other thread
     // can come and use our DJI. Good thing we inited the DJI _before_ adding it to the table.
 
-    LOG((LF_CORDB,LL_INFO10000,"DMI:CAAJI: new head of dji list:0x%p\n", m_latestJitInfo));
+    LOG((LF_CORDB,LL_INFO10000,"DMI:CAAJI: new head of dji list: %p\n", m_latestJitInfo));
 
     return dji;
 }
@@ -1983,7 +1985,7 @@ void DebuggerMethodInfo::IterateAllDJIs(AppDomain * pAppDomain, Module * pLoader
     _ASSERTE(pEnum != NULL);
     _ASSERTE(pAppDomain != NULL || pMethodDescFilter != NULL);
 
-    // Esnure we have DJIs for everything.
+    // Ensure we have DJIs for everything.
     CreateDJIsForNativeBlobs(pAppDomain, pLoaderModuleFilter, pMethodDescFilter);
 
     pEnum->m_pCurrent = m_latestJitInfo;
@@ -2076,7 +2078,7 @@ void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
     }
     CONTRACTL_END;
 
-   LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD pMethodDesc:0x%p\n", pMethodDesc));
+   LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD pMethodDesc:%p\n", pMethodDesc));
 
     // The debugger doesn't track Lightweight-codegen methods b/c they have no metadata.
     if (pMethodDesc->IsDynamicMethod())
@@ -2099,17 +2101,17 @@ void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
             // Some versions may not be compiled yet - skip those for now
             // if they compile later the JitCompiled callback will add a DJI to our cache at that time
             PCODE codeAddr = itr->GetNativeCode();
-            LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD (%d) Native code for DJI - 0x%p\n", ++count, codeAddr));
+            LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD (%d) Native code for DJI - %p\n", ++count, codeAddr));
             if (codeAddr)
             {
                 // The DJI may already be populated in the cache, if so CreateInitAndAdd is
                 // a no-op and that is fine.
                 BOOL unusedDjiWasCreated;
                 CreateInitAndAddJitInfo(*itr, codeAddr, &unusedDjiWasCreated);
-                LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD Was DJI created? 0x%d\n", unusedDjiWasCreated));
+                LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD Was DJI created? %s\n", (unusedDjiWasCreated ? "true" : "false")));
             }
         }
-        LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD NativeCodeVersion total %d for md=0x%p\n", count, pMethodDesc));
+        LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD NativeCodeVersion total %d for md=%p\n", count, pMethodDesc));
     }
 #else
     // We just ask for the DJI to ensure that it's lazily created.
@@ -2179,8 +2181,8 @@ HRESULT DebuggerMethodInfoTable::AddMethodInfo(Module *pModule,
     }
     CONTRACTL_END;
 
-   LOG((LF_CORDB, LL_INFO1000, "DMIT::AMI Adding dmi:0x%x Mod:0x%x tok:"
-        "0x%x nVer:0x%x\n", mi, pModule, token, mi->GetCurrentEnCVersion()));
+   LOG((LF_CORDB, LL_INFO1000, "DMIT::AMI: Adding dmi:%p Mod:%p tok:0x%08x nVer:0x%zx\n",
+        mi, pModule, token, mi->GetCurrentEnCVersion()));
 
    _ASSERTE(mi != NULL);
 
@@ -2197,18 +2199,18 @@ HRESULT DebuggerMethodInfoTable::AddMethodInfo(Module *pModule,
     DebuggerMethodInfoEntry *dmie =
         (DebuggerMethodInfoEntry *) Add(HASH(&dmik));
 
-    if (dmie != NULL)
+    if (dmie == NULL)
     {
-        dmie->key.pModule = pModule;
-        dmie->key.token = token;
-        dmie->mi = mi;
-
-        LOG((LF_CORDB, LL_INFO1000, "DMIT::AJI: mod:0x%x tok:0%x ",
-            pModule, token));
-        return S_OK;
+        ThrowOutOfMemory();
+        return E_OUTOFMEMORY;
     }
 
-    ThrowOutOfMemory();
+    dmie->key.pModule = pModule;
+    dmie->key.token = token;
+    dmie->mi = mi;
+
+    LOG((LF_CORDB, LL_INFO1000, "DMIT::AMI: mod:%p tok:0x%08x\n",
+        pModule, token));
     return S_OK;
 }
 
@@ -2227,8 +2229,8 @@ HRESULT DebuggerMethodInfoTable::OverwriteMethodInfo(Module *pModule,
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO1000, "DMIT::OJI: dmi:0x%x mod:0x%x tok:0x%x\n", mi,
-        pModule, token));
+    LOG((LF_CORDB, LL_INFO1000, "DMIT::OMI: dmi:%p mod:%p tok:0x%08x\n",
+        mi, pModule, token));
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
@@ -2240,14 +2242,13 @@ HRESULT DebuggerMethodInfoTable::OverwriteMethodInfo(Module *pModule,
       = (DebuggerMethodInfoEntry *) Find(HASH(&dmik), KEY(&dmik));
     if (entry != NULL)
     {
-        if ( (fOnlyIfNull &&
-              entry->mi == NULL) ||
-             !fOnlyIfNull)
+        if ( (fOnlyIfNull && entry->mi == NULL)
+            || !fOnlyIfNull)
         {
             entry->mi = mi;
 
-            LOG((LF_CORDB, LL_INFO1000, "DMIT::OJI: mod:0x%x tok:0x%x remap"
-                "nVer:0x%x\n", pModule, token, entry->nVersionLastRemapped));
+            LOG((LF_CORDB, LL_INFO1000, "DMIT::OMI: mod:%p tok:0x%08x remap nVer:0x%zx\n",
+                pModule, token, entry->nVersionLastRemapped));
             return S_OK;
         }
     }
@@ -2380,7 +2381,7 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetMethodInfo(Module *pModule, mdMe
     }
     else
     {
-        LOG((LF_CORDB, LL_INFO1000, "DMI::GMI: for methodDef 0x%x, got 0x%p prev:0x%p\n",
+        LOG((LF_CORDB, LL_INFO1000, "DMI::GMI: for methodDef 0x%x, DMI=%p prev DMI=%p\n",
             token, entry->mi, (entry->mi?entry->mi->m_prevMethodInfo:0)));
         return entry->mi;
     }

@@ -140,7 +140,7 @@ namespace Tests.System
                             state,
                             TimeSpan.FromMilliseconds(state.Period), TimeSpan.FromMilliseconds(state.Period));
 
-            state.TokenSource.Token.WaitHandle.WaitOne(60000);
+            state.TokenSource.Token.WaitHandle.WaitOne(Timeout.InfiniteTimeSpan);
             state.TokenSource.Dispose();
 
             Assert.Equal(4, state.Counter);
@@ -409,6 +409,36 @@ namespace Tests.System
 #endif // !NETFRAMEWORK
         }
 
+#if TESTEXTENSIONS
+        [Fact]
+        public static void InvokeCallbackFromCreateTimer()
+        {
+            TimeProvider p = new InvokeCallbackCreateTimerProvider();
+
+            CancellationTokenSource cts = p.CreateCancellationTokenSource(TimeSpan.FromSeconds(0));
+            Assert.True(cts.IsCancellationRequested);
+
+            Task t = p.Delay(TimeSpan.FromSeconds(0));
+            Assert.True(t.IsCompleted);
+
+            t = new TaskCompletionSource<bool>().Task.WaitAsync(TimeSpan.FromSeconds(0), p);
+            Assert.True(t.IsFaulted);
+        }
+
+        class InvokeCallbackCreateTimerProvider : TimeProvider
+        {
+            public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+            {
+                ITimer t = base.CreateTimer(callback, state, dueTime, period);
+                if (dueTime != Timeout.InfiniteTimeSpan)
+                {
+                    callback(state);
+                }
+                return t;
+            }
+        }
+#endif
+
         class TimerState
         {
             public TimerState()
@@ -499,7 +529,14 @@ namespace Tests.System
                     period = new TimeSpan(period.Ticks / 2);
                 }
 
-                return _timer.Change(dueTime, period);
+                try
+                {
+                    return _timer.Change(dueTime, period);
+                }
+                catch (ObjectDisposedException)
+                {
+                    return false;
+                }
             }
 
             public void Dispose() => _timer.Dispose();
