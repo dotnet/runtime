@@ -11665,6 +11665,10 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
     switch (oper)
     {
         case GT_ASG:
+        case GT_STOREIND:
+        case GT_STORE_BLK:
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
             // Make sure we're allowed to do this.
             if (optValnumCSE_phase)
             {
@@ -11690,6 +11694,11 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                 {
                     return fgMorphInitBlock(tree);
                 }
+            }
+
+            if (!tree->OperIs(GT_ASG))
+            {
+                break;
             }
 
             if (typ == TYP_LONG)

@@ -514,10 +514,8 @@ GenTree* DecomposeLongs::DecomposeStoreLclFld(LIR::Use& use)
     loStore->gtFlags |= GTF_VAR_USEASG;
 
     // Create the store for the upper half of the GT_LONG and insert it after the low store.
-    GenTreeLclFld* hiStore = m_compiler->gtNewLclFldNode(loStore->GetLclNum(), TYP_INT, loStore->GetLclOffs() + 4);
-    hiStore->SetOper(GT_STORE_LCL_FLD);
-    hiStore->gtOp1 = value->gtOp2;
-    hiStore->gtFlags |= (GTF_VAR_DEF | GTF_VAR_USEASG);
+    GenTreeLclFld* hiStore =
+        m_compiler->gtNewStoreLclFldNode(loStore->GetLclNum(), TYP_INT, loStore->GetLclOffs() + 4, value->gtOp2);
 
     Range().InsertAfter(loStore, hiStore);
 
