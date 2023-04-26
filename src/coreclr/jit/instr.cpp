@@ -1716,12 +1716,12 @@ instruction CodeGen::ins_Copy(var_types dstType)
 
     if (dstType == TYP_DOUBLE)
     {
-        return INS_fmv_d_x;
+        return INS_fsgnj_d;
     }
     else
     {
         assert(dstType == TYP_FLOAT);
-        return INS_fmv_w_x;
+        return INS_fsgnj_s;
     }
 #else
     NYI("ins_Copy");
@@ -1834,10 +1834,10 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
     }
 #elif defined(TARGET_RISCV64)
     assert(!varTypeIsSIMD(dstType));
+    assert(!genIsValidFloatReg(srcReg));
 
     if (dstType == TYP_DOUBLE)
     {
-        assert(!genIsValidFloatReg(srcReg));
         return INS_fmv_d_x;
     }
     else
