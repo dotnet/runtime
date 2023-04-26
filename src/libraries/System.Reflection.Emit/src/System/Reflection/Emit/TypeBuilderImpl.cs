@@ -110,9 +110,9 @@ namespace System.Reflection.Emit
             _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
         }
 
-        private void ParseStructLayoutAttribute(ConstructorInfo con, ReadOnlySpan<byte> data)
+        private void ParseStructLayoutAttribute(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            CustomAttributeInfo attributeInfo = CustomAttributeInfo.DecodeCustomAttribute(con, data);
+            CustomAttributeInfo attributeInfo = CustomAttributeInfo.DecodeCustomAttribute(con, binaryAttribute);
             LayoutKind layoutKind = (LayoutKind)attributeInfo._ctorArgs[0]!;
             _attributes &= ~TypeAttributes.LayoutMask;
             _attributes |= layoutKind switch
@@ -154,7 +154,7 @@ namespace System.Reflection.Emit
                         _typeSize = value;
                         break;
                     default:
-                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnknownNamedType, con.DeclaringType, name));
+                        throw new ArgumentException(SR.Format(SR.Argument_UnknownNamedType, con.DeclaringType, name), nameof(binaryAttribute));
                 }
             }
         }

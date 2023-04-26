@@ -154,6 +154,11 @@ namespace System.Reflection.Emit
                     {
                         AddFieldLayout(fieldHandle, field._offset);
                     }
+
+                    if (field._marshallingInfo != null)
+                    {
+                        AddFieldMarshalling(fieldHandle, field._marshallingInfo.PopulateMarshallingBlob(_metadataBuilder));
+                    }
                 }
             }
         }
@@ -270,6 +275,11 @@ namespace System.Reflection.Emit
 
         private void AddFieldLayout(FieldDefinitionHandle fieldHandle, int offset) =>
             _metadataBuilder.AddFieldLayout(field: fieldHandle, offset: offset);
+
+        private void AddFieldMarshalling(FieldDefinitionHandle fieldHandle, BlobHandle descriptor)
+        {
+            _metadataBuilder.AddMarshallingDescriptor(fieldHandle, descriptor);
+        }
 
         private AssemblyReferenceHandle AddAssemblyReference(string name, Version? version, string? culture,
             byte[]? publicKeyToken, AssemblyNameFlags flags, AssemblyContentType contentType) =>

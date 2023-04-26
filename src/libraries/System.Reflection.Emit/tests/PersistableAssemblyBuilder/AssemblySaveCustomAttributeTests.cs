@@ -176,23 +176,20 @@ namespace System.Reflection.Emit.Tests
                 CustomAttributeBuilder[] fieldAttributes = new[] { new CustomAttributeBuilder(typeof(NonSerializedAttribute).GetConstructor(Type.EmptyTypes), new object[] { }),
                                                               new CustomAttributeBuilder(typeof(FieldOffsetAttribute).GetConstructor(new Type[] { typeof(int) }), new object[] { 2 }),
                                                               new CustomAttributeBuilder(s_guidPair.con, s_guidPair.args),
-                                                              // TODO: Need to support the UnmanagedType type
-                                                              //new CustomAttributeBuilder(typeof(MarshalAsAttribute).GetConstructor(new Type[] { typeof(UnmanagedType) }), new object[] { UnmanagedType.I4}),
+                                                              new CustomAttributeBuilder(typeof(MarshalAsAttribute).GetConstructor(new Type[] { typeof(UnmanagedType) }), new object[] { UnmanagedType.I4}),
                                                               new CustomAttributeBuilder(typeof(SpecialNameAttribute).GetConstructor(Type.EmptyTypes), new object[] { })
                                                             };
 
                 AssemblyBuilder ab = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
                     PopulateAssemblyName(), null, typeof(string), out MethodInfo saveMethod);
-                TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes);
+                TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes, type.BaseType);
                 DefineFieldsAndSetAttributes(fieldAttributes.ToList(), type.GetFields(), tb);
                 typeAttributes.ForEach(tb.SetCustomAttribute);
-
                 saveMethod.Invoke(ab, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
                 Module moduleFromDisk = assemblyFromDisk.Modules.First();
                 Type testType = moduleFromDisk.GetTypes()[0];
-
                 IList<CustomAttributeData> attributesFromDisk = testType.GetCustomAttributesData();
 
                 Assert.Equal(typeAttributes.Count - 3, attributesFromDisk.Count); // 3 pseudo attributes 
@@ -216,11 +213,11 @@ namespace System.Reflection.Emit.Tests
 
                 FieldInfo field = testType.GetFields()[0];
                 IList<CustomAttributeData> fieldAttributesFromDisk = field.GetCustomAttributesData();
-                Assert.Equal(2, fieldAttributesFromDisk.Count);
 
+                Assert.Equal(3, fieldAttributesFromDisk.Count);
                 Assert.True((field.Attributes & FieldAttributes.NotSerialized) != 0); // NonSerializedAttribute
                 Assert.True((field.Attributes & FieldAttributes.SpecialName) != 0); // SpecialNameAttribute
-                // Assert.True((field.Attributes & FieldAttributes.HasFieldMarshal) != 0); // MarshalAsAttribute
+                Assert.True((field.Attributes & FieldAttributes.HasFieldMarshal) != 0); // MarshalAsAttribute
 
                 for (int i = 0; i < fieldAttributesFromDisk.Count; i++)
                 {
@@ -229,9 +226,9 @@ namespace System.Reflection.Emit.Tests
                         case "FieldOffsetAttribute":
                             Assert.Equal(2, fieldAttributesFromDisk[i].ConstructorArguments[0].Value);
                             break;
-                        /*case "MarshalAsAttribute": // TODO: Need to support the UnmanagedType type
-                            Assert.Equal(UnmanagedType.I4, methodAttributesFromDisk[i].ConstructorArguments[0].Value);
-                            break;*/
+                        case "MarshalAsAttribute":
+                            Assert.Equal(UnmanagedType.I4, (UnmanagedType)fieldAttributesFromDisk[i].ConstructorArguments[0].Value);
+                            break;
                         case "GuidAttribute":
                             Assert.Equal(s_guidPair.args[0], fieldAttributesFromDisk[i].ConstructorArguments[0].Value);
                             break;
@@ -270,9 +267,8 @@ namespace System.Reflection.Emit.Tests
                 TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes);
                 typeAttributes.ForEach(tb.SetCustomAttribute);
                 DefineMethodsAndSetAttributes(methodAttributes.ToList(), tb, type.GetMethods());
-
                 saveMethod.Invoke(ab, new object[] { file.Path });
-                Console.WriteLine(file.Path);
+
                 Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
                 Type testType = assemblyFromDisk.Modules.First().GetTypes()[0];
                 IList<CustomAttributeData> attributesFromDisk = testType.GetCustomAttributesData();
@@ -306,7 +302,7 @@ namespace System.Reflection.Emit.Tests
                     Assert.True((methodImpl & MethodImplAttributes.NoInlining) != 0); // MethodImplAttribute
                     Assert.True((methodImpl & MethodImplAttributes.AggressiveOptimization) != 0); // MethodImplAttribute
                     Assert.True((methodImpl & MethodImplAttributes.PreserveSig) != 0); // PreserveSigAttribute
-                    Assert.Equal(methodAttributes.Length-2, methodAttributesFromDisk.Count);
+                    Assert.Equal(methodAttributes.Length - 2, methodAttributesFromDisk.Count);
 
                     for (int i = 0; i < methodAttributesFromDisk.Count; i++)
                     {
@@ -351,6 +347,59 @@ namespace System.Reflection.Emit.Tests
                                 break;
                         }
                     }
+                }
+            }
+        }
+
+        private static readonly ConstructorInfo marshalAsEnumCtor = typeof(MarshalAsAttribute).GetConstructor(new Type[] { typeof(UnmanagedType) });
+        private static readonly ConstructorInfo marshalAsShortCtor = typeof(MarshalAsAttribute).GetConstructor(new Type[] { typeof(short) });
+
+        public static IEnumerable<object[]> MarshalAsAttributeWithVariousFields()
+        {
+            yield return new object[] { new CustomAttributeBuilder(marshalAsEnumCtor, new object[] { UnmanagedType.LPStr }), UnmanagedType.LPStr };
+            yield return new object[] { new CustomAttributeBuilder(marshalAsShortCtor, new object[] { (short)21 }), UnmanagedType.LPWStr };
+            yield return new object[] { new CustomAttributeBuilder(marshalAsShortCtor, new object[] { (short)19 }), UnmanagedType.BStr };
+            yield return new object[] { new CustomAttributeBuilder(marshalAsEnumCtor, new object[] { UnmanagedType.ByValTStr },
+                new FieldInfo[] { typeof(MarshalAsAttribute).GetField("SizeConst") }, new object[] { 256 }) , UnmanagedType.ByValTStr };
+            yield return new object[] { new CustomAttributeBuilder(marshalAsEnumCtor, new object[] { UnmanagedType.CustomMarshaler },
+                new FieldInfo[] { typeof(MarshalAsAttribute).GetField("MarshalType"), typeof(MarshalAsAttribute).GetField("MarshalCookie")  },
+                new object[] { typeof(EmptyTestClass).AssemblyQualifiedName, "MyCookie" }) , UnmanagedType.CustomMarshaler };
+            // TODO: When array support added add test for LPArray/ByValArray/SafeArray
+        }
+
+        [Theory]
+        [MemberData(nameof(MarshalAsAttributeWithVariousFields))]
+        public void MarshalAsPseudoCustomAttributesTest(CustomAttributeBuilder attribute, UnmanagedType expectedType)
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                Type type = typeof(StructWithFields);
+                AssemblyBuilder ab = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
+                    PopulateAssemblyName(), null, typeof(string), out MethodInfo saveMethod);
+                TypeBuilder tb = ab.DefineDynamicModule("Module").DefineType(type.FullName, type.Attributes, type.BaseType);
+                FieldInfo stringField = type.GetFields()[1];
+                FieldBuilder fb = tb.DefineField(stringField.Name, stringField.FieldType, stringField.Attributes);
+                fb.SetCustomAttribute(attribute);
+                saveMethod.Invoke(ab, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
+                FieldInfo field = assemblyFromDisk.Modules.First().GetTypes()[0].GetFields()[0];
+                CustomAttributeData attributeFromDisk = field.GetCustomAttributesData()[0];
+
+                Assert.Equal(1, field.GetCustomAttributesData().Count);
+                Assert.True((field.Attributes & FieldAttributes.HasFieldMarshal) != 0);
+                Assert.Equal(expectedType, (UnmanagedType)attributeFromDisk.ConstructorArguments[0].Value);
+
+                switch (expectedType)
+                {
+                    case UnmanagedType.CustomMarshaler:
+                        Assert.Equal(typeof(EmptyTestClass).AssemblyQualifiedName,
+                            attributeFromDisk.NamedArguments.First(na => na.MemberName == "MarshalType").TypedValue.Value);
+                        Assert.Equal("MyCookie", attributeFromDisk.NamedArguments.First(na => na.MemberName == "MarshalCookie").TypedValue.Value);
+                        break;
+                    case UnmanagedType.ByValTStr:
+                        Assert.Equal(256, attributeFromDisk.NamedArguments.First(na => na.MemberName == "SizeConst").TypedValue.Value);
+                        break;
                 }
             }
         }

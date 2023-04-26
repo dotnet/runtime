@@ -35,18 +35,18 @@ namespace System.Reflection.Emit
         private const int TwoByteMask = 0x3f;
         private const int FourByteMask = 0x1f;
 
-        internal static CustomAttributeInfo DecodeCustomAttribute(ConstructorInfo ctor, ReadOnlySpan<byte> data)
+        internal static CustomAttributeInfo DecodeCustomAttribute(ConstructorInfo ctor, ReadOnlySpan<byte> binaryAttribute)
         {
             int pos = 2;
             CustomAttributeInfo info = default;
 
-            if (data.Length < 2)
+            if (binaryAttribute.Length < 2)
             {
-                throw new InvalidOperationException(SR.Format(SR.InvalidOperation_InvalidCustomAttributeLength, ctor.DeclaringType, data.Length));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidCustomAttributeLength, ctor.DeclaringType, binaryAttribute.Length), nameof(binaryAttribute));
             }
-            if ((data[0] != 0x01) || (data[1] != 0x00))
+            if ((binaryAttribute[0] != 0x01) || (binaryAttribute[1] != 0x00))
             {
-                throw new InvalidOperationException(SR.Format(SR.InvalidOperation_InvalidProlog, ctor.DeclaringType));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidProlog, ctor.DeclaringType), nameof(binaryAttribute));
             }
 
             ParameterInfo[] pi = ctor.GetParameters();
@@ -54,38 +54,39 @@ namespace System.Reflection.Emit
             info._ctorArgs = new object?[pi.Length];
             for (int i = 0; i < pi.Length; ++i)
             {
-                info._ctorArgs[i] = DecodeCustomAttributeValue(pi[i].ParameterType, data, pos, out pos);
+                info._ctorArgs[i] = DecodeCustomAttributeValue(pi[i].ParameterType, binaryAttribute, pos, out pos);
             }
-            int numNamed = data[pos] + (data[pos + 1] * 256);
+            int numNamed = BinaryPrimitives.ReadUInt16LittleEndian(binaryAttribute.Slice(pos));
             pos += 2;
 
             info._namedParamNames = new string[numNamed];
             info._namedParamValues = new object[numNamed];
             for (int i = 0; i < numNamed; ++i)
             {
-                int namedType = data[pos++];
-                int dataType = data[pos++];
+                int namedType = binaryAttribute[pos++];
+                int dataType = binaryAttribute[pos++];
 
                 if (dataType == EnumType)
                 {
                     // skip bytes for Enum type name;
-                    int len2 = DecodeLen(data, pos, out pos);
+                    int len2 = DecodeLen(binaryAttribute, pos, out pos);
                     pos += len2;
                 }
 
-                int len = DecodeLen(data, pos, out pos);
-                string name = StringFromBytes(data, pos, len);
+                int len = DecodeLen(binaryAttribute, pos, out pos);
+                string name = StringFromBytes(binaryAttribute, pos, len);
                 info._namedParamNames[i] = name;
                 pos += len;
 
                 if (namedType == Field)
                 {
+                    // For known pseudo custom attributes underlying Enum type is int
                     Type fieldType = dataType == EnumType ? typeof(int) : ElementTypeToType((PrimitiveSerializationTypeCode)dataType);
-                    info._namedParamValues[i] = DecodeCustomAttributeValue(fieldType, data, pos, out pos); ;
+                    info._namedParamValues[i] = DecodeCustomAttributeValue(fieldType, binaryAttribute, pos, out pos); ;
                 }
                 else
                 {
-                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnknownNamedType, ctor.DeclaringType, namedType));
+                    throw new ArgumentException(SR.Format(SR.Argument_UnknownNamedType, ctor.DeclaringType, namedType), nameof(binaryAttribute));
                 }
             }
 
@@ -134,6 +135,9 @@ namespace System.Reflection.Emit
                 case TypeCode.Int32:
                     rpos = pos + 4;
                     return BinaryPrimitives.ReadInt32LittleEndian(data.Slice(pos));
+                case TypeCode.Int16:
+                    rpos = pos + 2;
+                    return BinaryPrimitives.ReadInt16LittleEndian(data.Slice(pos));
                 case TypeCode.Boolean:
                     rpos = pos + 1;
                     return (data[pos] == 0) ? false : true;
@@ -167,7 +171,7 @@ namespace System.Reflection.Emit
                 PrimitiveSerializationTypeCode.Single => typeof(float),
                 PrimitiveSerializationTypeCode.Double => typeof(double),
                 PrimitiveSerializationTypeCode.String => typeof(string),
-                _ => throw new ArgumentException(SR.ArgumentException_InvalidTypeArgument),
+                _ => throw new ArgumentException(SR.Argument_InvalidTypeArgument, "binaryAttribute"),
             };
     }
 }
