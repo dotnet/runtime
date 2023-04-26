@@ -210,12 +210,12 @@ namespace System.Runtime.Intrinsics.Wasm
         ///   i8x16.shuffle
         /// </summary>
         [Intrinsic]
-        public static Vector128<sbyte> Shuffle(Vector128<sbyte> lower, Vector128<sbyte> upper, Vector128<sbyte> indices) => Shuffle(lower, upper, indices);
+        public static Vector128<sbyte> Shuffle(Vector128<sbyte> lower, Vector128<sbyte> upper, [ConstantExpected] Vector128<sbyte> indices) => Shuffle(lower, upper, indices); // takes ImmLaneIdx32[16]
         /// <summary>
         ///   i8x16.shuffle
         /// </summary>
         [Intrinsic]
-        public static Vector128<byte>  Shuffle(Vector128<byte>  lower, Vector128<byte>  upper, Vector128<byte>  indices) => Shuffle(lower, upper, indices);
+        public static Vector128<byte>  Shuffle(Vector128<byte>  lower, Vector128<byte>  upper, [ConstantExpected] Vector128<byte>  indices) => Shuffle(lower, upper, indices); // takes ImmLaneIdx32[16]
 
         /// <summary>
         ///   i8x16.swizzle

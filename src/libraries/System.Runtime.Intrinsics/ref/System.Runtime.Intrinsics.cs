@@ -6025,8 +6025,8 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> ReplaceLane(Vector128<double> vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte imm, double value) { throw null; }   // takes ImmLaneIdx2
         public static Vector128<nint>   ReplaceLane(Vector128<nint>   vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, nint   value) { throw null; }
         public static Vector128<nuint>  ReplaceLane(Vector128<nuint>  vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, nuint  value) { throw null; }
-        public static Vector128<sbyte> Shuffle(Vector128<sbyte> lower, Vector128<sbyte> upper, Vector128<sbyte> indices) { throw null; }
-        public static Vector128<byte>  Shuffle(Vector128<byte>  lower, Vector128<byte>  upper, Vector128<byte>  indices) { throw null; }
+        public static Vector128<sbyte> Shuffle(Vector128<sbyte> lower, Vector128<sbyte> upper, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] Vector128<sbyte> indices) { throw null; } // takes ImmLaneIdx32[16]
+        public static Vector128<byte>  Shuffle(Vector128<byte>  lower, Vector128<byte>  upper, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute] Vector128<byte>  indices) { throw null; } // takes ImmLaneIdx32[16]
         public static Vector128<sbyte> Swizzle(Vector128<sbyte> vector, Vector128<sbyte> indices) { throw null; }
         public static Vector128<byte>  Swizzle(Vector128<byte>  vector, Vector128<byte>  indices) { throw null; }
         public static Vector128<sbyte>  Add(Vector128<sbyte>  left, Vector128<sbyte>  right) { throw null; }
