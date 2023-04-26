@@ -254,6 +254,20 @@
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
+
+      <HelixWorkItem Update="$(WorkItemPrefix)System.Text.Json.Tests">
+        <Timeout>00:50:00</Timeout>
+      </HelixWorkItem>
+      <HelixWorkItem Update="$(WorkItemPrefix)System.Collections.Immutable.Tests">
+        <Timeout>00:50:00</Timeout>
+      </HelixWorkItem>
+      <HelixWorkItem Update="$(WorkItemPrefix)System.Net.WebSockets.Client.Tests">
+        <Timeout>00:50:00</Timeout>
+      </HelixWorkItem>
+      <HelixWorkItem Update="$(WorkItemPrefix)System.Net.Http.Functional.Tests">
+        <Timeout>00:50:00</Timeout>
+      </HelixWorkItem>
+
     </ItemGroup>
   </Target>
 
