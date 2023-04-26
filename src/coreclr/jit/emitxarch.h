@@ -294,7 +294,7 @@ bool hasEvexPrefix(code_t code)
     return (code & EVEX_PREFIX_MASK) == EVEX_PREFIX_CODE;
 }
 code_t AddEvexPrefix(instruction ins, code_t code, emitAttr attr);
-code_t AddEvexbBit(const instrDesc* id, code_t code);
+code_t AddEvexbBitIfNeeded(const instrDesc* id, code_t code);
 
 //------------------------------------------------------------------------
 // AddSimdPrefixIfNeeded: Add the correct SIMD prefix if required.
@@ -386,7 +386,7 @@ bool codeEvexMigrationCheck(code_t code)
     return hasEvexPrefix(code);
 }
 
-ssize_t GetInputSizeInBytes(instrDesc* id);
+ssize_t GetInputSizeInBytes(instrDesc* id) const;
 
 bool containsAVXInstruction = false;
 bool ContainsAVX()
@@ -704,10 +704,10 @@ void emitIns_SIMD_R_R_C(instruction          ins,
                         regNumber            op1Reg,
                         CORINFO_FIELD_HANDLE fldHnd,
                         int                  offs,
-                        insOpts              instOptions);
+                        insOpts              instOptions = INS_OPTS_NONE);
 void emitIns_SIMD_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg);
 void emitIns_SIMD_R_R_S(
-    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs, insOpts instOptions);
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int varx, int offs, insOpts instOptions = INS_OPTS_NONE);
 
 void emitIns_SIMD_R_R_A_I(
     instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTreeIndir* indir, int ival);

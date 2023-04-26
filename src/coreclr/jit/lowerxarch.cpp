@@ -2370,7 +2370,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 LowerNode(tmp1);
 
                 node->ResetHWIntrinsicId(NI_AVX2_BroadcastScalarToVector256, tmp1);
-
                 // if AVX512 is supported, seek for optimization opportunities using embedded broadcast.
                 // contain the broadcast intrinsics in the embeddebd broadcast compatible intrinsics
                 // at codegen phase, directly emit the operend on "Create" node instead of a series of broadcast.
@@ -2380,17 +2379,20 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     bool     foundUse   = BlockRange().TryGetUse(node, &use);
                     GenTree* CreateUser = nullptr;
                     if (foundUse && use.User()->OperIs(GT_HWINTRINSIC) &&
-                        use.User()->AsHWIntrinsic()->isEmbBroadcastHWIntrinsic())
+                        use.User()->AsHWIntrinsic()->OperIsEmbBroadcastHWIntrinsic())
                     {
                         CreateUser = use.User();
                     }
                     // RUIHAN: Should we contain this 2 lowered intrinsics or contain the original "Create"
                     if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_FLOAT))
                     {
-                        node->SetEmbBroadcast();
+                        // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment issue.
+                        if(node == CreateUser->AsHWIntrinsic()->Op(1))
+                        {
+                            std::swap(CreateUser->AsHWIntrinsic()->Op(1), CreateUser->AsHWIntrinsic()->Op(2));
+                        }
                     }
                 }
-
                 return LowerNode(node);
             }
 
@@ -7525,7 +7527,30 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
         case NI_AVX2_BroadcastScalarToVector256:
         {
-            return childNode->IsEmbBroadcast();
+            if(comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) && parentNode->OperIsEmbBroadcastHWIntrinsic())
+            {
+                assert(!childNode->OperIsLeaf());
+                GenTree* CreateScalar = childNode->AsHWIntrinsic()->Op(1);
+                assert(CreateScalar->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe);
+                GenTree* Scalar = CreateScalar->AsHWIntrinsic()->Op(1);
+                if(Scalar->OperIs(GT_LCL_VAR) && Scalar->TypeIs(TYP_FLOAT))
+                {
+                    const unsigned opLclNum     = Scalar->AsLclVar()->GetLclNum();
+                    comp->lvaSetVarDoNotEnregister(
+                    opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+                    MakeSrcContained(CreateScalar, Scalar);
+                    MakeSrcContained(childNode, CreateScalar);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
         }
 
         default:
@@ -7850,16 +7875,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                               (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
                              IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                     {
-                        if (op1->OperIs(GT_HWINTRINSIC) && op1->IsEmbBroadcast())
-                        {
-                            GenTree*       CreateScalar = op1->AsHWIntrinsic()->Op(1);
-                            GenTree*       local        = CreateScalar->AsHWIntrinsic()->Op(1);
-                            const unsigned opLclNum     = local->AsLclVar()->GetLclNum();
-                            comp->lvaSetVarDoNotEnregister(
-                                opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-                            MakeSrcContained(CreateScalar, local);
-                            MakeSrcContained(op1, CreateScalar);
-                        }
                         MakeSrcContained(node, op1);
 
                         // Swap the operands here to make the containment checks in codegen significantly simpler

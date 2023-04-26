@@ -1269,7 +1269,7 @@ emitter::code_t emitter::AddEvexPrefix(instruction ins, code_t code, emitAttr at
     return code;
 }
 
-emitter::code_t emitter::AddEvexbBit(const instrDesc* id, code_t code)
+emitter::code_t emitter::AddEvexbBitIfNeeded(const instrDesc* id, code_t code)
 {
     if (hasEvexPrefix(code) && id->idIsEvexbContext())
     {
@@ -6813,8 +6813,9 @@ void emitter::emitIns_R_R_C(instruction          ins,
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
 #if defined(TARGET_XARCH)
-    if ((instOptions == INS_OPTS_EVEX_b) && UseEvexEncoding())
+    if ((instOptions == INS_OPTS_EVEX_b))
     {
+        assert(UseEvexEncoding());
         id->idSetEvexbContext();
     }
 #endif //  TARGET_XARCH
@@ -6865,8 +6866,9 @@ void emitter::emitIns_R_R_S(
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
 #if defined(TARGET_XARCH)
-    if ((instOptions == INS_OPTS_EVEX_b) && UseEvexEncoding())
+    if ((instOptions == INS_OPTS_EVEX_b))
     {
+        assert(UseEvexEncoding());
         id->idSetEvexbContext();
     }
 #endif //  TARGET_XARCH
@@ -15742,7 +15744,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 // Return Value:
 //    size in bytes.
 //
-ssize_t emitter::GetInputSizeInBytes(instrDesc* id)
+ssize_t emitter::GetInputSizeInBytes(instrDesc* id) const
 {
     insFlags inputSize = static_cast<insFlags>((CodeGenInterface::instInfo[id->idIns()] & Input_Mask));
 
@@ -16938,7 +16940,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             code = insCodeRM(ins);
             code = AddSimdPrefixIfNeeded(id, code, size);
-            code = AddEvexbBit(id, code);
+            code = AddEvexbBitIfNeeded(id, code);
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
@@ -17181,7 +17183,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             code = insCodeRM(ins);
             code = AddSimdPrefixIfNeeded(id, code, size);
-            code = AddEvexbBit(id, code);
+            code = AddEvexbBitIfNeeded(id, code);
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 

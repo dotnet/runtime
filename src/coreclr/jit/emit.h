@@ -3673,21 +3673,24 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //
 emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
+
+
+    emitAttr    defaultSize = id->idOpSize();
+    instruction ins         = id->idIns();
     if (id->idIsEvexbContext())
     {
         // should have the assumption that Evex.b now stands for the embedded broadcast context.
-        switch (id->idIns())
+        // reference: Section 2.7.5 in Intel 64 and ia-32 architectures software developer's manual volume 2.
+        ssize_t inputSize = GetInputSizeInBytes(id);
+        switch (inputSize)
         {
-            case INS_addps:
+            case 4:
                 return EA_4BYTE;
 
             default:
                 break;
         }
     }
-    emitAttr    defaultSize = id->idOpSize();
-    instruction ins         = id->idIns();
-
     switch (ins)
     {
         case INS_pextrb:

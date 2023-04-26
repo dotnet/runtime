@@ -1533,7 +1533,7 @@ public:
         }
     };
 
-    OperandDesc genOperandDesc(GenTree* op);
+    OperandDesc genOperandDesc(GenTree* op, insOpts instOptions = INS_OPTS_NONE, var_types simdBaseType = TYP_UNKNOWN);
 
     void inst_TT(instruction ins, emitAttr size, GenTree* op1);
     void inst_RV_TT(instruction ins, emitAttr size, regNumber op1Reg, GenTree* op2);

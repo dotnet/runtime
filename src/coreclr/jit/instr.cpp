@@ -758,7 +758,7 @@ void CodeGen::inst_RV_SH(
 //    This method is not idempotent - it can only be called once for a
 //    given node.
 //
-CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
+CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, var_types simdBaseType)
 {
     if (!op->isContained() && !op->isUsedFromSpillTemp())
     {
@@ -802,18 +802,16 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
             {
                 case NI_AVX2_BroadcastScalarToVector256:
                 {
-                    assert(hwintrinsic->isContained());
-                    if (hwintrinsic->IsEmbBroadcast())
+                    if (op->isContained())
                     {
-                        op = hwintrinsic->AsHWIntrinsic()->Op(1)->AsHWIntrinsic()->Op(1);
-                        assert(op->OperIs(GT_LCL_VAR) && op->TypeIs(TYP_FLOAT));
-                        return genOperandDesc(op);
+                        op = hwintrinsic->AsHWIntrinsic()->Op(1);
+                        assert(op->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe);
+                        assert(op->isContained());
+                        return genOperandDesc(op->AsHWIntrinsic()->Op(1));
                     }
                     else
                     {
-                        assert(hwintrinsic->OperIsMemoryLoad());
-                        assert(hwintrinsic->GetOperandCount() == 1);
-                        addr = hwintrinsic->Op(1);
+                        unreached();
                     }
                     break;
                 }
@@ -887,6 +885,23 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 
             case GT_CNS_VEC:
             {
+#if defined(TARGET_XARCH)
+                if(instOptions == INS_OPTS_EVEX_b)
+                {
+                    switch (simdBaseType)
+                    {
+                        case TYP_FLOAT:
+                        {
+                            float scalar = static_cast<float>(op->AsVecCon()->gtSimd32Val.f32[0]);
+                            return OperandDesc(emit->emitFltOrDblConst(*reinterpret_cast<float*>(&scalar), EA_4BYTE));
+                        }
+                    
+                        default:
+                            unreached();
+                    }
+                    break;
+                }
+#endif // TARGET_XARCH
                 switch (op->TypeGet())
                 {
 #if defined(FEATURE_SIMD)
@@ -1132,7 +1147,7 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
     {
         case GT_HWINTRINSIC:
         {
-            if (op->IsEmbBroadcast())
+            if (op->isContained())
             {
                 IsEmbBroadcastEnabled = true;
             }
@@ -1183,30 +1198,15 @@ void CodeGen::inst_RV_RV_TT(instruction ins,
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
-    OperandDesc op2Desc     = genOperandDesc(op2);
     insOpts     instOptions = INS_OPTS_NONE;
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
     bool IsEmbBroadcast = CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2);
     if (IsEmbBroadcast)
     {
         instOptions = INS_OPTS_EVEX_b;
-        if (op2->OperIs(GT_CNS_VEC))
-        {
-            switch (simdBaseType)
-            {
-                case TYP_FLOAT:
-                {
-                    float scalar = static_cast<float>(op2->AsVecCon()->gtSimd32Val.f32[0]);
-                    op2Desc      = OperandDesc(emit->emitFltOrDblConst(*reinterpret_cast<float*>(&scalar), EA_4BYTE));
-                    break;
-                }
-
-                default:
-                    break;
-            }
-        }
     }
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
+    OperandDesc op2Desc     = genOperandDesc(op2, instOptions, simdBaseType);
     switch (op2Desc.GetKind())
     {
         case OperandKind::ClsVar:
