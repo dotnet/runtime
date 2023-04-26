@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests.Common
@@ -39,5 +40,17 @@ namespace System.Runtime.InteropServices.Tests.Common
 
         protected override void ReleaseObjects(IEnumerable objects)
             => throw new NotImplementedException();
+
+        [ModuleInitializer]
+        internal static void GcStress()
+        {
+            var t = new Thread(() => {
+                var a = new object[1_000_000];
+                var r = new Random();
+                for (;;) { a[r.Next(a.Length)] = new byte[r.Next(300)]; }
+            });
+            t.IsBackground = true;
+            t.Start();
+        }
     }
 }

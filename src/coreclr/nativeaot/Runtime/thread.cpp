@@ -1146,7 +1146,7 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
         return false; // bad transition
     }
 
-    // this is an ordinary transition to managed code
+    // This is an ordinary transition to managed code
     // GC threads should not do that
     ASSERT(!IsGCSpecial());
 
