@@ -835,7 +835,7 @@ bool Compiler::optJumpThreadCheck(BasicBlock* const block, BasicBlock* const dom
         {
             if (isPhiRBO)
             {
-                GenTreeLclVarCommon* const phiDef = tree->AsOp()->gtGetOp1()->AsLclVarCommon();
+                GenTreeLclVarCommon* const phiDef = tree->AsLclVarCommon();
                 unsigned const             lclNum = phiDef->GetLclNum();
                 unsigned const             ssaNum = phiDef->GetSsaNum();
                 LclVarDsc* const           varDsc = lvaGetDesc(lclNum);
@@ -1218,12 +1218,12 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
                 break;
             }
 
-            GenTree* const phiDefNode = stmt->GetRootNode();
+            GenTreeLclVar* const phiDefNode = stmt->GetRootNode()->AsLclVar();
             assert(phiDefNode->IsPhiDefn());
-            GenTreeLclVarCommon* const phiDefLclNode = phiDefNode->AsOp()->gtOp1->AsLclVarCommon();
-            if (phiDefLclNode->GetLclNum() == lclNum)
+
+            if (phiDefNode->GetLclNum() == lclNum)
             {
-                if (phiDefLclNode->GetSsaNum() == ssaDefNum)
+                if (phiDefNode->GetSsaNum() == ssaDefNum)
                 {
                     funcArgToPhiLocalMap[i]   = lclNum;
                     funcArgToPhiDefNodeMap[i] = phiDefNode;
@@ -1269,8 +1269,8 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
                 continue;
             }
 
-            GenTree* const    phiNode = funcArgToPhiDefNodeMap[i];
-            GenTreePhi* const phi     = phiNode->gtGetOp2()->AsPhi();
+            GenTree* const    phiDef = funcArgToPhiDefNodeMap[i];
+            GenTreePhi* const phi    = phiDef->AsLclVar()->Data()->AsPhi();
             for (GenTreePhi::Use& use : phi->Uses())
             {
                 GenTreePhiArg* const phiArgNode = use.GetNode()->AsPhiArg();
@@ -1807,11 +1807,8 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             continue;
         }
 
-        // If prevTree has side effects, bail,
-        // unless it is in the immediately preceding statement.
-        //
-        // (we'll later show that any exception must come from the RHS as the LHS
-        // will be a simple local).
+        // If prevTree has side effects, bail, unless it is in the immediately preceding statement.
+        // We'll handle exceptional side effects with VNs below.
         //
         if ((prevTree->gtFlags & (GTF_CALL | GTF_ORDER_SIDEEFF)) != 0)
         {
@@ -1825,33 +1822,26 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             sideEffect = true;
         }
 
-        if (!prevTree->OperIs(GT_ASG))
+        if (!prevTree->OperIs(GT_STORE_LCL_VAR))
         {
-            JITDUMP(" -- prev tree not ASG\n");
+            JITDUMP(" -- prev tree not STORE_LCL_VAR\n");
             break;
         }
 
-        GenTree* const prevTreeLHS = prevTree->AsOp()->gtOp1;
-        GenTree* const prevTreeRHS = prevTree->AsOp()->gtOp2;
-
-        if (!prevTreeLHS->OperIs(GT_LCL_VAR))
-        {
-            JITDUMP(" -- prev tree not ASG(LCL...)\n");
-            break;
-        }
+        GenTree* const prevTreeData = prevTree->AsLclVar()->Data();
 
         // If we are seeing PHIs we have run out of interesting stmts.
         //
-        if (prevTreeRHS->OperIs(GT_PHI))
+        if (prevTreeData->OperIs(GT_PHI))
         {
             JITDUMP(" -- prev tree is a phi\n");
             break;
         }
 
-        // Bail if RHS has an embedded assignment. We could handle this
+        // Bail if value has an embedded assignment. We could handle this
         // if we generalized the interference check we run below.
         //
-        if ((prevTreeRHS->gtFlags & GTF_ASG) != 0)
+        if ((prevTreeData->gtFlags & GTF_ASG) != 0)
         {
             JITDUMP(" -- prev tree RHS has embedded assignment\n");
             break;
@@ -1859,15 +1849,15 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         // Figure out what local is assigned here.
         //
-        const unsigned   prevTreeLcl    = prevTreeLHS->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* const prevTreeLclDsc = lvaGetDesc(prevTreeLcl);
+        const unsigned   prevTreeLclNum = prevTree->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* const prevTreeLclDsc = lvaGetDesc(prevTreeLclNum);
 
         // If local is not tracked, assume we can't safely reason about interference
         // or liveness.
         //
         if (!prevTreeLclDsc->lvTracked)
         {
-            JITDUMP(" -- prev tree defs untracked V%02u\n", prevTreeLcl);
+            JITDUMP(" -- prev tree defs untracked V%02u\n", prevTreeLclNum);
             break;
         }
 
@@ -1879,12 +1869,12 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
             break;
         }
 
-        definedLocals[definedLocalsCount++] = prevTreeLcl;
+        definedLocals[definedLocalsCount++] = prevTreeLclNum;
 
         // If the normal liberal VN of RHS is the normal liberal VN of the current tree, or is "related",
         // consider forward sub.
         //
-        const ValueNum                  domCmpVN        = vnStore->VNNormalValue(prevTreeRHS->GetVN(VNK_Liberal));
+        const ValueNum                  domCmpVN        = vnStore->VNNormalValue(prevTreeData->GetVN(VNK_Liberal));
         bool                            matched         = false;
         ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
 
@@ -1911,7 +1901,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         //
         if (treeExcVN != vnStore->VNForEmptyExcSet())
         {
-            const ValueNum prevTreeExcVN = vnStore->VNExceptionSet(prevTreeRHS->GetVN(VNK_Liberal));
+            const ValueNum prevTreeExcVN = vnStore->VNExceptionSet(prevTreeData->GetVN(VNK_Liberal));
 
             if (!vnStore->VNExcIsSubset(prevTreeExcVN, treeExcVN))
             {
@@ -1927,7 +1917,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         for (unsigned int i = 0; i < definedLocalsCount; i++)
         {
-            if (gtHasRef(prevTreeRHS, definedLocals[i]))
+            if (gtHasRef(prevTreeData, definedLocals[i]))
             {
                 JITDUMP(" -- prev tree ref to V%02u interferes\n", definedLocals[i]);
                 interferes = true;
@@ -1942,7 +1932,7 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
 
         // Heuristic: only forward sub a relop
         //
-        if (!prevTreeRHS->OperIsCompare())
+        if (!prevTreeData->OperIsCompare())
         {
             JITDUMP(" -- prev tree is not relop\n");
             continue;
@@ -1954,12 +1944,12 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         //
         if (VarSetOps::IsMember(this, block->bbLiveOut, prevTreeLclDsc->lvVarIndex))
         {
-            JITDUMP(" -- prev tree lcl V%02u is live-out\n", prevTreeLcl);
+            JITDUMP(" -- prev tree lcl V%02u is live-out\n", prevTreeLclNum);
             continue;
         }
 
         JITDUMP(" -- prev tree is viable candidate for relop fwd sub!\n");
-        candidateTree       = prevTreeRHS;
+        candidateTree       = prevTreeData;
         candidateStmt       = prevStmt;
         candidateVnRelation = vnRelationMatch;
     }
