@@ -176,6 +176,10 @@ namespace Microsoft.Extensions.Http.Tests.Logging
 
                 return Task.FromResult(response);
             }
+
+#if NET5_0_OR_GREATER
+            protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => new();
+#endif
         }
     }
 }
