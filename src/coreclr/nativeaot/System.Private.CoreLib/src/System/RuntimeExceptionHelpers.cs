@@ -169,14 +169,7 @@ namespace System
         // exception that escapes from a ThreadPool workitem, or from a void-returning async method.
         public static void ReportUnhandledException(Exception exception)
         {
-#if ENABLE_WINRT
-            // If possible report the exception to GEH, if not fail fast.
-            WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
-            if (callbacks == null || !callbacks.ReportUnhandledError(exception))
-                FailFast(GetStringForFailFastReason(RhFailFastReason.UnhandledException), exception);
-#else
             FailFast(GetStringForFailFastReason(RhFailFastReason.UnhandledException), exception);
-#endif
         }
 
         // This is the classlib-provided fail-fast function that will be invoked whenever the runtime
