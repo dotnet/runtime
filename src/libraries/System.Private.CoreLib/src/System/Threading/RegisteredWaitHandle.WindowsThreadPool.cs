@@ -57,7 +57,7 @@ namespace System.Threading
             _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(_callbackHelper!, timedOut);
         }
 
-        private unsafe void RestartWaitCore()
+        internal unsafe void RestartWait()
         {
             long timeout;
             long* pTimeout = null;  // Null indicates infinite timeout

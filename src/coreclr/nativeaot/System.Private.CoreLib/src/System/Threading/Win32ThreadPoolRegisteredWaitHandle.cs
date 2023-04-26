@@ -57,8 +57,6 @@ namespace System.Threading
             }
         }
 
-        internal unsafe void RestartWait() => RestartWaitCore();
-
         public bool Unregister(WaitHandle waitObject) => UnregisterCore(waitObject);
 
         ~RegisteredWaitHandle()

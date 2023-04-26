@@ -134,11 +134,6 @@ namespace System.Threading
         /// </summary>
         internal PortableThreadPool.WaitThread? WaitThread { get; set; }
 
-        internal unsafe void RestartWait()
-        {
-            Debug.Assert(ThreadPool.UseWindowsThreadPool);
-            RestartWaitCore();
-        }
         public bool Unregister(WaitHandle waitObject) => ThreadPool.UseWindowsThreadPool ? UnregisterCore(waitObject) : UnregisterPortableCore(waitObject);
 
         internal void PerformCallback(bool timedOut)
