@@ -4396,7 +4396,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
             return;
         }
 
-        if ((flag == GTF_ICON_STATIC_HDL) || (flag == GTF_ICON_STATIC_BOX_PTR))
+        if ((flag == GTF_ICON_STATIC_HDL) || (flag == GTF_ICON_STATIC_HDL_CCTOR) || (flag == GTF_ICON_STATIC_BOX_PTR))
         {
             const char* fieldName =
                 emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(cookie), true, buffer, sizeof(buffer));
@@ -4433,11 +4433,11 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     {
         str = emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(handle));
     }
-    else if (flag == GTF_ICON_CONST_PTR)
+    else if ((flag == GTF_ICON_CONST_PTR) || (flag == GTF_ICON_CONST_PTR_CCTOR))
     {
         str = "const ptr";
     }
-    else if (flag == GTF_ICON_GLOBAL_PTR)
+    else if ((flag == GTF_ICON_GLOBAL_PTR) || (flag == GTF_ICON_GLOBAL_PTR_CCTOR))
     {
         str = "global ptr";
     }
@@ -4445,7 +4445,7 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     {
         str = emitComp->eeGetFieldName(reinterpret_cast<CORINFO_FIELD_HANDLE>(handle), true, buffer, sizeof(buffer));
     }
-    else if (flag == GTF_ICON_STATIC_HDL)
+    else if ((flag == GTF_ICON_STATIC_HDL) || (flag == GTF_ICON_STATIC_HDL_CCTOR))
     {
         str = "static handle";
     }

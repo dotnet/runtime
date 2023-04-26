@@ -7203,9 +7203,11 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
 
     if (isInvariant)
     {
-        assert(iconFlags != GTF_ICON_STATIC_HDL); // Pointer to a mutable class Static variable
-        assert(iconFlags != GTF_ICON_BBC_PTR);    // Pointer to a mutable basic block count value
-        assert(iconFlags != GTF_ICON_GLOBAL_PTR); // Pointer to mutable data from the VM state
+        assert(iconFlags != GTF_ICON_STATIC_HDL);       // Pointer to a mutable class Static variable
+        assert(iconFlags != GTF_ICON_STATIC_HDL_CCTOR); // Pointer to a mutable class Static variable
+        assert(iconFlags != GTF_ICON_BBC_PTR);          // Pointer to a mutable basic block count value
+        assert(iconFlags != GTF_ICON_GLOBAL_PTR);       // Pointer to mutable data from the VM state
+        assert(iconFlags != GTF_ICON_GLOBAL_PTR_CCTOR); // Pointer to mutable data from the VM state
 
         // This indirection also is invariant.
         indirFlags |= GTF_IND_INVARIANT;
@@ -10762,19 +10764,9 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             case GT_CNS_INT:
                 if (tree->IsIconHandle())
                 {
-                    if ((tree->gtFlags & GTF_ICON_INITCLASS) != 0)
-                    {
-                        printf("I"); // Static Field handle with INITCLASS requirement
-                        --msgLength;
-                        break;
-                    }
-                    else
-                    {
-                        // Some other handle
-                        printf("H");
-                        --msgLength;
-                        break;
-                    }
+                    printf("H");
+                    --msgLength;
+                    break;
                 }
                 goto DASH;
 
@@ -11456,6 +11448,7 @@ void Compiler::gtDispConst(GenTree* tree)
                             printf(" field");
                             break;
                         case GTF_ICON_STATIC_HDL:
+                        case GTF_ICON_STATIC_HDL_CCTOR:
                             printf(" static");
                             break;
                         case GTF_ICON_OBJ_HDL:
@@ -11463,9 +11456,11 @@ void Compiler::gtDispConst(GenTree* tree)
                             unreached(); // These cases are handled above
                             break;
                         case GTF_ICON_CONST_PTR:
+                        case GTF_ICON_CONST_PTR_CCTOR:
                             printf(" const ptr");
                             break;
                         case GTF_ICON_GLOBAL_PTR:
+                        case GTF_ICON_GLOBAL_PTR_CCTOR:
                             printf(" global ptr");
                             break;
                         case GTF_ICON_VARG_HDL:
@@ -11478,6 +11473,7 @@ void Compiler::gtDispConst(GenTree* tree)
                             printf(" token");
                             break;
                         case GTF_ICON_TLS_HDL:
+                        case GTF_ICON_TLS_HDL_CCTOR:
                             printf(" tls");
                             break;
                         case GTF_ICON_FTN_ADDR:
@@ -17782,7 +17778,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeq** pFldSe
             return false;
         }
     }
-    else if (IsIconHandle(GTF_ICON_STATIC_HDL))
+    else if (IsIconHandle(GTF_ICON_STATIC_HDL, GTF_ICON_STATIC_HDL_CCTOR))
     {
         fldSeq = AsIntCon()->gtFieldSeq;
         offset = AsIntCon()->IconValue();
@@ -18160,7 +18156,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     }
                 }
             }
-            else if (base->IsIconHandle(GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL))
+            else if (base->IsIconHandle(GTF_ICON_CONST_PTR, GTF_ICON_CONST_PTR_CCTOR, GTF_ICON_STATIC_HDL,
+                                        GTF_ICON_STATIC_HDL_CCTOR))
             {
                 // Check if we have IND(ICON_HANDLE) that represents a static field
                 FieldSeq* fldSeq = base->AsIntCon()->gtFieldSeq;

@@ -7543,7 +7543,9 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             // isCctorDependent and isAddressWhoseDereferenceWouldBeCctorDependent, but we don't for
             // simplicity/throughput; the constant itself would be considered non-hoistable anyway, since
             // optIsCSEcandidate returns false for constants.
-            bool treeIsCctorDependent     = tree->OperIs(GT_CNS_INT) && ((tree->gtFlags & GTF_ICON_INITCLASS) != 0);
+            bool treeIsCctorDependent = tree->OperIs(GT_CNS_INT) &&
+                                        tree->IsIconHandle(GTF_ICON_STATIC_HDL_CCTOR, GTF_ICON_CONST_PTR_CCTOR,
+                                                           GTF_ICON_TLS_HDL_CCTOR, GTF_ICON_STATIC_BOX_PTR_CCTOR);
             bool treeIsInvariant          = true;
             bool treeHasHoistableChildren = false;
             int  childCount;

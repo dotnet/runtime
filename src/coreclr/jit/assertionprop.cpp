@@ -2855,7 +2855,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, GenTree* value)
 {
     // Giving up on these kinds of handles demonstrated size improvements
-    if (value->IsIconHandle(GTF_ICON_STATIC_HDL, GTF_ICON_CLASS_HDL))
+    if (value->IsIconHandle(GTF_ICON_STATIC_HDL, GTF_ICON_STATIC_HDL_CCTOR, GTF_ICON_CLASS_HDL))
     {
         return false;
     }
@@ -2956,7 +2956,8 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             // Don't propagate handles if we need to report relocs.
             if (opts.compReloc && curAssertion->op2.HasIconFlag() && curAssertion->op2.u1.iconVal != 0)
             {
-                if (curAssertion->op2.GetIconFlag() == GTF_ICON_STATIC_HDL)
+                if ((curAssertion->op2.GetIconFlag() == GTF_ICON_STATIC_HDL) ||
+                    (curAssertion->op2.GetIconFlag() == GTF_ICON_STATIC_HDL_CCTOR))
                 {
                     propagateType = true;
                 }

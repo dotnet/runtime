@@ -4331,25 +4331,22 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             assert(pFieldInfo->fieldLookup.accessType == IAT_VALUE);
             size_t       fldAddr = reinterpret_cast<size_t>(pFieldInfo->fieldLookup.addr);
             GenTreeFlags handleKind;
+            bool         cctorDependent = (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS) != 0;
             if (isBoxedStatic)
             {
-                handleKind = GTF_ICON_STATIC_BOX_PTR;
+                handleKind = cctorDependent ? GTF_ICON_STATIC_BOX_PTR_CCTOR : GTF_ICON_STATIC_BOX_PTR;
             }
             else if (isStaticReadOnlyInitedRef)
             {
-                handleKind = GTF_ICON_CONST_PTR;
+                handleKind = cctorDependent ? GTF_ICON_CONST_PTR_CCTOR : GTF_ICON_CONST_PTR;
             }
             else
             {
-                handleKind = GTF_ICON_STATIC_HDL;
+                handleKind = cctorDependent ? GTF_ICON_STATIC_HDL_CCTOR : GTF_ICON_STATIC_HDL;
             }
             isHoistable = true;
             op1         = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
             INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
-            if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
-            {
-                op1->gtFlags |= GTF_ICON_INITCLASS;
-            }
             break;
         }
     }

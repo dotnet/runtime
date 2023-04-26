@@ -9854,97 +9854,75 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
 
                 switch (handleKind)
                 {
-
                     case GTF_ICON_SCOPE_HDL:
-
                         chars += printf("[ICON_SCOPE_HDL]");
                         break;
-
                     case GTF_ICON_CLASS_HDL:
-
                         chars += printf("[ICON_CLASS_HDL]");
                         break;
-
                     case GTF_ICON_METHOD_HDL:
-
                         chars += printf("[ICON_METHOD_HDL]");
                         break;
-
                     case GTF_ICON_FIELD_HDL:
-
                         chars += printf("[ICON_FIELD_HDL]");
                         break;
-
                     case GTF_ICON_STATIC_HDL:
-
                         chars += printf("[ICON_STATIC_HDL]");
                         break;
-
+                    case GTF_ICON_STATIC_HDL_CCTOR:
+                        chars += printf("[ICON_STATIC_HDL_CCTOR]");
+                        break;
                     case GTF_ICON_STR_HDL:
-
                         chars += printf("[ICON_STR_HDL]");
                         break;
-
                     case GTF_ICON_OBJ_HDL:
-
                         chars += printf("[ICON_OBJ_HDL]");
                         break;
-
                     case GTF_ICON_CONST_PTR:
-
                         chars += printf("[ICON_CONST_PTR]");
                         break;
-
+                    case GTF_ICON_CONST_PTR_CCTOR:
+                        chars += printf("[ICON_CONST_PTR_CCTOR]");
+                        break;
                     case GTF_ICON_GLOBAL_PTR:
-
                         chars += printf("[ICON_GLOBAL_PTR]");
                         break;
-
+                    case GTF_ICON_GLOBAL_PTR_CCTOR:
+                        chars += printf("[ICON_GLOBAL_PTR_CCTOR]");
+                        break;
                     case GTF_ICON_VARG_HDL:
-
                         chars += printf("[ICON_VARG_HDL]");
                         break;
-
                     case GTF_ICON_PINVKI_HDL:
-
                         chars += printf("[ICON_PINVKI_HDL]");
                         break;
-
                     case GTF_ICON_TOKEN_HDL:
-
                         chars += printf("[ICON_TOKEN_HDL]");
                         break;
-
                     case GTF_ICON_TLS_HDL:
-
                         chars += printf("[ICON_TLD_HDL]");
                         break;
-
+                    case GTF_ICON_TLS_HDL_CCTOR:
+                        chars += printf("[ICON_TLD_HDL_CCTOR]");
+                        break;
                     case GTF_ICON_FTN_ADDR:
-
                         chars += printf("[ICON_FTN_ADDR]");
                         break;
-
                     case GTF_ICON_CIDMID_HDL:
-
                         chars += printf("[ICON_CIDMID_HDL]");
                         break;
-
                     case GTF_ICON_BBC_PTR:
-
                         chars += printf("[ICON_BBC_PTR]");
                         break;
-
                     case GTF_ICON_STATIC_BOX_PTR:
-
                         chars += printf("[GTF_ICON_STATIC_BOX_PTR]");
                         break;
-
+                    case GTF_ICON_STATIC_BOX_PTR_CCTOR:
+                        chars += printf("[GTF_ICON_STATIC_BOX_PTR_CCTOR]");
+                        break;
                     case GTF_ICON_STATIC_ADDR_PTR:
-
                         chars += printf("[GTF_ICON_STATIC_ADDR_PTR]");
                         break;
-
                     default:
                         assert(!"a forgotten handle flag");
                         break;
