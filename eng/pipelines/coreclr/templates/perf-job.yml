@@ -79,7 +79,7 @@ jobs:
         - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
       - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
         - ${{ 'build_android_arm64_release_AndroidMono' }}
-        - ${{ 'Build_ios_arm64_release_MACiOSAndroidMaui' }}
+        - ${{ 'Build_ios_arm64_release_PerfBDNApp' }}
       - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
         - ${{ 'build_ios_arm64_release_iOSMono' }}
 

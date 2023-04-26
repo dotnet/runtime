@@ -170,7 +170,7 @@ jobs:
         - osx_x64
       variables:
         - name: mauiVersion
-          value: $[ dependencies.Build_ios_arm64_release_PerfBDNAppNet6.outputs['getMauiVersion.mauiVersion'] ]
+          value: $[ dependencies.Build_ios_arm64_release_MACiOSAndroidMauiNet6.outputs['getMauiVersion.mauiVersion'] ]
       jobParameters:
         testGroup: perf
         runtimeType: iOSMobileNet6
