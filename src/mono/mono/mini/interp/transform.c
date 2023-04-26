@@ -9914,6 +9914,13 @@ retry:
 					sregs [0] = local;
 					needs_retry = TRUE;
 				}
+			} else if (opcode == MINT_CKNULL) {
+				InterpInst *def = local_defs [sregs [0]].ins;
+				if (def && def->opcode == MINT_LDLOCA_S) {
+					// CKNULL on LDLOCA is a NOP
+					ins->opcode = MINT_MOV_P;
+					needs_retry = TRUE;
+				}
 			}
 
 			ins_index++;
