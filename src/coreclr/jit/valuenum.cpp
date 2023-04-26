@@ -2016,7 +2016,7 @@ void ValueNumStore::GetCastOperFromVN(ValueNum vn, var_types* pCastToType, bool*
 
 ValueNum ValueNumStore::VNForHandle(ssize_t cnsVal, GenTreeFlags handleFlags)
 {
-    assert((handleFlags & ~GTF_ICON_HDL_MASK) == 0);
+    assert((handleFlags & ~(GTF_ICON_HDL_MASK | GTF_ICON_INITCLASS)) == 0);
 
     ValueNum res;
     VNHandle handle;
@@ -2406,7 +2406,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
             if ((resultVN == NoVN) && GetVNFunc(addressVN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad))
             {
                 ValueNum fieldSeqVN = VNNormalValue(funcApp.m_args[0]);
-                if (IsVNHandle(fieldSeqVN) && (GetHandleFlags(fieldSeqVN) == GTF_ICON_FIELD_SEQ))
+                if (IsVNHandle(fieldSeqVN) && ((GetHandleFlags(fieldSeqVN) & GTF_ICON_HDL_MASK) == GTF_ICON_FIELD_SEQ))
                 {
                     FieldSeq* fieldSeq = FieldSeqVNToFieldSeq(fieldSeqVN);
                     if (fieldSeq != nullptr)
@@ -4151,8 +4151,8 @@ ValueNum ValueNumStore::VNEvalFoldTypeCompare(var_types type, VNFunc func, Value
         return NoVN;
     }
 
-    assert(GetHandleFlags(handle0) == GTF_ICON_CLASS_HDL);
-    assert(GetHandleFlags(handle1) == GTF_ICON_CLASS_HDL);
+    assert((GetHandleFlags(handle0) & GTF_ICON_HDL_MASK) == GTF_ICON_CLASS_HDL);
+    assert((GetHandleFlags(handle1) & GTF_ICON_HDL_MASK) == GTF_ICON_CLASS_HDL);
 
     const ssize_t handleVal0 = ConstantValue<ssize_t>(handle0);
     const ssize_t handleVal1 = ConstantValue<ssize_t>(handle1);
@@ -5296,7 +5296,7 @@ ValueNum ValueNumStore::VNForFieldSeq(FieldSeq* fieldSeq)
 //
 FieldSeq* ValueNumStore::FieldSeqVNToFieldSeq(ValueNum vn)
 {
-    assert(IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_FIELD_SEQ));
+    assert(IsVNHandle(vn) && ((GetHandleFlags(vn) & GTF_ICON_HDL_MASK) == GTF_ICON_FIELD_SEQ));
 
     return reinterpret_cast<FieldSeq*>(ConstantValue<ssize_t>(vn));
 }
@@ -5875,10 +5875,10 @@ GenTreeFlags ValueNumStore::GetHandleFlags(ValueNum vn)
 
 GenTreeFlags ValueNumStore::GetFoldedArithOpResultHandleFlags(ValueNum vn)
 {
-    GenTreeFlags flags = GetHandleFlags(vn);
-    assert((flags & GTF_ICON_HDL_MASK) == flags);
+    GenTreeFlags flags       = GetHandleFlags(vn);
+    GenTreeFlags resultFlags = flags & ~GTF_ICON_HDL_MASK;
 
-    switch (flags)
+    switch (flags & GTF_ICON_HDL_MASK)
     {
         case GTF_ICON_SCOPE_HDL:
         case GTF_ICON_CLASS_HDL:
@@ -5895,15 +5895,19 @@ GenTreeFlags ValueNumStore::GetFoldedArithOpResultHandleFlags(ValueNum vn)
         case GTF_ICON_TLS_HDL:
         case GTF_ICON_STATIC_BOX_PTR:
         case GTF_ICON_STATIC_ADDR_PTR:
-            return GTF_ICON_CONST_PTR;
+            resultFlags |= GTF_ICON_CONST_PTR;
+            break;
         case GTF_ICON_STATIC_HDL:
         case GTF_ICON_GLOBAL_PTR:
         case GTF_ICON_BBC_PTR:
-            return GTF_ICON_GLOBAL_PTR;
+            resultFlags |= GTF_ICON_GLOBAL_PTR;
+            break;
         default:
             assert(!"Unexpected handle type");
             return flags;
     }
+
+    return resultFlags;
 }
 
 bool ValueNumStore::IsVNHandle(ValueNum vn)
@@ -5919,7 +5923,7 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 
 bool ValueNumStore::IsVNObjHandle(ValueNum vn)
 {
-    return IsVNHandle(vn) && GetHandleFlags(vn) == GTF_ICON_OBJ_HDL;
+    return IsVNHandle(vn) && ((GetHandleFlags(vn) & GTF_ICON_HDL_MASK) == GTF_ICON_OBJ_HDL);
 }
 
 //------------------------------------------------------------------------
@@ -8379,7 +8383,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
     {
         printf("NoVN");
     }
-    else if (IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_FIELD_SEQ))
+    else if (IsVNHandle(vn) && ((GetHandleFlags(vn) & GTF_ICON_HDL_MASK) == GTF_ICON_FIELD_SEQ))
     {
         comp->gtDispFieldSeq(FieldSeqVNToFieldSeq(vn), 0);
         printf(" ");
@@ -9940,9 +9944,9 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             if (tree->IsIconHandle())
             {
                 const GenTreeIntCon* cns         = tree->AsIntCon();
-                const GenTreeFlags   handleFlags = tree->GetIconHandleFlag();
+                const GenTreeFlags   handleFlags = tree->gtFlags & AssertionDsc::PropagatedIconHandleFlags;
                 tree->gtVNPair.SetBoth(vnStore->VNForHandle(cns->IconValue(), handleFlags));
-                if (handleFlags == GTF_ICON_CLASS_HDL)
+                if ((handleFlags & GTF_ICON_HDL_MASK) == GTF_ICON_CLASS_HDL)
                 {
                     vnStore->AddToEmbeddedHandleMap(cns->IconValue(), cns->gtCompileTimeHandle);
                 }
@@ -10034,8 +10038,8 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             else
             {
                 assert(doesMethodHaveFrozenObjects());
-                tree->gtVNPair.SetBoth(
-                    vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
+                tree->gtVNPair.SetBoth(vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()),
+                                                            tree->gtFlags & AssertionDsc::PropagatedIconHandleFlags));
             }
             break;
 
@@ -10051,7 +10055,8 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
                 if (tree->IsIconHandle())
                 {
                     tree->gtVNPair.SetBoth(
-                        vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
+                        vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()),
+                                             tree->gtFlags & AssertionDsc::PropagatedIconHandleFlags));
                 }
                 else
                 {
