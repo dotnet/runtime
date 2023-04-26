@@ -72,8 +72,6 @@ public class ConvertDllsToWebCil : Task
 
                 var webcilItem = new TaskItem(finalWebcil, candidate.CloneCustomMetadata());
                 webcilItem.SetMetadata("RelativePath", Path.ChangeExtension(candidate.GetMetadata("RelativePath"), ".webcil"));
-                webcilItem.SetMetadata("AssetTraitName", "WasmResource");
-                webcilItem.SetMetadata("AssetTraitValue", "runtime");
                 webcilItem.SetMetadata("OriginalItemSpec", finalWebcil);
 
                 webCilCandidates.Add(webcilItem);
