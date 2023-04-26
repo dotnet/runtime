@@ -109,9 +109,9 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-      - linux_x64
+      - osx_x64
       jobParameters:
-        buildArgs: -s clr+clr.aot+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
+        buildArgs: -s mono+libs -c $(_BuildConfig)
         nameSuffix: iOSNativeAOT
         isOfficialBuild: false
         extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
