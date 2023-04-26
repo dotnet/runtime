@@ -7,6 +7,7 @@
 
   <PropertyGroup Condition="'$(InstallWorkloadForTesting)' == 'true'">
     <_SdkForWorkloadTestingBasePath>$(ArtifactsBinDir)</_SdkForWorkloadTestingBasePath>
+    <_WebAssemblySdkPackPath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'Microsoft.NET.Sdk.WebAssembly.Pack'))</_WebAssemblySdkPackPath>
     <_SdkWithNoWorkloadPath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-none'))</_SdkWithNoWorkloadPath>
     <_SdkWithNoWorkloadStampPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), '.version-for-none-$(SdkVersionForWorkloadTesting).stamp'))</_SdkWithNoWorkloadStampPath>
     <InstallWorkloadUsingArtifactsDependsOn>
@@ -196,6 +197,7 @@
                      LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
+                     WebAssemblySdkPackExtractPath="$(_WebAssemblySdkPackPath)"
       />
 
     <Touch Files="$(_SdkWithNoWorkloadStampPath)" AlwaysCreate="true" />
