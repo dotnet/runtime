@@ -20,6 +20,8 @@ namespace System.Text.Json.Serialization.Converters
             {
                 case JsonTokenType.StartArray:
                     return ReadList(ref reader, options.GetNodeOptions());
+                case JsonTokenType.Null:
+                    return null;
                 default:
                     Debug.Assert(false);
                     throw ThrowHelper.GetInvalidOperationException_ExpectedArray(reader.TokenType);

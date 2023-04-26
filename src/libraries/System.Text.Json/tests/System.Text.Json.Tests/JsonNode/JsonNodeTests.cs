@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -39,6 +41,10 @@ namespace System.Text.Json.Nodes.Tests
             Assert.IsAssignableFrom<JsonValue>(JsonNode.Parse("\"str\""));
             Assert.IsAssignableFrom<JsonValue>(JsonNode.Parse(ToUtf8("\"str\"")));
             Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("\"str\""));
+
+            Assert.Null(JsonSerializer.Deserialize<JsonNode>("null"));
+            Assert.Collection(JsonSerializer.Deserialize<JsonNode[]>("[null]"), Assert.Null);
+            Assert.Collection(JsonSerializer.Deserialize<IReadOnlyDictionary<string, JsonNode>>("{ \"Value\": null }"), kv => Assert.Null(kv.Value));
         }
 
         [Fact]
