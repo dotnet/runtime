@@ -2982,6 +2982,11 @@ AGAIN:
 
     if (tree->OperIsUnary())
     {
+        if (tree->OperIsLocalStore() && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
+        {
+            return true;
+        }
+
         return gtHasRef(tree->AsUnOp()->gtGetOp1(), lclNum);
     }
 
@@ -17489,6 +17494,42 @@ bool GenTree::DefinesLocal(
 {
     assert((pOffset == nullptr) || (*pOffset == 0));
 
+    if (OperIs(GT_STORE_LCL_VAR))
+    {
+        *pLclVarTree = AsLclVarCommon();
+        if (pIsEntire != nullptr)
+        {
+            *pIsEntire = true;
+        }
+        if (pOffset != nullptr)
+        {
+            *pOffset = 0;
+        }
+        if (pSize != nullptr)
+        {
+            *pSize = comp->lvaLclExactSize(AsLclVarCommon()->GetLclNum());
+        }
+
+        return true;
+    }
+    if (OperIs(GT_STORE_LCL_FLD))
+    {
+        *pLclVarTree = AsLclVarCommon();
+        if (pIsEntire != nullptr)
+        {
+            *pIsEntire = !AsLclFld()->IsPartialLclFld(comp);
+        }
+        if (pOffset != nullptr)
+        {
+            *pOffset = AsLclFld()->GetLclOffs();
+        }
+        if (pSize != nullptr)
+        {
+            *pSize = AsLclFld()->GetSize();
+        }
+
+        return true;
+    }
     if (OperIs(GT_ASG))
     {
         GenTree* lhs = AsOp()->gtGetOp1();

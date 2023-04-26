@@ -1638,7 +1638,7 @@ public:
 
     bool OperIsSsaDef() const
     {
-        return OperIs(GT_ASG, GT_CALL);
+        return OperIs(GT_ASG, GT_CALL) || OperIsLocalStore();
     }
 
     static bool OperIsHWIntrinsic(genTreeOps gtOper)
