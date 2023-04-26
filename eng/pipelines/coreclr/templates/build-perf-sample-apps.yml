@@ -78,7 +78,7 @@ steps:
         artifactName: iOSSampleAppLLVM
         archiveExtension: '.zip'
         archiveType: zip
-    - script: make hello-app TARGET_OS=ios MONO_ARCH=arm64 MONO_CONFIG=Release DEPLOY_AND_RUN=false
+    - script: make world TARGET_OS=ios MONO_ARCH=arm64 MONO_CONFIG=Release DEPLOY_AND_RUN=false
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT
