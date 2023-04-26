@@ -3577,13 +3577,10 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
         GenTreeCC* cc   = tree->AsCC();
         cc->gtCondition = GenCondition::Reverse(cc->gtCondition);
     }
-    else if (tree->OperIs(GT_JCMP))
+    else if (tree->OperIs(GT_JCMP, GT_JTEST))
     {
-        // Flip the GTF_JCMP_EQ
-        // On ARM64, this causes switching
-        //     cbz <=> cbnz
-        //     tbz <=> tbnz
-        tree->gtFlags ^= GTF_JCMP_EQ;
+        GenTreeOpCC* opCC = tree->AsOpCC();
+        opCC->gtCondition = GenCondition::Reverse(opCC->gtCondition);
     }
     else
     {
@@ -10762,11 +10759,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                 }
                 goto DASH;
 
-            case GT_JCMP:
-                printf((tree->gtFlags & GTF_JCMP_TST) ? "T" : "C");
-                printf((tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
-                goto DASH;
-
             case GT_CNS_INT:
                 if (tree->IsIconHandle())
                 {
@@ -11829,8 +11821,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             printf(" cond=%s", tree->AsCC()->gtCondition.Name());
             break;
         case GT_JCMP:
-            printf(" cond=%s%s", (tree->gtFlags & GTF_JCMP_TST) ? "TEST_" : "",
-                   (tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
+        case GT_JTEST:
+            printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
             break;
 
         default:
