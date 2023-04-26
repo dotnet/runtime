@@ -80,27 +80,27 @@ jobs:
 #           archiveType: tar
 #           tarCompression: gz
 
-#   # build mono iOS scenarios
-#   - template: /eng/pipelines/common/platform-matrix.yml
-#     parameters:
-#       jobTemplate: /eng/pipelines/common/global-build-job.yml
-#       buildConfig: release
-#       runtimeFlavor: mono
-#       platforms:
-#       - ios_arm64
-#       jobParameters:
-#         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-#         nameSuffix: iOSMono
-#         isOfficialBuild: false
-#         extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
-#         extraStepsParameters:
-#           rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-#           includeRootFolder: true
-#           displayName: iOS Mono Artifacts
-#           artifactName: iOSMonoarm64
-#           archiveExtension: '.tar.gz'
-#           archiveType: tar
-#           tarCompression: gz
+  # build mono iOS scenarios
+  # - template: /eng/pipelines/common/platform-matrix.yml
+  #   parameters:
+  #     jobTemplate: /eng/pipelines/common/global-build-job.yml
+  #     buildConfig: release
+  #     runtimeFlavor: mono
+  #     platforms:
+  #     - ios_arm64
+  #     jobParameters:
+  #       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+  #       nameSuffix: iOSMono
+  #       isOfficialBuild: false
+  #       extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
+  #       extraStepsParameters:
+  #         rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+  #         includeRootFolder: true
+  #         displayName: iOS Mono Artifacts
+  #         artifactName: iOSMonoarm64
+  #         archiveExtension: '.tar.gz'
+  #         archiveType: tar
+  #         tarCompression: gz
 
   # build NativeAOT iOS scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -109,7 +109,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-      - ios-arm64
+      - ios_arm64
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
         nameSuffix: iOSNativeAOT
