@@ -10,7 +10,8 @@ import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { createPromiseController, PromiseAndController } from "./promise-controller";
 import { delay } from "./promise-utils";
 import { abort_startup, beforeOnRuntimeInitialized, memorySnapshotSkippedOrDone } from "./startup";
-import { AssetBehaviours, AssetEntry, AssetEntryInternal, LoadingResource, mono_assert, ResourceRequest } from "./types";
+import { AssetEntryInternal, mono_assert } from "./types";
+import { AssetBehaviours, AssetEntry, LoadingResource, ResourceRequest } from "./types-api";
 import { InstantiateWasmSuccessCallback, VoidPtr } from "./types/emscripten";
 
 const allAssetsInMemory = createPromiseController<void>();
@@ -314,7 +315,7 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
             const loadingResource = download_resource(asset);
             asset.pendingDownloadInternal = loadingResource;
             response = await loadingResource.response;
-            if (!response.ok) {
+            if (!response || !response.ok) {
                 continue;// next source
             }
             return response;

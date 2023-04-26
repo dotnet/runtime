@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Module } from "../../imports";
-import { MonoConfig } from "../../types";
+import { MonoConfig } from "../../types-api";
 import { pthread_ptr } from "./types";
 
 export interface PThreadInfo {

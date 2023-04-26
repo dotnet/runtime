@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Module } from "../imports";
-import { WebAssemblyBootResourceType } from "./WebAssemblyStartOptions";
+import { WebAssemblyBootResourceType } from "../types-api";
 
 type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
 
