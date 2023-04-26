@@ -7,6 +7,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmXHarnessMonoArgs>--setenv=XHARNESS_LOG_TEST_START=true --no-memory-snapshot</WasmXHarnessMonoArgs>
+    <WasmXHarnessTestsTimeout>00:45:00</WasmXHarnessTestsTimeout>
   </PropertyGroup>
 
   <ItemGroup>
