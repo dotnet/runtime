@@ -380,6 +380,13 @@ PAL_PerfJitDump_Start(const char* path)
     return GetState().Start(path);
 }
 
+bool
+PALAPI
+PAL_PerfJitDump_IsStarted()
+{
+    return GetState().enabled;
+}
+
 int
 PALAPI
 PAL_PerfJitDump_LogMethod(void* pCode, size_t codeSize, const char* symbol, void* debugInfo, void* unwindInfo)
@@ -401,6 +408,13 @@ PALAPI
 PAL_PerfJitDump_Start(const char* path)
 {
     return 0;
+}
+
+bool
+PALAPI
+PAL_PerfJitDump_IsStarted()
+{
+    return false;
 }
 
 int
