@@ -941,8 +941,9 @@ private:
                m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK, GT_FIELD));
         bool coversDestination = CoversDestination();
 
-        GenTree* addr         = nullptr;
-        unsigned addrBaseOffs = 0;
+        GenTree*     addr         = nullptr;
+        unsigned     addrBaseOffs = 0;
+        GenTreeFlags indirFlags   = GTF_EMPTY;
 
         if (m_dst->OperIs(GT_BLK, GT_FIELD))
         {
@@ -961,6 +962,9 @@ private:
             {
                 addrBaseOffs = m_src->AsField()->gtFldOffset;
             }
+
+            indirFlags =
+                m_src->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
         }
 
         int numAddrUses = addr == nullptr ? 0 : (m_entries.Height() + (coversDestination ? 0 : 1));
@@ -1062,7 +1066,9 @@ private:
 
         if (needsNullCheck)
         {
-            statements->AddStatement(m_compiler->gtNewIndir(TYP_BYTE, grabAddr(addrBaseOffs)));
+            GenTreeIndir* indir = m_compiler->gtNewIndir(TYP_BYTE, grabAddr(addrBaseOffs));
+            indir->gtFlags |= indirFlags & ~GTF_IND_UNALIGNED;
+            statements->AddStatement(indir);
         }
 
         for (int i = 0; i < m_entries.Height(); i++)
@@ -1095,6 +1101,7 @@ private:
                 {
                     GenTree* addr = grabAddr(addrBaseOffs + entry.Offset);
                     dst           = m_compiler->gtNewIndir(entry.Type, addr);
+                    dst->gtFlags |= indirFlags;
                 }
             }
 
@@ -1122,6 +1129,7 @@ private:
                 {
                     GenTree* addr = grabAddr(addrBaseOffs + entry.Offset);
                     src           = m_compiler->gtNewIndir(entry.Type, addr);
+                    src->gtFlags |= indirFlags;
                 }
             }
 
