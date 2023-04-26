@@ -177,21 +177,20 @@ export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStri
         let i = 0;
         let stop = false;
         let result = -1;
+        let segmentWidth = 0;
+        let index = 0;
+        let nextIndex = 0;
         while (!stop)
         {
-            const iteratorSrc = segmenter.segment(source)[Symbol.iterator]();
+            let isAbsoluteIndexMeasured = false;
+            const iteratorSrc = segmenter.segment(source.slice(i, source.length))[Symbol.iterator]();
             let srcNext = iteratorSrc.next();
-            for (let j=0; j<i; j++)
-            {
-                srcNext = iteratorSrc.next();
-            }
 
             if (srcNext.done)
             {
                 stop = true;
                 break;
             }
-            const index = srcNext.value.index;
             let matchFound = true;
             for(let j=0; j<needleSegments.length; j++)
             {
@@ -203,22 +202,45 @@ export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStri
                 srcNext = iteratorSrc.next();
                 if (srcNext.done && j + 1 < needleSegments.length)
                 {
+                    // early stop if we are too far in indexing source to be able to match the needle
                     matchFound = false;
                     stop = true;
                     break;
                 }
+                if (!isAbsoluteIndexMeasured)
+                {
+                    index = nextIndex;
+                    if (!srcNext.done)
+                    {
+                        segmentWidth = srcNext.value.index;
+                        nextIndex = index + segmentWidth;
+                    }
+                    isAbsoluteIndexMeasured = true;
+                }
             }
-            if (matchFound && fromBeginning)
-            {
-                result = index;
+            if (stop)
                 break;
+
+            if (!isAbsoluteIndexMeasured)
+            {
+                index = nextIndex;
+                srcNext = iteratorSrc.next();
+                if (!srcNext.done)
+                {
+                    segmentWidth = srcNext.value.index;
+                    nextIndex = index + segmentWidth;
+                }
             }
-            i++;
-            if (matchFound && !fromBeginning)
+            if (matchFound)
             {
                 result = index;
-                continue;
+                if (fromBeginning)
+                    break;
             }
+            // no update was done
+            if (nextIndex === i)
+                break;
+            i = nextIndex;
         }
         return result;
     }
