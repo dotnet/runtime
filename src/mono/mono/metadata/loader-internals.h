@@ -61,11 +61,11 @@ typedef struct {
 	GHashTable *delegate_end_invoke_cache;
 	GHashTable *runtime_invoke_signature_cache;
 	GHashTable *runtime_invoke_sig_cache;
+	GHashTable *delegate_abstract_invoke_cache;
 
 	/*
 	 * indexed by SignaturePointerPair
 	 */
-	GHashTable *delegate_abstract_invoke_cache;
 	GHashTable *delegate_bound_static_invoke_cache;
 
 	/*
@@ -304,6 +304,9 @@ mono_alc_find_assembly (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
 MONO_COMPONENT_API GPtrArray*
 mono_alc_get_all_loaded_assemblies (void);
+
+GPtrArray*
+mono_alc_get_all (void);
 
 MONO_API void
 mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);

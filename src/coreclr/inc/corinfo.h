@@ -519,7 +519,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_SETFIELDDOUBLE,
 
     CORINFO_HELP_GETFIELDADDR,
-
+    CORINFO_HELP_GETSTATICFIELDADDR,
     CORINFO_HELP_GETSTATICFIELDADDR_TLS,        // Helper for PE TLS fields
 
     // There are a variety of specialized helpers for accessing static fields. The JIT should use
@@ -3224,7 +3224,7 @@ public:
                     ) = 0;
 
     //------------------------------------------------------------------------------
-    // getReadonlyStaticFieldValue: returns true and the actual field's value if the given
+    // getStaticFieldContent: returns true and the actual field's value if the given
     //    field represents a statically initialized readonly field of any type.
     //
     // Arguments:
@@ -3236,12 +3236,19 @@ public:
     // Return Value:
     //    Returns true if field's constant value was available and successfully copied to buffer
     //
-    virtual bool getReadonlyStaticFieldValue(
+    virtual bool getStaticFieldContent(
                     CORINFO_FIELD_HANDLE    field,
                     uint8_t                *buffer,
                     int                     bufferSize,
                     int                     valueOffset = 0,
                     bool                    ignoreMovableObjects = true
+                    ) = 0;
+
+    virtual bool getObjectContent(
+                    CORINFO_OBJECT_HANDLE   obj,
+                    uint8_t*                buffer,
+                    int                     bufferSize,
+                    int                     valueOffset
                     ) = 0;
 
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed

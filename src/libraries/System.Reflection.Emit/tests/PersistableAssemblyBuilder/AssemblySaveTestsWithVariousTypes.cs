@@ -56,14 +56,13 @@ namespace System.Reflection.Emit.Tests
         {
             yield return new object[] { new Type[] { typeof(INoMethod) } };
             yield return new object[] { new Type[] { typeof(IMultipleMethod) } };
-            yield return new object[] { new Type[] { typeof(INoMethod), typeof(INoMethod2) } };
             yield return new object[] { new Type[] { typeof(INoMethod), typeof(IOneMethod) } };
-            yield return new object[] { new Type[] { typeof(IMultipleMethod), typeof(INoMethod2) } };
-            yield return new object[] { new Type[] { typeof(IMultipleMethod), typeof(INoMethod2), typeof(IAccess), typeof(IOneMethod), typeof(INoMethod) } };
+            yield return new object[] { new Type[] { typeof(IMultipleMethod), typeof(EmptyTestClass) } };
+            yield return new object[] { new Type[] { typeof(IMultipleMethod), typeof(EmptyTestClass), typeof(IAccess), typeof(IOneMethod), typeof(INoMethod) } };
             yield return new object[] { new Type[] { typeof(EmptyStruct) } };
-            yield return new object[] { new Type[] { typeof(StructWithField) } };
-            yield return new object[] { new Type[] { typeof(StructWithField), typeof(EmptyStruct) } };
-            yield return new object[] { new Type[] { typeof(IMultipleMethod), typeof(EmptyStruct), typeof(INoMethod2), typeof(StructWithField) } };
+            yield return new object[] { new Type[] { typeof(StructWithFields) } };
+            yield return new object[] { new Type[] { typeof(StructWithFields), typeof(EmptyStruct) } };
+            yield return new object[] { new Type[] { typeof(IMultipleMethod), typeof(StructWithFields), typeof(ClassWithFields), typeof(EmptyTestClass) } };
         }
 
         [Theory]
@@ -177,40 +176,47 @@ namespace System.Reflection.Emit.Tests
         }
     }
 
-    // Test Interfaces
+    // Test Types
     public interface INoMethod
-    {
-    }
-
-    public interface INoMethod2
     {
     }
 
     public interface IMultipleMethod
     {
         string Func();
-        bool MoreFunc();
-        double DoIExist();
+        IOneMethod MoreFunc();
+        StructWithFields DoIExist();
         void BuildAPerpetualMotionMachine();
     }
 
     internal interface IAccess
     {
-        public int BuildAI();
+        public Version BuildAI();
         public int DisableRogueAI();
     }
 
     public interface IOneMethod
     {
-        string Func();
+        object Func();
     }
 
     public struct EmptyStruct
     {
     }
 
-    public struct StructWithField
+    public struct StructWithFields
     {
-        public int field;
+        public int field1;
+        public string field2;
+    }
+
+    public class EmptyTestClass
+    {
+    }
+
+    public class ClassWithFields : EmptyTestClass
+    {
+        public EmptyTestClass field1;
+        public byte field2;
     }
 }

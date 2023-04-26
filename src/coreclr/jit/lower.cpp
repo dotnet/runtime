@@ -1825,7 +1825,6 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
 
             // TODO-CQ: Try to create an addressing mode
             GenTreeIndir* srcBlk = comp->gtNewIndir(TYP_STRUCT, srcAddr);
-            srcBlk->gtFlags |= GTF_GLOB_REF;
             srcBlk->SetContained();
 
             GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
@@ -3727,42 +3726,42 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     {
         GenTree*     relopOp1 = cond->gtGetOp1();
         GenTree*     relopOp2 = cond->gtGetOp2();
-        bool         useJCMP  = false;
-        GenTreeFlags flags    = GTF_EMPTY;
+        genTreeOps   newOper  = GT_COUNT;
+        GenCondition cc;
 
         if (cond->OperIs(GT_EQ, GT_NE) && relopOp2->IsIntegralConst(0))
         {
             // Codegen will use cbz or cbnz in codegen which do not affect the flag register
-            flags   = cond->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
-            useJCMP = true;
+            newOper = GT_JCMP;
+            cc      = GenCondition::FromRelop(cond);
         }
         else if (cond->OperIs(GT_LT, GT_GE) && !cond->IsUnsigned() && relopOp2->IsIntegralConst(0))
         {
             // Codegen will use tbnz or tbz in codegen which do not affect the flag register
-            flags   = GTF_JCMP_TST | (cond->OperIs(GT_LT) ? GTF_EMPTY : GTF_JCMP_EQ);
-            useJCMP = true;
+            newOper = GT_JTEST;
+            cc      = cond->OperIs(GT_LT) ? GenCondition(GenCondition::NE) : GenCondition(GenCondition::EQ);
+            // x < 0 => (x & signBit) != 0. Update the constant to be the sign bit.
             relopOp2->AsIntConCommon()->SetIntegralValue(
                 (static_cast<INT64>(1) << (8 * genTypeSize(genActualType(relopOp1)) - 1)));
         }
         else if (cond->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
         {
             // Codegen will use tbz or tbnz in codegen which do not affect the flag register
-            flags   = GTF_JCMP_TST | (cond->OperIs(GT_TEST_EQ) ? GTF_JCMP_EQ : GTF_EMPTY);
-            useJCMP = true;
+            newOper = GT_JTEST;
+            cc      = GenCondition::FromRelop(cond);
         }
 
-        if (useJCMP)
+        if (newOper != GT_COUNT)
         {
-            jtrue->SetOper(GT_JCMP);
-            jtrue->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ);
-            jtrue->gtOp1 = relopOp1;
-            jtrue->gtOp2 = relopOp2;
-            jtrue->gtFlags |= flags;
+            jtrue->ChangeOper(newOper);
+            jtrue->gtOp1                 = relopOp1;
+            jtrue->gtOp2                 = relopOp2;
+            jtrue->AsOpCC()->gtCondition = cc;
 
             relopOp2->SetContained();
 
             BlockRange().Remove(cond);
-            JITDUMP("Lowered to JCMP\n");
+            JITDUMP("Lowered to %s\n", GenTree::OpName(newOper));
             return nullptr;
         }
     }
@@ -4955,7 +4954,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     GenTree* newThisAddr = new (comp, GT_LEA)
         GenTreeAddrMode(TYP_BYREF, thisExpr, nullptr, 0, comp->eeGetEEInfo()->offsetOfDelegateInstance);
 
-    GenTree* newThis = comp->gtNewOperNode(GT_IND, TYP_REF, newThisAddr);
+    GenTree* newThis = comp->gtNewIndir(TYP_REF, newThisAddr);
 
     BlockRange().InsertAfter(thisExpr, newThisAddr, newThis);
 
@@ -5816,7 +5815,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
             GenTree* tmpTree = comp->gtNewLclvNode(lclNumTmp, result->TypeGet());
             tmpTree          = Offset(tmpTree, vtabOffsOfIndirection);
 
-            tmpTree       = comp->gtNewOperNode(GT_IND, TYP_I_IMPL, tmpTree);
+            tmpTree       = Ind(tmpTree);
             GenTree* offs = comp->gtNewIconNode(vtabOffsOfIndirection + vtabOffsAfterIndirection, TYP_INT);
             result = comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, comp->gtNewLclvNode(lclNumTmp, result->TypeGet()), offs);
 

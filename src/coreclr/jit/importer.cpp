@@ -1084,11 +1084,11 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
         assert(OFFSETOF__CORINFO_TypedReference__dataPtr == 0);
         assert(destAddr->gtType == TYP_I_IMPL || destAddr->gtType == TYP_BYREF);
 
-        GenTree*       ptrSlot         = gtNewOperNode(GT_IND, TYP_I_IMPL, destAddr);
+        GenTree*       ptrSlot         = gtNewIndir(TYP_I_IMPL, destAddr);
         GenTreeIntCon* typeFieldOffset = gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL);
 
         GenTree* typeSlot =
-            gtNewOperNode(GT_IND, TYP_I_IMPL, gtNewOperNode(GT_ADD, destAddr->gtType, destAddrClone, typeFieldOffset));
+            gtNewIndir(TYP_I_IMPL, gtNewOperNode(GT_ADD, destAddr->gtType, destAddrClone, typeFieldOffset));
 
         // append the assign of the pointer value
         GenTree* asg = gtNewAssignNode(ptrSlot, src->AsOp()->gtOp1);
@@ -1847,8 +1847,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         if (i != 0)
         {
-            slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
-            slotPtrTree->gtFlags |= (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+            slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
         }
 
         if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
@@ -1871,8 +1870,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         return slotPtrTree;
     }
 
-    slotPtrTree = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
-    slotPtrTree->gtFlags |= GTF_IND_NONFAULTING;
+    slotPtrTree = gtNewIndir(TYP_I_IMPL, slotPtrTree, GTF_IND_NONFAULTING);
+    slotPtrTree->gtFlags &= ~GTF_GLOB_REF; // TODO-Bug?: this is a quirk. Can we mark this indirection invariant?
 
     return slotPtrTree;
 }
@@ -3666,7 +3665,8 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
                 exprToBox = gtNewCastNode(genActualType(dstTyp), exprToBox, false, dstTyp);
             }
 
-            op1 = gtNewAssignNode(gtNewOperNode(GT_IND, dstTyp, op1), exprToBox);
+            op1 = gtNewIndir(dstTyp, op1, GTF_IND_NONFAULTING);
+            op1 = gtNewAssignNode(op1, exprToBox);
         }
 
         // Spill eval stack to flush out any pending side effects.
@@ -3869,7 +3869,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
     if (varTypeIsIntegral(fieldType) || varTypeIsFloating(fieldType) || (fieldType == TYP_REF))
     {
         assert(bufferSize >= genTypeSize(fieldType));
-        if (info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, genTypeSize(fieldType)))
+        if (info.compCompHnd->getStaticFieldContent(field, buffer, genTypeSize(fieldType)))
         {
             GenTree* cnsValue = impImportCnsTreeFromBuffer(buffer, fieldType);
             if (cnsValue != nullptr)
@@ -3899,7 +3899,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
             }
 
             uint8_t buffer[MaxStructSize] = {0};
-            if (info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, totalSize))
+            if (info.compCompHnd->getStaticFieldContent(field, buffer, totalSize))
             {
 #ifdef FEATURE_SIMD
                 // First, let's check whether field is a SIMD vector and import it as GT_CNS_VEC
@@ -3949,7 +3949,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                 return gtNewLclvNode(structTempNum, realType);
             }
 
-            JITDUMP("getReadonlyStaticFieldValue returned false - bail out.");
+            JITDUMP("getStaticFieldContent returned false - bail out.");
             return nullptr;
         }
 
@@ -3980,7 +3980,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         const int bufferSize         = TARGET_POINTER_SIZE;
         uint8_t   buffer[bufferSize] = {0};
 
-        if ((totalSize > bufferSize) || !info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, totalSize))
+        if ((totalSize > bufferSize) || !info.compCompHnd->getStaticFieldContent(field, buffer, totalSize))
         {
             return nullptr;
         }
@@ -4366,15 +4366,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         lclTyp = TypeHandleToVarType(pFieldInfo->fieldType, pFieldInfo->structType, &layout);
 
         // TODO-CQ: mark the indirections non-faulting.
-        if (lclTyp == TYP_STRUCT)
-        {
-            op1 = gtNewBlkIndir(layout, op1);
-        }
-        else
-        {
-            op1 = gtNewOperNode(GT_IND, lclTyp, op1);
-            op1->gtFlags |= GTF_GLOB_REF;
-        }
+        op1 = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, op1) : gtNewIndir(lclTyp, op1);
+
         if (isStaticReadOnlyInitedRef)
         {
             op1->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
@@ -7210,6 +7203,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     return;
                 }
 
+                if (opts.OptimizationEnabled() && (gtGetArrayElementClassHandle(impStackTop(1).val) == ldelemClsHnd) &&
+                    impIsClassExact(ldelemClsHnd))
+                {
+                    JITDUMP("\nldelema of T[] with T exact: skipping covariant check\n");
+                    goto ARR_LD;
+                }
+
                 GenTree* index = impPopStack().val;
                 GenTree* arr   = impPopStack().val;
 
@@ -8545,22 +8545,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 #endif
 
-                op1 = gtNewOperNode(GT_IND, lclTyp, op1);
-                op1->gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
-
-                if (prefixFlags & PREFIX_VOLATILE)
-                {
-                    assert(op1->OperGet() == GT_IND);
-                    op1->gtFlags |= GTF_ORDER_SIDEEFF; // Prevent this from being reordered
-                    op1->gtFlags |= GTF_IND_VOLATILE;
-                }
-
-                if ((prefixFlags & PREFIX_UNALIGNED) && !varTypeIsByte(lclTyp))
-                {
-                    assert(op1->OperGet() == GT_IND);
-                    op1->gtFlags |= GTF_IND_UNALIGNED;
-                }
-
+                op1 = gtNewIndir(lclTyp, op1, impPrefixFlagsToIndirFlags(prefixFlags));
                 op1 = gtNewAssignNode(op1, op2);
                 goto SPILL_APPEND;
 
@@ -8611,26 +8596,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 assertImp(genActualType(op1->gtType) == TYP_I_IMPL || op1->gtType == TYP_BYREF);
 
-                op1 = gtNewOperNode(GT_IND, lclTyp, op1);
-
-                // ldind could point anywhere, example a boxed class static int
-                op1->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF);
-
-                if (prefixFlags & PREFIX_VOLATILE)
-                {
-                    assert(op1->OperGet() == GT_IND);
-                    op1->gtFlags |= GTF_ORDER_SIDEEFF; // Prevent this from being reordered
-                    op1->gtFlags |= GTF_IND_VOLATILE;
-                }
-
-                if ((prefixFlags & PREFIX_UNALIGNED) && !varTypeIsByte(lclTyp))
-                {
-                    assert(op1->OperGet() == GT_IND);
-                    op1->gtFlags |= GTF_IND_UNALIGNED;
-                }
-
+                op1 = gtNewIndir(lclTyp, op1, impPrefixFlagsToIndirFlags(prefixFlags));
                 impPushOnStack(op1, tiRetVal);
-
                 break;
 
             case CEE_UNALIGNED:
@@ -9411,15 +9378,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             ClassLayout* layout;
                             lclTyp = TypeHandleToVarType(fieldInfo.fieldType, fieldInfo.structType, &layout);
-                            if (lclTyp == TYP_STRUCT)
-                            {
-                                op1 = gtNewBlkIndir(layout, op1, GTF_IND_NONFAULTING);
-                            }
-                            else
-                            {
-                                op1 = gtNewIndir(lclTyp, op1, GTF_IND_NONFAULTING);
-                                op1->gtFlags |= GTF_GLOB_REF;
-                            }
+                            op1    = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, op1, GTF_IND_NONFAULTING)
+                                                         : gtNewIndir(lclTyp, op1, GTF_IND_NONFAULTING);
                         }
                         break;
 #else
@@ -9717,15 +9677,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         ClassLayout* layout;
                         lclTyp = TypeHandleToVarType(fieldInfo.fieldType, fieldInfo.structType, &layout);
-                        if (lclTyp == TYP_STRUCT)
-                        {
-                            op1 = gtNewBlkIndir(layout, op1, GTF_IND_NONFAULTING);
-                        }
-                        else
-                        {
-                            op1 = gtNewIndir(lclTyp, op1, GTF_IND_NONFAULTING);
-                            op1->gtFlags |= GTF_GLOB_REF;
-                        }
+                        op1    = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, op1, GTF_IND_NONFAULTING)
+                                                     : gtNewIndir(lclTyp, op1, GTF_IND_NONFAULTING);
                         break;
 #else
                         fieldInfo.fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
@@ -10142,7 +10095,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // Fetch the type from the correct slot
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
                                         gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
-                    op1 = gtNewOperNode(GT_IND, TYP_BYREF, op1);
+                    op1 = gtNewIndir(TYP_BYREF, op1);
                 }
 
                 // Convert native TypeHandle to RuntimeTypeHandle.
@@ -10727,7 +10680,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     else
                     {
-                        op2 = gtNewOperNode(GT_IND, TYP_STRUCT, op2);
+                        op2 = gtNewIndir(TYP_STRUCT, op2);
                     }
 
 #ifdef TARGET_64BIT
@@ -10756,7 +10709,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     op2 = impPopStack().val; // address to load from
                     op2 = gtNewIndir(lclTyp, op2);
-                    op2->gtFlags |= GTF_GLOB_REF;
                     goto STIND_VALUE;
                 }
 
@@ -12509,24 +12461,6 @@ void Compiler::verResetCurrentState(BasicBlock* block, EntryState* destState)
 
         memcpy(destState->esStack, block->bbStackOnEntry(), stackSize);
     }
-}
-
-unsigned BasicBlock::bbStackDepthOnEntry() const
-{
-    return (bbEntryState ? bbEntryState->esStackDepth : 0);
-}
-
-void BasicBlock::bbSetStack(void* stackBuffer)
-{
-    assert(bbEntryState);
-    assert(stackBuffer);
-    bbEntryState->esStack = (StackEntry*)stackBuffer;
-}
-
-StackEntry* BasicBlock::bbStackOnEntry() const
-{
-    assert(bbEntryState);
-    return bbEntryState->esStack;
 }
 
 void Compiler::verInitCurrentState()

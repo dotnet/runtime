@@ -145,6 +145,26 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
                         return "vpxord";
                     }
 
+                    case INS_roundpd:
+                    {
+                        return "vrndscalepd";
+                    }
+
+                    case INS_roundps:
+                    {
+                        return "vrndscaleps";
+                    }
+
+                    case INS_roundsd:
+                    {
+                        return "vrndscalesd";
+                    }
+
+                    case INS_roundss:
+                    {
+                        return "vrndscaless";
+                    }
+
                     case INS_vbroadcastf128:
                     {
                         return "vbroadcastf32x4";
@@ -1467,6 +1487,7 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
     return INS_vmov;
 #else
     NYI("ins_Move_Extend");
+    return INS_invalid;
 #endif
 }
 
