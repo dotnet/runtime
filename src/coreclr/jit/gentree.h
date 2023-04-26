@@ -9294,10 +9294,10 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
 }
 
 //-------------------------------------------------------------------------
-// gtCommaAssignVal - find value being assigned to a comma wrapped assignment
+// gtCommaAssignVal - find value being assigned to a comma wrapped store
 //
 // Returns:
-//    tree representing value being assigned if this tree represents a
+//    tree representing value being stored if this tree represents a
 //    comma-wrapped local definition and use.
 //
 //    original tree, if not.
@@ -9311,15 +9311,10 @@ inline GenTree* GenTree::gtCommaAssignVal()
         GenTree* commaOp1 = AsOp()->gtOp1;
         GenTree* commaOp2 = AsOp()->gtOp2;
 
-        if (commaOp2->OperIs(GT_LCL_VAR) && commaOp1->OperIs(GT_ASG))
+        if (commaOp2->OperIs(GT_LCL_VAR) && commaOp1->OperIs(GT_STORE_LCL_VAR) &&
+            (commaOp1->AsLclVar()->GetLclNum() == commaOp2->AsLclVar()->GetLclNum()))
         {
-            GenTree* asgOp1 = commaOp1->AsOp()->gtOp1;
-            GenTree* asgOp2 = commaOp1->AsOp()->gtOp2;
-
-            if (asgOp1->OperIs(GT_LCL_VAR) && (asgOp1->AsLclVar()->GetLclNum() == commaOp2->AsLclVar()->GetLclNum()))
-            {
-                result = asgOp2;
-            }
+            result = commaOp1->AsLclVar()->Data();
         }
     }
 
