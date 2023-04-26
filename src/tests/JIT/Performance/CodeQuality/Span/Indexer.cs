@@ -927,7 +927,13 @@ namespace Span
             Console.WriteLine();
         }
 
-        public static int Main(string[] args)
+        public static int Main()
+        {
+            return Test(Array.Empty<string>());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static int Test(string[] args)
         {
             if (args.Length > 0)
             {

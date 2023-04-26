@@ -100,12 +100,17 @@ public static class Adams
         }
     }
 
-    [MethodImpl(MethodImplOptions.NoOptimization)]
-    public static int Main(string[] argv)
+    public static int Main()
     {
-        if (argv.Length > 0)
+        return Test(null);
+    }
+
+    [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
+    private static int Test(int? arg)
+    {
+        if (arg.HasValue)
         {
-            Iterations = Int32.Parse(argv[0]);
+            Iterations = (int)arg;
         }
 
         Stopwatch sw = Stopwatch.StartNew();

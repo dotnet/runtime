@@ -14,14 +14,21 @@
 */
 
 using System;
+using System.Runtime.CompilerServices;
 
 namespace BenchmarksGame
 {
     public class NBody_3
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
-            int n = args.Length > 0 ? Int32.Parse(args[0]) : 10000;
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int n = arg ?? 10000;
             bool success = Bench(n, true);
             return (success ? 100 : -1);
         }

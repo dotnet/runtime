@@ -22,10 +22,15 @@ namespace BenchmarksGame
 {
     public class SpectralNorm_3
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
-            int n = 100;
-            if (args.Length > 0) n = Int32.Parse(args[0]);
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int n = arg ?? 100;
 
             double norm = Bench(n);
             Console.WriteLine("{0:f9}", norm);

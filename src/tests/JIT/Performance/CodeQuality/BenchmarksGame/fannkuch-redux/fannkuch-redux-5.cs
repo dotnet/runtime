@@ -98,9 +98,15 @@ namespace BenchmarksGame
             maxFlips[taskId] = maxflips;
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
-            int n = args.Length > 0 ? int.Parse(args[0]) : 7;
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int n = arg ?? 7;
             int sum = Bench(n, true);
 
             int expected = 16;

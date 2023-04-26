@@ -35,9 +35,15 @@ namespace BenchmarksGame
         const int IC = 29573;
         static int seed = 42;
 
-        public static int Main(string[] args)
+        public static int Main()
         {
-            int n = args.Length > 0 ? Int32.Parse(args[0]) : 1000;
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int n = arg ?? 1000;
 
             Bench(n, true);
             return 100;

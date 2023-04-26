@@ -15,15 +15,22 @@
 
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace BenchmarksGame
 {
     public class Fasta_2
     {
-        static int Main(string[] args)
+        public static int Main()
         {
-            int n = args.Length > 0 ? Int32.Parse(args[0]) : 1000;
+            return Test(null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static int Test(int? arg)
+        {
+            int n = arg ?? 1000;
 
             Bench(n, true);
             return 100;
