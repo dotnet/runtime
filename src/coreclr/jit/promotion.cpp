@@ -1299,11 +1299,11 @@ public:
                     // Overlap with last entry starting before offs.
                     firstIndex--;
                 }
-            }
-            else if (firstIndex >= replacements.size())
-            {
-                // Starts after last replacement ends.
-                return false;
+                else if (firstIndex >= replacements.size())
+                {
+                    // Starts after last replacement ends.
+                    return false;
+                }
             }
 
             const Replacement& first = replacements[firstIndex];
