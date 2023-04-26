@@ -6499,11 +6499,26 @@ void emitter::emitIns_R_R_R(
 
 /*****************************************************************************
  *
- *  Add an instruction storing 2 registers into a memory (pointed by reg3) and the offset
-    (immediate).
+ *  
  */
-
-void emitter::emitIns_SS_R_R_R_I(instruction ins,
+//-----------------------------------------------------------------------------------
+// emitIns_R_R_R_I_LdStPair: Add an instruction storing 2 registers into a memory
+//                     (pointed by reg3) and the offset (immediate).
+//
+// Arguments:
+//     ins      - The instruction code
+//     attr     - The emit attribute for register 1
+//     attr2    - The emit attribute for register 2
+//     reg1     - Register 1
+//     reg2     - Register 2
+//     reg3     - Register 3
+//     imm      - Immediate offset, prior to scaling by operand size
+//     varx1    - LclVar number 1
+//     varx2    - LclVar number 2
+//     offs1    - Memory offset of lclvar number 1
+//     offs2    - Memory offset of lclvar number 2
+//
+void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
                                  emitAttr    attr,
                                  emitAttr    attr2,
                                  regNumber   reg1,
@@ -16473,20 +16488,18 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     ssize_t  prevImmSize   = prevImm * size;
     ssize_t  newImmSize    = imm * size;
     bool     isLastLclVar  = emitLastIns->idIsLclVar();
-    int      currOffset    = -1;
     int      prevOffset    = -1;
     int      prevLclVarNum = -1;
-    int      currLclVarNum = -1;
 
     if (emitLastIns->idIsLclVar())
     {
         prevOffset    = emitLastIns->idAddr()->iiaLclVar.lvaOffset();
         prevLclVarNum = emitLastIns->idAddr()->iiaLclVar.lvaVarNum();
     }
-    if (isCurrLclVar)
+
+    if (!isCurrLclVar)
     {
-        currOffset    = offs;
-        currLclVarNum = varx;
+        assert((varx == -1) && (offs == -1));
     }
 
     switch (emitLastIns->idGCref())
@@ -16516,13 +16529,13 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
 
     if (optimizationOrder == eRO_ascending)
     {
-        emitIns_SS_R_R_R_I(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum,
-                           currLclVarNum, prevOffset, currOffset);
+        emitIns_R_R_R_I_LdStPair(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum,
+                           varx, prevOffset, offs);
     }
     else
     {
-        emitIns_SS_R_R_R_I(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, currLclVarNum,
-                           prevLclVarNum, currOffset, prevOffset);
+        emitIns_R_R_R_I_LdStPair(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, varx, prevLclVarNum, offs,
+                           prevOffset);
     }
 
     return true;
