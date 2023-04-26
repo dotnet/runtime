@@ -109,7 +109,7 @@ jobs:
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-      - linux_x64
+      - osx_x64
       jobParameters:
         buildArgs: -s clr+clr.aot -c $(_BuildConfig)
         nameSuffix: iOSNativeAOT
