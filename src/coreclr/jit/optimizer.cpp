@@ -9364,24 +9364,23 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
 
         for (unsigned defIndex = 1; defIndex < defCount; defIndex++)
         {
-            LclSsaVarDsc* defDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex);
-            GenTreeOp*    store  = defDsc->GetAssignment();
+            LclSsaVarDsc*        defDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex);
+            GenTreeLclVarCommon* store  = defDsc->GetAssignment();
 
             if (store != nullptr)
             {
-                assert(store->OperIs(GT_ASG) && defDsc->m_vnPair.BothDefined());
+                assert(store->OperIsLocalStore() && defDsc->m_vnPair.BothDefined());
 
                 JITDUMP("Considering [%06u] for removal...\n", dspTreeID(store));
 
-                GenTree* lhs = store->gtGetOp1();
-                if (lhs->AsLclVarCommon()->GetLclNum() != lclNum)
+                if (store->GetLclNum() != lclNum)
                 {
                     JITDUMP(" -- no; composite definition\n");
                     continue;
                 }
 
                 ValueNum oldStoreValue;
-                if ((lhs->gtFlags & GTF_VAR_USEASG) == 0)
+                if ((store->gtFlags & GTF_VAR_USEASG) == 0)
                 {
                     LclSsaVarDsc* lastDefDsc = varDsc->lvPerSsaData.GetSsaDefByIndex(defIndex - 1);
                     if (lastDefDsc->GetBlock() != defDsc->GetBlock())
@@ -9390,7 +9389,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                         continue;
                     }
 
-                    if ((lhs->gtFlags & GTF_VAR_EXPLICIT_INIT) != 0)
+                    if ((store->gtFlags & GTF_VAR_EXPLICIT_INIT) != 0)
                     {
                         // Removing explicit inits is not profitable for primitives and not safe for structs.
                         JITDUMP(" -- no; 'explicit init'\n");
@@ -9412,19 +9411,19 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                 {
                     ValueNum oldLclValue = varDsc->GetPerSsaData(defDsc->GetUseDefSsaNum())->m_vnPair.GetConservative();
                     oldStoreValue =
-                        vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum), lhs->TypeGet(),
-                                           lhs->AsLclFld()->GetLclOffs(), lhs->AsLclFld()->GetSize());
+                        vnStore->VNForLoad(VNK_Conservative, oldLclValue, lvaLclExactSize(lclNum), store->TypeGet(),
+                                           store->AsLclFld()->GetLclOffs(), store->AsLclFld()->GetSize());
                 }
 
-                GenTree* rhs = store->gtGetOp2();
+                GenTree* data = store->AsLclVarCommon()->Data();
                 ValueNum storeValue;
-                if (lhs->TypeIs(TYP_STRUCT) && rhs->IsIntegralConst(0))
+                if (store->TypeIs(TYP_STRUCT) && data->IsIntegralConst(0))
                 {
-                    storeValue = vnStore->VNForZeroObj(lhs->AsLclVarCommon()->GetLayout(this));
+                    storeValue = vnStore->VNForZeroObj(store->GetLayout(this));
                 }
                 else
                 {
-                    storeValue = rhs->GetVN(VNK_Conservative);
+                    storeValue = data->GetVN(VNK_Conservative);
                 }
 
                 if (oldStoreValue == storeValue)
@@ -9432,16 +9431,17 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                     JITDUMP("Removed dead store:\n");
                     DISPTREE(store);
 
-                    lhs->gtFlags &= ~(GTF_VAR_DEF | GTF_VAR_USEASG);
+                    // TODO-ASG: delete this hack.
+                    GenTree* nop  = gtNewNothingNode();
+                    data->gtNext  = nop;
+                    nop->gtPrev   = data;
+                    nop->gtNext   = store;
+                    store->gtPrev = nop;
 
                     store->ChangeOper(GT_COMMA);
-                    if (store->IsReverseOp())
-                    {
-                        std::swap(store->gtOp1, store->gtOp2);
-                        store->ClearReverseOp();
-                    }
-                    store->gtType = store->gtGetOp2()->TypeGet();
-                    store->SetAllEffectsFlags(store->gtOp1, store->gtOp2);
+                    store->AsOp()->gtOp2 = nop;
+                    store->gtType = TYP_VOID;
+                    store->SetAllEffectsFlags(data);
                     gtUpdateTreeAncestorsSideEffects(store);
 
                     madeChanges = true;
