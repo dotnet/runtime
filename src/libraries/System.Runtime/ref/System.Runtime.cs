@@ -14194,8 +14194,8 @@ namespace System.Text
     {
         internal CompositeFormat() { }
         public static System.Text.CompositeFormat Parse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format) { throw null; }
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Text.CompositeFormat? compositeFormat) { throw null; }
         public string Format { get { throw null; } }
+        public int MinimumArgumentCount { get { throw null; } }
     }
     public abstract partial class Decoder
     {
