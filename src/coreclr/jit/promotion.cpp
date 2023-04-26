@@ -953,6 +953,8 @@ private:
             {
                 addrBaseOffs = m_dst->AsField()->gtFldOffset;
             }
+
+            indirFlags = GetPropagatedIndirFlags(m_dst);
         }
         else if (m_src->OperIs(GT_BLK, GT_FIELD))
         {
@@ -963,8 +965,7 @@ private:
                 addrBaseOffs = m_src->AsField()->gtFldOffset;
             }
 
-            indirFlags =
-                m_src->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
+            indirFlags = GetPropagatedIndirFlags(m_src);
         }
 
         int numAddrUses = addr == nullptr ? 0 : (m_entries.Height() + (coversDestination ? 0 : 1));
@@ -1067,7 +1068,7 @@ private:
         if (needsNullCheck)
         {
             GenTreeIndir* indir = m_compiler->gtNewIndir(TYP_BYTE, grabAddr(addrBaseOffs));
-            indir->gtFlags |= indirFlags & ~GTF_IND_UNALIGNED;
+            PropagateIndirFlags(indir, indirFlags);
             statements->AddStatement(indir);
         }
 
@@ -1101,7 +1102,7 @@ private:
                 {
                     GenTree* addr = grabAddr(addrBaseOffs + entry.Offset);
                     dst           = m_compiler->gtNewIndir(entry.Type, addr);
-                    dst->gtFlags |= indirFlags;
+                    PropagateIndirFlags(dst, indirFlags);
                 }
             }
 
@@ -1129,7 +1130,7 @@ private:
                 {
                     GenTree* addr = grabAddr(addrBaseOffs + entry.Offset);
                     src           = m_compiler->gtNewIndir(entry.Type, addr);
-                    src->gtFlags |= indirFlags;
+                    PropagateIndirFlags(src, indirFlags);
                 }
             }
 
@@ -1137,6 +1138,28 @@ private:
         }
 
         assert(numAddrUses == 0);
+    }
+
+    GenTreeFlags GetPropagatedIndirFlags(GenTree* indir)
+    {
+        assert(indir->OperIs(GT_BLK, GT_FIELD));
+        if (indir->OperIs(GT_BLK))
+        {
+            return indir->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
+        }
+
+        static_assert_no_msg(GTF_FLD_VOLATILE == GTF_IND_VOLATILE);
+        return indir->gtFlags & GTF_IND_VOLATILE;
+    }
+
+    void PropagateIndirFlags(GenTree* indir, GenTreeFlags flags)
+    {
+        if (genTypeSize(indir) == 1)
+        {
+            flags &= ~GTF_IND_UNALIGNED;
+        }
+
+        indir->gtFlags |= flags;
     }
 
     //------------------------------------------------------------------------
