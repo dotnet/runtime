@@ -11,6 +11,7 @@ namespace System.Threading
     /// <seealso cref="ThreadPoolBoundHandle.AllocateNativeOverlapped(PreAllocatedOverlapped)"/>
     public sealed partial class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
+        private DeferredDisposableLifetime<PreAllocatedOverlapped> _lifetime;
 
         [CLSCompliant(false)]
         public PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData) :

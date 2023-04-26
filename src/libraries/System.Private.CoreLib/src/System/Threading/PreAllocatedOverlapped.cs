@@ -9,6 +9,7 @@ namespace System.Threading
     /// <seealso cref="ThreadPoolBoundHandle.AllocateNativeOverlapped(PreAllocatedOverlapped)"/>
     public sealed partial class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
+        DeferredDisposableLifetime<PreAllocatedOverlapped> _lifetime;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="PreAllocatedOverlapped"/> class, specifying

@@ -169,12 +169,6 @@ namespace System.Threading
             _lifetime.Release(this);
         }
 
-        private void IDeferredDisposableOnFinalReleaseCore(bool disposed)
-        {
-            if (disposed)
-                _threadPoolHandle!.Dispose();
-        }
-
         private void DisposeCore()
         {
             _lifetime.Dispose(this);
@@ -189,6 +183,12 @@ namespace System.Threading
             //
             if (!Environment.HasShutdownStarted)
                 Dispose();
+        }
+
+        private void IDeferredDisposableOnFinalReleaseCore(bool disposed)
+        {
+            if (disposed)
+                _threadPoolHandle!.Dispose();
         }
     }
 }
