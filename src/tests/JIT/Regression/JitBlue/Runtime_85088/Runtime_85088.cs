@@ -27,7 +27,7 @@ public class Runtime_85088
                 // f will be physically promoted and will require a read back after this call.
                 // Since this is a finally, some platforms will have a GT_RETFILT that we were
                 // inserting IR after instead of before.
-                f = Call();
+                f = Call(f);
             }
         }
         catch
@@ -38,7 +38,7 @@ public class Runtime_85088
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Foo Call()
+    private static Foo Call(Foo f)
     {
         return new Foo { X = 75, Y = 25 };
     }

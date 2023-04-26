@@ -171,7 +171,7 @@ Statement* Compiler::fgNewStmtAtEnd(BasicBlock* block, GenTree* tree, const Debu
 
 //------------------------------------------------------------------------
 // fgInsertStmtNearEnd: Insert the given statement at the end of the given basic block,
-//   but before the GT_JTRUE, if present.
+//   but before the terminating node, if present.
 //
 // Arguments:
 //   block - the block into which 'stmt' will be inserted;
