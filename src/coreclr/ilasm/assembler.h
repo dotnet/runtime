@@ -847,7 +847,7 @@ public:
     BOOL EmitClass(Class *pClass);
     HRESULT CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename);
     HRESULT CreateTLSDirectory();
-    HRESULT CreateDebugDirectory();
+    HRESULT CreateDebugDirectory(BYTE(&pdbChecksum)[32]);
     HRESULT InitMetaData();
     Class *FindCreateClass(_In_ __nullterminated const char *pszFQN);
     BOOL EmitFieldRef(_In_z_ char *pszArg, int opcode);

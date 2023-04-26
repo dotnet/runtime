@@ -2116,12 +2116,7 @@ STDMETHODIMP RegMeta::ComputeSha256PdbStreamChecksum(
 #ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
     return E_NOTIMPL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
-    HRESULT hr = S_OK;
-
-    hr = m_pStgdb->m_pPdbHeap->ComputeSha256Checksum(computeSha256, checksum);
-
-ErrExit:
-    return hr;
+    return m_pStgdb->m_pPdbHeap->ComputeSha256Checksum(computeSha256, checksum);
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 }
 
@@ -2134,12 +2129,7 @@ STDMETHODIMP RegMeta::ChangePdbStreamGuid(
 #ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
     return E_NOTIMPL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
-    HRESULT hr = S_OK;
-
-    hr = m_pStgdb->m_pPdbHeap->SetDataGuid(newGuid);
-
-ErrExit:
-    return hr;
+    return m_pStgdb->m_pPdbHeap->SetDataGuid(newGuid);
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 }
 
