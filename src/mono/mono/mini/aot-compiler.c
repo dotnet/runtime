@@ -4321,7 +4321,7 @@ collect_dedup_method (MonoAotCompile *acfg, MonoMethod *method)
 			return TRUE;
 		// Remember for later
 		if (acfg->dedup_phase == DEDUP_COLLECT && !g_hash_table_lookup (dedup_methods, method))
-				g_hash_table_insert (dedup_methods, method, method);
+			g_hash_table_insert (dedup_methods, method, method);
 	}
 	return FALSE;
 }
