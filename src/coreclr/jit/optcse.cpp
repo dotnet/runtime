@@ -766,8 +766,8 @@ bool Compiler::optValnumCSE_Locate()
                 {
                     if (!enableConstCSE &&
                         // Unconditionally allow these constant handles to be CSE'd
-                        !tree->IsIconHandle(GTF_ICON_STATIC_HDL, GTF_ICON_STATIC_HDL_CCTOR, GTF_ICON_CLASS_HDL,
-                                            GTF_ICON_STR_HDL, GTF_ICON_OBJ_HDL))
+                        !tree->IsIconHandle(GTF_ICON_STATIC_HDL) && !tree->IsIconHandle(GTF_ICON_CLASS_HDL) &&
+                        !tree->IsIconHandle(GTF_ICON_STR_HDL) && !tree->IsIconHandle(GTF_ICON_OBJ_HDL))
                     {
                         continue;
                     }

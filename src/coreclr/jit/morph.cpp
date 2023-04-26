@@ -5345,9 +5345,14 @@ GenTree* Compiler::fgMorphExpandTlsFieldAddr(GenTree* tree)
 #define WIN32_TLS_SLOTS (0x2C) // Offset from fs:[0] where the pointer to the slots resides
 
     // Mark this ICON as a TLS_HDL, codegen will use FS:[cns]
-    GenTreeFlags handleType = ((tree->gtFlags & GTF_FLD_INITCLASS) != 0) ? GTF_ICON_TLS_HDL_CCTOR : GTF_ICON_TLS_HDL;
-    GenTree*     tlsRef     = gtNewIconHandleNode(WIN32_TLS_SLOTS, handleType);
-    tree->gtFlags &= ~GTF_FLD_INITCLASS;
+    GenTree* tlsRef = gtNewIconHandleNode(WIN32_TLS_SLOTS, GTF_ICON_TLS_HDL);
+
+    // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS
+    if ((tree->gtFlags & GTF_FLD_INITCLASS) != 0)
+    {
+        tree->gtFlags &= ~GTF_FLD_INITCLASS;
+        tlsRef->gtFlags |= GTF_ICON_INITCLASS;
+    }
 
     tlsRef = gtNewIndir(TYP_I_IMPL, tlsRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 

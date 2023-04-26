@@ -5418,7 +5418,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     emitter*  emit       = GetEmitter();
 
     GenTree* addr = tree->Addr();
-    if (addr->IsIconHandle(GTF_ICON_TLS_HDL, GTF_ICON_TLS_HDL_CCTOR))
+    if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
     {
         noway_assert(EA_ATTR(genTypeSize(targetType)) == EA_PTRSIZE);
 #if TARGET_64BIT

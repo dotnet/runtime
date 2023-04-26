@@ -518,34 +518,36 @@ enum GenTreeFlags : unsigned int
 
     GTF_ARR_ADDR_NONNULL        = 0x80000000, // GT_ARR_ADDR -- this array's address is not null
 
-    GTF_ICON_HDL_MASK             = 0xFF000000, // Bits used by handle types below
-    GTF_ICON_SCOPE_HDL            = 0x01000000, // GT_CNS_INT -- constant is a scope handle
-    GTF_ICON_CLASS_HDL            = 0x02000000, // GT_CNS_INT -- constant is a class handle
-    GTF_ICON_METHOD_HDL           = 0x03000000, // GT_CNS_INT -- constant is a method handle
-    GTF_ICON_FIELD_HDL            = 0x04000000, // GT_CNS_INT -- constant is a field handle
-    GTF_ICON_STATIC_HDL           = 0x05000000, // GT_CNS_INT -- constant is a handle to static data
-    GTF_ICON_STATIC_HDL_CCTOR     = 0x06000000, // GT_CNS_INT -- constant is a handle to cctor dependent static data
-    GTF_ICON_STR_HDL              = 0x07000000, // GT_CNS_INT -- constant is a pinned handle pointing to a string object
-    GTF_ICON_OBJ_HDL              = 0x08000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
-    GTF_ICON_CONST_PTR            = 0x09000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
-    GTF_ICON_CONST_PTR_CCTOR      = 0x0A000000, // GT_CNS_INT -- constant is a pointer to cctor dependent immutable data
-    GTF_ICON_GLOBAL_PTR           = 0x0B000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
-    GTF_ICON_GLOBAL_PTR_CCTOR     = 0x18000000, // GT_CNS_INT -- constant is a pointer to cctor dependent mutable data (e.g. from the VM state)
-    GTF_ICON_VARG_HDL             = 0x0C000000, // GT_CNS_INT -- constant is a var arg cookie handle
-    GTF_ICON_PINVKI_HDL           = 0x0D000000, // GT_CNS_INT -- constant is a pinvoke calli handle
-    GTF_ICON_TOKEN_HDL            = 0x0E000000, // GT_CNS_INT -- constant is a token handle (other than class, method or field)
-    GTF_ICON_TLS_HDL              = 0x0F000000, // GT_CNS_INT -- constant is a TLS ref with offset
-    GTF_ICON_TLS_HDL_CCTOR        = 0x10000000, // GT_CNS_INT -- constant is a cctor dependent TLS ref with offset
-    GTF_ICON_FTN_ADDR             = 0x11000000, // GT_CNS_INT -- constant is a function address
-    GTF_ICON_CIDMID_HDL           = 0x12000000, // GT_CNS_INT -- constant is a class ID or a module ID
-    GTF_ICON_BBC_PTR              = 0x13000000, // GT_CNS_INT -- constant is a basic block count pointer
-    GTF_ICON_STATIC_BOX_PTR       = 0x14000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
-    GTF_ICON_STATIC_BOX_PTR_CCTOR = 0x15000000, // GT_CNS_INT -- constant is an address of the box for a cctor dependent STATIC_IN_HEAP field
-    GTF_ICON_FIELD_SEQ            = 0x16000000, // GT_CNS_INT -- constant is a FieldSeq* (used only as VNHandle)
-    GTF_ICON_STATIC_ADDR_PTR      = 0x17000000, // GT_CNS_INT -- constant is a pointer to a static base address
+    GTF_ICON_HDL_MASK           = 0xFF000000, // Bits used by handle types below
+    GTF_ICON_SCOPE_HDL          = 0x01000000, // GT_CNS_INT -- constant is a scope handle
+    GTF_ICON_CLASS_HDL          = 0x02000000, // GT_CNS_INT -- constant is a class handle
+    GTF_ICON_METHOD_HDL         = 0x03000000, // GT_CNS_INT -- constant is a method handle
+    GTF_ICON_FIELD_HDL          = 0x04000000, // GT_CNS_INT -- constant is a field handle
+    GTF_ICON_STATIC_HDL         = 0x05000000, // GT_CNS_INT -- constant is a handle to static data
+    GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a pinned handle pointing to a string object
+    GTF_ICON_OBJ_HDL            = 0x12000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
+    GTF_ICON_CONST_PTR          = 0x07000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
+    GTF_ICON_GLOBAL_PTR         = 0x08000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
+    GTF_ICON_VARG_HDL           = 0x09000000, // GT_CNS_INT -- constant is a var arg cookie handle
+    GTF_ICON_PINVKI_HDL         = 0x0A000000, // GT_CNS_INT -- constant is a pinvoke calli handle
+    GTF_ICON_TOKEN_HDL          = 0x0B000000, // GT_CNS_INT -- constant is a token handle (other than class, method or field)
+    GTF_ICON_TLS_HDL            = 0x0C000000, // GT_CNS_INT -- constant is a TLS ref with offset
+    GTF_ICON_FTN_ADDR           = 0x0D000000, // GT_CNS_INT -- constant is a function address
+    GTF_ICON_CIDMID_HDL         = 0x0E000000, // GT_CNS_INT -- constant is a class ID or a module ID
+    GTF_ICON_BBC_PTR            = 0x0F000000, // GT_CNS_INT -- constant is a basic block count pointer
+    GTF_ICON_STATIC_BOX_PTR     = 0x10000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
+    GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
+    GTF_ICON_STATIC_ADDR_PTR    = 0x13000000, // GT_CNS_INT -- constant is a pointer to a static base address
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
     GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count
+    GTF_ICON_INITCLASS          = 0x00100000, // GT_CNS_INT -- Constant is used to access a static that requires preceding
+                                              //               class/static init helper.  In some cases, the constant is
+                                              //               the address of the static field itself, and in other cases
+                                              //               there's an extra layer of indirection and it is the address
+                                              //               of the cell that the runtime will fill in with the address
+                                              //               of the static field; in both of those cases, the constant
+                                              //               is what gets flagged.
 
     GTF_OVERFLOW                = 0x10000000, // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
                                               // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.

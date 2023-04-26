@@ -3106,11 +3106,9 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 GenTreeFlags handleKind = op1->GetIconHandleFlag();
 
                 // Some of these aren't handles to invariant data...
-                if ((handleKind == GTF_ICON_STATIC_HDL) ||       // Pointer to a mutable class Static variable
-                    (handleKind == GTF_ICON_STATIC_HDL_CCTOR) || // Pointer to a mutable class Static variable
-                    (handleKind == GTF_ICON_BBC_PTR) ||          // Pointer to a mutable basic block count value
-                    (handleKind == GTF_ICON_GLOBAL_PTR) ||       // Pointer to mutable data from the VM state
-                    (handleKind == GTF_ICON_GLOBAL_PTR_CCTOR))   // Pointer to mutable data from the VM state
+                if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
+                    (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
+                    (handleKind == GTF_ICON_GLOBAL_PTR))   // Pointer to mutable data from the VM state
                 {
                     // For statics, we expect the GTF_GLOB_REF to be set. However, we currently
                     // fail to set it in a number of situations, and so this check is disabled.
