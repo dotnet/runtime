@@ -2092,7 +2092,6 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	GHashTable *cache;
 	gpointer cache_key = NULL;
 	char *name;
-	MonoClass *target_class = NULL;
 	gboolean closed_over_null = FALSE;
 	MonoGenericContext *ctx = NULL;
 	MonoGenericContainer *container = NULL;
@@ -2113,25 +2112,14 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	 */
 	if (callvirt) {
 		subtype = WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL;
-		if (target_method->is_inflated) {
-			ERROR_DECL (error);
-			MonoType *target_type;
-
-			g_assert (method->signature->hasthis);
-			target_type = mono_class_inflate_generic_type_checked (method->signature->params [0],
-				mono_method_get_context (method), error);
-			mono_error_assert_ok (error); /* FIXME don't swallow the error */
-			target_class = mono_class_from_mono_type_internal (target_type);
-		} else {
-			target_class = target_method->klass;
-		}
-
-		closed_over_null = sig->param_count == mono_method_signature_internal (target_method)->param_count;
 
 		/*
 		 * We don't want to use target_method's signature because it can be freed early
 		 */
-		target_method_sig = mono_method_signature_internal (target_method);
+		target_method_sig = mono_metadata_signature_dup_delegate_invoke_to_target (invoke_sig);
+		// target_method_sig = mono_method_signature_internal (target_method);
+
+		closed_over_null = sig->param_count == target_method_sig->param_count;
 	}
 
 	if (static_method_with_first_arg_bound) {
@@ -2241,7 +2229,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 		/* FIXME: Other subtypes */
 		mb->mem_manager = m_method_get_mem_manager (method);
 
-	get_marshal_cb ()->emit_delegate_invoke_internal (mb, sig, invoke_sig, target_method_sig, static_method_with_first_arg_bound, callvirt, closed_over_null, method, target_method, target_class, ctx, container);
+	get_marshal_cb ()->emit_delegate_invoke_internal (mb, sig, invoke_sig, target_method_sig, static_method_with_first_arg_bound, callvirt, closed_over_null, method, target_method, ctx, container);
 
 	get_marshal_cb ()->mb_skip_visibility (mb);
 

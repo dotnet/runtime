@@ -4965,6 +4965,13 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 				continue;
 			}
 
+			method = mono_get_delegate_invoke_internal (klass);
+
+			if (!strcmp(method->name, "Foo") || !strcmp(method->name, "ToString") || !strcmp(method->name, "Invoke")) {
+				m = mono_marshal_get_delegate_invoke_internal (method, TRUE, FALSE, NULL);
+				add_method (acfg, m);
+			}
+
 			if (cattr) {
 				int j;
 
