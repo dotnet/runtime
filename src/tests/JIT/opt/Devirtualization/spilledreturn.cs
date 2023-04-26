@@ -74,10 +74,9 @@ public class Test
         }
     }
 
-    public static int Main(string[] args)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int TestEntry(bool vague)
     {
-        vague = args.Length > 0;
-
         M(0).Foo();
         M(0).Bar();
         M(1).Foo();
@@ -91,6 +90,11 @@ public class Test
         G<string>().Foo();
 
         return 100;
+    }
+
+    public static int Main()
+    {
+        return TestEntry(false);
     }
 }
 

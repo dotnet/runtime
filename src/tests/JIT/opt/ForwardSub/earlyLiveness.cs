@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 class EarlyLiveness_ForwardSub
 {
-    static int Main(string[] args)
+    static int Main()
     {
         int result = 100;
         int test1 = Test1();
