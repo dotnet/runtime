@@ -298,13 +298,14 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="GenerateMarkerFiles" BeforeTargets="AssignTargetPaths">
-    <PropertyGroup Condition="'$(NumberOfStripesToUseInStress)' == '' and '$(IsMergedTestRunnerAssembly)' == 'true'">
+  <Target Name="GenerateMarkerFiles" BeforeTargets="AssignTargetPaths"
+          Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and !$(BuildAsStandalone)">
+    <PropertyGroup Condition="'$(NumberOfStripesToUseInStress)' == ''">
       <NumberOfStripesToUseInStress>1</NumberOfStripesToUseInStress> <!-- Set a custom number of stripes in stress to allow very large merged groups to function in the presence of GCStress -->
     </PropertyGroup>
 
     <!-- Generate a set of stress marker files to be used in stress scenarios in CI runs -->
-    <ItemGroup Condition="'$(NumberOfStripesToUseInStress)' != '' and '$(IsMergedTestRunnerAssembly)' == 'true'">
+    <ItemGroup Condition="'$(NumberOfStripesToUseInStress)' != ''">
       <SequenceOfIntegers Include="0"/>
       <SequenceOfIntegers Include="1"/>
       <SequenceOfIntegers Include="2"/>
@@ -415,7 +416,7 @@
 
     <ItemGroup>
       <Content Include="$(AssemblyName).reflect.xml" Condition="Exists('$(AssemblyName).reflect.xml')" CopyToOutputDirectory="PreserveNewest" />
-      <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly" Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
+      <MarkerFile Include="$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly">
         <Type>MergedTestAssembly</Type>
       </MarkerFile>
       <MarkerFile Include="$(IntermediateOutputPath)\$(AssemblyName).NoMonoAot" Condition="'$(MonoAotIncompatible)' == 'true'">
@@ -437,7 +438,7 @@
 
     <!-- We don't want the out-of-process test marker file to be included in referencing projects, so we don't include it as content. -->
     <WriteLinesToFile
-        Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAsStandalone)' != 'true'"
+        Condition="'$(RequiresProcessIsolation)' == 'true'"
         File="$(OutputPath)\$(AssemblyName).OutOfProcessTest"
         Lines="OutOfProcessTest"
         Overwrite="true"
