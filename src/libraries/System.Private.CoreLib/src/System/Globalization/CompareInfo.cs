@@ -1633,6 +1633,12 @@ namespace System.Globalization
                     }
                     else
                     {
+#if TARGET_BROWSER
+                if (GlobalizationMode.Hybrid)
+                {
+                    throw new PlatformNotSupportedException(GetPNSEText("SortVersion"));
+                }
+#endif
                         m_SortVersion = GlobalizationMode.UseNls ? NlsGetSortVersion() : IcuGetSortVersion();
                     }
                 }

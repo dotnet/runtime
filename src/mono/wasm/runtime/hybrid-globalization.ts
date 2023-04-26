@@ -65,7 +65,7 @@ export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: Mo
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(string1, string2, locale, casePicker);
         if (result == -2)
-            throw new Error("$Invalid comparison option.");
+            throw new Error(`Invalid comparison option. Option=${casePicker}`);
         return result;
     }
     catch (ex: any) {
@@ -102,7 +102,7 @@ export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoS
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(sourceOfPrefixLength, prefix, locale, casePicker);
         if (result == -2)
-            throw new Error("$Invalid comparison option.");
+            throw new Error(`Invalid comparison option. Option=${casePicker}`);
         return result === 0 ? 1 : 0; // equals ? true : false
     }
     catch (ex: any) {
@@ -132,7 +132,7 @@ export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStr
         const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(sourceOfSuffixLength, suffix, locale, casePicker);
         if (result == -2)
-            throw new Error("$Invalid comparison option.");
+            throw new Error(`Invalid comparison option. Option=${casePicker}`);
         return result === 0 ? 1 : 0; // equals ? true : false
     }
     catch (ex: any) {
@@ -253,7 +253,7 @@ export function compare_strings(string1: string, string2: string, locale: string
             return string1.localeCompare(string2, locale); // a ≠ b, a ≠ á, a ≠ A
         case 8:
             // 8: IgnoreKanaType works only for "ja"
-            if (locale && locale.startsWith("ja"))
+            if (locale && !locale.startsWith("ja"))
                 return -2;
             return string1.localeCompare(string2, locale); // a ≠ b, a ≠ á, a ≠ A
         case 1:
