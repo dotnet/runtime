@@ -489,12 +489,18 @@ push_var (TransformData *td, int var_index)
 	} while (0)
 
 static void
-set_simple_type_and_local (TransformData *td, StackInfo *sp, int type)
+set_type_and_local (TransformData *td, StackInfo *sp, int type, MonoClass *klass)
 {
-	SET_SIMPLE_TYPE (sp, type);
+	SET_TYPE (sp, type, klass);
 	create_interp_stack_local (td, sp, MINT_STACK_SLOT_SIZE);
 	if (!td->optimized)
 		td->locals [sp->local].stack_offset = sp->offset;
+}
+
+static void
+set_simple_type_and_local (TransformData *td, StackInfo *sp, int type)
+{
+	set_type_and_local (td, sp, type, NULL);
 }
 
 static void
@@ -3538,7 +3544,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		StackInfo *sp = td->sp - 1 - csignature->param_count;
 		interp_add_ins (td, MINT_CKNULL);
 		interp_ins_set_sreg (td->last_ins, sp->local);
-		set_simple_type_and_local (td, sp, sp->type);
+		set_type_and_local (td, sp, sp->type, sp->klass);
 		interp_ins_set_dreg (td->last_ins, sp->local);
 	}
 
