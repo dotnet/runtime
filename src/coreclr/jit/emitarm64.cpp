@@ -6497,10 +6497,6 @@ void emitter::emitIns_R_R_R(
     appendToCurIG(id);
 }
 
-/*****************************************************************************
- *
- *
- */
 //-----------------------------------------------------------------------------------
 // emitIns_R_R_R_I_LdStPair: Add an instruction storing 2 registers into a memory
 //                     (pointed by reg3) and the offset (immediate).
@@ -6569,7 +6565,7 @@ void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
         {
             // Unlike emitIns_S_S_R_R(), we would never come here when
             // (imm & mask) != 0.
-            assert(false);
+            unreached();
         }
     }
 
@@ -6584,14 +6580,7 @@ void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
         id->idAddr()->iiaLclVar.initLclVarAddr(varx1, offs1);
         id->idSetIsLclVar();
 
-        if (id->idSmallCns())
-        {
-            ((instrDescLclVarPair*)id)->iiaLclVar2.initLclVarAddr(varx2, offs2);
-        }
-        else
-        {
-            ((instrDescLclVarPairCns*)id)->iiaLclVar2.initLclVarAddr(varx2, offs2);
-        }
+        emitGetLclVarPairLclVar2(id)->initLclVarAddr(varx2, offs2);
     }
     else
     {
@@ -11886,16 +11875,10 @@ SKIP_GC_UPDATE:
             if (id->idIsLclVarPair())
             {
                 bool FPbased2;
-                if (id->idSmallCns())
-                {
-                    varNum2 = ((instrDescLclVarPair*)id)->iiaLclVar2.lvaVarNum();
-                    ofs2    = ((instrDescLclVarPair*)id)->iiaLclVar2.lvaOffset();
-                }
-                else
-                {
-                    varNum2 = ((instrDescLclVarPairCns*)id)->iiaLclVar2.lvaVarNum();
-                    ofs2    = ((instrDescLclVarPairCns*)id)->iiaLclVar2.lvaOffset();
-                }
+
+                emitLclVarAddr* lclVarAddr2 = emitGetLclVarPairLclVar2(id);
+                varNum2                     = lclVarAddr2->lvaVarNum();
+                ofs2                        = lclVarAddr2->lvaOffset();
 
                 // If there are 2 GC vars in this instrDesc, get the 2nd variable
                 // that should be tracked.
