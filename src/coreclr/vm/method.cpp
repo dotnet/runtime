@@ -918,9 +918,10 @@ PCODE MethodDesc::GetNativeCode()
     {
         // When profiler is enabled, profiler may ask to rejit a code even though we
         // we have ngen code for this MethodDesc.  (See MethodDesc::DoPrestub).
-        // This means that *GetAddrOfNativeCodeSlot()
-        // is not stable. It can turn from non-zero to zero.
-        PCODE pCode = *GetAddrOfNativeCodeSlot();
+        // This means that *ppCode is not stable. It can turn from non-zero to zero.
+        PTR_PCODE ppCode = GetAddrOfNativeCodeSlot();
+        PCODE pCode = *ppCode;
+
 #ifdef TARGET_ARM
         if (pCode != NULL)
             pCode |= THUMB_CODE;
@@ -1548,12 +1549,17 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
 #ifndef DACCESS_COMPILE
     if (HasClassOrMethodInstantiation())
     {
-        MethodTable *pMT = GetMethodTable();
+        MethodTable* pMT = GetMethodTable();
         if (!pMT->IsTypicalTypeDefinition())
-            pMT = ClassLoader::LoadTypeDefThrowing(pMT->GetModule(),
-                                                   pMT->GetCl(),
-                                                   ClassLoader::ThrowIfNotFound,
-                                                   ClassLoader::PermitUninstDefOrRef).GetMethodTable();
+        {
+            MethodTable* pMTTypical = ClassLoader::LoadTypeDefThrowing(pMT->GetModule(),
+                                                    pMT->GetCl(),
+                                                    ClassLoader::ThrowIfNotFound,
+                                                    ClassLoader::PermitUninstDefOrRef).GetMethodTable();
+            LOG((LF_CLASSLOADER, LL_INFO100000, "MD:LTMD: pMT:%p => pMTTypical:%p\n",
+                pMT, pMTTypical));
+            pMT = pMTTypical;
+        }
         CONSISTENCY_CHECK(TypeHandle(pMT).CheckFullyLoaded());
         MethodDesc *resultMD = pMT->GetParallelMethodDesc(this);
         PREFIX_ASSUME(resultMD != NULL);
@@ -1562,7 +1568,9 @@ MethodDesc* MethodDesc::LoadTypicalMethodDefinition()
     }
     else
 #endif // !DACCESS_COMPILE
+    {
         RETURN(this);
+    }
 }
 
 //*******************************************************************************
@@ -3244,6 +3252,8 @@ void MethodDesc::ResetCodeEntryPointForEnC()
     _ASSERTE(!IsVersionableWithPrecode());
     _ASSERTE(!MayHaveEntryPointSlotsToBackpatch());
 
+    LOG((LF_ENC, LL_INFO100000, "MD::RCEPFENC: this:%p - %s::%s - HasPrecode():%s, HasNativeCodeSlot():%s\n",
+        this, m_pszDebugClassName, m_pszDebugMethodName, (HasPrecode() ? "true" : "false"), (HasNativeCodeSlot() ? "true" : "false")));
     if (HasPrecode())
     {
         GetPrecode()->ResetTargetInterlocked();
@@ -3251,7 +3261,11 @@ void MethodDesc::ResetCodeEntryPointForEnC()
 
     if (HasNativeCodeSlot())
     {
-        *GetAddrOfNativeCodeSlot() = NULL;
+        PTR_PCODE ppCode = GetAddrOfNativeCodeSlot();
+        PCODE pCode = *ppCode;
+        LOG((LF_CORDB, LL_INFO1000000, "MD::RCEPFENC: %p -> %p\n",
+            ppCode, pCode));
+        *ppCode = NULL;
     }
 }
 

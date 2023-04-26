@@ -733,13 +733,12 @@ namespace System.Text
             }
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/84425: Make this public.
         /// <summary>Encodes into a span of bytes a set of characters from the specified read-only span if the destination is large enough.</summary>
         /// <param name="chars">The span containing the set of characters to encode.</param>
         /// <param name="bytes">The byte span to hold the encoded bytes.</param>
         /// <param name="bytesWritten">Upon successful completion of the operation, the number of bytes encoded into <paramref name="bytes"/>.</param>
         /// <returns><see langword="true"/> if all of the characters were encoded into the destination; <see langword="false"/> if the destination was too small to contain all the encoded bytes.</returns>
-        internal virtual bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
+        public virtual bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
         {
             int required = GetByteCount(chars);
             if (required <= bytes.Length)
@@ -881,6 +880,24 @@ namespace System.Text
             {
                 return GetChars(bytesPtr, bytes.Length, charsPtr, chars.Length);
             }
+        }
+
+        /// <summary>Decodes into a span of chars a set of bytes from the specified read-only span if the destination is large enough.</summary>
+        /// <param name="bytes">A read-only span containing the sequence of bytes to decode.</param>
+        /// <param name="chars">The character span receiving the decoded bytes.</param>
+        /// <param name="charsWritten">Upon successful completion of the operation, the number of chars decoded into <paramref name="chars"/>.</param>
+        /// <returns><see langword="true"/> if all of the characters were decoded into the destination; <see langword="false"/> if the destination was too small to contain all the decoded chars.</returns>
+        public virtual bool TryGetChars(ReadOnlySpan<byte> bytes, Span<char> chars, out int charsWritten)
+        {
+            int required = GetCharCount(bytes);
+            if (required <= chars.Length)
+            {
+                charsWritten = GetChars(bytes, chars);
+                return true;
+            }
+
+            charsWritten = 0;
+            return false;
         }
 
         [CLSCompliant(false)]

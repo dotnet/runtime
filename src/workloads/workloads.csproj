@@ -148,7 +148,7 @@
     <CreateVisualStudioWorkload BaseIntermediateOutputPath="$(WorkloadIntermediateOutputPath)"
                                 AllowMissingPacks="True"
                                 BaseOutputPath="$(WorkloadOutputPath)"
-                                ComponentResources="$(ComponentResources)"
+                                ComponentResources="@(ComponentResources)"
                                 PackageSource="$(PackageSource)"
                                 ShortNames="@(ShortNames)"
                                 WorkloadManifestPackageFiles="@(ManifestPackages)"
