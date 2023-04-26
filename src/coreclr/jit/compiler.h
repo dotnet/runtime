@@ -7318,40 +7318,29 @@ public:
                 IntegralRange u2;
             };
 
-            GenTreeFlags GetIconFlags()
+            bool HasIconFlag()
+            {
+                assert(m_encodedIconFlags <= 0xFF);
+                return m_encodedIconFlags != 0;
+            }
+            GenTreeFlags GetIconFlag()
             {
                 // number of trailing zeros in GTF_ICON_HDL_MASK
                 const uint16_t iconMaskTzc = 24;
                 static_assert_no_msg((0xFF000000 == GTF_ICON_HDL_MASK) && (GTF_ICON_HDL_MASK >> iconMaskTzc) == 0xFF);
 
-                GenTreeFlags flags = (GenTreeFlags)((m_encodedIconFlags & 0xFF) << iconMaskTzc);
-                if ((m_encodedIconFlags & 0x100) != 0)
-                {
-                    flags |= GTF_ICON_INITCLASS;
-                }
-
+                GenTreeFlags flags = (GenTreeFlags)(m_encodedIconFlags << iconMaskTzc);
+                assert((flags & ~GTF_ICON_HDL_MASK) == 0);
                 return flags;
             }
-            void SetIconFlags(GenTreeFlags flags, FieldSeq* fieldSeq = nullptr)
+            void SetIconFlag(GenTreeFlags flags, FieldSeq* fieldSeq = nullptr)
             {
                 const uint16_t iconMaskTzc = 24;
-                assert((flags & ~PropagatedIconHandleFlags) == 0);
+                assert((flags & ~GTF_ICON_HDL_MASK) == 0);
                 m_encodedIconFlags = flags >> iconMaskTzc;
-                if ((flags & GTF_ICON_INITCLASS) != 0)
-                {
-                    m_encodedIconFlags |= 0x100;
-                }
-
-                u1.fieldSeq = fieldSeq;
-            }
-
-            bool IsHandle()
-            {
-                return (GetIconFlags() & GTF_ICON_HDL_MASK) != 0;
+                u1.fieldSeq        = fieldSeq;
             }
         } op2;
-
-        static const GenTreeFlags PropagatedIconHandleFlags = GTF_ICON_HDL_MASK | GTF_ICON_INITCLASS;
 
         bool IsCheckedBoundArithBound()
         {
@@ -7459,8 +7448,7 @@ public:
             {
                 case O2K_IND_CNS_INT:
                 case O2K_CONST_INT:
-                    return ((op2.u1.iconVal == that->op2.u1.iconVal) &&
-                            (op2.GetIconFlags() == that->op2.GetIconFlags()));
+                    return ((op2.u1.iconVal == that->op2.u1.iconVal) && (op2.GetIconFlag() == that->op2.GetIconFlag()));
 
                 case O2K_CONST_LONG:
                     return (op2.lconVal == that->op2.lconVal);

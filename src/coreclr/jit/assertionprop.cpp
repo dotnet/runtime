@@ -699,12 +699,12 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 if (curAssertion->op1.kind == O1K_EXACT_TYPE)
                 {
                     printf("Exact Type MT(%08X)", dspPtr(curAssertion->op2.u1.iconVal));
-                    assert(curAssertion->op2.IsHandle());
+                    assert(curAssertion->op2.HasIconFlag());
                 }
                 else if (curAssertion->op1.kind == O1K_SUBTYPE)
                 {
                     printf("MT(%08X)", dspPtr(curAssertion->op2.u1.iconVal));
-                    assert(curAssertion->op2.IsHandle());
+                    assert(curAssertion->op2.HasIconFlag());
                 }
                 else if ((curAssertion->op1.kind == O1K_BOUND_OPER_BND) ||
                          (curAssertion->op1.kind == O1K_BOUND_LOOP_BND) ||
@@ -741,7 +741,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                     }
                     else
                     {
-                        if (curAssertion->op2.IsHandle())
+                        if (curAssertion->op2.HasIconFlag())
                         {
                             printf("[%08p]", dspPtr(curAssertion->op2.u1.iconVal));
                         }
@@ -1058,7 +1058,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         assertion.op2.kind       = O2K_CONST_INT;
         assertion.op2.vn         = ValueNumStore::VNForNull();
         assertion.op2.u1.iconVal = 0;
-        assertion.op2.SetIconFlags(GTF_EMPTY);
+        assertion.op2.SetIconFlag(GTF_EMPTY);
     }
     //
     // Are we making an assertion about a local variable?
@@ -1112,7 +1112,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
             assertion.op2.u1.iconVal = op2->AsIntCon()->gtIconVal;
             assertion.op2.vn         = optConservativeNormalVN(op2);
-            assertion.op2.SetIconFlags(op2->gtFlags & AssertionDsc::PropagatedIconHandleFlags);
+            assertion.op2.SetIconFlag(op2->GetIconHandleFlag());
 
             //
             // Ok everything has been set and the assertion looks good
@@ -1201,8 +1201,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 #endif // TARGET_ARM
 
                         assertion.op2.u1.iconVal = iconVal;
-                        assertion.op2.SetIconFlags(op2->gtFlags & AssertionDsc::PropagatedIconHandleFlags,
-                                                   op2->AsIntCon()->gtFieldSeq);
+                        assertion.op2.SetIconFlag(op2->GetIconHandleFlag(), op2->AsIntCon()->gtFieldSeq);
                     }
                     else if (op2->gtOper == GT_CNS_LNG)
                     {
@@ -1364,7 +1363,10 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 assertion.op2.kind       = O2K_IND_CNS_INT;
                 assertion.op2.u1.iconVal = cnsValue;
                 assertion.op2.vn         = optConservativeNormalVN(op2->AsOp()->gtOp1);
-                assertion.op2.SetIconFlags(iconFlags);
+
+                /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
+                assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
+                assertion.op2.SetIconFlag(iconFlags);
             }
             // JIT case
             else if (optIsTreeKnownIntValue(!optLocalAssertionProp, op2, &cnsValue, &iconFlags))
@@ -1373,7 +1375,10 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 assertion.op2.kind       = O2K_CONST_INT;
                 assertion.op2.u1.iconVal = cnsValue;
                 assertion.op2.vn         = optConservativeNormalVN(op2);
-                assertion.op2.SetIconFlags(iconFlags);
+
+                /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
+                assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
+                assertion.op2.SetIconFlag(iconFlags);
             }
             else
             {
@@ -1442,7 +1447,7 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
         if (tree->OperGet() == GT_CNS_INT)
         {
             *pConstant = tree->AsIntCon()->IconValue();
-            *pFlags    = tree->gtFlags & AssertionDsc::PropagatedIconHandleFlags;
+            *pFlags    = tree->GetIconHandleFlag();
             return true;
         }
 #ifdef TARGET_64BIT
@@ -1451,7 +1456,7 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
         else if (tree->OperGet() == GT_CNS_LNG)
         {
             *pConstant = tree->AsLngCon()->gtLconVal;
-            *pFlags    = tree->gtFlags & AssertionDsc::PropagatedIconHandleFlags;
+            *pFlags    = tree->GetIconHandleFlag();
             return true;
         }
 #endif
@@ -1671,11 +1676,12 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
         case O2K_IND_CNS_INT:
         case O2K_CONST_INT:
         {
+            // The only flags that can be set are those in the GTF_ICON_HDL_MASK.
             switch (assertion->op1.kind)
             {
                 case O1K_EXACT_TYPE:
                 case O1K_SUBTYPE:
-                    assert(assertion->op2.IsHandle());
+                    assert(assertion->op2.HasIconFlag());
                     break;
                 case O1K_LCLVAR:
                     assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
@@ -1694,7 +1700,7 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
         {
             // All handles should be represented by O2K_CONST_INT,
             // so no handle bits should be set here.
-            assert(!assertion->op2.IsHandle());
+            assert(!assertion->op2.HasIconFlag());
         }
         break;
 
@@ -1906,7 +1912,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         dsc.op2.kind       = O2K_CONST_INT;
         dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
         dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlags(GTF_EMPTY);
+        dsc.op2.SetIconFlag(GTF_EMPTY);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
@@ -1923,7 +1929,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         dsc.op2.kind       = O2K_CONST_INT;
         dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
         dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlags(GTF_EMPTY);
+        dsc.op2.SetIconFlag(GTF_EMPTY);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
@@ -1940,7 +1946,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         dsc.op2.kind       = O2K_CONST_INT;
         dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
         dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlags(GTF_EMPTY);
+        dsc.op2.SetIconFlag(GTF_EMPTY);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
@@ -1957,7 +1963,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         dsc.op2.kind       = O2K_CONST_INT;
         dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
         dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlags(GTF_EMPTY);
+        dsc.op2.SetIconFlag(GTF_EMPTY);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
@@ -2000,7 +2006,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         dsc.op2.kind       = O2K_CONST_INT;
         dsc.op2.vn         = vnStore->VNZeroForType(op2->TypeGet());
         dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlags(GTF_EMPTY);
+        dsc.op2.SetIconFlag(GTF_EMPTY);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
@@ -2017,7 +2023,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         dsc.op2.kind       = O2K_CONST_INT;
         dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
         dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlags(GTF_EMPTY);
+        dsc.op2.SetIconFlag(GTF_EMPTY);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
@@ -2031,7 +2037,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         dsc.op2.kind       = O2K_CONST_INT;
         dsc.op2.vn         = vnStore->VNZeroForType(TYP_INT);
         dsc.op2.u1.iconVal = 0;
-        dsc.op2.SetIconFlags(GTF_EMPTY);
+        dsc.op2.SetIconFlag(GTF_EMPTY);
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
@@ -2127,7 +2133,7 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
             dsc.op2.vn         = vnStore->VNConservativeNormalValue(op2->gtVNPair);
             dsc.op2.kind       = O2K_CONST_INT;
             dsc.op2.u1.iconVal = 0;
-            dsc.op2.SetIconFlags(GTF_EMPTY);
+            dsc.op2.SetIconFlag(GTF_EMPTY);
 
             // when con is not zero, create an assertion on the arr.Length == con edge
             // when con is zero, create an assertion on the arr.Length != 0 edge
@@ -2946,13 +2952,11 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             break;
 
         case O2K_CONST_INT:
-        {
-            GenTreeFlags iconFlags  = curAssertion->op2.GetIconFlags();
-            GenTreeFlags iconHandle = iconFlags & GTF_ICON_HDL_MASK;
+
             // Don't propagate handles if we need to report relocs.
-            if (opts.compReloc && (iconHandle != 0) && curAssertion->op2.u1.iconVal != 0)
+            if (opts.compReloc && curAssertion->op2.HasIconFlag() && curAssertion->op2.u1.iconVal != 0)
             {
-                if (iconHandle == GTF_ICON_STATIC_HDL)
+                if (curAssertion->op2.GetIconFlag() == GTF_ICON_STATIC_HDL)
                 {
                     propagateType = true;
                 }
@@ -2972,10 +2976,11 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             assert(!varTypeIsSmall(tree) || (curAssertion->op2.u1.iconVal ==
                                              optCastConstantSmall(curAssertion->op2.u1.iconVal, tree->TypeGet())));
 
-            if (iconHandle != 0)
+            if (curAssertion->op2.HasIconFlag())
             {
                 // Here we have to allocate a new 'large' node to replace the old one
-                newTree = gtNewIconHandleNode(curAssertion->op2.u1.iconVal, iconFlags, curAssertion->op2.u1.fieldSeq);
+                newTree = gtNewIconHandleNode(curAssertion->op2.u1.iconVal, curAssertion->op2.GetIconFlag(),
+                                              curAssertion->op2.u1.fieldSeq);
 
                 // Make sure we don't retype const gc handles to TYP_I_IMPL
                 // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
@@ -2998,10 +3003,8 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             {
                 assert(varTypeIsIntegralOrI(tree));
                 newTree->BashToConst(curAssertion->op2.u1.iconVal, genActualType(tree));
-                newTree->gtFlags |= iconFlags;
             }
             break;
-        }
 
         default:
             return nullptr;
@@ -3881,7 +3884,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
 
             if (vnStore->IsVNHandle(vnCns))
             {
-                op1->gtFlags |= (vnStore->GetHandleFlags(vnCns) & AssertionDsc::PropagatedIconHandleFlags);
+                op1->gtFlags |= (vnStore->GetHandleFlags(vnCns) & GTF_ICON_HDL_MASK);
             }
         }
         else if (op1->TypeGet() == TYP_LONG)
@@ -3890,7 +3893,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
 
             if (vnStore->IsVNHandle(vnCns))
             {
-                op1->gtFlags |= (vnStore->GetHandleFlags(vnCns) & AssertionDsc::PropagatedIconHandleFlags);
+                op1->gtFlags |= (vnStore->GetHandleFlags(vnCns) & GTF_ICON_HDL_MASK);
             }
         }
         else if (op1->TypeGet() == TYP_DOUBLE)

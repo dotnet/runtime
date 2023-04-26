@@ -985,7 +985,7 @@ public:
     // If "vn" is checked bound arith, then populate the "info" fields for cmpOp, cmpOper.
     void GetCompareCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info);
 
-    // Returns the flags on the current handle. GTF_ICON_SCOPE_HDL for example. Can also have GTF_ICON_INITCLASS.
+    // Returns the flags on the current handle. GTF_ICON_SCOPE_HDL for example.
     GenTreeFlags GetHandleFlags(ValueNum vn);
 
     // Returns true iff the VN represents a handle constant.
