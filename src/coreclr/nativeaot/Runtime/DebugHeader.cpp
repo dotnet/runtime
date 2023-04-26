@@ -76,7 +76,7 @@ struct DotNetRuntimeDebugHeader
     // This counter can be incremented to indicate breaking changes
     // This field must be encoded little endian, regardless of the typical endianness of
     // the machine
-    const uint16_t MajorVersion = 2;
+    const uint16_t MajorVersion = 3;
 
     // This counter can be incremented to indicate back-compatible changes
     // This field must be encoded little endian, regardless of the typical endianness of
@@ -201,11 +201,7 @@ extern "C" void PopulateDebugHeaders()
     MAKE_DEBUG_FIELD_ENTRY(MethodTable, m_usComponentSize);
     MAKE_DEBUG_FIELD_ENTRY(MethodTable, m_uFlags);
     MAKE_DEBUG_ENTRY(MethodTable, m_pBaseType, offsetof(MethodTable, m_RelatedType) + offsetof(MethodTable::RelatedTypeUnion, m_pBaseType));
-    MAKE_DEBUG_ENTRY(MethodTable, m_ppBaseTypeViaIAT, offsetof(MethodTable, m_RelatedType) + offsetof(MethodTable::RelatedTypeUnion, m_ppBaseTypeViaIAT));
-    MAKE_DEBUG_ENTRY(MethodTable, m_pCanonicalType, offsetof(MethodTable, m_RelatedType) + offsetof(MethodTable::RelatedTypeUnion, m_pCanonicalType));
-    MAKE_DEBUG_ENTRY(MethodTable, m_ppCanonicalTypeViaIAT, offsetof(MethodTable, m_RelatedType) + offsetof(MethodTable::RelatedTypeUnion, m_ppCanonicalTypeViaIAT));
     MAKE_DEBUG_ENTRY(MethodTable, m_pRelatedParameterType, offsetof(MethodTable, m_RelatedType) + offsetof(MethodTable::RelatedTypeUnion, m_pRelatedParameterType));
-    MAKE_DEBUG_ENTRY(MethodTable, m_ppRelatedParameterTypeViaIAT, offsetof(MethodTable, m_RelatedType) + offsetof(MethodTable::RelatedTypeUnion, m_ppRelatedParameterTypeViaIAT));
     MAKE_DEBUG_FIELD_ENTRY(MethodTable, m_VTable);
 
     MAKE_SIZE_ENTRY(StressLog);

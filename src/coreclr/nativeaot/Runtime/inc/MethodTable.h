@@ -98,15 +98,9 @@ private:
         {
             // Kinds.CanonicalEEType
             MethodTable*     m_pBaseType;
-            MethodTable**    m_ppBaseTypeViaIAT;
-
-            // Kinds.ClonedEEType
-            MethodTable** m_pCanonicalType;
-            MethodTable** m_ppCanonicalTypeViaIAT;
 
             // Kinds.ParameterizedEEType
             MethodTable*  m_pRelatedParameterType;
-            MethodTable** m_ppRelatedParameterTypeViaIAT;
         };
     };
 
