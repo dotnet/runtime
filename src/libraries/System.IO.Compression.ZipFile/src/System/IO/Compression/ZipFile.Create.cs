@@ -349,12 +349,83 @@ namespace System.IO.Compression
                                                CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding) =>
             DoCreateFromDirectory(sourceDirectoryName, destinationArchiveFileName, compressionLevel, includeBaseDirectory, entryNameEncoding);
 
+        /// <summary>
+        /// Creates a zip archive in the specified stream that contains the files and directories from the specified directory.
+        /// </summary>
+        /// <param name="sourceDirectoryName">The path to the directory to be archived, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <param name="destination">The stream where the zip archive is to be stored.</param>
+        /// <remarks>
+        /// The directory structure from the file system is preserved in the archive. If the directory is empty, an empty archive is created.
+        /// This method overload does not include the base directory in the archive and does not allow you to specify a compression level.
+        /// If you want to include the base directory or specify a compression level, call the <see cref="CreateFromDirectory(string, Stream, CompressionLevel, bool)"/> method overload.
+        /// If a file in the directory cannot be added to the archive, the archive is left incomplete and invalid, and the method throws an <see cref="IOException"/> exception.
+        /// </remarks>
+        /// <exception cref="ArgumentException"><paramref name="sourceDirectoryName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
+        /// -or-
+        /// The <paramref name="destination"/> stream does not support writing.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName" /> or <paramref name="destination" /> is <see langword="null" />.</exception>
+        /// <exception cref="PathTooLongException">In <paramref name="sourceDirectoryName" /> the specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="DirectoryNotFoundException"><paramref name="sourceDirectoryName" /> is invalid or does not exist (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="IOException">A file in the specified directory could not be opened.
+        ///-or-
+        ///An I/O error occurred while opening a file to be archived.</exception>
+        /// <exception cref="NotSupportedException"><paramref name="sourceDirectoryName" /> contains an invalid format.</exception>
         public static void CreateFromDirectory(string sourceDirectoryName, Stream destination) =>
            DoCreateFromDirectory(sourceDirectoryName, destination, compressionLevel: null, includeBaseDirectory: false, entryNameEncoding: null);
 
+        /// <summary>
+        /// Creates a zip archive in the specified stream that contains the files and directories from the specified directory, uses the specified compression level, and optionally includes the base directory.
+        /// </summary>
+        /// <param name="sourceDirectoryName">The path to the directory to be archived, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <param name="destination">The stream where the zip archive is to be stored.</param>
+        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression effectiveness when creating the entry.</param>
+        /// <param name="includeBaseDirectory"><see langword="true" /> to include the directory name from <paramref name="sourceDirectoryName" /> at the root of the archive; <see langword="false" /> to include only the contents of the directory.</param>
+        /// <remarks>
+        /// The directory structure from the file system is preserved in the archive. If the directory is empty, an empty archive is created.
+        /// Use this method overload to specify the compression level and whether to include the base directory in the archive.
+        /// If a file in the directory cannot be added to the archive, the archive is left incomplete and invalid, and the method throws an <see cref="IOException"/> exception.
+        /// </remarks>
+        /// <exception cref="ArgumentException"><paramref name="sourceDirectoryName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
+        /// -or-
+        /// The <paramref name="destination"/> stream does not support writing.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName" /> or <paramref name="destination" /> is <see langword="null" />.</exception>
+        /// <exception cref="PathTooLongException">In <paramref name="sourceDirectoryName" /> the specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="DirectoryNotFoundException"><paramref name="sourceDirectoryName" /> is invalid or does not exist (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="IOException">A file in the specified directory could not be opened.
+        ///-or-
+        ///An I/O error occurred while opening a file to be archived.</exception>
+        /// <exception cref="NotSupportedException"><paramref name="sourceDirectoryName" /> contains an invalid format.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
         public static void CreateFromDirectory(string sourceDirectoryName, Stream destination, CompressionLevel compressionLevel, bool includeBaseDirectory) =>
             DoCreateFromDirectory(sourceDirectoryName, destination, compressionLevel, includeBaseDirectory, entryNameEncoding: null);
 
+        /// <summary>
+        /// Creates a zip archive in the specified stream that contains the files and directories from the specified directory, uses the specified compression level and character encoding for entry names, and optionally includes the base directory.
+        /// </summary>
+        /// <param name="sourceDirectoryName">The path to the directory to be archived, specified as a relative or absolute path. A relative path is interpreted as relative to the current working directory.</param>
+        /// <param name="destination">The stream where the zip archive is to be stored.</param>
+        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression effectiveness when creating the entry.</param>
+        /// <param name="includeBaseDirectory"><see langword="true" /> to include the directory name from <paramref name="sourceDirectoryName" /> at the root of the archive; <see langword="false" /> to include only the contents of the directory.</param>
+        /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this archive. Specify a value for this parameter only when an encoding is required for interoperability with zip archive tools and libraries that do not support UTF-8 encoding for entry names.</param>
+        /// <remarks>
+        /// The directory structure from the file system is preserved in the archive. If the directory is empty, an empty archive is created.
+        /// Use this method overload to specify the compression level and character encoding, and whether to include the base directory in the archive.
+        /// If a file in the directory cannot be added to the archive, the archive is left incomplete and invalid, and the method throws an <see cref="IOException"/> exception.
+        /// </remarks>
+        /// <exception cref="ArgumentException"><paramref name="sourceDirectoryName" /> is <see cref="string.Empty" />, contains only white space, or contains at least one invalid character.
+        /// -or-
+        /// The <paramref name="destination"/> stream does not support writing.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceDirectoryName" /> or <paramref name="destination" /> is <see langword="null" />.</exception>
+        /// <exception cref="PathTooLongException">In <paramref name="sourceDirectoryName" /> the specified path, file name, or both exceed the system-defined maximum length.</exception>
+        /// <exception cref="DirectoryNotFoundException"><paramref name="sourceDirectoryName" /> is invalid or does not exist (for example, it is on an unmapped drive).</exception>
+        /// <exception cref="IOException">A file in the specified directory could not be opened.
+        ///-or-
+        ///An I/O error occurred while opening a file to be archived.</exception>
+        /// <exception cref="NotSupportedException"><paramref name="sourceDirectoryName" /> contains an invalid format.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="compressionLevel"/> is not a valid <see cref="CompressionLevel"/> value.</exception>
         public static void CreateFromDirectory(string sourceDirectoryName, Stream destination,
                                                CompressionLevel compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding) =>
             DoCreateFromDirectory(sourceDirectoryName, destination, compressionLevel, includeBaseDirectory, entryNameEncoding);
@@ -381,7 +452,11 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(destination, nameof(destination));
             if (!destination.CanWrite)
             {
-                throw new IOException("stream is unwritable");
+                throw new ArgumentException(SR.UnwritableStream, nameof(destination));
+            }
+            if (compressionLevel.HasValue && !Enum.IsDefined(typeof(CompressionLevel), compressionLevel))
+            {
+                throw new ArgumentOutOfRangeException(nameof(compressionLevel));
             }
 
             // Rely on Path.GetFullPath for validation of sourceDirectoryName and destinationArchive
