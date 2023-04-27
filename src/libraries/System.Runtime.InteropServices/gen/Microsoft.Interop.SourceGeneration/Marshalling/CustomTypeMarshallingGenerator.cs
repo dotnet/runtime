@@ -71,11 +71,7 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.NotifyForSuccessfulInvoke:
-                    if (elementMarshalDirection is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
-                    {
-                        return _nativeTypeMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
-                    }
-                    break;
+                    return _nativeTypeMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
                 case StubCodeContext.Stage.UnmarshalCapture:
                     if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                     {
