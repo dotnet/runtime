@@ -521,12 +521,12 @@ expand_i4: dest:x src1:i len:4
 expand_i8: dest:x src1:i len:4
 expand_r4: dest:x src1:f len:4
 expand_r8: dest:x src1:f len:4
-insert_i1: dest:x src1:i len:4
-insert_i2: dest:x src1:i len:4
-insert_i4: dest:x src1:i len:4
-insert_i8: dest:x src1:i len:4
-insert_r4: dest:x src1:f len:4
-insert_r8: dest:x src1:f len:4
+insert_i1: dest:x src1:x src2:i len:8
+insert_i2: dest:x src1:x src2:i len:8
+insert_i4: dest:x src1:x src2:i len:8
+insert_i8: dest:x src1:x src2:i len:8
+insert_r4: dest:x src1:x src2:f len:8
+insert_r8: dest:x src1:x src2:f len:8
 create_scalar_int: dest:x src1:i len:8
 create_scalar_float: dest:x src1:f len:12
 create_scalar_unsafe_int: dest:x src1:i len:4
@@ -542,6 +542,8 @@ arm64_fcvtn2: dest:x src1:x src2:x len:4 clob:1
 xunop: dest:x src1:x len:4
 arm64_ushl: dest:x src1:x src2:x len:4
 arm64_ext_imm: dest:x src1:x src2:x len:4
+xinsert_i8: dest:x src1:x src2:i src3:i len:20
+xinsert_r8: dest:x src1:x src2:f src3:i len:20
 
 generic_class_init: src1:a len:44 clob:c
 gc_safe_point: src1:i len:12 clob:c

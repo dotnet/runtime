@@ -1133,7 +1133,8 @@ struct CORINFO_SIG_INFO
     CorInfoCallConv     getCallConv()       { return CorInfoCallConv((callConv & CORINFO_CALLCONV_MASK)); }
     bool                hasThis()           { return ((callConv & CORINFO_CALLCONV_HASTHIS) != 0); }
     bool                hasExplicitThis()   { return ((callConv & CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
-    unsigned            totalILArgs()       { return (numArgs + (hasThis() ? 1 : 0)); }
+    bool                hasImplicitThis()   { return ((callConv & (CORINFO_CALLCONV_HASTHIS | CORINFO_CALLCONV_EXPLICITTHIS)) == CORINFO_CALLCONV_HASTHIS); }
+    unsigned            totalILArgs()       { return (numArgs + (hasImplicitThis() ? 1 : 0)); }
     bool                isVarArg()          { return ((getCallConv() == CORINFO_CALLCONV_VARARG) || (getCallConv() == CORINFO_CALLCONV_NATIVEVARARG)); }
     bool                hasTypeArg()        { return ((callConv & CORINFO_CALLCONV_PARAMTYPE) != 0); }
 };
@@ -3224,7 +3225,7 @@ public:
                     ) = 0;
 
     //------------------------------------------------------------------------------
-    // getReadonlyStaticFieldValue: returns true and the actual field's value if the given
+    // getStaticFieldContent: returns true and the actual field's value if the given
     //    field represents a statically initialized readonly field of any type.
     //
     // Arguments:
@@ -3236,12 +3237,19 @@ public:
     // Return Value:
     //    Returns true if field's constant value was available and successfully copied to buffer
     //
-    virtual bool getReadonlyStaticFieldValue(
+    virtual bool getStaticFieldContent(
                     CORINFO_FIELD_HANDLE    field,
                     uint8_t                *buffer,
                     int                     bufferSize,
                     int                     valueOffset = 0,
                     bool                    ignoreMovableObjects = true
+                    ) = 0;
+
+    virtual bool getObjectContent(
+                    CORINFO_OBJECT_HANDLE   obj,
+                    uint8_t*                buffer,
+                    int                     bufferSize,
+                    int                     valueOffset
                     ) = 0;
 
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed

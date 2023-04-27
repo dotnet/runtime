@@ -1237,10 +1237,10 @@ protected:
     BasicBlock* genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // TODO: refactor for LA.
-    void genCodeForJumpCompare(GenTreeOp* tree);
+    void genCodeForJumpCompare(GenTreeOpCC* tree);
 #endif
 #if defined(TARGET_ARM64)
-    void genCodeForJumpCompare(GenTreeOp* tree);
+    void genCodeForJumpCompare(GenTreeOpCC* tree);
     void genCodeForBfiz(GenTreeOp* tree);
     void genCodeForCond(GenTreeOp* tree);
 #endif // TARGET_ARM64

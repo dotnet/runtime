@@ -1,9 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
@@ -12,10 +15,14 @@ namespace System.Reflection.Emit
         private readonly Type _returnType;
         private readonly Type[]? _parameterTypes;
         private readonly ModuleBuilderImpl _module;
-        private readonly MethodAttributes _attributes;
         private readonly string _name;
         private readonly CallingConventions _callingConventions;
         private readonly TypeBuilderImpl _declaringType;
+        private MethodAttributes _attributes;
+        private MethodImplAttributes _methodImplFlags;
+
+        internal DllImportData? _dllImportData;
+        internal List<CustomAttributeWrapper>? _customAttributes;
 
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
@@ -35,6 +42,8 @@ namespace System.Reflection.Emit
                     ArgumentNullException.ThrowIfNull(_parameterTypes[i] = parameterTypes[i], nameof(parameterTypes));
                 }
             }
+
+            _methodImplFlags = MethodImplAttributes.IL;
         }
 
         internal BlobBuilder GetMethodSignatureBlob() =>
@@ -44,9 +53,44 @@ namespace System.Reflection.Emit
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names) => throw new NotImplementedException();
         protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName) => throw new NotImplementedException();
         protected override ILGenerator GetILGeneratorCore(int size) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
-        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes) => throw new NotImplementedException();
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
+        {
+            // Handle pseudo custom attributes
+            switch (con.ReflectedType!.FullName)
+            {
+                case "System.Runtime.CompilerServices.MethodImplAttribute":
+                    int implValue = BinaryPrimitives.ReadUInt16LittleEndian(binaryAttribute.Slice(2));
+                    _methodImplFlags |= (MethodImplAttributes)implValue;
+                    return;
+                case "System.Runtime.InteropServices.DllImportAttribute":
+                    {
+                        _dllImportData = DllImportData.CreateDllImportData(CustomAttributeInfo.DecodeCustomAttribute(con, binaryAttribute), out var preserveSig);
+                        _attributes |= MethodAttributes.PinvokeImpl;
+                        if (preserveSig)
+                        {
+                            _methodImplFlags |= MethodImplAttributes.PreserveSig;
+                        }
+                    }
+                    return;
+                case "System.Runtime.InteropServices.PreserveSigAttribute":
+                    _methodImplFlags |= MethodImplAttributes.PreserveSig;
+                    return;
+                case "System.Runtime.CompilerServices.SpecialNameAttribute":
+                    _attributes |= MethodAttributes.SpecialName;
+                    return;
+                case "System.Security.SuppressUnmanagedCodeSecurityAttribute":
+                    _attributes |= MethodAttributes.HasSecurity;
+                    break;
+            }
+
+            _customAttributes ??= new List<CustomAttributeWrapper>();
+            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+        }
+
+        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
+        {
+            _methodImplFlags = attributes;
+        }
         protected override void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
             Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers) => throw new NotImplementedException();
         public override string Name => _name;
@@ -83,7 +127,7 @@ namespace System.Reflection.Emit
             => throw new NotImplementedException();
 
         public override MethodImplAttributes GetMethodImplementationFlags()
-            => throw new NotImplementedException();
+            => _methodImplFlags;
 
         public override ParameterInfo[] GetParameters()
             => throw new NotImplementedException();
@@ -97,5 +141,104 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params System.Type[] typeArguments)
             => throw new NotImplementedException();
+    }
+
+    internal sealed class DllImportData
+    {
+        private readonly string _moduleName;
+        private readonly string? _entryPoint;
+        private readonly MethodImportAttributes _flags;
+        internal DllImportData(string moduleName, string? entryPoint, MethodImportAttributes flags)
+        {
+            _moduleName = moduleName;
+            _entryPoint = entryPoint;
+            _flags = flags;
+        }
+
+        public string ModuleName => _moduleName;
+
+        public string? EntryPoint => _entryPoint;
+
+        public MethodImportAttributes Flags => _flags;
+
+        internal static DllImportData CreateDllImportData(CustomAttributeInfo attr, out bool preserveSig)
+        {
+            string? moduleName = (string?)attr._ctorArgs[0];
+            if (moduleName == null || moduleName.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_DllNameCannotBeEmpty);
+            }
+
+            MethodImportAttributes importAttributes = MethodImportAttributes.None;
+            string? entryPoint = null;
+            preserveSig = true;
+            for (int i = 0; i < attr._namedParamNames.Length; ++i)
+            {
+                string name = attr._namedParamNames[i];
+                object value = attr._namedParamValues[i]!;
+                switch (name)
+                {
+                    case "PreserveSig":
+                        preserveSig = (bool)value;
+                        break;
+                    case "CallingConvention":
+                        importAttributes |= (CallingConvention)value switch
+                        {
+                            CallingConvention.Cdecl => MethodImportAttributes.CallingConventionCDecl,
+                            CallingConvention.FastCall => MethodImportAttributes.CallingConventionFastCall,
+                            CallingConvention.StdCall => MethodImportAttributes.CallingConventionStdCall,
+                            CallingConvention.ThisCall => MethodImportAttributes.CallingConventionThisCall,
+                            _=> MethodImportAttributes.CallingConventionWinApi // Roslyn defaults with this
+                        };
+                        break;
+                    case "CharSet":
+                        importAttributes |= (CharSet)value switch
+                        {
+                            CharSet.Ansi => MethodImportAttributes.CharSetAnsi,
+                            CharSet.Auto => MethodImportAttributes.CharSetAuto,
+                            CharSet.Unicode => MethodImportAttributes.CharSetUnicode,
+                            _ => MethodImportAttributes.CharSetAuto
+                        };
+                        break;
+                    case "EntryPoint":
+                        entryPoint = (string?)value;
+                        break;
+                    case "ExactSpelling":
+                        if ((bool)value)
+                        {
+                            importAttributes |= MethodImportAttributes.ExactSpelling;
+                        }
+                        break;
+                    case "SetLastError":
+                        if ((bool)value)
+                        {
+                            importAttributes |= MethodImportAttributes.SetLastError;
+                        }
+                        break;
+                    case "BestFitMapping":
+                        if ((bool)value)
+                        {
+                            importAttributes |= MethodImportAttributes.BestFitMappingEnable;
+                        }
+                        else
+                        {
+                            importAttributes |= MethodImportAttributes.BestFitMappingDisable;
+                        }
+                        break;
+                    case "ThrowOnUnmappableChar":
+                        if ((bool)value)
+                        {
+                            importAttributes |= MethodImportAttributes.ThrowOnUnmappableCharEnable;
+                        }
+                        else
+                        {
+                            importAttributes |= MethodImportAttributes.ThrowOnUnmappableCharDisable;
+                        }
+                        break;
+                }
+            }
+
+            return new DllImportData(moduleName, entryPoint, importAttributes);
+        }
     }
 }

@@ -1247,15 +1247,25 @@ unsigned interceptor_ICJI::getClassDomainID(
     return original_ICorJitInfo->getClassDomainID(cls, ppIndirection);
 }
 
-bool interceptor_ICJI::getReadonlyStaticFieldValue(
+bool interceptor_ICJI::getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
           int valueOffset,
           bool ignoreMovableObjects)
 {
-    mcs->AddCall("getReadonlyStaticFieldValue");
-    return original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    mcs->AddCall("getStaticFieldContent");
+    return original_ICorJitInfo->getStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+}
+
+bool interceptor_ICJI::getObjectContent(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset)
+{
+    mcs->AddCall("getObjectContent");
+    return original_ICorJitInfo->getObjectContent(obj, buffer, bufferSize, valueOffset);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(

@@ -4193,9 +4193,9 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 int LinearScan::BuildCmp(GenTree* tree)
 {
 #if defined(TARGET_XARCH)
-    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_BT));
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_BT));
 #elif defined(TARGET_ARM64)
-    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_CCMP));
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_JTEST, GT_CCMP));
 #else
     assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP));
 #endif
