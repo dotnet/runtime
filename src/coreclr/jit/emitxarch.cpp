@@ -4522,7 +4522,7 @@ void emitter::spillIntArgRegsToShadowSlots()
 
         id = emitNewInstrAmd(EA_PTRSIZE, offset);
         id->idIns(INS_mov);
-        id->idInsFmt(IF_AWR_RRD);
+        id->idInsFmt(emitInsModeFormat(INS_mov, IF_ARD_RRD));
         id->idAddr()->iiaAddrMode.amBaseReg = REG_SPBASE;
         id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
         id->idAddr()->iiaAddrMode.amScale   = emitEncodeScale(1);
@@ -4581,7 +4581,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
     instrDesc* id     = emitNewInstrAmd(attr, offset);
     id->idIns(ins);
     id->idReg1(dstReg);
-    emitHandleMemOp(mem, id, IF_RWR_ARD, ins);
+    emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_RRD_ARD), ins);
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
     dispIns(id);
@@ -4695,7 +4695,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         int icon = (int)data->AsIntConCommon()->IconValue();
         id       = emitNewInstrAmdCns(attr, offset, icon);
         id->idIns(ins);
-        emitHandleMemOp(mem, id, IF_AWR_CNS, ins);
+        emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_CNS), ins);
         sz = emitInsSizeAM(id, insCodeMI(ins), icon);
         id->idCodeSize(sz);
     }
@@ -4711,7 +4711,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         {
             id = emitNewInstrAmd(attr, offset);
             id->idIns(ins);
-            emitHandleMemOp(mem, id, IF_AWR_RRD, ins);
+            emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_RRD), ins);
             id->idReg1(op1->GetRegNum());
             sz = emitInsSizeAM(id, insCodeMR(ins));
             id->idCodeSize(sz);
@@ -4724,7 +4724,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
             id = emitNewInstrAmdCns(attr, offset, icon);
             id->idIns(ins);
             id->idReg1(op1->GetRegNum());
-            emitHandleMemOp(mem, id, IF_AWR_RRD_CNS, ins);
+            emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_RRD_CNS), ins);
             sz = emitInsSizeAM(id, insCodeMR(ins), icon);
             id->idCodeSize(sz);
         }
@@ -4735,7 +4735,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         assert(!data->isContained());
         id = emitNewInstrAmd(attr, offset);
         id->idIns(ins);
-        emitHandleMemOp(mem, id, IF_AWR_RRD, ins);
+        emitHandleMemOp(mem, id, emitInsModeFormat(ins, IF_ARD_RRD), ins);
         id->idReg1(data->GetRegNum());
         sz = emitInsSizeAM(id, insCodeMR(ins));
         id->idCodeSize(sz);
@@ -5239,7 +5239,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
         else
         {
             id = emitNewInstrAmdCns(attr, offset, iconVal);
-            emitHandleMemOp(storeInd, id, IF_ARW_CNS, ins);
+            emitHandleMemOp(storeInd, id, emitInsModeFormat(ins, IF_ARD_CNS), ins);
             id->idIns(ins);
             sz = emitInsSizeAM(id, insCodeMI(ins), iconVal);
         }
@@ -5250,7 +5250,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 
         // ind, reg
         id = emitNewInstrAmd(attr, offset);
-        emitHandleMemOp(storeInd, id, IF_ARW_RRD, ins);
+        emitHandleMemOp(storeInd, id, emitInsModeFormat(ins, IF_ARD_RRD), ins);
         id->idReg1(src->GetRegNum());
         id->idIns(ins);
         sz = emitInsSizeAM(id, insCodeMR(ins));
@@ -5304,7 +5304,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     }
 
     instrDesc* id = emitNewInstrAmd(attr, offset);
-    emitHandleMemOp(storeInd, id, IF_ARW, ins);
+    emitHandleMemOp(storeInd, id, emitInsModeFormat(ins, IF_ARD), ins);
     id->idIns(ins);
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeMR(ins));
     id->idCodeSize(sz);
@@ -5652,7 +5652,7 @@ void emitter::emitIns_IJ(emitAttr attr, regNumber reg, unsigned base)
     instrDesc* id = emitNewInstrAmd(attr, base);
 
     id->idIns(ins);
-    id->idInsFmt(IF_ARD);
+    id->idInsFmt(emitInsModeFormat(ins, IF_ARD));
     id->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
     id->idAddr()->iiaAddrMode.amIndxReg = reg;
     id->idAddr()->iiaAddrMode.amScale   = emitter::OPSZP;
@@ -6279,7 +6279,7 @@ void emitter::emitIns_R_R_I(instruction ins, emitAttr attr, regNumber reg1, regN
     instrDesc* id = emitNewInstrSC(attr, ival);
 
     id->idIns(ins);
-    id->idInsFmt(IF_RWR_RRD_CNS);
+    id->idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_CNS));
     id->idReg1(reg1);
     id->idReg2(reg2);
 
@@ -6336,7 +6336,7 @@ void emitter::emitIns_AR(instruction ins, emitAttr attr, regNumber base, int off
 
     id->idIns(ins);
 
-    id->idInsFmt(IF_ARD);
+    id->idInsFmt(emitInsModeFormat(ins, IF_ARD));
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
 
@@ -6391,7 +6391,7 @@ void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTre
     id->idIns(ins);
     id->idReg1(reg1);
 
-    emitHandleMemOp(indir, id, IF_RRW_ARD, ins);
+    emitHandleMemOp(indir, id, emitInsModeFormat(ins, IF_RRD_ARD), ins);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -6411,7 +6411,7 @@ void emitter::emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenT
     id->idIns(ins);
     id->idReg1(reg1);
 
-    emitHandleMemOp(indir, id, IF_RRW_ARD_CNS, ins);
+    emitHandleMemOp(indir, id, emitInsModeFormat(ins, IF_RRD_ARD_CNS), ins);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins), ival);
     id->idCodeSize(sz);
@@ -6430,7 +6430,7 @@ void emitter::emitIns_R_AR_I(instruction ins, emitAttr attr, regNumber reg1, reg
     id->idIns(ins);
     id->idReg1(reg1);
 
-    id->idInsFmt(IF_RRW_ARD_CNS);
+    id->idInsFmt(emitInsModeFormat(ins, IF_RRD_ARD_CNS));
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
 
@@ -6456,7 +6456,7 @@ void emitter::emitIns_R_C_I(
     instrDesc* id = emitNewInstrCnsDsp(attr, ival, offs);
 
     id->idIns(ins);
-    id->idInsFmt(IF_RRW_MRD_CNS);
+    id->idInsFmt(emitInsModeFormat(ins, IF_RRD_MRD_CNS));
     id->idReg1(reg1);
     id->idAddr()->iiaFieldHnd = fldHnd;
 
@@ -6475,7 +6475,7 @@ void emitter::emitIns_R_S_I(instruction ins, emitAttr attr, regNumber reg1, int 
     instrDesc* id = emitNewInstrCns(attr, ival);
 
     id->idIns(ins);
-    id->idInsFmt(IF_RRW_SRD_CNS);
+    id->idInsFmt(emitInsModeFormat(ins, IF_RRD_SRD_CNS));
     id->idReg1(reg1);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
@@ -6502,7 +6502,7 @@ void emitter::emitIns_R_R_A(instruction ins, emitAttr attr, regNumber reg1, regN
     id->idReg1(reg1);
     id->idReg2(reg2);
 
-    emitHandleMemOp(indir, id, IF_RWR_RRD_ARD, ins);
+    emitHandleMemOp(indir, id, emitInsModeFormat(ins, IF_RRD_RRD_ARD), ins);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
     id->idCodeSize(sz);
@@ -6522,7 +6522,7 @@ void emitter::emitIns_R_R_AR(instruction ins, emitAttr attr, regNumber reg1, reg
     id->idReg1(reg1);
     id->idReg2(reg2);
 
-    id->idInsFmt(IF_RWR_RRD_ARD);
+    id->idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_ARD));
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
 
@@ -6589,7 +6589,7 @@ void emitter::emitIns_R_AR_R(instruction ins,
     id->idReg1(reg1);
     id->idReg2(reg2);
 
-    id->idInsFmt(IF_RWR_ARD_RRD);
+    id->idInsFmt(emitInsModeFormat(ins, IF_RRD_ARD_RRD));
     id->idAddr()->iiaAddrMode.amBaseReg = base;
     id->idAddr()->iiaAddrMode.amIndxReg = index;
     id->idAddr()->iiaAddrMode.amScale   = emitEncodeSize((emitAttr)scale);
@@ -6616,7 +6616,7 @@ void emitter::emitIns_R_R_C(
     instrDesc* id = emitNewInstrDsp(attr, offs);
 
     id->idIns(ins);
-    id->idInsFmt(IF_RWR_RRD_MRD);
+    id->idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_MRD));
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
@@ -6640,7 +6640,7 @@ void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg,
 
     instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
-    id->idInsFmt(IF_RWR_RRD_RRD);
+    id->idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_RRD));
     id->idReg1(targetReg);
     id->idReg2(reg1);
     id->idReg3(reg2);
@@ -6660,7 +6660,7 @@ void emitter::emitIns_R_R_S(instruction ins, emitAttr attr, regNumber reg1, regN
     instrDesc* id = emitNewInstr(attr);
 
     id->idIns(ins);
-    id->idInsFmt(IF_RWR_RRD_SRD);
+    id->idInsFmt(emitInsModeFormat(ins, IF_RRD_RRD_SRD));
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
@@ -7538,7 +7538,7 @@ void emitter::emitIns_C_R_I(
     instrDesc* id = emitNewInstrCnsDsp(attr, ival, offs);
 
     id->idIns(ins);
-    id->idInsFmt(IF_MWR_RRD_CNS);
+    id->idInsFmt(emitInsModeFormat(ins, IF_MRD_RRD_CNS));
     id->idReg1(reg);
     id->idAddr()->iiaFieldHnd = fldHnd;
 
@@ -7569,7 +7569,7 @@ void emitter::emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs
     instrDesc* id = emitNewInstrAmdCns(attr, 0, ival);
 
     id->idIns(ins);
-    id->idInsFmt(IF_SWR_RRD_CNS);
+    id->idInsFmt(emitInsModeFormat(ins, IF_SRD_RRD_CNS));
     id->idReg1(reg);
     id->idAddr()->iiaLclVar.initLclVarAddr(varNum, offs);
 #ifdef DEBUG
@@ -7602,7 +7602,7 @@ void emitter::emitIns_A_R_I(instruction ins, emitAttr attr, GenTreeIndir* indir,
     instrDesc* id = emitNewInstrAmdCns(attr, indir->Offset(), imm);
     id->idIns(ins);
     id->idReg1(reg);
-    emitHandleMemOp(indir, id, IF_AWR_RRD_CNS, ins);
+    emitHandleMemOp(indir, id, emitInsModeFormat(ins, IF_ARD_RRD_CNS), ins);
     UNATIVE_OFFSET size = emitInsSizeAM(id, insCodeMR(ins), imm);
     id->idCodeSize(size);
     dispIns(id);
@@ -9332,7 +9332,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
         // The function is "ireg" if id->idIsCallRegPtr(),
         // else [ireg+xmul*xreg+disp]
 
-        id->idInsFmt(IF_ARD);
+        id->idInsFmt(emitInsModeFormat(ins, IF_ARD));
 
         id->idAddr()->iiaAddrMode.amBaseReg = ireg;
         id->idAddr()->iiaAddrMode.amIndxReg = xreg;
@@ -15303,7 +15303,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             insGroup* tmpIGlabel  = id->idAddr()->iiaIGlabel;
             bool      tmpDspReloc = id->idIsDspReloc();
 
-            id->idInsFmt(IF_SWR_CNS);
+            id->idInsFmt(emitInsModeFormat(ins, IF_SRD_CNS));
             id->idAddr()->iiaLclVar = ((instrDescLbl*)id)->dstLclVar;
             id->idSetIsDspReloc(false);
 
@@ -15329,7 +15329,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
                 idAmd->idDebugOnlyInfo(id->idDebugOnlyInfo());
             }
 
-            idAmd->idInsFmt(IF_RWR_ARD);
+            idAmd->idInsFmt(emitInsModeFormat(ins, IF_RRD_ARD));
             idAmd->idAddr()->iiaAddrMode.amBaseReg = REG_NA;
             idAmd->idAddr()->iiaAddrMode.amIndxReg = REG_NA;
             emitSetAmdDisp(idAmd, distVal); // set the displacement
