@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Http.Logging
             _options = options;
         }
 
-        private Task<HttpResponseMessage> SendCoreAsync(HttpRequestMessage request, bool useAsync CancellationToken cancellationToken)
+        private Task<HttpResponseMessage> SendCoreAsync(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
         {
             ThrowHelper.ThrowIfNull(request);
             return Core(request, cancellationToken);

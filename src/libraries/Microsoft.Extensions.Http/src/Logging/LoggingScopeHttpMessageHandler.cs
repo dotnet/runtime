@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Http.Logging
                 {
                     Log.RequestPipelineStart(_logger, request, shouldRedactHeaderValue);
                     var response = useAsync
-                        ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                        ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false)
 #if NET5_0_OR_GREATER
                         : base.Send(request, cancellationToken);
 #else
