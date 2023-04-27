@@ -871,9 +871,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/CLR-x86-JIT/v2.1/DDB/B168384/LdfldaHack/*">
             <Issue>https://github.com/dotnet/runtime/issues/615</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_84693/Runtime_84693/*">
-            <Issue>https://github.com/dotnet/runtime/issues/85081</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
             <Issue>Not compatible with crossgen2</Issue>
         </ExcludeList>
@@ -1423,6 +1420,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_85240/test85240/**">
+            <Issue>https://github.com/dotnet/runtime/issues/71095</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Remainder/Regressions/Regression1/**">
             <Issue>https://github.com/dotnet/runtime/issues/79022</Issue>
         </ExcludeList>
@@ -3335,6 +3335,12 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/**">
+            <Issue>https://github.com/dotnet/runtime/issues/85316</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
+            <Issue>https://github.com/dotnet/runtime/issues/85316</Issue>
         </ExcludeList>
     </ItemGroup>
 

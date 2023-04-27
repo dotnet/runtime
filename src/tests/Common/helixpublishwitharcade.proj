@@ -84,7 +84,7 @@
 
       <_PropertiesToPass>
         TargetArchitecture=$(TargetArchitecture);
-        TargetOS=$(TargetOS);
+        TargetOS=$(TargetOS.ToLowerInvariant());
         Configuration=$(Configuration);
         Creator=$(_Creator);
         HelixAccessToken=$(_HelixAccessToken);

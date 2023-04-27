@@ -9,7 +9,7 @@ using Xunit;
 namespace System.Reflection.Emit.Tests
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public class AssemblySaveTestsWithVariousTypes
+    public class AssemblySaveWithVariousMembersTests
     {
         private static readonly AssemblyName s_assemblyName = new AssemblyName("MyDynamicAssembly")
         {
@@ -25,23 +25,9 @@ namespace System.Reflection.Emit.Tests
             using (TempFile file = TempFile.Create())
             {
                 Assembly assemblyFromDisk = WriteAndLoadAssembly(Type.EmptyTypes, file.Path);
-                AssemblyName aNameFromDisk = assemblyFromDisk.GetName();
 
-                // Test AssemblyName properties
-                Assert.Equal(s_assemblyName.Name, aNameFromDisk.Name);
-                Assert.Equal(s_assemblyName.Version, aNameFromDisk.Version);
-                Assert.Equal(s_assemblyName.CultureInfo, aNameFromDisk.CultureInfo);
-                Assert.Equal(s_assemblyName.CultureName, aNameFromDisk.CultureName);
-                Assert.Equal(s_assemblyName.ContentType, aNameFromDisk.ContentType);
-                // Runtime assemblies adding AssemblyNameFlags.PublicKey in Assembly.GetName() overloads
-                Assert.Equal(s_assemblyName.Flags | AssemblyNameFlags.PublicKey, aNameFromDisk.Flags);
                 Assert.Empty(assemblyFromDisk.GetTypes());
-
-                Module moduleFromDisk = assemblyFromDisk.Modules.FirstOrDefault();
-
-                Assert.NotNull(moduleFromDisk);
-                Assert.Equal(s_assemblyName.Name, moduleFromDisk.ScopeName);
-                Assert.Empty(moduleFromDisk.GetTypes());
+                AssemblyTools.AssertAssemblyNameAndModule(s_assemblyName, assemblyFromDisk.GetName(), assemblyFromDisk.Modules.FirstOrDefault());
             }
         }
 
@@ -86,49 +72,10 @@ namespace System.Reflection.Emit.Tests
                 Type sourceType = types[i];
                 Type typeFromDisk = typesFromDisk[i];
 
-                AssertTypeProperties(sourceType, typeFromDisk);
-                AssertMethods(sourceType.GetMethods(), typeFromDisk.GetMethods());
-                AssertFields(sourceType.GetFields(), typeFromDisk.GetFields());
+                AssemblyTools.AssertTypeProperties(sourceType, typeFromDisk);
+                AssemblyTools.AssertMethods(sourceType.GetMethods(), typeFromDisk.GetMethods());
+                AssemblyTools.AssertFields(sourceType.GetFields(), typeFromDisk.GetFields());
             }
-        }
-
-        private static void AssertFields(FieldInfo[] declaredFields, FieldInfo[] fieldsFromDisk)
-        {
-            Assert.Equal(declaredFields.Length, fieldsFromDisk.Length);
-
-            for (int j = 0; j < declaredFields.Length; j++)
-            {
-                FieldInfo sourceField = declaredFields[j];
-                FieldInfo fieldFromDisk = fieldsFromDisk[j];
-
-                Assert.Equal(sourceField.Name, fieldFromDisk.Name);
-                Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
-                Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
-            }
-        }
-
-        private static void AssertMethods(MethodInfo[] sourceMethods, MethodInfo[] methodsFromDisk)
-        {
-            Assert.Equal(sourceMethods.Length, methodsFromDisk.Length);
-
-            for (int j = 0; j < sourceMethods.Length; j++)
-            {
-                MethodInfo sourceMethod = sourceMethods[j];
-                MethodInfo methodFromDisk = methodsFromDisk[j];
-
-                Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
-                Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-                Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
-            }
-        }
-
-        private static void AssertTypeProperties(Type sourceType, Type typeFromDisk)
-        {
-            Assert.Equal(sourceType.Name, typeFromDisk.Name);
-            Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
-            Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
-            Assert.Equal(sourceType.IsInterface, typeFromDisk.IsInterface);
-            Assert.Equal(sourceType.IsValueType, typeFromDisk.IsValueType);
         }
 
         [Theory]
@@ -149,9 +96,8 @@ namespace System.Reflection.Emit.Tests
         {
             using (TempFile file = TempFile.Create())
             {
-                MethodInfo defineDynamicAssemblyMethod = AssemblyTools.PopulateMethods(typeof(string), out MethodInfo saveMethod);
-                AssemblyBuilder assemblyBuilder = (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null,
-                    new object[] { s_assemblyName, typeof(object).Assembly, null });
+                AssemblyBuilder assemblyBuilder = AssemblyTools.PopulateAssemblyBuilderAndSaveMethod(
+                    s_assemblyName, null, typeof(string), out MethodInfo saveMethod);
 
                 ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
                 TypeBuilder tb = mb.DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract);
