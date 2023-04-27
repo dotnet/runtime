@@ -10,6 +10,7 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System
@@ -36,6 +37,8 @@ namespace System
             HResult = HResults.E_POINTER;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected NullReferenceException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

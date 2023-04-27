@@ -1105,6 +1105,21 @@ void interceptor_ICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     mc->recGetFieldInfo(pResolvedToken, callerHandle, flags, pResult);
 }
 
+uint32_t interceptor_ICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+{
+    mc->cr->AddCall("getThreadLocalFieldInfo");
+    uint32_t result = original_ICorJitInfo->getThreadLocalFieldInfo(field);
+    mc->recGetThreadLocalFieldInfo(field, result);
+    return result;
+}
+
+void interceptor_ICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
+    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);
+    mc->recGetThreadLocalStaticBlocksInfo(pInfo);
+}
+
 // Returns true iff "fldHnd" represents a static field.
 bool interceptor_ICJI::isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
 {
@@ -1728,11 +1743,19 @@ unsigned interceptor_ICJI::getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppI
     return temp;
 }
 
-bool interceptor_ICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+bool interceptor_ICJI::getStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
 {
-    mc->cr->AddCall("getReadonlyStaticFieldValue");
-    bool result = original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
-    mc->recGetReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects, result);
+    mc->cr->AddCall("getStaticFieldContent");
+    bool result = original_ICorJitInfo->getStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    mc->recGetStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects, result);
+    return result;
+}
+
+bool interceptor_ICJI::getObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset)
+{
+    mc->cr->AddCall("getObjectContent");
+    bool result = original_ICorJitInfo->getObjectContent(obj, buffer, bufferSize, valueOffset);
+    mc->recGetObjectContent(obj, buffer, bufferSize, valueOffset, result);
     return result;
 }
 

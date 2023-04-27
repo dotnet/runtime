@@ -485,13 +485,25 @@ public:
                          CORINFO_ACCESS_FLAGS    flags,
                          CORINFO_FIELD_INFO*     pResult);
 
+    void recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint32_t result);
+    void     dmpGetThreadLocalFieldInfo(DWORDLONG key, DWORD value);
+    uint32_t repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
+
+    void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
+    void dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value);
+    void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo);
+
     void recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection, CORINFO_METHOD_HANDLE result);
     void dmpEmbedMethodHandle(DWORDLONG key, DLDL value);
     CORINFO_METHOD_HANDLE repEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection);
 
-    void recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects, bool result);
-    void dmpGetReadonlyStaticFieldValue(DLDDD key, DD value);
-    bool repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
+    void recGetStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects, bool result);
+    void dmpGetStaticFieldContent(DLDDD key, DD value);
+    bool repGetStaticFieldContent(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects);
+
+    void recGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset, bool result);
+    void dmpGetObjectContent(DLDD key, DD value);
+    bool repGetObjectContent(CORINFO_OBJECT_HANDLE obj, uint8_t* buffer, int bufferSize, int valueOffset);
 
     void recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative, CORINFO_CLASS_HANDLE result);
     void dmpGetStaticFieldCurrentClass(DLD key, const Agnostic_GetStaticFieldCurrentClass& value);
@@ -1167,7 +1179,7 @@ enum mcPackets
     Packet_GetExactClasses = 195,
     Packet_GetRuntimeTypePointer = 196,
     Packet_PrintObjectDescription = 197,
-    Packet_GetReadonlyStaticFieldValue = 198,
+    Packet_GetStaticFieldContent = 198,
     Packet_GetObjectType = 199,
     Packet_IsObjectImmutable = 200,
     Packet_ExpandRawHandleIntrinsic = 201,
@@ -1176,7 +1188,10 @@ enum mcPackets
     Packet_GetStringChar = 204,
     Packet_GetIsClassInitedFlagAddress = 205,
     Packet_GetStaticBaseAddress = 206,
-    Packet_GetRISCV64PassStructInRegisterFlags = 207,
+    Packet_GetThreadLocalFieldInfo = 207,
+    Packet_GetThreadLocalStaticBlocksInfo = 208,
+    Packet_GetRISCV64PassStructInRegisterFlags = 209,
+    Packet_GetObjectContent = 210,
 };
 
 void SetDebugDumpVariables();

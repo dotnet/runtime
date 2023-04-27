@@ -895,6 +895,7 @@ protected:
     void genCodeForCompare(GenTreeOp* tree);
 #ifdef TARGET_ARM64
     void genCodeForCCMP(GenTreeCCMP* ccmp);
+    void genCodeForCinc(GenTreeOp* cinc);
 #endif
     void genCodeForSelect(GenTreeOp* select);
     void genIntrinsic(GenTreeIntrinsic* treeNode);
@@ -933,6 +934,10 @@ protected:
     void genLoadIndTypeSimd12(GenTreeIndir* treeNode);
     void genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode);
     void genLoadLclTypeSimd12(GenTreeLclVarCommon* treeNode);
+#ifdef TARGET_XARCH
+    void genEmitStoreLclTypeSimd12(GenTree* store, unsigned lclNum, unsigned offset);
+    void genEmitLoadLclTypeSimd12(regNumber tgtReg, unsigned lclNum, unsigned offset);
+#endif // TARGET_XARCH
 #ifdef TARGET_X86
     void genStoreSimd12ToStack(regNumber dataReg, regNumber tmpReg);
     void genPutArgStkSimd12(GenTreePutArgStk* treeNode);
@@ -1131,7 +1136,7 @@ protected:
     void genCodeForReturnTrap(GenTreeOp* tree);
     void genCodeForStoreInd(GenTreeStoreInd* tree);
     void genCodeForSwap(GenTreeOp* tree);
-    void genCodeForCpObj(GenTreeObj* cpObjNode);
+    void genCodeForCpObj(GenTreeBlk* cpObjNode);
     void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
 #ifndef TARGET_X86
@@ -1232,10 +1237,10 @@ protected:
     BasicBlock* genCallFinally(BasicBlock* block);
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // TODO: refactor for LA.
-    void genCodeForJumpCompare(GenTreeOp* tree);
+    void genCodeForJumpCompare(GenTreeOpCC* tree);
 #endif
 #if defined(TARGET_ARM64)
-    void genCodeForJumpCompare(GenTreeOp* tree);
+    void genCodeForJumpCompare(GenTreeOpCC* tree);
     void genCodeForBfiz(GenTreeOp* tree);
     void genCodeForCond(GenTreeOp* tree);
 #endif // TARGET_ARM64
@@ -1572,6 +1577,7 @@ public:
 
 #if defined(TARGET_ARM64)
     static insCond JumpKindToInsCond(emitJumpKind condition);
+    static insOpts ShiftOpToInsOpts(genTreeOps op);
 #elif defined(TARGET_XARCH)
     static instruction JumpKindToCmov(emitJumpKind condition);
 #endif

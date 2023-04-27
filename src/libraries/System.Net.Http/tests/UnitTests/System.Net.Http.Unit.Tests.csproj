@@ -70,8 +70,6 @@
              Link="ProductionCode\System\Net\Http\DelegatingHandler.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs"
              Link="ProductionCode\System\IO\DelegatingStream.cs" />
-    <Compile Include="..\..\src\System\Net\Http\ByteArrayHelpers.cs"
-             Link="ProductionCode\System\Net\Http\ByteArrayHelpers.cs" />
     <Compile Include="..\..\src\System\Net\Http\EmptyContent.cs"
              Link="ProductionCode\System\Net\Http\EmptyContent.cs" />
     <Compile Include="..\..\src\System\Net\Http\EmptyReadStream.cs"
@@ -257,6 +255,7 @@
     <Compile Include="Fakes\HttpTelemetry.cs" />
     <Compile Include="Fakes\MacProxy.cs" Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'" />
     <Compile Include="Headers\AltSvcHeaderParserTest.cs" />
+    <Compile Include="Headers\AuthenticationHeaderParserTest.cs" />
     <Compile Include="Headers\AuthenticationHeaderValueTest.cs" />
     <Compile Include="Headers\ByteArrayHeaderParserTest.cs" />
     <Compile Include="Headers\CacheControlHeaderParserTest.cs" />
@@ -264,6 +263,7 @@
     <Compile Include="Headers\ContentDispositionHeaderValueTest.cs" />
     <Compile Include="Headers\ContentRangeHeaderValueTest.cs" />
     <Compile Include="Headers\DateHeaderParserTest.cs" />
+    <Compile Include="Headers\EntityTagHeaderParserTest.cs" />
     <Compile Include="Headers\EntityTagHeaderValueTest.cs" />
     <Compile Include="Headers\GenericHeaderParserTest\AuthenticationParserTest.cs" />
     <Compile Include="Headers\GenericHeaderParserTest\ContentRangeParserTest.cs" />
@@ -320,6 +320,8 @@
              Link="HPack\HPackIntegerTest.cs" />
     <Compile Include="$(CommonPath)..\tests\Tests\System\Net\aspnetcore\Http2\HuffmanDecodingTests.cs"
              Link="HPack\HuffmanDecodingTests.cs" />
+    <Compile Include="$(CommonPath)..\tests\Tests\System\Net\aspnetcore\Http3\QPackDecoderTest.cs"
+             Link="QPack\QPackDecoderTest.cs" />
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />
@@ -391,12 +393,18 @@
              Link="Common\System\Net\Http\aspnetcore\Http3\QPack\HeaderField.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs"
              Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncoder.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackDecoder.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecoder.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs"
              Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\QPack\QPackDecodingException.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackDecodingException.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs"
              Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeInterop.cs"
              Link="WinHttpHandler\UnitTests\FakeInterop.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeRegistry.cs"

@@ -146,6 +146,13 @@ namespace System.Text
 
                 return new string(new ReadOnlySpan<char>(ref *pDestination, charsWritten)); // this overload of ROS ctor doesn't validate length
             }
+
+            // TODO: Make this [Intrinsic] and handle JIT-time UTF8 encoding of literal `chars`.
+            /// <inheritdoc/>
+            public override unsafe bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
+            {
+                return base.TryGetBytes(chars, bytes, out bytesWritten);
+            }
         }
     }
 }

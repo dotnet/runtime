@@ -208,4 +208,3 @@ target_compile_definitions(metadata_objects PRIVATE -DMONO_DLL_EXPORT)
 target_include_directories(metadata_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)
-

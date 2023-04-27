@@ -476,7 +476,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_FLD_TLS                 = 0x80000000, // GT_FIELD_ADDR -- field address is a Windows x86 TLS reference
     GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD -- same as GTF_IND_VOLATILE
-    GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD/GT_FIELD_ADDR -- field access requires preceding class/static init helper
     GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD -- same as GTF_IND_TGT_HEAP
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX_ADDR -- this array address should be range-checked
@@ -494,9 +493,10 @@ enum GenTreeFlags : unsigned int
     GTF_IND_UNALIGNED           = 0x02000000, // OperIsIndir() -- the load or store is unaligned (we assume worst case alignment of 1 byte)
     GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (a prejit indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND -- the indirection never returns null (zero)
+    GTF_IND_INITCLASS           = 0x00200000, // OperIsIndir() -- the indirection requires preceding static cctor
 
     GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
-                    GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP,
+                    GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP | GTF_IND_INITCLASS,
 
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
                                               //                         addressing mode
@@ -507,12 +507,6 @@ enum GenTreeFlags : unsigned int
     GTF_RELOP_JMP_USED          = 0x40000000, // GT_<relop> -- result of compare used for jump or ?:
     GTF_RELOP_ZTT               = 0x08000000, // GT_<relop> -- Loop test cloned for converting while-loops into do-while
                                               //               with explicit "loop test" in the header block.
-
-    GTF_JCMP_EQ                 = 0x80000000, // GTF_JCMP_EQ  -- Branch on equal rather than not equal
-    GTF_JCMP_TST                = 0x40000000, // GTF_JCMP_TST -- Use bit test instruction rather than compare against zero instruction
-#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    GTF_JCMP_MASK               = 0x3E000000, // For LoongArch64 and RISCV64, Using the five bits[29:25] to encoding the GenCondition:code.
-#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
 
@@ -547,13 +541,6 @@ enum GenTreeFlags : unsigned int
 
  // GTF_ICON_REUSE_REG_VAL      = 0x00800000  // GT_CNS_INT -- GTF_REUSE_REG_VAL, defined above
     GTF_ICON_SIMD_COUNT         = 0x00200000, // GT_CNS_INT -- constant is Vector<T>.Count
-    GTF_ICON_INITCLASS          = 0x00100000, // GT_CNS_INT -- Constant is used to access a static that requires preceding
-                                              //               class/static init helper.  In some cases, the constant is
-                                              //               the address of the static field itself, and in other cases
-                                              //               there's an extra layer of indirection and it is the address
-                                              //               of the cell that the runtime will fill in with the address
-                                              //               of the static field; in both of those cases, the constant
-                                              //               is what gets flagged.
 
     GTF_OVERFLOW                = 0x10000000, // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
                                               // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.
@@ -1204,6 +1191,11 @@ public:
         return OperIsInitVal(OperGet());
     }
 
+    bool IsInitVal() const
+    {
+        return IsIntegralConst(0) || OperIsInitVal();
+    }
+
     bool IsConstInitVal() const
     {
         return (gtOper == GT_CNS_INT) || (OperIsInitVal() && (gtGetOp1()->gtOper == GT_CNS_INT));
@@ -1215,7 +1207,7 @@ public:
 
     static bool OperIsBlk(genTreeOps gtOper)
     {
-        return (gtOper == GT_BLK) || (gtOper == GT_OBJ) || OperIsStoreBlk(gtOper);
+        return (gtOper == GT_BLK) || OperIsStoreBlk(gtOper);
     }
 
     bool OperIsBlk() const
@@ -1225,7 +1217,7 @@ public:
 
     static bool OperIsStoreBlk(genTreeOps gtOper)
     {
-        return StaticOperIs(gtOper, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYN_BLK);
+        return StaticOperIs(gtOper, GT_STORE_BLK, GT_STORE_DYN_BLK);
     }
 
     bool OperIsStoreBlk() const
@@ -1547,8 +1539,7 @@ public:
     // OperIsIndir() returns true also for indirection nodes such as GT_BLK, etc. as well as GT_NULLCHECK.
     static bool OperIsIndir(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_IND, GT_STOREIND, GT_OBJ, GT_STORE_OBJ, GT_BLK, GT_STORE_BLK,
-                                           GT_STORE_DYN_BLK, GT_NULLCHECK));
+        static_assert_no_msg(AreContiguous(GT_IND, GT_STOREIND, GT_BLK, GT_STORE_BLK, GT_STORE_DYN_BLK, GT_NULLCHECK));
         return (GT_IND <= gtOper) && (gtOper <= GT_NULLCHECK);
     }
 
@@ -1598,6 +1589,8 @@ public:
 
     // Helper function to return the address of an indir or array meta-data node.
     GenTree* GetIndirOrArrMetaDataAddr();
+
+    bool IndirMayFault(Compiler* compiler);
 
     bool OperIsImplicitIndir() const;
 
@@ -1679,7 +1672,7 @@ public:
 
     bool OperIsConditionalJump() const
     {
-        return OperIs(GT_JTRUE, GT_JCMP, GT_JCC);
+        return OperIs(GT_JTRUE, GT_JCMP, GT_JTEST, GT_JCC);
     }
 
     bool OperConsumesFlags() const
@@ -1691,7 +1684,7 @@ public:
         }
 #endif
 #if defined(TARGET_ARM64)
-        if (OperIs(GT_CCMP))
+        if (OperIs(GT_CCMP, GT_CINCCC))
         {
             return true;
         }
@@ -4051,6 +4044,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_EXPANDED_EARLY          = 0x08000000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
     GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x10000000, // this call has late devirtualzation info
     GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x20000000, // ldvirtftn on an interface type
+    GTF_CALL_M_EXP_TLS_ACCESS          = 0x40000000, // this call is a helper for access TLS marked field
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -5391,6 +5385,21 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_EXP_RUNTIME_LOOKUP) != 0;
     }
 
+    void SetExpTLSFieldAccess()
+    {
+        gtCallMoreFlags |= GTF_CALL_M_EXP_TLS_ACCESS;
+    }
+
+    void ClearExpTLSFieldAccess()
+    {
+        gtCallMoreFlags &= ~GTF_CALL_M_EXP_TLS_ACCESS;
+    }
+
+    bool IsExpTLSFieldAccess() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_EXP_TLS_ACCESS) != 0;
+    }
+
     void SetExpandedEarly()
     {
         gtCallMoreFlags |= GTF_CALL_M_EXPANDED_EARLY;
@@ -5540,6 +5549,8 @@ struct GenTreeCall final : public GenTree
     }
 
     bool IsHelperCall(Compiler* compiler, unsigned helper) const;
+
+    CorInfoHelpFunc GetHelperNum() const;
 
     bool AreArgsComplete() const;
 
@@ -6185,6 +6196,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryLoad(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryLoadOrStore() const;
+    bool OperIsMemoryStoreOrBarrier() const;
+
+    bool OperRequiresAsgFlag() const;
+    bool OperRequiresCallFlag() const;
 
     unsigned GetResultOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
 
@@ -6279,23 +6294,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
 
-    void Initialize(NamedIntrinsic intrinsicId)
-    {
-        SetHWIntrinsicId(intrinsicId);
-
-        bool isStore = OperIsMemoryStore();
-        bool isLoad  = OperIsMemoryLoad();
-
-        if (isStore || isLoad)
-        {
-            gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
-
-            if (isStore)
-            {
-                gtFlags |= GTF_ASG;
-            }
-        }
-    }
+    void Initialize(NamedIntrinsic intrinsicId);
 };
 #endif // FEATURE_HW_INTRINSICS
 
@@ -7299,6 +7298,10 @@ public:
     enum
     {
         BlkOpKindInvalid,
+        BlkOpKindCpObjUnroll,
+#ifdef TARGET_XARCH
+        BlkOpKindCpObjRepInstr,
+#endif
 #ifndef TARGET_X86
         BlkOpKindHelper,
 #endif
@@ -7351,30 +7354,6 @@ protected:
     {
     }
 #endif // DEBUGGABLE_GENTREE
-};
-
-// gtObj  -- 'object' (GT_OBJ).
-//
-// This node is used for block values that may have GC pointers.
-
-struct GenTreeObj : public GenTreeBlk
-{
-    GenTreeObj(var_types type, GenTree* addr, ClassLayout* layout) : GenTreeBlk(GT_OBJ, type, addr, layout)
-    {
-        noway_assert(GetLayout()->GetClassHandle() != NO_CLASS_HANDLE);
-    }
-
-    GenTreeObj(var_types type, GenTree* addr, GenTree* data, ClassLayout* layout)
-        : GenTreeBlk(GT_STORE_OBJ, type, addr, data, layout)
-    {
-        noway_assert(GetLayout()->GetClassHandle() != NO_CLASS_HANDLE);
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeObj() : GenTreeBlk()
-    {
-    }
-#endif
 };
 
 // GenTreeStoreDynBlk  -- 'dynamic block store' (GT_STORE_DYN_BLK).

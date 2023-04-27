@@ -38,7 +38,7 @@ inline bool compMacOsArm64Abi()
 }
 inline bool compFeatureArgSplit()
 {
-    return TargetArchitecture::IsLoongArch64 || TargetArchitecture::IsArm32 ||
+    return TargetArchitecture::IsLoongArch64 || TargetArchitecture::IsArm32 || TargetArchitecture::IsRiscv64 ||
            (TargetOS::IsWindows && TargetArchitecture::IsArm64);
 }
 inline bool compUnixX86Abi()
@@ -379,12 +379,34 @@ inline bool genIsValidIntReg(regNumber reg)
 }
 
 /*****************************************************************************
+ * Return true if the register is a valid integer or fake register
+ */
+inline bool genIsValidIntOrFakeReg(regNumber reg)
+{
+#if defined(TARGET_ARM64)
+    return genIsValidIntReg(reg) || (reg == REG_SP);
+#else
+    return genIsValidIntReg(reg);
+#endif
+}
+
+/*****************************************************************************
  * Return true if the register is a valid floating point register
  */
 inline bool genIsValidFloatReg(regNumber reg)
 {
     return reg >= REG_FP_FIRST && reg <= REG_FP_LAST;
 }
+
+#if defined(TARGET_XARCH)
+/*****************************************************************************
+ * Return true if the register is a valid mask register
+ */
+inline bool genIsValidMaskReg(regNumber reg)
+{
+    return reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST;
+}
+#endif // TARGET_XARCH
 
 #ifdef TARGET_ARM
 

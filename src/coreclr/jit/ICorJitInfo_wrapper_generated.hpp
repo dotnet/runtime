@@ -981,6 +981,23 @@ void WrapICorJitInfo::getFieldInfo(
     API_LEAVE(getFieldInfo);
 }
 
+uint32_t WrapICorJitInfo::getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field)
+{
+    API_ENTER(getThreadLocalFieldInfo);
+    uint32_t temp = wrapHnd->getThreadLocalFieldInfo(field);
+    API_LEAVE(getThreadLocalFieldInfo);
+    return temp;
+}
+
+void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+{
+    API_ENTER(getThreadLocalStaticBlocksInfo);
+    wrapHnd->getThreadLocalStaticBlocksInfo(pInfo);
+    API_LEAVE(getThreadLocalStaticBlocksInfo);
+}
+
 bool WrapICorJitInfo::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {
@@ -1505,16 +1522,28 @@ unsigned WrapICorJitInfo::getClassDomainID(
     return temp;
 }
 
-bool WrapICorJitInfo::getReadonlyStaticFieldValue(
+bool WrapICorJitInfo::getStaticFieldContent(
           CORINFO_FIELD_HANDLE field,
           uint8_t* buffer,
           int bufferSize,
           int valueOffset,
           bool ignoreMovableObjects)
 {
-    API_ENTER(getReadonlyStaticFieldValue);
-    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
-    API_LEAVE(getReadonlyStaticFieldValue);
+    API_ENTER(getStaticFieldContent);
+    bool temp = wrapHnd->getStaticFieldContent(field, buffer, bufferSize, valueOffset, ignoreMovableObjects);
+    API_LEAVE(getStaticFieldContent);
+    return temp;
+}
+
+bool WrapICorJitInfo::getObjectContent(
+          CORINFO_OBJECT_HANDLE obj,
+          uint8_t* buffer,
+          int bufferSize,
+          int valueOffset)
+{
+    API_ENTER(getObjectContent);
+    bool temp = wrapHnd->getObjectContent(obj, buffer, bufferSize, valueOffset);
+    API_LEAVE(getObjectContent);
     return temp;
 }
 

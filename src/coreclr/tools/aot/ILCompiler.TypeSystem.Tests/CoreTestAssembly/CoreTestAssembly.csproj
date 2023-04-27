@@ -4,6 +4,7 @@
     <AssemblyName>CoreTestAssembly</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <IsCoreAssembly>true</IsCoreAssembly>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <SkipTestRun>true</SkipTestRun>
     <TargetFramework>netstandard2.0</TargetFramework>
     <!-- Don't add references to the netstandard platform since this is a core assembly -->
