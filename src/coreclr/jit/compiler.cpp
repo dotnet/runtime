@@ -4795,6 +4795,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     };
     DoPhase(this, PHASE_MORPH_GLOBAL, morphGlobalPhase);
 
+    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
+
     // GS security checks for unsafe buffers
     //
     DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
@@ -4810,8 +4812,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_CREATE_FUNCLETS, &Compiler::fgCreateFunclets);
 
 #endif // FEATURE_EH_FUNCLETS
-
-    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
 
     if (opts.OptimizationEnabled())
     {
@@ -4857,13 +4857,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDebugCheckLinks();
 #endif
 
-    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
-
     // Morph multi-dimensional array operations.
     // (Consider deferring all array operation morphing, including single-dimensional array ops,
     // from global morph to here, so cloning doesn't have to deal with morphed forms.)
     //
-    DoPhase(this, PHASE_MORPH_MDARR, &Compiler::fgMorphArrayOps);    
+    DoPhase(this, PHASE_MORPH_MDARR, &Compiler::fgMorphArrayOps);
 
     // Create the variable table (and compute variable ref counts)
     //
