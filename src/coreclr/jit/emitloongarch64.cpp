@@ -2652,8 +2652,8 @@ void emitter::emitJumpDistBind()
     }
     if (EMIT_INSTLIST_VERBOSE)
     {
-        printf("\nInstruction list before jump distance binding:(LA64 don't supports)\n\n");
-        // emitDispIGlist(true);
+        printf("\nInstruction list before jump distance binding:\n\n");
+        emitDispIGlist(true);
     }
 #endif
 
@@ -5949,7 +5949,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 /*****************************************************************************
  *
  * For LoongArch64, the `emitter::emitDispIns` only supports
- * the `COMPlus_JitDump` and `DOTNET_JitDump`.
+ * the `DOTNET_JitDump`.
  */
 void emitter::emitDispIns(
     instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* pCode, size_t sz, insGroup* ig)
@@ -5958,7 +5958,7 @@ void emitter::emitDispIns(
     {
         BYTE* addr = emitCodeBlock + offset + writeableOffset;
 
-        unsigned int size = id->idCodeSize();
+        int size = id->idCodeSize();
         while (size > 0)
         {
             emitDisInsName(*(code_t*)addr, addr, id);
