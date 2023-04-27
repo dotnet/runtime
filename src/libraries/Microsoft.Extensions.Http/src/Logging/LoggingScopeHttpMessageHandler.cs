@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Http.Logging
 #if NET5_0_OR_GREATER
                         : base.Send(request, cancellationToken);
 #else
-                        : throw new UnreachableException();
+                        : throw new NotImplementedException("Unreachable code");
 #endif
                     Log.RequestPipelineEnd(_logger, response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
 
