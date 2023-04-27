@@ -4252,23 +4252,22 @@ PhaseStatus Compiler::optUnrollLoops()
         GenTree* incr = incrStmt->GetRootNode();
 
         // Don't unroll loops we don't understand.
-        if (incr->gtOper != GT_ASG)
+        if (!incr->OperIs(GT_STORE_LCL_VAR))
         {
             JITDUMP("Failed to unroll loop " FMT_LP ": unknown increment op (%s)\n", lnum,
                     GenTree::OpName(incr->gtOper));
             continue;
         }
-        incr = incr->AsOp()->gtOp2;
+        incr = incr->AsLclVar()->Data();
 
         GenTree* init = initStmt->GetRootNode();
 
         // Make sure everything looks ok.
         // clang-format off
-        if ((init->gtOper != GT_ASG) ||
-            (init->AsOp()->gtOp1->gtOper != GT_LCL_VAR) ||
-            (init->AsOp()->gtOp1->AsLclVarCommon()->GetLclNum() != lvar) ||
-            (init->AsOp()->gtOp2->gtOper != GT_CNS_INT) ||
-            (init->AsOp()->gtOp2->AsIntCon()->gtIconVal != lbeg) ||
+        if (!init->OperIs(GT_STORE_LCL_VAR) ||
+            (init->AsLclVar()->GetLclNum() != lvar) ||
+            !init->AsLclVar()->Data()->IsCnsIntOrI() ||
+            (init->AsLclVar()->Data()->AsIntCon()->gtIconVal != lbeg) ||
 
             !((incr->gtOper == GT_ADD) || (incr->gtOper == GT_SUB)) ||
             (incr->AsOp()->gtOp1->gtOper != GT_LCL_VAR) ||
