@@ -96,8 +96,8 @@ namespace System
         }
 
         // Performance metric to count the number of exceptions thrown
-        private static int s_exceptionCount;
-        internal static int ExceptionCount => s_exceptionCount;
+        private static uint s_exceptionCount;
+        internal static uint GetExceptionCount() => s_exceptionCount;
 
         [RuntimeExport("AppendExceptionStackFrame")]
         private static void AppendExceptionStackFrame(object exceptionObj, IntPtr IP, int flags)
