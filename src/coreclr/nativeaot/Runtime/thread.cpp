@@ -1125,10 +1125,6 @@ EXTERN_C NATIVEAOT_API uint32_t __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL
 
 FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFrame)
 {
-    // Do we need to attach the thread?
-    if (!IsStateSet(TSF_Attached))
-        return false; // thread is not attached
-
     // If the thread is already in cooperative mode, this is a bad transition that will be a fail fast unless we are in
     // a do not trigger mode.  The exception to the rule allows us to have [UnmanagedCallersOnly] methods that are called via
     // the "restricted GC callouts" as well as from native, which is necessary because the methods are CCW vtable
@@ -1143,6 +1139,10 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
         m_pTransitionFrame = NULL;
         return true;
     }
+
+    // Do we need to attach the thread?
+    if (!IsStateSet(TSF_Attached))
+        return false; // thread is not attached
 
     if (IsCurrentThreadInCooperativeMode())
     {
