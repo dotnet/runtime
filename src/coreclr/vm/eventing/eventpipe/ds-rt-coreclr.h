@@ -313,7 +313,7 @@ ds_rt_server_log_pause_message (void)
 	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend();
 
 	printf("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n");
-	printf("%s=\"%s\"\n", diagPortsName, ports == nullptr ? "" : ports);
+	printf("DOTNET_%s=\"%s\"\n", diagPortsName, ports == nullptr ? "" : ports);
 	printf("DOTNET_DefaultDiagnosticPortSuspend=%u\n", port_suspended);
 	fflush(stdout);
 }
