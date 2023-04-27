@@ -15746,8 +15746,7 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
 // |  |  |  \--*  ADD       int
 // |  |  |     +--*  MUL       int
 // |  |  |     |  +--*  COMMA     int
-// |  |  |     |  |  +--*  ASG       int
-// |  |  |     |  |  |  +--*  LCL_VAR   int    V04 tmp1
+// |  |  |     |  |  +--*  STORE_LCL_VAR   int    V04 tmp1
 // |  |  |     |  |  |  \--*  SUB       int
 // |  |  |     |  |  |     +--*  LCL_VAR   int    V01 arg1
 // |  |  |     |  |  |     \--*  MDARR_LOWER_BOUND int    (0)
@@ -15761,8 +15760,7 @@ bool Compiler::fgMorphArrayOpsStmt(MorphMDArrayTempCache* pTempCache, BasicBlock
 // |  |  |     |  \--*  MDARR_LENGTH int    (1)
 // |  |  |     |     \--*  LCL_VAR   ref    V00 arg0
 // |  |  |     \--*  COMMA     int
-// |  |  |        +--*  ASG       int
-// |  |  |        |  +--*  LCL_VAR   int    V05 tmp2
+// |  |  |        +--*  STORE_LCL_VAR   int    V05 tmp2
 // |  |  |        |  \--*  SUB       int
 // |  |  |        |     +--*  LCL_VAR   int    V02 arg2
 // |  |  |        |     \--*  MDARR_LOWER_BOUND int    (1)

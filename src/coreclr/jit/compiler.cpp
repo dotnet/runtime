@@ -4857,13 +4857,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDebugCheckLinks();
 #endif
 
+    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
+
     // Morph multi-dimensional array operations.
     // (Consider deferring all array operation morphing, including single-dimensional array ops,
     // from global morph to here, so cloning doesn't have to deal with morphed forms.)
     //
-    DoPhase(this, PHASE_MORPH_MDARR, &Compiler::fgMorphArrayOps);
-
-    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
+    DoPhase(this, PHASE_MORPH_MDARR, &Compiler::fgMorphArrayOps);    
 
     // Create the variable table (and compute variable ref counts)
     //
