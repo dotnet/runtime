@@ -10594,6 +10594,12 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                         --msgLength;
                         break;
                     }
+                    if (tree->gtFlags & GTF_IND_INITCLASS)
+                    {
+                        printf("I");
+                        --msgLength;
+                        break;
+                    }
                     if (tree->gtFlags & GTF_IND_INVARIANT)
                     {
                         printf("#");
@@ -10762,19 +10768,9 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             case GT_CNS_INT:
                 if (tree->IsIconHandle())
                 {
-                    if ((tree->gtFlags & GTF_ICON_INITCLASS) != 0)
-                    {
-                        printf("I"); // Static Field handle with INITCLASS requirement
-                        --msgLength;
-                        break;
-                    }
-                    else
-                    {
-                        // Some other handle
-                        printf("H");
-                        --msgLength;
-                        break;
-                    }
+                    printf("H");
+                    --msgLength;
+                    break;
                 }
                 goto DASH;
 
