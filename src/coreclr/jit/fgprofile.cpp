@@ -2707,29 +2707,19 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     if (fgPgoHaveWeights)
     {
-        // We expect not to have both block and edge counts. We may have other
-        // forms of profile data even if we do not have any counts.
+        // If for some reason we have both block and edge counts, prefer the edge counts.
         //
-        // As of 4/6/2023 the following invariant check turns out to no longer hold.
-        // Tracking issue: https://github.com/dotnet/runtime/issues/84446
-        //
-        // assert(!haveBlockCounts || !haveEdgeCounts);
-
         bool dataIsGood = false;
 
-        if (haveBlockCounts)
-        {
-            dataIsGood = fgIncorporateBlockCounts();
-        }
-        else if (haveEdgeCounts)
+        if (haveEdgeCounts)
         {
             dataIsGood = fgIncorporateEdgeCounts();
         }
+        else if (haveBlockCounts)
+        {
+            dataIsGood = fgIncorporateBlockCounts();
+        }
 
-        // Profile incorporation may have tossed out all PGO data if it
-        // encountered major issues. This is perhaps too drastic. Consider
-        // at least keeping the class profile data, or perhaps enable full synthesis.
-        //
         // If profile incorporation hit fixable problems, run synthesis in blend mode.
         //
         if (fgPgoHaveWeights && !dataIsGood)
@@ -3554,10 +3544,9 @@ void EfficientEdgeCountReconstructor::Propagate()
     //
     if (m_badcode || m_mismatch || m_failedToConverge || m_allWeightsZero)
     {
-        // Make sure nothing else in the jit looks at the profile data.
+        // Make sure nothing else in the jit looks at the count profile data.
         //
         m_comp->fgPgoHaveWeights = false;
-        m_comp->fgPgoSchema      = nullptr;
 
         if (m_badcode)
         {
@@ -3576,7 +3565,7 @@ void EfficientEdgeCountReconstructor::Propagate()
             m_comp->fgPgoFailReason = "PGO data available, profile data was all zero";
         }
 
-        JITDUMP("... discarding profile data: %s\n", m_comp->fgPgoFailReason);
+        JITDUMP("... discarding profile count data: %s\n", m_comp->fgPgoFailReason);
         return;
     }
 
