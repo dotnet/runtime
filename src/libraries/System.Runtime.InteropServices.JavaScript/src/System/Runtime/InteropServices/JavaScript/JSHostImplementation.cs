@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         private static Dictionary<int, WeakReference<JSObject>>? s_csOwnedObjects;
 
-        public static Dictionary<int, WeakReference<JSObject>> CsOwnedObjects
+        public static Dictionary<int, WeakReference<JSObject>> ThreadCsOwnedObjects
         {
             get
             {
@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (jsHandle != IntPtr.Zero)
             {
-                CsOwnedObjects.Remove((int)jsHandle);
+                ThreadCsOwnedObjects.Remove((int)jsHandle);
                 Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
             }
         }
@@ -187,12 +187,12 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             JSObject? res;
 
-            if (!CsOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
+            if (!ThreadCsOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
                 !reference.TryGetTarget(out res) ||
                 res.IsDisposed)
             {
                 res = new JSObject(jsHandle);
-                CsOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
+                ThreadCsOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
             }
             return res;
         }

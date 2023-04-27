@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void RegisterCSOwnedObject(JSObject proxy)
         {
-            JSHostImplementation.CsOwnedObjects[(int)proxy.JSHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
+            JSHostImplementation.ThreadCsOwnedObjects[(int)proxy.JSHandle] = new WeakReference<JSObject>(proxy, trackResurrection: true);
         }
 
         public static MarshalType GetMarshalTypeFromType(Type type)
