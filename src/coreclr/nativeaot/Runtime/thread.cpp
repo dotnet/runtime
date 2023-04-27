@@ -1125,6 +1125,9 @@ EXTERN_C NATIVEAOT_API uint32_t __cdecl RhCompatibleReentrantWaitAny(UInt32_BOOL
 
 FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFrame)
 {
+    // remember the current transition frame, so it will be restored when we return from reverse pinvoke
+    pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
+
     // If the thread is already in cooperative mode, this is a bad transition that will be a fail fast unless we are in
     // a do not trigger mode.  The exception to the rule allows us to have [UnmanagedCallersOnly] methods that are called via
     // the "restricted GC callouts" as well as from native, which is necessary because the methods are CCW vtable
@@ -1134,9 +1137,7 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
     {
         // We expect this scenario only when EE is stopped.
         ASSERT(ThreadStore::IsTrapThreadsRequested());
-        // make transition to coop mode without waiting for GC (noop if already in coop mode)
-        pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
-        m_pTransitionFrame = NULL;
+        // no need to do anything
         return true;
     }
 
@@ -1152,9 +1153,6 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
     // this is an ordinary transition to managed code
     // GC threads should not do that
     ASSERT(!IsGCSpecial());
-
-    // save the previous transition frame
-    pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
 
     // must be in cooperative mode when checking the trap flag
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, NULL);
@@ -1236,7 +1234,7 @@ FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame
 
 FORCEINLINE void Thread::InlinePInvoke(PInvokeTransitionFrame * pFrame)
 {
-    _ASSERT(!IsDoNotTriggerGcSet() || ThreadStore::IsTrapThreadsRequested());
+    ASSERT(!IsDoNotTriggerGcSet() || ThreadStore::IsTrapThreadsRequested());
     pFrame->m_pThread = this;
     // set our mode to preemptive
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, pFrame);
