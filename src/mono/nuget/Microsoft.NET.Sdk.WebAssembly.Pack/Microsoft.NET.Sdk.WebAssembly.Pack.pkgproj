@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(RepoTasksDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
-    <PackageFile Include="build\*.props;build\*.targets;build\*.web.config" TargetPath="build" />
+    <PackageFile Include="Sdk\*.props;Sdk\*.targets;Sdk\*.web.config" TargetPath="Sdk" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

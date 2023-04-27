@@ -1,6 +1,7 @@
 <Project TreatAsLocalProperty="ArchiveTests">
   <PropertyGroup>
     <_UseWasmSymbolicator Condition="'$(TestTrimming)' != 'true'">true</_UseWasmSymbolicator>
+    <WorkloadsTestPreviousVersions>true</WorkloadsTestPreviousVersions>
   </PropertyGroup>
 
   <Import Project="tests.wasm.targets" />
@@ -265,7 +266,7 @@
                             Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
 
       <WorkloadCombinationsToInstall Include="latest"        Variants="latest" />
-      <WorkloadCombinationsToInstall Include="net7"          Variants="net7" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
+      <!--<WorkloadCombinationsToInstall Include="net7"          Variants="net7" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />-->
       <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" />
       <!--<WorkloadCombinationsToInstall Include="net6"     Variants="net6" />-->
       <!--<WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />-->

@@ -123,6 +123,8 @@
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.WebAssembly.Sdk" />
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk.WebAssembly.Pack" />
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk.WebAssembly.Pack" />
     <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
   </ImportGroup>
@@ -149,6 +151,7 @@
       <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
       <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablePerfTracing)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.perftrace.**RID**</RuntimePackNamePatterns>
     </KnownRuntimePack>
+    <KnownWebAssemblySdkPack Remove="@(KnownWebAssemblySdkPack)" />
   </ItemGroup>
 
   <!-- we can't condition sdk imports on the item @(NativeFileReference). Instead, explicitly check before the build
