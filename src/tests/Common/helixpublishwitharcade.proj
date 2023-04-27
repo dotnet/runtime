@@ -22,15 +22,15 @@
     ============================================
 
   <PropertyGroup>
-    <BUILD_SOURCESDIRECTORY>c:\gh\runtime</BUILD_SOURCESDIRECTORY>
-    <CorrelationPayloadDirectory>c:\bugs\spmicollect3\payload\correlation</CorrelationPayloadDirectory>
-    <WorkItemDirectory>c:\bugs\spmicollect3\payload\workitem</WorkItemDirectory>
+    <BUILD_SOURCESDIRECTORY>/home/brucefo/gh/runtime</BUILD_SOURCESDIRECTORY>
+    <CorrelationPayloadDirectory>/home/brucefo/test/correlation</CorrelationPayloadDirectory>
+    <WorkItemDirectory>/home/brucefo/test/workitem</WorkItemDirectory>
     <_Scenarios>normal</_Scenarios>
     <_Creator></_Creator>
     <_HelixAccessToken></_HelixAccessToken>
     <_HelixBuild></_HelixBuild>
     <_HelixSource></_HelixSource>
-    <_HelixTargetQueues>Windows.10.Amd64.Open</_HelixTargetQueues>
+    <_HelixTargetQueues>Ubuntu.1804.Amd64.Open</_HelixTargetQueues>
     <_HelixType>test/stuff</_HelixType>
     <_PublishTestResults>false</_PublishTestResults>
     <_RunCrossGen>false</_RunCrossGen>
@@ -47,7 +47,7 @@
     <BundledNETCoreAppPackageVersion>BundledNETCoreAppPackageVersion</BundledNETCoreAppPackageVersion>
     <HelixRuntimeRid></HelixRuntimeRid>
     <_PALTestsDir></_PALTestsDir>
-    <_SuperPmiCollect>true</_SuperPmiCollect>
+    <_SuperPmiCollect>false</_SuperPmiCollect>
   </PropertyGroup>
   <Target Name="printItems">
     <Message Text="@(HelixWorkItem -> 'name: %(HelixWorkItem.Identity)
@@ -358,7 +358,17 @@
     <ItemGroup>
       <!-- Exclude WASM support files. They can interfere with our discovery process and create extra work items that don't work. -->
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
+
+      <_MergedWrapperMarker Update="@(_MergedWrapperMarker)">
+        <TestExecutionScriptPath>$([System.IO.Path]::ChangeExtension('%(Identity)', '.$(TestScriptExtension)'))</TestExecutionScriptPath>
+      </_MergedWrapperMarker>
+
+      <!-- Exclude merged test wrappers without the test execution script for this target (skipped due to CLRTestTargetUnsupported et al) -->
+      <_MergedWrapperMarker Remove="@(_MergedWrapperMarker)" Condition="!Exists('%(TestExecutionScriptPath)')" />
     </ItemGroup>
+
+    <Message Text="_MergedWrapperMarkers:"/>
+    <Message Text="%(_MergedWrapperMarker.Identity)"/>
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectoryForDesktop"
