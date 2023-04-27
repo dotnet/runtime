@@ -227,7 +227,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodOnTypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MonoArrayMethod.cs" />
-      <Compile Include="src\System\Reflection\Emit\RuntimeParameterBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeAssemblyBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeConstructorBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeEnumBuilder.Mono.cs" />
@@ -236,6 +235,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeGenericTypeParameterBuilder.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeMethodBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeModuleBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeParameterBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimePropertyBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeTypeBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />
@@ -258,7 +258,8 @@
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MarshalAsAttribute.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeLibrary.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectiveCMarshal.Mono.cs" Condition="'$(FeatureObjCMarshal)' == 'true'" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectiveCMarshal.Mono.cs"
+               Condition="'$(FeatureObjCMarshal)' == 'true'"/>
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\X86Base.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
@@ -297,10 +298,10 @@
 
   <!-- Enable unsupported browser warnings -->
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsAnyOS)' == 'true'">
-    <SupportedPlatform Include="browser" />
+    <SupportedPlatform Include="browser"/>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWasi)' == 'true' or '$(TargetsAnyOS)' == 'true'">
-    <SupportedPlatform Include="wasi" />
+    <SupportedPlatform Include="wasi"/>
   </ItemGroup>
 
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
@@ -310,7 +311,9 @@
   </ItemGroup>
 
   <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">
-    <Copy SourceFiles="$(RuntimeBinDir)/IL/System.Private.CoreLib.dll;$(RuntimeBinDir)/IL/System.Private.CoreLib.pdb" DestinationFolder="$(RuntimeBinDir)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(RuntimeBinDir)/IL/System.Private.CoreLib.dll;$(RuntimeBinDir)/IL/System.Private.CoreLib.pdb"
+          DestinationFolder="$(RuntimeBinDir)"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <!-- Setup eventing file generation -->
@@ -323,7 +326,11 @@
     <Compile Include="@(EventingSourceFile)" />
   </ItemGroup>
 
-  <Target Name="GenerateEventingFiles" Inputs="@(EventingGenerationScript);@(EventManifestFile)" Outputs="@(EventingSourceFile)" DependsOnTargets="FindPython" BeforeTargets="BeforeCompile">
+  <Target Name="GenerateEventingFiles"
+          Inputs="@(EventingGenerationScript);@(EventManifestFile)"
+          Outputs="@(EventingSourceFile)"
+          DependsOnTargets="FindPython"
+          BeforeTargets="BeforeCompile">
 
     <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.Mono.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
     <PropertyGroup>

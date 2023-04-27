@@ -9,10 +9,12 @@ namespace System.Reflection.Emit
     {
         private readonly string? _name;
         private readonly int _position;
-        private ParameterAttributes _attributes;
         private readonly MethodBuilderImpl _methodBuilder;
+        private ParameterAttributes _attributes;
 
-        internal List<CustomAttributeWrapper> _customAttributes = new();
+        internal List<CustomAttributeWrapper>? _customAttributes = new();
+        internal MarshallingInfo? _marshallingInfo;
+        internal object? _defaultValue = DBNull.Value;
 
         public ParameterBuilderImpl(MethodBuilderImpl methodBuilder, int sequence, ParameterAttributes attributes, string? paramName)
         {
@@ -28,40 +30,34 @@ namespace System.Reflection.Emit
 
         public override int Position => _position;
 
-        public override void SetConstant(object? defaultValue) => throw new NotImplementedException();
+        public override void SetConstant(object? defaultValue) => _defaultValue = defaultValue;
+
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            if (!IsPseudoCustomAttribute(con, binaryAttribute))
-            {
-                _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
-            }
-        }
-
-        private bool IsPseudoCustomAttribute(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
-        {
-            string? attrname = con.ReflectedType!.FullName;
-            switch (attrname)
+            switch (con.ReflectedType!.FullName)
             {
                 case "System.Runtime.InteropServices.InAttribute":
                     _attributes |= ParameterAttributes.In;
-                    break;
+                    return;
                 case "System.Runtime.InteropServices.OutAttribute":
                     _attributes |= ParameterAttributes.Out;
-                    break;
+                    return;
                 case "System.Runtime.InteropServices.OptionalAttribute":
                     _attributes |= ParameterAttributes.Optional;
-                    break;
+                    return;
                 case "System.Runtime.InteropServices.MarshalAsAttribute":
                     _attributes |= ParameterAttributes.HasFieldMarshal;
-                    break;
+                    _marshallingInfo = MarshallingInfo.ParseMarshallingInfo(con, binaryAttribute, isField: false);
+                    return;
                 case "System.Runtime.InteropServices.DefaultParameterValueAttribute":
                     // MS.NET doesn't handle this attribute but we handle it for consistency TODO: not sure if we need to handle this
-                    CustomAttributeInfo cinfo = CustomAttributeInfo.DecodeCustomAttribute(con, binaryAttribute);
-                    SetConstant(cinfo._ctorArgs[0]);
-                    break;
-                default: return false;
+                    CustomAttributeInfo caInfo = CustomAttributeInfo.DecodeCustomAttribute(con, binaryAttribute);
+                    SetConstant(caInfo._ctorArgs[0]);
+                    return;
             }
-            return true;
+
+            _customAttributes ??= new List<CustomAttributeWrapper>();
+            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
         }
     }
 }

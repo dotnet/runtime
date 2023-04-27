@@ -134,7 +134,7 @@ namespace System.Reflection.Emit
 
                 foreach (MethodBuilderImpl method in typeBuilder._methodDefinitions)
                 {
-                    MethodDefinitionHandle methodHandle = AddMethodDefinition(method, method.GetMethodSignatureBlob());
+                    MethodDefinitionHandle methodHandle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), _nextParameterRowId);
                     WriteCustomAttributes(method._customAttributes, methodHandle);
                     _nextMethodDefRowId++;
 
@@ -147,6 +147,16 @@ namespace System.Reflection.Emit
                                 ParameterHandle parameterHandle = AddParameter(parameter);
                                 WriteCustomAttributes(parameter._customAttributes, parameterHandle);
                                 _nextParameterRowId++;
+
+                                if (parameter._marshallingInfo != null)
+                                {
+                                    AddMarshalling(parameterHandle, parameter._marshallingInfo.PopulateMarshallingBlob(_metadataBuilder));
+                                }
+
+                                if (parameter._defaultValue != DBNull.Value)
+                                {
+                                    AddDefaultValue(parameterHandle, parameter._defaultValue);
+                                }
                             }
                         }
                     }
@@ -171,7 +181,7 @@ namespace System.Reflection.Emit
 
                     if (field._marshallingInfo != null)
                     {
-                        AddFieldMarshalling(fieldHandle, field._marshallingInfo.PopulateMarshallingBlob(_metadataBuilder));
+                        AddMarshalling(fieldHandle, field._marshallingInfo.PopulateMarshallingBlob(_metadataBuilder));
                     }
                 }
             }
@@ -237,6 +247,9 @@ namespace System.Reflection.Emit
             return handle;
         }
 
+        private void AddDefaultValue(ParameterHandle parameterHandle, object? defaultValue) =>
+            _metadataBuilder.AddConstant(parameterHandle, defaultValue);
+
         private FieldDefinitionHandle AddFieldDefinition(FieldBuilderImpl field, BlobBuilder fieldSignature) =>
             _metadataBuilder.AddFieldDefinition(
                 attributes: field.Attributes,
@@ -252,14 +265,14 @@ namespace System.Reflection.Emit
                 fieldList: MetadataTokens.FieldDefinitionHandle(fieldToken),
                 methodList: MetadataTokens.MethodDefinitionHandle(methodToken));
 
-        private MethodDefinitionHandle AddMethodDefinition(MethodBuilderImpl method, BlobBuilder methodSignature) =>
+        private MethodDefinitionHandle AddMethodDefinition(MethodBuilderImpl method, BlobBuilder methodSignature, int parameterToken) =>
             _metadataBuilder.AddMethodDefinition(
                 attributes: method.Attributes,
                 implAttributes: method.GetMethodImplementationFlags(),
                 name: _metadataBuilder.GetOrAddString(method.Name),
                 signature: _metadataBuilder.GetOrAddBlob(methodSignature),
                 bodyOffset: -1, // No body supported yet
-                parameterList: MetadataTokens.ParameterHandle(1));
+                parameterList: MetadataTokens.ParameterHandle(parameterToken));
 
         private TypeReferenceHandle AddTypeReference(Type type, AssemblyReferenceHandle parent) =>
             _metadataBuilder.AddTypeReference(
@@ -290,12 +303,10 @@ namespace System.Reflection.Emit
         private void AddFieldLayout(FieldDefinitionHandle fieldHandle, int offset) =>
             _metadataBuilder.AddFieldLayout(field: fieldHandle, offset: offset);
 
-        private void AddFieldMarshalling(FieldDefinitionHandle fieldHandle, BlobHandle descriptor)
-        {
+        private void AddMarshalling(EntityHandle fieldHandle, BlobHandle descriptor) =>
             _metadataBuilder.AddMarshallingDescriptor(fieldHandle, descriptor);
-        }
 
-        internal static ParameterHandle AddParameter(ParameterBuilderImpl parameter) =>
+        private ParameterHandle AddParameter(ParameterBuilderImpl parameter) =>
             _metadataBuilder.AddParameter(
                 attributes: (ParameterAttributes)parameter.Attributes,
                 name: parameter.Name != null ? _metadataBuilder.GetOrAddString(parameter.Name) : default,
