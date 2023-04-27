@@ -42,9 +42,6 @@ namespace Microsoft.Workload.Build.Tasks
 
         public bool           OnlyUpdateManifests{ get; set; }
 
-        [Required, NotNull]
-        public string? WebAssemblySdkPackExtractPath { get; set; }
-
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
         private string _tempDir = string.Empty;
@@ -66,8 +63,6 @@ namespace Microsoft.Workload.Build.Tasks
                 if (!Directory.Exists(LocalNuGetsPath))
                     throw new LogAsErrorException($"Cannot find {nameof(LocalNuGetsPath)}={LocalNuGetsPath} . " +
                                                     "Set it to the Shipping packages directory in artifacts.");
-
-                ExtractWebAssemblySdkPack(WebAssemblySdkPackExtractPath, LocalNuGetsPath);
 
                 ExecuteHackForRenamedManifest();
                 if (!InstallAllManifests())
@@ -122,7 +117,7 @@ namespace Microsoft.Workload.Build.Tasks
                     if (!ExecuteInternal(req) && !req.IgnoreErrors)
                         return false;
 
-                    OverrideWebAssemblySdkPack(req.TargetPath, WebAssemblySdkPackExtractPath);
+                    OverrideWebAssemblySdkPack(req.TargetPath, LocalNuGetsPath);
 
                     File.WriteAllText(req.StampPath, string.Empty);
                 }
@@ -151,13 +146,29 @@ namespace Microsoft.Workload.Build.Tasks
             System.IO.Compression.ZipFile.ExtractToDirectory(nupkg, targetPath);
         }
 
-        private static void OverrideWebAssemblySdkPack(string targetPath, string packPath)
+        private void OverrideWebAssemblySdkPack(string targetPath, string localNuGetsPath)
         {
+            string packPath = Path.Combine(targetPath, "Microsoft.NET.Sdk.WebAssembly.Pack");
+            ExtractWebAssemblySdkPack(packPath, localNuGetsPath);
+
             string propsPath = Directory.EnumerateFiles(targetPath, @"Sdk.props", SearchOption.AllDirectories).Single(f => f.Contains("Microsoft.NET.Sdk.WebAssembly"));
             string targetsPath = Directory.EnumerateFiles(targetPath, @"Sdk.targets", SearchOption.AllDirectories).Single(f => f.Contains("Microsoft.NET.Sdk.WebAssembly"));
 
-            File.WriteAllText(propsPath, File.ReadAllText(propsPath).Replace("$(_WebAssemblyPropsFile)", Path.Combine(packPath, "build", "Microsoft.NET.Sdk.WebAssembly.Browser.props")));
-            File.WriteAllText(targetsPath, File.ReadAllText(targetsPath).Replace("$(_WebAssemblyTargetsFile)", Path.Combine(packPath, "build", "Microsoft.NET.Sdk.WebAssembly.Browser.targets")));
+            OverrideFile(propsPath, "$(_WebAssemblyPropsFile)", Path.Combine(packPath, "build", "Microsoft.NET.Sdk.WebAssembly.Browser.props"));
+            OverrideFile(targetsPath, "$(_WebAssemblyTargetsFile)", Path.Combine(packPath, "build", "Microsoft.NET.Sdk.WebAssembly.Browser.targets"));
+
+            void OverrideFile(string sdkFilePath, string propertyToReplace, string packAbsolutePath)
+            {
+                if (!File.Exists(sdkFilePath))
+                    throw new FileNotFoundException(sdkFilePath);
+
+                if (!File.Exists(packAbsolutePath))
+                    throw new FileNotFoundException(packAbsolutePath);
+
+                string packRelativePath = Path.GetRelativePath(Path.GetDirectoryName(sdkFilePath)!, packAbsolutePath);
+                File.WriteAllText(sdkFilePath, File.ReadAllText(sdkFilePath).Replace(propertyToReplace, "$(MSBuildThisFileDirectory)" + packRelativePath));
+                Log.LogMessage(MessageImportance.Low, $"Overriding WebAssembly SDK pack in {sdkFilePath} to point to {packRelativePath}");
+            }
         }
 
         private bool ExecuteInternal(InstallWorkloadRequest req)
