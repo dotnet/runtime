@@ -7599,6 +7599,8 @@ HRESULT ProfToEEInterfaceImpl::EnumerateNonGCObjects(ICorProfilerObjectEnum** pp
         GC_NOTRIGGER;
         MODE_ANY;
         EE_THREAD_NOT_REQUIRED;
+
+        // FrozenObjectHeapManager takes a lock
         CAN_TAKE_LOCK;
     }
     CONTRACTL_END;
@@ -7636,6 +7638,8 @@ HRESULT ProfToEEInterfaceImpl::GetNonGCHeapBounds(ULONG cObjectRanges,
         GC_NOTRIGGER;
         MODE_ANY;
         EE_THREAD_NOT_REQUIRED;
+
+        // FrozenObjectHeapManager takes a lock
         CAN_TAKE_LOCK;
     }
     CONTRACTL_END;
