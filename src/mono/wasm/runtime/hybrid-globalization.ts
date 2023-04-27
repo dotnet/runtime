@@ -84,16 +84,16 @@ function pass_exception_details(ex: any, exceptionMessage: Int32Ptr){
     exceptionRoot.release();
 }
 
-export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number): number{
+export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, srcPtr: number, srcLength: number, prefixPtr: number, prefixLength: number, options: number): number{
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
-        const prefix = decode_to_clean_string(str2, str2Length);
+        const prefix = decode_to_clean_string(prefixPtr, prefixLength);
         // no need to look for an empty string
         if (prefix.length == 0)
             return 1; // true
 
-        const source = decode_to_clean_string(str1, str1Length);
+        const source = decode_to_clean_string(srcPtr, srcLength);
         if (source.length < prefix.length)
             return 0; //false
         const sourceOfPrefixLength = source.slice(0, prefix.length);
@@ -114,15 +114,15 @@ export function mono_wasm_starts_with(exceptionMessage: Int32Ptr, culture: MonoS
     }
 }
 
-export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number): number{
+export function mono_wasm_ends_with(exceptionMessage: Int32Ptr, culture: MonoStringRef, srcPtr: number, srcLength: number, suffixPtr: number, suffixLength: number, options: number): number{
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
-        const suffix = decode_to_clean_string(str2, str2Length);
+        const suffix = decode_to_clean_string(suffixPtr, suffixLength);
         if (suffix.length == 0)
             return 1; // true
 
-        const source = decode_to_clean_string(str1, str1Length);
+        const source = decode_to_clean_string(srcPtr, srcLength);
         const diff = source.length - suffix.length;
         if (diff < 0)
             return 0; //false
@@ -156,18 +156,18 @@ function clean_string(str: string)
     return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
 }
 
-export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, fromBeginning: number): number{
+export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStringRef, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number): number{
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
-        const needle = string_decoder.decode(<any>str1, <any>(str1 + 2*str1Length));
+        const needle = string_decoder.decode(<any>needlePtr, <any>(needlePtr + 2*needleLength));
         // no need to look for an empty string
         if (clean_string(needle).length == 0)
-            return fromBeginning ? 0 : str2Length;
+            return fromBeginning ? 0 : srcLength;
 
-        const source = string_decoder.decode(<any>str2, <any>(str2 + 2*str2Length));
+        const source = string_decoder.decode(<any>srcPtr, <any>(srcPtr + 2*srcLength));
         // no need to look in an empty string
         if (clean_string(source).length == 0)
-            return fromBeginning ? 0 : str2Length;
+            return fromBeginning ? 0 : srcLength;
         const cultureName = conv_string_root(cultureRoot);
         const locale = cultureName ? cultureName : undefined;
         const casePicker = (options & 0x1f);
