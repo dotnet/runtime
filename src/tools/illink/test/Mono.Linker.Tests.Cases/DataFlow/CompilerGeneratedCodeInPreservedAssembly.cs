@@ -10,7 +10,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
-	// This test tries to hit a case where the entire assemly is preserved (via descriptor, NOT action)
+	// This test tries to hit a case where the entire assembly is preserved (via descriptor, NOT action)
 	// meaning we will go and mark all types and members in it.
 	// At the same time there's a compiler generated method (local function) which is called from
 	// a branch which will be removed due to constant propagation.
@@ -43,7 +43,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				// Analyzer doesn't implement constant propagation and branch removal, so it reaches this code
-				// NativeAOT has a bug here:
+				// NativeAOT behavioral difference:
 				//   https://github.com/dotnet/runtime/issues/85161
 				[ExpectedWarning ("IL2026", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 				void LocalWithWarning ()
@@ -65,7 +65,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// Analyzer doesn't implement constant propagation and branch removal, so it reaches this code
-			// NativeAOT has a bug here:
+			// NativeAOT behavioral difference:
 			//   https://github.com/dotnet/runtime/issues/85161
 			[ExpectedWarning ("IL2026", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			void LocalWithWarning ()
