@@ -76,12 +76,13 @@ namespace System.Net.Http
                 _metrics.RequestStart(request);
 
                 HttpResponseMessage? response = null;
+                Exception? unhandledException = null;
                 try
                 {
                     response = _handler.Send(request, cancellationToken);
                     return response;
                 }
-                catch (Exception ex) when (LogRequestFailed(ex, telemetryStarted: true))
+                catch (Exception ex) when (LogRequestFailed(ex, telemetryStarted: true, out unhandledException))
                 {
                     // Unreachable as LogRequestFailed will return false
                     throw;
@@ -89,7 +90,7 @@ namespace System.Net.Http
                 finally
                 {
                     HttpTelemetry.Log.RequestStop(response);
-                    _metrics.RequestStop(request, response, startTimestamp, Stopwatch.GetTimestamp());
+                    _metrics.RequestStop(request, response, unhandledException, startTimestamp, Stopwatch.GetTimestamp());
                 }
             }
             else
@@ -121,12 +122,13 @@ namespace System.Net.Http
                 metrics.RequestStart(request);
 
                 HttpResponseMessage? response = null;
+                Exception? unhandledException = null;
                 try
                 {
                     response = await handler.SendAsync(request, cancellationToken).ConfigureAwait(false);
                     return response;
                 }
-                catch (Exception ex) when (LogRequestFailed(ex, telemetryStarted: true))
+                catch (Exception ex) when (LogRequestFailed(ex, telemetryStarted: true, out unhandledException))
                 {
                     // Unreachable as LogRequestFailed will return false
                     throw;
@@ -134,7 +136,7 @@ namespace System.Net.Http
                 finally
                 {
                     HttpTelemetry.Log.RequestStop(response);
-                    metrics.RequestStop(request, response, startTimestamp, Stopwatch.GetTimestamp());
+                    metrics.RequestStop(request, response, unhandledException, startTimestamp, Stopwatch.GetTimestamp());
                 }
             }
         }
@@ -145,12 +147,13 @@ namespace System.Net.Http
             request.RequestUri is Uri requestUri &&
             requestUri.IsAbsoluteUri;
 
-        internal static bool LogRequestFailed(Exception exception, bool telemetryStarted)
+        internal static bool LogRequestFailed(Exception exception, bool telemetryStarted, out Exception thrownException)
         {
             if (HttpTelemetry.Log.IsEnabled() && telemetryStarted)
             {
                 HttpTelemetry.Log.RequestFailed(exception);
             }
+            thrownException = exception;
             return false;
         }
 

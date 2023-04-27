@@ -35,7 +35,7 @@ namespace System.Net.Http
             _currentRequests.Add(1, tags);
         }
 
-        public void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, long startTimestamp, long currentTimestamp)
+        public void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, Exception? unhandledException, long startTimestamp, long currentTimestamp)
         {
 #pragma warning disable SA1129 // Do not use default value type constructor
             var tags = new TagList();
@@ -43,10 +43,14 @@ namespace System.Net.Http
             InitializeCommonTags(ref tags, request);
             _currentRequests.Add(-1, tags);
 
-            if (response != null)
+            if (response is not null)
             {
                 tags.Add("status-code", (int)response.StatusCode); // Boxing?
                 tags.Add("protocol", $"HTTP/{response.Version}"); // Hacky
+            }
+            if (unhandledException is not null)
+            {
+                tags.Add("exception-name", unhandledException.GetType().FullName);
             }
             if (request.HasTags)
             {

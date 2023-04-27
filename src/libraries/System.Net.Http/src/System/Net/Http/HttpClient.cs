@@ -621,7 +621,7 @@ namespace System.Net.Http
                 e = toThrow = CancellationHelper.CreateOperationCanceledException(e, cancellationToken.IsCancellationRequested ? cancellationToken : cts.Token);
             }
 
-            LogRequestFailed(e, telemetryStarted);
+            LogRequestFailed(e, telemetryStarted, out _);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 
