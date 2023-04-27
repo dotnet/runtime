@@ -6866,7 +6866,7 @@ void emitter::emitIns_R_R_S(
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
 
 #if defined(TARGET_XARCH)
-    if ((instOptions == INS_OPTS_EVEX_b))
+    if (instOptions == INS_OPTS_EVEX_b)
     {
         assert(UseEvexEncoding());
         id->idSetEvexbContext();
