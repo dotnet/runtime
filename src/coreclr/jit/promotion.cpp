@@ -1770,11 +1770,13 @@ PhaseStatus Promotion::Run()
                 assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
                 if (rep.NeedsReadBack)
                 {
-                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u at the end of " FMT_BB "\n", i,
+                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n", i,
                             rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
 
-                    GenTree* readBack = replacer.CreateReadBack(i, rep);
-                    m_compiler->fgInsertStmtNearEnd(bb, m_compiler->fgNewStmtFromTree(readBack));
+                    GenTree*   readBack = replacer.CreateReadBack(i, rep);
+                    Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+                    DISPSTMT(stmt);
+                    m_compiler->fgInsertStmtNearEnd(bb, stmt);
                     rep.NeedsReadBack = false;
                 }
 
