@@ -4474,7 +4474,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 }
 #elif defined(TARGET_XARCH)
                 // XORPS is the fastest and smallest way to initialize a XMM register to zero.
-                inst_RV_RV(INS_xorps, reg, reg, TYP_DOUBLE);
+                GetEmitter()->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, reg, reg, reg);
                 dblInitReg = reg;
 #elif defined(TARGET_ARM64)
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
@@ -4514,7 +4514,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
                 }
 #elif defined(TARGET_XARCH)
                 // XORPS is the fastest and smallest way to initialize a XMM register to zero.
-                inst_RV_RV(INS_xorps, reg, reg, TYP_DOUBLE);
+                GetEmitter()->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, reg, reg, reg);
                 fltInitReg = reg;
 #elif defined(TARGET_ARM64)
                 // We will just zero out the entire vector register. This sets it to a double/float zero value

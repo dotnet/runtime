@@ -681,12 +681,15 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
     regNumber targetReg = node->GetRegNum();
     GenTree*  op1       = node->Op(1);
     GenTree*  op2       = node->Op(2);
-    emitter*  emit      = GetEmitter();
+    regNumber op1Reg    = op1->GetRegNum();
 
-    // TODO-XArch-CQ: Commutative operations can have op1 be contained
-    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+    assert(targetReg != REG_NA);
 
-    regNumber op1Reg = op1->GetRegNum();
+    if (op2->isContained() || op2->isUsedFromSpillTemp())
+    {
+        assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
+        assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
+    }
 
     if (ins == INS_insertps)
     {
@@ -702,31 +705,49 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
             // insertps can also contain op2 when it is zero in which case
             // we just reuse op1Reg since ival specifies the entry to zero
 
-            emit->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op1Reg, ival);
+            GetEmitter()->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op1Reg, ival);
             return;
         }
     }
 
-    assert(targetReg != REG_NA);
     assert(op1Reg != REG_NA);
 
+    bool isRMW = node->isRMWHWIntrinsic(compiler);
+    inst_RV_RV_TT_IV(ins, simdSize, targetReg, op1Reg, op2, ival, isRMW);
+}
+
+//------------------------------------------------------------------------
+// inst_RV_RV_TT_IV: Generates an instruction that takes 3 operands:
+//                   a register operand, an operand that may be in memory or register,
+//                   and an immediate value. The result is returned in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    size      -- The emit size attribute
+//    targetReg -- The target register
+//    op1Reg    -- The first operand register
+//    op2       -- The second operand, which may be a memory node or a node producing a register
+//    ival      -- The immediate operand
+//    isRMW     -- true if the instruction is RMW; otherwise, false
+//
+void CodeGen::inst_RV_RV_TT_IV(
+    instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, int8_t ival, bool isRMW)
+{
+    emitter* emit = GetEmitter();
+    noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), op1Reg));
+
+    // TODO-XArch-CQ: Commutative operations can have op1 be contained
+    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+
     OperandDesc op2Desc = genOperandDesc(op2);
-
-    if (op2Desc.IsContained())
-    {
-        assert(HWIntrinsicInfo::SupportsContainment(node->GetHWIntrinsicId()));
-        assertIsContainableHWIntrinsicOp(compiler->m_pLowering, node, op2);
-    }
-
     switch (op2Desc.GetKind())
     {
         case OperandKind::ClsVar:
-            emit->emitIns_SIMD_R_R_C_I(ins, simdSize, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0, ival);
+            emit->emitIns_SIMD_R_R_C_I(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0, ival);
             break;
 
         case OperandKind::Local:
-            emit->emitIns_SIMD_R_R_S_I(ins, simdSize, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset(),
-                                       ival);
+            emit->emitIns_SIMD_R_R_S_I(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset(), ival);
             break;
 
         case OperandKind::Indir:
@@ -735,7 +756,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
             // temporary GT_IND to generate code with.
             GenTreeIndir  indirForm;
             GenTreeIndir* indir = op2Desc.GetIndirForm(&indirForm);
-            emit->emitIns_SIMD_R_R_A_I(ins, simdSize, targetReg, op1Reg, indir, ival);
+            emit->emitIns_SIMD_R_R_A_I(ins, size, targetReg, op1Reg, indir, ival);
         }
         break;
 
@@ -743,7 +764,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
         {
             regNumber op2Reg = op2Desc.GetReg();
 
-            if ((op1Reg != targetReg) && (op2Reg == targetReg) && node->isRMWHWIntrinsic(compiler))
+            if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
             {
                 // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW intrinsic.
                 //
@@ -752,12 +773,11 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
                 // as target. However, for commutative intrinsics, we can just swap the operands
                 // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
 
-                noway_assert(node->OperIsCommutative());
                 op2Reg = op1Reg;
                 op1Reg = targetReg;
             }
 
-            emit->emitIns_SIMD_R_R_R_I(ins, simdSize, targetReg, op1Reg, op2Reg, ival);
+            emit->emitIns_SIMD_R_R_R_I(ins, size, targetReg, op1Reg, op2Reg, ival);
         }
         break;
 

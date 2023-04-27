@@ -945,6 +945,9 @@ protected:
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
+    void inst_RV_RV_TT_IV(
+        instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, int8_t ival, bool isRMW);
+
     void genHWIntrinsic(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
     void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber reg, GenTree* rmOp);
