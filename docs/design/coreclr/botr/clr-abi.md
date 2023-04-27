@@ -696,7 +696,7 @@ The extra state created by the JIT for synchronized methods (lock taken flag) mu
 
 ## Generics
 
-EnC is not supported for generic methods and methods on generic types.
+EnC is supported for adding and editing generic methods and methods on generic types and generic methods on non-generic types.
 
 # System V x86_64 support
 

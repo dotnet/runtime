@@ -506,6 +506,7 @@ namespace System.Text.Json
                     left._encoder == right._encoder &&
                     left._defaultIgnoreCondition == right._defaultIgnoreCondition &&
                     left._numberHandling == right._numberHandling &&
+                    left._preferredObjectCreationHandling == right._preferredObjectCreationHandling &&
                     left._unknownTypeHandling == right._unknownTypeHandling &&
                     left._unmappedMemberHandling == right._unmappedMemberHandling &&
                     left._defaultBufferSize == right._defaultBufferSize &&
@@ -559,6 +560,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._encoder);
                 AddHashCode(ref hc, options._defaultIgnoreCondition);
                 AddHashCode(ref hc, options._numberHandling);
+                AddHashCode(ref hc, options._preferredObjectCreationHandling);
                 AddHashCode(ref hc, options._unknownTypeHandling);
                 AddHashCode(ref hc, options._unmappedMemberHandling);
                 AddHashCode(ref hc, options._defaultBufferSize);

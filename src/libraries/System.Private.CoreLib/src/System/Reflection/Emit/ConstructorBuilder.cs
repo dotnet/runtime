@@ -31,14 +31,21 @@ namespace System.Reflection.Emit
         protected abstract ILGenerator GetILGeneratorCore(int streamSize);
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
-            => SetCustomAttributeCore(con, binaryAttribute);
+        {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
-        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+            SetCustomAttributeCore(con, binaryAttribute);
+        }
+
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute);
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
-            => SetCustomAttributeCore(customBuilder);
+        {
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
-        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
+            SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
+        }
 
         public void SetImplementationFlags(MethodImplAttributes attributes)
             => SetImplementationFlagsCore(attributes);

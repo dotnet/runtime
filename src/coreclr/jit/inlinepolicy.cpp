@@ -846,9 +846,7 @@ int DefaultPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* meth
 {
     int callsiteSize = 55; // Direct call take 5 native bytes; indirect call takes 6 native bytes.
 
-    bool hasThis = methInfo->args.hasThis();
-
-    if (hasThis)
+    if (methInfo->args.hasImplicitThis())
     {
         callsiteSize += 30; // "mov" or "lea"
     }
@@ -856,7 +854,7 @@ int DefaultPolicy::DetermineCallsiteNativeSizeEstimate(CORINFO_METHOD_INFO* meth
     CORINFO_ARG_LIST_HANDLE argLst = methInfo->args.args;
     COMP_HANDLE             comp   = m_RootCompiler->info.compCompHnd;
 
-    for (unsigned i = (hasThis ? 1 : 0); i < methInfo->args.totalILArgs(); i++, argLst = comp->getArgNext(argLst))
+    for (unsigned i = 0; i < methInfo->args.numArgs; i++, argLst = comp->getArgNext(argLst))
     {
         var_types sigType = (var_types)m_RootCompiler->eeGetArgType(argLst, &methInfo->args);
 

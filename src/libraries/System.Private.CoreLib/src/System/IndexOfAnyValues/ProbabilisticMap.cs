@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -104,6 +105,7 @@ namespace System.Buffers
                 (short)ch,
                 values.Length);
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<byte> ContainsMask32CharsAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, ref char searchSpace)
         {
@@ -124,6 +126,7 @@ namespace System.Buffers
             return resultLower & resultUpper;
         }
 
+        [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Vector256<byte> IsCharBitSetAvx2(Vector256<byte> charMapLower, Vector256<byte> charMapUpper, Vector256<byte> values)
         {
@@ -172,10 +175,19 @@ namespace System.Buffers
             Vector128<byte> bitPositions = Vector128.ShuffleUnsafe(Vector128.Create(0x8040201008040201).AsByte(), highNibble);
 
             Vector128<byte> index = values & Vector128.Create((byte)VectorizedIndexMask);
-            Vector128<byte> bitMaskLower = Vector128.ShuffleUnsafe(charMapLower, index);
-            Vector128<byte> bitMaskUpper = Vector128.ShuffleUnsafe(charMapUpper, index - Vector128.Create((byte)16));
-            Vector128<byte> mask = Vector128.GreaterThan(index, Vector128.Create((byte)15));
-            Vector128<byte> bitMask = Vector128.ConditionalSelect(mask, bitMaskUpper, bitMaskLower);
+            Vector128<byte> bitMask;
+
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                bitMask = AdvSimd.Arm64.VectorTableLookup((charMapLower, charMapUpper), index);
+            }
+            else
+            {
+                Vector128<byte> bitMaskLower = Vector128.ShuffleUnsafe(charMapLower, index);
+                Vector128<byte> bitMaskUpper = Vector128.ShuffleUnsafe(charMapUpper, index - Vector128.Create((byte)16));
+                Vector128<byte> mask = Vector128.GreaterThan(index, Vector128.Create((byte)15));
+                bitMask = Vector128.ConditionalSelect(mask, bitMaskUpper, bitMaskLower);
+            }
 
             return ~Vector128.Equals(bitMask & bitPositions, Vector128<byte>.Zero);
         }

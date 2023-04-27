@@ -1728,8 +1728,7 @@ void DacDbiInterfaceImpl::CollectFields(TypeHandle                   thExact,
     // FieldDesc::GetExactDeclaringType to get at the correct field. This requires the exact
     // TypeHandle. </TODO>
     EncApproxFieldDescIterator fdIterator(thApprox.GetMethodTable(),
-                                          ApproxFieldDescIterator::ALL_FIELDS,
-                                          FALSE);  // don't fixup EnC (we can't, we're stopped)
+                                          ApproxFieldDescIterator::ALL_FIELDS); // don't fixup EnC (we can't, we're stopped)
 
     PTR_FieldDesc pCurrentFD;
     unsigned int index = 0;
@@ -3873,8 +3872,7 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypes(
 PTR_FieldDesc  DacDbiInterfaceImpl::FindField(TypeHandle thApprox, mdFieldDef fldToken)
 {
     EncApproxFieldDescIterator fdIterator(thApprox.GetMethodTable(),
-                                          ApproxFieldDescIterator::ALL_FIELDS,
-                                          FALSE);  // don't fixup EnC (we can't, we're stopped)
+                                          ApproxFieldDescIterator::ALL_FIELDS); // don't fixup EnC (we can't, we're stopped)
 
     PTR_FieldDesc pCurrentFD;
 

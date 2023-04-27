@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -19,17 +18,37 @@ namespace System.Reflection.Emit
             return fieldSignature;
         }
 
+        internal static BlobBuilder ConstructorSignatureEncoder(ParameterInfo[]? parameters, ModuleBuilderImpl module)
+        {
+            BlobBuilder constructorSignature = new();
+
+            new BlobEncoder(constructorSignature).
+                MethodSignature(isInstanceMethod: true).
+                Parameters((parameters == null) ? 0 : parameters.Length, out ReturnTypeEncoder retType, out ParametersEncoder parameterEncoder);
+
+            retType.Void();
+
+            if (parameters != null)
+            {
+                Type[]? typeParameters = Array.ConvertAll(parameters, parameter => parameter.ParameterType);
+
+                foreach (Type parameter in typeParameters)
+                {
+                    WriteSignatureForType(parameterEncoder.AddParameter().Type(), parameter, module);
+                }
+            }
+
+            return constructorSignature;
+        }
+
         internal static BlobBuilder MethodSignatureEncoder(ModuleBuilderImpl module, Type[]? parameters, Type? returnType, bool isInstance)
         {
             // Encoding return type and parameters.
             BlobBuilder methodSignature = new();
 
-            ParametersEncoder parEncoder;
-            ReturnTypeEncoder retEncoder;
-
             new BlobEncoder(methodSignature).
                 MethodSignature(isInstanceMethod: isInstance).
-                Parameters((parameters == null) ? 0 : parameters.Length, out retEncoder, out parEncoder);
+                Parameters((parameters == null) ? 0 : parameters.Length, out ReturnTypeEncoder retEncoder, out ParametersEncoder parEncoder);
 
             if (returnType != null && returnType != module.GetTypeFromCoreAssembly(CoreTypeId.Void))
             {

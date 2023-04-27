@@ -888,26 +888,34 @@ namespace System.IO
 
         public override Task FlushAsync()
         {
-            // If we have been inherited into a subclass, the following implementation could be incorrect
-            // since it does not call through to Flush() which a subclass might have overridden.  To be safe
-            // we will only use this implementation in cases where we know it is safe to do so,
-            // and delegate to our base class (which will call into Flush) when we are not sure.
             if (GetType() != typeof(StreamWriter))
             {
                 return base.FlushAsync();
             }
 
-            // flushEncoder should be true at the end of the file and if
-            // the user explicitly calls Flush (though not if AutoFlush is true).
-            // This is required to flush any dangling characters from our UTF-7
-            // and UTF-8 encoders.
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
+            return (_asyncWriteTask = FlushAsyncInternal(flushStream: true, flushEncoder: true, CancellationToken.None));
+        }
 
-            Task task = FlushAsyncInternal(flushStream: true, flushEncoder: true);
-            _asyncWriteTask = task;
+        /// <summary>Clears all buffers for this stream asynchronously and causes any buffered data to be written to the underlying device.</summary>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
+        /// <returns>A <see cref="Task"/> that represents the asynchronous flush operation.</returns>
+        public override Task FlushAsync(CancellationToken cancellationToken)
+        {
+            if (GetType() != typeof(StreamWriter))
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(cancellationToken);
+                }
 
-            return task;
+                return FlushAsync();
+            }
+
+            ThrowIfDisposed();
+            CheckAsyncTaskInProgress();
+            return (_asyncWriteTask = FlushAsyncInternal(flushStream: true, flushEncoder: true, cancellationToken));
         }
 
         private Task FlushAsyncInternal(bool flushStream, bool flushEncoder, CancellationToken cancellationToken = default)
