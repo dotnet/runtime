@@ -418,7 +418,8 @@ struct CORINFO_SIG_INFO_SMALL
     CorInfoCallConv     getCallConv()       { return CorInfoCallConv((callConv & CORINFO_CALLCONV_MASK)); }
     bool                hasThis()           { return ((callConv & CORINFO_CALLCONV_HASTHIS) != 0); }
     bool                hasExplicitThis()   { return ((callConv & CORINFO_CALLCONV_EXPLICITTHIS) != 0); }
-    unsigned            totalILArgs()       { return (numArgs + hasThis()); }
+    bool                hasImplicitThis()   { return ((callConv & (CORINFO_CALLCONV_HASTHIS | CORINFO_CALLCONV_EXPLICITTHIS)) == CORINFO_CALLCONV_HASTHIS); }
+    unsigned            totalILArgs()       { return (numArgs + (hasImplicitThis() ? 1 : 0)); }
     bool                isVarArg()          { return ((getCallConv() == CORINFO_CALLCONV_VARARG) || (getCallConv() == CORINFO_CALLCONV_NATIVEVARARG)); }
     bool                hasTypeArg()        { return ((callConv & CORINFO_CALLCONV_PARAMTYPE) != 0); }
 

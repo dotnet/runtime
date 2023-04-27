@@ -10,7 +10,7 @@
     <PackageVersionNet7>7.0.5</PackageVersionNet7>
     <PackageVersionNet6>6.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet7)').Build),11))</PackageVersionNet6>
     <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
-    <PreReleaseVersionIteration>4</PreReleaseVersionIteration>
+    <PreReleaseVersionIteration>5</PreReleaseVersionIteration>
     <WorkloadVersionSuffix Condition="'$(PreReleaseVersionLabel)' != 'release'">-$(PreReleaseVersionLabel).$(PreReleaseVersionIteration)</WorkloadVersionSuffix>
     <SdkBandVersionForWorkload_FromRuntimeVersions>$(SdkBandVersion)$(WorkloadVersionSuffix)</SdkBandVersionForWorkload_FromRuntimeVersions>
     <!-- Set assembly version to align with major and minor version,
@@ -32,8 +32,8 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- dotnet/roslyn-analyzers dependencies -->
-    <MicrosoftCodeAnalysisAnalyzersVersion>3.3.5-beta1.23223.2</MicrosoftCodeAnalysisAnalyzersVersion>
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>8.0.0-preview.23223.2</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisAnalyzersVersion>3.3.5-beta1.23225.2</MicrosoftCodeAnalysisAnalyzersVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>8.0.0-preview.23225.2</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <!-- dotnet/roslyn dependencies -->
     <!--
       These versions should not be used by any project that contributes to the design-time experience in VS, such as an analyzer, code-fix, or generator assembly.
@@ -84,21 +84,21 @@
     <!-- SDK dependencies -->
     <MicrosoftDotNetApiCompatTaskVersion>8.0.100-preview.2.23107.1</MicrosoftDotNetApiCompatTaskVersion>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetBuildTasksFeedVersion>8.0.0-beta.23224.1</MicrosoftDotNetBuildTasksFeedVersion>
-    <MicrosoftDotNetCodeAnalysisVersion>8.0.0-beta.23224.1</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenAPIVersion>8.0.0-beta.23224.1</MicrosoftDotNetGenAPIVersion>
-    <MicrosoftDotNetGenFacadesVersion>8.0.0-beta.23224.1</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>8.0.0-beta.23224.1</MicrosoftDotNetXUnitExtensionsVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.23224.1</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksArchivesVersion>8.0.0-beta.23224.1</MicrosoftDotNetBuildTasksArchivesVersion>
-    <MicrosoftDotNetBuildTasksInstallersVersion>8.0.0-beta.23224.1</MicrosoftDotNetBuildTasksInstallersVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>8.0.0-beta.23224.1</MicrosoftDotNetBuildTasksPackagingVersion>
-    <MicrosoftDotNetBuildTasksTargetFrameworkVersion>8.0.0-beta.23224.1</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
-    <MicrosoftDotNetBuildTasksTemplatingVersion>8.0.0-beta.23224.1</MicrosoftDotNetBuildTasksTemplatingVersion>
-    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>8.0.0-beta.23224.1</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
-    <MicrosoftDotNetRemoteExecutorVersion>8.0.0-beta.23224.1</MicrosoftDotNetRemoteExecutorVersion>
-    <MicrosoftDotNetVersionToolsTasksVersion>8.0.0-beta.23224.1</MicrosoftDotNetVersionToolsTasksVersion>
-    <MicrosoftDotNetPackageTestingVersion>8.0.0-beta.23224.1</MicrosoftDotNetPackageTestingVersion>
+    <MicrosoftDotNetBuildTasksFeedVersion>8.0.0-beta.23224.5</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>8.0.0-beta.23224.5</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftDotNetGenAPIVersion>8.0.0-beta.23224.5</MicrosoftDotNetGenAPIVersion>
+    <MicrosoftDotNetGenFacadesVersion>8.0.0-beta.23224.5</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>8.0.0-beta.23224.5</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.23224.5</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetBuildTasksArchivesVersion>8.0.0-beta.23224.5</MicrosoftDotNetBuildTasksArchivesVersion>
+    <MicrosoftDotNetBuildTasksInstallersVersion>8.0.0-beta.23224.5</MicrosoftDotNetBuildTasksInstallersVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>8.0.0-beta.23224.5</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksTargetFrameworkVersion>8.0.0-beta.23224.5</MicrosoftDotNetBuildTasksTargetFrameworkVersion>
+    <MicrosoftDotNetBuildTasksTemplatingVersion>8.0.0-beta.23224.5</MicrosoftDotNetBuildTasksTemplatingVersion>
+    <MicrosoftDotNetBuildTasksWorkloadsPackageVersion>8.0.0-beta.23224.5</MicrosoftDotNetBuildTasksWorkloadsPackageVersion>
+    <MicrosoftDotNetRemoteExecutorVersion>8.0.0-beta.23224.5</MicrosoftDotNetRemoteExecutorVersion>
+    <MicrosoftDotNetVersionToolsTasksVersion>8.0.0-beta.23224.5</MicrosoftDotNetVersionToolsTasksVersion>
+    <MicrosoftDotNetPackageTestingVersion>8.0.0-beta.23224.5</MicrosoftDotNetPackageTestingVersion>
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
