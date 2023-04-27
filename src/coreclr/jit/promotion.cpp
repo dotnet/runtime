@@ -717,10 +717,11 @@ class DecompositionPlan
     ArrayStack<Entry> m_entries;
     GenTree*          m_dst;
     GenTree*          m_src;
+    bool              m_srcInvolvesReplacements;
 
 public:
-    DecompositionPlan(Compiler* comp, GenTree* dst, GenTree* src)
-        : m_compiler(comp), m_entries(comp->getAllocator(CMK_Promotion)), m_dst(dst), m_src(src)
+    DecompositionPlan(Compiler* comp, GenTree* dst, GenTree* src, bool srcInvolvesReplacements)
+        : m_compiler(comp), m_entries(comp->getAllocator(CMK_Promotion)), m_dst(dst), m_src(src), m_srcInvolvesReplacements(srcInvolvesReplacements)
     {
     }
 
@@ -1054,7 +1055,14 @@ private:
                 // Like above, use 0 intentionally here.
                 m_dst->AsUnOp()->gtOp1 = grabAddr(0);
             }
+        }
 
+        // If the source involves replacements then do the struct op first --
+        // otherwise we would overwrite the destination with stale bits.
+        // If the source does not involve replacements then CQ analysis shows
+        // that it's best to do it last.
+        if (!coversDestination && m_srcInvolvesReplacements)
+        {
             statements->AddStatement(m_compiler->gtNewBlkOpNode(m_dst, m_src));
 
             if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
@@ -1135,6 +1143,11 @@ private:
             }
 
             statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
+        }
+
+        if (!coversDestination && !m_srcInvolvesReplacements)
+        {
+            statements->AddStatement(m_compiler->gtNewBlkOpNode(m_dst, m_src));
         }
 
         assert(numAddrUses == 0);
@@ -1413,7 +1426,7 @@ public:
                 }
             }
 
-            DecompositionPlan plan(m_compiler, dst, src);
+            DecompositionPlan plan(m_compiler, dst, src, srcInvolvesReplacements);
 
             if (src->IsConstInitVal())
             {
