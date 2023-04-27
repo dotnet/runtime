@@ -9977,6 +9977,15 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_long (buf, (gssize)frame->frame_addr);
 		break;
 	}
+	case MDBGPROT_CMD_STACK_FRAME_GET_COUNT: {
+		MonoDebugLocalsInfo *locals;
+		locals = mono_debug_lookup_locals (frame->de.method);
+		if (locals)
+			buffer_add_int (buf, locals->num_locals);
+		else
+			buffer_add_int (buf, 0);
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
