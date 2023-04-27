@@ -268,6 +268,10 @@ LEAF_END RhpAssignRef, _TEXT
 // - Function "InWriteBarrierHelper" assumes an AV due to passed in null pointer will happen at RhpCheckedLockCmpXchgAVLocation
 // - Function "UnwindSimpleHelperToCaller" assumes no registers were pushed and LR contains the return address
 
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+.arch_extension lse
+#endif
+
 // RhpCheckedLockCmpXchg(Object** dest, Object* value, Object* comparand)
 //
 // Interlocked compare exchange on objectref.
@@ -385,3 +389,7 @@ NoBarrierXchg:
         ret
 
     LEAF_END RhpCheckedXchg, _TEXT
+
+#ifndef LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT
+.arch_extension nolse
+#endif
