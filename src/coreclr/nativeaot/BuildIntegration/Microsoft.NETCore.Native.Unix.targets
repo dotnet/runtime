@@ -22,7 +22,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     <DsymUtilOptions Condition="'$(_IsApplePlatform)' == 'true'">--flat</DsymUtilOptions>
     <_SymbolPrefix Condition="'$(_IsApplePlatform)' == 'true'">_</_SymbolPrefix>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'freebsd'">lld</LinkerFlavor>
-    <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
@@ -104,7 +103,6 @@ The .NET Foundation licenses this file to you under the MIT license.
     </ItemGroup>
 
     <ItemGroup>
-      <LinkerArg Include="-fuse-ld=$(LinkerFlavor)" Condition="'$(LinkerFlavor)' != ''" />
       <LinkerArg Include="@(NativeLibrary)" />
       <LinkerArg Include="--sysroot=$(SysRoot)" Condition="'$(SysRoot)' != ''" />
       <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(_IsApplePlatform)' != 'true' and '$(TargetTriple)' != ''" />
@@ -180,10 +178,20 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(_IsApplePlatform)' != 'true'"
       Text="Requested linker ('$(CppLinker)') not found in PATH." />
 
-    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="'$(LinkerFlavor)' == 'lld'" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
+    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="'$(LinkerFlavor)' == 'lld' or ('$(LinkerFlavor)' == '' and '$(CppLinker)' == 'clang')"
+          IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" StandardErrorImportance="Low" ConsoleToMSBuild="true">
       <Output TaskParameter="ExitCode" PropertyName="_LinkerVersionStringExitCode" />
       <Output TaskParameter="ConsoleOutput" PropertyName="_LinkerVersionString" />
     </Exec>
+
+    <PropertyGroup Condition="'$(LinkerFlavor)' == ''">
+      <LinkerFlavor Condition="'$(_LinkerVersionStringExitCode)' == '0'">lld</LinkerFlavor>
+      <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <LinkerArg Include="-fuse-ld=$(LinkerFlavor)" Condition="'$(LinkerFlavor)' != ''" />
+    </ItemGroup>
 
     <PropertyGroup Condition="'$(_LinkerVersionStringExitCode)' == '0' and '$(_LinkerVersionString)' != ''">
       <_LinkerVersion>$([System.Text.RegularExpressions.Regex]::Match($(_LinkerVersionString), '[1-9]\d*'))</_LinkerVersion>
