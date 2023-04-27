@@ -844,10 +844,11 @@ namespace System.Net.Security
                     }
                     else
                     {
+                        string hostName = TargetHostNameHelper.NormalizeHostName(_sslAuthenticationOptions.TargetHost);
                         status = SslStreamPal.InitializeSecurityContext(
                                        ref _credentialsHandle!,
                                        ref _securityContext,
-                                       _sslAuthenticationOptions.TargetHost,
+                                       hostName,
                                        inputBuffer,
                                        ref result,
                                        _sslAuthenticationOptions);
@@ -863,7 +864,7 @@ namespace System.Net.Security
                             status = SslStreamPal.InitializeSecurityContext(
                                        ref _credentialsHandle!,
                                        ref _securityContext,
-                                       _sslAuthenticationOptions.TargetHost,
+                                       hostName,
                                        ReadOnlySpan<byte>.Empty,
                                        ref result,
                                        _sslAuthenticationOptions);
@@ -1059,7 +1060,7 @@ namespace System.Net.Security
                         _remoteCertificate,
                         _sslAuthenticationOptions.CheckCertName,
                         _sslAuthenticationOptions.IsServer,
-                        _sslAuthenticationOptions.TargetHost);
+                        TargetHostNameHelper.NormalizeHostName(_sslAuthenticationOptions.TargetHost));
                 }
 
                 if (remoteCertValidationCallback != null)

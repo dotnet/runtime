@@ -516,27 +516,43 @@ namespace System.Tests
         [Fact]
         public static void TryFormatTest()
         {
-            Span<char> buffer = stackalloc char[100];
-            DateOnly dateOnly = DateOnly.FromDateTime(DateTime.Today);
+            // UTF16
+            {
+                Span<char> buffer = stackalloc char[100];
+                DateOnly dateOnly = DateOnly.FromDateTime(DateTime.Today);
 
-            Assert.True(dateOnly.TryFormat(buffer, out int charsWritten));
-            Assert.True(dateOnly.TryFormat(buffer, out charsWritten, "o"));
-            Assert.Equal(10, charsWritten);
-            Assert.True(dateOnly.TryFormat(buffer, out charsWritten, "R"));
-            Assert.Equal(16, charsWritten);
-            Assert.False(dateOnly.TryFormat(buffer.Slice(0, 3), out charsWritten));
-            Assert.False(dateOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "r"));
-            Assert.False(dateOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "O"));
-            Assert.Throws<FormatException>(() => {
-                    Span<char> buff = stackalloc char[100];
-                    dateOnly.TryFormat(buff, out charsWritten, "u");
-                });
-            Assert.Throws<FormatException>(() => {
-                    Span<char> buff = stackalloc char[100];
-                    dateOnly.TryFormat(buff, out charsWritten, "hh-ss");
-                });
-            Assert.Throws<FormatException>(() => $"{dateOnly:u}");
-            Assert.Throws<FormatException>(() => $"{dateOnly:hh-ss}");
+                Assert.True(dateOnly.TryFormat(buffer, out int charsWritten));
+                Assert.True(dateOnly.TryFormat(buffer, out charsWritten, "o"));
+                Assert.Equal(10, charsWritten);
+                Assert.True(dateOnly.TryFormat(buffer, out charsWritten, "R"));
+                Assert.Equal(16, charsWritten);
+                Assert.False(dateOnly.TryFormat(buffer.Slice(0, 3), out charsWritten));
+                Assert.False(dateOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "r"));
+                Assert.False(dateOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "O"));
+                Assert.Throws<FormatException>(() => dateOnly.TryFormat(stackalloc char[100], out charsWritten, "u"));
+                Assert.Throws<FormatException>(() => dateOnly.TryFormat(stackalloc char[100], out charsWritten, "hh-ss"));
+                Assert.Throws<FormatException>(() => $"{dateOnly:u}");
+                Assert.Throws<FormatException>(() => $"{dateOnly:hh-ss}");
+            }
+
+            // UTF8
+            {
+                Span<byte> buffer = stackalloc byte[100];
+                DateOnly dateOnly = DateOnly.FromDateTime(DateTime.Today);
+
+                Assert.True(dateOnly.TryFormat(buffer, out int charsWritten, default, null));
+                Assert.True(dateOnly.TryFormat(buffer, out charsWritten, "o", null));
+                Assert.Equal(10, charsWritten);
+                Assert.True(dateOnly.TryFormat(buffer, out charsWritten, "R", null));
+                Assert.Equal(16, charsWritten);
+                Assert.False(dateOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, default, null));
+                Assert.False(dateOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "r", null));
+                Assert.False(dateOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "O", null));
+                Assert.Throws<FormatException>(() => dateOnly.TryFormat(stackalloc byte[100], out charsWritten, "u", null));
+                Assert.Throws<FormatException>(() => dateOnly.TryFormat(stackalloc byte[100], out charsWritten, "hh-ss", null));
+                Assert.Throws<FormatException>(() => $"{dateOnly:u}");
+                Assert.Throws<FormatException>(() => $"{dateOnly:hh-ss}");
+            }
         }
     }
 }

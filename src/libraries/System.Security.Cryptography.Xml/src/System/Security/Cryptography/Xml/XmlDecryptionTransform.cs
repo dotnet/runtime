@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Xml;
 
@@ -10,6 +11,8 @@ namespace System.Security.Cryptography.Xml
     // XML Decryption Transform is used to specify the order of XML Digital Signature
     // and XML Encryption when performed on the same document.
 
+    [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
     public class XmlDecryptionTransform : Transform
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument) };
@@ -19,7 +22,12 @@ namespace System.Security.Cryptography.Xml
         private EncryptedXml? _exml; // defines the XML encryption processing rules
         private XmlDocument? _containingDocument;
         private XmlNamespaceManager? _nsm;
-        private const string XmlDecryptionTransformNamespaceUrl = "http://www.w3.org/2002/07/decrypt#";
+
+        // work around https://github.com/dotnet/runtime/issues/81864 by splitting this into a separate class.
+        internal static class Consts
+        {
+            internal const string XmlDecryptionTransformNamespaceUrl = "http://www.w3.org/2002/07/decrypt#";
+        }
 
         public XmlDecryptionTransform()
         {
@@ -88,10 +96,10 @@ namespace System.Security.Cryptography.Xml
                 XmlElement? elem = node as XmlElement;
                 if (elem != null)
                 {
-                    if (elem.LocalName == "Except" && elem.NamespaceURI == XmlDecryptionTransformNamespaceUrl)
+                    if (elem.LocalName == "Except" && elem.NamespaceURI == Consts.XmlDecryptionTransformNamespaceUrl)
                     {
                         // the Uri is required
-                        string? uri = Utils.GetAttribute(elem, "URI", XmlDecryptionTransformNamespaceUrl);
+                        string? uri = Utils.GetAttribute(elem, "URI", Consts.XmlDecryptionTransformNamespaceUrl);
                         if (uri == null || uri.Length == 0 || uri[0] != '#')
                             throw new CryptographicException(SR.Cryptography_Xml_UriRequired);
                         if (!Utils.VerifyAttributes(elem, "URI"))
@@ -119,7 +127,7 @@ namespace System.Security.Cryptography.Xml
                 element.SetAttribute("Algorithm", Algorithm);
             foreach (string uri in ExceptUris)
             {
-                XmlElement exceptUriElement = document.CreateElement("Except", XmlDecryptionTransformNamespaceUrl);
+                XmlElement exceptUriElement = document.CreateElement("Except", Consts.XmlDecryptionTransformNamespaceUrl);
                 exceptUriElement.SetAttribute("URI", uri);
                 element.AppendChild(exceptUriElement);
             }

@@ -221,7 +221,6 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             break;
 
         case GT_IND:
-        case GT_OBJ:
         case GT_BLK:
             // For Volatile indirection, first mutate GcHeap/ByrefExposed
             // see comments in ValueNum.cpp (under the memory read case)
@@ -269,30 +268,16 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             break;
 
         case GT_STOREIND:
-        case GT_STORE_OBJ:
         case GT_STORE_BLK:
         case GT_STORE_DYN_BLK:
         case GT_MEMORYBARRIER: // Similar to Volatile indirections, we must handle this as a memory def.
             fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
             break;
 
-#ifdef FEATURE_HW_INTRINSICS
+#if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
         {
-            GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
-
-            // We can't call fgMutateGcHeap unless the block has recorded a MemoryDef
-            //
-            if (hwIntrinsicNode->OperIsMemoryStore())
-            {
-                // We currently handle this like a Volatile store, so it counts as a definition of GcHeap/ByrefExposed
-                fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
-            }
-            if (hwIntrinsicNode->OperIsMemoryLoad())
-            {
-                // This instruction loads from memory and we need to record this information
-                fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
-            }
+            fgPerNodeLocalVarLiveness(tree->AsHWIntrinsic());
             break;
         }
 #endif // FEATURE_HW_INTRINSICS
@@ -350,6 +335,27 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             break;
     }
 }
+
+#if defined(FEATURE_HW_INTRINSICS)
+void Compiler::fgPerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic)
+{
+    NamedIntrinsic intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+    // We can't call fgMutateGcHeap unless the block has recorded a MemoryDef
+    //
+    if (hwintrinsic->OperIsMemoryStoreOrBarrier())
+    {
+        // We currently handle this like a Volatile store or GT_MEMORYBARRIER
+        // so it counts as a definition of GcHeap/ByrefExposed
+        fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
+    }
+    else if (hwintrinsic->OperIsMemoryLoad())
+    {
+        // This instruction loads from memory and we need to record this information
+        fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
+    }
+}
+#endif // FEATURE_HW_INTRINSICS
 
 /*****************************************************************************/
 void Compiler::fgPerBlockLocalVarLiveness()
@@ -2012,8 +2018,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     if (isDeadStore)
                     {
                         LIR::Use addrUse;
-                        if (blockRange.TryGetUse(node, &addrUse) &&
-                            (addrUse.User()->OperIs(GT_STOREIND, GT_STORE_BLK, GT_STORE_OBJ)))
+                        if (blockRange.TryGetUse(node, &addrUse) && (addrUse.User()->OperIs(GT_STOREIND, GT_STORE_BLK)))
                         {
                             GenTreeIndir* const store = addrUse.User()->AsIndir();
 
@@ -2093,10 +2098,10 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_JMP:
             case GT_STOREIND:
             case GT_BOUNDS_CHECK:
-            case GT_STORE_OBJ:
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
             case GT_JCMP:
+            case GT_JTEST:
             case GT_JCC:
             case GT_JTRUE:
             case GT_RETURN:
@@ -2124,12 +2129,25 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
 
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
-                // Conservative: This only removes Vector.Zero nodes, but could be expanded.
-                if (node->IsVectorZero())
+            {
+                GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
+                NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+                if (hwintrinsic->OperIsMemoryStore())
                 {
-                    fgTryRemoveNonLocal(node, &blockRange);
+                    // Never remove these nodes, as they are always side-effecting.
+                    break;
                 }
+                else if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
+                {
+                    // Never remove these nodes, as they are always side-effecting
+                    // or have a behavioral semantic that is undesirable to remove
+                    break;
+                }
+
+                fgTryRemoveNonLocal(node, &blockRange);
                 break;
+            }
 #endif // FEATURE_HW_INTRINSICS
 
             case GT_NO_OP:
@@ -2149,13 +2167,12 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             break;
 
             case GT_BLK:
-            case GT_OBJ:
             {
                 bool removed = fgTryRemoveNonLocal(node, &blockRange);
                 if (!removed && node->IsUnusedValue())
                 {
-                    // IR doesn't expect dummy uses of `GT_OBJ/BLK/DYN_BLK`.
-                    JITDUMP("Transform an unused OBJ/BLK node [%06d]\n", dspTreeID(node));
+                    // IR doesn't expect dummy uses of `GT_BLK`.
+                    JITDUMP("Transform an unused BLK node [%06d]\n", dspTreeID(node));
                     Lowering::TransformUnusedIndirection(node->AsIndir(), this, block);
                 }
             }
@@ -2200,9 +2217,8 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
                 return GenTree::VisitResult::Continue;
             });
 
-            if (node->OperIs(GT_SELECTCC, GT_SETCC))
+            if (node->OperConsumesFlags() && node->gtPrev->gtSetFlags())
             {
-                assert((node->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
                 node->gtPrev->gtFlags &= ~GTF_SET_FLAGS;
             }
 

@@ -389,8 +389,6 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
     noway_assert(!opts.MinOpts());
 
-    bool removeLoop = false;
-
     // If an unreachable block is a loop entry or bottom then the loop is unreachable.
     // Special case: the block was the head of a loop - or pointing to a loop entry.
 
@@ -456,101 +454,37 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         // If `block` flows to the loop entry then the whole loop will become unreachable if it is the
         // only non-loop predecessor.
 
-        switch (block->bbJumpKind)
+        bool removeLoop = false;
+        if (!loop.lpContains(block))
         {
-            case BBJ_NONE:
-                if (block->bbNext == loop.lpEntry)
-                {
-                    removeLoop = true;
-                }
-                break;
-
-            case BBJ_COND:
-                if ((block->bbNext == loop.lpEntry) || (block->bbJumpDest == loop.lpEntry))
-                {
-                    removeLoop = true;
-                }
-                break;
-
-            case BBJ_ALWAYS:
-                if (block->bbJumpDest == loop.lpEntry)
-                {
-                    removeLoop = true;
-                }
-                break;
-
-            case BBJ_SWITCH:
-                for (BasicBlock* const bTarget : block->SwitchTargets())
-                {
-                    if (bTarget == loop.lpEntry)
-                    {
-                        removeLoop = true;
-                        break;
-                    }
-                }
-                break;
-
-            default:
-                break;
-        }
-
-        if (removeLoop)
-        {
-            // Check if the entry has other predecessors outside the loop.
-            // TODO: Replace this when predecessors are available.
-
-            for (BasicBlock* const auxBlock : Blocks())
+            for (BasicBlock* const succ : block->Succs())
             {
-                // Ignore blocks in the loop.
-                if (loop.lpContains(auxBlock))
+                if (loop.lpEntry == succ)
                 {
-                    continue;
-                }
-
-                switch (auxBlock->bbJumpKind)
-                {
-                    case BBJ_NONE:
-                        if (auxBlock->bbNext == loop.lpEntry)
-                        {
-                            removeLoop = false;
-                        }
-                        break;
-
-                    case BBJ_COND:
-                        if ((auxBlock->bbNext == loop.lpEntry) || (auxBlock->bbJumpDest == loop.lpEntry))
-                        {
-                            removeLoop = false;
-                        }
-                        break;
-
-                    case BBJ_ALWAYS:
-                        if (auxBlock->bbJumpDest == loop.lpEntry)
-                        {
-                            removeLoop = false;
-                        }
-                        break;
-
-                    case BBJ_SWITCH:
-                        for (BasicBlock* const bTarget : auxBlock->SwitchTargets())
-                        {
-                            if (bTarget == loop.lpEntry)
-                            {
-                                removeLoop = false;
-                                break;
-                            }
-                        }
-                        break;
-
-                    default:
-                        break;
+                    removeLoop = true;
+                    break;
                 }
             }
 
             if (removeLoop)
             {
-                reportBefore();
-                optMarkLoopRemoved(loopNum);
+                // If the entry has any non-loop block that is not the known 'block' predecessor of entry
+                // (found above), then don't remove the loop.
+                for (BasicBlock* const predBlock : loop.lpEntry->PredBlocks())
+                {
+                    if (!loop.lpContains(predBlock) && (predBlock != block))
+                    {
+                        removeLoop = false;
+                        break;
+                    }
+                }
             }
+        }
+
+        if (removeLoop)
+        {
+            reportBefore();
+            optMarkLoopRemoved(loopNum);
         }
         else if (loop.lpHead == block)
         {
@@ -2090,7 +2024,7 @@ private:
                 continue;
             }
 
-            // This blocks is lexically between TOP and BOTTOM, but it does not
+            // This block is lexically between TOP and BOTTOM, but it does not
             // participate in the flow cycle.  Check for a run of consecutive
             // such blocks.
             //
@@ -2504,6 +2438,21 @@ private:
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
                 {
                     // Exit from a block other than BOTTOM
+                    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if !defined(FEATURE_EH_FUNCLETS)
+                    // On non-funclet platforms (x86), the catch exit is a BBJ_ALWAYS, but we don't want that to
+                    // be considered a loop exit block, as catch handlers don't have predecessor lists and don't
+                    // show up as might be expected in the dominator tree.
+                    if (block->bbJumpKind == BBJ_ALWAYS)
+                    {
+                        if (!BasicBlock::sameHndRegion(block, exitPoint))
+                        {
+                            break;
+                        }
+                    }
+#endif // !defined(FEATURE_EH_FUNCLETS)
+
                     lastExit = block;
                     exitCount++;
                 }
@@ -4926,22 +4875,28 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     }
 
     // Get hold of the jump target
-    BasicBlock* bTest = block->bbJumpDest;
+    BasicBlock* const bTest = block->bbJumpDest;
 
-    // Does the block consist of 'jtrue(cond) block' ?
+    // Does the bTest consist of 'jtrue(cond) block' ?
     if (bTest->bbJumpKind != BBJ_COND)
     {
         return false;
     }
 
     // bTest must be a backwards jump to block->bbNext
-    if (bTest->bbJumpDest != block->bbNext)
+    // This will be the top of the loop.
+    //
+    BasicBlock* const bTop = bTest->bbJumpDest;
+
+    if (bTop != block->bbNext)
     {
         return false;
     }
 
-    // Since test is a BBJ_COND it will have a bbNext
-    noway_assert(bTest->bbNext != nullptr);
+    // Since bTest is a BBJ_COND it will have a bbNext
+    //
+    BasicBlock* const bJoin = bTest->bbNext;
+    noway_assert(bJoin != nullptr);
 
     // 'block' must be in the same try region as the condition, since we're going to insert a duplicated condition
     // in a new block after 'block', and the condition might include exception throwing code.
@@ -4954,8 +4909,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
 
     // The duplicated condition block will branch to bTest->bbNext, so that also better be in the
     // same try region (or no try region) to avoid generating illegal flow.
-    BasicBlock* bTestNext = bTest->bbNext;
-    if (bTestNext->hasTryIndex() && !BasicBlock::sameTryRegion(block, bTestNext))
+    if (bJoin->hasTryIndex() && !BasicBlock::sameTryRegion(block, bJoin))
     {
         return false;
     }
@@ -4970,7 +4924,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     }
 
     // Find the loop termination test at the bottom of the loop.
-    Statement* condStmt = bTest->lastStmt();
+    Statement* const condStmt = bTest->lastStmt();
 
     // Verify the test block ends with a conditional that we can manipulate.
     GenTree* const condTree = condStmt->GetRootNode();
@@ -4979,6 +4933,9 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     {
         return false;
     }
+
+    JITDUMP("Matched flow pattern for loop inversion: block " FMT_BB " bTop " FMT_BB " bTest " FMT_BB "\n",
+            block->bbNum, bTop->bbNum, bTest->bbNum);
 
     // Estimate the cost of cloning the entire test block.
     //
@@ -5007,7 +4964,7 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     bool           allProfileWeightsAreValid = false;
     weight_t const weightBlock               = block->bbWeight;
     weight_t const weightTest                = bTest->bbWeight;
-    weight_t const weightNext                = block->bbNext->bbWeight;
+    weight_t const weightTop                 = bTop->bbWeight;
 
     // If we have profile data then we calculate the number of times
     // the loop will iterate into loopIterations
@@ -5015,35 +4972,45 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     {
         // Only rely upon the profile weight when all three of these blocks
         // have good profile weights
-        if (block->hasProfileWeight() && bTest->hasProfileWeight() && block->bbNext->hasProfileWeight())
+        if (block->hasProfileWeight() && bTest->hasProfileWeight() && bTop->hasProfileWeight())
         {
             // If this while loop never iterates then don't bother transforming
             //
-            if (weightNext == BB_ZERO_WEIGHT)
+            if (weightTop == BB_ZERO_WEIGHT)
             {
                 return true;
             }
 
-            // We generally expect weightTest == weightNext + weightBlock.
+            // We generally expect weightTest > weightTop
             //
             // Tolerate small inconsistencies...
             //
-            if (!fgProfileWeightsConsistent(weightBlock + weightNext, weightTest))
+            if (!fgProfileWeightsConsistent(weightBlock + weightTop, weightTest))
             {
                 JITDUMP("Profile weights locally inconsistent: block " FMT_WT ", next " FMT_WT ", test " FMT_WT "\n",
-                        weightBlock, weightNext, weightTest);
+                        weightBlock, weightTop, weightTest);
             }
             else
             {
                 allProfileWeightsAreValid = true;
 
-                // Determine iteration count
+                // Determine average iteration count
                 //
-                //   weightNext is the number of time this loop iterates
-                //   weightBlock is the number of times that we enter the while loop
+                //   weightTop is the number of time this loop executes
+                //   weightTest is the number of times that we consider entering or remaining in the loop
                 //   loopIterations is the average number of times that this loop iterates
                 //
-                loopIterations = weightNext / weightBlock;
+                weight_t loopEntries = weightTest - weightTop;
+
+                // If profile is inaccurate, try and use other data to provide a credible estimate.
+                // The value should at least be >= weightBlock.
+                //
+                if (loopEntries < weightBlock)
+                {
+                    loopEntries = weightBlock;
+                }
+
+                loopIterations = weightTop / loopEntries;
             }
         }
         else
@@ -5183,16 +5150,33 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     // Flag the block that received the copy as potentially having various constructs.
     bNewCond->bbFlags |= bTest->bbFlags & BBF_COPY_PROPAGATE;
 
-    bNewCond->bbJumpDest = bTest->bbNext;
+    // Fix flow and profile
+    //
+    bNewCond->bbJumpDest = bJoin;
     bNewCond->inheritWeight(block);
 
-    // Update bbRefs and bbPreds for 'bNewCond', 'bNewCond->bbNext' 'bTest' and 'bTest->bbNext'.
+    if (allProfileWeightsAreValid)
+    {
+        weight_t const delta = weightTest - weightTop;
+
+        // If there is just one outside edge incident on bTest, then ideally delta == block->bbWeight.
+        // But this might not be the case if profile data is inconsistent.
+        //
+        // And if bTest has multiple outside edges we want to account for the weight of them all.
+        //
+        if (delta > block->bbWeight)
+        {
+            bNewCond->setBBProfileWeight(delta);
+        }
+    }
+
+    // Update pred info
+    //
+    fgAddRefPred(bJoin, bNewCond);
+    fgAddRefPred(bTop, bNewCond);
 
     fgAddRefPred(bNewCond, block);
-    fgAddRefPred(bNewCond->bbNext, bNewCond);
-
     fgRemoveRefPred(bTest, block);
-    fgAddRefPred(bTest->bbNext, bNewCond);
 
     // Move all predecessor edges that look like loop entry edges to point to the new cloned condition
     // block, not the existing condition block. The idea is that if we only move `block` to point to
@@ -5202,15 +5186,15 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
     // as the proxy for predecessors that are "in" versus "out" of the potential loop. Note that correctness
     // is maintained no matter which condition block we point to, but we'll lose optimization potential
     // (and create spaghetti code) if we get it wrong.
-
+    //
     BlockToBlockMap blockMap(getAllocator(CMK_LoopOpt));
     bool            blockMapInitialized = false;
 
-    unsigned loopFirstNum  = bNewCond->bbNext->bbNum;
-    unsigned loopBottomNum = bTest->bbNum;
+    unsigned const loopFirstNum  = bTop->bbNum;
+    unsigned const loopBottomNum = bTest->bbNum;
     for (BasicBlock* const predBlock : bTest->PredBlocks())
     {
-        unsigned bNum = predBlock->bbNum;
+        unsigned const bNum = predBlock->bbNum;
         if ((loopFirstNum <= bNum) && (bNum <= loopBottomNum))
         {
             // Looks like the predecessor is from within the potential loop; skip it.
@@ -5240,8 +5224,8 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         // cases of stress modes with inconsistent weights.
         //
         JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n", bTest->bbNum, weightTest,
-                weightNext);
-        bTest->inheritWeight(block->bbNext);
+                weightTop);
+        bTest->inheritWeight(bTop);
 
         // Determine the new edge weights.
         //
@@ -5251,23 +5235,23 @@ bool Compiler::optInvertWhileLoop(BasicBlock* block)
         // Note "next" is the loop top block, not bTest's bbNext,
         // we'll call this latter block "after".
         //
-        weight_t const testToNextLikelihood  = min(1.0, weightNext / weightTest);
+        weight_t const testToNextLikelihood  = min(1.0, weightTop / weightTest);
         weight_t const testToAfterLikelihood = 1.0 - testToNextLikelihood;
 
-        // Adjust edges out of bTest (which now has weight weightNext)
+        // Adjust edges out of bTest (which now has weight weightTop)
         //
-        weight_t const testToNextWeight  = weightNext * testToNextLikelihood;
-        weight_t const testToAfterWeight = weightNext * testToAfterLikelihood;
+        weight_t const testToNextWeight  = weightTop * testToNextLikelihood;
+        weight_t const testToAfterWeight = weightTop * testToAfterLikelihood;
 
-        FlowEdge* const edgeTestToNext  = fgGetPredForBlock(bTest->bbJumpDest, bTest);
+        FlowEdge* const edgeTestToNext  = fgGetPredForBlock(bTop, bTest);
         FlowEdge* const edgeTestToAfter = fgGetPredForBlock(bTest->bbNext, bTest);
 
-        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum,
-                bTest->bbJumpDest->bbNum, testToNextWeight);
+        JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (iterate loop)\n", bTest->bbNum, bTop->bbNum,
+                testToNextWeight);
         JITDUMP("Setting weight of " FMT_BB " -> " FMT_BB " to " FMT_WT " (exit loop)\n", bTest->bbNum,
                 bTest->bbNext->bbNum, testToAfterWeight);
 
-        edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight, bTest->bbJumpDest);
+        edgeTestToNext->setEdgeWeights(testToNextWeight, testToNextWeight, bTop);
         edgeTestToAfter->setEdgeWeights(testToAfterWeight, testToAfterWeight, bTest->bbNext);
 
         // Adjust edges out of block, using the same distribution.
@@ -6990,7 +6974,6 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     // convenient). But note that it is arbitrary because there is not guaranteed execution order amongst
     // the child loops.
 
-    int childLoopPreHeaders = 0;
     for (BasicBlock::loopNumber childLoop = pLoopDsc->lpChild; //
          childLoop != BasicBlock::NOT_IN_LOOP;                 //
          childLoop = optLoopTable[childLoop].lpSibling)
@@ -7020,7 +7003,6 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
         }
         JITDUMP("  --  " FMT_BB " (child loop pre-header)\n", childPreHead->bbNum);
         defExec.Push(childPreHead);
-        ++childLoopPreHeaders;
     }
 
     if (pLoopDsc->lpExitCnt == 1)
@@ -7033,22 +7015,14 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
         // Push dominators, until we reach "entry" or exit the loop.
 
         BasicBlock* cur = pLoopDsc->lpExit;
-        while (cur != nullptr && pLoopDsc->lpContains(cur) && cur != pLoopDsc->lpEntry)
+        while ((cur != nullptr) && (cur != pLoopDsc->lpEntry))
         {
             JITDUMP("  --  " FMT_BB " (dominate exit block)\n", cur->bbNum);
+            assert(pLoopDsc->lpContains(cur));
             defExec.Push(cur);
             cur = cur->bbIDom;
         }
-
-        // If we didn't reach the entry block, give up and *just* push the entry block (and the pre-headers).
-        if (cur != pLoopDsc->lpEntry)
-        {
-            JITDUMP("  -- odd, we didn't reach entry from exit via dominators. Only considering hoisting in entry "
-                    "block " FMT_BB "\n",
-                    pLoopDsc->lpEntry->bbNum);
-            defExec.Pop(defExec.Height() - childLoopPreHeaders);
-            assert(defExec.Height() == childLoopPreHeaders);
-        }
+        noway_assert(cur == pLoopDsc->lpEntry);
     }
     else // More than one exit
     {
@@ -7563,13 +7537,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
                 return fgWalkResult::WALK_CONTINUE;
             }
 
-            // Initclass CLS_VARs and IconHandles are the base cases of cctor dependent trees.
-            // In the IconHandle case, it's of course the dereference, rather than the constant itself, that is
-            // truly dependent on the cctor.  So a more precise approach would be to separately propagate
-            // isCctorDependent and isAddressWhoseDereferenceWouldBeCctorDependent, but we don't for
-            // simplicity/throughput; the constant itself would be considered non-hoistable anyway, since
-            // optIsCSEcandidate returns false for constants.
-            bool treeIsCctorDependent     = tree->OperIs(GT_CNS_INT) && ((tree->gtFlags & GTF_ICON_INITCLASS) != 0);
+            bool treeIsCctorDependent     = tree->OperIsIndir() && ((tree->gtFlags & GTF_IND_INITCLASS) != 0);
             bool treeIsInvariant          = true;
             bool treeHasHoistableChildren = false;
             int  childCount;
@@ -8783,11 +8751,17 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 
 #ifdef FEATURE_HW_INTRINSICS
                     case GT_HWINTRINSIC:
-                        if (tree->AsHWIntrinsic()->OperIsMemoryStore())
+                    {
+                        GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
+                        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+                        if (hwintrinsic->OperIsMemoryStoreOrBarrier())
                         {
+                            // For barriers, we model the behavior after GT_MEMORYBARRIER
                             memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                         }
                         break;
+                    }
 #endif // FEATURE_HW_INTRINSICS
 
                     case GT_LOCKADD:

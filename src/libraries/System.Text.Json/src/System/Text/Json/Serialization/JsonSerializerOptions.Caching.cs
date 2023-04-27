@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
@@ -60,15 +61,49 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Tries to get the <see cref="JsonTypeInfo"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
+        /// </summary>
+        /// <param name="type">The type to resolve contract metadata for.</param>
+        /// <param name="typeInfo">The resolved contract metadata, or <see langword="null" /> if not contract could be resolved.</param>
+        /// <returns><see langword="true"/> if a contract for <paramref name="type"/> was found, or <see langword="false"/> otherwise.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="type"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="type"/> is not valid for serialization.</exception>
+        /// <remarks>
+        /// Returned metadata can be downcast to <see cref="JsonTypeInfo{T}"/> and used with the relevant <see cref="JsonSerializer"/> overloads.
+        ///
+        /// If the <see cref="JsonSerializerOptions"/> instance is locked for modification, the method will return a cached instance for the metadata.
+        /// </remarks>
+        public bool TryGetTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
+        {
+            if (type is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(type));
+            }
+
+            if (JsonTypeInfo.IsInvalidForSerialization(type))
+            {
+                ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
+            }
+
+            typeInfo = GetTypeInfoInternal(type, ensureNotNull: null, resolveIfMutable: true);
+            return typeInfo is not null;
+        }
+
+        /// <summary>
         /// Same as GetTypeInfo but without validation and additional knobs.
         /// </summary>
-        internal JsonTypeInfo GetTypeInfoInternal(
+        [return: NotNullIfNotNull(nameof(ensureNotNull))]
+        internal JsonTypeInfo? GetTypeInfoInternal(
             Type type,
             bool ensureConfigured = true,
+            // We can't assert non-nullability on the basis of boolean parameters,
+            // so use a nullable representation instead to piggy-back on the NotNullIfNotNull attribute.
+            bool? ensureNotNull = true,
             bool resolveIfMutable = false,
             bool fallBackToNearestAncestorType = false)
         {
             Debug.Assert(!fallBackToNearestAncestorType || IsReadOnly, "ancestor resolution should only be invoked in read-only options.");
+            Debug.Assert(ensureNotNull is null or true, "Explicitly passing false will result in invalid result annotation.");
 
             JsonTypeInfo? typeInfo = null;
 
@@ -85,7 +120,7 @@ namespace System.Text.Json
                 typeInfo = GetTypeInfoNoCaching(type);
             }
 
-            if (typeInfo == null)
+            if (typeInfo is null && ensureNotNull == true)
             {
                 ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type, TypeInfoResolver);
             }
@@ -127,7 +162,14 @@ namespace System.Text.Json
             Type runtimeType = rootValue.GetType();
             if (runtimeType != JsonTypeInfo.ObjectType)
             {
+                // To determine the contract for an object value:
+                // 1. Find the JsonTypeInfo for the runtime type with fallback to the nearest ancestor, if not available.
+                // 2. If the resolved type is deriving from a polymorphic type, use the contract of the polymorphic type instead.
                 polymorphicTypeInfo = GetTypeInfoForRootType(runtimeType, fallBackToNearestAncestorType: true);
+                if (polymorphicTypeInfo.AncestorPolymorphicType is { } ancestorPolymorphicType)
+                {
+                    polymorphicTypeInfo = ancestorPolymorphicType;
+                }
                 return true;
             }
 
@@ -141,7 +183,22 @@ namespace System.Text.Json
             get
             {
                 Debug.Assert(IsReadOnly);
-                return _objectTypeInfo ??= GetTypeInfoInternal(JsonTypeInfo.ObjectType);
+                return _objectTypeInfo ??= GetObjectTypeInfo(this);
+
+                static JsonTypeInfo GetObjectTypeInfo(JsonSerializerOptions options)
+                {
+                    JsonTypeInfo? typeInfo = options.GetTypeInfoInternal(JsonTypeInfo.ObjectType, ensureNotNull: null);
+                    if (typeInfo is null)
+                    {
+                        // If the user-supplied resolver does not provide a JsonTypeInfo<object>,
+                        // use a placeholder value to drive root-level boxed value serialization.
+                        var converter = new ObjectConverterSlim();
+                        typeInfo = new JsonTypeInfo<object>(converter, options);
+                        typeInfo.EnsureConfigured();
+                    }
+
+                    return typeInfo;
+                }
             }
         }
 
@@ -241,7 +298,7 @@ namespace System.Text.Json
             private CacheEntry? DetermineNearestAncestor(Type type, CacheEntry entry)
             {
                 // In cases where the underlying TypeInfoResolver returns `null` for a given type,
-                // this method traverses the hierarchy above the given type to determine potential
+                // this method traverses the hierarchy above the type to determine potential
                 // ancestors for which the resolver does provide metadata. This can be useful in
                 // cases where we're using a source generator and are trying to serialize private
                 // implementations of an interface that is supported by the source generator.
@@ -449,6 +506,7 @@ namespace System.Text.Json
                     left._encoder == right._encoder &&
                     left._defaultIgnoreCondition == right._defaultIgnoreCondition &&
                     left._numberHandling == right._numberHandling &&
+                    left._preferredObjectCreationHandling == right._preferredObjectCreationHandling &&
                     left._unknownTypeHandling == right._unknownTypeHandling &&
                     left._unmappedMemberHandling == right._unmappedMemberHandling &&
                     left._defaultBufferSize == right._defaultBufferSize &&
@@ -502,6 +560,7 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._encoder);
                 AddHashCode(ref hc, options._defaultIgnoreCondition);
                 AddHashCode(ref hc, options._numberHandling);
+                AddHashCode(ref hc, options._preferredObjectCreationHandling);
                 AddHashCode(ref hc, options._unknownTypeHandling);
                 AddHashCode(ref hc, options._unmappedMemberHandling);
                 AddHashCode(ref hc, options._defaultBufferSize);

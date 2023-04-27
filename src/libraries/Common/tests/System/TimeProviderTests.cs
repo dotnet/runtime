@@ -17,7 +17,7 @@ namespace Tests.System
         public void TestUtcSystemTime()
         {
             DateTimeOffset dto1 = DateTimeOffset.UtcNow;
-            DateTimeOffset providerDto = TimeProvider.System.UtcNow;
+            DateTimeOffset providerDto = TimeProvider.System.GetUtcNow();
             DateTimeOffset dto2 = DateTimeOffset.UtcNow;
 
             Assert.InRange(providerDto.Ticks, dto1.Ticks, dto2.Ticks);
@@ -28,7 +28,7 @@ namespace Tests.System
         public void TestLocalSystemTime()
         {
             DateTimeOffset dto1 = DateTimeOffset.Now;
-            DateTimeOffset providerDto = TimeProvider.System.LocalNow;
+            DateTimeOffset providerDto = TimeProvider.System.GetLocalNow();
             DateTimeOffset dto2 = DateTimeOffset.Now;
 
             // Ensure there was no daylight saving shift during the test execution.
@@ -37,6 +37,17 @@ namespace Tests.System
                 Assert.InRange(providerDto.Ticks, dto1.Ticks, dto2.Ticks);
                 Assert.Equal(dto1.Offset, providerDto.Offset);
             }
+        }
+
+        private class ZonedTimeProvider : TimeProvider
+        {
+            private TimeZoneInfo _zoneInfo;
+            public ZonedTimeProvider(TimeZoneInfo zoneInfo) : base()
+            {
+                _zoneInfo = zoneInfo ?? TimeZoneInfo.Local;
+            }
+            public override TimeZoneInfo LocalTimeZone { get => _zoneInfo; }
+            public static TimeProvider FromLocalTimeZone(TimeZoneInfo zoneInfo) => new ZonedTimeProvider(zoneInfo);
         }
 
         [Fact]
@@ -50,11 +61,11 @@ namespace Tests.System
             TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(OperatingSystem.IsWindows() ? "Pacific Standard Time" : "America/Los_Angeles");
 #endif // NETFRAMEWORK
 
-            TimeProvider tp = TimeProvider.FromLocalTimeZone(tzi);
+            TimeProvider tp = ZonedTimeProvider.FromLocalTimeZone(tzi);
             Assert.Equal(tzi.Id, tp.LocalTimeZone.Id);
 
             DateTimeOffset utcDto1 = DateTimeOffset.UtcNow;
-            DateTimeOffset localDto = tp.LocalNow;
+            DateTimeOffset localDto = tp.GetLocalNow();
             DateTimeOffset utcDto2 = DateTimeOffset.UtcNow;
 
             DateTimeOffset utcConvertedDto = TimeZoneInfo.ConvertTime(localDto, TimeZoneInfo.Utc);
@@ -82,6 +93,11 @@ namespace Tests.System
             Assert.InRange(providerTimestamp1, timestamp1, timestamp2);
             Assert.True(providerTimestamp2 > timestamp2);
             Assert.Equal(GetElapsedTime(providerTimestamp1, providerTimestamp2), TimeProvider.System.GetElapsedTime(providerTimestamp1, providerTimestamp2));
+
+            long timestamp = TimeProvider.System.GetTimestamp();
+            TimeSpan period1 = TimeProvider.System.GetElapsedTime(timestamp);
+            TimeSpan period2 = TimeProvider.System.GetElapsedTime(timestamp);
+            Assert.True(period1 <= period2);
 
             Assert.Equal(Stopwatch.Frequency, TimeProvider.System.TimestampFrequency);
         }
@@ -124,7 +140,7 @@ namespace Tests.System
                             state,
                             TimeSpan.FromMilliseconds(state.Period), TimeSpan.FromMilliseconds(state.Period));
 
-            state.TokenSource.Token.WaitHandle.WaitOne(60000);
+            state.TokenSource.Token.WaitHandle.WaitOne(Timeout.InfiniteTimeSpan);
             state.TokenSource.Dispose();
 
             Assert.Equal(4, state.Counter);
@@ -139,12 +155,12 @@ namespace Tests.System
 
             for (int i = 0; i < 20; i++)
             {
-                DateTimeOffset fastNow = fastClock.UtcNow;
+                DateTimeOffset fastNow = fastClock.GetUtcNow();
                 DateTimeOffset now = DateTimeOffset.UtcNow;
 
                 Assert.True(fastNow > now, $"Expected {fastNow} > {now}");
 
-                fastNow = fastClock.LocalNow;
+                fastNow = fastClock.GetLocalNow();
                 now = DateTimeOffset.Now;
 
                 Assert.True(fastNow > now, $"Expected {fastNow} > {now}");
@@ -197,33 +213,34 @@ namespace Tests.System
             //
             // Test out some int-based timeout logic
             //
-#if NETFRAMEWORK
-            CancellationTokenSource cts = new CancellationTokenSource(Timeout.InfiniteTimeSpan); // should be an infinite timeout
+#if TESTEXTENSIONS
+            CancellationTokenSource cts = provider.CreateCancellationTokenSource(Timeout.InfiniteTimeSpan); // should be an infinite timeout
 #else
             CancellationTokenSource cts = new CancellationTokenSource(Timeout.InfiniteTimeSpan, provider); // should be an infinite timeout
-#endif // NETFRAMEWORK
-            CancellationToken token = cts.Token;
+#endif // TESTEXTENSIONS
             ManualResetEventSlim mres = new ManualResetEventSlim(false);
-            CancellationTokenRegistration ctr = token.Register(() => mres.Set());
 
-            Assert.False(token.IsCancellationRequested,
+            Assert.False(cts.Token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on infinite timeout (int)!");
 
-#if NETFRAMEWORK
-            CancelAfter(provider, cts, TimeSpan.FromMilliseconds(1000000));
+#if TESTEXTENSIONS
+            cts.Dispose();
+            cts = provider.CreateCancellationTokenSource(TimeSpan.FromMilliseconds(1000000));
 #else
             cts.CancelAfter(1000000);
-#endif // NETFRAMEWORK
+#endif // TESTEXTENSIONS
 
-            Assert.False(token.IsCancellationRequested,
+            Assert.False(cts.Token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on super-long timeout (int) !");
 
-#if NETFRAMEWORK
-            CancelAfter(provider, cts, TimeSpan.FromMilliseconds(1));
+#if TESTEXTENSIONS
+            cts.Dispose();
+            cts = provider.CreateCancellationTokenSource(TimeSpan.FromMilliseconds(1));
 #else
             cts.CancelAfter(1);
-#endif // NETFRAMEWORK
+#endif // TESTEXTENSIONS
 
+            CancellationTokenRegistration ctr = cts.Token.Register(() => mres.Set());
             Debug.WriteLine("CancellationTokenSourceWithTimer: > About to wait on cancellation that should occur soon (int)... if we hang, something bad happened");
 
             mres.Wait();
@@ -234,33 +251,34 @@ namespace Tests.System
             // Test out some TimeSpan-based timeout logic
             //
             TimeSpan prettyLong = new TimeSpan(1, 0, 0);
-#if NETFRAMEWORK
-            cts = new CancellationTokenSource(prettyLong);
+#if TESTEXTENSIONS
+            cts = provider.CreateCancellationTokenSource(prettyLong);
 #else
             cts = new CancellationTokenSource(prettyLong, provider);
-#endif // NETFRAMEWORK
+#endif // TESTEXTENSIONS
 
-            token = cts.Token;
             mres = new ManualResetEventSlim(false);
-            ctr = token.Register(() => mres.Set());
 
-            Assert.False(token.IsCancellationRequested,
+            Assert.False(cts.Token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on super-long timeout (TimeSpan,1)!");
 
-#if NETFRAMEWORK
-            CancelAfter(provider, cts, prettyLong);
+#if TESTEXTENSIONS
+            cts.Dispose();
+            cts = provider.CreateCancellationTokenSource(prettyLong);
 #else
             cts.CancelAfter(prettyLong);
-#endif // NETFRAMEWORK
+#endif // TESTEXTENSIONS
 
-            Assert.False(token.IsCancellationRequested,
+            Assert.False(cts.Token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on super-long timeout (TimeSpan,2) !");
 
-#if NETFRAMEWORK
-            CancelAfter(provider, cts, TimeSpan.FromMilliseconds(1000));
+#if TESTEXTENSIONS
+            cts.Dispose();
+            cts = provider.CreateCancellationTokenSource(TimeSpan.FromMilliseconds(1000));
 #else
             cts.CancelAfter(new TimeSpan(1000));
-#endif // NETFRAMEWORK
+#endif // TESTEXTENSIONS
+            ctr = cts.Token.Register(() => mres.Set());
 
             Debug.WriteLine("CancellationTokenSourceWithTimer: > About to wait on cancellation that should occur soon (TimeSpan)... if we hang, something bad happened");
 
@@ -375,9 +393,10 @@ namespace Tests.System
         [Fact]
         public static void NegativeTests()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new FastClock(-1)); // negative frequency
-            Assert.Throws<ArgumentOutOfRangeException>(() => new FastClock(0)); // zero frequency
-            Assert.Throws<ArgumentNullException>(() => TimeProvider.FromLocalTimeZone(null));
+            FastClock clock = new FastClock(-1);  // negative frequency
+            Assert.Throws<InvalidOperationException>(() => clock.GetElapsedTime(1, 2));
+            clock = new FastClock(0); // zero frequency
+            Assert.Throws<InvalidOperationException>(() => clock.GetElapsedTime(1, 2));
 
             Assert.Throws<ArgumentNullException>(() => TimeProvider.System.CreateTimer(null, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan));
             Assert.Throws<ArgumentOutOfRangeException>(() => TimeProvider.System.CreateTimer(obj => { }, null, TimeSpan.FromMilliseconds(-2), Timeout.InfiniteTimeSpan));
@@ -389,6 +408,36 @@ namespace Tests.System
             Assert.Throws<ArgumentNullException>(() => new PeriodicTimer(TimeSpan.FromMilliseconds(1), null));
 #endif // !NETFRAMEWORK
         }
+
+#if TESTEXTENSIONS
+        [Fact]
+        public static void InvokeCallbackFromCreateTimer()
+        {
+            TimeProvider p = new InvokeCallbackCreateTimerProvider();
+
+            CancellationTokenSource cts = p.CreateCancellationTokenSource(TimeSpan.FromSeconds(0));
+            Assert.True(cts.IsCancellationRequested);
+
+            Task t = p.Delay(TimeSpan.FromSeconds(0));
+            Assert.True(t.IsCompleted);
+
+            t = new TaskCompletionSource<bool>().Task.WaitAsync(TimeSpan.FromSeconds(0), p);
+            Assert.True(t.IsFaulted);
+        }
+
+        class InvokeCallbackCreateTimerProvider : TimeProvider
+        {
+            public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+            {
+                ITimer t = base.CreateTimer(callback, state, dueTime, period);
+                if (dueTime != Timeout.InfiniteTimeSpan)
+                {
+                    callback(state);
+                }
+                return t;
+            }
+        }
+#endif
 
         class TimerState
         {
@@ -414,34 +463,35 @@ namespace Tests.System
         {
             private long _minutesToAdd;
             private TimeZoneInfo _zone;
+            private long _timestampFrequency;
 
-            public FastClock(long timestampFrequency = TimeSpan.TicksPerSecond, TimeZoneInfo? zone = null) : base(timestampFrequency)
+            public FastClock(long timestampFrequency = TimeSpan.TicksPerSecond, TimeZoneInfo? zone = null) : base()
             {
+                _timestampFrequency = timestampFrequency;
                 _zone = zone ?? TimeZoneInfo.Local;
             }
 
-            public override DateTimeOffset UtcNow
+            public override DateTimeOffset GetUtcNow()
             {
-                get
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                _minutesToAdd++;
+                long remainingTicks = (DateTimeOffset.MaxValue.Ticks - now.Ticks);
+
+                if (_minutesToAdd * TimeSpan.TicksPerMinute > remainingTicks)
                 {
-                    DateTimeOffset now = DateTimeOffset.UtcNow;
-
-                    _minutesToAdd++;
-                    long remainingTicks = (DateTimeOffset.MaxValue.Ticks - now.Ticks);
-
-                    if (_minutesToAdd * TimeSpan.TicksPerMinute > remainingTicks)
-                    {
-                        _minutesToAdd = 0;
-                        return now;
-                    }
-
-                    return now.AddMinutes(_minutesToAdd);
+                    _minutesToAdd = 0;
+                    return now;
                 }
+
+                return now.AddMinutes(_minutesToAdd);
             }
+
+            public override long TimestampFrequency { get => _timestampFrequency; }
 
             public override TimeZoneInfo LocalTimeZone => _zone;
 
-            public override long GetTimestamp() => UtcNow.Ticks;
+            public override long GetTimestamp() => GetUtcNow().Ticks;
 
             public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period) =>
                 new FastTimer(callback, state, dueTime, period);
@@ -479,7 +529,14 @@ namespace Tests.System
                     period = new TimeSpan(period.Ticks / 2);
                 }
 
-                return _timer.Change(dueTime, period);
+                try
+                {
+                    return _timer.Change(dueTime, period);
+                }
+                catch (ObjectDisposedException)
+                {
+                    return false;
+                }
             }
 
             public void Dispose() => _timer.Dispose();
@@ -537,5 +594,65 @@ namespace Tests.System
 
         private static TestExtensionsTaskFactory extensionsTaskFactory = new();
 #endif // TESTEXTENSIONS
+
+        // A timer that get fired on demand
+        private class ManualTimer : ITimer
+        {
+            TimerCallback _callback;
+            object? _state;
+
+            public ManualTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+            {
+                _callback = callback;
+                _state = state;
+            }
+
+            public bool Change(TimeSpan dueTime, TimeSpan period) => true;
+
+            public void Fire()
+            {
+                _callback?.Invoke(_state);
+                IsFired = true;
+            }
+
+            public bool IsFired { get; set; }
+
+            public void Dispose() { }
+            public ValueTask DisposeAsync () { return default; }
+        }
+
+        private class ManualTimeProvider : TimeProvider
+        {
+            public ManualTimer Timer { get; set; }
+
+            public ManualTimeProvider() { }
+            public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+            {
+                Timer = new ManualTimer(callback, state, dueTime, period);
+                return Timer;
+            }
+        }
+
+        [Fact]
+        // 1- Creates the CTS with a delay that we control via the time provider.
+        // 2- Disposes the CTS.
+        // 3- Then fires the timer. We want to validate the process doesn't crash.
+        public static void TestCTSWithDelayFiringAfterCancellation()
+        {
+            ManualTimeProvider manualTimer = new ManualTimeProvider();
+#if TESTEXTENSIONS
+            CancellationTokenSource cts = manualTimer.CreateCancellationTokenSource(TimeSpan.FromSeconds(60));
+#else
+            CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(60), manualTimer);
+#endif // TESTEXTENSIONS
+
+            Assert.NotNull(manualTimer.Timer);
+            Assert.False(manualTimer.Timer.IsFired);
+
+            cts.Dispose();
+
+            manualTimer.Timer.Fire();
+            Assert.True(manualTimer.Timer.IsFired);
+        }
     }
 }

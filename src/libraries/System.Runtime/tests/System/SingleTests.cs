@@ -863,28 +863,7 @@ namespace System.Tests
 
                     try
                     {
-                        char[] actual;
-                        int charsWritten;
-
-                        // Just right
-                        actual = new char[localExpected.Length];
-                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                        Assert.Equal(localExpected.Length, charsWritten);
-                        Assert.Equal(localExpected, new string(actual));
-
-                        // Longer than needed
-                        actual = new char[localExpected.Length + 1];
-                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                        Assert.Equal(localExpected.Length, charsWritten);
-                        Assert.Equal(localExpected, new string(actual, 0, charsWritten));
-
-                        // Too short
-                        if (localExpected.Length > 0)
-                        {
-                            actual = new char[localExpected.Length - 1];
-                            Assert.False(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                            Assert.Equal(0, charsWritten);
-                        }
+                        NumberFormatTestHelper.TryFormatNumberTest(localI, localFormat, localProvider, localExpected, formatCasingMatchesOutput: false);
                     }
                     catch (Exception exc)
                     {

@@ -9,10 +9,10 @@ using Internal.Metadata.NativeFormat.Writer;
 using Cts = Internal.TypeSystem;
 using Ecma = System.Reflection.Metadata;
 
-using CallingConventions = System.Reflection.CallingConventions;
 using Debug = System.Diagnostics.Debug;
 using MethodAttributes = System.Reflection.MethodAttributes;
 using MethodImplAttributes = System.Reflection.MethodImplAttributes;
+using SignatureCallingConvention = Internal.Metadata.NativeFormat.SignatureCallingConvention;
 
 namespace ILCompiler.Metadata
 {
@@ -196,14 +196,16 @@ namespace ILCompiler.Metadata
                 throw new NotImplementedException();
         }
 
-        private static CallingConventions GetSignatureCallingConvention(Cts.MethodSignature signature)
+        private static SignatureCallingConvention GetSignatureCallingConvention(Cts.MethodSignature signature)
         {
-            CallingConventions callingConvention = CallingConventions.Standard;
+            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionCdecl == (int)SignatureCallingConvention.Cdecl);
+            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionThisCall == (int)SignatureCallingConvention.ThisCall);
+            Debug.Assert((int)Cts.MethodSignatureFlags.UnmanagedCallingConventionMask == (int)SignatureCallingConvention.UnmanagedCallingConventionMask);
+            SignatureCallingConvention callingConvention = (SignatureCallingConvention)(signature.Flags & Cts.MethodSignatureFlags.UnmanagedCallingConventionMask);
             if ((signature.Flags & Cts.MethodSignatureFlags.Static) == 0)
             {
-                callingConvention = CallingConventions.HasThis;
+                callingConvention |= SignatureCallingConvention.HasThis;
             }
-            // TODO: additional calling convention flags like stdcall / cdecl etc.
             return callingConvention;
         }
     }

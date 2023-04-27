@@ -16,6 +16,8 @@ namespace System.Text.Json.Serialization.Converters
         where TDictionary : IDictionary<TKey, TValue>
         where TKey : notnull
     {
+        internal override bool CanPopulate => true;
+
         protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
             TDictionary collection = (TDictionary)state.Current.ReturnValue!;

@@ -39,8 +39,6 @@ void        mono_dl_close      (MonoDl *module, MonoError *error);
 char*       mono_dl_build_path (const char *directory, const char *name, void **iter);
 char*       mono_dl_build_platform_path (const char *directory, const char *name, void **iter);
 
-MonoDl*     mono_dl_open_runtime_lib (const char *lib_name, int flags, MonoError *error);
-
 MonoDl *
 mono_dl_open_self (MonoError *error);
 // This converts the MONO_DL_* enum to native flags, combines it with the other flags passed, and resolves some inconsistencies

@@ -437,7 +437,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
                 }
             }
         }
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Any structs that are larger than MAX_PASS_MULTIREG_BYTES are always passed by reference
         if (structSize > MAX_PASS_MULTIREG_BYTES)
         {

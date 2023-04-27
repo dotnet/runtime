@@ -1204,5 +1204,58 @@ namespace System.Net.Quic.Tests
                 await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask).WaitAsync(TimeSpan.FromSeconds(10));
             }
         }
+
+        private async Task SniTestCore(string hostname, bool shouldSendSni)
+        {
+            string expectedHostName = shouldSendSni ? hostname : string.Empty;
+
+            using X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
+            var listenerOptions = new QuicListenerOptions()
+            {
+                ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var serverOptions = CreateQuicServerOptions();
+                    serverOptions.ServerAuthenticationOptions.ServerCertificateContext = null;
+                    serverOptions.ServerAuthenticationOptions.ServerCertificate = null;
+                    serverOptions.ServerAuthenticationOptions.ServerCertificateSelectionCallback = (sender, actualHostName) =>
+                    {
+                        Assert.Equal(expectedHostName, actualHostName);
+                        return serverCert;
+                    };
+                    return ValueTask.FromResult(serverOptions);
+                }
+            };
+
+            // Use whatever endpoint, it'll get overwritten in CreateConnectedQuicConnection.
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listenerOptions.ListenEndPoint);
+            clientOptions.ClientAuthenticationOptions.TargetHost = hostname;
+            clientOptions.ClientAuthenticationOptions.RemoteCertificateValidationCallback = delegate { return true; };
+
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(clientOptions, listenerOptions);
+            await using (clientConnection)
+            await using (serverConnection)
+            {
+                Assert.Equal(expectedHostName, clientConnection.TargetHostName);
+                Assert.Equal(expectedHostName, serverConnection.TargetHostName);
+            }
+        }
+
+        [Theory]
+        [InlineData("a")]
+        [InlineData("test")]
+        [InlineData("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")] // max allowed hostname length is 63
+        [InlineData("\u017C\u00F3\u0142\u0107 g\u0119\u015Bl\u0105 ja\u017A\u0144. \u7EA2\u70E7. \u7167\u308A\u713C\u304D")]
+        public Task ClientSendsSniServerReceives_Ok(string hostname) => SniTestCore(hostname, true);
+
+        [Theory]
+        [InlineData("127.0.0.1")]
+        [InlineData("::1")]
+        [InlineData("2001:11:22::1")]
+        [InlineData("fe80::9c3a:b64d:6249:1de8%2")]
+        [InlineData("fe80::9c3a:b64d:6249:1de8")]
+        public Task DoesNotSendIPAsSni(string target) => SniTestCore(target, false);
     }
 }

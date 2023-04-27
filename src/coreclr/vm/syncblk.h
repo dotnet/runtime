@@ -1309,7 +1309,7 @@ class SyncBlockCache
   private:
     PTR_SLink   m_pCleanupBlockList;    // list of sync blocks that need cleanup
     SLink*      m_FreeBlockList;        // list of free sync blocks
-    Crst        m_CacheLock;            // cache lock
+    CrstStatic  m_CacheLock;            // cache lock
     DWORD       m_FreeCount;            // count of active sync blocks
     DWORD       m_ActiveCount;          // number active
     SyncBlockArray *m_SyncBlocks;       // Array of new SyncBlocks.
@@ -1345,19 +1345,9 @@ class SyncBlockCache
     SPTR_DECL(SyncBlockCache, s_pSyncBlockCache);
     static SyncBlockCache*& GetSyncBlockCache();
 
-    void *operator new(size_t size, void *pInPlace)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return pInPlace;
-    }
-
-    void operator delete(void *p)
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-
-    SyncBlockCache();
-    ~SyncBlockCache();
+    // Note: No constructors/destructors - global instance
+    void Init();
+    void Destroy();
 
     static void Attach();
     static void Detach();
