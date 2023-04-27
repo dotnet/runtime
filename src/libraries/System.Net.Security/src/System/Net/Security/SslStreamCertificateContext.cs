@@ -11,7 +11,14 @@ namespace System.Net.Security
     {
         internal readonly SslCertificateTrust? Trust;
 
+        /// <summary>
+        /// Gets the target (leaf) certificate of the built chain.
+        /// </summary>
         public X509Certificate2 TargetCertificate { get; }
+
+        /// <summary>
+        /// Gets the intermediate certificates for the built chain.
+        /// </summary>
         public ReadOnlyCollection<X509Certificate2> IntermediateCertificates { get; }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
