@@ -3173,11 +3173,10 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
         unsigned regSize = compiler->roundDownSIMDSize(size);
-        if ((size < ZMM_RECOMMENDED_THRESHOLD) && (regSize == ZMM_REGSIZE_BYTES))
+        if (size < ZMM_RECOMMENDED_THRESHOLD)
         {
-            // If the size is less than the recommended threshold then use YMM registers
-            // instead of ZMM registers to avoid AVX512 downclocking.
-            regSize = YMM_REGSIZE_BYTES;
+            // Involve ZMM only for large data due to possible downclocking.
+            regSize = min(regSize, YMM_REGSIZE_BYTES);
         }
 
         bool zeroing = false;
@@ -3482,11 +3481,10 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         // Get the largest SIMD register available if the size is large enough
         unsigned regSize = compiler->roundDownSIMDSize(size);
-        if ((size < ZMM_RECOMMENDED_THRESHOLD) && (regSize == ZMM_REGSIZE_BYTES))
+        if (size < ZMM_RECOMMENDED_THRESHOLD)
         {
-            // If the size is less than the recommended threshold then use YMM registers
-            // instead of ZMM registers to avoid AVX512 downclocking.
-            regSize = YMM_REGSIZE_BYTES;
+            // Involve ZMM only for large data due to possible downclocking.
+            regSize = min(regSize, YMM_REGSIZE_BYTES);
         }
 
         auto emitSimdMovs = [&]() {
