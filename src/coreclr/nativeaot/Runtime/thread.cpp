@@ -1146,9 +1146,7 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
         return false; // thread is not attached
 
     if (IsCurrentThreadInCooperativeMode())
-    {
         return false; // bad transition
-    }
 
     // this is an ordinary transition to managed code
     // GC threads should not do that
