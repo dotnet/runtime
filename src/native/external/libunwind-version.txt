@@ -18,6 +18,3 @@ Apply https://github.com/libunwind/libunwind/pull/416
 
 For LoongArch64:
 Apply https://github.com/libunwind/libunwind/pull/316 and https://github.com/libunwind/libunwind/pull/322
-
-Build Break on arm64 with old clang
-https://github.com/dotnet/runtime/pull/85431/commits/0ee8827547405408b37d1aae2a83629c1632eea8
