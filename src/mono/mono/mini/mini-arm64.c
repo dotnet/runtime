@@ -3944,10 +3944,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 
-			if (dreg != sreg1)
-				arm_neon_mov (code, dreg, sreg1);
-			
-			arm_neon_ins_e(code, t, dreg, sreg2, ins->inst_c0, 0);
+			if (dreg != sreg1) {
+				if (dreg != sreg2) {
+					arm_neon_mov (code, dreg, sreg1);
+					arm_neon_ins_e(code, t, dreg, sreg2, ins->inst_c0, 0);
+				} else {
+					arm_neon_mov (code, NEON_TMP_REG, sreg1);
+					arm_neon_ins_e(code, t, NEON_TMP_REG, sreg2, ins->inst_c0, 0);
+					arm_neon_mov (code, dreg, NEON_TMP_REG);
+				}
+			} else {
+				g_assert (dreg != sreg2);
+				arm_neon_ins_e(code, t, dreg, sreg2, ins->inst_c0, 0);
+			}
 			break;
 		}
 		case OP_ARM64_XTN:
