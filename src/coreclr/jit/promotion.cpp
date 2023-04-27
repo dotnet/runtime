@@ -1542,6 +1542,7 @@ public:
                 assert(srcLcl != nullptr);
                 statements->AddStatement(CreateReadBack(srcLcl->GetLclNum(), *srcRep));
                 srcRep->NeedsReadBack = false;
+                assert(!srcRep->NeedsWriteBack);
             }
 
             if ((dstRep < dstEndRep) && (srcRep < srcEndRep))
@@ -1608,8 +1609,8 @@ public:
 
                 // TODO-CQ: If the source is promoted then this will result in
                 // DNER'ing it. Alternatively we could copy the promoted field
-                // directly the destination's struct local and the overlapping
-                // fields as needing read back to avoid this DNER.
+                // directly to the destination's struct local and mark the
+                // overlapping fields as needing read back to avoid this DNER.
                 plan->CopyToReplacement(dstRep->LclNum, dstRep->Offset - dstBaseOffs, dstRep->AccessType);
                 dstRep->NeedsWriteBack = true;
                 dstRep->NeedsReadBack  = false;
