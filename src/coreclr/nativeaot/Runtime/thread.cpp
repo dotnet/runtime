@@ -1133,16 +1133,19 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
     // a do not trigger mode.  The exception to the rule allows us to have [UnmanagedCallersOnly] methods that are called via
     // the "restricted GC callouts" as well as from native, which is necessary because the methods are CCW vtable
     // methods on interfaces passed to native.
+    // We will allow threads in DoNotTriggerGc mode to do reverse PInvoke regardless of their coop state.
+    if (IsDoNotTriggerGcSet())
+    {
+        // We expect this scenario only when EE is stopped.
+        ASSERT(ThreadStore::IsTrapThreadsRequested());
+        // make transition to coop mode without waiting for GC (noop if already in coop mode)
+        pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
+        m_pTransitionFrame = NULL;
+        return true;
+    }
+
     if (IsCurrentThreadInCooperativeMode())
     {
-        if (IsDoNotTriggerGcSet())
-        {
-            // RhpTrapThreads will always be set in this case, so we must skip that check.  We must be sure to
-            // zero-out our 'previous transition frame' state first, however.
-            pFrame->m_savedPInvokeTransitionFrame = NULL;
-            return true;
-        }
-
         return false; // bad transition
     }
 
@@ -1233,6 +1236,7 @@ FORCEINLINE void Thread::InlineReversePInvokeReturn(ReversePInvokeFrame * pFrame
 
 FORCEINLINE void Thread::InlinePInvoke(PInvokeTransitionFrame * pFrame)
 {
+    _ASSERT(!IsDoNotTriggerGcSet() || ThreadStore::IsTrapThreadsRequested());
     pFrame->m_pThread = this;
     // set our mode to preemptive
     VolatileStoreWithoutBarrier(&m_pTransitionFrame, pFrame);
