@@ -6153,6 +6153,13 @@ bool Compiler::optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc)
         {
             GenTree* const tree = *use;
 
+            if (tree->OperIs(GT_STOREIND))
+            {
+                // Set the proper indirection bits.
+                varRefKinds refs  = varTypeIsGC(tree) ? VR_IND_REF : VR_IND_SCL;
+                m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
+            }
+
             // Can this tree define a local?
             //
             if (!tree->OperIsSsaDef())
@@ -6166,30 +6173,13 @@ bool Compiler::optIsVarAssignedWithDesc(Statement* stmt, isVarAssgDsc* dsc)
             {
                 m_dsc->ivaMaskCall = optCallInterf(tree->AsCall());
             }
-            else
+            else if (tree->OperIs(GT_STORE_LCL_FLD))
             {
-                assert(tree->OperIs(GT_ASG));
-
-                genTreeOps destOper = tree->gtGetOp1()->OperGet();
-                if (destOper == GT_LCL_FLD)
-                {
-                    // We can't track every field of every var. Moreover, indirections
-                    // may access different parts of the var as different (but
-                    // overlapping) fields. So just treat them as indirect accesses
-                    //
-                    // unsigned    lclNum = dest->AsLclFld()->GetLclNum();
-                    // noway_assert(lvaTable[lclNum].lvAddrTaken);
-                    //
-                    varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
-                    m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
-                }
-                else if (destOper == GT_IND)
-                {
-                    // Set the proper indirection bits
-                    //
-                    varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
-                    m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
-                }
+                // We can't track every field of every var. Moreover, indirections
+                // may access different parts of the var as different (but overlapping)
+                // fields. So just treat them as indirect accesses.
+                varRefKinds refs  = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
+                m_dsc->ivaMaskInd = varRefKinds(m_dsc->ivaMaskInd | refs);
             }
 
             // Determine if the tree modifies a particular local
