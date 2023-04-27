@@ -359,7 +359,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal enum StepSize
     {
         Minimal,
-        Line
+        LineColumn
     }
 
     internal sealed record ArrayDimensions
@@ -1431,7 +1431,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((byte)1);
             commandParamsWriter.Write((byte)ModifierKind.Step);
             commandParamsWriter.Write(thread_id);
-            commandParamsWriter.Write((int)StepSize.Line);
+            commandParamsWriter.Write((int)StepSize.LineColumn);
             commandParamsWriter.Write((int)kind);
             commandParamsWriter.Write((int)(StepFilter.StaticCtor)); //filter
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdEventRequest.Set, commandParamsWriter, token, throwOnError: false);
