@@ -54,7 +54,7 @@ int __cdecl main(const int argc, const char* argv[])
     options.Signal = 0;
     options.CrashThread = 0;
     options.Pid = 0;
-#if defined(HOST_UNIX) && !defined(HOST_OSX)
+#if defined(HOST_UNIX)
     options.SignalCode = 0;
     options.SignalErrno = 0;
     options.SignalAddress = nullptr;
@@ -140,7 +140,6 @@ int __cdecl main(const int argc, const char* argv[])
             {
                 options.Signal = atoi(*++argv);
             }
-#ifndef HOST_OSX
             else if (strcmp(*argv, "--code") == 0)
             {
                 options.SignalCode = atoi(*++argv);
@@ -153,7 +152,6 @@ int __cdecl main(const int argc, const char* argv[])
             {
                 options.SignalAddress = (void*)atoll(*++argv);
             }
-#endif
 #endif
             else if ((strcmp(*argv, "-d") == 0) || (strcmp(*argv, "--diag") == 0))
             {
@@ -264,5 +262,3 @@ trace_verbose_printf(const char* format, ...)
         va_end(args);
     }
 }
-
-
