@@ -12,13 +12,32 @@ namespace System.IO.Compression.Tests;
 public class ZipFile_Create_Stream : ZipFileTestBase
 {
     [Fact]
+    public void CreateFromDirectory_UnwritableStream_Throws()
+    {
+        using MemoryStream ms = new();
+        using WrappedStream destination = new(ms, canRead: true, canWrite: false, canSeek: true);
+        Assert.Throws<ArgumentException>("destination", () => ZipFile.CreateFromDirectory(GetTestFilePath(), destination));
+    }
+
+    [Fact]
     public void CreateFromDirectoryNormal()
     {
         string folderName = zfolder("normal");
         using MemoryStream destination = new();
         ZipFile.CreateFromDirectory(folderName, destination);
-
+        destination.Position = 0;
         IsZipSameAsDir(destination, folderName, ZipArchiveMode.Read, requireExplicit: false, checkTimes: false);
+    }
+
+    [Fact]
+    public void CreateFromDirectoryNormal_Unreadable_Unseekable()
+    {
+        string folderName = zfolder("normal");
+        using MemoryStream ms = new();
+        using WrappedStream destination = new(ms, canRead: false, canWrite: true, canSeek: false);
+        ZipFile.CreateFromDirectory(folderName, destination);
+        ms.Position = 0;
+        IsZipSameAsDir(ms, folderName, ZipArchiveMode.Read, requireExplicit: false, checkTimes: false);
     }
 
     [Fact]

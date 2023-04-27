@@ -9,15 +9,17 @@ namespace System.IO.Compression.Tests;
 public class ZipFile_Extract_Stream : ZipFileTestBase
 {
     [Fact]
-    public void ExtractToDirectoryNullStream() =>
-        AssertExtensions.Throws<ArgumentNullException>("source", () => ZipFile.ExtractToDirectory(source: null, GetTestFilePath()));
+    public void ExtractToDirectory_NullStream_Throws()
+    {
+        Assert.Throws<ArgumentNullException>("source", () => ZipFile.ExtractToDirectory(source: null, GetTestFilePath()));
+    }
 
     [Fact]
-    public void ExtractToDirectoryUnreadableStream()
+    public void ExtractToDirectory_UnreadableStream_Throws()
     {
-        using MemoryStream baseStream = new();
-        using WrappedStream source = new(baseStream, canRead: false, canWrite: true, canSeek: true);
-        AssertExtensions.Throws<IOException>(() => ZipFile.ExtractToDirectory(source, GetTestFilePath()));
+        using MemoryStream ms = new();
+        using WrappedStream source = new(ms, canRead: false, canWrite: true, canSeek: true);
+        Assert.Throws<ArgumentException>("source", () => ZipFile.ExtractToDirectory(source, GetTestFilePath()));
     }
 
     [Theory]
@@ -30,7 +32,25 @@ public class ZipFile_Extract_Stream : ZipFileTestBase
     [InlineData("noexplicitdir.zip", "explicitdir")]
     public void ExtractToDirectoryNormal(string file, string folder)
     {
-        using Stream source = File.OpenRead(zfile(file));
+        using FileStream source = File.OpenRead(zfile(file));
+        string folderName = zfolder(folder);
+        using TempDirectory tempFolder = new(GetTestFilePath());
+        ZipFile.ExtractToDirectory(source, tempFolder.Path);
+        DirsEqual(tempFolder.Path, folderName);
+    }
+
+    [Theory]
+    [InlineData("normal.zip", "normal")]
+    [InlineData("empty.zip", "empty")]
+    [InlineData("explicitdir1.zip", "explicitdir")]
+    [InlineData("explicitdir2.zip", "explicitdir")]
+    [InlineData("appended.zip", "small")]
+    [InlineData("prepended.zip", "small")]
+    [InlineData("noexplicitdir.zip", "explicitdir")]
+    public void ExtractToDirectoryNormal_Unwritable_Unseekable(string file, string folder)
+    {
+        using FileStream fs = File.OpenRead(zfile(file));
+        using WrappedStream source = new(fs, canRead: true, canWrite: false, canSeek: false);
         string folderName = zfolder(folder);
         using TempDirectory tempFolder = new(GetTestFilePath());
         ZipFile.ExtractToDirectory(source, tempFolder.Path);
