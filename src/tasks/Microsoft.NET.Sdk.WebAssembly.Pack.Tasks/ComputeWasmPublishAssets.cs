@@ -373,6 +373,9 @@ public class ComputeWasmPublishAssets : Task
                 assetsToUpdate.Add(satelliteAssembly.ItemSpec, satelliteAssembly);
                 var culture = satelliteAssembly.GetMetadata("AssetTraitValue");
                 var fileName = Path.GetFileName(satelliteAssembly.GetMetadata("RelativePath"));
+                if (IsWebCilEnabled)
+                    fileName = Path.ChangeExtension(fileName, ".dll");
+
                 if (satelliteAssemblies.TryGetValue((culture, fileName), out var existing))
                 {
                     filesToRemove.Add(existing);

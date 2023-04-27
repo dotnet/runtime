@@ -5,6 +5,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Security.Authentication;
 using System.Security.Cryptography;
@@ -29,10 +30,10 @@ namespace System.Net.Security
         private List<string>? _ocspUrls;
         private X509Certificate2? _ca;
 
-        private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates, SslCertificateTrust? trust)
+        private SslStreamCertificateContext(X509Certificate2 target, ReadOnlyCollection<X509Certificate2> intermediates, SslCertificateTrust? trust)
         {
-            _intermediateCertificates = intermediates;
-            Certificate = target;
+            IntermediateCertificates = intermediates;
+            TargetCertificate = target;
             Trust = trust;
             SslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
 
@@ -54,7 +55,7 @@ namespace System.Net.Security
                     }
                 }
 
-                if (KeyHandle== null)
+                if (KeyHandle == null)
                 {
                     throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
                 }
@@ -75,7 +76,7 @@ namespace System.Net.Security
 
         partial void AddRootCertificate(X509Certificate2? rootCertificate, ref bool transferredOwnership)
         {
-            if (IntermediateCertificates.Length == 0)
+            if (IntermediateCertificates.Count == 0)
             {
                 _ca = rootCertificate;
                 transferredOwnership = true;
@@ -150,7 +151,7 @@ namespace System.Net.Security
 
             if (_ocspUrls is null && _ca is not null)
             {
-                foreach (X509Extension ext in Certificate.Extensions)
+                foreach (X509Extension ext in TargetCertificate.Extensions)
                 {
                     if (ext is X509AuthorityInformationAccessExtension aia)
                     {
@@ -196,7 +197,7 @@ namespace System.Net.Security
             Debug.Assert(_ocspUrls.Count > 0);
             Debug.Assert(caCert is not null);
 
-            IntPtr subject = Certificate.Handle;
+            IntPtr subject = TargetCertificate.Handle;
             IntPtr issuer = caCert.Handle;
             Debug.Assert(subject != 0);
             Debug.Assert(issuer != 0);
@@ -252,7 +253,7 @@ namespace System.Net.Security
 
                 ArrayPool<byte>.Shared.Return(rentedBytes);
                 ArrayPool<char>.Shared.Return(rentedChars.Array!);
-                GC.KeepAlive(Certificate);
+                GC.KeepAlive(TargetCertificate);
                 GC.KeepAlive(caCert);
                 return ret;
             }

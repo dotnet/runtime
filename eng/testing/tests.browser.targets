@@ -286,6 +286,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <_RuntimePackNugetAvailable Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.$(RuntimeIdentifier).*$(PackageVersionForWorkloadManifests).nupkg" />
       <_RuntimePackNugetAvailable Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.*.$(RuntimeIdentifier).*$(PackageVersionForWorkloadManifests).nupkg" />
       <_RuntimePackNugetAvailable Remove="@(_RuntimePackNugetAvailable)" Condition="$([System.String]::new('%(_RuntimePackNugetAvailable.FileName)').EndsWith('.symbols'))" />
     </ItemGroup>

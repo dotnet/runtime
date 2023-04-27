@@ -46,7 +46,7 @@ namespace Internal.Runtime
         }
 
         /// <summary>
-        /// Return true if type is good for simple casting : canonical, no related type via IAT, no generic variance
+        /// Return true if type is good for simple casting : canonical, no generic variance
         /// </summary>
         internal bool SimpleCasting()
         {
