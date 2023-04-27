@@ -56,7 +56,7 @@
 
     ldc.i4.0
     newarr     [mscorlib]System.String
-    call int32 P::Main(string[] x)
+    call int32 P::Test(string[] x)
     ret
   }
 
