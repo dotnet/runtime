@@ -716,28 +716,15 @@ void Compiler::optPrintLoopTable()
 //
 bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenTree* init, unsigned iterVar)
 {
-    if (init == nullptr)
+    // Operator should be STORE_LCL_VAR<iterator local>
+    if ((init == nullptr) || !init->OperIs(GT_STORE_LCL_VAR) || (init->AsLclVar()->GetLclNum() != iterVar))
     {
         return false;
     }
 
-    // Operator should be =
-    if (init->gtOper != GT_ASG)
-    {
-        return false;
-    }
-
-    GenTree* lhs = init->AsOp()->gtOp1;
-    GenTree* rhs = init->AsOp()->gtOp2;
-    // LHS has to be local and should equal iterVar.
-    if ((lhs->gtOper != GT_LCL_VAR) || (lhs->AsLclVarCommon()->GetLclNum() != iterVar))
-    {
-        return false;
-    }
-
-    // RHS can be constant or local var.
-    // TODO-CQ: CLONE: Add arr length for descending loops.
-    if ((rhs->gtOper != GT_CNS_INT) || (rhs->TypeGet() != TYP_INT))
+    // Value must be constant. TODO-CQ: CLONE: Add arr length for descending loops.
+    GenTree* initValue = init->AsLclVar()->Data();
+    if (!initValue->IsCnsIntOrI() || (initValue->TypeGet() != TYP_INT))
     {
         return false;
     }
@@ -772,7 +759,7 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
     }
 
     optLoopTable[loopInd].lpFlags |= LPFLG_CONST_INIT;
-    optLoopTable[loopInd].lpConstInit = (int)rhs->AsIntCon()->gtIconVal;
+    optLoopTable[loopInd].lpConstInit = (int)initValue->AsIntCon()->gtIconVal;
     optLoopTable[loopInd].lpInitBlock = initBlock;
 
     return true;
@@ -799,14 +786,14 @@ bool Compiler::optCheckIterInLoopTest(unsigned loopInd, GenTree* test, unsigned 
 {
     // Obtain the relop from the "test" tree.
     GenTree* relop;
-    if (test->gtOper == GT_JTRUE)
+    if (test->OperIs(GT_JTRUE))
     {
         relop = test->gtGetOp1();
     }
     else
     {
-        assert(test->gtOper == GT_ASG);
-        relop = test->gtGetOp2();
+        assert(test->OperIs(GT_STORE_LCL_VAR));
+        relop = test->AsLclVar()->Data();
     }
 
     noway_assert(relop->OperIsCompare());
@@ -1059,20 +1046,11 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
         }
 
         GenTree* tree = prevStmt->GetRootNode();
-        if (tree->OperGet() == GT_ASG)
+        if (tree->OperIs(GT_STORE_LCL_VAR) && (tree->AsLclVar()->GetLclNum() == opr1->AsLclVar()->GetLclNum()) &&
+            tree->AsLclVar()->Data()->OperIsCompare())
         {
-            GenTree* lhs = tree->AsOp()->gtOp1;
-            GenTree* rhs = tree->AsOp()->gtOp2;
-
-            // Return as the new test node.
-            if (lhs->gtOper == GT_LCL_VAR && lhs->AsLclVarCommon()->GetLclNum() == opr1->AsLclVarCommon()->GetLclNum())
-            {
-                if (rhs->OperIsCompare())
-                {
-                    *newTestStmt = prevStmt;
-                    return true;
-                }
-            }
+            *newTestStmt = prevStmt;
+            return true;
         }
     }
     return false;
@@ -3662,7 +3640,6 @@ bool Compiler::optComputeLoopRep(int        constInit,
         // For the big types, 32 bit arithmetic is performed
 
         case TYP_INT:
-        case TYP_UINT:
             if (unsTest)
             {
                 constInitX = (unsigned int)constInit;
