@@ -2383,7 +2383,6 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     {
                         CreateUser = use.User();
                     }
-                    // RUIHAN: Should we contain this 2 lowered intrinsics or contain the original "Create"
                     if (CreateUser != nullptr && op1->OperIs(GT_LCL_VAR) && op1->TypeIs(TYP_FLOAT))
                     {
                         // swap the embedded broadcast candidate to 2nd operand, convenient to handle the containment
@@ -7531,17 +7530,23 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
                 parentNode->OperIsEmbBroadcastHWIntrinsic())
             {
-                assert(!childNode->OperIsLeaf());
+                
                 GenTree* CreateScalar = childNode->AsHWIntrinsic()->Op(1);
-                assert(CreateScalar->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe);
-                GenTree* Scalar = CreateScalar->AsHWIntrinsic()->Op(1);
-                if (Scalar->OperIs(GT_LCL_VAR) && Scalar->TypeIs(TYP_FLOAT))
+                if(CreateScalar->OperIs(GT_HWINTRINSIC) && CreateScalar->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe)
                 {
-                    const unsigned opLclNum = Scalar->AsLclVar()->GetLclNum();
-                    comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
-                    MakeSrcContained(CreateScalar, Scalar);
-                    MakeSrcContained(childNode, CreateScalar);
-                    return true;
+                    GenTree* Scalar = CreateScalar->AsHWIntrinsic()->Op(1);
+                    if (Scalar->OperIs(GT_LCL_VAR) && Scalar->TypeIs(TYP_FLOAT))
+                    {
+                        const unsigned opLclNum = Scalar->AsLclVar()->GetLclNum();
+                        comp->lvaSetVarDoNotEnregister(opLclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
+                        MakeSrcContained(CreateScalar, Scalar);
+                        MakeSrcContained(childNode, CreateScalar);
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
                 else
                 {

@@ -804,6 +804,10 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op, insOpts instOptions, v
                 {
                     if (op->isContained())
                     {
+                        // if broadcast node is contained, should mean that we have some forms like
+                        // broadcast -> CreateScalarUnsafe -> scalar.
+                        // if so, directly emit scalar.
+                        assert(op->AsHWIntrinsic()->Op(1)->OperIs(GT_HWINTRINSIC));
                         op = hwintrinsic->AsHWIntrinsic()->Op(1);
                         assert(op->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe);
                         assert(op->isContained());
@@ -1139,8 +1143,8 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
         return false;
     }
 
-    // RUIHAN check 2 situations here
-    // 1. Add -> Broadcast -> CreateScalar -> LCL_VAR
+    // Embedded broadcast can be applied when operands are in the following forms.
+    // 1. Broadcast -> CreateScalar -> LCL_VAR
     // 2. CnsVec
     bool IsEmbBroadcastEnabled = false;
     switch (op->OperGet())
@@ -1167,7 +1171,11 @@ bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
             break;
     }
 
-    return IsEmbBroadcastCompatible && IsEmbBroadcastEnabled;
+    // to enable embedded broadcast, we need 3 things,
+    // 1. embedded broadcast compatible intrinsics
+    // 2. proper forms on the intrinsic operands.
+    // 3. EVEX enabled.
+    return IsEmbBroadcastCompatible && IsEmbBroadcastEnabled && GetEmitter()->UseEvexEncoding();
 }
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
 
