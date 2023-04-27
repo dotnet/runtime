@@ -966,7 +966,7 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 		mono_debug_free_method_async_debug_info (async_method);
 	}
 
-	if (req->size != STEP_SIZE_LINE)
+	if (req->size != STEP_SIZE_LINE_COLUMN)
 		return TRUE;
 
 	/* Have to check whenever a different source line was reached */
@@ -979,8 +979,9 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 		PRINT_DEBUG_MSG (1, "[%p] No line number info for il offset %x, don't know if it's in the same line single stepping.\n", (gpointer) (gsize) mono_native_thread_id_get (), sp->il_offset);
 		req->last_method = method;
 		req->last_line = -1;
+		req->last_column = -1;
 		return hit;
-	} else if (loc && method == req->last_method && loc->row == req->last_line) {
+	} else if (loc && method == req->last_method && loc->row == req->last_line && loc->column == req->last_column) {
 		int nframes;
 		rt_callbacks.ss_calculate_framecount (tls, ctx, FALSE, NULL, &nframes);
 		if (nframes == req->nframes) { // If the frame has changed we're clearly not on the same source line.
@@ -992,6 +993,7 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 	if (loc) {
 		req->last_method = method;
 		req->last_line = loc->row;
+		req->last_column = loc->column;
 		mono_debug_free_source_location (loc);
 	}
 

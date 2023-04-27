@@ -4724,10 +4724,11 @@ mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 				frame = tls->frames [0];
 		}
 
-		if (ss_req->size == STEP_SIZE_LINE) {
+		if (ss_req->size == STEP_SIZE_LINE_COLUMN) {
 			if (frame) {
 				ss_req->last_method = frame->de.method;
 				ss_req->last_line = -1;
+				ss_req->last_column = -1;
 
 				minfo = mono_debug_lookup_method (frame->de.method);
 				if (minfo && frame->il_offset != -1) {
@@ -4735,6 +4736,7 @@ mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 
 					if (loc) {
 						ss_req->last_line = loc->row;
+						ss_req->last_column = loc->column;
 						g_free (loc);
 					}
 				}
@@ -6907,6 +6909,34 @@ static void add_error_string (Buffer *buf, const char *str)
 		buffer_add_string (buf, str);
 }
 
+
+static gboolean
+valid_memory_address (gpointer addr, gint size)
+{
+#ifndef _MSC_VER
+	gboolean ret = TRUE;
+	create_file_to_check_memory_address ();
+	if(file_check_valid_memory < 0) {
+		return TRUE;
+	}
+	write (file_check_valid_memory,  (gpointer)addr, 1);
+	if (errno == EFAULT) {
+		ret = FALSE;
+	}
+#else
+	int i = 0;
+	gboolean ret = FALSE;
+	__try {
+		for (i = 0; i < size; i++)
+			*((volatile char*)addr+i);
+		ret = TRUE;
+	} __except(1) {
+		return ret;
+	}
+#endif
+	return ret;
+}
+
 static ErrorCode
 vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 {
@@ -7252,6 +7282,8 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	case MDBGPROT_CMD_VM_READ_MEMORY: {
 		guint8* memory = (guint8*)GINT_TO_POINTER (decode_long (p, &p, end));
 		int size = decode_int (p, &p, end);
+		if (!valid_memory_address(memory, size))
+			return ERR_INVALID_ARGUMENT;		
 		PRINT_DEBUG_MSG (1, "MDBGPROT_CMD_VM_READ_MEMORY - [%p] - size - %d\n", memory, size);
 		buffer_add_byte_array (buf, memory, size);
 		break;
@@ -9840,6 +9872,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		return cmd_stack_frame_get_this (frame, sig, buf, jit);
 		break;
 	}
+	case MDBGPROT_CMD_STACK_FRAME_SET_VALUES_2:
 	case CMD_STACK_FRAME_SET_VALUES: {
 		guint8 *val_buf;
 		MonoType *t;
@@ -9852,8 +9885,9 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		for (i = 0; i < len; ++i) {
 			pos = decode_int (p, &p, end);
-
 			if (pos < 0) {
+				if (command == MDBGPROT_CMD_STACK_FRAME_SET_VALUES_2 && sig->hasthis) //0 == this
+					pos++;
 				pos = - pos - 1;
 
 				g_assert (pos >= 0 && GINT_TO_UINT32(pos) < jit->num_params);
@@ -10096,33 +10130,6 @@ create_file_to_check_memory_address (void)
 	g_free (file_name);
 }
 
-static gboolean
-valid_memory_address (gpointer addr, gint size)
-{
-#ifndef _MSC_VER
-	gboolean ret = TRUE;
-	create_file_to_check_memory_address ();
-	if(file_check_valid_memory < 0) {
-		return TRUE;
-	}
-	write (file_check_valid_memory,  (gpointer)addr, 1);
-	if (errno == EFAULT) {
-		ret = FALSE;
-	}
-#else
-	int i = 0;
-	gboolean ret = FALSE;
-	__try {
-		for (i = 0; i < size; i++)
-			*((volatile char*)addr+i);
-		ret = TRUE;
-	} __except(1) {
-		return ret;
-	}
-#endif
-	return ret;
-}
-
 static ErrorCode
 pointer_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 {
@@ -10273,11 +10280,12 @@ get_field_value:
 		len = decode_int (p, &p, end);
 		i = 0;
 		int field_token =  decode_int (p, &p, end);
-		gpointer iter = NULL;
-
-		while ((f = mono_class_get_fields_internal (obj_type, &iter))) {
-			if (mono_class_get_field_token (f) == field_token)
-				goto set_field_value;
+		for (k = obj_type; k; k = m_class_get_parent (k)) {
+			gpointer iter = NULL;
+			while ((f = mono_class_get_fields_internal (k, &iter))) {
+				if (mono_class_get_field_token (f) == field_token)
+					goto set_field_value;
+			}
 		}
 		goto invalid_fieldid;
 	case CMD_OBJECT_REF_SET_VALUES:
