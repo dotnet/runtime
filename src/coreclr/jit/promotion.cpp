@@ -1099,12 +1099,11 @@ public:
 
                 if (srcDsc->lvPromoted)
                 {
-                    unsigned   fieldLcl    = m_compiler->lvaGetFieldLocal(srcDsc, srcOffs);
-                    LclVarDsc* fieldLclDsc = m_compiler->lvaGetDesc(fieldLcl);
+                    unsigned fieldLcl = m_compiler->lvaGetFieldLocal(srcDsc, srcOffs);
 
-                    if (fieldLclDsc->lvType == rep->AccessType)
+                    if ((fieldLcl != BAD_VAR_NUM) && (m_compiler->lvaGetDesc(fieldLcl)->lvType == rep->AccessType))
                     {
-                        srcFld = m_compiler->gtNewLclvNode(fieldLcl, fieldLclDsc->lvType);
+                        srcFld = m_compiler->gtNewLclvNode(fieldLcl, rep->AccessType);
                     }
                 }
 
@@ -1299,6 +1298,11 @@ public:
                 {
                     // Overlap with last entry starting before offs.
                     firstIndex--;
+                }
+                else if (firstIndex >= replacements.size())
+                {
+                    // Starts after last replacement ends.
+                    return false;
                 }
             }
 
