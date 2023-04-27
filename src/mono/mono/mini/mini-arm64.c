@@ -1188,7 +1188,7 @@ emit_thunk (guint8 *code, gconstpointer target)
 }
 
 static gpointer
-create_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
+create_thunk (MonoCompile *cfg, guchar *code, const guchar *target, int relocation)
 {
 	MonoJitInfo *ji;
 	MonoThunkJitInfo *info;
@@ -1260,7 +1260,7 @@ create_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 
 		if (!target_thunk) {
 			jit_mm_unlock (jit_mm);
-			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE));
+			g_print ("thunk failed %p->%p, thunk space=%d method %s, relocation %d", code, target, thunks_size, cfg ? mono_method_full_name (cfg->method, TRUE) : mono_method_full_name (jinfo_get_method (ji), TRUE), relocation);
 			g_assert_not_reached ();
 		}
 
@@ -1283,7 +1283,7 @@ arm_patch_full (MonoCompile *cfg, guint8 *code, guint8 *target, int relocation)
 		} else {
 			gpointer thunk;
 
-			thunk = create_thunk (cfg, code, target);
+			thunk = create_thunk (cfg, code, target, relocation);
 			g_assert (arm_is_bl_disp (code, thunk));
 			arm_b (code, thunk);
 		}
@@ -1317,7 +1317,7 @@ arm_patch_full (MonoCompile *cfg, guint8 *code, guint8 *target, int relocation)
 		} else {
 			gpointer thunk;
 
-			thunk = create_thunk (cfg, code, target);
+			thunk = create_thunk (cfg, code, target, relocation);
 			g_assert (arm_is_bl_disp (code, thunk));
 			arm_bl (code, thunk);
 		}

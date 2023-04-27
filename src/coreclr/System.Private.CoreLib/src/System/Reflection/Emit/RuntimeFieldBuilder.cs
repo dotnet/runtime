@@ -150,7 +150,7 @@ namespace System.Reflection.Emit
             RuntimeTypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), m_fieldTok, m_fieldType, defaultValue);
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             RuntimeModuleBuilder moduleBuilder = (RuntimeModuleBuilder)m_typeBuilder.Module;
 
@@ -158,13 +158,6 @@ namespace System.Reflection.Emit
 
             RuntimeTypeBuilder.DefineCustomAttribute(moduleBuilder,
                 m_fieldTok, moduleBuilder.GetMethodMetadataToken(con), binaryAttribute);
-        }
-
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            m_typeBuilder.ThrowIfCreated();
-
-            customBuilder.CreateCustomAttribute((RuntimeModuleBuilder)m_typeBuilder.Module, m_fieldTok);
         }
 
         #endregion

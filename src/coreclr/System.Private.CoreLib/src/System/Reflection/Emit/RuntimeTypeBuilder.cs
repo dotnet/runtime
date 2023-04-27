@@ -111,13 +111,12 @@ namespace System.Reflection.Emit
             private readonly byte[]? m_binaryAttribute;
             private readonly CustomAttributeBuilder? m_customBuilder;
 
-            public CustAttr(ConstructorInfo con, byte[] binaryAttribute)
+            public CustAttr(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
             {
                 ArgumentNullException.ThrowIfNull(con);
-                ArgumentNullException.ThrowIfNull(binaryAttribute);
 
                 m_con = con;
-                m_binaryAttribute = binaryAttribute;
+                m_binaryAttribute = binaryAttribute.ToArray();
             }
 
             public CustAttr(CustomAttributeBuilder customBuilder)
@@ -173,21 +172,13 @@ namespace System.Reflection.Emit
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineCustomAttribute")]
         private static partial void DefineCustomAttribute(QCallModule module, int tkAssociate, int tkConstructor,
-            byte[]? attr, int attrLength);
+            ReadOnlySpan<byte> attr, int attrLength);
 
         internal static void DefineCustomAttribute(RuntimeModuleBuilder module, int tkAssociate, int tkConstructor,
-            byte[]? attr)
+            ReadOnlySpan<byte> attr)
         {
-            byte[]? localAttr = null;
-
-            if (attr != null)
-            {
-                localAttr = new byte[attr.Length];
-                Buffer.BlockCopy(attr, 0, localAttr, 0, attr.Length);
-            }
-
             DefineCustomAttribute(new QCallModule(ref module), tkAssociate, tkConstructor,
-                localAttr, (localAttr != null) ? localAttr.Length : 0);
+                attr, attr.Length);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineProperty", StringMarshalling = StringMarshalling.Utf16)]
@@ -670,7 +661,7 @@ namespace System.Reflection.Emit
             m_genParamAttributes = genericParameterAttributes;
         }
 
-        internal void SetGenParamCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        internal void SetGenParamCustomAttribute(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             CustAttr ca = new CustAttr(con, binaryAttribute);
 
@@ -1858,14 +1849,14 @@ namespace System.Reflection.Emit
             }
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        internal void SetCustomAttribute(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            DefineCustomAttribute(m_module, m_tdType, m_module.GetMethodMetadataToken(con), binaryAttribute);
+            SetCustomAttributeCore(con, binaryAttribute);
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            customBuilder.CreateCustomAttribute(m_module, m_tdType);
+            DefineCustomAttribute(m_module, m_tdType, m_module.GetMethodMetadataToken(con), binaryAttribute);
         }
 
         #endregion
