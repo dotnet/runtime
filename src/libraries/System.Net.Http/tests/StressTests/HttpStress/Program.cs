@@ -162,6 +162,9 @@ namespace HttpStress
 
             string GetAssemblyInfo(Assembly assembly) => $"{assembly.Location}, modified {new FileInfo(assembly.Location).LastWriteTime}";
 
+            Type msQuicApiType = typeof(QuicConnection).Assembly.GetType("System.Net.Quic.MsQuicApi");
+            string msQuicLibraryVersion = (string)msQuicApiType.GetProperty("MsQuicLibraryVersion", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
+
             Console.WriteLine("       .NET Core: " + GetAssemblyInfo(typeof(object).Assembly));
             Console.WriteLine("    ASP.NET Core: " + GetAssemblyInfo(typeof(WebHost).Assembly));
             Console.WriteLine(" System.Net.Http: " + GetAssemblyInfo(typeof(System.Net.Http.HttpClient).Assembly));
@@ -174,6 +177,7 @@ namespace HttpStress
             Console.WriteLine("  Content Length: " + config.MaxContentLength);
             Console.WriteLine("    HTTP Version: " + config.HttpVersion);
             Console.WriteLine("  QUIC supported: " + (IsQuicSupported ? "yes" : "no"));
+            Console.WriteLine("  MsQuic Version: " + msQuicLibraryVersion);
             Console.WriteLine("        Lifetime: " + (config.ConnectionLifetime.HasValue ? $"{config.ConnectionLifetime.Value.TotalMilliseconds}ms" : "(infinite)"));
             Console.WriteLine("      Operations: " + string.Join(", ", usedClientOperations.Select(o => o.name)));
             Console.WriteLine("     Random Seed: " + config.RandomSeed);
@@ -184,7 +188,6 @@ namespace HttpStress
 
             if (config.HttpVersion == HttpVersion.Version30 && IsQuicSupported)
             {
-                Type msQuicApiType = typeof(QuicConnection).Assembly.GetType("System.Net.Quic.MsQuicApi");
                 unsafe
                 {
                     object msQuicApiInstance = msQuicApiType.GetProperty("Api", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
