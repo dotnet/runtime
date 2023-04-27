@@ -158,7 +158,9 @@ int Compiler::optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDs
 bool Compiler::optCopyProp(
     BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName)
 {
-    assert(((tree->gtFlags & GTF_VAR_DEF) == 0) && (tree->GetLclNum() == lclNum) && tree->gtVNPair.BothDefined());
+    assert((tree->gtFlags & GTF_VAR_DEF) == 0);
+    assert(tree->GetLclNum() == lclNum);
+    assert(tree->gtVNPair.BothDefined());
 
     bool       madeChanges = false;
     LclVarDsc* varDsc      = lvaGetDesc(lclNum);
@@ -389,7 +391,8 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
             {
                 optCopyPropPushDef(tree, lclDefNode, curSsaName);
             }
-            else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && tree->AsLclVarCommon()->HasSsaName())
+            else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && tree->AsLclVarCommon()->HasSsaName() &&
+                     tree->gtVNPair.BothDefined())
             {
                 unsigned lclNum = tree->AsLclVarCommon()->GetLclNum();
 
