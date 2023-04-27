@@ -479,17 +479,17 @@ MonoClass * mono_class_from_name(MonoImage *image, const char* name_space, const
     auto assembly = (MonoAssembly_clr*)image;
     DomainAssembly* domainAssembly = assembly->GetDomainAssembly();
 
-    InlineSString<512> fullTypeName(SString::Utf8, name_space);
-    fullTypeName.AppendUTF8(".");
-    fullTypeName.AppendUTF8(name);
-    SString::Iterator i = fullTypeName.Begin();
-    while (fullTypeName.Find(i, W('/')))
-        fullTypeName.Replace(i, W('+'));
-
     TypeHandle retTypeHandle;
 
     EX_TRY
     {
+        InlineSString<512> fullTypeName(SString::Utf8, name_space);
+        fullTypeName.AppendUTF8(".");
+        fullTypeName.AppendUTF8(name);
+        SString::Iterator i = fullTypeName.Begin();
+        while (fullTypeName.Find(i, W('/')))
+            fullTypeName.Replace(i, W('+'));
+
         retTypeHandle = TypeName::GetTypeManaged(fullTypeName.GetUnicode(), domainAssembly, FALSE, ignoreCase, TRUE, NULL, NULL);
     }
     EX_CATCH
