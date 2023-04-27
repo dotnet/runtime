@@ -6813,7 +6813,7 @@ void emitter::emitIns_R_R_C(instruction          ins,
     id->idReg2(reg2);
     id->idAddr()->iiaFieldHnd = fldHnd;
 #if defined(TARGET_XARCH)
-    if ((instOptions == INS_OPTS_EVEX_b))
+    if (instOptions == INS_OPTS_EVEX_b)
     {
         assert(UseEvexEncoding());
         id->idSetEvexbContext();

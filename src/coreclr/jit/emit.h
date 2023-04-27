@@ -3674,7 +3674,6 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
 
-
     emitAttr    defaultSize = id->idOpSize();
     instruction ins         = id->idIns();
     if (id->idIsEvexbContext())

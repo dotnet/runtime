@@ -25090,7 +25090,7 @@ bool GenTreeHWIntrinsic::OperIsBroadcastScalar() const
 {
 #if defined(TARGET_XARCH)
     NamedIntrinsic intrinsicId = GetHWIntrinsicId();
-    switch(intrinsicId)
+    switch (intrinsicId)
     {
         case NI_AVX2_BroadcastScalarToVector128:
         case NI_AVX2_BroadcastScalarToVector256:
