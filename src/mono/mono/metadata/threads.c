@@ -4931,12 +4931,8 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 	}
 
 	MonoThreadCreateFlags create_flags = MONO_THREAD_CREATE_FLAGS_NONE;
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	// HACK: threadpool threads can return to the JS event loop
-	// WISH: support this for other threads, too
-	if (internal->threadpool_thread)
+	if (G_UNLIKELY (internal->external_eventloop))
 		create_flags |= MONO_THREAD_CREATE_FLAGS_EXTERNAL_EVENTLOOP;
-#endif
 
 	res = create_thread (internal, internal, NULL, NULL, stack_size, create_flags, error);
 	if (!res) {
