@@ -2438,8 +2438,13 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 // Case 3: ARR_LENGTH(new T[CNS])
                 else if ((funcApp.m_func == VNF_JitNewArr) && IsVNConstant(funcApp.m_args[1]))
                 {
-                    // Return known length of the array
-                    resultVN = funcApp.m_args[1];
+                    // Constant is INT64, but we need INT32 for GT_ARR_LEN, so make sure it fits
+                    ssize_t val = CoercedConstantValue<ssize_t>(funcApp.m_args[1]);
+                    if ((size_t)val <= UINT_MAX)
+                    {
+                        // Return known length of the array
+                        resultVN = funcApp.m_args[1];
+                    }
                 }
             }
         }
