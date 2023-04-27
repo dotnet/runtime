@@ -36,21 +36,15 @@ namespace System.Diagnostics.Tracing
         private IncrementingPollingCounter? _allocRateCounter;
         private PollingCounter? _timerCounter;
         private PollingCounter? _fragmentationCounter;
-
         private PollingCounter? _committedCounter;
-#if !NATIVEAOT // TODO shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
         private IncrementingPollingCounter? _exceptionCounter;
-#endif // !NATIVEAOT
         private PollingCounter? _gcTimeCounter;
         private PollingCounter? _gen0SizeCounter;
         private PollingCounter? _gen1SizeCounter;
         private PollingCounter? _gen2SizeCounter;
         private PollingCounter? _lohSizeCounter;
         private PollingCounter? _pohSizeCounter;
-#if !NATIVEAOT // TODO shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
         private PollingCounter? _assemblyCounter;
-#endif // !NATIVEAOT
-
         private PollingCounter? _ilBytesJittedCounter;
         private PollingCounter? _methodsJittedCounter;
         private IncrementingPollingCounter? _jitTimeCounter;
@@ -139,7 +133,9 @@ namespace System.Diagnostics.Tracing
                  }) { DisplayName = "GC Fragmentation", DisplayUnits = "%" };
 
                 _committedCounter ??= new PollingCounter("gc-committed", this, () => ((double)GC.GetGCMemoryInfo().TotalCommittedBytes / 1_000_000)) { DisplayName = "GC Committed Bytes", DisplayUnits = "MB" };
-#if !NATIVEAOT // TODO
+#if NATIVEAOT
+                _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.ExceptionCount) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
+#else
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
 #endif // !NATIVEAOT
                 _gcTimeCounter ??= new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };
@@ -148,7 +144,9 @@ namespace System.Diagnostics.Tracing
                 _gen2SizeCounter ??= new PollingCounter("gen-2-size", this, () => GC.GetGenerationSize(2)) { DisplayName = "Gen 2 Size", DisplayUnits = "B" };
                 _lohSizeCounter ??= new PollingCounter("loh-size", this, () => GC.GetGenerationSize(3)) { DisplayName = "LOH Size", DisplayUnits = "B" };
                 _pohSizeCounter ??= new PollingCounter("poh-size", this, () => GC.GetGenerationSize(4)) { DisplayName = "POH (Pinned Object Heap) Size", DisplayUnits = "B" };
-#if !NATIVEAOT // TODO
+#if NATIVEAOT
+                _assemblyCounter ??= new PollingCounter("assembly-count", this, () => AppDomain.CurrentDomain.GetAssemblies().Length) { DisplayName = "Number of Assemblies Loaded" };
+#else
                 _assemblyCounter ??= new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
 #endif // !NATIVEAOT
 
