@@ -9755,10 +9755,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_REQ_ADDR_IN_REG]");
                 }
-                if (tree->gtFlags & GTF_IND_ASG_LHS)
-                {
-                    chars += printf("[IND_ASG_LHS]");
-                }
                 if (tree->gtFlags & GTF_IND_UNALIGNED)
                 {
                     chars += printf("[IND_UNALIGNED]");

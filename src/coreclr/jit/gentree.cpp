@@ -10925,12 +10925,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
                         --msgLength;
                         break;
                     }
-                    if (tree->gtFlags & GTF_IND_ASG_LHS)
-                    {
-                        printf("D"); // print a D for definition
-                        --msgLength;
-                        break;
-                    }
                     if (tree->gtFlags & GTF_IND_NONNULL)
                     {
                         printf("@");

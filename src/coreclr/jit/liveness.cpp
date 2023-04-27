@@ -233,13 +233,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                 fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
             }
 
-            // If the GT_IND is the lhs of an assignment, we'll handle it
-            // as a memory def, when we get to assignment.
-            // Otherwise, we treat it as a use here.
-            if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
-            {
-                fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
-            }
+            fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
             break;
 
         // These should have been morphed away to become GT_INDs:

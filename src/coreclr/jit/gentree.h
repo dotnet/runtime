@@ -489,8 +489,6 @@ enum GenTreeFlags : unsigned int
     GTF_IND_REQ_ADDR_IN_REG     = 0x08000000, // GT_IND -- requires its addr operand to be evaluated into a register.
                                               //           This flag is useful in cases where it is required to generate register
                                               //           indirect addressing mode. One such case is virtual stub calls on xarch.
-    GTF_IND_ASG_LHS             = 0x04000000, // GT_IND -- this GT_IND node is (the effective val) of the LHS of an
-                                              //           assignment; don't evaluate it independently.
     GTF_IND_UNALIGNED           = 0x02000000, // OperIsIndir() -- the load or store is unaligned (we assume worst case alignment of 1 byte)
     GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (a prejit indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND -- the indirection never returns null (zero)
