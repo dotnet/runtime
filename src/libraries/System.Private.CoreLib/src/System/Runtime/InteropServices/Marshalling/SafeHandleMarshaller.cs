@@ -70,6 +70,10 @@ namespace System.Runtime.InteropServices.Marshalling
             {
                 _addRefd = false;
                 _callInvoked = false;
+                // SafeHandle ref marshalling has always required parameterless constructors,
+                // but it has never required them to be public.
+                // We construct the handle now to ensure we don't cause an exception
+                // before we are able to capture the unmanaged handle after the call.
                 _newHandle = (T)Activator.CreateInstance(typeof(T), nonPublic: true)!;
             }
 
@@ -146,7 +150,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         public struct ManagedToUnmanagedOut
         {
-            private bool _callInvoked;
+            private bool _initialized;
             private T _newHandle;
 
             /// <summary>
@@ -154,7 +158,11 @@ namespace System.Runtime.InteropServices.Marshalling
             /// </summary>
             public ManagedToUnmanagedOut()
             {
-                _callInvoked = false;
+                _initialized = false;
+                // SafeHandle out marshalling has always required parameterless constructors,
+                // but it has never required them to be public.
+                // We construct the handle now to ensure we don't cause an exception
+                // before we are able to capture the unmanaged handle after the call.
                 _newHandle = (T)Activator.CreateInstance(typeof(T), nonPublic: true)!;
             }
 
@@ -164,15 +172,8 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <param name="value">The unmanaged handle.</param>
             public void FromUnmanaged(IntPtr value)
             {
+                _initialized = true;
                 Marshal.InitHandle(_newHandle, value);
-            }
-
-            /// <summary>
-            /// Notify the marshaller that the native call has been invoked.
-            /// </summary>
-            public void OnInvoked()
-            {
-                _callInvoked = true;
             }
 
             /// <summary>
@@ -186,10 +187,10 @@ namespace System.Runtime.InteropServices.Marshalling
             /// </summary>
             public void Free()
             {
-                // If we never invoked the call, then we aren't going to use the
+                // If we never captured the handle value, then we aren't going to use the
                 // new handle. Dispose it now to avoid clogging up the finalizer queue
                 // unnecessarily.
-                if (!_callInvoked)
+                if (!_initialized)
                 {
                     _newHandle!.Dispose();
                 }

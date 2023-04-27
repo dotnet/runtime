@@ -66,36 +66,38 @@ namespace Microsoft.Interop
                 }
             }
 
-            if (_safeHandleMarshallerType is not null)
+            // If we don't have the SafeHandleMarshaller<T> type, then we'll use the built-in support in the generator.
+            // This support will be removed when dotnet/runtime doesn't build any packages for platforms below .NET 8
+            // as the downlevel support is dotnet/runtime specific.
+            if (_safeHandleMarshallerType is null)
             {
-
-                INamedTypeSymbol entryPointType = _safeHandleMarshallerType.Construct(type);
-                if (!ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(
-                    entryPointType,
-                    type,
-                    _compilation,
-                    out CustomTypeMarshallers? marshallers))
-                {
-                    return NoMarshallingInfo.Instance;
-                }
-
-                // If the SafeHandle-derived type doesn't have a default constructor or is abstract,
-                // we only support managed-to-unmanaged marshalling
-                if (!hasDefaultConstructor || type.IsAbstract)
-                {
-                    marshallers = marshallers.Value with
-                    {
-                        Modes = ImmutableDictionary<MarshalMode, CustomTypeMarshallerData>.Empty
-                            .Add(
-                                MarshalMode.ManagedToUnmanagedIn,
-                                marshallers.Value.GetModeOrDefault(MarshalMode.ManagedToUnmanagedIn))
-                    };
-                }
-
-                return new NativeMarshallingAttributeInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType), marshallers.Value);
+                return new SafeHandleMarshallingInfo(hasAccessibleDefaultConstructor, type.IsAbstract);
             }
 
-            return new SafeHandleMarshallingInfo(hasAccessibleDefaultConstructor, type.IsAbstract);
+            INamedTypeSymbol entryPointType = _safeHandleMarshallerType.Construct(type);
+            if (!ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(
+                entryPointType,
+                type,
+                _compilation,
+                out CustomTypeMarshallers? marshallers))
+            {
+                return NoMarshallingInfo.Instance;
+            }
+
+            // If the SafeHandle-derived type doesn't have a default constructor or is abstract,
+            // we only support managed-to-unmanaged marshalling
+            if (!hasDefaultConstructor || type.IsAbstract)
+            {
+                marshallers = marshallers.Value with
+                {
+                    Modes = ImmutableDictionary<MarshalMode, CustomTypeMarshallerData>.Empty
+                        .Add(
+                            MarshalMode.ManagedToUnmanagedIn,
+                            marshallers.Value.GetModeOrDefault(MarshalMode.ManagedToUnmanagedIn))
+                };
+            }
+
+            return new NativeMarshallingAttributeInfo(ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType), marshallers.Value);
         }
     }
 }

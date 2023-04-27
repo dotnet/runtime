@@ -13537,8 +13537,6 @@ namespace System.Runtime.InteropServices.Marshalling
 
             public void FromUnmanaged(nint value) { }
 
-            public void OnInvoked() { }
-
             public T ToManaged() { throw null; }
 
             public void Free() { }
