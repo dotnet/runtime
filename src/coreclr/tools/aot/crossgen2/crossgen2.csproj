@@ -88,11 +88,6 @@
   <Target Name="LocateNativeCompiler"
           Condition="'$(NativeAotSupported)' == 'true' and '$(_IsPublishing)' == 'true' and '$(HostOS)' != 'windows'"
           BeforeTargets="SetupOSSpecificProps">
-      <PropertyGroup>
-        <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
-        <LinkerFlavor Condition="'$(CppCompilerAndLinker)' == 'clang' and '$(TargetOS)' == 'linux'">lld</LinkerFlavor>
-      </PropertyGroup>
-
       <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
             EchoOff="true"
             ConsoleToMsBuild="true"
