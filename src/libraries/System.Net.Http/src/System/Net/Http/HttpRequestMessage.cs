@@ -31,6 +31,7 @@ namespace System.Net.Http
         private HttpVersionPolicy _versionPolicy;
         private HttpContent? _content;
         private HttpRequestOptions? _options;
+        private List<KeyValuePair<string, object?>>? _metricsTags;
 
         public Version Version
         {
@@ -115,6 +116,14 @@ namespace System.Net.Http
         /// Gets the collection of options to configure the HTTP request.
         /// </summary>
         public HttpRequestOptions Options => _options ??= new HttpRequestOptions();
+
+        // TODO: Should tags be defined in a new collection or stashed in HttpRequestOptions?
+        // If tags are stashed in HttpRequestOptions then there should probably be extension methods to interact with them.
+        // If tags are stored in a collection then a custom collection type might be wanted.
+        // An Add(string name, object? value) method for convenience would be nice.
+        public ICollection<KeyValuePair<string, object?>> MetricsTags => _metricsTags ??= new List<KeyValuePair<string, object?>>();
+
+        internal bool HasTags => _metricsTags != null;
 
         public HttpRequestMessage()
             : this(HttpMethod.Get, (Uri?)null)

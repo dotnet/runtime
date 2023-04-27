@@ -214,6 +214,9 @@ namespace System.Net.Http
         public HttpMessageInvoker(System.Net.Http.HttpMessageHandler handler) { }
         public HttpMessageInvoker(System.Net.Http.HttpMessageHandler handler, bool disposeHandler) { }
         public void Dispose() { }
+#pragma warning disable CS3003 // Type is not CLS-compliant
+        public System.Diagnostics.Metrics.Meter Meter { get { throw null; } set { } }
+#pragma warning restore CS3003 // Type is not CLS-compliant
         protected virtual void Dispose(bool disposing) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public virtual System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -263,6 +266,7 @@ namespace System.Net.Http
         [System.ObsoleteAttribute("HttpRequestMessage.Properties has been deprecated. Use Options instead.")]
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
         public HttpRequestOptions Options { get { throw null; } }
+        public ICollection<KeyValuePair<string, object?>> MetricsTags { get { throw null; } }
         public System.Uri? RequestUri { get { throw null; } set { } }
         public System.Version Version { get { throw null; } set { } }
         public System.Net.Http.HttpVersionPolicy VersionPolicy { get { throw null; } set { } }

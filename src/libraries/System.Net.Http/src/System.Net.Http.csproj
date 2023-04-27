@@ -53,6 +53,7 @@
     <Compile Include="System\Net\Http\HttpMessageHandler.cs" />
     <Compile Include="System\Net\Http\HttpMessageInvoker.cs" />
     <Compile Include="System\Net\Http\HttpMethod.cs" />
+    <Compile Include="System\Net\Http\HttpMetrics.cs" />
     <Compile Include="System\Net\Http\HttpParseResult.cs" />
     <Compile Include="System\Net\Http\HttpProtocolException.cs" />
     <Compile Include="System\Net\Http\HttpRequestException.cs" />
