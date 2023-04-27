@@ -372,10 +372,6 @@ PTFF_THREAD_ABORT_BIT = 36
 TrapThreadsFlags_AbortInProgress_Bit = 0
 TrapThreadsFlags_TrapThreads_Bit     = 1
 
-// Bit position for the ARM64IntrinsicConstants_Atomics flags, to be used with tbz / tbnz instructions
-// ARM64IntrinsicConstants_Atomics = 0x0080
-ARM64_ATOMICS_FEATURE_FLAG_BIT       = 7
-
 // This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
 #define STATUS_REDHAWK_THREAD_ABORT     0x43
 

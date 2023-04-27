@@ -81,10 +81,6 @@ TrapThreadsFlags_TrapThreads     equ 2
 TrapThreadsFlags_AbortInProgress_Bit equ 0
 TrapThreadsFlags_TrapThreads_Bit     equ 1
 
-;; Bit position for the ARM64IntrinsicConstants_Atomics flags, to be used with tbz / tbnz instructions
-;; ARM64IntrinsicConstants_Atomics = 0x0080
-ARM64_ATOMICS_FEATURE_FLAG_BIT       equ 7
-
 ;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
 STATUS_REDHAWK_THREAD_ABORT      equ 0x43
 
