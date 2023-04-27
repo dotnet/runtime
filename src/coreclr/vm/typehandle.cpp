@@ -325,12 +325,15 @@ BOOL TypeHandle::IsSharedByGenericInstantiations() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (IsArray())
+    if (IsTypeDesc())
     {
-        return GetArrayElementTypeHandle().IsCanonicalSubtype();
+        return AsTypeDesc()->IsSharedByGenericInstantiations();
     }
-    else if (!IsTypeDesc())
+    else
     {
+        if (IsArray())
+            return GetArrayElementTypeHandle().IsCanonicalSubtype();
+
         return AsMethodTable()->IsSharedByGenericInstantiations();
     }
 

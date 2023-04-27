@@ -1420,6 +1420,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_85240/test85240/**">
+            <Issue>https://github.com/dotnet/runtime/issues/71095</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Remainder/Regressions/Regression1/**">
             <Issue>https://github.com/dotnet/runtime/issues/79022</Issue>
         </ExcludeList>
