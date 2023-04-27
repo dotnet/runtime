@@ -118,6 +118,7 @@
 
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmSingleFileBundle)' == 'true'">true</WasmBuildNative>
+    <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(InvariantGlobalization)' == 'true'">true</WasmBuildNative>
 
     <WasiBundleAssemblies Condition="'$(WasiBundleAssemblies)' == ''">true</WasiBundleAssemblies>
     <WasiRunner Condition="'$(WasiRunner)' == ''">wasmtime</WasiRunner>
@@ -321,13 +322,19 @@
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
     </PropertyGroup>
 
-    <ItemGroup>
-      <!-- If dotnet.{wasm,js} weren't added already (eg. AOT can add them), then add the default ones -->
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
+    <ItemGroup Condition="'$(InvariantGlobalization)' == 'true' or '$(WasmSingleFileBundle)' == 'true'">
+      <ReferenceCopyLocalPaths Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(WasmBuildNative)' == 'true'">
+      <ReferenceCopyLocalPaths Remove="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(WasmBuildNative)' != 'true'">
+      <!-- Add the default ones when we don't compile one -->
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm"/>
       <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
+    <ItemGroup Condition="'$(InvariantGlobalization)' != 'true' and '$(WasmSingleFileBundle)' != 'true'">
       <WasmIcuDataFileNames Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat"/>
       <WasmNativeAsset Include="@(WasmIcuDataFileNames)"/>
     </ItemGroup>

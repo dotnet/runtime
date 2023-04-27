@@ -132,7 +132,9 @@ namespace System.Reflection.Runtime.MethodInfos.NativeFormat
         {
             get
             {
-                return MethodSignature.CallingConvention;
+                var sigCallingConvention = MethodSignature.CallingConvention;
+                return (sigCallingConvention & Internal.Metadata.NativeFormat.SignatureCallingConvention.HasThis) != 0
+                    ? CallingConventions.HasThis : 0;
             }
         }
 

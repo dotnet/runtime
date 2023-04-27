@@ -293,9 +293,6 @@
 
     <!-- Windows arm32 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm') and '$(TargetsWindows)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTestWithMcj/*">
-            <Issue>https://github.com/dotnet/runtime/issues/84818</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/out_of_range_fp_to_int_conversions/*">
             <Issue>https://github.com/dotnet/runtime/issues/49184</Issue>
         </ExcludeList>
@@ -512,20 +509,11 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/pinvokes_do/**">
             <Issue>https://github.com/dotnet/runtime/issues/66745</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/binding/tracing/BinderTracingTest.ResolutionFlow/*">
-            <Issue>https://github.com/dotnet/runtime/issues/84818</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltenter/**">
             <Issue>https://github.com/dotnet/runtime/issues/84750</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/profiler/elt/slowpatheltleave/**">
             <Issue>https://github.com/dotnet/runtime/issues/84750</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/readytorun/coreroot_determinism/coreroot_determinism/*">
-            <Issue>https://github.com/dotnet/runtime/issues/84818</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/readytorun/determinism/crossgen2determinism/*">
-            <Issue>https://github.com/dotnet/runtime/issues/84818</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
             <Issue>https://github.com/dotnet/runtime/issues/81241</Issue>
@@ -895,9 +883,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/*">
             <Issue>https://github.com/dotnet/runtime/issues/81103</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeInitialization/CctorsWithSideEffects/CctorForWrite/*">
-            <Issue>https://github.com/dotnet/runtime/issues/84007</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Crossgen2 x86 specific excludes -->
@@ -993,12 +978,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/SafeArray/SafeArrayTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: SAFEARRAY</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/API/ComWrappersTests/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74620</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/API/ComWrappersTestsBuiltInComDisabled/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74620</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/WeakReference/WeakReferenceTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/74620</Issue>
@@ -1441,6 +1420,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_85240/test85240/**">
+            <Issue>https://github.com/dotnet/runtime/issues/71095</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Remainder/Regressions/Regression1/**">
             <Issue>https://github.com/dotnet/runtime/issues/79022</Issue>
         </ExcludeList>
@@ -3353,6 +3335,12 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/**">
+            <Issue>https://github.com/dotnet/runtime/issues/85316</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
+            <Issue>https://github.com/dotnet/runtime/issues/85316</Issue>
         </ExcludeList>
     </ItemGroup>
 

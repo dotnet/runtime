@@ -12,6 +12,7 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Default Interface Methods](#default-interface-methods)
 - [Static Interface Methods](#static-interface-methods)
 - [Covariant Return Types](#covariant-return-types)
+- [Function Pointer Type Identity](#function-pointer-type-identity)
 - [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
 - [Ref field support](#ref-fields)
 - [Rules for IL rewriters](#rules-for-il-rewriters)
@@ -924,6 +925,16 @@ For this example, the behavior of calls on objects of various types is presented
 "
 ### II.22.27
 Edit rule 12 to specify that "The method signature defined by *MethodBody* shall match those defined by *MethodDeclaration* exactly if *MethodDeclaration* defines a method on an interface or be *covariant-return-compatible-with* (§I.8.7.1) if *MethodDeclaration* represents a method on a class."
+
+## Function Pointer Type Identity
+
+The unmanaged calling convention of the function pointer type no longer contributes to the type identity. For the purposes of type identity, the only important bit is whether the calling convention is managed or unmanaged.
+
+### I.8.7 Assignment compatibility
+
+For the purpose of type compatibility when determining a type from a signature:
+
+iv) ~~Any calling convention~~ _Whether the calling convention is managed or unmanaged_ is considered part of the type.
 
 ## Unsigned data conversion with overflow detection
 

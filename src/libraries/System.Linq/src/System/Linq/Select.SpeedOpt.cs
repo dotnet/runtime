@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using static System.Linq.Utilities;
 
 namespace System.Linq
@@ -75,13 +75,11 @@ namespace System.Linq
             {
                 // See assert in constructor.
                 // Since _source should never be empty, we don't check for 0/return Array.Empty.
-                Debug.Assert(_source.Length > 0);
+                TSource[] source = _source;
+                Debug.Assert(source.Length > 0);
 
-                var results = new TResult[_source.Length];
-                for (int i = 0; i < results.Length; i++)
-                {
-                    results[i] = _selector(_source[i]);
-                }
+                var results = new TResult[source.Length];
+                Fill(source, results, _selector);
 
                 return results;
             }
@@ -89,13 +87,20 @@ namespace System.Linq
             public List<TResult> ToList()
             {
                 TSource[] source = _source;
+                Debug.Assert(source.Length > 0);
+
                 var results = new List<TResult>(source.Length);
-                for (int i = 0; i < source.Length; i++)
-                {
-                    results.Add(_selector(source[i]));
-                }
+                Fill(source, SetCountAndGetSpan(results, source.Length), _selector);
 
                 return results;
+            }
+
+            private static void Fill(ReadOnlySpan<TSource> source, Span<TResult> destination, Func<TSource, TResult> func)
+            {
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = func(source[i]);
+                }
             }
 
             public int GetCount(bool onlyIfCheap)
@@ -202,11 +207,7 @@ namespace System.Linq
             public TResult[] ToArray()
             {
                 var results = new TResult[_end - _start];
-                int srcIndex = _start;
-                for (int i = 0; i < results.Length; i++)
-                {
-                    results[i] = _selector(srcIndex++);
-                }
+                Fill(results, _start, _selector);
 
                 return results;
             }
@@ -214,12 +215,17 @@ namespace System.Linq
             public List<TResult> ToList()
             {
                 var results = new List<TResult>(_end - _start);
-                for (int i = _start; i != _end; i++)
-                {
-                    results.Add(_selector(i));
-                }
+                Fill(SetCountAndGetSpan(results, _end - _start), _start, _selector);
 
                 return results;
+            }
+
+            private static void Fill(Span<TResult> results, int start, Func<int, TResult> func)
+            {
+                for (int i = 0; i < results.Length; i++, start++)
+                {
+                    results[i] = func(start);
+                }
             }
 
             public int GetCount(bool onlyIfCheap)
@@ -292,31 +298,34 @@ namespace System.Linq
         {
             public TResult[] ToArray()
             {
-                int count = _source.Count;
-                if (count == 0)
+                ReadOnlySpan<TSource> source = CollectionsMarshal.AsSpan(_source);
+                if (source.Length == 0)
                 {
                     return Array.Empty<TResult>();
                 }
 
-                var results = new TResult[count];
-                for (int i = 0; i < results.Length; i++)
-                {
-                    results[i] = _selector(_source[i]);
-                }
+                var results = new TResult[source.Length];
+                Fill(source, results, _selector);
 
                 return results;
             }
 
             public List<TResult> ToList()
             {
-                int count = _source.Count;
-                var results = new List<TResult>(count);
-                for (int i = 0; i < count; i++)
-                {
-                    results.Add(_selector(_source[i]));
-                }
+                ReadOnlySpan<TSource> source = CollectionsMarshal.AsSpan(_source);
+
+                var results = new List<TResult>(source.Length);
+                Fill(source, SetCountAndGetSpan(results, source.Length), _selector);
 
                 return results;
+            }
+
+            private static void Fill(ReadOnlySpan<TSource> source, Span<TResult> destination, Func<TSource, TResult> func)
+            {
+                for (int i = 0; i < destination.Length; i++)
+                {
+                    destination[i] = func(source[i]);
+                }
             }
 
             public int GetCount(bool onlyIfCheap)
@@ -398,24 +407,28 @@ namespace System.Linq
                 }
 
                 var results = new TResult[count];
-                for (int i = 0; i < results.Length; i++)
-                {
-                    results[i] = _selector(_source[i]);
-                }
+                Fill(_source, results, _selector);
 
                 return results;
             }
 
             public List<TResult> ToList()
             {
+                IList<TSource> source = _source;
                 int count = _source.Count;
+
                 var results = new List<TResult>(count);
-                for (int i = 0; i < count; i++)
-                {
-                    results.Add(_selector(_source[i]));
-                }
+                Fill(source, SetCountAndGetSpan(results, count), _selector);
 
                 return results;
+            }
+
+            private static void Fill(IList<TSource> source, Span<TResult> results, Func<TSource, TResult> func)
+            {
+                for (int i = 0; i < results.Length; i++)
+                {
+                    results[i] = func(source[i]);
+                }
             }
 
             public int GetCount(bool onlyIfCheap)
@@ -789,10 +802,7 @@ namespace System.Linq
                 }
 
                 TResult[] array = new TResult[count];
-                for (int i = 0, curIdx = _minIndexInclusive; i < array.Length; ++i, ++curIdx)
-                {
-                    array[i] = _selector(_source[curIdx]);
-                }
+                Fill(_source, array, _selector, _minIndexInclusive);
 
                 return array;
             }
@@ -806,13 +816,17 @@ namespace System.Linq
                 }
 
                 List<TResult> list = new List<TResult>(count);
-                int end = _minIndexInclusive + count;
-                for (int i = _minIndexInclusive; i != end; ++i)
-                {
-                    list.Add(_selector(_source[i]));
-                }
+                Fill(_source, SetCountAndGetSpan(list, count), _selector, _minIndexInclusive);
 
                 return list;
+            }
+
+            private static void Fill(IList<TSource> source, Span<TResult> destination, Func<TSource, TResult> func, int sourceIndex)
+            {
+                for (int i = 0; i < destination.Length; i++, sourceIndex++)
+                {
+                    destination[i] = func(source[sourceIndex]);
+                }
             }
 
             public int GetCount(bool onlyIfCheap)

@@ -782,17 +782,18 @@ protected:
         unsigned _idNoGC : 1;       // Some helpers don't get recorded in GC tables
 
 #ifdef TARGET_ARM64
-        opSize   _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts  _idInsOpt : 6; // options for instructions
-        unsigned _idLclVar : 1; // access a local on stack
+        opSize   _idOpSize : 3;    // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts  _idInsOpt : 6;    // options for instructions
+        unsigned _idLclVar : 1;    // access a local on stack
+        unsigned _idLclVarPair : 1 // carries information for 2 GC lcl vars.
 #endif
 
 #ifdef TARGET_LOONGARCH64
-        // TODO-LoongArch64: maybe delete on future.
-        opSize  _idOpSize : 3;  // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
-        insOpts _idInsOpt : 6;  // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
-                                // accessing a local on stack.
-        unsigned _idLclVar : 1; // access a local on stack.
+            // TODO-LoongArch64: maybe delete on future.
+            opSize _idOpSize : 3; // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16
+        insOpts    _idInsOpt : 6; // loongarch options for special: placeholders. e.g emitIns_R_C, also identifying the
+                                  // accessing a local on stack.
+        unsigned _idLclVar : 1;   // access a local on stack.
 #endif
 
 #ifdef TARGET_RISCV64
@@ -815,7 +816,7 @@ protected:
         // x86:   46 bits
         // amd64: 46 bits
         // arm:   48 bits
-        // arm64: 49 bits
+        // arm64: 50 bits
         // loongarch64: 46 bits
 
         //
@@ -827,7 +828,7 @@ protected:
 #if defined(TARGET_ARM)
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
-#define ID_EXTRA_BITFIELD_BITS (17)
+#define ID_EXTRA_BITFIELD_BITS (18)
 #elif defined(TARGET_XARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #else
@@ -867,7 +868,7 @@ protected:
         // x86:   52/48 bits
         // amd64: 53/48 bits
         // arm:   54/50 bits
-        // arm64: 56/51 bits
+        // arm64: 57/52 bits
         // loongarch64: 53/48 bits
         CLANG_FORMAT_COMMENT_ANCHOR;
 
@@ -885,7 +886,7 @@ protected:
         // x86:   12/16 bits
         // amd64: 11/16 bits
         // arm:   10/14 bits
-        // arm64: 8/13 bits
+        // arm64: 7/12 bits
         // loongarch64: 11/16 bits
 
         unsigned _idSmallCns : ID_BIT_SMALL_CNS;
@@ -1432,6 +1433,16 @@ protected:
         {
             _idLclVar = 1;
         }
+#ifdef TARGET_ARM64
+        bool idIsLclVarPair() const
+        {
+            return _idLclVarPair != 0;
+        }
+        void idSetIsLclVarPair()
+        {
+            _idLclVarPair = 1;
+        }
+#endif // TARGET_ARM64
 #endif // TARGET_ARMARCH
 
 #if defined(TARGET_ARM)
@@ -1819,6 +1830,22 @@ protected:
 
 #endif // TARGET_XARCH
 
+#ifdef TARGET_ARM64
+    struct instrDescLclVarPair : instrDesc // contains 2 gc vars to be tracked
+    {
+        instrDescLclVarPair() = delete;
+
+        emitLclVarAddr iiaLclVar2;
+    };
+
+    struct instrDescLclVarPairCns : instrDescCns // contains 2 gc vars to be tracked, with large cons
+    {
+        instrDescLclVarPairCns() = delete;
+
+        emitLclVarAddr iiaLclVar2;
+    };
+#endif
+
     struct instrDescCGCA : instrDesc // call with ...
     {
         instrDescCGCA() = delete;
@@ -1905,7 +1932,7 @@ protected:
     ssize_t emitGetInsCIdisp(instrDesc* id);
     unsigned emitGetInsCIargs(instrDesc* id);
 
-    inline static emitAttr emitGetMemOpSize(instrDesc* id);
+    inline emitAttr emitGetMemOpSize(instrDesc* id) const;
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -2600,7 +2627,26 @@ private:
 #endif // EMITTER_STATS
         return (instrDescLbl*)emitAllocAnyInstr(sizeof(instrDescLbl), EA_4BYTE);
     }
-#endif // !TARGET_ARM64
+#endif // TARGET_ARM64
+
+#if defined(TARGET_ARM64)
+    instrDescLclVarPair* emitAllocInstrLclVarPair(emitAttr attr)
+    {
+        instrDescLclVarPair* result = (instrDescLclVarPair*)emitAllocAnyInstr(sizeof(instrDescLclVarPair), attr);
+        result->idSetIsLclVarPair();
+        return result;
+    }
+
+    instrDescLclVarPairCns* emitAllocInstrLclVarPairCns(emitAttr attr, cnsval_size_t cns)
+    {
+        instrDescLclVarPairCns* result =
+            (instrDescLclVarPairCns*)emitAllocAnyInstr(sizeof(instrDescLclVarPairCns), attr);
+        result->idSetIsLargeCns();
+        result->idSetIsLclVarPair();
+        result->idcCnsVal = cns;
+        return result;
+    }
+#endif // TARGET_ARM64
 
     instrDescCns* emitAllocInstrCns(emitAttr attr)
     {
@@ -2686,6 +2732,8 @@ private:
 
 #if !defined(TARGET_ARM64)
     instrDescLbl* emitNewInstrLbl();
+#else
+    instrDesc* emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns);
 #endif // !TARGET_ARM64
 
     static const BYTE emitFmtToOps[];
@@ -3249,6 +3297,36 @@ inline emitter::instrDescLbl* emitter::emitNewInstrLbl()
 {
     return emitAllocInstrLbl();
 }
+#else
+inline emitter::instrDesc* emitter::emitNewInstrLclVarPair(emitAttr attr, cnsval_ssize_t cns)
+{
+#if EMITTER_STATS
+    emitTotalIDescCnt++;
+    emitTotalIDescCnsCnt++;
+#endif // EMITTER_STATS
+
+    if (instrDesc::fitsInSmallCns(cns))
+    {
+        instrDescLclVarPair* id = emitAllocInstrLclVarPair(attr);
+        id->idSmallCns(cns);
+#if EMITTER_STATS
+        emitSmallCnsCnt++;
+        if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
+            emitSmallCns[SMALL_CNS_TSZ - 1]++;
+        else
+            emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+#endif
+        return id;
+    }
+    else
+    {
+        instrDescLclVarPairCns* id = emitAllocInstrLclVarPairCns(attr, cns);
+#if EMITTER_STATS
+        emitLargeCnsCnt++;
+#endif
+        return id;
+    }
+}
 #endif // !TARGET_ARM64
 
 inline emitter::instrDesc* emitter::emitNewInstrDsp(emitAttr attr, target_ssize_t dsp)
@@ -3329,10 +3407,22 @@ inline size_t emitter::emitGetInstrDescSize(const instrDesc* id)
     }
     else if (id->idIsLargeCns())
     {
+#ifdef TARGET_ARM64
+        if (id->idIsLclVarPair())
+        {
+            return sizeof(instrDescLclVarPairCns);
+        }
+#endif
         return sizeof(instrDescCns);
     }
     else
     {
+#ifdef TARGET_ARM64
+        if (id->idIsLclVarPair())
+        {
+            return sizeof(instrDescLclVarPair);
+        }
+#endif
         return sizeof(instrDesc);
     }
 }
@@ -3456,11 +3546,12 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 //  Arguments:
 //       id - Instruction descriptor
 //
-/* static */ emitAttr emitter::emitGetMemOpSize(instrDesc* id)
+emitAttr emitter::emitGetMemOpSize(instrDesc* id) const
 {
-    emitAttr defaultSize = id->idOpSize();
+    emitAttr    defaultSize = id->idOpSize();
+    instruction ins         = id->idIns();
 
-    switch (id->idIns())
+    switch (ins)
     {
         case INS_pextrb:
         case INS_pinsrb:
@@ -3570,9 +3661,6 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 
         case INS_cvtdq2pd:
         case INS_cvtps2pd:
-        case INS_vpmovdw:
-        case INS_vpmovqd:
-        case INS_vpmovwb:
         {
             if (defaultSize == 64)
             {
@@ -3587,6 +3675,57 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
                 assert(defaultSize == 16);
                 return EA_8BYTE;
             }
+        }
+
+        case INS_vpmovdb:
+        case INS_vpmovdw:
+        case INS_vpmovqb:
+        case INS_vpmovqd:
+        case INS_vpmovqw:
+        case INS_vpmovwb:
+        case INS_vpmovsdb:
+        case INS_vpmovsdw:
+        case INS_vpmovsqb:
+        case INS_vpmovsqd:
+        case INS_vpmovsqw:
+        case INS_vpmovswb:
+        case INS_vpmovusdb:
+        case INS_vpmovusdw:
+        case INS_vpmovusqb:
+        case INS_vpmovusqd:
+        case INS_vpmovusqw:
+        case INS_vpmovuswb:
+        {
+            insTupleType tupleType = insTupleTypeInfo(ins);
+            unsigned     memSize   = 0;
+
+            switch (tupleType)
+            {
+                case INS_TT_HALF_MEM:
+                {
+                    memSize = defaultSize / 2;
+                    break;
+                }
+
+                case INS_TT_QUARTER_MEM:
+                {
+                    memSize = defaultSize / 4;
+                    break;
+                }
+
+                case INS_TT_EIGHTH_MEM:
+                {
+                    memSize = defaultSize / 8;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            return EA_ATTR(memSize);
         }
 
         case INS_vbroadcastf128:
@@ -3613,7 +3752,11 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 
         case INS_movddup:
         {
-            if (defaultSize == 32)
+            if (defaultSize == 64)
+            {
+                return EA_64BYTE;
+            }
+            else if (defaultSize == 32)
             {
                 return EA_32BYTE;
             }

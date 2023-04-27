@@ -2404,7 +2404,7 @@ void Thread::RareEnablePreemptiveGC()
 
         }
     }
-    STRESS_LOG0(LF_SYNC, LL_INFO100000, " RareEnablePreemptiveGC: leaving.\n");
+    STRESS_LOG0(LF_SYNC, LL_INFO100000, "RareEnablePreemptiveGC: leaving.\n");
 }
 
 // Called when we are passing through a safe point in CommonTripThread or

@@ -8,7 +8,7 @@
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
     <Language>C#</Language>
-    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
@@ -126,8 +126,8 @@
       <MonoLlvmPath>$(MonoBinDir)</MonoLlvmPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(CROSSCOMPILE)' != ''">
-      <AotCompiler>$(MonoBinDir)/cross/$(OutputRid)/mono-aot-cross</AotCompiler>
-      <MonoLlvmPath>$(MonoBinDir)/cross/$(OutputRid)</MonoLlvmPath>
+      <AotCompiler>$(MonoBinDir)/cross/$(OutputRID)/mono-aot-cross</AotCompiler>
+      <MonoLlvmPath>$(MonoBinDir)/cross/$(OutputRID)</MonoLlvmPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -537,8 +537,7 @@
   <Target Name="RestorePackage">
     <PropertyGroup>
       <_ConfigurationProperties>/p:TargetOS=$(TargetOS) /p:TargetArchitecture=$(TargetArchitecture) /p:Configuration=$(Configuration) /p:CrossBuild=$(CrossBuild)</_ConfigurationProperties>
-      <DotnetRestoreCommand Condition="'$(__DistroRid)' == ''">"$(DotNetTool)" restore $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
-      <DotnetRestoreCommand Condition="'$(__DistroRid)' != ''">"$(DotNetTool)" restore -r $(__DistroRid) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
+      <DotnetRestoreCommand>"$(DotNetTool)" restore -r $(PackageRID) $(RestoreProj) $(PackageVersionArg) /p:SetTFMForRestore=true $(_ConfigurationProperties)</DotnetRestoreCommand>
     </PropertyGroup>
     <Exec Command="$(DotnetRestoreCommand)"/>
   </Target>
@@ -578,7 +577,8 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:Configuration=$(Configuration)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:LibrariesConfiguration=$(LibrariesConfiguration)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetOS=$(TargetOS)"</GroupBuildCmd>
-      <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeOS=$(RuntimeOS)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:ToolsOS=$(ToolsOS)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:PackageOS=$(PackageOS)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeFlavor=$(RuntimeFlavor)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeVariant=$(RuntimeVariant)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:CLRTestBuildAllTargets=$(CLRTestBuildAllTargets)"</GroupBuildCmd>

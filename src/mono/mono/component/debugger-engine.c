@@ -922,8 +922,8 @@ mono_de_ss_update (SingleStepReq *req, MonoJitInfo *ji, SeqPoint *sp, void *tls,
 		PRINT_DEBUG_MSG (1, "[%p] Breakpoint hit during async step-out at %s hit, continuing stepping out.\n", (gpointer)(gsize)mono_native_thread_id_get (), method->name);
 		return FALSE;
 	}
-
-	if (req->depth == STEP_DEPTH_OVER && (sp->flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK) && !(sp->flags & MONO_SEQ_POINT_FLAG_NESTED_CALL)) {
+	//if we are paused in the end of a method "}" the next step should be in the line which is calling this method
+	if (req->depth == STEP_DEPTH_OVER && (sp->flags & MONO_SEQ_POINT_FLAG_NONEMPTY_STACK) && !(sp->flags & MONO_SEQ_POINT_FLAG_NESTED_CALL) && req->start_method == method) {
 		/*
 		 * These seq points are inserted by the JIT after calls, step over needs to skip them.
 		 */

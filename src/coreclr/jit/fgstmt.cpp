@@ -524,6 +524,7 @@ inline bool OperIsControlFlow(genTreeOps oper)
     {
         case GT_JTRUE:
         case GT_JCMP:
+        case GT_JTEST:
         case GT_JCC:
         case GT_SWITCH:
         case GT_LABEL:

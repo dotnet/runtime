@@ -288,7 +288,7 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client decides to form the custom attribute blob themselves.
         /// </summary>
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             lock (SyncRoot)
             {
@@ -297,17 +297,6 @@ namespace System.Reflection.Emit
                     AssemblyDefToken,
                     _manifestModuleBuilder.GetMethodMetadataToken(con),
                     binaryAttribute);
-            }
-        }
-
-        /// <summary>
-        /// Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder.
-        /// </summary>
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            lock (SyncRoot)
-            {
-                customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyDefToken);
             }
         }
     }

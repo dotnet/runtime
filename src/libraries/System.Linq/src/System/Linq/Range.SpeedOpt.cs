@@ -17,25 +17,23 @@ namespace System.Linq
             public int[] ToArray()
             {
                 int[] array = new int[_end - _start];
-                int cur = _start;
-                for (int i = 0; i < array.Length; ++i)
-                {
-                    array[i] = cur;
-                    ++cur;
-                }
-
+                Fill(array, _start);
                 return array;
             }
 
             public List<int> ToList()
             {
                 List<int> list = new List<int>(_end - _start);
-                for (int cur = _start; cur != _end; cur++)
-                {
-                    list.Add(cur);
-                }
-
+                Fill(SetCountAndGetSpan(list, _end - _start), _start);
                 return list;
+            }
+
+            private static void Fill(Span<int> destination, int value)
+            {
+                for (int i = 0; i < destination.Length; i++, value++)
+                {
+                    destination[i] = value;
+                }
             }
 
             public int GetCount(bool onlyIfCheap) => unchecked(_end - _start);

@@ -494,6 +494,49 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonUnmappedMemberHandling EffectiveUnmappedMemberHandling { get; private set; }
 
+        private JsonObjectCreationHandling? _preferredPropertyObjectCreationHandling;
+
+        /// <summary>
+        /// Gets or sets the preferred <see cref="JsonObjectCreationHandling"/> value for properties contained in the type.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonTypeInfo"/> instance has been locked for further modification.
+        ///
+        /// -or-
+        ///
+        /// Unmapped member handling only supported for <see cref="JsonTypeInfoKind.Object"/>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Specified an invalid <see cref="JsonObjectCreationHandling"/> value.
+        /// </exception>
+        /// <remarks>
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// the value of this callback will be mapped from <see cref="JsonObjectCreationHandlingAttribute"/> annotations on types.
+        /// </remarks>
+        public JsonObjectCreationHandling? PreferredPropertyObjectCreationHandling
+        {
+            get => _preferredPropertyObjectCreationHandling;
+            set
+            {
+                VerifyMutable();
+
+                if (value is not null)
+                {
+                    if (Kind != JsonTypeInfoKind.Object)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
+                    }
+
+                    if (!JsonSerializer.IsValidCreationHandlingValue(value.Value))
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(value));
+                    }
+                }
+
+                _preferredPropertyObjectCreationHandling = value;
+            }
+        }
+
         /// <summary>
         /// Gets or sets the <see cref="IJsonTypeInfoResolver"/> from which this metadata instance originated.
         /// </summary>
@@ -598,6 +641,13 @@ namespace System.Text.Json.Serialization.Metadata
 
             PropertyInfoForTypeInfo.Configure();
 
+            if (PolymorphismOptions != null)
+            {
+                // This needs to be done before ConfigureProperties() is called
+                // JsonPropertyInfo.Configure() must have this value available in order to detect Polymoprhic + cyclic class case
+                PolymorphicTypeResolver = new PolymorphicTypeResolver(Options, PolymorphismOptions, Type, Converter.CanHaveMetadata);
+            }
+
             if (Kind == JsonTypeInfoKind.Object)
             {
                 ConfigureProperties();
@@ -622,12 +672,32 @@ namespace System.Text.Json.Serialization.Metadata
 
             DetermineIsCompatibleWithCurrentOptions();
             CanUseSerializeHandler = HasSerializeHandler && IsCompatibleWithCurrentOptions;
+        }
 
-            if (PolymorphismOptions != null)
+        /// <summary>
+        /// Gets any ancestor polymorphic types that declare
+        /// a type discriminator for the current type. Consulted
+        /// when serializing polymorphic values as objects.
+        /// </summary>
+        internal JsonTypeInfo? AncestorPolymorphicType
+        {
+            get
             {
-                PolymorphicTypeResolver = new PolymorphicTypeResolver(this);
+                Debug.Assert(IsConfigured);
+                Debug.Assert(Type != typeof(object));
+
+                if (!_isAncestorPolymorphicTypeResolved)
+                {
+                    _ancestorPolymorhicType = PolymorphicTypeResolver.FindNearestPolymorphicBaseType(this);
+                    _isAncestorPolymorphicTypeResolved = true;
+                }
+
+                return _ancestorPolymorhicType;
             }
         }
+
+        private JsonTypeInfo? _ancestorPolymorhicType;
+        private volatile bool _isAncestorPolymorphicTypeResolved;
 
         /// <summary>
         /// Determines if the transitive closure of all JsonTypeInfo metadata referenced
@@ -877,15 +947,14 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonParameterInfoValues[]? ParameterInfoValues { get; set; }
 
         // Untyped, root-level serialization methods
-        internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue, bool isInvokedByPolymorphicConverter = false);
-        internal abstract Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken, bool isInvokedByPolymorphicConverter = false);
-        internal abstract void SerializeAsObject(Stream utf8Json, object? rootValue, bool isInvokedByPolymorphicConverter = false);
+        internal abstract void SerializeAsObject(Utf8JsonWriter writer, object? rootValue);
+        internal abstract Task SerializeAsObjectAsync(Stream utf8Json, object? rootValue, CancellationToken cancellationToken);
+        internal abstract void SerializeAsObject(Stream utf8Json, object? rootValue);
 
         // Untyped, root-level deserialization methods
         internal abstract object? DeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state);
         internal abstract ValueTask<object?> DeserializeAsObjectAsync(Stream utf8Json, CancellationToken cancellationToken);
         internal abstract object? DeserializeAsObject(Stream utf8Json);
-        internal abstract IAsyncEnumerable<object?> DeserializeAsyncEnumerableAsObject(Stream utf8Json, CancellationToken cancellationToken);
 
         /// <summary>
         /// Used by the built-in resolvers to add property metadata applying conflict resolution.
@@ -1230,6 +1299,15 @@ namespace System.Text.Json.Serialization.Metadata
 #endif
         }
 
+        internal bool SupportsPolymorphicDeserialization
+        {
+            get
+            {
+                Debug.Assert(IsConfigurationStarted);
+                return PolymorphicTypeResolver?.UsesTypeDiscriminators == true;
+            }
+        }
+
         internal static bool IsValidExtensionDataProperty(Type propertyType)
         {
             return typeof(IDictionary<string, object>).IsAssignableFrom(propertyType) ||
@@ -1248,7 +1326,7 @@ namespace System.Text.Json.Serialization.Metadata
             if (type == typeof(object) && converter.CanBePolymorphic)
             {
                 // System.Object is polymorphic and will not respect Properties
-                Debug.Assert(converter is ObjectConverter);
+                Debug.Assert(converter is ObjectConverter or ObjectConverterSlim);
                 return JsonTypeInfoKind.None;
             }
 
