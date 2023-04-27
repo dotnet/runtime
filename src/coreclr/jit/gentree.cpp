@@ -10680,12 +10680,11 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         /* First print the flags associated with the node */
         switch (tree->gtOper)
         {
-            case GT_LEA:
             case GT_BLK:
+            case GT_IND:
+            case GT_STOREIND:
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
-
-            case GT_IND:
                 // We prefer printing V or U
                 if ((tree->gtFlags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) == 0)
                 {
