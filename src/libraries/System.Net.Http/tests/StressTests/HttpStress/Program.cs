@@ -190,6 +190,8 @@ namespace HttpStress
             {
                 unsafe
                 {
+                    // If the system gets overloaded, MsQuic has a tendency to drop incoming connections, see https://github.com/dotnet/runtime/issues/55979.
+                    // So in case we're running H/3 stress test, we're using the same hack as for System.Net.Quic tests, which increases the time limit for pending operations in MsQuic thread pool.
                     object msQuicApiInstance = msQuicApiType.GetProperty("Api", BindingFlags.NonPublic | BindingFlags.Static).GetGetMethod(true).Invoke(null, Array.Empty<object?>());
                     QUIC_API_TABLE* apiTable = (QUIC_API_TABLE*)(Pointer.Unbox(msQuicApiType.GetProperty("ApiTable").GetGetMethod().Invoke(msQuicApiInstance, Array.Empty<object?>())));
                     QUIC_SETTINGS settings = default(QUIC_SETTINGS);
