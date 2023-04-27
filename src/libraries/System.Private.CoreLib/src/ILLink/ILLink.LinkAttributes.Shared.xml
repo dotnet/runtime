@@ -141,6 +141,9 @@
     <type fullname="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Diagnostics.CodeAnalysis.ExperimentalAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
 
     <!-- System.Reflection -->
     <type fullname="System.Reflection.AssemblyCompanyAttribute">
