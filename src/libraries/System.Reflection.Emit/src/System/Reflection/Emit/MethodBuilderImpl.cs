@@ -59,12 +59,8 @@ namespace System.Reflection.Emit
             if (position > 0 && (_parameterTypes == null || position > _parameterTypes.Length))
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
 
-            if (position == 0 && _parameters == null)
-            {
-                _parameters = new ParameterBuilderImpl[1];
-            }
+            _parameters ??= new ParameterBuilderImpl[1];
 
-            Debug.Assert(_parameters != null);
             attributes &= ~ParameterAttributes.ReservedMask;
             ParameterBuilderImpl parameter = new ParameterBuilderImpl(this, position, attributes, strParamName);
             _parameters[position] = parameter;
