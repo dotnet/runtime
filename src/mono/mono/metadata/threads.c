@@ -1088,9 +1088,7 @@ typedef struct {
 	MonoThreadStart start_func;
 	gpointer start_func_arg;
 	gboolean force_attach;
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	gboolean returns_to_js_event_loop;
-#endif
+	gboolean external_eventloop;
 	gboolean failed;
 	MonoCoopSem registered;
 } StartInfo;
@@ -1176,9 +1174,7 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 	/* Let the thread that called Start() know we're ready */
 	mono_coop_sem_post (&start_info->registered);
 
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	gboolean returns_to_js_event_loop = start_info->returns_to_js_event_loop;
-#endif
+	gboolean external_eventloop = start_info->external_eventloop;
 
 	if (mono_atomic_dec_i32 (&start_info->ref) == 0) {
 		mono_coop_sem_destroy (&start_info->registered);
@@ -1247,13 +1243,11 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 
 	THREAD_DEBUG (g_message ("%s: (%" G_GSIZE_FORMAT ") Start wrapper terminating", __func__, mono_native_thread_id_get ()));
 
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	if (returns_to_js_event_loop) {
-		/* if the thread wants to stay alive, don't clean up after it */
-		if (emscripten_runtime_keepalive_check())
+	if (G_UNLIKELY (external_eventloop)) {
+		/* if the thread wants to stay alive in an external eventloop, don't clean up after it */
+		if (mono_thread_platform_external_eventloop_keepalive_check ())
 			return 0;
 	}
-#endif
 
 	/* Do any cleanup needed for apartment state. This
 	 * cannot be done in mono_thread_detach_internal since
@@ -1281,19 +1275,15 @@ start_wrapper (gpointer data)
 	info = mono_thread_info_attach ();
 	info->runtime_thread = TRUE;
 
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	gboolean returns_to_js_event_loop = start_info->returns_to_js_event_loop;
-#endif
+	gboolean external_eventloop = start_info->external_eventloop;
 	/* Run the actual main function of the thread */
 	res = start_wrapper_internal (start_info, (gsize*)info->stack_end);
 
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	if (returns_to_js_event_loop) {
+	if (G_UNLIKELY (external_eventloop)) {
 		/* if the thread wants to stay alive, don't clean up after it */
-		if (emscripten_runtime_keepalive_check())
+		if (mono_thread_platform_external_eventloop_keepalive_check ())
 			return 0;
 	}
-#endif
 
 	mono_thread_info_exit (res);
 
@@ -1381,9 +1371,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 	start_info->start_func_arg = start_func_arg;
 	start_info->force_attach = flags & MONO_THREAD_CREATE_FLAGS_FORCE_CREATE;
 	start_info->failed = FALSE;
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	start_info->returns_to_js_event_loop = (flags & MONO_THREAD_CREATE_FLAGS_RETURNS_TO_JS_EVENT_LOOP) != 0;
-#endif
+	start_info->external_eventloop = (flags & MONO_THREAD_CREATE_FLAGS_EXTERNAL_EVENTLOOP) != 0;
 	mono_coop_sem_init (&start_info->registered, 0);
 
 	if (flags != MONO_THREAD_CREATE_FLAGS_SMALL_STACK)
@@ -4947,7 +4935,7 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 	// HACK: threadpool threads can return to the JS event loop
 	// WISH: support this for other threads, too
 	if (internal->threadpool_thread)
-		create_flags |= MONO_THREAD_CREATE_FLAGS_RETURNS_TO_JS_EVENT_LOOP;
+		create_flags |= MONO_THREAD_CREATE_FLAGS_EXTERNAL_EVENTLOOP;
 #endif
 
 	res = create_thread (internal, internal, NULL, NULL, stack_size, create_flags, error);
