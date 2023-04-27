@@ -9118,9 +9118,12 @@ void Compiler::optRemoveRedundantZeroInits()
                     case GT_LCL_VAR:
                     case GT_LCL_FLD:
                     case GT_LCL_ADDR:
+                    case GT_STORE_LCL_VAR:
+                    case GT_STORE_LCL_FLD:
                     {
-                        unsigned  lclNum    = tree->AsLclVarCommon()->GetLclNum();
-                        unsigned* pRefCount = refCounts.LookupPointer(lclNum);
+                        GenTreeLclVarCommon* lclNode   = tree->AsLclVarCommon();
+                        unsigned             lclNum    = lclNode->GetLclNum();
+                        unsigned*            pRefCount = refCounts.LookupPointer(lclNum);
                         if (pRefCount != nullptr)
                         {
                             *pRefCount = (*pRefCount) + 1;
@@ -9137,7 +9140,6 @@ void Compiler::optRemoveRedundantZeroInits()
 
                         // We need to count the number of tracked var defs in the block
                         // so that we can update block->bbVarDef if we remove any tracked var defs.
-
                         LclVarDsc* const lclDsc = lvaGetDesc(lclNum);
                         if (lclDsc->lvTracked)
                         {
@@ -9172,32 +9174,15 @@ void Compiler::optRemoveRedundantZeroInits()
                             }
                         }
 
-                        break;
-                    }
-                    // case GT_CALL:
-                    // TODO-CQ: Need to remove redundant zero-inits for "return buffer".
-                    // assert(!"Need to handle zero inits.\n");
-                    // break;
-                    case GT_ASG:
-                    {
-                        GenTreeOp* treeOp = tree->AsOp();
-
-                        GenTreeLclVarCommon* lclVar;
-                        bool                 isEntire;
-
-                        if (!tree->DefinesLocal(this, &lclVar, &isEntire))
+                        if (!tree->OperIsLocalStore())
                         {
                             break;
                         }
 
-                        const unsigned lclNum = lclVar->GetLclNum();
-
-                        LclVarDsc* const lclDsc    = lvaGetDesc(lclNum);
-                        unsigned*        pRefCount = refCounts.LookupPointer(lclNum);
-
-                        // pRefCount can't be null because the local node on the lhs of the assignment
-                        // must have already been seen.
-                        assert(pRefCount != nullptr);
+                        // TODO-Cleanup: there is potential for cleaning this algorithm up by deleting
+                        // double lookups of various reference counts. This is complicated somewhat by
+                        // the present of LCL_ADDR (GTF_CALL_M_RETBUFFARG_LCLOPT) definitions.
+                        pRefCount = refCounts.LookupPointer(lclNum);
                         if (*pRefCount != 1)
                         {
                             break;
@@ -9227,8 +9212,9 @@ void Compiler::optRemoveRedundantZeroInits()
 
                         // The local hasn't been referenced before this assignment.
                         bool removedExplicitZeroInit = false;
+                        bool isEntire                = !tree->IsPartialLclFld(this);
 
-                        if (treeOp->gtGetOp2()->IsIntegralConst(0))
+                        if (tree->Data()->IsIntegralConst(0))
                         {
                             bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
                             bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
@@ -9282,7 +9268,7 @@ void Compiler::optRemoveRedundantZeroInits()
                                 // the prolog and this explicit initialization. Therefore, it doesn't
                                 // require zero initialization in the prolog.
                                 lclDsc->lvHasExplicitInit = 1;
-                                lclVar->gtFlags |= GTF_VAR_EXPLICIT_INIT;
+                                lclNode->gtFlags |= GTF_VAR_EXPLICIT_INIT;
                                 JITDUMP("Marking V%02u as having an explicit init\n", lclNum);
                             }
                         }
