@@ -64,7 +64,7 @@ CreateDump(const CreateDumpOptions& options)
         goto exit;
     }
     
-    int retryCount = 5;
+    int retryCount = 10;
     // Retry the write dump on ERROR_PARTIAL_COPY
     for (int i = 0; i <= retryCount; i++)
     {
