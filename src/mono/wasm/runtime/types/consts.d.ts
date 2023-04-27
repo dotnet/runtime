@@ -19,4 +19,3 @@ declare module "consts:monoDiagnosticsMock" {
 }
 
 declare function createEmscripten(module: any): Promise<void>;
-declare const earlyExports: any;

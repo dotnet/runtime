@@ -47,7 +47,6 @@ function setup(disableLegacyJsInterop) {
     #if USE_PTHREADS
     if (ENVIRONMENT_IS_PTHREAD) {
         Module.config = {};
-        earlyExports.module = Module;
         __dotnet_runtime.initializeReplacements(dotnet_replacements);
         __dotnet_runtime.configureWorkerStartup(Module);
     } else {
