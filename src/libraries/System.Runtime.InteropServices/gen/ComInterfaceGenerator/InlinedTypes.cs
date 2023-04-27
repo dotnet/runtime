@@ -53,7 +53,7 @@ namespace Microsoft.Interop
                                         GenericName(
                                             Identifier("GetInstance"),
                                             TypeArgumentList(
-                                                SeparatedList<SyntaxNode>(
+                                                SeparatedList<TypeSyntax>(
                                                     new[] { PredefinedType(Token(SyntaxKind.ObjectKeyword)) })))))
                                 .AddArgumentListArguments(
                                     Argument(
