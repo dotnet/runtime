@@ -1393,8 +1393,14 @@
   <data name="Argument_MustBeRuntimeFieldInfo" xml:space="preserve">
     <value>FieldInfo must be a runtime FieldInfo object.</value>
   </data>
+  <data name="Argument_MustBeRuntimeConstructorInfo" xml:space="preserve">
+    <value>ConstructorInfo must be a runtime ConstructorInfo object.</value>
+  </data>
   <data name="Argument_MustBeRuntimeMethodInfo" xml:space="preserve">
     <value>MethodInfo must be a runtime MethodInfo object.</value>
+  </data>
+  <data name="Argument_MustBeRuntimeMethod" xml:space="preserve">
+    <value>Method must be a runtime MethodInfo, ConstructorInfo or DynamicMethod object.</value>
   </data>
   <data name="Argument_MustBeRuntimeType" xml:space="preserve">
     <value>Type must be a runtime Type object.</value>

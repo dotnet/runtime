@@ -1,33 +1,32 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
+using System.Reflection.Emit;
 
 namespace System.Reflection
 {
-    internal partial class MethodInvoker
+    public partial class MethodInvoker
     {
-        public MethodInvoker(MethodBase method)
+        internal unsafe MethodInvoker(RuntimeMethodInfo method) : this(method, method.ArgumentTypes)
         {
-            _method = method;
+            _invocationFlags = method.ComputeAndUpdateInvocationFlags();
+            _invokeFunc_RefArgs = InterpretedInvoke;
+        }
 
-            if (LocalAppContextSwitches.ForceInterpretedInvoke && !LocalAppContextSwitches.ForceEmitInvoke)
-            {
-                // Always use the native invoke; useful for testing.
-                _strategyDetermined = true;
-            }
-            else if (LocalAppContextSwitches.ForceEmitInvoke && !LocalAppContextSwitches.ForceInterpretedInvoke)
-            {
-                // Always use emit invoke (if IsDynamicCodeSupported == true); useful for testing.
-                _invoked = true;
-            }
+        internal unsafe MethodInvoker(DynamicMethod method) : this(method, method.ArgumentTypes)
+        {
+            _invokeFunc_RefArgs = InterpretedInvoke;
+        }
+
+        internal unsafe MethodInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.ArgumentTypes)
+        {
+            _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
+            _invokeFunc_RefArgs = InterpretedInvoke;
         }
 
         private unsafe object? InterpretedInvoke(object? obj, IntPtr *args)
         {
-            Exception? exc;
-
-            object? o = ((RuntimeMethodInfo)_method).InternalInvoke(obj, args, out exc);
+            object? o = ((RuntimeMethodInfo)_method).InternalInvoke(obj, args, out Exception? exc);
 
             if (exc != null)
                 throw exc;

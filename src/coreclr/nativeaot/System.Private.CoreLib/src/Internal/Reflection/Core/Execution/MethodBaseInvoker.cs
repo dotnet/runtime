@@ -13,12 +13,12 @@ using Internal.Runtime.Augments;
 namespace Internal.Reflection.Core.Execution
 {
     //
-    // This class polymorphically implements the MethodBase.Invoke() api and its close cousins. MethodInvokers are designed to be built once and cached
+    // This class polymorphically implements the MethodBase.Invoke() api and its close cousins. MethodBaseInvokers are designed to be built once and cached
     // for maximum Invoke() throughput.
     //
-    public abstract class MethodInvoker
+    public abstract class MethodBaseInvoker
     {
-        protected MethodInvoker() { }
+        protected MethodBaseInvoker() { }
 
         [DebuggerGuidedStepThrough]
         public object? Invoke(object thisObject, object?[] arguments, Binder? binder, BindingFlags invokeAttr, CultureInfo? cultureInfo)
@@ -26,7 +26,7 @@ namespace Internal.Reflection.Core.Execution
             BinderBundle binderBundle = binder.ToBinderBundle(invokeAttr, cultureInfo);
             bool wrapInTargetInvocationException = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             object? result = Invoke(thisObject, arguments, binderBundle, wrapInTargetInvocationException);
-            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
 
@@ -42,7 +42,11 @@ namespace Internal.Reflection.Core.Execution
 
         protected abstract object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException);
         protected abstract object CreateInstance(object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException);
+        protected internal abstract object CreateInstance(Span<object?> arguments);
+        protected internal abstract object CreateInstanceWithFewArgs(Span<object?> arguments);
         public abstract Delegate CreateDelegate(RuntimeTypeHandle delegateType, object target, bool isStatic, bool isVirtual, bool isOpen);
+        protected internal abstract object? Invoke(object? thisObject, Span<object?> arguments);
+        protected internal abstract object? InvokeDirectWithFewArgs(object? thisObject, Span<object?> arguments);
 
         // This property is used to retrieve the target method pointer. It is used by the RuntimeMethodHandle.GetFunctionPointer API
         public abstract IntPtr LdFtnResult { get; }

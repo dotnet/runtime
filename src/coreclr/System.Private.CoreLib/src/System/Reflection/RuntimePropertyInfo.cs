@@ -372,7 +372,7 @@ namespace System.Reflection
 
             if (index is null)
             {
-                m.InvokeOneParameter(obj, invokeAttr, binder, value, culture);
+                m.InvokePropertySetter(obj, invokeAttr, binder, value, culture);
             }
             else
             {

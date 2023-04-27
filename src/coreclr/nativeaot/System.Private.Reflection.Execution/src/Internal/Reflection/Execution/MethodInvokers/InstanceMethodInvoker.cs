@@ -2,16 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using global::System;
-using global::System.Threading;
 using global::System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using global::System.Diagnostics;
-using global::System.Collections.Generic;
 
 using global::Internal.Runtime.Augments;
-using global::Internal.Reflection.Execution;
-using global::Internal.Reflection.Core.Execution;
 using global::Internal.Runtime.CompilerServices;
 
 namespace Internal.Reflection.Execution.MethodInvokers
@@ -44,7 +40,7 @@ namespace Internal.Reflection.Execution.MethodInvokers
             throw new TargetException();
         }
 
-        [DebuggerGuidedStepThroughAttribute]
+        [DebuggerGuidedStepThrough]
         protected sealed override object? Invoke(object? thisObject, object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
         {
             if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
@@ -58,7 +54,39 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 arguments,
                 binderBundle,
                 wrapInTargetInvocationException);
-            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
+        }
+
+        [DebuggerGuidedStepThrough]
+        protected sealed override object? Invoke(object? thisObject, Span<object?> arguments)
+        {
+            if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
+            {
+                ValidateThis(thisObject, _declaringTypeHandle);
+            }
+
+            object? result = MethodInvokeInfo.Invoke(
+                thisObject,
+                MethodInvokeInfo.LdFtnResult,
+                arguments);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return result;
+        }
+
+        [DebuggerGuidedStepThrough]
+        protected sealed override object? InvokeDirectWithFewArgs(object? thisObject, Span<object?> arguments)
+        {
+            if (MethodInvokeInfo.IsSupportedSignature) // Workaround to match expected argument validation order
+            {
+                ValidateThis(thisObject, _declaringTypeHandle);
+            }
+
+            object? result = MethodInvokeInfo.InvokeDirectWithFewArgs(
+                thisObject,
+                MethodInvokeInfo.LdFtnResult,
+                arguments);
+            DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
         }
 
@@ -73,6 +101,20 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 binderBundle,
                 wrapInTargetInvocationException);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
+            return thisObject;
+        }
+
+        protected sealed override object CreateInstance(Span<object?> arguments)
+        {
+            object thisObject = RawCalliHelper.Call(_allocatorMethod, _declaringTypeHandle.Value);
+            Invoke(thisObject, arguments);
+            return thisObject;
+        }
+
+        protected sealed override object CreateInstanceWithFewArgs(Span<object?> arguments)
+        {
+            object thisObject = RawCalliHelper.Call(_allocatorMethod, _declaringTypeHandle.Value);
+            InvokeDirectWithFewArgs(thisObject, arguments);
             return thisObject;
         }
 

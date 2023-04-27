@@ -120,5 +120,9 @@ namespace System
 
         internal bool IsActualEnum
             => TryGetEEType(out EETypePtr eeType) && eeType.IsEnum;
+
+#pragma warning disable IDE0060
+        internal static object AllocateValueType(RuntimeType type, object? value) => throw new NotSupportedException();
+#pragma warning restore IDE0060
     }
 }

@@ -1761,21 +1761,13 @@ namespace System
                 throw new MissingMethodException(SR.Format(SR.Acc_CreateAbstEx, this));
             }
 
-            unsafe
-            {
-                return ctor.Invoker.InlinedInvoke(
-                    obj: null,
-                    args: default,
-                    wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions);
-            }
+            return ctor.Invoker.InvokeWithNoArgs(obj: null, wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions);
         }
 
         // FIXME Reuse with coreclr
         private CheckValueStatus TryChangeTypeSpecial(
-            ref object value,
-            out bool isValueType)
+            ref object value)
         {
-            isValueType = true;
             if (IsEnum)
             {
                 Type? type = Enum.GetUnderlyingType(this);
@@ -1814,7 +1806,6 @@ namespace System
                 }
             }
 
-            isValueType = false;
             return CheckValueStatus.ArgumentException;
         }
 
@@ -2080,10 +2071,7 @@ namespace System
             if (ctor is null || !ctor.IsPublic)
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, gt!));
 
-            unsafe
-            {
-                return ctor.Invoker.InlinedInvoke(obj: null, args: default, BindingFlags.Default)!;
-            }
+            return ctor.Invoker.InvokeWithNoArgs(obj: null, invokeAttr: default)!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

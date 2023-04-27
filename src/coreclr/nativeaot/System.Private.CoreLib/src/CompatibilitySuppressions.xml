@@ -686,7 +686,7 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:Internal.Reflection.Core.Execution.MethodInvoker</Target>
+    <Target>T:Internal.Reflection.Core.Execution.MethodBaseInvoker</Target>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>

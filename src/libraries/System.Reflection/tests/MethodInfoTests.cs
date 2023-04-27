@@ -717,7 +717,7 @@ namespace System.Reflection.Tests
             Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { YesNo.No }));
             Assert.Equal(YesNo.Yes, method.Invoke(null, new object?[] { YesNo.Yes }));
             Assert.Equal(YesNo.No, method.Invoke(null, new object?[] { Type.Missing }));
-        } 
+        }
 
         [Fact]
         public static void InvokeNullableEnumParameterDefaultYes()
@@ -1356,4 +1356,3 @@ namespace System.Reflection.Tests
     }
 #pragma warning restore 0414
 }
-

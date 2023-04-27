@@ -152,7 +152,7 @@ namespace Internal.Reflection.Execution
             return;
         }
 
-        public override IntPtr GetDynamicInvokeThunk(MethodInvoker invoker)
+        public override IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker)
         {
             return ((MethodInvokerWithMethodInvokeInfo)invoker).MethodInvokeInfo.InvokeThunk
                 ;

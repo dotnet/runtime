@@ -178,6 +178,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Nullable.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeFieldHandle.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\RuntimeImports.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeMethodHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeType.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeTypeHandle.cs" />
@@ -205,6 +206,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBaseInvoker.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvoker.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\ModifiedType.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
