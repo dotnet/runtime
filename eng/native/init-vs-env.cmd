@@ -8,7 +8,7 @@ if /i "%~1" == "x86"   (set __VCBuildArch=x86)
 if /i "%~1" == "x64"   (set __VCBuildArch=x86_amd64)
 if /i "%~1" == "arm"   (set __VCBuildArch=x86_arm)
 if /i "%~1" == "arm64" (set __VCBuildArch=x86_arm64)
-if /i "%~1" == "wasm"  (set __VCBuildArch=x86_amd64)
+if /i "%~1" == "wasm" (if /i "%PROCESSOR_ARCHITECTURE%" == "ARM64" (set __VCBuildArch=x86_arm64) else (set __VCBuildArch=x86_amd64))
 
 :: Default to highest Visual Studio version available that has Visual C++ tools.
 ::

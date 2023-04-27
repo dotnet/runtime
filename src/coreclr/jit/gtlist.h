@@ -231,8 +231,10 @@ GTNODE(TEST             , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR
 // The XARCH BT instruction. Like CMP, this sets the condition flags (CF to be precise) and does not produce a value.
 GTNODE(BT               , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR))
 #endif
-// Makes a comparison and jump if the condition specified.  Does not set flags.
-GTNODE(JCMP             , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+// Makes a comparison and jumps if the condition specified by gtCondition is true. Does not set flags.
+GTNODE(JCMP             , GenTreeOpCC        ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+// Do a bit test and jump if set/not set.
+GTNODE(JTEST            , GenTreeOpCC        ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and branch if the condition specified by GenTreeCC::gtCondition is true.
 GTNODE(JCC              , GenTreeCC          ,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and produces 1 if the condition specified by GenTreeCC::gtCondition is true and 0 otherwise.

@@ -62,8 +62,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <ItemGroup>
       <NetCoreAppNativeLibrary Include="System.Native" />
-      <!-- FIXME: The library is currently not available for iOS-like platforms -->
-      <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true' and '$(_IsiOSLikePlatform)' != 'true'" />
+      <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true'" />
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
       <NetCoreAppNativeLibrary Include="System.Net.Security.Native" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(_IsApplePlatform)' == 'true'" />

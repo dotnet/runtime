@@ -634,6 +634,8 @@ METHOD(MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh)
 // Arm.Dp
 METHOD(DotProductBySelectedQuadruplet)
 // Wasm
+METHOD(AllTrue)
+METHOD(AnyTrue)
 METHOD(AverageRounded)
 METHOD(Bitmask)
 METHOD(ConvertNarrowingSignedSaturate)

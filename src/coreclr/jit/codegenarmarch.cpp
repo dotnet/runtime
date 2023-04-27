@@ -369,7 +369,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_JCMP:
-            genCodeForJumpCompare(treeNode->AsOp());
+        case GT_JTEST:
+            genCodeForJumpCompare(treeNode->AsOpCC());
             break;
 
         case GT_CCMP:

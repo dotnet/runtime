@@ -3869,7 +3869,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
     if (varTypeIsIntegral(fieldType) || varTypeIsFloating(fieldType) || (fieldType == TYP_REF))
     {
         assert(bufferSize >= genTypeSize(fieldType));
-        if (info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, genTypeSize(fieldType)))
+        if (info.compCompHnd->getStaticFieldContent(field, buffer, genTypeSize(fieldType)))
         {
             GenTree* cnsValue = impImportCnsTreeFromBuffer(buffer, fieldType);
             if (cnsValue != nullptr)
@@ -3899,7 +3899,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
             }
 
             uint8_t buffer[MaxStructSize] = {0};
-            if (info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, totalSize))
+            if (info.compCompHnd->getStaticFieldContent(field, buffer, totalSize))
             {
 #ifdef FEATURE_SIMD
                 // First, let's check whether field is a SIMD vector and import it as GT_CNS_VEC
@@ -3949,7 +3949,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                 return gtNewLclvNode(structTempNum, realType);
             }
 
-            JITDUMP("getReadonlyStaticFieldValue returned false - bail out.");
+            JITDUMP("getStaticFieldContent returned false - bail out.");
             return nullptr;
         }
 
@@ -3980,7 +3980,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         const int bufferSize         = TARGET_POINTER_SIZE;
         uint8_t   buffer[bufferSize] = {0};
 
-        if ((totalSize > bufferSize) || !info.compCompHnd->getReadonlyStaticFieldValue(field, buffer, totalSize))
+        if ((totalSize > bufferSize) || !info.compCompHnd->getStaticFieldContent(field, buffer, totalSize))
         {
             return nullptr;
         }
@@ -4167,10 +4167,11 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         outerFldSeq = nullptr;
     }
 
-    bool     isHoistable               = false;
-    bool     isStaticReadOnlyInitedRef = false;
-    unsigned typeIndex                 = 0;
-    GenTree* op1;
+    bool         isHoistable               = false;
+    bool         isStaticReadOnlyInitedRef = false;
+    GenTreeFlags indirFlags                = GTF_EMPTY;
+    unsigned     typeIndex                 = 0;
+    GenTree*     op1;
     switch (pFieldInfo->fieldAccessor)
     {
         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
@@ -4348,7 +4349,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
             if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
             {
-                op1->gtFlags |= GTF_ICON_INITCLASS;
+                indirFlags |= GTF_IND_INITCLASS;
             }
             break;
         }
@@ -4356,8 +4357,9 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
     if (isBoxedStatic)
     {
-        op1 = gtNewIndir(TYP_REF, op1, GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-        op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
+        op1        = gtNewIndir(TYP_REF, op1, GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL | indirFlags);
+        indirFlags = GTF_EMPTY;
+        op1        = gtNewOperNode(GT_ADD, TYP_BYREF, op1, gtNewIconNode(TARGET_POINTER_SIZE, outerFldSeq));
     }
 
     if (!(access & CORINFO_ACCESS_ADDRESS))
@@ -4366,7 +4368,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         lclTyp = TypeHandleToVarType(pFieldInfo->fieldType, pFieldInfo->structType, &layout);
 
         // TODO-CQ: mark the indirections non-faulting.
-        op1 = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, op1) : gtNewIndir(lclTyp, op1);
+        op1 = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, op1, indirFlags) : gtNewIndir(lclTyp, op1, indirFlags);
 
         if (isStaticReadOnlyInitedRef)
         {

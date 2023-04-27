@@ -422,6 +422,7 @@ class CEEInfo : public ICorJitInfo
 public:
 #include "icorjitinfoimpl_generated.h"
     uint32_t getClassAttribsInternal (CORINFO_CLASS_HANDLE cls);
+    bool isObjectImmutableInteral(OBJECTREF obj);
 
     static unsigned getClassAlignmentRequirementStatic(TypeHandle clsHnd);
 

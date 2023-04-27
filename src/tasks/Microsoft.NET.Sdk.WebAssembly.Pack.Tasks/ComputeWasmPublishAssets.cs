@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Microsoft.Build.Framework;
@@ -197,9 +198,11 @@ public class ComputeWasmPublishAssets : Task
                 continue;
             }
 
-            if (isDotNetJs)
+            if (isDotNetJs || isDotNetWorkerJs)
             {
-                var aotDotNetJs = WasmAotAssets.SingleOrDefault(a => $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}" == "dotnet.js");
+                var baseName = isDotNetWorkerJs ? "dotnet.worker" : "dotnet";
+
+                var aotDotNetJs = WasmAotAssets.SingleOrDefault(a => $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}" == $"{baseName}.js");
                 ITaskItem newDotNetJs = null;
                 if (aotDotNetJs != null)
                 {
@@ -207,8 +210,8 @@ public class ComputeWasmPublishAssets : Task
                     newDotNetJs.SetMetadata("OriginalItemSpec", aotDotNetJs.ItemSpec);
 
                     string relativePath = FingerprintDotNetJs
-                        ? $"_framework/{$"dotnet.{DotNetJsVersion}.{FileHasher.GetFileHash(aotDotNetJs.ItemSpec)}.js"}"
-                        : "_framework/dotnet.js";
+                        ? $"_framework/{$"{baseName}.{DotNetJsVersion}.{FileHasher.GetFileHash(aotDotNetJs.ItemSpec)}.js"}"
+                        : $"_framework/{baseName}.js";
 
                     newDotNetJs.SetMetadata("RelativePath", relativePath);
 
@@ -223,36 +226,7 @@ public class ComputeWasmPublishAssets : Task
 
                 ApplyPublishProperties(newDotNetJs);
                 nativeStaticWebAssets.Add(newDotNetJs);
-                if (resolvedNativeAssetToPublish.TryGetValue("dotnet.js", out var resolved))
-                {
-                    filesToRemove.Add(resolved);
-                }
-                continue;
-            }
-
-            if (isDotNetWorkerJs)
-            {
-                var aotDotNetWorkerJs = WasmAotAssets.SingleOrDefault(a => $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}" == "dotnet.worker.js");
-                ITaskItem newDotNetWorkerJs = null;
-                if (aotDotNetWorkerJs != null)
-                {
-                    newDotNetWorkerJs = new TaskItem(Path.GetFullPath(aotDotNetWorkerJs.ItemSpec), asset.CloneCustomMetadata());
-                    newDotNetWorkerJs.SetMetadata("OriginalItemSpec", aotDotNetWorkerJs.ItemSpec);
-                    newDotNetWorkerJs.SetMetadata("RelativePath", "_framework/dotnet.worker.js");
-
-                    updateMap.Add(asset.ItemSpec, newDotNetWorkerJs);
-                    Log.LogMessage(MessageImportance.High, "Replacing asset '{0}' with AoT version '{1}'", asset.ItemSpec, newDotNetWorkerJs.ItemSpec);
-                }
-                else
-                {
-                    newDotNetWorkerJs = new TaskItem(asset);
-                    newDotNetWorkerJs.SetMetadata("RelativePath", "_framework/dotnet.worker.js");
-                    Log.LogMessage(MessageImportance.High, "Promoting asset '{0}' to Publish asset.", asset.ItemSpec);
-                }
-
-                ApplyPublishProperties(newDotNetWorkerJs);
-                nativeStaticWebAssets.Add(newDotNetWorkerJs);
-                if (resolvedNativeAssetToPublish.TryGetValue("dotnet.worker.js", out var resolved))
+                if (resolvedNativeAssetToPublish.TryGetValue($"{baseName}.js", out var resolved))
                 {
                     filesToRemove.Add(resolved);
                 }
@@ -300,7 +274,11 @@ public class ComputeWasmPublishAssets : Task
             return fileName.StartsWith("dotnet.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal) && !fileName.Contains("worker");
         }
 
-        static bool IsDotNetWorkerJs(string key) => string.Equals("dotnet.worker.js", Path.GetFileName(key), StringComparison.Ordinal);
+        static bool IsDotNetWorkerJs(string key)
+        {
+            var fileName = Path.GetFileName(key);
+            return fileName.StartsWith("dotnet.worker.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal);
+        }
 
         static bool IsDotNetWasm(string key) => string.Equals("dotnet.wasm", Path.GetFileName(key), StringComparison.Ordinal);
     }
@@ -395,6 +373,9 @@ public class ComputeWasmPublishAssets : Task
                 assetsToUpdate.Add(satelliteAssembly.ItemSpec, satelliteAssembly);
                 var culture = satelliteAssembly.GetMetadata("AssetTraitValue");
                 var fileName = Path.GetFileName(satelliteAssembly.GetMetadata("RelativePath"));
+                if (IsWebCilEnabled)
+                    fileName = Path.ChangeExtension(fileName, ".dll");
+
                 if (satelliteAssemblies.TryGetValue((culture, fileName), out var existing))
                 {
                     filesToRemove.Add(existing);
