@@ -141,7 +141,7 @@ namespace ILCompiler
 
                 try
                 {
-                    if (!CorInfoImpl.ShouldSkipCompilation(method))
+                    if (!CorInfoImpl.ShouldSkipCompilation(null, method))
                     {
                         ReadyToRunLibraryRootProvider.CheckCanGenerateMethod(methodToRoot);
                         _rootingServiceProvider.AddCompilationRoot(methodToRoot, rootMinimalDependencies: false, reason: "Linker XML descriptor");

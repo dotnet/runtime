@@ -92,6 +92,7 @@ namespace Thunkerator
         private Dictionary<string, List<string>> _architectureVectorInstructionSetJitNames = new Dictionary<string, List<string>>();
         private HashSet<string> _64BitArchitectures = new HashSet<string>();
         private Dictionary<string, string> _64BitVariantArchitectureJitNameSuffix = new Dictionary<string, string>();
+        private Dictionary<string, string> _64BitVariantArchitectureManagedNameSuffix = new Dictionary<string, string>();
 
         // This represents the number of flags fields we currently track
         private const int FlagsFieldCount = 1;
@@ -126,6 +127,11 @@ namespace Thunkerator
             return _64BitVariantArchitectureJitNameSuffix[arch];
         }
 
+        private string ArchToManagedInstructionSetSuffixArch(string arch)
+        {
+            return _64BitVariantArchitectureManagedNameSuffix[arch];
+        }
+
         public bool ParseInput(TextReader tr)
         {
             int currentLineIndex = 1;
@@ -151,7 +157,7 @@ namespace Thunkerator
                     switch (command[0])
                     {
                         case "definearch":
-                            if (command.Length != 4)
+                            if (command.Length != 5)
                                 throw new Exception($"Incorrect number of args for definearch {command.Length}");
                             ArchitectureEncountered(command[1]);
                             if (command[2] == "64Bit")
@@ -163,6 +169,7 @@ namespace Thunkerator
                                 throw new Exception("Architecture must be 32Bit or 64Bit");
                             }
                             _64BitVariantArchitectureJitNameSuffix[command[1]] = command[3];
+                            _64BitVariantArchitectureManagedNameSuffix[command[1]] = command[4];
                             break;
                         case "instructionset":
                             if (command.Length != 7)
@@ -767,6 +774,119 @@ namespace Internal.JitInterface
                 tr.WriteLine("                    break;");
             }
             tr.Write(@"            }
+        }
+    }
+    public static class InstructionSetParser
+    {
+        public static InstructionSet LookupPlatformIntrinsicInstructionSet(TargetArchitecture targetArch, TypeDesc intrinsicType)
+        {
+            MetadataType metadataType = intrinsicType.GetTypeDefinition() as MetadataType;
+            if (metadataType == null)
+                return InstructionSet.ILLEGAL;
+
+            string namespaceName;
+            string typeName = metadataType.Name;
+            string nestedTypeName = null;
+            if (metadataType.ContainingType != null)
+            {
+                var enclosingType = (MetadataType)metadataType.ContainingType;
+                namespaceName = enclosingType.Namespace;
+                nestedTypeName = metadataType.Name;
+                typeName = enclosingType.Name;
+            }
+            else
+            {
+                namespaceName = metadataType.Namespace;
+            }
+
+            string platformIntrinsicNamespace;
+
+            switch (targetArch)
+            {
+                case TargetArchitecture.ARM64:
+                    platformIntrinsicNamespace = ""System.Runtime.Intrinsics.Arm"";
+                    break;
+
+                case TargetArchitecture.X64:
+                case TargetArchitecture.X86:
+                    platformIntrinsicNamespace = ""System.Runtime.Intrinsics.X86"";
+                    break;
+
+                default:
+                    return InstructionSet.ILLEGAL;
+            }
+
+            if (namespaceName != platformIntrinsicNamespace)
+                return InstructionSet.ILLEGAL;
+
+            switch (targetArch)
+            {
+");
+            foreach (string architecture in _architectures)
+            {
+                tr.Write($@"
+                case TargetArchitecture.{architecture}:
+                switch (typeName)
+                {{
+");
+                foreach (var instructionSet in _instructionSets)
+                {
+                    if (instructionSet.Architecture != architecture) continue;
+                    // VL instructionSets are handled as part of their master instruction set.
+                    if (instructionSet.ManagedName.EndsWith("_VL"))
+                        continue;
+
+                    // Instruction sets without a managed name are not handled here.
+                    if (string.IsNullOrEmpty(instructionSet.ManagedName))
+                        continue;
+
+                    InstructionSetInfo vlInstructionSet = null;
+                    foreach (var potentialVLinstructionSet in _instructionSets)
+                    {
+                        if (instructionSet.Architecture != architecture) continue;
+                        string managedName = potentialVLinstructionSet.ManagedName;
+                        if (managedName.EndsWith("_VL") && instructionSet.ManagedName == managedName.Substring(0, managedName.Length - 3))
+                        {
+                            vlInstructionSet = potentialVLinstructionSet; break;
+                        }
+                    }
+
+                    string hasSixtyFourBitInstructionSet = null;
+                    if (_64bitVariants[architecture].Contains(instructionSet.JitName) && _64BitArchitectures.Contains(architecture))
+                    {
+                        hasSixtyFourBitInstructionSet = ArchToManagedInstructionSetSuffixArch(architecture);
+                    }
+
+                    tr.Write(@$"
+                    case ""{instructionSet.ManagedName}"":");
+
+                    if (hasSixtyFourBitInstructionSet != null)
+                    {
+                        tr.Write($@"
+                        if (nestedTypeName == ""{hasSixtyFourBitInstructionSet}"")
+                        {{ return InstructionSet.{architecture}_{instructionSet.JitName}_{ArchToInstructionSetSuffixArch(architecture)}; }}
+                        else");
+                    }
+                    if (vlInstructionSet != null)
+                    {
+                        tr.Write($@"
+                        if (nestedTypeName == ""VL"")
+                        {{ return InstructionSet.{architecture}_{vlInstructionSet.JitName}; }}
+                        else");
+                    }
+                    tr.Write($@"
+                        {{ return InstructionSet.{architecture}_{instructionSet.JitName}; }}
+");
+                }
+                tr.Write($@"
+                }}
+                break;
+");
+            }
+
+            tr.Write(@"
+            }
+            return InstructionSet.ILLEGAL;
         }
     }
 }

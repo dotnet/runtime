@@ -102,7 +102,7 @@ namespace ILCompiler
 
                 try
                 {
-                    if (!CorInfoImpl.ShouldSkipCompilation(method))
+                    if (!CorInfoImpl.ShouldSkipCompilation(null, method))
                     {
                         ReadyToRunLibraryRootProvider.CheckCanGenerateMethod(methodToRoot);
                         rootProvider.AddCompilationRoot(methodToRoot, rootMinimalDependencies: false, reason: reason);

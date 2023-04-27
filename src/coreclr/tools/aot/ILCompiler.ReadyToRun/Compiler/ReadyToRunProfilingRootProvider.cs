@@ -61,7 +61,7 @@ namespace ILCompiler
                     if (containsSignatureVariables)
                         continue;
 
-                    if (!CorInfoImpl.ShouldSkipCompilation(method))
+                    if (!CorInfoImpl.ShouldSkipCompilation(null, method))
                     {
                         ReadyToRunLibraryRootProvider.CheckCanGenerateMethod(method);
                         rootProvider.AddCompilationRoot(method, rootMinimalDependencies: true, reason: "Profile triggered method");
