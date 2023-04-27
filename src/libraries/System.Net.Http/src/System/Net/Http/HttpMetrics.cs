@@ -18,12 +18,12 @@ namespace System.Net.Http
 
             _currentRequests = _meter.CreateUpDownCounter<long>(
                 "current-requests",
-                description: "The duration of outbound HTTP requests.");
+                description: "Number of outbound HTTP requests that are currently active on the client.");
 
             _requestsDuration = _meter.CreateHistogram<double>(
                 "request-duration",
                 unit: "s",
-                description: "Number of outbound HTTP requests that are currently active on the client.");
+                description: "The duration of outbound HTTP requests.");
         }
 
         public void RequestStart(HttpRequestMessage request)
