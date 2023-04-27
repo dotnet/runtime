@@ -113,6 +113,9 @@ namespace LibraryImportGenerator.UnitTests
             // Abstract SafeHandle type by reference
             yield return new object[] { ID(), CodeSnippets.BasicParameterWithByRefModifier("ref", "System.Runtime.InteropServices.SafeHandle"), 1, 0 };
 
+            // SafeHandle array
+            yield return new object[] { ID(), CodeSnippets.MarshalAsArrayParametersAndModifiers("Microsoft.Win32.SafeHandles.SafeFileHandle"), 5, 0 };
+
             // Collection with constant and element size parameter
             yield return new object[] { ID(), CodeSnippets.MarshalUsingCollectionWithConstantAndElementCount, 2, 0 };
 
