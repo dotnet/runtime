@@ -6444,7 +6444,154 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 // Therefore the codegen of GT_JMP is to ensure that the callee arguments are correctly setup.
 void CodeGen::genJmpMethod(GenTree* jmp)
 {
-    NYI_RISCV64("genJmpMethod-----unimplemented on RISCV64 yet----");
+    assert(jmp->OperGet() == GT_JMP);
+    assert(compiler->compJmpOpUsed);
+
+    // If no arguments, nothing to do
+    if (compiler->info.compArgsCount == 0)
+    {
+        return;
+    }
+
+    // Make sure register arguments are in their initial registers
+    // and stack arguments are put back as well.
+    unsigned   varNum;
+    LclVarDsc* varDsc;
+
+    // First move any en-registered stack arguments back to the stack.
+    // At the same time any reg arg not in correct reg is moved back to its stack location.
+    //
+    // We are not strictly required to spill reg args that are not in the desired reg for a jmp call
+    // But that would require us to deal with circularity while moving values around.  Spilling
+    // to stack makes the implementation simple, which is not a bad trade off given Jmp calls
+    // are not frequent.
+    for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
+    {
+        varDsc = compiler->lvaGetDesc(varNum);
+
+        if (varDsc->lvPromoted)
+        {
+            noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
+
+            unsigned fieldVarNum = varDsc->lvFieldLclStart;
+            varDsc               = compiler->lvaGetDesc(fieldVarNum);
+        }
+        noway_assert(varDsc->lvIsParam);
+
+        if (varDsc->lvIsRegArg && (varDsc->GetRegNum() != REG_STK))
+        {
+            // Skip reg args which are already in its right register for jmp call.
+            // If not, we will spill such args to their stack locations.
+            //
+            // If we need to generate a tail call profiler hook, then spill all
+            // arg regs to free them up for the callback.
+            if (!compiler->compIsProfilerHookNeeded() && (varDsc->GetRegNum() == varDsc->GetArgReg()))
+                continue;
+        }
+        else if (varDsc->GetRegNum() == REG_STK)
+        {
+            // Skip args which are currently living in stack.
+            continue;
+        }
+
+        // If we came here it means either a reg argument not in the right register or
+        // a stack argument currently living in a register.  In either case the following
+        // assert should hold.
+        assert(varDsc->GetRegNum() != REG_STK);
+        assert(varDsc->IsEnregisterableLcl());
+        var_types storeType = varDsc->GetStackSlotHomeType();
+        emitAttr  storeSize = emitActualTypeSize(storeType);
+
+        GetEmitter()->emitIns_S_R(ins_Store(storeType), storeSize, varDsc->GetRegNum(), varNum, 0);
+
+        // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
+        // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be expecting it.
+        // Therefore manually update life of varDsc->GetRegNum().
+        regMaskTP tempMask = genRegMask(varDsc->GetRegNum());
+        regSet.RemoveMaskVars(tempMask);
+        gcInfo.gcMarkRegSetNpt(tempMask);
+        if (compiler->lvaIsGCTracked(varDsc))
+        {
+            VarSetOps::AddElemD(compiler, gcInfo.gcVarPtrSetCur, varNum);
+        }
+    }
+
+#ifdef PROFILING_SUPPORTED
+    // At this point all arg regs are free.
+    // Emit tail call profiler callback.
+    genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_TAILCALL);
+#endif
+
+    // Next move any un-enregistered register arguments back to their register.
+    for (varNum = 0; varNum < compiler->info.compArgsCount; varNum++)
+    {
+        varDsc = compiler->lvaGetDesc(varNum);
+        if (varDsc->lvPromoted)
+        {
+            noway_assert(varDsc->lvFieldCnt == 1); // We only handle one field here
+
+            unsigned fieldVarNum = varDsc->lvFieldLclStart;
+            varDsc               = compiler->lvaGetDesc(fieldVarNum);
+        }
+        noway_assert(varDsc->lvIsParam);
+
+        // Skip if arg not passed in a register.
+        if (!varDsc->lvIsRegArg)
+            continue;
+
+        // Register argument
+        noway_assert(isRegParamType(genActualType(varDsc->TypeGet())));
+
+        // Is register argument already in the right register?
+        // If not load it from its stack location.
+        regNumber argReg     = varDsc->GetArgReg(); // incoming arg register
+        regNumber argRegNext = REG_NA;
+
+        if (varDsc->GetRegNum() != argReg)
+        {
+            var_types loadType = TYP_UNDEF;
+
+            if (varTypeIsStruct(varDsc))
+            {
+                // Must be <= 16 bytes or else it wouldn't be passed in registers, except for HFA,
+                // which can be bigger (and is handled above).
+                noway_assert(EA_SIZE_IN_BYTES(varDsc->lvSize()) <= 16);
+                loadType = varDsc->GetLayout()->GetGCPtrType(0);
+            }
+            else
+            {
+                loadType = compiler->mangleVarArgsType(genActualType(varDsc->TypeGet()));
+            }
+            emitAttr loadSize = emitActualTypeSize(loadType);
+            GetEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argReg, varNum, 0);
+
+            // Update argReg life and GC Info to indicate varDsc stack slot is dead and argReg is going live.
+            // Note that we cannot modify varDsc->GetRegNum() here because another basic block may not be
+            // expecting it. Therefore manually update life of argReg.  Note that GT_JMP marks the end of
+            // the basic block and after which reg life and gc info will be recomputed for the new block
+            // in genCodeForBBList().
+            regSet.AddMaskVars(genRegMask(argReg));
+            gcInfo.gcMarkRegPtrVal(argReg, loadType);
+
+            if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
+            {
+                // Restore the second register.
+                argRegNext = genRegArgNext(argReg);
+
+                loadType = varDsc->GetLayout()->GetGCPtrType(1);
+                loadSize = emitActualTypeSize(loadType);
+                GetEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argRegNext, varNum, TARGET_POINTER_SIZE);
+
+                regSet.AddMaskVars(genRegMask(argRegNext));
+                gcInfo.gcMarkRegPtrVal(argRegNext, loadType);
+            }
+
+            if (compiler->lvaIsGCTracked(varDsc))
+            {
+                VarSetOps::RemoveElemD(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex);
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------
