@@ -14,9 +14,9 @@ export let Module: EmscriptenModule & DotnetModule & EmscriptenModuleInternal;
 export let INTERNAL: any;
 
 // these are imported and re-exported from emscripten internals
-export let ENVIRONMENT_IS_NODE: boolean;
+export let ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export let ENVIRONMENT_IS_SHELL: boolean;
-export let ENVIRONMENT_IS_WEB: boolean;
+export let ENVIRONMENT_IS_WEB = typeof window == "object";
 export let ENVIRONMENT_IS_WORKER: boolean;
 export let ENVIRONMENT_IS_PTHREAD: boolean;
 export let exportedRuntimeAPI: RuntimeAPI = null as any;
