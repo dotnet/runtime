@@ -703,6 +703,208 @@ public:
     }
 };
 
+class StructSegments
+{
+public:
+    struct Interval
+    {
+        unsigned Start = 0;
+        unsigned End = 0;
+
+        Interval()
+        {
+        }
+
+        Interval(unsigned start, unsigned end)
+            : Start(start), End(end)
+        {
+        }
+
+        bool IntersectsInclusive(const Interval& other) const
+        {
+            if (End < other.Start)
+            {
+                return false;
+            }
+
+            if (other.End < Start)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        bool Contains(const Interval& other) const
+        {
+            return other.Start >= Start && other.End <= End;
+        }
+
+        void Merge(const Interval& other)
+        {
+            Start = min(Start, other.Start);
+            End = max(End, other.End);
+        }
+    };
+
+private:
+    jitstd::vector<Interval> m_intervals;
+
+public:
+    StructSegments(CompAllocator allocator) : m_intervals(allocator)
+    {
+    }
+
+    void Add(const Interval& interval)
+    {
+        size_t index = BinarySearch<Interval, &Interval::End>(m_intervals, interval.Start);
+
+        if ((ssize_t)index < 0)
+        {
+            index = ~index;
+        }
+
+        m_intervals.insert(m_intervals.begin() + index, interval);
+        size_t endIndex;
+        for (endIndex = index + 1; endIndex < m_intervals.size(); endIndex++)
+        {
+            if (!m_intervals[index].IntersectsInclusive(m_intervals[endIndex]))
+            {
+                break;
+            }
+
+            m_intervals[index].Merge(m_intervals[endIndex]);
+        }
+
+        m_intervals.erase(m_intervals.begin() + index + 1, m_intervals.begin() + endIndex);
+    }
+
+    void Subtract(const Interval& interval)
+    {
+        size_t index = BinarySearch<Interval, &Interval::End>(m_intervals, interval.Start);
+        if ((ssize_t)index < 0)
+        {
+            index = ~index;
+        }
+        else
+        {
+            // Start == interval[index].End, which makes it non-interesting.
+            index++;
+        }
+
+        if (index >= m_intervals.size())
+        {
+            return;
+        }
+
+        // Here we know Start < interval[index].End. Do they not intersect at all?
+        if (m_intervals[index].Start >= interval.End)
+        {
+            // Does not intersect any segment.
+            return;
+        }
+
+        assert(m_intervals[index].IntersectsInclusive(interval));
+
+        if (m_intervals[index].Contains(interval))
+        {
+            if (interval.Start > m_intervals[index].Start)
+            {
+                // New interval (existing.Start, interval.Start)
+                if (interval.End < m_intervals[index].End)
+                {
+                    m_intervals.insert(m_intervals.begin() + index, Interval(m_intervals[index].Start, interval.Start));
+
+                    // And new interval (interval.End, existing.End)
+                    m_intervals[index + 1].Start = interval.End;
+                    return;
+                }
+
+                m_intervals[index].End = interval.Start;
+                return;
+            }
+            if (interval.End < m_intervals[index].End)
+            {
+                // New interval (interval.End, existing.End)
+                m_intervals[index].Start = interval.End;
+                return;
+            }
+
+            // Full interval is being removed
+            m_intervals.erase(m_intervals.begin() + index);
+            return;
+        }
+
+        if (interval.Start > m_intervals[index].Start)
+        {
+            m_intervals[index].End = interval.Start;
+            index++;
+        }
+
+        size_t endIndex = BinarySearch<Interval, &Interval::End>(m_intervals, interval.End);
+        if ((ssize_t)endIndex >= 0)
+        {
+            m_intervals.erase(m_intervals.begin() + index, m_intervals.begin() + endIndex + 1);
+            return;
+        }
+
+        endIndex = ~endIndex;
+        if (endIndex == m_intervals.size())
+        {
+            m_intervals.erase(m_intervals.begin() + index, m_intervals.end());
+            return;
+        }
+
+        if (interval.End > m_intervals[endIndex].Start)
+        {
+            m_intervals[endIndex].Start = interval.End;
+        }
+
+        m_intervals.erase(m_intervals.begin() + index, m_intervals.begin() + endIndex);
+    }
+
+#ifdef DEBUG
+    void Check(FixedBitVect* vect)
+    {
+        bool first = true;
+        unsigned last = 0;
+        for (const Interval& interval : m_intervals)
+        {
+            assert(first || (last < interval.Start));
+            assert(interval.End <= vect->bitVectGetSize());
+
+            for (unsigned i = last; i < interval.Start; i++)
+                assert(!vect->bitVectTest(i));
+
+            for (unsigned i = interval.Start; i < interval.End; i++)
+                assert(vect->bitVectTest(i));
+
+            first = false;
+            last = interval.End;
+        }
+
+        for (unsigned i = last, size = vect->bitVectGetSize(); i < size; i++)
+            assert(!vect->bitVectTest(i));
+    }
+#endif
+
+    bool IsEmpty()
+    {
+        return m_intervals.size() == 0;
+    }
+
+    bool IsSingleInterval(Interval* result)
+    {
+        if (m_intervals.size() == 1)
+        {
+            *result = m_intervals[0];
+            return true;
+        }
+
+        return false;
+    }
+};
+
 class DecompositionPlan
 {
     struct Entry
@@ -822,6 +1024,10 @@ private:
     //
     bool CoversDestination()
     {
+        StructSegments segments = GetRemainder();
+
+        ClassLayout* dstLayout = m_dst->GetLayout(m_compiler);
+
         unsigned prevEnd    = 0;
         unsigned dstLclOffs = 0;
         if (m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD))
@@ -853,6 +1059,164 @@ private:
         }
 
         return prevEnd == m_dst->GetLayout(m_compiler)->GetSize();
+    }
+
+    StructSegments GetRemainder()
+    {
+        ClassLayout* dstLayout = m_dst->GetLayout(m_compiler);
+
+        StructSegments segments(m_compiler->getAllocator(CMK_Promotion));
+
+        INDEBUG(FixedBitVect* segmentBitVect = FixedBitVect::bitVectInit(dstLayout->GetSize(), m_compiler));
+
+        COMP_HANDLE compHnd = m_compiler->info.compCompHnd;
+
+        bool significantPadding;
+        if (dstLayout->IsBlockLayout())
+        {
+            significantPadding = true;
+        }
+        else
+        {
+            uint32_t attribs = compHnd->getClassAttribs(dstLayout->GetClassHandle());
+            if ((attribs & (CORINFO_FLG_INDEXABLE_FIELDS | CORINFO_FLG_DONT_DIG_FIELDS)) != 0)
+            {
+                significantPadding = true;
+            }
+            else if (((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0) && ((attribs & CORINFO_FLG_CONTAINS_GC_PTR) == 0))
+            {
+                significantPadding = true;
+            }
+            else
+            {
+                significantPadding = false;
+            }
+        }
+
+        if (significantPadding)
+        {
+            segments.Add(StructSegments::Interval(0, dstLayout->GetSize()));
+
+#ifdef DEBUG
+            for (unsigned i = 0; i < dstLayout->GetSize(); i++)
+                segmentBitVect->bitVectSet(i);
+#endif
+        }
+        else
+        {
+            unsigned numFields = compHnd->getClassNumInstanceFields(dstLayout->GetClassHandle());
+            for (unsigned i = 0; i < numFields; i++)
+            {
+                CORINFO_FIELD_HANDLE fieldHnd = compHnd->getFieldInClass(dstLayout->GetClassHandle(), (int)i);
+                unsigned fldOffset = compHnd->getFieldOffset(fieldHnd);
+                CORINFO_CLASS_HANDLE fieldClassHandle;
+                CorInfoType corType = compHnd->getFieldType(fieldHnd, &fieldClassHandle);
+                var_types varType = JITtype2varType(corType);
+                unsigned size = genTypeSize(varType);
+                if (size == 0)
+                {
+                    // TODO-CQ: Recursively handle padding in sub structures
+                    // here. Might be better to introduce a single JIT-EE call
+                    // to query the significant segments -- that would also be
+                    // usable by R2R even outside the version bubble in many
+                    // cases.
+                    size = compHnd->getClassSize(fieldClassHandle);
+                    assert(size != 0);
+                }
+
+                segments.Add(StructSegments::Interval(fldOffset, fldOffset + size));
+#ifdef DEBUG
+                for (unsigned i = 0; i < size; i++)
+                    segmentBitVect->bitVectSet(fldOffset + i);
+#endif
+            }
+        }
+
+        for (int i = 0; i < m_entries.Height(); i++)
+        {
+            const Entry& entry = m_entries.BottomRef(i);
+
+            segments.Subtract(StructSegments::Interval(entry.Offset, entry.Offset + genTypeSize(entry.Type)));
+
+#ifdef DEBUG
+            for (unsigned i = 0; i < genTypeSize(entry.Type); i++)
+                segmentBitVect->bitVectClear(entry.Offset + i);
+#endif
+        }
+
+        INDEBUG(segments.Check(segmentBitVect));
+
+        return segments;
+    }
+
+    struct RemainderStrategy
+    {
+        enum
+        {
+            NoRemainder,
+            Primitive,
+            FullBlock,
+        };
+
+        int Type;
+        unsigned PrimitiveOffset;
+        var_types PrimitiveType;
+
+        RemainderStrategy(int type, unsigned primitiveOffset = 0, var_types primitiveType = TYP_UNDEF)
+            : Type(type), PrimitiveOffset(primitiveOffset), PrimitiveType(primitiveType)
+        {
+        }
+    };
+
+    RemainderStrategy DetermineRemainderStrategy()
+    {
+        StructSegments remainder = GetRemainder();
+        if (remainder.IsEmpty())
+        {
+            return RemainderStrategy(RemainderStrategy::NoRemainder);
+        }
+
+        StructSegments::Interval interval;
+        // See if we can "plug the hole" with a single primitive. For LCL_VAR
+        // destinations do not do this as it will essentially add a use of the
+        // local due to the partial def -- so it is better to prefer the full
+        // def that DCE might be able to get rid of.
+        if (remainder.IsSingleInterval(&interval) && !m_dst->OperIs(GT_LCL_VAR))
+        {
+            var_types primitiveType = TYP_UNDEF;
+            unsigned size = interval.End - interval.Start;
+            switch (size)
+            {
+            case 1:
+                primitiveType = TYP_UBYTE;
+                break;
+            case 2:
+                primitiveType = TYP_USHORT;
+                break;
+#ifdef TARGET_64BIT
+            case 4:
+                primitiveType = TYP_INT;
+                break;
+#endif
+            case TARGET_POINTER_SIZE:
+                primitiveType = TYP_I_IMPL;
+                if ((interval.Start % TARGET_POINTER_SIZE) == 0)
+                {
+                    ClassLayout* dstLayout = m_dst->GetLayout(m_compiler);
+                    primitiveType = dstLayout->GetGCPtrType(interval.Start / TARGET_POINTER_SIZE);
+                }
+                break;
+
+                // TODO-CQ: SIMD sizes
+            }
+
+            if (primitiveType != TYP_UNDEF)
+            {
+                return RemainderStrategy(RemainderStrategy::Primitive, interval.Start, primitiveType);
+            }
+        }
+
+        return RemainderStrategy(RemainderStrategy::FullBlock);
     }
 
     //------------------------------------------------------------------------
@@ -940,7 +1304,8 @@ private:
     {
         assert(m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK, GT_FIELD) &&
                m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_BLK, GT_FIELD));
-        bool coversDestination = CoversDestination();
+
+        RemainderStrategy remainderStrategy = DetermineRemainderStrategy();
 
         GenTree*     addr         = nullptr;
         unsigned     addrBaseOffs = 0;
@@ -969,20 +1334,31 @@ private:
             indirFlags = GetPropagatedIndirFlags(m_src);
         }
 
-        int numAddrUses = addr == nullptr ? 0 : (m_entries.Height() + (coversDestination ? 0 : 1));
+        int numAddrUses = 0;
 
-        // If the destination is fully covered we may need a null check for the GT_FIELD case.
-        // If the destination is not covered then the initial struct copy is enough.
-        bool needsNullCheck = coversDestination && (addr != nullptr) && m_compiler->fgAddrCouldBeNull(addr);
-
-        if (needsNullCheck)
+        if (addr != nullptr)
         {
-            // See if our first indirection will subsume the null check (usual case).
-            assert(m_entries.Height() > 0);
-            const Entry& entry = m_entries.BottomRef(0);
+            numAddrUses += m_entries.Height();
 
-            assert((entry.FromLclNum == BAD_VAR_NUM) || (entry.ToLclNum == BAD_VAR_NUM));
-            needsNullCheck = m_compiler->fgIsBigOffset(addrBaseOffs + entry.Offset);
+            if (remainderStrategy.Type != RemainderStrategy::NoRemainder)
+                numAddrUses++;
+        }
+
+        bool needsNullCheck = false;
+        if ((addr != nullptr) && m_compiler->fgAddrCouldBeNull(addr))
+        {
+            switch (remainderStrategy.Type)
+            {
+            case RemainderStrategy::NoRemainder:
+            case RemainderStrategy::Primitive:
+                // See if our first indirection will subsume the null check (usual case).
+                assert(m_entries.Height() > 0);
+                const Entry& entry = m_entries.BottomRef(0);
+
+                assert((entry.FromLclNum == BAD_VAR_NUM) || (entry.ToLclNum == BAD_VAR_NUM));
+                needsNullCheck = m_compiler->fgIsBigOffset(addrBaseOffs + entry.Offset);
+                break;
+            }
         }
 
         if (needsNullCheck)
@@ -1038,11 +1414,10 @@ private:
             return addrUse;
         };
 
-        if (!coversDestination)
+        if (remainderStrategy.Type == RemainderStrategy::FullBlock)
         {
-            // Note that this does not handle partially overlapping copies,
-            // but that is left undefined (and normal block copies do not
-            // handle this either).
+            // We will reuse the existing block op's operands. Rebase the
+            // address off of the new local we created.
             if (m_src->OperIs(GT_BLK, GT_FIELD))
             {
                 // Note that we should use 0 instead of addrBaseOffs here
@@ -1061,7 +1436,7 @@ private:
         // otherwise we would overwrite the destination with stale bits.
         // If the source does not involve replacements then CQ analysis shows
         // that it's best to do it last.
-        if (!coversDestination && m_srcInvolvesReplacements)
+        if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && m_srcInvolvesReplacements)
         {
             statements->AddStatement(m_compiler->gtNewBlkOpNode(m_dst, m_src));
 
@@ -1145,9 +1520,38 @@ private:
             statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
         }
 
-        if (!coversDestination && !m_srcInvolvesReplacements)
+        if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && !m_srcInvolvesReplacements)
         {
             statements->AddStatement(m_compiler->gtNewBlkOpNode(m_dst, m_src));
+        }
+
+        if (remainderStrategy.Type == RemainderStrategy::Primitive)
+        {
+            GenTree* dst;
+            if (m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            {
+                dst = m_compiler->gtNewLclFldNode(m_dst->AsLclVarCommon()->GetLclNum(), remainderStrategy.PrimitiveType, remainderStrategy.PrimitiveOffset);
+                m_compiler->lvaSetVarDoNotEnregister(m_dst->AsLclVarCommon()->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            }
+            else
+            {
+                dst = m_compiler->gtNewIndir(remainderStrategy.PrimitiveType, grabAddr(remainderStrategy.PrimitiveOffset));
+                PropagateIndirFlags(dst, indirFlags);
+            }
+
+            GenTree* src;
+            if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            {
+                src = m_compiler->gtNewLclFldNode(m_src->AsLclVarCommon()->GetLclNum(), remainderStrategy.PrimitiveType, remainderStrategy.PrimitiveOffset);
+                m_compiler->lvaSetVarDoNotEnregister(m_src->AsLclVarCommon()->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+            }
+            else
+            {
+                src = m_compiler->gtNewIndir(remainderStrategy.PrimitiveType, grabAddr(remainderStrategy.PrimitiveOffset));
+                PropagateIndirFlags(src, indirFlags);
+            }
+
+            statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
         }
 
         assert(numAddrUses == 0);
@@ -1551,7 +1955,12 @@ public:
                 {
                     // This source replacement ends before the next destination replacement starts.
                     // Write it directly to the destination struct local.
-                    plan->CopyFromReplacement(srcRep->LclNum, srcRep->Offset - srcBaseOffs, srcRep->AccessType);
+                    //plan->CopyFromReplacement(srcRep->LclNum, srcRep->Offset - srcBaseOffs, srcRep->AccessType);
+                    if (srcRep->NeedsWriteBack)
+                    {
+                        statements->AddStatement(CreateWriteBack(src->AsLclVarCommon()->GetLclNum(), *srcRep));
+                        srcRep->NeedsWriteBack = false;
+                    }
                     srcRep++;
                     continue;
                 }
@@ -1633,7 +2042,13 @@ public:
                     }
                 }
 
-                plan->CopyFromReplacement(srcRep->LclNum, srcRep->Offset - srcBaseOffs, srcRep->AccessType);
+                //plan->CopyFromReplacement(srcRep->LclNum, srcRep->Offset - srcBaseOffs, srcRep->AccessType);
+                if (srcRep->NeedsWriteBack)
+                {
+                    statements->AddStatement(CreateWriteBack(src->AsLclVarCommon()->GetLclNum(), *srcRep));
+                    srcRep->NeedsWriteBack = false;
+                }
+
                 srcRep++;
             }
         }
