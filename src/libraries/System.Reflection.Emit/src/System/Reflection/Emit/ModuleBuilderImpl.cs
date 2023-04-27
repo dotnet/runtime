@@ -148,9 +148,9 @@ namespace System.Reflection.Emit
                                 WriteCustomAttributes(parameter._customAttributes, parameterHandle);
                                 _nextParameterRowId++;
 
-                                if (parameter._marshallingInfo != null)
+                                if (parameter._marshallingData != null)
                                 {
-                                    AddMarshalling(parameterHandle, parameter._marshallingInfo.PopulateMarshallingBlob(_metadataBuilder));
+                                    AddMarshalling(parameterHandle, parameter._marshallingData.SerializeMarshallingData());
                                 }
 
                                 if (parameter._defaultValue != DBNull.Value)
@@ -179,9 +179,9 @@ namespace System.Reflection.Emit
                         AddFieldLayout(fieldHandle, field._offset);
                     }
 
-                    if (field._marshallingInfo != null)
+                    if (field._marshallingData != null)
                     {
-                        AddMarshalling(fieldHandle, field._marshallingInfo.PopulateMarshallingBlob(_metadataBuilder));
+                        AddMarshalling(fieldHandle, field._marshallingData.SerializeMarshallingData());
                     }
                 }
             }
@@ -303,8 +303,8 @@ namespace System.Reflection.Emit
         private void AddFieldLayout(FieldDefinitionHandle fieldHandle, int offset) =>
             _metadataBuilder.AddFieldLayout(field: fieldHandle, offset: offset);
 
-        private void AddMarshalling(EntityHandle fieldHandle, BlobHandle descriptor) =>
-            _metadataBuilder.AddMarshallingDescriptor(fieldHandle, descriptor);
+        private void AddMarshalling(EntityHandle fieldHandle, BlobBuilder builder) =>
+            _metadataBuilder.AddMarshallingDescriptor(fieldHandle, _metadataBuilder.GetOrAddBlob(builder));
 
         private ParameterHandle AddParameter(ParameterBuilderImpl parameter) =>
             _metadataBuilder.AddParameter(

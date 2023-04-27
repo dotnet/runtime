@@ -19,7 +19,7 @@ namespace System.Reflection.Emit
         private readonly Type _fieldType;
         private FieldAttributes _attributes;
 
-        internal MarshallingInfo? _marshallingInfo;
+        internal MarshallingData? _marshallingData;
         internal int _offset;
         internal List<CustomAttributeWrapper>? _customAttributes;
 
@@ -52,7 +52,7 @@ namespace System.Reflection.Emit
                     return;
                 case "System.Runtime.InteropServices.MarshalAsAttribute":
                     _attributes |= FieldAttributes.HasFieldMarshal;
-                    _marshallingInfo = MarshallingInfo.ParseMarshallingInfo(con, binaryAttribute, isField : true);
+                    _marshallingData = MarshallingData.CreateMarshallingData(con, binaryAttribute, isField : true);
                     return;
             }
 

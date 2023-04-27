@@ -12,8 +12,8 @@ namespace System.Reflection.Emit
         private readonly MethodBuilderImpl _methodBuilder;
         private ParameterAttributes _attributes;
 
-        internal List<CustomAttributeWrapper>? _customAttributes = new();
-        internal MarshallingInfo? _marshallingInfo;
+        internal List<CustomAttributeWrapper>? _customAttributes;
+        internal MarshallingData? _marshallingData;
         internal object? _defaultValue = DBNull.Value;
 
         public ParameterBuilderImpl(MethodBuilderImpl methodBuilder, int sequence, ParameterAttributes attributes, string? paramName)
@@ -47,7 +47,7 @@ namespace System.Reflection.Emit
                     return;
                 case "System.Runtime.InteropServices.MarshalAsAttribute":
                     _attributes |= ParameterAttributes.HasFieldMarshal;
-                    _marshallingInfo = MarshallingInfo.ParseMarshallingInfo(con, binaryAttribute, isField: false);
+                    _marshallingData = MarshallingData.CreateMarshallingData(con, binaryAttribute, isField: false);
                     return;
                 case "System.Runtime.InteropServices.DefaultParameterValueAttribute":
                     // MS.NET doesn't handle this attribute but we handle it for consistency TODO: not sure if we need to handle this

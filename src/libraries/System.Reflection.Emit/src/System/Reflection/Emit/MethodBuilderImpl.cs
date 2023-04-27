@@ -59,6 +59,11 @@ namespace System.Reflection.Emit
             if (position > 0 && (_parameterTypes == null || position > _parameterTypes.Length))
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
 
+            if (position == 0 && _parameters == null)
+            {
+                _parameters = new ParameterBuilderImpl[1];
+            }
+
             Debug.Assert(_parameters != null);
             attributes &= ~ParameterAttributes.ReservedMask;
             ParameterBuilderImpl parameter = new ParameterBuilderImpl(this, position, attributes, strParamName);
@@ -154,104 +159,5 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params System.Type[] typeArguments)
             => throw new NotImplementedException();
-    }
-
-    internal sealed class DllImportData
-    {
-        private readonly string _moduleName;
-        private readonly string? _entryPoint;
-        private readonly MethodImportAttributes _flags;
-        internal DllImportData(string moduleName, string? entryPoint, MethodImportAttributes flags)
-        {
-            _moduleName = moduleName;
-            _entryPoint = entryPoint;
-            _flags = flags;
-        }
-
-        public string ModuleName => _moduleName;
-
-        public string? EntryPoint => _entryPoint;
-
-        public MethodImportAttributes Flags => _flags;
-
-        internal static DllImportData CreateDllImportData(CustomAttributeInfo attr, out bool preserveSig)
-        {
-            string? moduleName = (string?)attr._ctorArgs[0];
-            if (moduleName == null || moduleName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_DllNameCannotBeEmpty);
-            }
-
-            MethodImportAttributes importAttributes = MethodImportAttributes.None;
-            string? entryPoint = null;
-            preserveSig = true;
-            for (int i = 0; i < attr._namedParamNames.Length; ++i)
-            {
-                string name = attr._namedParamNames[i];
-                object value = attr._namedParamValues[i]!;
-                switch (name)
-                {
-                    case "PreserveSig":
-                        preserveSig = (bool)value;
-                        break;
-                    case "CallingConvention":
-                        importAttributes |= (CallingConvention)value switch
-                        {
-                            CallingConvention.Cdecl => MethodImportAttributes.CallingConventionCDecl,
-                            CallingConvention.FastCall => MethodImportAttributes.CallingConventionFastCall,
-                            CallingConvention.StdCall => MethodImportAttributes.CallingConventionStdCall,
-                            CallingConvention.ThisCall => MethodImportAttributes.CallingConventionThisCall,
-                            _=> MethodImportAttributes.CallingConventionWinApi // Roslyn defaults with this
-                        };
-                        break;
-                    case "CharSet":
-                        importAttributes |= (CharSet)value switch
-                        {
-                            CharSet.Ansi => MethodImportAttributes.CharSetAnsi,
-                            CharSet.Auto => MethodImportAttributes.CharSetAuto,
-                            CharSet.Unicode => MethodImportAttributes.CharSetUnicode,
-                            _ => MethodImportAttributes.CharSetAuto
-                        };
-                        break;
-                    case "EntryPoint":
-                        entryPoint = (string?)value;
-                        break;
-                    case "ExactSpelling":
-                        if ((bool)value)
-                        {
-                            importAttributes |= MethodImportAttributes.ExactSpelling;
-                        }
-                        break;
-                    case "SetLastError":
-                        if ((bool)value)
-                        {
-                            importAttributes |= MethodImportAttributes.SetLastError;
-                        }
-                        break;
-                    case "BestFitMapping":
-                        if ((bool)value)
-                        {
-                            importAttributes |= MethodImportAttributes.BestFitMappingEnable;
-                        }
-                        else
-                        {
-                            importAttributes |= MethodImportAttributes.BestFitMappingDisable;
-                        }
-                        break;
-                    case "ThrowOnUnmappableChar":
-                        if ((bool)value)
-                        {
-                            importAttributes |= MethodImportAttributes.ThrowOnUnmappableCharEnable;
-                        }
-                        else
-                        {
-                            importAttributes |= MethodImportAttributes.ThrowOnUnmappableCharDisable;
-                        }
-                        break;
-                }
-            }
-
-            return new DllImportData(moduleName, entryPoint, importAttributes);
-        }
     }
 }
