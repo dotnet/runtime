@@ -3117,6 +3117,7 @@ static SimdIntrinsic armbase_methods [] = {
 	{SN_LeadingZeroCount},
 	{SN_MultiplyHigh},
 	{SN_ReverseElementBits},
+	{SN_Yield},
 	{SN_get_IsSupported},
 };
 
@@ -3596,6 +3597,13 @@ emit_arm64_intrinsics (
 				(is_64bit ? OP_XOP_I8_I8 : OP_XOP_I4_I4),
 				(is_64bit ? INTRINS_BITREVERSE_I64 : INTRINS_BITREVERSE_I32),
 				arg0_type, fsig, args);
+		case SN_Yield: {
+			MonoInst* ins;
+			MONO_INST_NEW (cfg, ins, OP_NOP);
+			MONO_ADD_INS (cfg->cbb, ins);
+			return ins;
+		}
+			
 		default:
 			g_assert_not_reached (); // if a new API is added we need to either implement it or change IsSupported to false
 		}
