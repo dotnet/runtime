@@ -2401,36 +2401,45 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 }
             }
 
-            // Case 2: ARR_LENGTH(static-readonly-field)
             VNFuncApp funcApp;
-            if ((resultVN == NoVN) && GetVNFunc(addressVN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad))
+            if ((resultVN == NoVN) && GetVNFunc(addressVN, &funcApp))
             {
-                ValueNum fieldSeqVN = VNNormalValue(funcApp.m_args[0]);
-                if (IsVNHandle(fieldSeqVN) && (GetHandleFlags(fieldSeqVN) == GTF_ICON_FIELD_SEQ))
+                // Case 2: ARR_LENGTH(static-readonly-field)
+                if (funcApp.m_func == VNF_InvariantNonNullLoad)
                 {
-                    FieldSeq* fieldSeq = FieldSeqVNToFieldSeq(fieldSeqVN);
-                    if (fieldSeq != nullptr)
+                    ValueNum fieldSeqVN = VNNormalValue(funcApp.m_args[0]);
+                    if (IsVNHandle(fieldSeqVN) && (GetHandleFlags(fieldSeqVN) == GTF_ICON_FIELD_SEQ))
                     {
-                        CORINFO_FIELD_HANDLE field = fieldSeq->GetFieldHandle();
-                        if (field != NULL)
+                        FieldSeq* fieldSeq = FieldSeqVNToFieldSeq(fieldSeqVN);
+                        if (fieldSeq != nullptr)
                         {
-                            uint8_t buffer[TARGET_POINTER_SIZE] = {0};
-                            if (m_pComp->info.compCompHnd->getStaticFieldContent(field, buffer, TARGET_POINTER_SIZE, 0,
-                                                                                 false))
+                            CORINFO_FIELD_HANDLE field = fieldSeq->GetFieldHandle();
+                            if (field != NULL)
                             {
-                                // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
-                                // value holding 32bit handle with upper half zeroed (hence, "= NULL").
-                                // It's done to match the current crossgen/ILC behavior.
-                                CORINFO_OBJECT_HANDLE objHandle = NULL;
-                                memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
-                                int len = m_pComp->info.compCompHnd->getArrayOrStringLength(objHandle);
-                                if (len >= 0)
+                                uint8_t buffer[TARGET_POINTER_SIZE] = {0};
+                                if (m_pComp->info.compCompHnd->getStaticFieldContent(field, buffer, TARGET_POINTER_SIZE,
+                                                                                     0, false))
                                 {
-                                    resultVN = VNForIntCon(len);
+                                    // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
+                                    // value holding 32bit handle with upper half zeroed (hence, "= NULL").
+                                    // It's done to match the current crossgen/ILC behavior.
+                                    CORINFO_OBJECT_HANDLE objHandle = NULL;
+                                    memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
+                                    int len = m_pComp->info.compCompHnd->getArrayOrStringLength(objHandle);
+                                    if (len >= 0)
+                                    {
+                                        resultVN = VNForIntCon(len);
+                                    }
                                 }
                             }
                         }
                     }
+                }
+                // Case 3: ARR_LENGTH(new T[CNS])
+                else if ((funcApp.m_func == VNF_JitNewArr) && IsVNConstant(funcApp.m_args[1]))
+                {
+                    // Return known length of the array
+                    resultVN = funcApp.m_args[1];
                 }
             }
         }
