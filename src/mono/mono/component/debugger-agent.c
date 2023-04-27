@@ -6909,6 +6909,16 @@ static void add_error_string (Buffer *buf, const char *str)
 		buffer_add_string (buf, str);
 }
 
+static void
+create_file_to_check_memory_address (void)
+{
+	if (file_check_valid_memory != -1)
+		return;
+	char *file_name = g_strdup_printf ("debugger_check_valid_memory.%d", mono_process_current_pid ());
+	filename_check_valid_memory = g_build_filename (g_get_tmp_dir (), file_name, (const char*)NULL);
+	file_check_valid_memory = open(filename_check_valid_memory, O_CREAT | O_WRONLY | O_APPEND, S_IWUSR);
+	g_free (file_name);
+}
 
 static gboolean
 valid_memory_address (gpointer addr, gint size)
@@ -10126,17 +10136,6 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	}
 
 	return ERR_NONE;
-}
-
-static void
-create_file_to_check_memory_address (void)
-{
-	if (file_check_valid_memory != -1)
-		return;
-	char *file_name = g_strdup_printf ("debugger_check_valid_memory.%d", mono_process_current_pid ());
-	filename_check_valid_memory = g_build_filename (g_get_tmp_dir (), file_name, (const char*)NULL);
-	file_check_valid_memory = open(filename_check_valid_memory, O_CREAT | O_WRONLY | O_APPEND, S_IWUSR);
-	g_free (file_name);
 }
 
 static ErrorCode
