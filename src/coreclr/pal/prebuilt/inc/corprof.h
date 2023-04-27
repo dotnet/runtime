@@ -1666,6 +1666,13 @@ typedef struct COR_PRF_GC_GENERATION_RANGE
     UINT_PTR rangeLengthReserved;
     } 	COR_PRF_GC_GENERATION_RANGE;
 
+typedef struct COR_PRF_NONGC_HEAP_RANGE
+    {
+    ObjectID rangeStart;
+    UINT_PTR rangeLength;
+    UINT_PTR rangeLengthReserved;
+    } 	COR_PRF_NONGC_HEAP_RANGE;
+
 typedef /* [public][public][public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0001_0005
     {
@@ -23231,6 +23238,11 @@ EXTERN_C const IID IID_ICorProfilerInfo14;
         virtual HRESULT STDMETHODCALLTYPE EnumerateNonGCObjects( 
             /* [out] */ ICorProfilerObjectEnum **ppEnum) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE GetNonGCHeapBounds( 
+            /* [in] */ ULONG cObjectRanges,
+            /* [out] */ ULONG *pcObjectRanges,
+            /* [length_is][size_is][out] */ COR_PRF_NONGC_HEAP_RANGE ranges[  ]) = 0;
+        
     };
     
     
@@ -24039,6 +24051,13 @@ EXTERN_C const IID IID_ICorProfilerInfo14;
             ICorProfilerInfo14 * This,
             /* [out] */ ICorProfilerObjectEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorProfilerInfo14, GetNonGCHeapBounds)
+        HRESULT ( STDMETHODCALLTYPE *GetNonGCHeapBounds )( 
+            ICorProfilerInfo14 * This,
+            /* [in] */ ULONG cObjectRanges,
+            /* [out] */ ULONG *pcObjectRanges,
+            /* [length_is][size_is][out] */ COR_PRF_NONGC_HEAP_RANGE ranges[  ]);
+        
         END_INTERFACE
     } ICorProfilerInfo14Vtbl;
 
@@ -24401,6 +24420,9 @@ EXTERN_C const IID IID_ICorProfilerInfo14;
 
 #define ICorProfilerInfo14_EnumerateNonGCObjects(This,ppEnum)	\
     ( (This)->lpVtbl -> EnumerateNonGCObjects(This,ppEnum) ) 
+
+#define ICorProfilerInfo14_GetNonGCHeapBounds(This,cObjectRanges,pcObjectRanges,ranges)	\
+    ( (This)->lpVtbl -> GetNonGCHeapBounds(This,cObjectRanges,pcObjectRanges,ranges) ) 
 
 #endif /* COBJMACROS */
 

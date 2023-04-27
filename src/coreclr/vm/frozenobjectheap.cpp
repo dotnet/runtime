@@ -226,9 +226,7 @@ Object* FrozenObjectSegment::GetNextObject(Object* obj) const
     uint8_t* nextObj = (reinterpret_cast<uint8_t*>(obj) + ALIGN_UP(obj->GetSize(), DATA_ALIGNMENT));
     if (nextObj < m_pCurrent)
     {
-        Object* result = reinterpret_cast<Object*>(nextObj);
-        INDEBUG(result->Validate());
-        return result;
+        return reinterpret_cast<Object*>(nextObj);
     }
 
     // Current object is the last one in the segment

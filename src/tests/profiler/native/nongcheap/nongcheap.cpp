@@ -59,10 +59,44 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
 
     _garbageCollections++;
 
+    COR_PRF_NONGC_HEAP_RANGE segments[16];
+    ULONG segCount;
+    ObjectID firstObj = 0;
+    HRESULT hr = pCorProfilerInfo->GetNonGCHeapBounds(16, &segCount, segments);
+    if (FAILED(hr))
+    {
+        printf("GetNonGCHeapBounds returned an error\n!");
+        _failures++;
+    }
+    else if (segCount == 0 || segCount > 16)
+    {
+        printf("GetNonGCHeapBounds invalid segCount (%lu)\n!", segCount);
+        _failures++;
+    }
+    else
+    {
+        // Save very first object ID to compare with EnumerateNonGCObjects
+        firstObj = segments[0].rangeStart;
+
+        printf("\nGetNonGCHeapBounds (segCount = %lu):\n", segCount);
+        for (ULONG i = 0; i < segCount; i++)
+        {
+            printf("\tseg#%ld, rangeStart=%p, rangeLength=%lu, rangeLengthReserved=%lu\n",
+                i, (void*)segments[i].rangeStart, (ULONG)segments[i].rangeLength, (ULONG)segments[i].rangeLengthReserved);
+
+            if ((ULONG)segments[i].rangeLength > (ULONG)segments[i].rangeLengthReserved)
+            {
+                printf("GetNonGCHeapBounds: rangeLength > rangeLengthReserved");
+                _failures++;
+            }
+        }
+        printf("\n");
+    }
+
     // Let's make sure we got the same number of objects as we got from the callback
     // by testing the EnumerateNonGCObjects API.
     ICorProfilerObjectEnum* pEnum = NULL;
-    HRESULT hr = pCorProfilerInfo->EnumerateNonGCObjects(&pEnum);
+    hr = pCorProfilerInfo->EnumerateNonGCObjects(&pEnum);
     if (FAILED(hr))
     {
         printf("EnumerateNonGCObjects returned an error\n!");
@@ -72,8 +106,18 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
     {
         int nonGcObjectsEnumerated = 0;
         ObjectID obj;
+        bool isFirstObj = true;
         while (pEnum->Next(1, &obj, NULL) == S_OK)
         {
+            if (isFirstObj)
+            {
+                if (firstObj != obj)
+                {
+                    printf("EnumerateNonGCObjects: firstObj != obj\n!");
+                    _failures++;
+                }
+            }
+            isFirstObj = false;
             nonGcObjectsEnumerated++;
         }
 
