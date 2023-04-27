@@ -79,10 +79,10 @@ HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
         // Save very first object ID to compare with EnumerateNonGCObjects
         firstObj = segments[0].rangeStart;
 
-        printf("\nGetNonGCHeapBounds (segCount = %lu):\n", segCount);
+        printf("\nGetNonGCHeapBounds (segCount = %u):\n", segCount);
         for (ULONG i = 0; i < segCount; i++)
         {
-            printf("\tseg#%ld, rangeStart=%p, rangeLength=%u, rangeLengthReserved=%u\n",
+            printf("\tseg#%u, rangeStart=%p, rangeLength=%u, rangeLengthReserved=%u\n",
                 i, (void*)segments[i].rangeStart, (ULONG)segments[i].rangeLength, (ULONG)segments[i].rangeLengthReserved);
 
             if ((ULONG)segments[i].rangeLength > (ULONG)segments[i].rangeLengthReserved)
