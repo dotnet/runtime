@@ -1145,7 +1145,32 @@ namespace System.Diagnostics.Tracing
             public static implicit operator EventSourcePrimitive(short value) => new(value);
             public static implicit operator EventSourcePrimitive(int value) => new(value);
             public static implicit operator EventSourcePrimitive(long value) => new(value);
+
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(sbyte value) => new(value);
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(ushort value) => new(value);
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(uint value) => new(value);
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(ulong value) => new(value);
+            [CLSCompliant(false)]
+            // Added to prevent going through the nuint -> ulong conversion
+            public static implicit operator EventSourcePrimitive(nuint value) => new(value);
+
+            public static implicit operator EventSourcePrimitive(float value) => new(value);
+            public static implicit operator EventSourcePrimitive(double value) => new(value);
+            public static implicit operator EventSourcePrimitive(decimal value) => new(value);
+
             public static implicit operator EventSourcePrimitive(string? value) => new(value);
+            public static implicit operator EventSourcePrimitive(byte[]? value) => new(value);
+
+            public static implicit operator EventSourcePrimitive(Guid value) => new(value);
+            public static implicit operator EventSourcePrimitive(DateTime value) => new(value);
+            public static implicit operator EventSourcePrimitive(nint value) => new(value);
+            public static implicit operator EventSourcePrimitive(char value) => new(value);
+
+            public static implicit operator EventSourcePrimitive(Enum value) => new(value);
         }
 
         /// <summary>

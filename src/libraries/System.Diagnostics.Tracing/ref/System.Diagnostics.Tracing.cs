@@ -224,7 +224,32 @@ namespace System.Diagnostics.Tracing
             public static implicit operator EventSourcePrimitive(short value) => throw null;
             public static implicit operator EventSourcePrimitive(int value) => throw null;
             public static implicit operator EventSourcePrimitive(long value) => throw null;
+
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(sbyte value) => throw null;
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(ushort value) => throw null;
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(uint value) => throw null;
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(ulong value) => throw null;
+            [CLSCompliant(false)]
+            // Added to prevent going through the nuint -> ulong conversion
+            public static implicit operator EventSourcePrimitive(nuint value) => throw null;
+
+            public static implicit operator EventSourcePrimitive(float value) => throw null;
+            public static implicit operator EventSourcePrimitive(double value) => throw null;
+            public static implicit operator EventSourcePrimitive(decimal value) => throw null;
+
             public static implicit operator EventSourcePrimitive(string? value) => throw null;
+            public static implicit operator EventSourcePrimitive(byte[]? value) => throw null;
+
+            public static implicit operator EventSourcePrimitive(Guid value) => throw null;
+            public static implicit operator EventSourcePrimitive(DateTime value) => throw null;
+            public static implicit operator EventSourcePrimitive(nint value) => throw null;
+            public static implicit operator EventSourcePrimitive(char value) => throw null;
+
+            public static implicit operator EventSourcePrimitive(Enum value) => throw null;
         }
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         protected internal partial struct EventData

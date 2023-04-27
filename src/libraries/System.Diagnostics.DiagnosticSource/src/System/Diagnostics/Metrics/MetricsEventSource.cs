@@ -87,16 +87,12 @@ namespace System.Diagnostics.Metrics
         }
 
         [Event(2, Keywords = Keywords.TimeSeriesValues)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                            Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
         public void CollectionStart(string sessionId, DateTime intervalStartTime, DateTime intervalEndTime)
         {
             WriteEvent(2, sessionId, intervalStartTime, intervalEndTime);
         }
 
         [Event(3, Keywords = Keywords.TimeSeriesValues)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                            Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
         public void CollectionStop(string sessionId, DateTime intervalStartTime, DateTime intervalEndTime)
         {
             WriteEvent(3, sessionId, intervalStartTime, intervalEndTime);
