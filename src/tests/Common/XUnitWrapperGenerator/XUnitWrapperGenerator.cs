@@ -464,21 +464,35 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         List<AttributeData> filterAttributes = new();
         foreach (var attr in method.GetAttributesOnSelfAndContainingSymbols())
         {
+            var hasSkip = attr.NamedArguments.Any(x => x.Key == "Skip");
+
             switch (attr.AttributeClass?.ToDisplayString())
             {
                 case "Xunit.ConditionalFactAttribute":
-                    filterAttributes.Add(attr);
-                    factAttribute = true;
+                    if (!hasSkip)
+                    {
+                        filterAttributes.Add(attr);
+                        factAttribute = true;
+                    }
                     break;
                 case "Xunit.FactAttribute":
-                    factAttribute = true;
+                    if (!hasSkip)
+                    {
+                        factAttribute = true;
+                    }
                     break;
                 case "Xunit.ConditionalTheoryAttribute":
-                    filterAttributes.Add(attr);
-                    theoryAttribute = true;
+                    if (!hasSkip)
+                    {
+                        filterAttributes.Add(attr);
+                        theoryAttribute = true;
+                    }
                     break;
                 case "Xunit.TheoryAttribute":
-                    theoryAttribute = true;
+                    if (!hasSkip)
+                    {
+                        theoryAttribute = true;
+                    }
                     break;
                 case "Xunit.ConditionalClassAttribute":
                 case "Xunit.SkipOnPlatformAttribute":
