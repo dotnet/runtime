@@ -4811,6 +4811,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
 #endif // FEATURE_EH_FUNCLETS
 
+    DoPhase(this, PHASE_RATIONALIZE_ASSIGNMENTS, &Compiler::fgRationalizeAssignments);
+
     if (opts.OptimizationEnabled())
     {
         // Invert loops
