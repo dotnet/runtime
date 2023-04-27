@@ -290,7 +290,8 @@ public class GenerateWasmBootJson : Task
             foreach (var configExtension in Extensions)
             {
                 var key = configExtension.GetMetadata("key");
-                var config = (Dictionary<string, object>)configSerializer.ReadObject(File.OpenRead(configExtension.ItemSpec));
+                using var fs = File.OpenRead(configExtension.ItemSpec);
+                var config = (Dictionary<string, object>)configSerializer.ReadObject(fs);
                 result.extensions[key] = config;
             }
         }
