@@ -8020,7 +8020,7 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
 
 GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
 {
-    assert(!src->TypeIs(TYP_VOID));
+    assert(!src->TypeIs(TYP_VOID) && !compAssignmentRationalized);
     /* Mark the target as being assigned */
 
     if ((dst->gtOper == GT_LCL_VAR) || (dst->OperGet() == GT_LCL_FLD))
@@ -15888,7 +15888,7 @@ GenTree* Compiler::gtFoldIndirConst(GenTreeIndir* indir)
 //    May update the type of the temp, if it was previously unknown.
 //
 //    May set compFloatingPointUsed.
-
+//
 GenTree* Compiler::gtNewTempAssign(
     unsigned tmp, GenTree* val, Statement** pAfterStmt, const DebugInfo& di, BasicBlock* block)
 {
@@ -15975,26 +15975,21 @@ GenTree* Compiler::gtNewTempAssign(
         compFloatingPointUsed = true;
     }
 
-    /* Create the assignment node */
-
-    GenTree* asg;
-    GenTree* dest = gtNewLclvNode(tmp, dstTyp);
-
-    if (varTypeIsStruct(varDsc) && !val->IsInitVal())
+    GenTree* store;
+    if (compAssignmentRationalized)
     {
-        asg = impAssignStruct(dest, val, CHECK_SPILL_NONE, pAfterStmt, di, block);
+        store = gtNewStoreLclVarNode(tmp, val);
+    }
+    else if (varTypeIsStruct(varDsc) && !val->IsInitVal())
+    {
+        store = impAssignStruct(gtNewLclvNode(tmp, dstTyp), val, CHECK_SPILL_NONE, pAfterStmt, di, block);
     }
     else
     {
-        asg = gtNewAssignNode(dest, val);
+        store = gtNewAssignNode(gtNewLclvNode(tmp, dstTyp), val);
     }
 
-    if (compAssignmentRationalized)
-    {
-        asg = fgRationalizeAssignment(asg->AsOp());
-    }
-
-    return asg;
+    return store;
 }
 
 /*****************************************************************************
