@@ -9356,16 +9356,23 @@ DONE_MORPHING_CHILDREN:
 
             if (op2->OperIs(GT_CAST))
             {
-                tree = fgOptimizeCastOnAssignment(tree->AsOp());
+                tree = fgOptimizeCastOnStore(tree);
 
                 assert(tree->OperIs(GT_ASG));
-
                 op1 = tree->gtGetOp1();
                 op2 = tree->gtGetOp2();
             }
 
             // Location nodes cannot be CSEd.
             op1->gtFlags |= GTF_DONT_CSE;
+            break;
+
+        case GT_STOREIND:
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+            tree = fgOptimizeCastOnStore(tree);
+            op1  = tree->gtGetOp1();
+            op2  = tree->gtGetOp2IfPresent();
             break;
 
         case GT_CAST:
@@ -10170,64 +10177,61 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
 }
 
 //------------------------------------------------------------------------
-// fgOptimizeCastOnAssignment: Optimizes the supplied GT_ASG tree with a GT_CAST node.
+// fgOptimizeCastOnAssignment: Optimizes the supplied store tree with a GT_CAST node.
 //
 // Arguments:
-//    tree - the cast tree to optimize
+//    tree - the store to optimize
 //
 // Return Value:
-//    The optimized tree (must be GT_ASG).
+//    The optimized store tree.
 //
-GenTree* Compiler::fgOptimizeCastOnAssignment(GenTreeOp* asg)
+GenTree* Compiler::fgOptimizeCastOnStore(GenTree* store)
 {
-    assert(asg->OperIs(GT_ASG));
+    assert(store->OperIs(GT_ASG) || store->OperIsStore());
 
-    GenTree* const op1 = asg->gtGetOp1();
-    GenTree* const op2 = asg->gtGetOp2();
+    GenTree* const src = store->Data();
 
-    assert(op2->OperIs(GT_CAST));
+    if (!src->OperIs(GT_CAST))
+        return store;
 
-    GenTree* const effectiveOp1 = op1->gtEffectiveVal();
+    GenTree* const dst = store->GetStoreDestination();
 
-    if (!effectiveOp1->OperIs(GT_IND, GT_LCL_VAR, GT_LCL_FLD))
-        return asg;
+    // TODO-ASG-Cleanup: delete the GT_LCL_VAR check.
+    if (dst->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) && !lvaGetDesc(dst->AsLclVarCommon())->lvNormalizeOnLoad())
+        return store;
 
-    if (effectiveOp1->OperIs(GT_LCL_VAR) &&
-        !lvaGetDesc(effectiveOp1->AsLclVarCommon()->GetLclNum())->lvNormalizeOnLoad())
-        return asg;
+    if (src->gtOverflow())
+        return store;
 
-    if (op2->gtOverflow())
-        return asg;
+    if (gtIsActiveCSE_Candidate(src))
+        return store;
 
-    if (gtIsActiveCSE_Candidate(op2))
-        return asg;
-
-    GenTreeCast* cast         = op2->AsCast();
+    GenTreeCast* cast         = src->AsCast();
     var_types    castToType   = cast->CastToType();
     var_types    castFromType = cast->CastFromType();
 
     if (gtIsActiveCSE_Candidate(cast->CastOp()))
-        return asg;
+        return store;
 
-    if (!varTypeIsSmall(effectiveOp1))
-        return asg;
+    if (!varTypeIsSmall(dst))
+        return store;
 
     if (!varTypeIsSmall(castToType))
-        return asg;
+        return store;
 
     if (!varTypeIsIntegral(castFromType))
-        return asg;
+        return store;
 
     // If we are performing a narrowing cast and
     // castToType is larger or the same as op1's type
     // then we can discard the cast.
-    if (genTypeSize(castToType) < genTypeSize(effectiveOp1))
-        return asg;
+    if (genTypeSize(castToType) < genTypeSize(dst))
+        return store;
 
     if (genActualType(castFromType) == genActualType(castToType))
     {
         // Removes the cast.
-        asg->gtOp2 = cast->CastOp();
+        store->Data() = cast->CastOp();
     }
     else
     {
@@ -10235,7 +10239,7 @@ GenTree* Compiler::fgOptimizeCastOnAssignment(GenTreeOp* asg)
         cast->gtCastType = genActualType(castToType);
     }
 
-    return asg;
+    return store;
 }
 
 //------------------------------------------------------------------------
@@ -11696,51 +11700,48 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
                 }
             }
 
-            if (!tree->OperIs(GT_ASG))
-            {
-                break;
-            }
-
-            if (typ == TYP_LONG)
-            {
-                break;
-            }
-
-            if (op2->gtFlags & GTF_ASG)
-            {
-                break;
-            }
-
-            if ((op2->gtFlags & GTF_CALL) && (op1->gtFlags & GTF_ALL_EFFECT))
-            {
-                break;
-            }
-
             /* Special case: a cast that can be thrown away */
 
             // TODO-Cleanup: fgMorphSmp does a similar optimization. However, it removes only
             // one cast and sometimes there is another one after it that gets removed by this
             // code. fgMorphSmp should be improved to remove all redundant casts so this code
             // can be removed.
-
-            if (op1->gtOper == GT_IND && op2->gtOper == GT_CAST && !op2->gtOverflow())
+            if ((tree->OperIs(GT_ASG) && op1->OperIs(GT_IND)) || tree->OperIs(GT_STOREIND))
             {
-                var_types srct;
-                var_types cast;
-                var_types dstt;
-
-                srct = op2->AsCast()->CastOp()->TypeGet();
-                cast = (var_types)op2->CastToType();
-                dstt = op1->TypeGet();
-
-                /* Make sure these are all ints and precision is not lost */
-
-                if (genTypeSize(cast) >= genTypeSize(dstt) && dstt <= TYP_INT && srct <= TYP_INT)
+                if (typ == TYP_LONG)
                 {
-                    op2 = tree->gtOp2 = op2->AsCast()->CastOp();
+                    break;
+                }
+
+                if (op2->gtFlags & GTF_ASG)
+                {
+                    break;
+                }
+
+                if ((op2->gtFlags & GTF_CALL) && (op1->gtFlags & GTF_ALL_EFFECT))
+                {
+                    break;
+                }
+
+
+                if (op2->gtOper == GT_CAST && !op2->gtOverflow())
+                {
+                    var_types srct;
+                    var_types cast;
+                    var_types dstt;
+
+                    srct = op2->AsCast()->CastOp()->TypeGet();
+                    cast = (var_types)op2->CastToType();
+                    dstt = tree->TypeGet();
+
+                    /* Make sure these are all ints and precision is not lost */
+
+                    if (genTypeSize(cast) >= genTypeSize(dstt) && dstt <= TYP_INT && srct <= TYP_INT)
+                    {
+                        op2 = tree->gtOp2 = op2->AsCast()->CastOp();
+                    }
                 }
             }
-
             break;
 
         case GT_MUL:
