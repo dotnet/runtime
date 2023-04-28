@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -31,17 +30,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public static ImmutableArray<T> AsImmutableArray<T>(T[]? array)
         {
-#if NET6_0_OR_GREATER
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T[]' and 'ImmutableArray<T>')
-            return *(ImmutableArray<T>*)&array;
-#pragma warning restore CS8500
-#else
-            // When on downlevel targets, use Unsafe.As to reinterpret the array reference. This is slightly
-            // more expensive (though not really that much) due to the additional generic instantiation, but
-            // it avoids problems on older runtimes that might not play well with native pointers to managed
-            // objects. For instance, the .NET Native compiler (UWP) can hit assertions in this case.
-            return Unsafe.As<T[]?, ImmutableArray<T>>(ref array);
-#endif
+            return new(array);
         }
 
         /// <summary>
@@ -63,13 +52,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public static T[]? AsArray<T>(ImmutableArray<T> array)
         {
-#if NET6_0_OR_GREATER
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T[]' and 'ImmutableArray<T>')
-            return *(T[]?*)&array;
-#pragma warning restore CS8500
-#else
-            return Unsafe.As<ImmutableArray<T>, T[]?>(ref array);
-#endif
+            return array.array;
         }
     }
 }
