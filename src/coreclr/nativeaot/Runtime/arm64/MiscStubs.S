@@ -9,15 +9,12 @@ NESTED_ENTRY RhpGetInlinedThreadStaticBase, _TEXT, NoHandler
         //   x0 - the thread static base for the given type
 
         // x1 = GetThread()
-#ifdef FEATURE_EMULATED_TLS
-        GETTHREAD_ETLS_1
-#else
-        INLINE_GETTHREAD x1
-#endif
+        INLINE_GET_TLS_VAR x1, C_FUNC(tls_InlinedThreadStatics)
 
         // get per-thread storage
-        ldr     x0, [x1, #OFFSETOF__Thread__m_pInlinedThreadLocalStatics]
+        ldr     x0, [x1]
         cbnz    x0, HaveValue
+        mov     x0, x1
         b       C_FUNC(RhpGetInlinedThreadStaticBaseSlow)
 
 HaveValue:
