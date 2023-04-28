@@ -558,7 +558,7 @@ class SchemaDef
             name: "MethodInstantiation",
             members: new MemberDef[] {
                 new MemberDef("Method", MethodDefOrRef, MemberDefFlags.RecordRef),
-                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpec, MemberDefFlags.List | MemberDefFlags.RecordRef),
+                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef),
                 // COMPLETENESS: new MemberDef("CustomAttributes", "CustomAttribute", MemberDefFlags.List | MemberDefFlags.RecordRef | MemberDefFlags.Child),
             }
         ),
@@ -674,7 +674,7 @@ class SchemaDef
             name: "TypeInstantiationSignature",
             members: new MemberDef[] {
                 new MemberDef("GenericType", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
-                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpec, MemberDefFlags.List | MemberDefFlags.RecordRef),
+                new MemberDef("GenericTypeArguments", TypeDefOrRefOrSpecOrMod, MemberDefFlags.List | MemberDefFlags.RecordRef),
             }
         ),
         new RecordDef(

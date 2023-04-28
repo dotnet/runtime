@@ -162,6 +162,8 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         protected sealed override int ExplicitLayoutFieldOffsetData => (int)(_field.Offset);
 
+        public sealed override Type GetModifiedFieldType() => ModifiedType.Create(FieldRuntimeType, _reader, FieldTypeHandle);
+
         private Handle FieldTypeHandle => _field.Signature.GetFieldSignature(_reader).Type;
 
         private readonly NativeFormatRuntimeNamedTypeInfo _definingTypeInfo;

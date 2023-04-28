@@ -421,6 +421,23 @@ namespace Internal.TypeSystem.Ecma
 
         public PropertySignature ParsePropertySignature()
         {
+            try
+            {
+                _indexStack = new Stack<int>();
+                _indexStack.Push(0);
+                _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
+                return ParsePropertySignatureInternal();
+            }
+            finally
+            {
+                _indexStack = null;
+                _embeddedSignatureDataList = null;
+            }
+
+        }
+
+        private PropertySignature ParsePropertySignatureInternal()
+        {
             // As PropertySignature is a struct, we cannot return null
             if (_notFoundBehavior != NotFoundBehavior.Throw)
                 throw new ArgumentException();
@@ -450,7 +467,9 @@ namespace Internal.TypeSystem.Ecma
                 parameters = TypeDesc.EmptyTypes;
             }
 
-            return new PropertySignature(isStatic, parameters, returnType);
+            EmbeddedSignatureData[] embeddedSignatureDataArray = (_embeddedSignatureDataList == null || _embeddedSignatureDataList.Count == 0) ? null : _embeddedSignatureDataList.ToArray();
+
+            return new PropertySignature(isStatic, parameters, returnType, embeddedSignatureDataArray);
         }
 
         public TypeDesc ParseFieldSignature()
