@@ -3185,36 +3185,13 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         }
         else if (src->gtSkipReloadOrCopy()->IsIntegralConst())
         {
-            ssize_t              fill     = src->AsIntCon()->IconValue() & 0xFF;
-            CORINFO_FIELD_HANDLE hnd      = nullptr;
-            var_types            loadType = TYP_UNDEF;
-            if (regSize == XMM_REGSIZE_BYTES)
-            {
-                simd16_t constValue;
-                memset(&constValue, (uint8_t)fill, sizeof(simd16_t));
-                hnd      = emit->emitSimd16Const(constValue);
-                loadType = TYP_SIMD16;
-            }
-            else if (regSize == YMM_REGSIZE_BYTES)
-            {
-                simd32_t constValue;
-                memset(&constValue, (uint8_t)fill, sizeof(simd32_t));
-                hnd      = emit->emitSimd32Const(constValue);
-                loadType = TYP_SIMD32;
-            }
-            else if (regSize == ZMM_REGSIZE_BYTES)
-            {
-                simd64_t constValue;
-                memset(&constValue, (uint8_t)fill, sizeof(simd64_t));
-                hnd      = emit->emitSimd64Const(constValue);
-                loadType = TYP_SIMD64;
-            }
-            else
-            {
-                // Unexpected regSize
-                unreached();
-            }
-            emit->emitIns_R_C(ins_Load(loadType), EA_ATTR(regSize), srcXmmReg, hnd, 0);
+            // Populate a constant vector from the fill value and save it
+            // to the data section so we can load it by address.
+            assert(regSize <= ZMM_REGSIZE_BYTES);
+            simd64_t constValue;
+            memset(&constValue, (uint8_t)(src->AsIntCon()->IconValue() & 0xFF), sizeof(simd64_t));
+            var_types loadType = compiler->getSIMDTypeForSize(regSize);
+            genSetRegToConst(srcXmmReg, loadType, compiler->gtNewVconNode(loadType, &constValue));
         }
         else
         {
