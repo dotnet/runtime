@@ -1627,7 +1627,8 @@ protected:
     }; // End of  struct instrDesc
 
 #if defined(TARGET_XARCH)
-    insFormat getMemoryOperation(instrDesc* id);
+    insFormat getMemoryOperation(instrDesc* id) const;
+    insFormat ExtractMemoryFormat(insFormat insFmt) const;
 #elif defined(TARGET_ARM64)
     void getMemoryOperation(instrDesc* id, unsigned* pMemAccessKind, bool* pIsLocalAccess);
 #endif

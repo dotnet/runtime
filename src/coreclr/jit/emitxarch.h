@@ -105,6 +105,8 @@ static bool IsKInstruction(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
+bool HasVexEncoding(instruction ins) const;
+bool HasEvexEncoding(instruction ins) const;
 bool IsVexEncodableInstruction(instruction ins) const;
 bool IsEvexEncodableInstruction(instruction ins) const;
 bool IsVexOrEvexEncodableInstruction(instruction ins) const;
