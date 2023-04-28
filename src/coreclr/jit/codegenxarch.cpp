@@ -3183,6 +3183,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             // than copying the constant from a GPR to a XMM register.
             emit->emitIns_R_R(INS_xorps, EA_ATTR(regSize), srcXmmReg, srcXmmReg);
         }
+#ifdef FEATURE_SIMD
         else if (src->gtSkipReloadOrCopy()->IsIntegralConst())
         {
             // Populate a constant vector from the fill value and save it
@@ -3193,6 +3194,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             var_types loadType = compiler->getSIMDTypeForSize(regSize);
             genSetRegToConst(srcXmmReg, loadType, compiler->gtNewVconNode(loadType, &constValue));
         }
+#endif
         else
         {
             // TODO-AVX512-ARCH: Enable AVX-512 for non-zeroing initblk.
