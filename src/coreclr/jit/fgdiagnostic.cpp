@@ -4200,6 +4200,76 @@ public:
     void SetBlock(BasicBlock* block)
     {
         m_block = block;
+        CheckPhis(block);
+    }
+
+    void CheckPhis(BasicBlock* block)
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            if (!stmt->IsPhiDefnStmt())
+            {
+                break;
+            }
+
+            GenTree* const phiDefNode = stmt->GetRootNode();
+            assert(phiDefNode->IsPhiDefn());
+            GenTreeLclVarCommon* const phiDefLclNode = phiDefNode->gtGetOp1()->AsLclVarCommon();
+            GenTreePhi* const          phi           = phiDefNode->gtGetOp2()->AsPhi();
+
+            // Verify each GT_PHI_ARG is the right local.
+            //
+            // If block does not begin a handler, verify GT_PHI_ARG blocks are unique
+            // (that is, each pred supplies at most one ssa def).
+            //
+            BitVecTraits bitVecTraits(m_compiler->fgBBNumMax + 1, m_compiler);
+            BitVec       phiPreds(BitVecOps::MakeEmpty(&bitVecTraits));
+
+            for (GenTreePhi::Use& use : phi->Uses())
+            {
+                GenTreePhiArg* const phiArgNode = use.GetNode()->AsPhiArg();
+                if (phiArgNode->GetLclNum() != phiDefLclNode->GetLclNum())
+                {
+                    SetHasErrors();
+                    JITDUMP("[error] Wrong local V%02u in PhiArg [%06u] -- expected V%02u\n", phiArgNode->GetLclNum(),
+                            m_compiler->dspTreeID(phiArgNode), phiDefLclNode->GetLclNum());
+                }
+
+                // Handlers can have multiple PhiArgs from the same block and implicit preds.
+                // So we can't easily check their PhiArgs.
+                //
+                if (m_compiler->bbIsHandlerBeg(block))
+                {
+                    continue;
+                }
+
+                BasicBlock* const phiArgBlock = phiArgNode->gtPredBB;
+
+                if (phiArgBlock != nullptr)
+                {
+                    if (BitVecOps::IsMember(&bitVecTraits, phiPreds, phiArgBlock->bbNum))
+                    {
+                        SetHasErrors();
+                        JITDUMP("[error] " FMT_BB " [%06u]: multiple PhiArgs for predBlock " FMT_BB "\n", block->bbNum,
+                                m_compiler->dspTreeID(phi), phiArgBlock->bbNum);
+                    }
+
+                    BitVecOps::AddElemD(&bitVecTraits, phiPreds, phiArgBlock->bbNum);
+
+                    // If phiArgBlock is not a pred of block we either have messed up when building
+                    // SSA or made modifications after building SSA and possibly should have pruned
+                    // out or updated this PhiArg.
+                    //
+                    FlowEdge* const edge = m_compiler->fgGetPredForBlock(block, phiArgBlock);
+
+                    if (edge == nullptr)
+                    {
+                        JITDUMP("[info] " FMT_BB " [%06u]: stale PhiArg [%06u] pred block " FMT_BB "\n", block->bbNum,
+                                m_compiler->dspTreeID(phi), m_compiler->dspTreeID(phiArgNode), phiArgBlock->bbNum);
+                    }
+                }
+            }
+        }
     }
 
     void DoChecks()
