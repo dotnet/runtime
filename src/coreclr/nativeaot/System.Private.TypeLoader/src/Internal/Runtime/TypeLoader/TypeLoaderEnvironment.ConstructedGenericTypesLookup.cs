@@ -97,60 +97,25 @@ namespace Internal.Runtime.TypeLoader
             internal abstract bool MatchParsedEntry(RuntimeTypeHandle tentativeType);
             internal abstract bool MatchGenericTypeEntry(GenericTypeEntry entry);
         }
-        internal class DefTypeBasedGenericTypeLookup : GenericTypeLookupData
+
+        internal class HandleBasedGenericTypeLookup : GenericTypeLookupData
         {
-            protected DefType _typeToLookup;
-
-            internal DefTypeBasedGenericTypeLookup(DefType typeToLookup) { _typeToLookup = typeToLookup; }
-
-            internal override int LookupHashCode() { return _typeToLookup.GetHashCode(); }
-
-            internal override bool MatchParsedEntry(RuntimeTypeHandle tentativeType)
-            {
-                //
-                // Entries read from the hashtable are loaded as DefTypes, and compared to the input.
-                // This lookup is slower than the lookups using RuntimeTypeHandles, but can handle cases where we don't have
-                // RuntimeTypeHandle values for all of the components of the input DefType, but still need to look it up in case the type
-                // statically exists and has an existing RuntimeTypeHandle value.
-                //
-                TypeSystemContext context = _typeToLookup.Context;
-
-                RuntimeTypeHandle[] parsedArgsHandles;
-                RuntimeTypeHandle parsedTypeDefinitionHandle = RuntimeAugments.GetGenericInstantiation(tentativeType, out parsedArgsHandles);
-
-                DefType parsedTypeDefinition = (DefType)context.ResolveRuntimeTypeHandle(parsedTypeDefinitionHandle);
-                Instantiation parsedArgs = context.ResolveRuntimeTypeHandles(parsedArgsHandles);
-                DefType parsedGenericType = context.ResolveGenericInstantiation(parsedTypeDefinition, parsedArgs);
-
-                return parsedGenericType == _typeToLookup;
-            }
-
-            internal override bool MatchGenericTypeEntry(GenericTypeEntry entry)
-            {
-                TypeSystemContext context = _typeToLookup.Context;
-
-                DefType parsedTypeDefinition = (DefType)context.ResolveRuntimeTypeHandle(entry._genericTypeDefinitionHandle);
-                Instantiation parsedArgs = context.ResolveRuntimeTypeHandles(entry._genericTypeArgumentHandles);
-                DefType parsedGenericType = context.ResolveGenericInstantiation(parsedTypeDefinition, parsedArgs);
-
-                return parsedGenericType == _typeToLookup;
-            }
-        }
-        internal class HandleBasedGenericTypeLookup : DefTypeBasedGenericTypeLookup
-        {
+            private DefType _typeToLookup;
             private RuntimeTypeHandle _genericTypeDefinitionHandle;
             private RuntimeTypeHandle[] _genericTypeArgumentHandles;
 
-            internal HandleBasedGenericTypeLookup(DefType typeToLookup) : base(typeToLookup)
+            internal HandleBasedGenericTypeLookup(DefType typeToLookup)
             {
                 Debug.Assert(typeToLookup != null);
+                _typeToLookup = typeToLookup;
                 _genericTypeDefinitionHandle = _typeToLookup.GetTypeDefinition().RuntimeTypeHandle;
                 // _genericTypeArgumentHandles not initialized here to avoid allocation of new array (and it's not used if we initialize _typeToLookup).
             }
 
-            internal HandleBasedGenericTypeLookup(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles) : base(null)
+            internal HandleBasedGenericTypeLookup(RuntimeTypeHandle genericTypeDefinitionHandle, RuntimeTypeHandle[] genericTypeArgumentHandles)
             {
                 Debug.Assert(genericTypeArgumentHandles != null);
+                _typeToLookup = null;
                 _genericTypeDefinitionHandle = genericTypeDefinitionHandle;
                 _genericTypeArgumentHandles = genericTypeArgumentHandles;
             }
