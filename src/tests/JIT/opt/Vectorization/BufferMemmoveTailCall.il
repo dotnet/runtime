@@ -3,7 +3,7 @@
 
 .assembly extern System.Runtime {}
 .assembly extern System.Runtime.Extensions {}
-.assembly TailCallBufferMemmoveTests {
+.assembly BufferMemmoveTailCall {
     // Allow access to private members of System.Private.CoreLib
     .custom instance void System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute::.ctor(string) = (
         01 00 16 53 79 73 74 65 6d 2e 50 72 69 76 61 74

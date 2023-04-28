@@ -6,7 +6,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
   .ver 6:0:0:0
 }
-.assembly store
+.assembly normalizeOnStore
 {
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
   .custom instance void [System.Runtime]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx

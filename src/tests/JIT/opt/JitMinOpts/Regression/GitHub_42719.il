@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib { }
-.assembly GitHub_42719 {}
+.assembly ASSEMBLY_NAME {}
 .method public static int32 Main() cil managed
 {
     .entrypoint
