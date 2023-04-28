@@ -265,7 +265,10 @@ public:
     static FixedBitVect* bitVectInit(UINT size, Compiler* comp);
 
     // bitVectGetSize() - Get number of bits in the bit set
-    UINT bitVectGetSize() { return bitVectSize; }
+    UINT bitVectGetSize()
+    {
+        return bitVectSize;
+    }
 
     // bitVectSet() - Sets the given bit
     void bitVectSet(UINT bitNum);

@@ -715,14 +715,13 @@ public:
     struct Segment
     {
         unsigned Start = 0;
-        unsigned End = 0;
+        unsigned End   = 0;
 
         Segment()
         {
         }
 
-        Segment(unsigned start, unsigned end)
-            : Start(start), End(end)
+        Segment(unsigned start, unsigned end) : Start(start), End(end)
         {
         }
 
@@ -749,7 +748,7 @@ public:
         void Merge(const Segment& other)
         {
             Start = min(Start, other.Start);
-            End = max(End, other.End);
+            End   = max(End, other.End);
         }
     };
 
@@ -933,8 +932,8 @@ public:
     //
     void Check(FixedBitVect* vect)
     {
-        bool first = true;
-        unsigned last = 0;
+        bool     first = true;
+        unsigned last  = 0;
         for (const Segment& segment : m_segments)
         {
             assert(first || (last < segment.Start));
@@ -947,7 +946,7 @@ public:
                 assert(vect->bitVectTest(i));
 
             first = false;
-            last = segment.End;
+            last  = segment.End;
         }
 
         for (unsigned i = last, size = vect->bitVectGetSize(); i < size; i++)
@@ -997,7 +996,11 @@ class DecompositionPlan
 
 public:
     DecompositionPlan(Compiler* comp, GenTree* dst, GenTree* src, bool srcInvolvesReplacements)
-        : m_compiler(comp), m_entries(comp->getAllocator(CMK_Promotion)), m_dst(dst), m_src(src), m_srcInvolvesReplacements(srcInvolvesReplacements)
+        : m_compiler(comp)
+        , m_entries(comp->getAllocator(CMK_Promotion))
+        , m_dst(dst)
+        , m_src(src)
+        , m_srcInvolvesReplacements(srcInvolvesReplacements)
     {
     }
 
@@ -1129,8 +1132,8 @@ private:
     int64_t GetInitPattern()
     {
         assert(IsInit());
-        GenTree* cns = m_src->OperIsInitVal() ? m_src->gtGetOp1() : m_src;
-        int64_t pattern = int64_t(cns->AsIntCon()->IconValue() & 0xFF) * 0x0101010101010101LL;
+        GenTree* cns     = m_src->OperIsInitVal() ? m_src->gtGetOp1() : m_src;
+        int64_t  pattern = int64_t(cns->AsIntCon()->IconValue() & 0xFF) * 0x0101010101010101LL;
         return pattern;
     }
 
@@ -1202,12 +1205,12 @@ private:
             unsigned numFields = compHnd->getClassNumInstanceFields(dstLayout->GetClassHandle());
             for (unsigned i = 0; i < numFields; i++)
             {
-                CORINFO_FIELD_HANDLE fieldHnd = compHnd->getFieldInClass(dstLayout->GetClassHandle(), (int)i);
-                unsigned fldOffset = compHnd->getFieldOffset(fieldHnd);
+                CORINFO_FIELD_HANDLE fieldHnd  = compHnd->getFieldInClass(dstLayout->GetClassHandle(), (int)i);
+                unsigned             fldOffset = compHnd->getFieldOffset(fieldHnd);
                 CORINFO_CLASS_HANDLE fieldClassHandle;
-                CorInfoType corType = compHnd->getFieldType(fieldHnd, &fieldClassHandle);
-                var_types varType = JITtype2varType(corType);
-                unsigned size = genTypeSize(varType);
+                CorInfoType          corType = compHnd->getFieldType(fieldHnd, &fieldClassHandle);
+                var_types            varType = JITtype2varType(corType);
+                unsigned             size    = genTypeSize(varType);
                 if (size == 0)
                 {
                     // TODO-CQ: Recursively handle padding in sub structures
@@ -1267,8 +1270,8 @@ private:
             FullBlock,
         };
 
-        int Type;
-        unsigned PrimitiveOffset;
+        int       Type;
+        unsigned  PrimitiveOffset;
         var_types PrimitiveType;
 
         RemainderStrategy(int type, unsigned primitiveOffset = 0, var_types primitiveType = TYP_UNDEF)
@@ -1306,30 +1309,30 @@ private:
         if (remainder.IsSingleSegment(&segment) && !m_dst->OperIs(GT_LCL_VAR))
         {
             var_types primitiveType = TYP_UNDEF;
-            unsigned size = segment.End - segment.Start;
+            unsigned  size          = segment.End - segment.Start;
             switch (size)
             {
-            case 1:
-                primitiveType = TYP_UBYTE;
-                break;
-            case 2:
-                primitiveType = TYP_USHORT;
-                break;
+                case 1:
+                    primitiveType = TYP_UBYTE;
+                    break;
+                case 2:
+                    primitiveType = TYP_USHORT;
+                    break;
 #ifdef TARGET_64BIT
-            case 4:
-                primitiveType = TYP_INT;
-                break;
+                case 4:
+                    primitiveType = TYP_INT;
+                    break;
 #endif
-            case TARGET_POINTER_SIZE:
-                primitiveType = TYP_I_IMPL;
-                if ((segment.Start % TARGET_POINTER_SIZE) == 0)
-                {
-                    ClassLayout* dstLayout = m_dst->GetLayout(m_compiler);
-                    primitiveType = dstLayout->GetGCPtrType(segment.Start / TARGET_POINTER_SIZE);
-                }
-                break;
+                case TARGET_POINTER_SIZE:
+                    primitiveType = TYP_I_IMPL;
+                    if ((segment.Start % TARGET_POINTER_SIZE) == 0)
+                    {
+                        ClassLayout* dstLayout = m_dst->GetLayout(m_compiler);
+                        primitiveType          = dstLayout->GetGCPtrType(segment.Start / TARGET_POINTER_SIZE);
+                    }
+                    break;
 
-                // TODO-CQ: SIMD sizes
+                    // TODO-CQ: SIMD sizes
             }
 
             if (primitiveType != TYP_UNDEF)
@@ -1380,9 +1383,10 @@ private:
         }
         else if (remainderStrategy.Type == RemainderStrategy::Primitive)
         {
-            GenTree* src = CreateInitValue(remainderStrategy.PrimitiveType, initPattern);
+            GenTree*             src    = CreateInitValue(remainderStrategy.PrimitiveType, initPattern);
             GenTreeLclVarCommon* dstLcl = m_dst->AsLclVarCommon();
-            GenTree* dst = m_compiler->gtNewLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType, dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
+            GenTree*             dst = m_compiler->gtNewLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
+                                                       dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
             m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
             statements->AddStatement(m_compiler->gtNewAssignNode(dst, src));
         }
@@ -1504,15 +1508,15 @@ private:
         {
             switch (remainderStrategy.Type)
             {
-            case RemainderStrategy::NoRemainder:
-            case RemainderStrategy::Primitive:
-                // See if our first indirection will subsume the null check (usual case).
-                assert(m_entries.Height() > 0);
-                const Entry& entry = m_entries.BottomRef(0);
+                case RemainderStrategy::NoRemainder:
+                case RemainderStrategy::Primitive:
+                    // See if our first indirection will subsume the null check (usual case).
+                    assert(m_entries.Height() > 0);
+                    const Entry& entry = m_entries.BottomRef(0);
 
-                assert((entry.FromLclNum == BAD_VAR_NUM) || (entry.ToLclNum == BAD_VAR_NUM));
-                needsNullCheck = m_compiler->fgIsBigOffset(addrBaseOffs + entry.Offset);
-                break;
+                    assert((entry.FromLclNum == BAD_VAR_NUM) || (entry.ToLclNum == BAD_VAR_NUM));
+                    needsNullCheck = m_compiler->fgIsBigOffset(addrBaseOffs + entry.Offset);
+                    break;
             }
         }
 
@@ -1686,12 +1690,14 @@ private:
             if (m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
                 GenTreeLclVarCommon* dstLcl = dst->AsLclVarCommon();
-                dst = m_compiler->gtNewLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType, dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
+                dst = m_compiler->gtNewLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
+                                                  dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
                 m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
             }
             else
             {
-                dst = m_compiler->gtNewIndir(remainderStrategy.PrimitiveType, grabAddr(remainderStrategy.PrimitiveOffset));
+                dst = m_compiler->gtNewIndir(remainderStrategy.PrimitiveType,
+                                             grabAddr(remainderStrategy.PrimitiveOffset));
                 PropagateIndirFlags(dst, indirFlags);
             }
 
@@ -1699,12 +1705,14 @@ private:
             if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
                 GenTreeLclVarCommon* srcLcl = src->AsLclVarCommon();
-                src = m_compiler->gtNewLclFldNode(srcLcl->GetLclNum(), remainderStrategy.PrimitiveType, srcLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
+                src = m_compiler->gtNewLclFldNode(srcLcl->GetLclNum(), remainderStrategy.PrimitiveType,
+                                                  srcLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
                 m_compiler->lvaSetVarDoNotEnregister(srcLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
             }
             else
             {
-                src = m_compiler->gtNewIndir(remainderStrategy.PrimitiveType, grabAddr(remainderStrategy.PrimitiveOffset));
+                src = m_compiler->gtNewIndir(remainderStrategy.PrimitiveType,
+                                             grabAddr(remainderStrategy.PrimitiveOffset));
                 PropagateIndirFlags(src, indirFlags);
             }
 
@@ -1929,7 +1937,8 @@ public:
                 {
                     if (dstFirstRep->NeedsWriteBack)
                     {
-                        JITDUMP("*** Block operation partially overlaps with destination V%02u (%s). Write and read-backs are "
+                        JITDUMP("*** Block operation partially overlaps with destination V%02u (%s). Write and "
+                                "read-backs are "
                                 "necessary.\n",
                                 dstFirstRep->LclNum, dstFirstRep->Description);
                         // The value of the replacement will be partially assembled from its old value and this struct
@@ -1952,10 +1961,10 @@ public:
                     {
                         if (dstLastRep->NeedsWriteBack)
                         {
-                            JITDUMP(
-                                "*** Block operation partially overlaps with destination V%02u (%s). Write and read-backs are "
-                                "necessary.\n",
-                                dstLastRep->LclNum, dstLastRep->Description);
+                            JITDUMP("*** Block operation partially overlaps with destination V%02u (%s). Write and "
+                                    "read-backs are "
+                                    "necessary.\n",
+                                    dstLastRep->LclNum, dstLastRep->Description);
                             result.AddStatement(CreateWriteBack(dstLcl->GetLclNum(), *dstLastRep));
 
                             dstLastRep->NeedsWriteBack = false;
@@ -1976,8 +1985,9 @@ public:
                 {
                     if (srcFirstRep->NeedsWriteBack)
                     {
-                        JITDUMP("*** Block operation partially overlaps with source V%02u (%s). Write back is necessary.\n",
-                                srcFirstRep->LclNum, srcFirstRep->Description);
+                        JITDUMP(
+                            "*** Block operation partially overlaps with source V%02u (%s). Write back is necessary.\n",
+                            srcFirstRep->LclNum, srcFirstRep->Description);
 
                         result.AddStatement(CreateWriteBack(srcLcl->GetLclNum(), *srcFirstRep));
 
@@ -1994,7 +2004,8 @@ public:
                     {
                         if (srcLastRep->NeedsWriteBack)
                         {
-                            JITDUMP("*** Block operation partially overlaps with source V%02u (%s). Write back is necessary.\n",
+                            JITDUMP("*** Block operation partially overlaps with source V%02u (%s). Write back is "
+                                    "necessary.\n",
                                     srcLastRep->LclNum, srcLastRep->Description);
 
                             result.AddStatement(CreateWriteBack(srcLcl->GetLclNum(), *srcLastRep));
@@ -2051,17 +2062,14 @@ public:
     //   endRep   - End of the replacements.
     //   plan     - Decomposition plan to add initialization entries into.
     //
-    void InitFields(GenTreeLclVarCommon* dst,
-                    Replacement*         firstRep,
-                    Replacement*         endRep,
-                    DecompositionPlan*   plan)
+    void InitFields(GenTreeLclVarCommon* dst, Replacement* firstRep, Replacement* endRep, DecompositionPlan* plan)
     {
         for (Replacement* rep = firstRep; rep < endRep; rep++)
         {
             if (!plan->CanInitPrimitive(rep->AccessType))
             {
                 JITDUMP("  Unsupported init of %s %s. Will init as struct and read back.\n",
-                    varTypeName(rep->AccessType), rep->Description);
+                        varTypeName(rep->AccessType), rep->Description);
 
                 // We will need to read this one back after initing the struct.
                 rep->NeedsWriteBack = false;
@@ -2116,8 +2124,8 @@ public:
         {
             if ((srcRep < srcEndRep) && srcRep->NeedsReadBack)
             {
-                JITDUMP("  Source replacement V%02u (%s) is stale. Will read it back before copy.\n",
-                    srcRep->LclNum, srcRep->Description);
+                JITDUMP("  Source replacement V%02u (%s) is stale. Will read it back before copy.\n", srcRep->LclNum,
+                        srcRep->Description);
 
                 assert(srcLcl != nullptr);
                 statements->AddStatement(CreateReadBack(srcLcl->GetLclNum(), *srcRep));
@@ -2158,7 +2166,8 @@ public:
                 {
                     plan->CopyBetweenReplacements(dstRep->LclNum, srcRep->LclNum, dstRep->Offset - dstBaseOffs,
                                                   dstRep->AccessType);
-                    JITDUMP("  V%02u (%s) <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description, srcRep->LclNum, srcRep->Description);
+                    JITDUMP("  V%02u (%s) <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description, srcRep->LclNum,
+                            srcRep->Description);
 
                     dstRep->NeedsWriteBack = true;
                     dstRep->NeedsReadBack  = false;
@@ -2172,7 +2181,7 @@ public:
                 // iteration of the loop.
                 statements->AddStatement(CreateWriteBack(srcLcl->GetLclNum(), *srcRep));
                 JITDUMP("  Partial overlap of V%02u (%s) <- V%02u (%s). Will read source back before copy\n",
-                    dstRep->LclNum, dstRep->Description, srcRep->LclNum, srcRep->Description);
+                        dstRep->LclNum, dstRep->Description, srcRep->LclNum, srcRep->Description);
                 srcRep++;
                 continue;
             }
@@ -2191,11 +2200,10 @@ public:
                         LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
                         if (dsc->lvType == dstRep->AccessType)
                         {
-                            plan->CopyBetweenReplacements(dstRep->LclNum, fieldLcl, offs,
-                                dstRep->AccessType);
+                            plan->CopyBetweenReplacements(dstRep->LclNum, fieldLcl, offs, dstRep->AccessType);
                             JITDUMP("  V%02u (%s) <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description, dsc->lvReason);
                             dstRep->NeedsWriteBack = true;
-                            dstRep->NeedsReadBack = false;
+                            dstRep->NeedsReadBack  = false;
                             dstRep++;
                             continue;
                         }
@@ -2226,9 +2234,9 @@ public:
                         LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
                         if (dsc->lvType == srcRep->AccessType)
                         {
-                            plan->CopyBetweenReplacements(fieldLcl, srcRep->LclNum, offs,
-                                srcRep->AccessType);
-                            JITDUMP("  V%02u (%s) <- V%02u (%s)\n", fieldLcl, dsc->lvReason, srcRep->LclNum, srcRep->Description);
+                            plan->CopyBetweenReplacements(fieldLcl, srcRep->LclNum, offs, srcRep->AccessType);
+                            JITDUMP("  V%02u (%s) <- V%02u (%s)\n", fieldLcl, dsc->lvReason, srcRep->LclNum,
+                                    srcRep->Description);
                             srcRep++;
                             continue;
                         }
