@@ -1160,7 +1160,7 @@ private:
         if (dstLayout->IsBlockLayout())
         {
             significantPadding = true;
-            JITDUMP("    Block op has significant padding due to block layout\n");
+            JITDUMP("  Block op has significant padding due to block layout\n");
         }
         else
         {
@@ -1168,17 +1168,17 @@ private:
             if ((attribs & CORINFO_FLG_INDEXABLE_FIELDS) != 0)
             {
                 significantPadding = true;
-                JITDUMP("    Block op has significant padding due to indexable fields\n");
+                JITDUMP("  Block op has significant padding due to indexable fields\n");
             }
             else if ((attribs & CORINFO_FLG_DONT_DIG_FIELDS) != 0)
             {
                 significantPadding = true;
-                JITDUMP("    Block op has significant padding due to CORINFO_FLG_DONT_DIG_FIELDS\n");
+                JITDUMP("  Block op has significant padding due to CORINFO_FLG_DONT_DIG_FIELDS\n");
             }
             else if (((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0) && ((attribs & CORINFO_FLG_CONTAINS_GC_PTR) == 0))
             {
                 significantPadding = true;
-                JITDUMP("    Block op has significant padding due to CUSTOMLAYOUT without GC pointers\n");
+                JITDUMP("  Block op has significant padding due to CUSTOMLAYOUT without GC pointers\n");
             }
             else
             {
@@ -1250,7 +1250,7 @@ private:
 
         if (m_compiler->verbose)
         {
-            printf("    Remainder: ");
+            printf("  Remainder: ");
             segments.Dump();
             printf("\n");
         }
@@ -1296,7 +1296,7 @@ private:
         StructSegments remainder = ComputeRemainder();
         if (remainder.IsEmpty())
         {
-            JITDUMP("  => remainder strategy: do nothing\n");
+            JITDUMP("  => Remainder strategy: do nothing\n");
             return RemainderStrategy(RemainderStrategy::NoRemainder);
         }
 
