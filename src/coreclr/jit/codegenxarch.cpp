@@ -3177,13 +3177,11 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             regSize = min(regSize, YMM_REGSIZE_BYTES);
         }
 
-        bool zeroing = false;
         if (src->gtSkipReloadOrCopy()->IsIntegralConst(0))
         {
             // If the source is constant 0 then always use xorps, it's faster
             // than copying the constant from a GPR to a XMM register.
             emit->emitIns_R_R(INS_xorps, EA_ATTR(regSize), srcXmmReg, srcXmmReg);
-            zeroing = true;
         }
         else if (src->gtSkipReloadOrCopy()->IsIntegralConst())
         {

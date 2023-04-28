@@ -345,7 +345,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 }
 
                 const bool willUseSimd =
-                    canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES) && comp->IsBaselineSimdIsaSupported();
+                    canUseSimd && (size >= XMM_REGSIZE_BYTES) && comp->IsBaselineSimdIsaSupported();
                 if (willUseSimd)
                 {
                     // We're going to use SIMD (and only SIMD - we don't want to occupy a GPR register with a fill value
