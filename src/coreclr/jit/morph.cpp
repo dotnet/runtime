@@ -9373,6 +9373,15 @@ DONE_MORPHING_CHILDREN:
             tree = fgOptimizeCastOnStore(tree);
             op1  = tree->gtGetOp1();
             op2  = tree->gtGetOp2IfPresent();
+
+            if (tree->OperIs(GT_STOREIND))
+            {
+                GenTree* optimizedTree = fgOptimizeIndir(tree->AsIndir());
+                if (optimizedTree != nullptr)
+                {
+                    return optimizedTree;
+                }
+            }
             break;
 
         case GT_CAST:
@@ -9711,37 +9720,17 @@ DONE_MORPHING_CHILDREN:
             fgSetRngChkTarget(tree);
             break;
 
-        case GT_BLK:
         case GT_IND:
         {
-            if (!tree->OperIs(GT_IND))
-            {
-                break;
-            }
-
             if (op1->IsIconHandle(GTF_ICON_OBJ_HDL))
             {
                 tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
             }
 
-            if (!tree->AsIndir()->IsVolatile() && !tree->TypeIs(TYP_STRUCT) && op1->OperIs(GT_LCL_ADDR) &&
-                !optValnumCSE_phase)
+            GenTree* optimizedTree = fgOptimizeIndir(tree->AsIndir());
+            if (optimizedTree != nullptr)
             {
-                unsigned loadSize   = tree->AsIndir()->Size();
-                unsigned offset     = op1->AsLclVarCommon()->GetLclOffs();
-                unsigned loadExtent = offset + loadSize;
-                unsigned lclSize    = lvaLclExactSize(op1->AsLclVarCommon()->GetLclNum());
-
-                if ((loadExtent <= lclSize) && (loadExtent < UINT16_MAX))
-                {
-                    op1->ChangeType(tree->TypeGet());
-                    op1->SetOper(GT_LCL_FLD);
-                    op1->AsLclFld()->SetLclOffs(offset);
-                    op1->SetVNsFromNode(tree);
-                    op1->AddAllEffectsFlags(tree->gtFlags & GTF_GLOB_REF);
-
-                    return op1;
-                }
+                return optimizedTree;
             }
 
 #ifdef TARGET_ARM
@@ -10072,6 +10061,61 @@ void Compiler::fgTryReplaceStructLocalWithField(GenTree* tree)
             lclVar->ChangeType(fieldDsc->lvType);
         }
     }
+}
+
+//------------------------------------------------------------------------
+// fgOptimizeIndir: Optimize an indirection.
+//
+// Turns indirections off of local addresses into local field nodes.
+//
+// Arguments:
+//    indir - The indirection to optimize (can be a store)
+//
+// Return Value:
+//    The optimized tree or "nullptr" if no transformations were performed.
+//
+GenTree* Compiler::fgOptimizeIndir(GenTreeIndir* indir)
+{
+    assert(indir->isIndir());
+    GenTree* addr = indir->Addr();
+
+    if (!indir->IsVolatile() && !indir->TypeIs(TYP_STRUCT) && addr->OperIs(GT_LCL_ADDR) && !optValnumCSE_phase)
+    {
+        unsigned size    = indir->Size();
+        unsigned offset  = addr->AsLclVarCommon()->GetLclOffs();
+        unsigned extent  = offset + size;
+        unsigned lclSize = lvaLclExactSize(addr->AsLclVarCommon()->GetLclNum());
+
+        if ((extent <= lclSize) && (extent < UINT16_MAX))
+        {
+            addr->ChangeType(indir->TypeGet());
+            if (indir->OperIs(GT_STOREIND))
+            {
+                GenTree* data = indir->Data();
+                addr->SetOper(GT_STORE_LCL_FLD);
+                addr->AsLclFld()->Data() = data;
+                addr->gtFlags |= (GTF_ASG | GTF_VAR_DEF);
+                addr->AddAllEffectsFlags(data);
+            }
+            else
+            {
+                assert(indir->OperIs(GT_IND));
+                addr->SetOper(GT_LCL_FLD);
+            }
+            addr->AsLclFld()->SetLclOffs(offset);
+            addr->SetVNsFromNode(indir);
+            addr->AddAllEffectsFlags(indir->gtFlags & GTF_GLOB_REF);
+
+            if (addr->OperIs(GT_STORE_LCL_FLD) && addr->IsPartialLclFld(this))
+            {
+                addr->gtFlags |= GTF_VAR_USEASG;
+            }
+
+            return addr;
+        }
+    }
+
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
