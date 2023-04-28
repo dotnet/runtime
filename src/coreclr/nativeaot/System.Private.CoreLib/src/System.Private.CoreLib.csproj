@@ -254,7 +254,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Variant.cs">
@@ -304,9 +303,6 @@
     <Compile Include="System\Threading\ThreadPool.Windows.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolBoundHandle.cs" />
-    <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.cs" />
-    <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.ExecutionContextCallbackArgs.cs" />
-    <Compile Include="System\Threading\Win32ThreadPoolNativeOverlapped.OverlappedData.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolPreAllocatedOverlapped.cs" />
     <Compile Include="System\Threading\Win32ThreadPoolRegisteredWaitHandle.cs" />
   </ItemGroup>
