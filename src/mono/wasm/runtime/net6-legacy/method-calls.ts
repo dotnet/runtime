@@ -3,7 +3,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
-import { Module, runtimeHelpers, INTERNAL, ENVIRONMENT_IS_PTHREAD } from "../imports";
+import { Module, runtimeHelpers, INTERNAL, ENVIRONMENT_IS_PTHREAD } from "../globals";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { _release_temp_frame } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";

@@ -2240,7 +2240,7 @@ namespace Internal.JitInterface
             return index;
         }
 
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
+        private bool getStaticFieldContent(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize, int valueOffset, bool ignoreMovableObjects)
         {
             Debug.Assert(fieldHandle != null);
             Debug.Assert(buffer != null);
@@ -2300,6 +2300,33 @@ namespace Internal.JitInterface
                     }
                 }
             }
+            return false;
+        }
+
+        private bool getObjectContent(CORINFO_OBJECT_STRUCT_* objPtr, byte* buffer, int bufferSize, int valueOffset)
+        {
+            Debug.Assert(objPtr != null);
+            Debug.Assert(buffer != null);
+            Debug.Assert(bufferSize >= 0);
+            Debug.Assert(valueOffset >= 0);
+
+            object obj = HandleToObject(objPtr);
+            if (obj is FrozenStringNode frozenStr)
+            {
+                // Only support reading the string data
+                int strDataOffset = _compilation.TypeSystemContext.Target.PointerSize + sizeof(int); // 12 on 64bit
+                if (valueOffset >= strDataOffset && (long)frozenStr.Data.Length * 2 >= (valueOffset - strDataOffset) + bufferSize)
+                {
+                    int offset = valueOffset - strDataOffset;
+                    fixed (char* pStr = frozenStr.Data)
+                    {
+                        new Span<byte>((byte*)pStr + offset, bufferSize).CopyTo(
+                            new Span<byte>(buffer, bufferSize));
+                        return true;
+                    }
+                }
+            }
+            // TODO: handle FrozenObjectNode
             return false;
         }
 

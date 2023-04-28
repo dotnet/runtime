@@ -182,7 +182,7 @@ namespace System.Runtime
                 if (i->_usInterfaceMethodSlot == itfSlotNumber)
                 {
                     MethodTable* pCurEntryType =
-                        pTgtType->InterfaceMap[i->_usInterfaceIndex].InterfaceType;
+                        pTgtType->InterfaceMap[i->_usInterfaceIndex];
 
                     if (pCurEntryType == pItfType)
                     {
@@ -250,7 +250,7 @@ namespace System.Runtime
             {
                 StaticVirtualMethodContextSource.None => null,
                 StaticVirtualMethodContextSource.ContextFromThisClass => pTgtType,
-                _ => pTgtType->InterfaceMap[usEncodedValue - StaticVirtualMethodContextSource.ContextFromFirstInterface].InterfaceType
+                _ => pTgtType->InterfaceMap[usEncodedValue - StaticVirtualMethodContextSource.ContextFromFirstInterface]
             };
         }
     }

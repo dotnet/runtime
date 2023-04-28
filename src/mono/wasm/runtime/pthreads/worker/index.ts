@@ -4,10 +4,10 @@
 /// <reference lib="webworker" />
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { Module, ENVIRONMENT_IS_PTHREAD, runtimeHelpers, ENVIRONMENT_IS_WEB } from "../../imports";
+import { Module, ENVIRONMENT_IS_PTHREAD, runtimeHelpers, ENVIRONMENT_IS_WEB } from "../../globals";
 import { makeChannelCreatedMonoMessage, makePreloadMonoMessage } from "../shared";
 import type { pthread_ptr } from "../shared/types";
-import { mono_assert, is_nullish, MonoConfig, MonoConfigInternal } from "../../types";
+import { is_nullish, MonoConfigInternal, mono_assert } from "../../types";
 import type { MonoThreadMessage } from "../shared";
 import {
     PThreadSelf,
@@ -18,6 +18,7 @@ import {
 } from "./events";
 import { setup_proxy_console } from "../../logging";
 import { afterConfigLoaded, preRunWorker } from "../../startup";
+import { MonoConfig } from "../../types-api";
 
 // re-export some of the events types
 export {
