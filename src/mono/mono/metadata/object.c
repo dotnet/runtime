@@ -2517,8 +2517,8 @@ mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, MonoError *
 			res = vtable [method->slot];
 		}
 	}
-
-	if (method->is_inflated) {
+	// res can be null if klass is abstract and doesn't implement method
+	if (res && method->is_inflated) {
 		/* Have to inflate the result */
 		res = mono_class_inflate_generic_method_checked (res, &((MonoMethodInflated*)method)->context, error);
 	}
