@@ -4205,11 +4205,25 @@ public:
 
     void CheckPhis(BasicBlock* block)
     {
+        Statement* nonPhiStmt = nullptr;
         for (Statement* const stmt : block->Statements())
         {
+            // All PhiDefs should appear before any other statements
+            //
             if (!stmt->IsPhiDefnStmt())
             {
-                break;
+                if (nonPhiStmt == nullptr)
+                {
+                    nonPhiStmt = stmt;
+                }
+                continue;
+            }
+
+            if (nonPhiStmt != nullptr)
+            {
+                SetHasErrors();
+                JITDUMP("[error] " FMT_BB " PhiDef " FMT_STMT " appears after non-PhiDef " FMT_STMT "\n", block->bbNum,
+                        stmt->GetID(), nonPhiStmt->GetID());
             }
 
             GenTree* const phiDefNode = stmt->GetRootNode();
