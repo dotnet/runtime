@@ -1842,7 +1842,24 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 // Produce code for a GT_INC_SATURATE node.
 void CodeGen::genCodeForIncSaturate(GenTree* tree)
 {
-    NYI("unimplemented on LOONGARCH64 yet");
+    regNumber targetReg = tree->GetRegNum();
+
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    assert(!tree->isContained());
+    // The dst can only be a register.
+    assert(targetReg != REG_NA);
+
+    GenTree* operand = tree->gtGetOp1();
+    assert(!operand->isContained());
+    // The src must be a register.
+    regNumber operandReg = genConsumeReg(operand);
+
+    GetEmitter()->emitIns_R_R_I(INS_addi_d, emitActualTypeSize(tree), targetReg, operandReg, 1);
+    // bne targetReg, zero, 2 * 4
+    GetEmitter()->emitIns_R_R_I(INS_bne, emitActualTypeSize(tree), targetReg, REG_R0, 8);
+    GetEmitter()->emitIns_R_R_R(INS_orn, emitActualTypeSize(tree), targetReg, REG_R0, targetReg);
+
+    genProduceReg(tree);
 }
 
 // Generate code to get the high N bits of a N*N=2N bit multiplication result
