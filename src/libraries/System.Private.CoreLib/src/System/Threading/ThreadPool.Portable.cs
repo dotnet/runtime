@@ -46,17 +46,6 @@ namespace System.Threading
         [Conditional("unnecessary")]
         internal static void SetMaxIOCompletionThreads(int ioCompletionThreads) { }
 
-        private static bool SetMaxThreadsPortableCore(int workerThreads, int completionPortThreads) =>
-            PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads, completionPortThreads);
-        private static void GetMaxThreadsPortableCore(out int workerThreads, out int completionPortThreads) =>
-            PortableThreadPool.ThreadPoolInstance.GetMaxThreads(out workerThreads, out completionPortThreads);
-        private static bool SetMinThreadsPortableCore(int workerThreads, int completionPortThreads) =>
-            PortableThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads, completionPortThreads);
-        private static void GetMinThreadsPortableCore(out int workerThreads, out int completionPortThreads) =>
-            PortableThreadPool.ThreadPoolInstance.GetMinThreads(out workerThreads, out completionPortThreads);
-        private static void GetAvailableThreadsPortableCore(out int workerThreads, out int completionPortThreads) =>
-            PortableThreadPool.ThreadPoolInstance.GetAvailableThreads(out workerThreads, out completionPortThreads);
-
         /// <summary>
         /// Gets the number of thread pool threads that currently exist.
         /// </summary>
@@ -72,23 +61,6 @@ namespace System.Threading
         /// For a thread pool implementation that may have different types of work items, the count includes all types.
         /// </remarks>
         public static long CompletedWorkItemCount => PortableThreadPool.ThreadPoolInstance.CompletedWorkItemCount;
-
-        /// <summary>
-        /// This method is called to request a new thread pool worker to handle pending work.
-        /// </summary>
-        private static void RequestWorkerThreadPortableCore() => PortableThreadPool.ThreadPoolInstance.RequestWorker();
-
-        private static void NotifyWorkItemProgressPortableCore() => PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool NotifyWorkItemCompletePortableCore(object? threadLocalCompletionCountObject, int currentTimeMs) =>
-            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTimeMs);
-
-        private static bool NotifyThreadBlockedPortableCore() => PortableThreadPool.ThreadPoolInstance.NotifyThreadBlocked();
-        private static void NotifyThreadUnblockedPortableCore() => PortableThreadPool.ThreadPoolInstance.NotifyThreadUnblocked();
-
-        private static object GetOrCreateThreadLocalCompletionCountObjectPortableCore() =>
-            PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,

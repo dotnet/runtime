@@ -29,20 +29,6 @@ namespace System.Threading
         }
     }
 
-    internal sealed class UnmanagedThreadPoolWorkItem : IThreadPoolWorkItem
-    {
-        private readonly IntPtr _callback;
-        private readonly IntPtr _state;
-
-        public UnmanagedThreadPoolWorkItem(IntPtr callback, IntPtr state)
-        {
-            _callback = callback;
-            _state = state;
-        }
-
-        unsafe void IThreadPoolWorkItem.Execute() => ((delegate* unmanaged<IntPtr, int>)_callback)(_state);
-    }
-
     public static partial class ThreadPool
     {
         private static bool EnsureConfigInitializedCore()
@@ -174,53 +160,6 @@ namespace System.Threading
                 if (mustReleaseSafeHandle)
                     osHandle.DangerousRelease();
             }
-        }
-
-        private static object GetOrCreateThreadLocalCompletionCountObjectPortableCore() =>
-            PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
-
-        private static bool SetMaxThreadsPortableCore(int workerThreads, int completionPortThreads) =>
-            PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads, completionPortThreads);
-
-        private static void GetMaxThreadsPortableCore(out int workerThreads, out int completionPortThreads)
-        {
-            PortableThreadPool.ThreadPoolInstance.GetMaxThreads(out workerThreads, out completionPortThreads);
-        }
-
-        private static bool SetMinThreadsPortableCore(int workerThreads, int completionPortThreads) =>
-            PortableThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads, completionPortThreads);
-
-        private static void GetMinThreadsPortableCore(out int workerThreads, out int completionPortThreads)
-        {
-            PortableThreadPool.ThreadPoolInstance.GetMinThreads(out workerThreads, out completionPortThreads);
-        }
-
-        private static void GetAvailableThreadsPortableCore(out int workerThreads, out int completionPortThreads)
-        {
-            PortableThreadPool.ThreadPoolInstance.GetAvailableThreads(out workerThreads, out completionPortThreads);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void NotifyWorkItemProgressPortableCore()
-        {
-            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool NotifyWorkItemCompletePortableCore(object threadLocalCompletionCountObject, int currentTimeMs) =>
-            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTimeMs);
-
-        private static bool NotifyThreadBlockedPortableCore() =>
-            PortableThreadPool.ThreadPoolInstance.NotifyThreadBlocked();
-
-        private static void NotifyThreadUnblockedPortableCore()
-        {
-            PortableThreadPool.ThreadPoolInstance.NotifyThreadUnblocked();
-        }
-
-        private static unsafe void RequestWorkerThreadPortableCore()
-        {
-            PortableThreadPool.ThreadPoolInstance.RequestWorker();
         }
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(

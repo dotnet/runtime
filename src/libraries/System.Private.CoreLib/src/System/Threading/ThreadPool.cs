@@ -53,12 +53,12 @@ namespace System.Threading
         internal static object GetOrCreateThreadLocalCompletionCountObject() =>
             ThreadPool.UseWindowsThreadPool ?
             WindowsThreadPool.GetOrCreateThreadLocalCompletionCountObject() :
-            GetOrCreateThreadLocalCompletionCountObjectPortableCore();
+            PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads) =>
             ThreadPool.UseWindowsThreadPool ?
             WindowsThreadPool.SetMaxThreads(workerThreads, completionPortThreads) :
-            SetMaxThreadsPortableCore(workerThreads, completionPortThreads);
+            PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads, completionPortThreads);
 
         public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
         {
@@ -68,12 +68,14 @@ namespace System.Threading
             }
             else
             {
-                GetMaxThreadsPortableCore(out workerThreads, out completionPortThreads);
+                PortableThreadPool.ThreadPoolInstance.GetMaxThreads(out workerThreads, out completionPortThreads);
             }
         }
 
         public static bool SetMinThreads(int workerThreads, int completionPortThreads) =>
-            SetMinThreadsPortableCore(workerThreads, completionPortThreads);
+            ThreadPool.UseWindowsThreadPool ?
+            WindowsThreadPool.SetMinThreads(workerThreads, completionPortThreads) :
+            PortableThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads, completionPortThreads);
 
         public static void GetMinThreads(out int workerThreads, out int completionPortThreads)
         {
@@ -83,7 +85,7 @@ namespace System.Threading
             }
             else
             {
-                GetMinThreadsPortableCore(out workerThreads, out completionPortThreads);
+                PortableThreadPool.ThreadPoolInstance.GetMinThreads(out workerThreads, out completionPortThreads);
             }
         }
 
@@ -95,7 +97,7 @@ namespace System.Threading
             }
             else
             {
-                GetAvailableThreadsPortableCore(out workerThreads, out completionPortThreads);
+                PortableThreadPool.ThreadPoolInstance.GetAvailableThreads(out workerThreads, out completionPortThreads);
             }
         }
 
@@ -108,7 +110,7 @@ namespace System.Threading
             }
             else
             {
-                NotifyWorkItemProgressPortableCore();
+                PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
             }
         }
 
@@ -116,12 +118,12 @@ namespace System.Threading
         internal static bool NotifyWorkItemComplete(object threadLocalCompletionCountObject, int currentTimeMs) =>
             ThreadPool.UseWindowsThreadPool ?
             WindowsThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTimeMs) :
-            NotifyWorkItemCompletePortableCore(threadLocalCompletionCountObject, currentTimeMs);
+            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTimeMs);
 
         internal static bool NotifyThreadBlocked() =>
             ThreadPool.UseWindowsThreadPool ?
             WindowsThreadPool.NotifyThreadBlocked() :
-            NotifyThreadBlockedPortableCore();
+            PortableThreadPool.ThreadPoolInstance.NotifyThreadBlocked();
 
         internal static void NotifyThreadUnblocked()
         {
@@ -131,10 +133,13 @@ namespace System.Threading
             }
             else
             {
-                NotifyThreadUnblockedPortableCore();
+                PortableThreadPool.ThreadPoolInstance.NotifyThreadUnblocked();
             }
         }
 
+        /// <summary>
+        /// This method is called to request a new thread pool worker to handle pending work.
+        /// </summary>
         internal static unsafe void RequestWorkerThread()
         {
             if (ThreadPool.UseWindowsThreadPool)
@@ -143,7 +148,7 @@ namespace System.Threading
             }
             else
             {
-                RequestWorkerThreadPortableCore();
+                PortableThreadPool.ThreadPoolInstance.RequestWorker();
             }
         }
 
