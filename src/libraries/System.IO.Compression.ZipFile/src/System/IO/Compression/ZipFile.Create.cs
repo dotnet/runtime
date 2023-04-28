@@ -449,12 +449,12 @@ namespace System.IO.Compression
         private static void DoCreateFromDirectory(string sourceDirectoryName, Stream destination,
                                                   CompressionLevel? compressionLevel, bool includeBaseDirectory, Encoding? entryNameEncoding)
         {
-            ArgumentNullException.ThrowIfNull(destination, nameof(destination));
+            ArgumentNullException.ThrowIfNull(destination);
             if (!destination.CanWrite)
             {
                 throw new ArgumentException(SR.UnwritableStream, nameof(destination));
             }
-            if (compressionLevel.HasValue && !Enum.IsDefined(typeof(CompressionLevel), compressionLevel))
+            if (compressionLevel.HasValue && !Enum.IsDefined(compressionLevel.Value))
             {
                 throw new ArgumentOutOfRangeException(nameof(compressionLevel));
             }

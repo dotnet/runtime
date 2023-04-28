@@ -12,6 +12,27 @@ namespace System.IO.Compression.Tests;
 public class ZipFile_Create_Stream : ZipFileTestBase
 {
     [Fact]
+    public void CreateFromDirectory_NullSourceDirectory_Throws()
+    {
+        using MemoryStream ms = new MemoryStream();
+        Assert.Throws<ArgumentNullException>(() => ZipFile.CreateFromDirectory(sourceDirectoryName: null, ms));
+        Assert.Throws<ArgumentNullException>(() => ZipFile.CreateFromDirectory(sourceDirectoryName: null, ms, CompressionLevel.NoCompression, includeBaseDirectory: false));
+        Assert.Throws<ArgumentNullException>(() => ZipFile.CreateFromDirectory(sourceDirectoryName: null, ms, CompressionLevel.NoCompression, includeBaseDirectory: false, Encoding.UTF8));
+    }
+
+    [Theory]
+    [InlineData((CompressionLevel)int.MinValue)]
+    [InlineData((CompressionLevel)(-1))]
+    [InlineData((CompressionLevel)4)]
+    [InlineData((CompressionLevel)int.MaxValue)]
+    public void CreateFromDirectory_CompressionLevel_OutOfRange_Throws(CompressionLevel invalidCompressionLevel)
+    {
+        using MemoryStream ms = new MemoryStream();
+        Assert.Throws<ArgumentOutOfRangeException>(() => ZipFile.CreateFromDirectory("sourceDirectory", ms, invalidCompressionLevel, includeBaseDirectory: false));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ZipFile.CreateFromDirectory("sourceDirectory", ms, invalidCompressionLevel, includeBaseDirectory: false, Encoding.UTF8));
+    }
+       
+    [Fact]
     public void CreateFromDirectory_UnwritableStream_Throws()
     {
         using MemoryStream ms = new();
