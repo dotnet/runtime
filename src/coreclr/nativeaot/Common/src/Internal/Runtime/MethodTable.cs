@@ -973,19 +973,9 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(!IsArray, "array type not supported in BaseType");
-                Debug.Assert(IsCanonical, "we expect canonical types here");
-                return _relatedType._pBaseType;
-            }
-        }
-
-        // TODO rename?
-        internal MethodTable* NonClonedNonArrayBaseType
-        {
-            get
-            {
                 Debug.Assert(!IsArray, "array type not supported in NonArrayBaseType");
-                Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect canonical types here");
+                Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect type definitions here");
+                Debug.Assert(!IsGenericTypeDefinition || _relatedType._pBaseType == null, "callers assume this would be null for a generic definition");
                 return _relatedType._pBaseType;
             }
         }
