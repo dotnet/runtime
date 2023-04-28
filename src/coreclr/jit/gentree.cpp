@@ -25862,7 +25862,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
-    return OperIsConst() || OperIs(GT_LCL_ADDR);
+    return OperIsConst() || OperIs(GT_LCL_ADDR) || OperIs(GT_FTN_ADDR);
 }
 
 //------------------------------------------------------------------------

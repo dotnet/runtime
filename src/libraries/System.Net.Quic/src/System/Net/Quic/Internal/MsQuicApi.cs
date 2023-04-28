@@ -130,7 +130,7 @@ internal sealed unsafe partial class MsQuicApi
             }
             string? gitHash = Marshal.PtrToStringUTF8((IntPtr)libGitHash);
 
-            MsQuicLibraryVersion = $"{Interop.Libraries.MsQuic} version={version} commit={gitHash}";
+            MsQuicLibraryVersion = $"{Interop.Libraries.MsQuic} {version} ({gitHash})";
 
             if (version < s_minMsQuicVersion)
             {
@@ -143,7 +143,7 @@ internal sealed unsafe partial class MsQuicApi
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(null, $"Loaded MsQuic library version '{version}', commit '{gitHash}'.");
+                NetEventSource.Info(null, $"Loaded MsQuic library '{MsQuicLibraryVersion}'.");
             }
 
             // Assume SChannel is being used on windows and query for the actual provider from the library if querying is supported

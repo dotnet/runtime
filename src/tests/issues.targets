@@ -2678,7 +2678,7 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/Runtime_64125/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_74635/Runtime_74635/**">
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_74635/Runtime_74635_1/**">
             <Issue>https://github.com/dotnet/runtime/issues/74687</Issue>
         </ExcludeList>
         <!-- End interpreter issues -->
