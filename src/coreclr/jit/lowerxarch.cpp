@@ -344,8 +344,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                     goto TOO_BIG_TO_UNROLL;
                 }
 
-                const bool willUseSimd =
-                    canUseSimd && (size >= XMM_REGSIZE_BYTES) && comp->IsBaselineSimdIsaSupported();
+                bool willUseSimd = canUseSimd && (size >= XMM_REGSIZE_BYTES) && comp->IsBaselineSimdIsaSupported();
+#ifndef TARGET_AMD64
+                // TODO-CQ: Current codegen logic relies on size being a multiple of 8
+                // to unroll for 32-bit targets.
+                willUseSimd = willUseSimd && (size % 8) == 0;
+#endif
                 if (willUseSimd)
                 {
                     // We're going to use SIMD (and only SIMD - we don't want to occupy a GPR register with a fill value
