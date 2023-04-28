@@ -60,10 +60,7 @@ inline bool MethodTable::DacVerifyWorker(MethodTable* pThis)
         // Now on to the next type in the hierarchy.
         //
 
-        if (pCurrentType->IsRelatedTypeViaIAT())
-            pCurrentType = *dac_cast<PTR_PTR_EEType>(reinterpret_cast<TADDR>(pCurrentType->m_RelatedType.m_ppBaseTypeViaIAT));
-        else
-            pCurrentType = dac_cast<PTR_EEType>(reinterpret_cast<TADDR>(pCurrentType->m_RelatedType.m_pBaseType));
+        pCurrentType = dac_cast<PTR_EEType>(reinterpret_cast<TADDR>(pCurrentType->m_RelatedType.m_pBaseType));
 
         if (pCurrentType == NULL)
             break;
@@ -115,7 +112,7 @@ __forceinline uint32_t MethodTable::GetFieldOffset(EETypeField eField)
         ASSERT(GetNumInterfaces() > 0);
         return cbOffset;
     }
-    cbOffset += sizeof(EEInterfaceInfo) * GetNumInterfaces();
+    cbOffset += sizeof(MethodTable*) * GetNumInterfaces();
 
     const uint32_t relativeOrFullPointerOffset =
 #if USE_PORTABLE_HELPERS

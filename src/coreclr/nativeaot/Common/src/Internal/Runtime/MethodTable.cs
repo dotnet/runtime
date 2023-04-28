@@ -20,45 +20,6 @@ namespace Internal.Runtime
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct EEInterfaceInfo
-    {
-        [StructLayout(LayoutKind.Explicit)]
-        private unsafe struct InterfaceTypeUnion
-        {
-            [FieldOffset(0)]
-            public MethodTable* _pInterfaceEEType;
-            [FieldOffset(0)]
-            public MethodTable** _ppInterfaceEETypeViaIAT;
-        }
-
-        private InterfaceTypeUnion _interfaceType;
-
-        internal MethodTable* InterfaceType
-        {
-            get
-            {
-                if ((unchecked((uint)_interfaceType._pInterfaceEEType) & IndirectionConstants.IndirectionCellPointer) != 0)
-                {
-#if TARGET_64BIT
-                    MethodTable** ppInterfaceEETypeViaIAT = (MethodTable**)(((ulong)_interfaceType._ppInterfaceEETypeViaIAT) - IndirectionConstants.IndirectionCellPointer);
-#else
-                    MethodTable** ppInterfaceEETypeViaIAT = (MethodTable**)(((uint)_interfaceType._ppInterfaceEETypeViaIAT) - IndirectionConstants.IndirectionCellPointer);
-#endif
-                    return *ppInterfaceEETypeViaIAT;
-                }
-
-                return _interfaceType._pInterfaceEEType;
-            }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                _interfaceType._pInterfaceEEType = value;
-            }
-#endif
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct DispatchMap
     {
         [StructLayout(LayoutKind.Sequential)]
@@ -179,20 +140,10 @@ namespace Internal.Runtime
             // Kinds.CanonicalEEType
             [FieldOffset(0)]
             public MethodTable* _pBaseType;
-            [FieldOffset(0)]
-            public MethodTable** _ppBaseTypeViaIAT;
-
-            // Kinds.ClonedEEType
-            [FieldOffset(0)]
-            public MethodTable* _pCanonicalType;
-            [FieldOffset(0)]
-            public MethodTable** _ppCanonicalTypeViaIAT;
 
             // Kinds.ArrayEEType
             [FieldOffset(0)]
             public MethodTable* _pRelatedParameterType;
-            [FieldOffset(0)]
-            public MethodTable** _ppRelatedParameterTypeViaIAT;
         }
 
         private static unsafe class OptionalFieldsReader
@@ -810,14 +761,6 @@ namespace Internal.Runtime
 #endif
         }
 
-        internal bool IsRelatedTypeViaIAT
-        {
-            get
-            {
-                return ((_uFlags & (uint)EETypeFlags.RelatedTypeViaIATFlag) != 0);
-            }
-        }
-
         internal bool RequiresAlign8
         {
             get
@@ -920,15 +863,12 @@ namespace Internal.Runtime
             }
         }
 
-        internal EEInterfaceInfo* InterfaceMap
+        internal MethodTable** InterfaceMap
         {
             get
             {
-                fixed (MethodTable* start = &this)
-                {
-                    // interface info table starts after the vtable and has _usNumInterfaces entries
-                    return (EEInterfaceInfo*)((byte*)start + sizeof(MethodTable) + sizeof(void*) * _usNumVtableSlots);
-                }
+                // interface info table starts after the vtable and has _usNumInterfaces entries
+                return (MethodTable**)((byte*)Unsafe.AsPointer(ref this) + sizeof(MethodTable) + sizeof(void*) * _usNumVtableSlots);
             }
         }
 
@@ -1015,10 +955,7 @@ namespace Internal.Runtime
                         return null;
                 }
 
-                if (IsRelatedTypeViaIAT)
-                    return *_relatedType._ppBaseTypeViaIAT;
-                else
-                    return _relatedType._pBaseType;
+                return _relatedType._pBaseType;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
@@ -1027,7 +964,6 @@ namespace Internal.Runtime
                 Debug.Assert(!IsParameterizedType);
                 Debug.Assert(!IsFunctionPointerType);
                 Debug.Assert(IsCanonical);
-                _uFlags &= (uint)~EETypeFlags.RelatedTypeViaIATFlag;
                 _relatedType._pBaseType = value;
             }
 #endif
@@ -1039,12 +975,6 @@ namespace Internal.Runtime
             {
                 Debug.Assert(!IsArray, "array type not supported in BaseType");
                 Debug.Assert(IsCanonical, "we expect canonical types here");
-
-                if (IsRelatedTypeViaIAT)
-                {
-                    return *_relatedType._ppBaseTypeViaIAT;
-                }
-
                 return _relatedType._pBaseType;
             }
         }
@@ -1056,12 +986,6 @@ namespace Internal.Runtime
             {
                 Debug.Assert(!IsArray, "array type not supported in NonArrayBaseType");
                 Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect canonical types here");
-
-                if (IsRelatedTypeViaIAT)
-                {
-                    return *_relatedType._ppBaseTypeViaIAT;
-                }
-
                 return _relatedType._pBaseType;
             }
         }
@@ -1072,8 +996,6 @@ namespace Internal.Runtime
             {
                 Debug.Assert(!IsParameterizedType, "array type not supported in NonArrayBaseType");
                 Debug.Assert(IsCanonical, "we expect canonical types here");
-                Debug.Assert(!IsRelatedTypeViaIAT, "Non IAT");
-
                 return _relatedType._pBaseType;
             }
         }
@@ -1115,17 +1037,12 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsParameterizedType);
-
-                if (IsRelatedTypeViaIAT)
-                    return *_relatedType._ppRelatedParameterTypeViaIAT;
-                else
-                    return _relatedType._pRelatedParameterType;
+                return _relatedType._pRelatedParameterType;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert(IsDynamicType && IsParameterizedType);
-                _uFlags &= ((uint)~EETypeFlags.RelatedTypeViaIATFlag);
                 _relatedType._pRelatedParameterType = value;
             }
 #endif
@@ -1437,7 +1354,7 @@ namespace Internal.Runtime
                 Debug.Assert(NumInterfaces > 0);
                 return cbOffset;
             }
-            cbOffset += (uint)(sizeof(EEInterfaceInfo) * NumInterfaces);
+            cbOffset += (uint)(sizeof(MethodTable*) * NumInterfaces);
 
             uint relativeOrFullPointerOffset = (IsDynamicType || !SupportsRelativePointers ? (uint)IntPtr.Size : 4);
 
@@ -1575,7 +1492,7 @@ namespace Internal.Runtime
         {
             return (uint)(sizeof(MethodTable) +
                 (IntPtr.Size * cVirtuals) +
-                (sizeof(EEInterfaceInfo) * cInterfaces) +
+                (sizeof(MethodTable*) * cInterfaces) +
                 sizeof(IntPtr) + // TypeManager
                 (SupportsWritableData ? sizeof(IntPtr) : 0) + // WritableData
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
