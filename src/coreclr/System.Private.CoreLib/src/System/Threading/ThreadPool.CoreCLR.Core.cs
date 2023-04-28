@@ -18,16 +18,6 @@ using System.Runtime.Versioning;
 
 namespace System.Threading
 {
-    internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
-    {
-        void IThreadPoolWorkItem.Execute() => CompleteWait();
-
-        // Entry point from unmanaged code
-        private void CompleteWait()
-        {
-            PortableThreadPool.CompleteWait(_registeredWaitHandle, _timedOut);
-        }
-    }
 
     public static partial class ThreadPool
     {
