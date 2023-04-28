@@ -284,9 +284,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetTickCount64.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetTickCount64.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadPool.cs">
-      <Link>Interop\Windows\Kernel32\Interop.ThreadPool.cs</Link>
-    </Compile>
     <Compile Include="System\Threading\Timer.Windows.cs" Condition="'$(FeaturePortableTimer)' != 'true'" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Timer.cs">
       <Link>Interop\Windows\Kernel32\Interop.Timer.cs</Link>
@@ -295,9 +292,6 @@
       <Link>Interop\Windows\Kernel32\Interop.DynamicLoad.cs</Link>
     </Compile>
     <Compile Include="System\Threading\Thread.NativeAot.Windows.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadPoolIO.cs">
-      <Link>Interop\Windows\Kernel32\Interop.ThreadPoolIO.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true' and '$(FeaturePortableThreadPool)' != 'true'">
     <Compile Include="System\Threading\ThreadPool.Windows.cs" />
