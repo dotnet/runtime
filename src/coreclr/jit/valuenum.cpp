@@ -2401,51 +2401,45 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 }
             }
 
+            // Case 2: ARR_LENGTH(static-readonly-field)
             VNFuncApp funcApp;
-            if ((resultVN == NoVN) && GetVNFunc(addressVN, &funcApp))
+            if ((resultVN == NoVN) && GetVNFunc(addressVN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad))
             {
-                // Case 2: ARR_LENGTH(static-readonly-field)
-                if (funcApp.m_func == VNF_InvariantNonNullLoad)
+                ValueNum fieldSeqVN = VNNormalValue(funcApp.m_args[0]);
+                if (IsVNHandle(fieldSeqVN) && (GetHandleFlags(fieldSeqVN) == GTF_ICON_FIELD_SEQ))
                 {
-                    ValueNum fieldSeqVN = VNNormalValue(funcApp.m_args[0]);
-                    if (IsVNHandle(fieldSeqVN) && (GetHandleFlags(fieldSeqVN) == GTF_ICON_FIELD_SEQ))
+                    FieldSeq* fieldSeq = FieldSeqVNToFieldSeq(fieldSeqVN);
+                    if (fieldSeq != nullptr)
                     {
-                        FieldSeq* fieldSeq = FieldSeqVNToFieldSeq(fieldSeqVN);
-                        if (fieldSeq != nullptr)
+                        CORINFO_FIELD_HANDLE field = fieldSeq->GetFieldHandle();
+                        if (field != NULL)
                         {
-                            CORINFO_FIELD_HANDLE field = fieldSeq->GetFieldHandle();
-                            if (field != NULL)
+                            uint8_t buffer[TARGET_POINTER_SIZE] = {0};
+                            if (m_pComp->info.compCompHnd->getStaticFieldContent(field, buffer, TARGET_POINTER_SIZE, 0,
+                                                                                 false))
                             {
-                                uint8_t buffer[TARGET_POINTER_SIZE] = {0};
-                                if (m_pComp->info.compCompHnd->getStaticFieldContent(field, buffer, TARGET_POINTER_SIZE,
-                                                                                     0, false))
+                                // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
+                                // value holding 32bit handle with upper half zeroed (hence, "= NULL").
+                                // It's done to match the current crossgen/ILC behavior.
+                                CORINFO_OBJECT_HANDLE objHandle = NULL;
+                                memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
+                                int len = m_pComp->info.compCompHnd->getArrayOrStringLength(objHandle);
+                                if (len >= 0)
                                 {
-                                    // In case of 64bit jit emitting 32bit codegen this handle will be 64bit
-                                    // value holding 32bit handle with upper half zeroed (hence, "= NULL").
-                                    // It's done to match the current crossgen/ILC behavior.
-                                    CORINFO_OBJECT_HANDLE objHandle = NULL;
-                                    memcpy(&objHandle, buffer, TARGET_POINTER_SIZE);
-                                    int len = m_pComp->info.compCompHnd->getArrayOrStringLength(objHandle);
-                                    if (len >= 0)
-                                    {
-                                        resultVN = VNForIntCon(len);
-                                    }
+                                    resultVN = VNForIntCon(len);
                                 }
                             }
                         }
                     }
                 }
-                // Case 3: ARR_LENGTH(new T[CNS])
-                else if ((funcApp.m_func == VNF_JitNewArr) && IsVNConstant(funcApp.m_args[1]))
-                {
-                    // Constant is INT64, but we need INT32 for GT_ARR_LEN, so make sure it fits
-                    ssize_t val = CoercedConstantValue<ssize_t>(funcApp.m_args[1]);
-                    if ((size_t)val <= INT_MAX)
-                    {
-                        // Return known length of the array
-                        resultVN = VNForIntCon((int)val);
-                    }
-                }
+            }
+
+            // Case 3: ARR_LENGTH(new T[cns])
+            // TODO: Add support for MD arrays
+            int knownSize;
+            if ((resultVN == NoVN) && TryGetNewArrSize(addressVN, &knownSize))
+            {
+                resultVN = VNForIntCon(knownSize);
             }
         }
 
@@ -6505,18 +6499,24 @@ bool ValueNumStore::IsVNNewArr(ValueNum vn, VNFuncApp* funcApp)
 
 // TODO-MDArray: support array dimension length of a specific dimension for JitNewMdArr, with a GetNewMDArrSize()
 // function.
-int ValueNumStore::GetNewArrSize(ValueNum vn)
+bool ValueNumStore::TryGetNewArrSize(ValueNum vn, int* size)
 {
     VNFuncApp funcApp;
     if (IsVNNewArr(vn, &funcApp))
     {
         ValueNum arg1VN = funcApp.m_args[1];
-        if (IsVNConstant(arg1VN) && TypeOfVN(arg1VN) == TYP_INT)
+        if (IsVNConstant(arg1VN))
         {
-            return ConstantValue<int>(arg1VN);
+            ssize_t val = CoercedConstantValue<ssize_t>(arg1VN);
+            if ((size_t)val <= INT_MAX)
+            {
+                *size = (int)val;
+                return true;
+            }
         }
     }
-    return 0;
+    *size = 0;
+    return false;
 }
 
 bool ValueNumStore::IsVNArrLen(ValueNum vn)
