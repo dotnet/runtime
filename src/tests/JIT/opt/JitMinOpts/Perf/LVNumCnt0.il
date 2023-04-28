@@ -12,7 +12,6 @@
   .ver 4:0:0:0
 }
 .assembly LVNumCnt0 {}
-.module LVNumCnt0.exe
 .method public static int32  Main() cil managed
 {
   .entrypoint

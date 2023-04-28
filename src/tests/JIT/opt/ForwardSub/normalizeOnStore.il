@@ -28,7 +28,6 @@
   .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module store.dll
 // MVID: {A3A2457C-4D44-404C-9480-A353C3DB86A4}
 .imagebase 0x00400000
 .file alignment 0x00000200

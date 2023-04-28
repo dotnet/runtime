@@ -3,7 +3,6 @@
 
 .assembly extern mscorlib { }
 .assembly GitHub_42719 {}
-.module GitHub_42719.exe
 .method public static int32 Main() cil managed
 {
     .entrypoint

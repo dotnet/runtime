@@ -4,7 +4,6 @@
 
 
 // Metadata version: v2.0.50727
-.module extern libc
 
 .assembly extern mscorlib { }
 .assembly extern xunit.core {}
@@ -60,7 +59,6 @@
     .hash algorithm 0x00008004
   .ver 1:0:0:0
 }
-.module TailcallVerifyWithPrefix.exe
 // MVID: {D1242658-CA16-4D11-A740-6635F112F4B5}
 .custom instance void [mscorlib]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 )
 .imagebase 0x00400000
