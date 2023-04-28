@@ -49,7 +49,7 @@ gantt
     Lookup known strings in issues  : lookup, after testReport, 1d
 ```
 
-Each pipeline will create its own build of the different runtimes, the tests, and will eventually run the,. We usually run our tests in a separate environment called Helix. This system allows for distribution of the large number of tests across the wide array of platforms supported. Once each worker machine processes its own results, these get reported back to `Azure DevOps` and they become available in the tests tab of the build.
+Each pipeline will create its own build of the different runtimes, the tests, and will eventually run the tests. We usually run our tests in a separate environment called Helix. This system allows for distribution of the large number of tests across the wide array of platforms supported. Once each worker machine processes its own results, these get reported back to `Azure DevOps` and they become available in the tests tab of the build.
 
 ## Pipelines used in dotnet/runtime
 
@@ -65,7 +65,7 @@ For mobile platforms and wasm we run some smoke tests that aim to protect the qu
 
 ### Runtime-dev-inner loop pipeline
 
-This pipeline is also required, and its intent is to cover a developer inner loop scenarios that could be affected by any change, like running a specific build command or running tests inside Visual Studio, etc.
+This pipeline is also required, and its intent is to cover developer inner loop scenarios that could be affected by any change, like running a specific build command or running tests inside Visual Studio, etc.
 
 ### Dotnet-linker-tests
 
@@ -73,17 +73,17 @@ This is also a required pipeline. The purpose of this pipeline is to test that t
 
 ### Runtime-staging
 
-This pipeline runs on every change; however it behaves a little different than the other pipelines. This pipeline will not fail if there are test failures, however it will fail if there is a timeout or a build failure. The reason why we fail on build failures is because we want to protect the developer inner loop (building the repository) for this platform.
+This pipeline runs on every change; however it behaves a little different than the other pipelines. This pipeline will not fail if there are test failures, however it will fail if there is a timeout or a build failure. We fail on build failures is because we want to protect the developer inner loop (building the repository) for this platform.
 
-The tests will not fail because the intent of this platform is to stage new platforms where the test infrastructure is new, and we need to test if we have enough capacity to include that new platform on the "main" runtime pipeline without causing flakiness. Once we analyze data and a platform is stable when running on PRs in this pipeline for at least a week, it can be promoted either to the `runtime-extra-platforms` pipeline or to the `runtime` pipeline.
+The tests will not fail because this pipeline is for staging new platforms where the test infrastructure is new, and we need to test if we have enough capacity to include that new platform on the "main" runtime pipeline without causing flakiness. Once we analyze data and a platform is stable when running on PRs in this pipeline for at least a week, it can be promoted either to the `runtime-extra-platforms` pipeline or to the `runtime` pipeline.
 
 ### Runtime-extra-platforms
 
 This pipeline does not run by default as it is not required for a PR, but it runs twice a day, and it can also be invoked in specific PRs by commenting `/azp run runtime-extra-platforms`. However, this pipeline is still an important part of our testing.
 
-This pipeline runs inner loop tests on platforms where we don't have enough hardware capacity to run tests (mobile, browser) or on platforms where we believe tests should organically pass based on the coverage we have in the "main" runtime pipeline. For example, in the "main" pipeline we run tests on Ubuntu 21.10 but since we also support Ubuntu 18.04 which is an LTS release, we run tests on Ubuntu 18.04 of this pipeline just to make sure we have healthy tests on those platforms which we are releasing a product for.
+This pipeline runs inner loop tests on platforms where we don't have enough hardware capacity to run tests (mobile, browser) or on platforms where we believe tests should organically pass based on the coverage we have in the "main" runtime pipeline. For example, in the "main" pipeline we run tests on Ubuntu 21.10. Since we also support Ubuntu 18.04 which is an LTS release, we run tests on Ubuntu 18.04 of this pipeline to make sure we have healthy tests on platforms which we are releasing a product for.
 
-Another concrete scenario would be windows arm64 for libraries tests, a platform for which we don't have enough hardware. The JIT is the most important piece to test here, as that is what generates the native code to run on that platform. So we run JIT tests on arm64 in the "main" pipeline, while our libraries tests are only run on the `runtime-extra-platforms` pipeline.
+This pipeline also runs tests for platforms that are generally stable but we don't have enough hardware to put into the regular runtime pipeline. For example, we run the libraries tests for windows arm64 in this pipeline. We don't have enough hardware to run the JIT tests and libraries tests for windows arm64 on every PR. The JIT is the most important piece to test here, as that is what generates the native code to run on that platform. So, we run JIT tests on arm64 in the "main" pipeline, while our libraries tests are only run on the `runtime-extra-platforms` pipeline.
 
 ### Outer loop pipelines
 
@@ -95,7 +95,7 @@ These pipelines will run tests that are long-running, are not very stable (i.e. 
 
 ### Legacy tests
 
-In older runtime tests, the classic xUnit console runner runs a generated set of xUnit facts. Each fact invokes a shell/batch script that sets up the environment, then starts the console apps that make up the runtime test bed. The wrapper is also responsible for harvesting all output from the processes that get started. The main advantage of this method is that each test runs in process isolation. This allows xUnit and its child process to have decoupled runtimes, hardening the test harness against native crashes. However, this is extremely expensive since startup costs and process start costs are paid per process. The usual flow for a Helix workitem of this type is as follows:
+In older runtime tests, the classic xUnit console runner runs a generated set of xUnit facts. Each fact invokes a shell/batch script that sets up the environment, then starts the console apps that make up the runtime test bed. The wrapper is also responsible for harvesting all output from the processes that get started. The main advantage of this method is that each test runs in process isolation. This allows xUnit and its child process to have decoupled runtimes, hardening the test harness against native crashes. However, this is extremely expensive since startup costs and process start costs are paid per test. The usual flow for a Helix workitem of this type is as follows:
 
 ```mermaid
 sequenceDiagram
