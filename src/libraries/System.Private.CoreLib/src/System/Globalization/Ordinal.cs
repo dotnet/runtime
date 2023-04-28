@@ -320,7 +320,6 @@ namespace System.Globalization
 
             // Hoist some expressions from the loop
             int valueTailLength = value.Length - 1;
-            int searchSpaceLength = source.Length - valueTailLength;
             int searchSpaceMinusValueTailLength = source.Length - valueTailLength;
             ref char searchSpace = ref MemoryMarshal.GetReference(source);
             char valueCharU = default;
@@ -355,16 +354,16 @@ namespace System.Globalization
                 // Do a quick search for the first element of "value".
                 int relativeIndex = isLetter ?
                     PackedSpanHelpers.PackedIndexOfIsSupported
-                        ? PackedSpanHelpers.IndexOfAny(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength)
-                        : SpanHelpers.IndexOfAnyChar(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceLength) :
-                    SpanHelpers.IndexOfChar(ref Unsafe.Add(ref searchSpace, offset), valueChar, searchSpaceLength);
+                        ? PackedSpanHelpers.IndexOfAny(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceMinusValueTailLength)
+                        : SpanHelpers.IndexOfAnyChar(ref Unsafe.Add(ref searchSpace, offset), valueCharU, valueCharL, searchSpaceMinusValueTailLength) :
+                    SpanHelpers.IndexOfChar(ref Unsafe.Add(ref searchSpace, offset), valueChar, searchSpaceMinusValueTailLength);
                 if (relativeIndex < 0)
                 {
                     break;
                 }
 
-                searchSpaceLength -= relativeIndex;
-                if (searchSpaceLength <= 0)
+                searchSpaceMinusValueTailLength -= relativeIndex;
+                if (searchSpaceMinusValueTailLength <= 0)
                 {
                     break;
                 }
@@ -379,10 +378,10 @@ namespace System.Globalization
                     return (int)offset;  // The tail matched. Return a successful find.
                 }
 
-                searchSpaceLength--;
+                searchSpaceMinusValueTailLength--;
                 offset++;
             }
-            while (searchSpaceLength > 0);
+            while (searchSpaceMinusValueTailLength > 0);
 
             return -1;
 
@@ -420,7 +419,7 @@ namespace System.Globalization
                 do
                 {
                     // Make sure we don't go out of bounds.
-                    Debug.Assert(offset + ch1ch2Distance + Vector256<ushort>.Count <= searchSpaceLength);
+                    Debug.Assert(offset + ch1ch2Distance + Vector256<ushort>.Count <= source.Length);
 
                     // Load a vector from the current search space offset and another from the offset plus the distance between the two characters.
                     // For each, | with 0x20 so that letters are lowercased, then & those together to get a mask. If the mask is all zeros, there
@@ -494,7 +493,7 @@ namespace System.Globalization
                 do
                 {
                     // Make sure we don't go out of bounds.
-                    Debug.Assert(offset + ch1ch2Distance + Vector128<ushort>.Count <= searchSpaceLength);
+                    Debug.Assert(offset + ch1ch2Distance + Vector128<ushort>.Count <= source.Length);
 
                     // Load a vector from the current search space offset and another from the offset plus the distance between the two characters.
                     // For each, | with 0x20 so that letters are lowercased, then & those together to get a mask. If the mask is all zeros, there
