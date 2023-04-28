@@ -28,8 +28,13 @@ namespace System.Threading
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
 #endif
 
+
+        private static bool EnsureConfigInitializedCore() {
+            throw new NotImplementedException();
+        }
+
         // Threadpool specific initialization of a new thread. Used by OS-provided threadpools. No-op for portable threadpool.
-        internal static void InitializeForThreadPoolThread() { }
+        private static void InitializeForThreadPoolThreadPortableCore() { }
 
 #pragma warning disable IDE0060
         internal static bool CanSetMinIOCompletionThreads(int ioCompletionThreads) => false;
@@ -41,15 +46,15 @@ namespace System.Threading
         [Conditional("unnecessary")]
         internal static void SetMaxIOCompletionThreads(int ioCompletionThreads) { }
 
-        public static bool SetMaxThreads(int workerThreads, int completionPortThreads) =>
+        private static bool SetMaxThreadsPortableCore(int workerThreads, int completionPortThreads) =>
             PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads, completionPortThreads);
-        public static void GetMaxThreads(out int workerThreads, out int completionPortThreads) =>
+        private static void GetMaxThreadsPortableCore(out int workerThreads, out int completionPortThreads) =>
             PortableThreadPool.ThreadPoolInstance.GetMaxThreads(out workerThreads, out completionPortThreads);
-        public static bool SetMinThreads(int workerThreads, int completionPortThreads) =>
+        private static bool SetMinThreadsPortableCore(int workerThreads, int completionPortThreads) =>
             PortableThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads, completionPortThreads);
-        public static void GetMinThreads(out int workerThreads, out int completionPortThreads) =>
+        private static void GetMinThreadsPortableCore(out int workerThreads, out int completionPortThreads) =>
             PortableThreadPool.ThreadPoolInstance.GetMinThreads(out workerThreads, out completionPortThreads);
-        public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads) =>
+        private static void GetAvailableThreadsPortableCore(out int workerThreads, out int completionPortThreads) =>
             PortableThreadPool.ThreadPoolInstance.GetAvailableThreads(out workerThreads, out completionPortThreads);
 
         /// <summary>
@@ -71,18 +76,18 @@ namespace System.Threading
         /// <summary>
         /// This method is called to request a new thread pool worker to handle pending work.
         /// </summary>
-        internal static void RequestWorkerThread() => PortableThreadPool.ThreadPoolInstance.RequestWorker();
+        private static void RequestWorkerThreadPortableCore() => PortableThreadPool.ThreadPoolInstance.RequestWorker();
 
-        internal static void NotifyWorkItemProgress() => PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
+        private static void NotifyWorkItemProgressPortableCore() => PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs) =>
+        private static bool NotifyWorkItemCompletePortableCore(object? threadLocalCompletionCountObject, int currentTimeMs) =>
             PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTimeMs);
 
-        internal static bool NotifyThreadBlocked() => PortableThreadPool.ThreadPoolInstance.NotifyThreadBlocked();
-        internal static void NotifyThreadUnblocked() => PortableThreadPool.ThreadPoolInstance.NotifyThreadUnblocked();
+        private static bool NotifyThreadBlockedPortableCore() => PortableThreadPool.ThreadPoolInstance.NotifyThreadBlocked();
+        private static void NotifyThreadUnblockedPortableCore() => PortableThreadPool.ThreadPoolInstance.NotifyThreadUnblocked();
 
-        internal static object GetOrCreateThreadLocalCompletionCountObject() =>
+        private static object GetOrCreateThreadLocalCompletionCountObjectPortableCore() =>
             PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
