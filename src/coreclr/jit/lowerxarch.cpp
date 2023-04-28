@@ -7530,9 +7530,10 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
             if (comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL) &&
                 parentNode->OperIsEmbBroadcastHWIntrinsic())
             {
-                
+
                 GenTree* CreateScalar = childNode->AsHWIntrinsic()->Op(1);
-                if(CreateScalar->OperIs(GT_HWINTRINSIC) && CreateScalar->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe)
+                if (CreateScalar->OperIs(GT_HWINTRINSIC) &&
+                    CreateScalar->AsHWIntrinsic()->GetHWIntrinsicId() == NI_Vector128_CreateScalarUnsafe)
                 {
                     GenTree* Scalar = CreateScalar->AsHWIntrinsic()->Op(1);
                     if (Scalar->OperIs(GT_LCL_VAR) && Scalar->TypeIs(TYP_FLOAT))
