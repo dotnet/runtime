@@ -9997,7 +9997,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		break;
 	}
 	case MDBGPROT_CMD_STACK_FRAME_GET_PARAMETERS_COUNT: {
-		buffer_add_int (buf, jit->num_params);
+		buffer_add_int (buf, jit->num_params + (sig->hasthis ? 1 : 0));
 		break;
 	}
 	default:
