@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "../../cwraps";
-import { INTERNAL } from "../../imports";
+import { INTERNAL } from "../../globals";
 import { withStackAlloc, getI32 } from "../../memory";
 import { Thread, waitForThread } from "../../pthreads/browser";
 import { isDiagnosticMessage, makeDiagnosticServerControlCommand } from "../shared/controller-commands";

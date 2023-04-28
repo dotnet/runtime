@@ -6,7 +6,7 @@
 import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 import { assertNever } from "../../types";
 import { pthread_self } from "../../pthreads/worker";
-import { Module } from "../../imports";
+import { Module } from "../../globals";
 import cwraps from "../../cwraps";
 import { EventPipeSessionIDImpl } from "../shared/types";
 import { CharPtr } from "../../types/emscripten";
