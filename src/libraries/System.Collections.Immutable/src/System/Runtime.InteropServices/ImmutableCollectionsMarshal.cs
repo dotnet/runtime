@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// An unsafe class that provides a set of methods to access the underlying data representations of immutable collections.
     /// </summary>
-    public static unsafe class ImmutableCollectionsMarshal
+    public static class ImmutableCollectionsMarshal
     {
         /// <summary>
         /// Gets an <see cref="ImmutableArray{T}"/> value wrapping the input <typeparamref name="T"/> array.
