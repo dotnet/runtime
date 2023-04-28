@@ -53,21 +53,7 @@ export function mono_wasm_normalize_string(exceptionMessage: Int32Ptr, normaliza
 
 function normalization_to_string(normalizationForm: number) : string
 {
-    let normalization = "NFC";
-    switch (normalizationForm) {
-        case 1:
-            normalization = "NFC";
-            break;
-        case 2:
-            normalization = "NFD";
-            break;
-        case 5:
-            normalization = "NFKC";
-            break;
-        case 6:
-            normalization = "NFKD";
-            break;
-    }
-    return normalization;
+    const map = [undefined, "NFC", "NFD", undefined, undefined, "NFKC", "NFKD"];
+    return map[normalizationForm] ?? "NFC";
 }
 
