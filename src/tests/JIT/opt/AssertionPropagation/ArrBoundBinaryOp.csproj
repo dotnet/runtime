@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Needed for GCStressIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <OutputType>Exe</OutputType>
     <!-- Disabled for GCStress due to test failure tracked by https://github.com/dotnet/runtime/issues/66279 -->
     <GCStressIncompatible>true</GCStressIncompatible>
