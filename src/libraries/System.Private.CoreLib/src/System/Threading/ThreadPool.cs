@@ -16,85 +16,49 @@ namespace System.Threading
 
         [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
-        public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)
-        {
-            if (ThreadPool.UseWindowsThreadPool)
-            {
-                return WindowsThreadPool.UnsafeQueueNativeOverlapped(overlapped);
-            }
-            else
-            {
-                if (overlapped == null)
-                {
-                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.overlapped);
-                }
-
-                // OS doesn't signal handle, so do it here
-                overlapped->InternalLow = IntPtr.Zero;
-
-                PortableThreadPool.ThreadPoolInstance.QueueNativeOverlapped(overlapped);
-                return true;
-            }
-        }
+        public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
+            ThreadPool.UseWindowsThreadPool ?
+            WindowsThreadPool.UnsafeQueueNativeOverlapped(overlapped) :
+            UnsafeQueueNativeOverlappedPortableCore(overlapped);
 
         [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
         [SupportedOSPlatform("windows")]
-        public static bool BindHandle(IntPtr osHandle)
-        {
-            if (ThreadPool.UseWindowsThreadPool)
-            {
-                return WindowsThreadPool.BindHandle(osHandle);
-            }
-            else
-            {
-                PortableThreadPool.ThreadPoolInstance.RegisterForIOCompletionNotifications(osHandle);
-                return true;
-            }
-        }
+        public static bool BindHandle(IntPtr osHandle) =>
+            ThreadPool.UseWindowsThreadPool ?
+            WindowsThreadPool.BindHandle(osHandle) :
+            BindHandlePortableCore(osHandle);
 
         [SupportedOSPlatform("windows")]
-        public static bool BindHandle(SafeHandle osHandle)
-        {
-            if (ThreadPool.UseWindowsThreadPool)
-            {
-                return WindowsThreadPool.BindHandle(osHandle);
-            }
-            else
-            {
-                ArgumentNullException.ThrowIfNull(osHandle);
-
-                bool mustReleaseSafeHandle = false;
-                try
-                {
-                    osHandle.DangerousAddRef(ref mustReleaseSafeHandle);
-
-                    PortableThreadPool.ThreadPoolInstance.RegisterForIOCompletionNotifications(osHandle.DangerousGetHandle());
-                    return true;
-                }
-                finally
-                {
-                    if (mustReleaseSafeHandle)
-                        osHandle.DangerousRelease();
-                }
-            }
-        }
+        public static bool BindHandle(SafeHandle osHandle) =>
+            ThreadPool.UseWindowsThreadPool ?
+            WindowsThreadPool.BindHandle(osHandle) :
+            BindHandlePortableCore(osHandle);
 
         internal static bool EnsureConfigInitialized() => EnsureConfigInitializedCore();
 
-        internal static void InitializeForThreadPoolThread() => WindowsThreadPool.InitializeForThreadPoolThread();
-
+        internal static void InitializeForThreadPoolThread()
+        {
+            if (ThreadPool.UseWindowsThreadPool)
+            {
+                WindowsThreadPool.InitializeForThreadPoolThread();
+            }
+            else
+            {
+                InitializeForThreadPoolThreadPortableCore();
+            }
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void IncrementCompletedWorkItemCount() => WindowsThreadPool.IncrementCompletedWorkItemCount();
 
         internal static object GetOrCreateThreadLocalCompletionCountObject() =>
             ThreadPool.UseWindowsThreadPool ?
             WindowsThreadPool.GetOrCreateThreadLocalCompletionCountObject() :
-            PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
+            GetOrCreateThreadLocalCompletionCountObjectPortableCore();
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads) =>
             ThreadPool.UseWindowsThreadPool ?
             WindowsThreadPool.SetMaxThreads(workerThreads, completionPortThreads) :
-            PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads, completionPortThreads);
+            SetMaxThreadsPortableCore(workerThreads, completionPortThreads);
 
         public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
         {
@@ -104,14 +68,12 @@ namespace System.Threading
             }
             else
             {
-                PortableThreadPool.ThreadPoolInstance.GetMaxThreads(out workerThreads, out completionPortThreads);
+                GetMaxThreadsPortableCore(out workerThreads, out completionPortThreads);
             }
         }
 
         public static bool SetMinThreads(int workerThreads, int completionPortThreads) =>
-            ThreadPool.UseWindowsThreadPool ?
-            WindowsThreadPool.SetMinThreads(workerThreads, completionPortThreads) :
-            PortableThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads, completionPortThreads);
+            SetMinThreadsPortableCore(workerThreads, completionPortThreads);
 
         public static void GetMinThreads(out int workerThreads, out int completionPortThreads)
         {
@@ -121,9 +83,10 @@ namespace System.Threading
             }
             else
             {
-                PortableThreadPool.ThreadPoolInstance.GetMinThreads(out workerThreads, out completionPortThreads);
+                GetMinThreadsPortableCore(out workerThreads, out completionPortThreads);
             }
         }
+
         public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads)
         {
             if (ThreadPool.UseWindowsThreadPool)
@@ -132,9 +95,8 @@ namespace System.Threading
             }
             else
             {
-                PortableThreadPool.ThreadPoolInstance.GetAvailableThreads(out workerThreads, out completionPortThreads);
+                GetAvailableThreadsPortableCore(out workerThreads, out completionPortThreads);
             }
-
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -146,7 +108,7 @@ namespace System.Threading
             }
             else
             {
-                PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
+                NotifyWorkItemProgressPortableCore();
             }
         }
 
@@ -154,12 +116,12 @@ namespace System.Threading
         internal static bool NotifyWorkItemComplete(object threadLocalCompletionCountObject, int currentTimeMs) =>
             ThreadPool.UseWindowsThreadPool ?
             WindowsThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTimeMs) :
-            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTimeMs);
+            NotifyWorkItemCompletePortableCore(threadLocalCompletionCountObject, currentTimeMs);
 
         internal static bool NotifyThreadBlocked() =>
             ThreadPool.UseWindowsThreadPool ?
             WindowsThreadPool.NotifyThreadBlocked() :
-            PortableThreadPool.ThreadPoolInstance.NotifyThreadBlocked();
+            NotifyThreadBlockedPortableCore();
 
         internal static void NotifyThreadUnblocked()
         {
@@ -169,9 +131,10 @@ namespace System.Threading
             }
             else
             {
-                PortableThreadPool.ThreadPoolInstance.NotifyThreadUnblocked();
+                NotifyThreadUnblockedPortableCore();
             }
         }
+
         internal static unsafe void RequestWorkerThread()
         {
             if (ThreadPool.UseWindowsThreadPool)
@@ -180,14 +143,14 @@ namespace System.Threading
             }
             else
             {
-                PortableThreadPool.ThreadPoolInstance.RequestWorker();
+                RequestWorkerThreadPortableCore();
             }
         }
 
         internal static void ReportThreadStatus(bool isWorking)
         {
-            // Debug.Assert(!ThreadPool.UseWindowsThreadPool);
-            PortableThreadPool.ThreadPoolInstance.ReportThreadStatus(isWorking);
+            Debug.Assert(!ThreadPool.UseWindowsThreadPool);
+            ReportThreadStatusCore(isWorking);
         }
     }
 }

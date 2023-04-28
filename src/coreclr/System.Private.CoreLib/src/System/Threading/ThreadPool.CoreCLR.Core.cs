@@ -131,6 +131,98 @@ namespace System.Threading
             }
         }
 
+        private static void InitializeForThreadPoolThreadPortableCore() { }
+
+        [SupportedOSPlatform("windows")]
+        private static unsafe bool UnsafeQueueNativeOverlappedPortableCore(NativeOverlapped* overlapped)
+        {
+            if (overlapped == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.overlapped);
+            }
+
+            // OS doesn't signal handle, so do it here
+            overlapped->InternalLow = IntPtr.Zero;
+
+            PortableThreadPool.ThreadPoolInstance.QueueNativeOverlapped(overlapped);
+            return true;
+        }
+
+        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
+        [SupportedOSPlatform("windows")]
+        private static bool BindHandlePortableCore(IntPtr osHandle)
+        {
+            PortableThreadPool.ThreadPoolInstance.RegisterForIOCompletionNotifications(osHandle);
+            return true;
+        }
+
+        [SupportedOSPlatform("windows")]
+        private static bool BindHandlePortableCore(SafeHandle osHandle)
+        {
+            ArgumentNullException.ThrowIfNull(osHandle);
+
+            bool mustReleaseSafeHandle = false;
+            try
+            {
+                osHandle.DangerousAddRef(ref mustReleaseSafeHandle);
+
+                PortableThreadPool.ThreadPoolInstance.RegisterForIOCompletionNotifications(osHandle.DangerousGetHandle());
+                return true;
+            }
+            finally
+            {
+                if (mustReleaseSafeHandle)
+                    osHandle.DangerousRelease();
+            }
+        }
+
+        private static object GetOrCreateThreadLocalCompletionCountObjectPortableCore() =>
+            PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();
+
+        private static bool SetMaxThreadsPortableCore(int workerThreads, int completionPortThreads) =>
+            PortableThreadPool.ThreadPoolInstance.SetMaxThreads(workerThreads, completionPortThreads);
+
+        private static void GetMaxThreadsPortableCore(out int workerThreads, out int completionPortThreads)
+        {
+            PortableThreadPool.ThreadPoolInstance.GetMaxThreads(out workerThreads, out completionPortThreads);
+        }
+
+        private static bool SetMinThreadsPortableCore(int workerThreads, int completionPortThreads) =>
+            PortableThreadPool.ThreadPoolInstance.SetMinThreads(workerThreads, completionPortThreads);
+
+        private static void GetMinThreadsPortableCore(out int workerThreads, out int completionPortThreads)
+        {
+            PortableThreadPool.ThreadPoolInstance.GetMinThreads(out workerThreads, out completionPortThreads);
+        }
+
+        private static void GetAvailableThreadsPortableCore(out int workerThreads, out int completionPortThreads)
+        {
+            PortableThreadPool.ThreadPoolInstance.GetAvailableThreads(out workerThreads, out completionPortThreads);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void NotifyWorkItemProgressPortableCore()
+        {
+            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemProgress();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool NotifyWorkItemCompletePortableCore(object threadLocalCompletionCountObject, int currentTimeMs) =>
+            PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTimeMs);
+
+        private static bool NotifyThreadBlockedPortableCore() =>
+            PortableThreadPool.ThreadPoolInstance.NotifyThreadBlocked();
+
+        private static void NotifyThreadUnblockedPortableCore()
+        {
+            PortableThreadPool.ThreadPoolInstance.NotifyThreadUnblocked();
+        }
+
+        private static unsafe void RequestWorkerThreadPortableCore()
+        {
+            PortableThreadPool.ThreadPoolInstance.RequestWorker();
+        }
+
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -151,6 +243,11 @@ namespace System.Threading
             PortableThreadPool.ThreadPoolInstance.RegisterWaitHandle(registeredWaitHandle);
 
             return registeredWaitHandle;
+        }
+
+        private static void ReportThreadStatusCore(bool isWorking)
+        {
+            PortableThreadPool.ThreadPoolInstance.ReportThreadStatus(isWorking);
         }
     }
 }

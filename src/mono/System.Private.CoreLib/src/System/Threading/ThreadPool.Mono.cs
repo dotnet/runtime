@@ -10,7 +10,7 @@ namespace System.Threading
     public static partial class ThreadPool
     {
         [Conditional("unnecessary")]
-        internal static void ReportThreadStatus(bool isWorking)
+        internal static void ReportThreadStatusCore(bool isWorking)
         {
         }
     }
