@@ -3917,8 +3917,8 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 
 				if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE)
 					encode_klass_ref (acfg, method->klass, p, &p);
-
-				encode_signature (acfg, sig, p, &p);
+				else
+					encode_signature (acfg, sig, p, &p);
 			}
 			break;
 		}
