@@ -1689,7 +1689,7 @@ private:
             GenTree* dst;
             if (m_dst->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
-                GenTreeLclVarCommon* dstLcl = dst->AsLclVarCommon();
+                GenTreeLclVarCommon* dstLcl = m_dst->AsLclVarCommon();
                 dst = m_compiler->gtNewLclFldNode(dstLcl->GetLclNum(), remainderStrategy.PrimitiveType,
                                                   dstLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
                 m_compiler->lvaSetVarDoNotEnregister(dstLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
@@ -1704,7 +1704,7 @@ private:
             GenTree* src;
             if (m_src->OperIs(GT_LCL_VAR, GT_LCL_FLD))
             {
-                GenTreeLclVarCommon* srcLcl = src->AsLclVarCommon();
+                GenTreeLclVarCommon* srcLcl = m_src->AsLclVarCommon();
                 src = m_compiler->gtNewLclFldNode(srcLcl->GetLclNum(), remainderStrategy.PrimitiveType,
                                                   srcLcl->GetLclOffs() + remainderStrategy.PrimitiveOffset);
                 m_compiler->lvaSetVarDoNotEnregister(srcLcl->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
