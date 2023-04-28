@@ -468,7 +468,7 @@ MonoClass * mono_class_from_name(MonoImage *image, const char* name_space, const
 {
     CONTRACTL
     {
-        THROWS;
+        NOTHROW;
         GC_TRIGGERS;
         // We don't support multiple domains
         PRECONDITION(image != nullptr);
@@ -479,19 +479,32 @@ MonoClass * mono_class_from_name(MonoImage *image, const char* name_space, const
     auto assembly = (MonoAssembly_clr*)image;
     DomainAssembly* domainAssembly = assembly->GetDomainAssembly();
 
-    InlineSString<512> fullTypeName(SString::Utf8, name_space);
-    fullTypeName.AppendUTF8(".");
-    fullTypeName.AppendUTF8(name);
-    SString::Iterator i = fullTypeName.Begin();
-    while (fullTypeName.Find(i, W('/')))
-        fullTypeName.Replace(i, W('+'));
+    TypeHandle retTypeHandle;
 
-    TypeHandle retTypeHandle = TypeName::GetTypeManaged(fullTypeName.GetUnicode(), domainAssembly, FALSE, ignoreCase, TRUE, NULL, NULL);
+    EX_TRY
+    {
+        InlineSString<512> fullTypeName(SString::Utf8, name_space);
+        fullTypeName.AppendUTF8(".");
+        fullTypeName.AppendUTF8(name);
+        SString::Iterator i = fullTypeName.Begin();
+        while (fullTypeName.Find(i, W('/')))
+            fullTypeName.Replace(i, W('+'));
+
+        retTypeHandle = TypeName::GetTypeManaged(fullTypeName.GetUnicode(), domainAssembly, FALSE, ignoreCase, TRUE, NULL, NULL);
+    }
+    EX_CATCH
+    {
+        SString sstr;
+        GET_EXCEPTION()->GetMessage(sstr);
+        printf("Exc: %s %d %x\n", sstr.GetUTF8(), GET_EXCEPTION()->IsType(CLRException::GetType()), GET_EXCEPTION()->GetInstanceType());
+    }
+    EX_END_CATCH(SwallowAllExceptions)
 
     if (!retTypeHandle.IsNull())
     {
         return (MonoClass*)retTypeHandle.AsMethodTable();
     }
+
     return NULL;
 }
 
