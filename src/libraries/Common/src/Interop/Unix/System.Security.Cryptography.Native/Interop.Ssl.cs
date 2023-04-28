@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -262,10 +263,10 @@ internal static partial class Interop
             }
         }
 
-        internal static bool AddExtraChainCertificates(SafeSslHandle ssl, ReadOnlySpan<X509Certificate2> chain)
+        internal static bool AddExtraChainCertificates(SafeSslHandle ssl, ReadOnlyCollection<X509Certificate2> chain)
         {
             // send pre-computed list of intermediates.
-            for (int i = 0; i < chain.Length; i++)
+            for (int i = 0; i < chain.Count; i++)
             {
                 SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain[i].Handle);
                 Crypto.CheckValidOpenSslHandle(dupCertHandle);

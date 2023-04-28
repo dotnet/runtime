@@ -444,7 +444,7 @@ namespace System
                 {
                     Debug.Assert((uint)index < _value->NumInterfaces);
 
-                    return new EETypePtr(_value->InterfaceMap[index].InterfaceType);
+                    return new EETypePtr(_value->InterfaceMap[index]);
                 }
             }
         }

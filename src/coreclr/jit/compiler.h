@@ -8896,12 +8896,6 @@ public:
         {
             maxRegSize = maxSIMDStructBytes();
 #if defined(TARGET_XARCH)
-            if (type != UnrollKind::Memmove)
-            {
-                // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial.
-                // Enabled for Memmove only for now.
-                maxRegSize = min(maxRegSize, YMM_REGSIZE_BYTES);
-            }
             threshold = maxRegSize;
 #elif defined(TARGET_ARM64)
             // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
@@ -8933,7 +8927,7 @@ public:
         //
         // | arch        | memset | memcpy |
         // |-------------|--------|--------|
-        // | x86 avx512  |   512  |   256  | (TODO-XARCH-AVX512: ignored for now)
+        // | x86 avx512  |   512  |   256  |
         // | x86 avx     |   256  |   128  |
         // | x86 sse     |   128  |    64  |
         // | arm64       |   256  |   128  | ldp/stp (2x128bit)

@@ -55,7 +55,7 @@ namespace System.Runtime
             Debug.Assert(!pTargetType->IsFunctionPointerType, "IsInstanceOfClass called with function pointer MethodTable");
             Debug.Assert(!pTargetType->IsInterface, "IsInstanceOfClass called with interface MethodTable");
 
-            // Quick check if both types are good for simple casting: canonical, no related type via IAT, no generic variance
+            // Quick check if both types are good for simple casting: canonical, no generic variance
             if (Internal.Runtime.MethodTable.BothSimpleCasting(pObjType, pTargetType))
             {
                 // walk the type hierarchy looking for a match
@@ -256,10 +256,10 @@ namespace System.Runtime
             Debug.Assert(pTargetType->IsInterface, "IsInstanceOfInterface called with non-interface MethodTable");
 
             int numInterfaces = pObjType->NumInterfaces;
-            EEInterfaceInfo* interfaceMap = pObjType->InterfaceMap;
+            MethodTable** interfaceMap = pObjType->InterfaceMap;
             for (int i = 0; i < numInterfaces; i++)
             {
-                MethodTable* pInterfaceType = interfaceMap[i].InterfaceType;
+                MethodTable* pInterfaceType = interfaceMap[i];
                 if (pInterfaceType == pTargetType)
                 {
                     return true;
@@ -287,7 +287,7 @@ namespace System.Runtime
 
                 for (int i = 0; i < numInterfaces; i++)
                 {
-                    MethodTable* pInterfaceType = interfaceMap[i].InterfaceType;
+                    MethodTable* pInterfaceType = interfaceMap[i];
 
                     // We can ignore interfaces which are not also marked as having generic variance
                     // unless we're dealing with array covariance.
