@@ -42,10 +42,19 @@ namespace System.Text.Json.Nodes.Tests
             Assert.IsAssignableFrom<JsonValue>(JsonNode.Parse(ToUtf8("\"str\"")));
             Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>("\"str\""));
 
-            Assert.Null(JsonSerializer.Deserialize<JsonNode>("null"));
-            Assert.Collection(JsonSerializer.Deserialize<JsonNode[]>("[null]"), Assert.Null);
-            Assert.Collection(JsonSerializer.Deserialize<IReadOnlyDictionary<string, JsonNode>>("{ \"Value\": null }"), kv => Assert.Null(kv.Value));
+            JsonType_Deserializes_Null<JsonNode>();
+            JsonType_Deserializes_Null<JsonArray>();
+            JsonType_Deserializes_Null<JsonObject>();
         }
+
+        private static void JsonType_Deserializes_Null<TNode>() where TNode : JsonNode
+        {
+            Assert.Null(JsonSerializer.Deserialize<TNode>("null"));
+            Assert.Collection(JsonSerializer.Deserialize<TNode[]>("[null]"), Assert.Null);
+            Assert.Collection(JsonSerializer.Deserialize<IReadOnlyDictionary<string, TNode>>("{ \"Value\": null }"), kv => Assert.Null(kv.Value));
+            Assert.Null(JsonSerializer.Deserialize<ObjectWithNodeProperty<TNode>>("{ \"Value\": null }").Value);
+        }
+        private record ObjectWithNodeProperty<TNode>(TNode Value) where TNode : JsonNode;
 
         [Fact]
         public static void AsMethods_Throws()
