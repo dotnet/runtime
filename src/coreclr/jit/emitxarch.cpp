@@ -12092,6 +12092,9 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                     break;
                 }
 
+                case IF_RRD_ARD:
+                case IF_RWR_ARD:
+                case IF_RRW_ARD:
                 case IF_AWR_RRD_RRD:
                 {
                     src1 = id->idReg1();
