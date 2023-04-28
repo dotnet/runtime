@@ -3153,8 +3153,6 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        // If src is contained then it must be 0.
-        assert(src->IsIntegralConst(0));
         assert(willUseSimdMov);
 #ifdef TARGET_AMD64
         assert(size >= XMM_REGSIZE_BYTES);
@@ -3186,6 +3184,35 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             // than copying the constant from a GPR to a XMM register.
             emit->emitIns_R_R(INS_xorps, EA_ATTR(regSize), srcXmmReg, srcXmmReg);
             zeroing = true;
+        }
+        else if (src->gtSkipReloadOrCopy()->IsIntegralConst())
+        {
+            ssize_t              fill = src->AsIntCon()->IconValue() & 0xFF;
+            CORINFO_FIELD_HANDLE hnd  = nullptr;
+            if (regSize == XMM_REGSIZE_BYTES)
+            {
+                simd16_t constValue;
+                memset(&constValue, (uint8_t)fill, sizeof(simd16_t));
+                hnd = emit->emitSimd16Const(constValue);
+            }
+            else if (regSize == YMM_REGSIZE_BYTES)
+            {
+                simd32_t constValue;
+                memset(&constValue, (uint8_t)fill, sizeof(simd32_t));
+                hnd = emit->emitSimd32Const(constValue);
+            }
+            else if (regSize == ZMM_REGSIZE_BYTES)
+            {
+                simd64_t constValue;
+                memset(&constValue, (uint8_t)fill, sizeof(simd64_t));
+                hnd = emit->emitSimd64Const(constValue);
+            }
+            else
+            {
+                // Unexpected regSize
+                unreached();
+            }
+            emit->emitIns_R_C(ins_Load(TYP_SIMD32), EA_ATTR(regSize), srcXmmReg, hnd, 0);
         }
         else
         {
@@ -3237,38 +3264,20 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             emitSimdMovs();
             dstOffset += regSize;
             bytesWritten += regSize;
-
-            if (!zeroing)
-            {
-                assert(regSize <= YMM_REGSIZE_BYTES);
-            }
-
-            if (!zeroing && regSize == YMM_REGSIZE_BYTES && size - bytesWritten < YMM_REGSIZE_BYTES)
-            {
-                regSize = XMM_REGSIZE_BYTES;
-            }
         }
 
         size -= bytesWritten;
 
-        // Handle the remainder by overlapping with previously processed data (only for zeroing)
-        if (zeroing && (size > 0) && (size < regSize) && (regSize >= XMM_REGSIZE_BYTES))
+        // Handle the remainder by overlapping with previously processed data
+        if ((size > 0) && (size < regSize) && (regSize >= XMM_REGSIZE_BYTES))
         {
-            if (isPow2(size) && (size <= REGSIZE_BYTES))
-            {
-                // For sizes like 1,2,4 and 8 we delegate handling to normal stores
-                // because that will be a single instruction that is smaller than SIMD mov
-            }
-            else
-            {
-                // Get optimal register size to cover the whole remainder (with overlapping)
-                regSize = compiler->roundUpSIMDSize(size);
+            // Get optimal register size to cover the whole remainder (with overlapping)
+            regSize = compiler->roundUpSIMDSize(size);
 
-                // Rewind dstOffset so we can fit a vector for the while remainder
-                dstOffset -= (regSize - size);
-                emitSimdMovs();
-                size = 0;
-            }
+            // Rewind dstOffset so we can fit a vector for the while remainder
+            dstOffset -= (regSize - size);
+            emitSimdMovs();
+            size = 0;
         }
     }
 
