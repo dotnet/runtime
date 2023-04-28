@@ -49,13 +49,14 @@ NESTED_ENTRY RhpGetInlinedThreadStaticBase, _TEXT, NoHandler
         // On exit:
         //   rax - the thread static base for the given type
 
-        // rax = GetThread()
-        INLINE_GETTHREAD
+        // rdi = &tls_InlinedThreadStatics
+        INLINE_GET_TLS_VAR tls_InlinedThreadStatics
+        mov     rdi, rax
 
         // get per-thread storage
-        mov     rax, [rax + OFFSETOF__Thread__m_pInlinedThreadLocalStatics]
+        mov     rax, [rdi]
         test    rax, rax
-        jz      C_FUNC(RhpGetInlinedThreadStaticBaseSlow)
+        jz      C_FUNC(RhpGetInlinedThreadStaticBaseSlow)    // rdi contains the storage ref
 
         // return it
         ret
