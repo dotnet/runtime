@@ -1,4 +1,4 @@
-import { INTERNAL, Module } from "../imports";
+import { INTERNAL, Module } from "../globals";
 import { MonoConfigInternal } from "../types";
 import { AssetEntry, LoadingResource, WebAssemblyBootResourceType } from "../types-api";
 import { BootConfigResult, BootJsonData, ICUDataMode } from "./BootConfig";

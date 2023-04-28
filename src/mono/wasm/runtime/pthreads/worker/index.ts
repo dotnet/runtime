@@ -4,7 +4,7 @@
 /// <reference lib="webworker" />
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { Module, ENVIRONMENT_IS_PTHREAD, runtimeHelpers, ENVIRONMENT_IS_WEB } from "../../imports";
+import { Module, ENVIRONMENT_IS_PTHREAD, runtimeHelpers, ENVIRONMENT_IS_WEB } from "../../globals";
 import { makeChannelCreatedMonoMessage, makePreloadMonoMessage } from "../shared";
 import type { pthread_ptr } from "../shared/types";
 import { is_nullish, MonoConfigInternal, mono_assert } from "../../types";

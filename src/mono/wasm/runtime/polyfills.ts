@@ -3,9 +3,9 @@
 
 import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
-import type { DotnetModuleConfigImports, EarlyReplacements } from "./types";
+import type { DotnetModuleConfigImports, EmscriptenReplacements } from "./types";
 import type { TypedArray } from "./types/emscripten";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WORKER, ENVIRONMENT_IS_WEB, INTERNAL, Module, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WORKER, ENVIRONMENT_IS_WEB, INTERNAL, Module, runtimeHelpers } from "./globals";
 import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
 
 let node_fs: any | undefined = undefined;
@@ -121,7 +121,7 @@ export function init_polyfills(): void {
     }
 }
 
-export function initializeReplacements(replacements: EarlyReplacements): void {
+export function initializeReplacements(replacements: EmscriptenReplacements): void {
     // require replacement
     const imports = Module.imports = (Module.imports || {}) as DotnetModuleConfigImports;
     const requireWrapper = (wrappedRequire: Function) => (name: string) => {
@@ -294,7 +294,7 @@ function normalizeDirectoryUrl(dir: string) {
     return dir.slice(0, dir.lastIndexOf("/")) + "/";
 }
 
-export function detectScriptDirectory(replacements: EarlyReplacements): string {
+export function detectScriptDirectory(replacements: EmscriptenReplacements): string {
     if (ENVIRONMENT_IS_WORKER) {
         // Check worker, not web, since window could be polyfilled
         replacements.scriptUrl = self.location.href;

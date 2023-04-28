@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./globals";
 import { mono_wasm_wait_for_debugger } from "./debug";
 import { abort_startup, mono_wasm_set_main_args } from "./startup";
 import cwraps from "./cwraps";

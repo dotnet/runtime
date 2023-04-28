@@ -34,11 +34,9 @@ function setup(disableLegacyJsInterop) {
         });
     }
 
-    __dotnet_runtime.initializeImports({
-        isNode: ENVIRONMENT_IS_NODE,
+    __dotnet_runtime.passEmscriptenInternals({
         isWorker: ENVIRONMENT_IS_WORKER,
         isShell: ENVIRONMENT_IS_SHELL,
-        isWeb: ENVIRONMENT_IS_WEB,
         isPThread: ENVIRONMENT_IS_PTHREAD,
         disableLegacyJsInterop,
         quit_, ExitStatus

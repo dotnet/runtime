@@ -3,7 +3,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { legacy_c_functions as cwraps } from "../cwraps";
-import { ENVIRONMENT_IS_PTHREAD, Module } from "../imports";
+import { ENVIRONMENT_IS_PTHREAD, Module } from "../globals";
 import { parseFQN } from "../invoke-cs";
 import { setI32, setU32, setF32, setF64, setU52, setI52, setB32, setI32_unchecked, setU32_unchecked, _zero_region, _create_temp_frame, getB32, getI32, getU32, getF32, getF64 } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
@@ -12,7 +12,7 @@ import { MonoMethod, MonoObject, MonoType, MonoClass, mono_assert, VoidPtrNull, 
 import { VoidPtr } from "../types/emscripten";
 import { legacyManagedExports } from "./corebindings";
 import { get_js_owned_object_by_gc_handle_ref, _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
-import { legacyHelpers } from "./imports";
+import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root, _js_to_mono_uri_root, js_to_mono_enum } from "./js-to-cs";
 import { _teardown_after_call } from "./method-calls";
 

@@ -4,16 +4,16 @@
 // WARNING: code in this file is executed before any of the emscripten code, so there is very little initialized already
 
 import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, WebAssemblyStartOptions } from "./types-api";
-import type { MonoConfigInternal, RuntimeHelpers, EarlyExports, DotnetModuleInternal, EmscriptenModuleInternal } from "./types";
+import type { MonoConfigInternal, GlobalObjects, EmscriptenModuleInternal } from "./types";
 
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, set_module_and_helpers } from "./imports";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, setGlobalObjects } from "./globals";
 import { mono_exit } from "./run";
 import { mono_assert } from "./types";
 import { setup_proxy_console } from "./logging";
 import { deep_merge_config, deep_merge_module } from "./config";
 import { initializeExports } from "./exports";
 
-export const earlyExports: EarlyExports = {
+export const globalObjectsRoot: GlobalObjects = {
     mono: {},
     binding: {},
     internal: {},
@@ -21,18 +21,10 @@ export const earlyExports: EarlyExports = {
     helpers: {},
     api: {}
 } as any;
-const module: DotnetModuleInternal = Object.assign(earlyExports.module, {
-    disableDotnet6Compatibility: true,
-    config: {}
-});
-const monoConfig: MonoConfigInternal = Object.assign(module.config!, {}) as any;
-const helpers: RuntimeHelpers = earlyExports.helpers;
-const api: RuntimeAPI = Object.assign(earlyExports.api, { Module: module, ...module });
-Object.assign(api, {
-    INTERNAL: earlyExports.internal,
-});
 
-set_module_and_helpers(module, helpers, earlyExports.internal);
+setGlobalObjects(globalObjectsRoot);
+const module = globalObjectsRoot.module;
+const monoConfig = module.config as MonoConfigInternal;
 
 export class HostBuilder implements DotnetHostBuilder {
     private instance?: RuntimeAPI;
@@ -315,7 +307,7 @@ export class HostBuilder implements DotnetHostBuilder {
                 mono_assert(module, "Null moduleConfig");
                 mono_assert(module.config, "Null moduleConfig.config");
                 await createEmscripten(module);
-                this.instance = api;
+                this.instance = globalObjectsRoot.api;
             }
             if (this.virtualWorkingDirectory) {
                 const FS = (this.instance!.Module as any).FS;
@@ -356,10 +348,10 @@ export class HostBuilder implements DotnetHostBuilder {
 }
 
 export function unifyModuleConfig(originalModule: EmscriptenModuleInternal, moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): DotnetModuleConfig {
-    initializeExports(earlyExports);
+    initializeExports();
     Object.assign(module, { ready: originalModule.ready });
     if (typeof moduleFactory === "function") {
-        const extension = moduleFactory(api) as any;
+        const extension = moduleFactory(globalObjectsRoot.api) as any;
         if (extension.ready) {
             throw new Error("MONO_WASM: Module.ready couldn't be redefined.");
         }

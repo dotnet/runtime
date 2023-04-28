@@ -231,26 +231,24 @@ export function is_nullish<T>(value: T | null | undefined): value is null | unde
     return (value === undefined) || (value === null);
 }
 
-export type EarlyImports = {
-    isNode: boolean,
+export type EmscriptenInternals = {
     isWorker: boolean,
     isShell: boolean,
-    isWeb: boolean,
     isPThread: boolean,
     disableLegacyJsInterop: boolean,
     quit_: Function,
     ExitStatus: ExitStatusError,
     requirePromise: Promise<Function>
 };
-export type EarlyExports = {
+export type GlobalObjects = {
     mono: any,
     binding: any,
     internal: any,
-    module: any,
-    helpers: any,
-    api: any,
+    module: DotnetModuleInternal,
+    helpers: RuntimeHelpers,
+    api: RuntimeAPI,
 };
-export type EarlyReplacements = {
+export type EmscriptenReplacements = {
     fetch: any,
     require: any,
     requirePromise: Promise<Function>,
@@ -409,15 +407,5 @@ export declare interface EmscriptenModuleInternal {
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
-    initializeImportsAndExports: (imports: EarlyImports, replacements: EarlyReplacements) => void;
     onConfigLoaded?: (config: MonoConfig, api: RuntimeAPI) => void | Promise<void>;
-}
-
-export declare function initializeImportsAndExports(
-    imports: EarlyImports,
-    exports: EarlyExports,
-): RuntimeAPI;
-
-export type RuntimeModuleAPI = {
-    initializeImportsAndExports: typeof initializeImportsAndExports;
 }

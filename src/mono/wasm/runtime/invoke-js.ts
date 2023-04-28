@@ -7,7 +7,7 @@ import { setI32_unchecked } from "./memory";
 import { conv_string_root, js_string_to_mono_string_root } from "./strings";
 import { mono_assert, MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types";
 import { Int32Ptr } from "./types/emscripten";
-import { INTERNAL, Module, runtimeHelpers } from "./imports";
+import { INTERNAL, Module, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_wasm_symbolicate_string } from "./logging";

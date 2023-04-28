@@ -6,9 +6,8 @@ import GitHash from "consts:gitHash";
 import BuildConfiguration from "consts:configuration";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
 import type { DotnetHostBuilder, RuntimeAPI } from "./types-api";
-import type { EarlyExports, DotnetModuleInternal } from "./types";
 
-import { disableLegacyJsInterop, exportedRuntimeAPI, initializeImports, set_exports } from "./imports";
+import { Module, disableLegacyJsInterop, exportedRuntimeAPI, passEmscriptenInternals, } from "./globals";
 import { is_nullish } from "./types";
 import { configureEmscriptenStartup, configureWorkerStartup } from "./startup";
 
@@ -16,37 +15,35 @@ import { create_weak_ref } from "./weak-ref";
 import { export_internal } from "./exports-internal";
 import { export_api } from "./export-api";
 import { mono_exit } from "./run";
-import { earlyExports, unifyModuleConfig } from "./run-outer";
+import { globalObjectsRoot, unifyModuleConfig } from "./run-outer";
 import { HostBuilder } from "./run-outer";
 import { initializeReplacements, init_polyfills } from "./polyfills";
 
 // legacy
 import { mono_bind_static_method } from "./net6-legacy/method-calls";
 import { export_binding_api, export_internal_api, export_mono_api } from "./net6-legacy/exports-legacy";
-import { set_legacy_exports } from "./net6-legacy/imports";
+import { initializeLegacyExports } from "./net6-legacy/globals";
 
-function initializeExports(
-    exports: EarlyExports,
-): RuntimeAPI {
-    set_exports(exports);
-    const module = exports.module as DotnetModuleInternal;
+function initializeExports(): RuntimeAPI {
+    const module = Module;
+    const globals = globalObjectsRoot;
     const globalThisAny = globalThis as any;
 
     if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
-        set_legacy_exports(exports);
+        initializeLegacyExports(globals);
     }
     init_polyfills();
 
     // here we merge methods from the local objects into exported objects
     if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
-        Object.assign(exports.mono, export_mono_api());
-        Object.assign(exports.binding, export_binding_api());
-        Object.assign(exports.internal, export_internal_api());
+        Object.assign(globals.mono, export_mono_api());
+        Object.assign(globals.binding, export_binding_api());
+        Object.assign(globals.internal, export_internal_api());
     }
-    Object.assign(exports.internal, export_internal());
+    Object.assign(globals.internal, export_internal());
     const API = export_api();
     Object.assign(exportedRuntimeAPI, {
-        INTERNAL: exports.internal,
+        INTERNAL: globals.internal,
         Module: module,
         runtimeBuildInfo: {
             productVersion: ProductVersion,
@@ -57,8 +54,8 @@ function initializeExports(
     });
     if (WasmEnableLegacyJsInterop && !disableLegacyJsInterop) {
         Object.assign(exportedRuntimeAPI, {
-            MONO: exports.mono,
-            BINDING: exports.binding,
+            MONO: globals.mono,
+            BINDING: globals.binding,
         });
     }
 
@@ -97,9 +94,9 @@ function initializeExports(
                 }
             });
         };
-        globalThisAny.MONO = exports.mono;
-        globalThisAny.BINDING = exports.binding;
-        globalThisAny.INTERNAL = exports.internal;
+        globalThisAny.MONO = globals.mono;
+        globalThisAny.BINDING = globals.binding;
+        globalThisAny.INTERNAL = globals.internal;
         globalThisAny.Module = module;
 
         // Blazor back compat
@@ -142,5 +139,5 @@ const dotnet: DotnetHostBuilder = new HostBuilder();
 const exit = mono_exit;
 export {
     dotnet, exit,
-    earlyExports, initializeImports, initializeExports, initializeReplacements, unifyModuleConfig, configureEmscriptenStartup, configureWorkerStartup
+    globalObjectsRoot as earlyExports, passEmscriptenInternals, initializeExports, initializeReplacements, unifyModuleConfig, configureEmscriptenStartup, configureWorkerStartup
 };

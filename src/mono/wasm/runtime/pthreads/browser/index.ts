@@ -7,7 +7,7 @@ import { MonoThreadMessage } from "../shared";
 import { PromiseController, createPromiseController } from "../../promise-controller";
 import { mono_assert } from "../../types";
 import Internals from "../shared/emscripten-internals";
-import { runtimeHelpers } from "../../imports";
+import { runtimeHelpers } from "../../globals";
 import { MonoConfig } from "../../types-api";
 
 const threads: Map<pthread_ptr, Thread> = new Map();

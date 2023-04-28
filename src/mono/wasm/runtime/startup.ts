@@ -8,7 +8,7 @@ import type { MonoConfig } from "./types-api";
 import type { MonoConfigInternal, DotnetModuleInternal } from "./types";
 
 import { mono_assert, CharPtrNull } from "./types";
-import { disableLegacyJsInterop, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, exportedRuntimeAPI, INTERNAL, Module, runtimeHelpers } from "./imports";
+import { disableLegacyJsInterop, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, exportedRuntimeAPI, INTERNAL, Module, runtimeHelpers } from "./globals";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -34,7 +34,7 @@ import { loadBootConfig } from "./blazor/_Integration";
 // legacy
 import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
-import { BINDING, MONO } from "./net6-legacy/imports";
+import { BINDING, MONO } from "./net6-legacy/globals";
 import { init_globalization } from "./icu";
 
 let config: MonoConfigInternal = undefined as any;
