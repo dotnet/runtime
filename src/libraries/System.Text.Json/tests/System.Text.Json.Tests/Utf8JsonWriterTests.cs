@@ -12,6 +12,7 @@ using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -3100,64 +3101,73 @@ namespace System.Text.Json.Tests
         [InlineData(false, false)]
         public void WritingTooLargeBase64Bytes(bool formatted, bool skipValidation)
         {
-            byte[] value;
-
             try
             {
-                value = new byte[200_000_000];
+                byte[] value = new byte[200_000_000];
+                value.AsSpan().Fill((byte)'a');
+
+                var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+                var output = new ArrayBufferWriter<byte>(value.Length);
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteBase64StringValue(value.AsSpan(0, 125_000_001));
+                }
+                Assert.InRange(output.WrittenCount, 125_000_001, int.MaxValue);
+                output.Clear();
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(value.AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
+                }
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(Encoding.UTF8.GetString(value).ToCharArray().AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
+                }
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteBase64StringValue(value);
+                }
+                Assert.InRange(output.WrittenCount, Base64.GetMaxEncodedToUtf8Length(value.Length), int.MaxValue);
+                output.Clear();
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo", value);
+                }
+                Assert.InRange(output.WrittenCount, Base64.GetMaxEncodedToUtf8Length(value.Length), int.MaxValue);
+                output.Clear();
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo"u8, value);
+                }
+                Assert.InRange(output.WrittenCount, Base64.GetMaxEncodedToUtf8Length(value.Length), int.MaxValue);
+                output.Clear();
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo".AsSpan(), value);
+                }
+                Assert.InRange(output.WrittenCount, Base64.GetMaxEncodedToUtf8Length(value.Length), int.MaxValue);
+                output.Clear();
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String(JsonEncodedText.Encode("foo"), value);
+                }
+                Assert.InRange(output.WrittenCount, Base64.GetMaxEncodedToUtf8Length(value.Length), int.MaxValue);
+                output.Clear();
             }
             catch (OutOfMemoryException)
             {
-                return;
-            }
-
-            value.AsSpan().Fill(255);
-
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-            var output = new ArrayBufferWriter<byte>(1024);
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64StringValue(value.AsSpan(0, 125_000_001)));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(value.AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(Encoding.UTF8.GetString(value).ToCharArray().AsSpan(0, 166_666_667), value.AsSpan(0, 1)));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64StringValue(value));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String("foo", value));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String("foo"u8, value));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String("foo".AsSpan(), value));
-            }
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBase64String(JsonEncodedText.Encode("foo"), value));
+                throw new SkipTestException("Out of memory allocating large objects");
             }
         }
 
@@ -3172,59 +3182,57 @@ namespace System.Text.Json.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
-        public void WritingLargestPossibleBase64Bytes(bool formatted, bool skipValidation)
+        public void WritingHugeBase64Bytes(bool formatted, bool skipValidation)
         {
-            byte[] value;
-
             try
             {
-                value = new byte[125_000_000];
+                byte[] value = new byte[1_000_000_000];
+
+                value.AsSpan().Fill(168);
+
+                var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+                var output = new ArrayBufferWriter<byte>(1024);
+
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteBase64StringValue(value);
+                }
+
+                output.Clear();
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo", value);
+                    jsonUtf8.WriteEndObject();
+                }
+
+                output.Clear();
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo"u8, value);
+                    jsonUtf8.WriteEndObject();
+                }
+
+                output.Clear();
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String("foo".AsSpan(), value);
+                    jsonUtf8.WriteEndObject();
+                }
+
+                output.Clear();
+                using (var jsonUtf8 = new Utf8JsonWriter(output, options))
+                {
+                    jsonUtf8.WriteStartObject();
+                    jsonUtf8.WriteBase64String(JsonEncodedText.Encode("foo"), value);
+                    jsonUtf8.WriteEndObject();
+                }
             }
             catch (OutOfMemoryException)
             {
-                return;
-            }
-
-            value.AsSpan().Fill(168);
-
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-            var output = new ArrayBufferWriter<byte>(1024);
-
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteBase64StringValue(value);
-            }
-
-            output.Clear();
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                jsonUtf8.WriteBase64String("foo", value);
-                jsonUtf8.WriteEndObject();
-            }
-
-            output.Clear();
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                jsonUtf8.WriteBase64String("foo"u8, value);
-                jsonUtf8.WriteEndObject();
-            }
-
-            output.Clear();
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                jsonUtf8.WriteBase64String("foo".AsSpan(), value);
-                jsonUtf8.WriteEndObject();
-            }
-
-            output.Clear();
-            using (var jsonUtf8 = new Utf8JsonWriter(output, options))
-            {
-                jsonUtf8.WriteStartObject();
-                jsonUtf8.WriteBase64String(JsonEncodedText.Encode("foo"), value);
-                jsonUtf8.WriteEndObject();
+                throw new SkipTestException("Out of memory allocating large objects");
             }
         }
 
