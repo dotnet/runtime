@@ -1273,11 +1273,28 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				 * These wrappers are associated with a signature, not with a method.
 				 * Since we can't decode them into methods, they need a target method.
 				 */
-				if (!target)
-					return FALSE;
+				MonoClass *klass;
+				MonoMethodSignature *sig;
+				// if (!target)
+				// 	return FALSE;
+
 
 				if (wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
 					subtype = (WrapperSubtype)decode_value (p, &p);
+					if (subtype == WRAPPER_SUBTYPE_DELEGATE_INVOKE_VIRTUAL) {
+						gboolean res;
+						MonoMethod *method;
+						int mcount, i;
+						klass = decode_klass_ref (module, p, &p, error);
+						sig = decode_signature_with_target (module, NULL, p, &p);
+
+						MonoMethod **klass_methods = m_class_get_methods (klass);
+						for (i = 0; i < mcount; ++i) {
+							if ( sig && mono_metadata_signature_equal (mono_method_signature_internal (klass_methods[i]), sig)) {
+								ref->method = klass_methods[i];
+							}
+						}
+					}
 					info = mono_marshal_get_wrapper_info (target);
 					if (info) {
 						if (info->subtype != subtype)

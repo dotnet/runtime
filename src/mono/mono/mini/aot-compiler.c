@@ -3913,8 +3913,11 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				WrapperInfo *wrapper_info = mono_marshal_get_wrapper_info (method);
 
 				encode_value (0, p, &p);
+				encode_value (wrapper_info ? wrapper_info->subtype : 0, p, &p);
+
 				if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE)
-					encode_value (wrapper_info ? wrapper_info->subtype : 0, p, &p);
+					encode_klass_ref (acfg, method->klass, p, &p);
+
 				encode_signature (acfg, sig, p, &p);
 			}
 			break;
@@ -4949,6 +4952,12 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 
 			add_method (acfg, m);
 
+			sig = mono_method_signature_internal (method);
+			if (sig->param_count && !m_class_is_byreflike (mono_class_from_mono_type_internal (sig->params [0]))) {
+				m = mono_marshal_get_delegate_invoke_internal (method, TRUE, FALSE, NULL);
+				add_method (acfg, m);
+			}
+
 			method = try_get_method_nofail (klass, "BeginInvoke", -1, 0);
 			if (method)
 				add_method (acfg, mono_marshal_get_delegate_begin_invoke (method));
@@ -4963,13 +4972,6 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 				mono_error_cleanup (error);
 				g_assert (!cattr);
 				continue;
-			}
-
-			method = mono_get_delegate_invoke_internal (klass);
-
-			if (!strcmp(method->name, "Foo") || !strcmp(method->name, "ToString") || !strcmp(method->name, "Invoke")) {
-				m = mono_marshal_get_delegate_invoke_internal (method, TRUE, FALSE, NULL);
-				add_method (acfg, m);
 			}
 
 			if (cattr) {
