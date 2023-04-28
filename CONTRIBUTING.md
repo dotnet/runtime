@@ -165,7 +165,7 @@ The following file header is the used for files in this repo. Please use it for 
 
 ### PR - CI Process
 
-The [dotnet continuous integration](https://dev.azure.com/dnceng-public/public/_build) (CI) system will automatically perform the required builds and run tests (including the ones you are expected to run) for PRs. Builds and test runs must be clean or have bugs properly filed against flaky/unexpected failures.
+The [dotnet continuous integration](https://dev.azure.com/dnceng-public/public/_build) (CI) system will automatically perform the required builds and run tests (including the ones you are expected to run) for PRs. Builds and test runs must be clean or have bugs properly filed against flaky/unexpected failures that are unrelated to your change.
 
 If the CI build fails for any reason, the PR issue will link to the `Azure DevOps` build with further information on the failure.
 
