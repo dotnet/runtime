@@ -8640,7 +8640,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                 {
                     GenTree* arg = lhs->AsIndir()->Addr()->gtEffectiveVal(/*commaOnly*/ true);
 
-                    if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
+                    if ((lhs->gtFlags & GTF_IND_VOLATILE) != 0)
                     {
                         memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                         continue;
