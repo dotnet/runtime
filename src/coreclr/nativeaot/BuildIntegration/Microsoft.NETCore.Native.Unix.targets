@@ -178,7 +178,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(_IsApplePlatform)' != 'true'"
       Text="Requested linker ('$(CppLinker)') not found in PATH." />
 
-    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="'$(LinkerFlavor)' == 'lld' or ('$(LinkerFlavor)' == '' and '$(CppLinker)' == 'clang')"
+    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="'$(LinkerFlavor)' == 'lld' or ('$(LinkerFlavor)' == '' and $(CppCompilerAndLinker.Contains('clang')))"
           IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" StandardErrorImportance="Low" ConsoleToMSBuild="true">
       <Output TaskParameter="ExitCode" PropertyName="_LinkerVersionStringExitCode" />
       <Output TaskParameter="ConsoleOutput" PropertyName="_LinkerVersionString" />
