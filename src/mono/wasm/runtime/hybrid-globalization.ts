@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "./imports";
 import { mono_wasm_new_external_root } from "./roots";
 import {MonoString, MonoStringRef } from "./types";
 import { Int32Ptr } from "./types/emscripten";
@@ -10,7 +9,7 @@ import { setU16 } from "./memory";
 
 export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
     try{
-        const input = get_utf16_string(src, srcLength);
+        const input = string_decoder.decode(<any>src, <any>(src + 2*srcLength));
         let result = toUpper ? input.toUpperCase() : input.toLowerCase();
         // Unicode defines some codepoints which expand into multiple codepoints,
         // originally we do not support this expansion
@@ -31,7 +30,7 @@ export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoS
         const cultureName = conv_string_root(cultureRoot);
         if (!cultureName)
             throw new Error("Cannot change case, the culture name is null.");
-        const input = get_utf16_string(src, srcLength);
+        const input = string_decoder.decode(<any>src, <any>(src + 2*srcLength));
         let result = toUpper ? input.toLocaleUpperCase(cultureName) : input.toLocaleLowerCase(cultureName);
         if (result.length > destLength)
             result = input;
@@ -45,14 +44,6 @@ export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoS
     finally {
         cultureRoot.release();
     }
-}
-
-function get_utf16_string(ptr: number, length: number): string{
-    const view = new Uint16Array(Module.HEAPU16.buffer, ptr, length);
-    let string = "";
-    for (let i = 0; i < length; i++)
-        string += String.fromCharCode(view[i]);
-    return string;
 }
 
 export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number) : number{
