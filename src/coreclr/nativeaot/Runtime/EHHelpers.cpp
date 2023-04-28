@@ -286,6 +286,11 @@ EXTERN_C void * RhpCheckedXchgAVLocation;
 EXTERN_C void * RhpLockCmpXchg32AVLocation;
 EXTERN_C void * RhpLockCmpXchg64AVLocation;
 
+#if defined(HOST_ARM64) && !defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
+EXTERN_C void* RhpCheckedLockCmpXchgAVLocation2;
+EXTERN_C void* RhpCheckedXchgAVLocation2;
+#endif
+
 static bool InWriteBarrierHelper(uintptr_t faultingIP)
 {
 #ifndef USE_PORTABLE_HELPERS
@@ -297,6 +302,10 @@ static bool InWriteBarrierHelper(uintptr_t faultingIP)
         (uintptr_t)&RhpCheckedXchgAVLocation,
         (uintptr_t)&RhpLockCmpXchg32AVLocation,
         (uintptr_t)&RhpLockCmpXchg64AVLocation,
+#if defined(HOST_ARM64) && !defined(LSE_INSTRUCTIONS_ENABLED_BY_DEFAULT)
+        (uintptr_t)&RhpCheckedLockCmpXchgAVLocation2,
+        (uintptr_t)&RhpCheckedXchgAVLocation2,
+#endif
     };
 
     // compare the IP against the list of known possible AV locations in the write barrier helpers
