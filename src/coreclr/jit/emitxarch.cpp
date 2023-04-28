@@ -3791,6 +3791,27 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
     {
         reg = REG_NA;
         rgx = REG_NA;
+
+#if defined(DEBUG)
+        switch (id->idInsFmt())
+        {
+            case IF_RWR_LABEL:
+            case IF_MRW_CNS:
+            case IF_MRW_RRD:
+            case IF_MRW_SHF:
+            {
+                break;
+            }
+
+            default:
+            {
+                assert(!"Unexpected insFormat in emitInsSizeAMD");
+                reg = id->idAddr()->iiaAddrMode.amBaseReg;
+                rgx = id->idAddr()->iiaAddrMode.amIndxReg;
+                break;
+            }
+        }
+#endif // DEBUG
     }
 
     if (id->idIsDspReloc())
@@ -4341,6 +4362,15 @@ emitter::insFormat emitter::emitMapFmtForIns(insFormat fmt, instruction ins)
 
         default:
         {
+            if (IsMovInstruction(ins))
+            {
+                // A `mov` instruction is always "write"
+                // and not "read/write".
+                if (fmt == IF_RRW_ARD)
+                {
+                    return IF_RWR_ARD;
+                }
+            }
             return fmt;
         }
     }
@@ -12081,35 +12111,10 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         }
         else if (IsDstSrcSrcAVXInstruction(ins))
         {
-            regNumber src2 = REG_NA;
-
-            switch (id->idInsFmt())
+            if (id->idHasReg2())
             {
-                case IF_AWR_RRD:
-                case IF_MWR_RRD:
-                case IF_SWR_RRD:
-                {
-                    src2 = id->idReg1();
-                    break;
-                }
-
-                case IF_RWR_ARD:
-                case IF_RWR_MRD:
-                case IF_RWR_SRD:
-                {
-                    src2 = id->idReg1();
-                    break;
-                }
-
-                default:
-                {
-                    assert(!"Unhandled insFmt in emitOutputAM");
-                    src2 = id->idReg2();
-                    break;
-                }
+                code = insEncodeReg3456(id, id->idReg2(), size, code);
             }
-
-            code = insEncodeReg3456(id, src2, size, code);
         }
     }
 
