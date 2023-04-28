@@ -13355,6 +13355,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 {
                     emitGCregDeadUpd(id->idReg1(), dst);
                     emitGCregDeadUpd(id->idReg2(), dst);
+                    break;
                 }
 
                 default:
@@ -13835,6 +13836,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 {
                     emitGCregDeadUpd(id->idReg1(), dst);
                     emitGCregDeadUpd(id->idReg2(), dst);
+                    break;
                 }
 
                 default:
@@ -14604,6 +14606,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
             {
                 emitGCregDeadUpd(id->idReg1(), dst);
                 emitGCregDeadUpd(id->idReg2(), dst);
+                break;
             }
 
             default:
