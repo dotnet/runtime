@@ -8883,9 +8883,8 @@ GenTree* Compiler::gtCloneExpr(
                 break;
 
             case GT_STORE_BLK:
-                copy = new (this, GT_STORE_BLK)
-                    GenTreeBlk(GT_STORE_BLK, tree->TypeGet(), tree->AsBlk()->Addr(), tree->AsBlk()->Data(),
-                               tree->AsBlk()->GetLayout());
+                copy = new (this, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, tree->TypeGet(), tree->AsBlk()->Addr(),
+                                                           tree->AsBlk()->Data(), tree->AsBlk()->GetLayout());
                 break;
 
             case GT_ARR_ADDR:
