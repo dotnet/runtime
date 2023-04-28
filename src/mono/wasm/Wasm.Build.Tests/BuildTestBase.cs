@@ -428,7 +428,8 @@ namespace Wasm.Build.Tests
                 {
                     AssertRuntimePackPath(result.buildOutput, options.TargetFramework ?? DefaultTargetFramework);
 
-                    string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework), "AppBundle");
+                    string bundleDir = Path.Combine(GetBinDir(config: buildArgs.Config, targetFramework: options.TargetFramework ?? DefaultTargetFramework),
+                                                    options.IsBrowserTemplateProject ? "wwwroot" : "AppBundle");
                     AssertBasicAppBundle(bundleDir,
                                          buildArgs.ProjectName,
                                          buildArgs.Config,
@@ -439,7 +440,7 @@ namespace Wasm.Build.Tests
                                          options.PredefinedIcudt ?? "",
                                          options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT,
                                          UseWebcil,
-                                         options.IsBrowserProject);
+                                         options.IsBrowserTemplateProject);
                 }
 
                 if (options.UseCache)
@@ -508,14 +509,7 @@ namespace Wasm.Build.Tests
             if (UseWebcil)
                 extraProperties += "<WasmEnableWebcil>true</WasmEnableWebcil>";
 
-            // TODO: Can be removed after updated templates propagate in.
-            string extraItems = string.Empty;
-            if (template == "wasmbrowser")
-                extraItems += "<WasmExtraFilesToDeploy Include=\"main.js\" />";
-            else
-                extraItems += "<WasmExtraFilesToDeploy Include=\"main.mjs\" />";
-
-            AddItemsPropertiesToProject(projectfile, extraProperties, extraItems);
+            AddItemsPropertiesToProject(projectfile, extraProperties);
 
             return projectfile;
         }
@@ -1232,9 +1226,12 @@ namespace Wasm.Build.Tests
         string?             Label                     = null,
         string?             TargetFramework           = null,
         string?             MainJS                    = null,
-        bool                IsBrowserProject          = true,
+        WasmTemplate        FromTemplate              = WasmTemplate.none,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
-    );
+    )
+    {
+        public bool IsBrowserTemplateProject => FromTemplate == WasmTemplate.wasmbrowser;
+    }
 
     public record BlazorBuildOptions
     (
@@ -1251,6 +1248,14 @@ namespace Wasm.Build.Tests
         Invariant,       // no icu
         FullIcu,         // full icu data: icudt.dat is loaded
         PredefinedIcu   // user set WasmIcuDataFileName value and we are loading that file
+    };
+
+    public enum WasmTemplate
+    {
+        none,
+        wasmconsole,
+        wasmbrowser,
+        wasiconsole
     };
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };

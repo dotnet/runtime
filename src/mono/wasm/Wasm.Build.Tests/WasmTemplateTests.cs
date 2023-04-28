@@ -38,7 +38,7 @@ namespace Wasm.Build.Tests
 
         private void UpdateBrowserMainJs(string targetFramework)
         {
-            string mainJsPath = Path.Combine(_projectDir!, "main.js");
+            string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
             string mainJsContent = File.ReadAllText(mainJsPath);
 
             // .withExitOnUnhandledError() is available only only >net7.0
@@ -102,7 +102,7 @@ namespace Wasm.Build.Tests
                             TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true, targetFramework: DefaultTargetFramework);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "wwwroot"), fromRuntimePack: true, targetFramework: DefaultTargetFramework);
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -123,7 +123,7 @@ namespace Wasm.Build.Tests
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "wwwroot"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
         }
 
         [Theory]
@@ -149,7 +149,7 @@ namespace Wasm.Build.Tests
                         MainJS: "main.mjs",
                         Publish: false,
                         TargetFramework: BuildTestBase.DefaultTargetFramework,
-                        IsBrowserProject: false
+                        FromTemplate: WasmTemplate.wasmconsole
                         ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true, targetFramework: DefaultTargetFramework);
@@ -176,7 +176,7 @@ namespace Wasm.Build.Tests
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false,
-                            IsBrowserProject: false));
+                            FromTemplate: WasmTemplate.wasmconsole));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
         }
@@ -219,7 +219,7 @@ namespace Wasm.Build.Tests
                             MainJS: "main.mjs",
                             Publish: false,
                             TargetFramework: expectedTFM,
-                            IsBrowserProject: false
+                            FromTemplate: WasmTemplate.wasmconsole
                             ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config, expectedTFM), "AppBundle"), fromRuntimePack: !relinking, targetFramework: expectedTFM);
@@ -392,7 +392,7 @@ namespace Wasm.Build.Tests
                             Publish: true,
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false,
-                            IsBrowserProject: false));
+                            FromTemplate: WasmTemplate.wasmconsole));
 
             if (!aot)
             {

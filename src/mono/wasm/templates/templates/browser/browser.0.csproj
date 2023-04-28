@@ -7,5 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.0-preview.4.23177.9" PrivateAssets="all" />
   </ItemGroup>
 </Project>
