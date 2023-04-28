@@ -173,11 +173,16 @@ namespace System.Globalization
             if (GlobalizationMode.UseNls)
             {
                 NlsInitSortHandle();
+                return;
             }
-            else
+#if TARGET_BROWSER
+            if (GlobalizationMode.Hybrid)
             {
-                IcuInitSortHandle(culture.InteropName!);
+                JsInit(culture.InteropName!);
+                return;
             }
+#endif
+            IcuInitSortHandle(culture.InteropName!);
         }
 
         [OnDeserializing]

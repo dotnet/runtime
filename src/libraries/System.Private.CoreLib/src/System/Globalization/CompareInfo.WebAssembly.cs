@@ -8,6 +8,11 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
+        private void JsInit(string interopCultureName)
+        {
+            _isAsciiEqualityOrdinal = GetIsAsciiEqualityOrdinal(interopCultureName);
+        }
+
         private static void AssertHybridOnWasm(CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
