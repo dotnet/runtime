@@ -1281,8 +1281,11 @@ start_wrapper (gpointer data)
 
 	if (G_UNLIKELY (external_eventloop)) {
 		/* if the thread wants to stay alive, don't clean up after it */
-		if (mono_thread_platform_external_eventloop_keepalive_check ())
+		if (mono_thread_platform_external_eventloop_keepalive_check ()) {
+			/* while we wait in the external eventloop, we're GC safe */
+			MONO_REQ_GC_SAFE_MODE;
 			return 0;
+		}
 	}
 
 	mono_thread_info_exit (res);
