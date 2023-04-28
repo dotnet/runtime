@@ -16,7 +16,7 @@ In case of failure, any PR on the runtime will have a failed GitHub check - PR B
 
 ![Build analysis check](analysis-check.png)
 
-This check tries to bubble as much useful information about all failures for any given PR and the pipelines it runs. It tracks both build and test failures and provides quick links to the build/test legs of interest, the logs, and other supplemental information that `Azure DevOps` may provide. The idea is it minimizes links to follow and tries to surface well known issues that have already been identified previously. It also adds a link to the `Helix Artifacts` tab of a failed test, as it often contains more detailed logs of the execution or a dump that's been collected at fault time.
+This check tries to bubble as much useful information about all failures for any given PR and the pipelines it runs. It tracks both build and test failures and provides quick links to the build/test legs, the logs, and other supplemental information that `Azure DevOps` may provide. The idea is to minimize the number of links to follow and tries to surface well known issues that have already been previously identified. It also adds a link to the `Helix Artifacts` tab of a failed test, as it often contains more detailed logs of the execution or a dump that's been collected at fault time.
 
 Validation may fail for several reasons, and for each one we have a different recommended action:
 
@@ -26,9 +26,9 @@ Validation may fail for several reasons, and for each one we have a different re
 
 ### Option 2: There is a flaky test that is not related to your PR
 
-* Your assumption should be that a failed test indicates a problem in your PR. (If we don't operate this way, chaos ensues.) However, there's often subtle regressions and flaky bugs that might have slipped into the target branch.
-  * Reruns might help, but we tend to be conservative with them as they tend to spike our resource usage. Opt to use them only if there's no known issue that can be correlated to the failures and it's not clear if the errors could be correlated. Try to rerun only the particular legs if possible by navigating to the GitHub Checks tab choose "re-run failed checks".
-  * There's the possibility someone else already investigated the issue. In such case, the build analysis tab should report the issue like so:
+* Your assumption should be that a failed test indicates a problem in your PR. (If we don't operate this way, chaos ensues.) However, there are often subtle regressions and flaky bugs that might have slipped into the target branch.
+  * Reruns might help, but we tend to be conservative with them as they tend to spike our resource usage. Opt to use them only if there are no known issue that can be correlated to the failures and it's not clear if the errors could be correlated. Try to rerun only the particular legs if possible, by navigating to the GitHub Checks tab and clicking on `Re-run failed checks`.
+  * There's the possibility someone else has already investigated the issue. In such case, the build analysis tab should report the issue like so:
     ![known issue example](known-issue-example.png)
     There's no additional work required here - the bug is getting tracked and appropriate data is being collected.
   * If the error is not getting reported as a known issue and you believe it's unrelated, see the [unrelated failure](#what-to-do-if-you-determine-the-failure-is-unrelated) section for next steps.
@@ -48,7 +48,7 @@ Validation may fail for several reasons, and for each one we have a different re
 
 ## What to do if you determine the failure is unrelated
 
-An issue that's not been reported before it will look like this in the `Build Analysis` check tab:
+An issue that has not been reported before will look like this in the `Build Analysis` check tab:
 
 ![failed test](failed-test.png)
 
@@ -76,20 +76,20 @@ If you have considered all the diagnostic artifacts and determined the failure i
     }
     ```
     ````
-    It already contains most information necessary. *The most important piece of information for you to fill out is the json blob*.
+    It already contains most of the essential information, but *it is very important that you fill out the json blob*.
 
-    - You can add the string you identified as uniquely identifying the issue into the `ErrorMessage` field. In case you need to use a regex, use the `ErrorPattern` field instead (this is a limitted, single-line, non-backtracking regex described [here](https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/KnownIssues.md#regex-matching)). This regex needs to be appropriately escaped - check the [arcade known issues](https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/KnownIssues.md#filling-out-known-issues-json-blob) documentation for a good guide on proper regex and JSON escaping.
-    - The field `ExcludeConsoleLog` should be `true` as much as possible. Setting it to false will mean all failures appear in the same log and since you didn't exclude the overall logs, all failures in the collection will get attributed to this one's issue bucket and errors will not be investigated properly. Due to limitations in Known Issues around rate limiting and xUnit resiliency, setting `ExcludeConsoleLog=false` is necessary in two scenarios:
+    - You can add into the `ErrorMessage` field the string that you found uniquely identifies the issue. In case you need to use a regex, use the `ErrorPattern` field instead. This is a limited to a single-line, non-backtracking regex as described [here](https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/KnownIssues.md#regex-matching). This regex also needs to be appropriately escaped. Check the [arcade known issues](https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/KnownIssues.md#filling-out-known-issues-json-blob) documentation for a good guide on proper regex and JSON escaping.
+    - The field `ExcludeConsoleLog` describes if the execution logs should be considered on top of the individual test results. **For most cases, this should be set to `true` as the failure will happen within a single test**. Setting it to `false` will mean all failures within an xUnit set of tests will also get attributed to this particular error, since there's one log describing all the problems. Due to limitations in Known Issues around rate limiting and xUnit resiliency, setting `ExcludeConsoleLog=false` is necessary in two scenarios:
       + Nested tests as reported to Azure DevOps. Essentially this means theory failures, which look like this when reported in Azure DevOps: ![xUnit theory seen in azure devops](theory-azdo.png).
         Adding support for this requires too many API calls, so using the console log here is necessary.
       + Native crashes in libraries also require using the console log. This is needed as the crash corrupts the test results to be reported to Azure DevOps, so only the console logs are left.
     - Optionally you can add specifics as needed like leg, configuration parameters, available dump links.
 
-Once the issue is open, feel free to rerun the `Build Analysis` check and the issue should be recognized as known if all was filed correctly and you are ready to merge once all unrelated issues are marked as known. However, there are some known limitations to the system as previously described. Additionally, the system only looks at the error message the stacktrace fields of an Azure DevOps test result, and the console log in the helix queue. If rerunning the check doesn't pick up the known issue and you feel it should, feel free to tag the infrastructure team for help.
+Once the issue is open, feel free to rerun the `Build Analysis` check and the issue should be recognized as known if all was filed correctly and you are ready to merge once all unrelated issues are marked as known. However, there are some known limitations to the system as previously described. Additionally, the system only looks at the error message the stacktrace fields of an Azure DevOps test result, and the console log in the helix queue. If rerunning the check doesn't pick up the known issue and you feel it should, feel free to tag  @dotnet/runtime-infrastructure to request infrastructure team for help.
 
-After you do this, if the failure is occuring frequently as per the data captured in the recently opened issue, please disable the failing test(s) with the corresponding issue link tracking the disable in a follow-up Pull Request.
+After you do this, if the failure is occurring frequently as per the data captured in the recently opened issue, please disable the failing test(s) with the corresponding tracking issue link in a follow-up Pull Request.
 
-* Update the tracking issue with the label `disabled-test` and remove the blocking tags.
+* Update the tracking issue with the `disabled-test` label and remove the blocking tags.
 * For libraries tests add a [`[ActiveIssue(link)]`](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/Attributes/ActiveIssueAttribute.cs) attribute on the test method. You can narrow the disabling down to runtime variant, flavor, and platform. For an example see [File_AppendAllLinesAsync_Encoded](https://github.com/dotnet/runtime/blob/cf49643711ad8aa4685a8054286c1348cef6e1d8/src/libraries/System.IO.FileSystem/tests/File/AppendAsync.cs#L74)
 * For runtime tests found under `src/tests`, please edit [`issues.targets`](https://github.com/dotnet/runtime/blob/main/src/tests/issues.targets). There are several groups for different types of disable (mono vs. coreclr, different platforms, different scenarios). Add the folder containing the test and issue mimicking any of the samples in the file.
 
