@@ -74,6 +74,12 @@ struct GCFrameRegistration
     int m_MaybeInterior;
 };
 
+struct InlinedThreadStaticRoot
+{
+    Object* m_threadStaticsBase;
+    InlinedThreadStaticRoot* m_next;
+};
+
 struct ThreadBuffer
 {
     uint8_t                 m_rgbAllocContextBuffer[SIZEOF_ALLOC_CONTEXT];
@@ -89,7 +95,7 @@ struct ThreadBuffer
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
     Object*                 m_pThreadLocalStatics;
-    Object*                 m_pInlinedThreadLocalStatics;
+    InlinedThreadStaticRoot* m_pInlinedThreadLocalStatics;
     GCFrameRegistration*    m_pGCFrameRegistrations;
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
@@ -288,7 +294,9 @@ public:
     void SetThreadAbortException(Object *exception);
 
     Object** GetThreadStaticStorage();
-    Object** GetInlinedThreadStaticStorage();
+
+    InlinedThreadStaticRoot* GetInlinedThreadStaticList();
+    void RegisterInlinedThreadStaticRoot(InlinedThreadStaticRoot* newRoot);
 
     NATIVE_CONTEXT* GetInterruptedContext();
 

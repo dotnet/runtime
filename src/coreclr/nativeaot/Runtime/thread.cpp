@@ -1270,21 +1270,28 @@ Object** Thread::GetThreadStaticStorage()
     return &m_pThreadLocalStatics;
 }
 
-Object** Thread::GetInlinedThreadStaticStorage()
-{
-    return &m_pInlinedThreadLocalStatics;
-}
-
 COOP_PINVOKE_HELPER(Object**, RhGetThreadStaticStorage, ())
 {
-    Thread * pCurrentThread = ThreadStore::RawGetCurrentThread();
+    Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
     return pCurrentThread->GetThreadStaticStorage();
 }
 
-COOP_PINVOKE_HELPER(Object**, RhGetInlinedThreadStaticStorage, ())
+InlinedThreadStaticRoot* Thread::GetInlinedThreadStaticList()
+{
+    return m_pInlinedThreadLocalStatics;
+}
+
+void Thread::RegisterInlinedThreadStaticRoot(InlinedThreadStaticRoot* newRoot)
+{
+    ASSERT(newRoot->m_next == NULL);
+    newRoot->m_next = m_pInlinedThreadLocalStatics;
+    m_pInlinedThreadLocalStatics = newRoot;
+}
+
+COOP_PINVOKE_HELPER(void, RhRegisterInlinedThreadStaticRoot, (Object** root))
 {
     Thread* pCurrentThread = ThreadStore::RawGetCurrentThread();
-    return pCurrentThread->GetInlinedThreadStaticStorage();
+    pCurrentThread->RegisterInlinedThreadStaticRoot((InlinedThreadStaticRoot*)root);
 }
 
 // This is function is used to quickly query a value that can uniquely identify a thread

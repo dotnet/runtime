@@ -43,13 +43,13 @@ LEAF_ENTRY RhpGetInlinedThreadStaticBase, _TEXT
         ; On exit:
         ;   rax - the thread static base for the given type
 
-        ;; rax = GetThread(), TRASHES r8
-        INLINE_GETTHREAD rax, r8
+        ;; rcx = &tls_InlinedThreadStatics, TRASHES r8
+        INLINE_GET_TLS_VAR rcx, r8, tls_InlinedThreadStatics
 
         ;; get per-thread storage
-        mov     rax, [rax + OFFSETOF__Thread__m_pInlinedThreadLocalStatics]
+        mov     rax, [rcx]
         test    rax, rax
-        jz      RhpGetInlinedThreadStaticBaseSlow
+        jz      RhpGetInlinedThreadStaticBaseSlow   ;; rcx contains the storage ref
 
         ;; return it
         ret
