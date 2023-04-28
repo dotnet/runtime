@@ -1697,7 +1697,7 @@ private:
             else
             {
                 dst = m_compiler->gtNewIndir(remainderStrategy.PrimitiveType,
-                                             grabAddr(remainderStrategy.PrimitiveOffset));
+                                             grabAddr(addrBaseOffs + remainderStrategy.PrimitiveOffset));
                 PropagateIndirFlags(dst, indirFlags);
             }
 
@@ -1712,7 +1712,7 @@ private:
             else
             {
                 src = m_compiler->gtNewIndir(remainderStrategy.PrimitiveType,
-                                             grabAddr(remainderStrategy.PrimitiveOffset));
+                                             grabAddr(addrBaseOffs + remainderStrategy.PrimitiveOffset));
                 PropagateIndirFlags(src, indirFlags);
             }
 
