@@ -11642,8 +11642,10 @@ void emitter::emitDispIns(
             }
 
             break;
+        }
 
         case IF_NONE:
+        {
 #if FEATURE_LOOP_ALIGN
             if (ins == INS_align)
             {
