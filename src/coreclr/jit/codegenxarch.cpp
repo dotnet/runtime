@@ -8016,7 +8016,7 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
     bool isRMW = !compiler->canUseVexEncoding();
     inst_RV_RV_TT_IV(ins, size, dstReg, dstReg, srcNode, ival, isRMW);
 #else
-    inst_RV_TV_IV(ins, size, dstReg, srcNode->GetRegNum(), ival);
+    inst_RV_TT_IV(ins, size, dstReg, srcNode, ival);
 #endif
 }
 
