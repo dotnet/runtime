@@ -695,7 +695,7 @@ class SchemaDef
         new RecordDef(
             name: "ByReferenceSignature",
             members: new MemberDef[] {
-                new MemberDef("Type", TypeDefOrRefOrSpec, MemberDefFlags.RecordRef),
+                new MemberDef("Type", TypeDefOrRefOrSpecOrMod, MemberDefFlags.RecordRef),
             }
         ),
         new RecordDef(

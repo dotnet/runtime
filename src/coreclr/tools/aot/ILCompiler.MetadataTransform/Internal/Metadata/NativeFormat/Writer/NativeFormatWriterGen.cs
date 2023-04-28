@@ -151,7 +151,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(Type == null ||
                 Type.HandleType == HandleType.TypeDefinition ||
                 Type.HandleType == HandleType.TypeReference ||
-                Type.HandleType == HandleType.TypeSpecification);
+                Type.HandleType == HandleType.TypeSpecification ||
+                Type.HandleType == HandleType.ModifiedType);
             writer.Write(Type);
         } // Save
 
