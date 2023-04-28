@@ -111,7 +111,6 @@
   <PropertyGroup>
     <CommonPath>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', 'src'))</CommonPath>
     <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
-    <NativeAotSourcesRoot>$(MSBuildThisFileDirectory)..\nativeaot\System.Private.CoreLib\src</NativeAotSourcesRoot>
   </PropertyGroup>
 
   <!-- Compilation options -->
