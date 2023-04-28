@@ -3673,6 +3673,33 @@ const BYTE emitter::emitFmtToOps[] = {
 const unsigned emitter::emitFmtCount = ArrLen(emitFmtToOps);
 #endif
 
+#if defined(TARGET_XARCH)
+//------------------------------------------------------------------------
+// emitGetSchedInfo: Gets the scheduling information for a given insFmt
+//
+// Arguments:
+//    insFmt - format for which to query scheduling information
+//
+// Return Value:
+//    the scheduling information for insFmt
+//
+const IS_INFO emitter::emitGetSchedInfo(insFormat insFmt)
+{
+    static const IS_INFO emitFmtToSchedInfo[] = {
+#define IF_DEF(en, op1, op2) static_cast<IS_INFO>(op1),
+#include "emitfmts.h"
+    };
+
+    if (insFmt < ArrLen(emitFmtToSchedInfo))
+    {
+        return emitFmtToSchedInfo[insFmt];
+    }
+
+    assert(!"Unsupported insFmt");
+    return IS_NONE;
+}
+#endif // TARGET_XARCH
+
 //------------------------------------------------------------------------
 // Interleaved GC info dumping.
 // We'll attempt to line this up with the opcode, which indented differently for

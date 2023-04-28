@@ -1203,6 +1203,7 @@ protected:
             idAddr()->_idReg3 = reg;
             assert(reg == idAddr()->_idReg3);
         }
+
         regNumber idReg4() const
         {
             assert(!idIsSmallDsc());
@@ -1214,27 +1215,117 @@ protected:
             idAddr()->_idReg4 = reg;
             assert(reg == idAddr()->_idReg4);
         }
+
+        bool idHasReg1() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R1_RD | IS_R1_RW | IS_R1_WR)) != 0;
+        }
+        bool idIsReg1Read() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R1_RD | IS_R1_RW)) != 0;
+        }
+        bool idIsReg1Write() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R1_RW | IS_R1_WR)) != 0;
+        }
+
+        bool idHasReg2() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R2_RD | IS_R2_RW | IS_R2_WR)) != 0;
+        }
+        bool idIsReg2Read() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R2_RD | IS_R2_RW)) != 0;
+        }
+        bool idIsReg2Write() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R2_RW | IS_R2_WR)) != 0;
+        }
+
         bool idHasReg3() const
         {
-            switch (idInsFmt())
-            {
-                case IF_RWR_RRD_RRD:
-                case IF_RWR_RRD_RRD_CNS:
-                case IF_RWR_RRD_RRD_RRD:
-                    return true;
-                default:
-                    return false;
-            }
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R3_RD | IS_R3_RW | IS_R3_WR)) != 0;
         }
+        bool idIsReg3Read() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R3_RD | IS_R3_RW)) != 0;
+        }
+        bool idIsReg3Write() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R3_RW | IS_R3_WR)) != 0;
+        }
+
         bool idHasReg4() const
         {
-            switch (idInsFmt())
-            {
-                case IF_RWR_RRD_RRD_RRD:
-                    return true;
-                default:
-                    return false;
-            }
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R4_RD | IS_R4_RW | IS_R4_WR)) != 0;
+        }
+        bool idIsReg4Read() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R4_RD | IS_R4_RW)) != 0;
+        }
+        bool idIsReg4Write() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_R4_RW | IS_R4_WR)) != 0;
+        }
+
+        bool idHasMemGen() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_GM_RD | IS_GM_RW | IS_GM_WR)) != 0;
+        }
+        bool idHasMemGenRead() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_GM_RD | IS_GM_RW)) != 0;
+        }
+        bool idHasMemGenWrite() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_GM_RW | IS_GM_WR)) != 0;
+        }
+
+        bool idHasMemStk() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_SF_RD | IS_SF_RW | IS_SF_WR)) != 0;
+        }
+        bool idHasMemStkRead() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_SF_RD | IS_SF_RW)) != 0;
+        }
+        bool idHasMemStkWrite() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_SF_RW | IS_SF_WR)) != 0;
+        }
+
+        bool idHasMemAdr() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_AM_RD | IS_AM_RW | IS_AM_WR)) != 0;
+        }
+        bool idHasMemAdrRead() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_AM_RD | IS_AM_RW)) != 0;
+        }
+        bool idHasMemAdrWrite() const
+        {
+            IS_INFO isInfo = emitGetSchedInfo(idInsFmt());
+            return (isInfo & (IS_AM_RW | IS_AM_WR)) != 0;
         }
 #endif // defined(TARGET_XARCH)
 #ifdef TARGET_ARMARCH
@@ -1910,6 +2001,7 @@ protected:
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
 
+    static const IS_INFO emitGetSchedInfo(insFormat f);
 #endif // TARGET_XARCH
 
     cnsval_ssize_t emitGetInsSC(instrDesc* id);
