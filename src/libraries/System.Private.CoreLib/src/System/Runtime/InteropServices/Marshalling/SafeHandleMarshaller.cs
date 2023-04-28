@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.Marshalling
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder), MarshalMode.ManagedToUnmanagedIn, typeof(SafeHandleMarshaller<>.ManagedToUnmanagedIn))]
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder), MarshalMode.ManagedToUnmanagedRef, typeof(SafeHandleMarshaller<>.ManagedToUnmanagedRef))]
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder), MarshalMode.ManagedToUnmanagedOut, typeof(SafeHandleMarshaller<>.ManagedToUnmanagedOut))]
-    public static class SafeHandleMarshaller<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)] T> where T : SafeHandle
+    public static class SafeHandleMarshaller<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> where T : SafeHandle
     {
         /// <summary>
         /// Custom marshaller to marshal a <see cref="SafeHandle"/> as its underlying handle value.
@@ -74,7 +74,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 // but it has never required them to be public.
                 // We construct the handle now to ensure we don't cause an exception
                 // before we are able to capture the unmanaged handle after the call.
-                _newHandle = (T)Activator.CreateInstance(typeof(T), nonPublic: true)!;
+                _newHandle = Activator.CreateInstance<T>()!;
             }
 
             /// <summary>
@@ -163,7 +163,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 // but it has never required them to be public.
                 // We construct the handle now to ensure we don't cause an exception
                 // before we are able to capture the unmanaged handle after the call.
-                _newHandle = (T)Activator.CreateInstance(typeof(T), nonPublic: true)!;
+                _newHandle = Activator.CreateInstance<T>()!;
             }
 
             /// <summary>

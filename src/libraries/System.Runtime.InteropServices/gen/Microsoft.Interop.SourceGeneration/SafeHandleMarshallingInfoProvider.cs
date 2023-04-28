@@ -59,7 +59,7 @@ namespace Microsoft.Interop
                 {
                     if (ctor.Parameters.Length == 0)
                     {
-                        hasDefaultConstructor = true;
+                        hasDefaultConstructor = ctor.DeclaredAccessibility == Accessibility.Public;
                         hasAccessibleDefaultConstructor = _compilation.IsSymbolAccessibleWithin(ctor, _containingScope);
                         break;
                     }
