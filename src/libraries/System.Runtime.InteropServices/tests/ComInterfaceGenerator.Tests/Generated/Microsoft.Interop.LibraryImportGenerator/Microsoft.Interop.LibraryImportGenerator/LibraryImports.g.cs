@@ -25,6 +25,22 @@ namespace ComInterfaceGenerator.Tests
 }
 namespace ComInterfaceGenerator.Tests
 {
+    public unsafe partial class IGetAndSetIntTests
+    {
+        [System.Runtime.InteropServices.DllImportAttribute("Microsoft.Interop.Tests.NativeExportsNE", EntryPoint = "new_get_and_set_int", ExactSpelling = true)]
+        public static extern partial void* NewNativeObject();
+    }
+}
+namespace ComInterfaceGenerator.Tests
+{
+    public unsafe partial class IGetIntArrayTests
+    {
+        [System.Runtime.InteropServices.DllImportAttribute("Microsoft.Interop.Tests.NativeExportsNE", EntryPoint = "new_get_and_set_int_array", ExactSpelling = true)]
+        public static extern partial void* NewNativeObject();
+    }
+}
+namespace ComInterfaceGenerator.Tests
+{
     internal unsafe partial class NativeExportsNE
     {
         internal unsafe partial class ImplicitThis

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -29,6 +30,31 @@ namespace Microsoft.Interop
                     }
                     return builder.MoveToImmutable();
                 });
+        }
+
+        public static IncrementalValuesProvider<(TGrouper, SequenceEqualImmutableArray<TGroupee>)> GroupTuples<TGrouper, TGroupee>(this IncrementalValuesProvider<(TGrouper Key, TGroupee Value)> values)
+        {
+            return values.Collect().SelectMany(static (values, ct) =>
+            {
+                var valueMap = new Dictionary<TGrouper, List<TGroupee>>();
+                foreach (var value in values)
+                {
+                    if (!valueMap.TryGetValue(value.Key, out var list))
+                    {
+                        list = new();
+                    }
+                    list.Add(value.Value);
+                    valueMap[value.Key] = list;
+                }
+
+                var builder = ImmutableArray.CreateBuilder<(TGrouper, SequenceEqualImmutableArray<TGroupee>)>(valueMap.Count);
+                foreach (var kvp in valueMap)
+                {
+                    builder.Add((kvp.Key, kvp.Value.ToSequenceEqualImmutableArray()));
+                }
+
+                return builder.MoveToImmutable();
+            });
         }
 
         /// <summary>
