@@ -26,7 +26,7 @@ import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "
 import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./snapshot";
-import { loadBootConfig } from "./blazor/_Integration";
+import { loadBootConfig, loadConfigFilesToVfs } from "./blazor/_Integration";
 
 // legacy
 import { init_legacy_exports } from "./net6-legacy/corebindings";
@@ -380,7 +380,10 @@ async function mono_wasm_pre_init_full(): Promise<void> {
     if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_full");
     Module.addRunDependency("mono_wasm_pre_init_full");
 
-    await mono_download_assets();
+    await Promise.all([
+        mono_download_assets(),
+        loadConfigFilesToVfs(INTERNAL.resourceLoader, config)
+    ]);
 
     Module.removeRunDependency("mono_wasm_pre_init_full");
 }

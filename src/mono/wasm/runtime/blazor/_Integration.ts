@@ -1,6 +1,7 @@
 import { INTERNAL, Module } from "../imports";
 import { AssetEntry, LoadingResource, MonoConfigInternal } from "../types";
 import { BootConfigResult, BootJsonData, ICUDataMode } from "./BootConfig";
+import { WebAssemblyConfigLoader } from "./WebAssemblyConfigLoader";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
 import { WebAssemblyBootResourceType } from "./WebAssemblyStartOptions";
 import { hasDebuggingEnabled } from "./_Polyfill";
@@ -18,6 +19,22 @@ export async function loadBootConfig(config: MonoConfigInternal,) {
 
     const newConfig = mapBootConfigToMonoConfig(Module.config as MonoConfigInternal, resourceLoader, bootConfigResult.applicationEnvironment);
     Module.config = newConfig;
+}
+
+export async function loadConfigFilesToVfs(resourceLoader: WebAssemblyResourceLoader | null, config: MonoConfigInternal) {
+    if (!resourceLoader) {
+        return;
+    }
+
+    const configFiles = await WebAssemblyConfigLoader.initAsync(resourceLoader.bootConfig, config.applicationEnvironment!, config.startupOptions ?? {});
+    for (let i = 0; i < configFiles.length; i++) {
+        const configFile = configFiles[i];
+        Module.FS_createDataFile(
+            "/", // TODO: Maybe working directory?
+            configFile.name,
+            configFile.content, true /* canRead */, true /* canWrite */, true /* canOwn */
+        );
+    }
 }
 
 let resourcesLoaded = 0;
