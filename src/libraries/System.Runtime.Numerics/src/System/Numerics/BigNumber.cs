@@ -1026,12 +1026,7 @@ namespace System.Numerics
             }
 
             // each byte is typically eight chars
-            var sb = new ValueStringBuilder(stackalloc char[Math.Min(charCount, 512)]);
-
-            if (charCount > 512)
-            {
-                sb = new ValueStringBuilder(charCount);
-            }
+            ValueStringBuilder sb = charCount > 512 ? new ValueStringBuilder(charCount) : new ValueStringBuilder(stackalloc char[charCount]);
 
             if (digits > charCount)
             {
