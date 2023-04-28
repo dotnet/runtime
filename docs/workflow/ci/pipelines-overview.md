@@ -1,6 +1,17 @@
 # Pipelines overview - Architecture and different available pipelines
 
-The runtime repository counts with a large amount of validation pipelines to help assess product quality accross different scenarios. Some of them run automatically, and some run per request to accommodate hardware availability and other resource constraints. However, the overall orchestration remains largely the same.
+* [Pipelines used in dotnet/runtime](#pipelines-used-in-dotnetruntime)
+  * [Runtime pipeline](#runtime-pipeline)
+  * [Runtime-dev-inner loop pipeline](#runtime-dev-inner-loop-pipeline)
+  * [Dotnet-linker-tests](#dotnet-linker-tests)
+  * [Runtime-staging](#runtime-staging)
+  * [Runtime-extra-platforms](#runtime-extra-platforms)
+  * [Outer loop pipelines](#outer-loop-pipelines)
+* [Running of different runtime-level tests and their orchestration in Helix](#running-of-different-runtime-level-tests-and-their-orchestration-in-helix)
+  * [Legacy tests](#legacy-tests)
+  * [SourceGen Orchestrated tests](#sourcegen-orchestrated-tests)
+
+The runtime repository counts with a large amount of validation pipelines to help assess product quality across different scenarios. Some of them run automatically, and some run per request to accommodate hardware availability and other resource constraints. However, the overall orchestration remains largely the same.
 
 ```mermaid
 gitGraph
@@ -38,41 +49,47 @@ gantt
     Lookup known strings in issues  : lookup, after testReport, 1d
 ```
 
-Each pipeline will create it's own build of the runtimes and the tests, and they eventually run them. We usually run our tests in a separate environment called Helix. This system allows for distribution of the large number of tests across the wide array of platforms supported. Once each worker machine processes its own results, these get reported back to `Azure DevOps` and they become available in the tests tab of the build.
+Each pipeline will create its own build of the runtimes and the tests, and they eventually run them. We usually run our tests in a separate environment called Helix. This system allows for distribution of the large number of tests across the wide array of platforms supported. Once each worker machine processes its own results, these get reported back to `Azure DevOps` and they become available in the tests tab of the build.
 
 ## Pipelines used in dotnet/runtime
 
-This repository contains several runtimes and a wide range of libraries supported in a wide array of platforms. This complexity makes it hard to balance resource usage, testing coverage, and developer productivity. In order to try to make build efforts more reliable and spend the least amount of time testing what the PR changes need we have various pipelines - some required, some optional. You can list the available pipelines by adding a comment like `/azp list` on a PR or get the available commands by adding a comment like `azp help`.
+This repository contains several runtimes and a wide range of libraries supported in a wide array of platforms. This complexity makes it hard to balance resource usage, testing coverage, and developer productivity. In order to try to make build efforts more reliable and spend the least amount of time testing what the PR changes need we have various pipelines - some required, some optional. You can list the available pipelines by adding a comment like `/azp list` on a PR or get the available commands by adding a comment like `/azp help`.
 
-Most of the repository pipelines use a custom mechanism to evaluate paths based on the changes contained in the PR to try and build/test the least that we can without compromising quality. This is the initial step on every pipeline that depends on this infrastructure, called "Evaluate Paths". In this step you can see the result of the evaluation for each subset of the repository. For more details on which subsets we have based on paths see [here](/eng/pipelines/common/evaluate-default-paths.yml). Also to understand how this mechanism works you can read this [comment](/eng/pipelines/evaluate-changed-paths.sh#L3-L12).
+Most of the repository pipelines use a custom mechanism to evaluate paths based on the changes contained in the PR to try and build/test the least that we can without compromising quality. This is the initial step on every pipeline that depends on this infrastructure, called "Evaluate Paths". In this step you can see the result of the evaluation for each subset of the repository. For more details on which subsets, we have based on paths see [here](/eng/pipelines/common/evaluate-default-paths.yml). Also, to understand how this mechanism works you can read this [comment](/eng/pipelines/evaluate-changed-paths.sh#L3-L12).
 
 ### Runtime pipeline
-This is the "main" pipeline for the runtime product. In this pipeline we include the most critical tests and platforms where we have enough test resources in order to deliver test results in a reasonable amount of time. The tests executed in this pipeline for runtime and libraries are considered innerloop, are the tests that are executed locally when one runs tests locally.
 
-For mobile platforms and wasm we run some smoke tests that aim to protect the quality of these platforms. We had to move to a smoke test approach given the hardware and time limitations that we encountered and contributors were affected by this with instability and long wait times for their PRs to finish validation.
+This is the "main" pipeline for the runtime product. In this pipeline we include the most critical tests and platforms where we have enough test resources in order to deliver test results in a reasonable amount of time. The tests executed in this pipeline for runtime and libraries are considered inner loop, are the tests that are executed locally when one runs tests locally.
 
-### Runtime-dev-innerloop pipeline
-This pipeline is also required, and its intent is to cover a developer innerloop scenarios that could be affected by any change, like running a specific build command or running tests inside Visual Studio, etc.
+For mobile platforms and wasm we run some smoke tests that aim to protect the quality of these platforms. We had to move to a smoke test approach given the hardware and time limitations that we encountered, and contributors were affected by this with instability and long wait times for their PRs to finish validation.
+
+### Runtime-dev-inner loop pipeline
+
+This pipeline is also required, and its intent is to cover a developer inner loop scenarios that could be affected by any change, like running a specific build command or running tests inside Visual Studio, etc.
 
 ### Dotnet-linker-tests
+
 This is also a required pipeline. The purpose of this pipeline is to test that the libraries code is ILLink friendly. Meaning that when we trim our libraries using the ILLink, we don't have any trimming bugs, like a required method on a specific scenario is trimmed away by accident.
 
 ### Runtime-staging
-This pipeline runs on every change, however it behaves a little different than the other pipelines. This pipeline, will not fail if there are test failures, however it will fail if there is a timeout or a build failure. The reason why we fail on build failures is because we want to protect the developer innerloop (building the repository) for this platform.
 
-The tests will not fail because the intent of this platform is to stage new platforms where the test infrastructure is new and we need to test if we have enough capacity to include that new platform on the "main" runtime pipeline without causing flakiness. Once we analyze data and a platform is stable when running on PRs in this pipeline for at least a weak it can be promoted either to the `runtime-extra-platforms` pipeline or to the `runtime` pipeline.
+This pipeline runs on every change; however it behaves a little different than the other pipelines. This pipeline will not fail if there are test failures, however it will fail if there is a timeout or a build failure. The reason why we fail on build failures is because we want to protect the developer inner loop (building the repository) for this platform.
+
+The tests will not fail because the intent of this platform is to stage new platforms where the test infrastructure is new, and we need to test if we have enough capacity to include that new platform on the "main" runtime pipeline without causing flakiness. Once we analyze data and a platform is stable when running on PRs in this pipeline for at least a week it can be promoted either to the `runtime-extra-platforms` pipeline or to the `runtime` pipeline.
 
 ### Runtime-extra-platforms
+
 This pipeline does not run by default as it is not required for a PR, but it runs twice a day, and it can also be invoked in specific PRs by commenting `/azp run runtime-extra-platforms`. However, this pipeline is still an important part of our testing.
 
-This pipeline runs innerloop tests on platforms where we don't have enough hardware capacity to run tests (mobile, browser) or on platforms where we believe tests should organically pass based on the coverage we have in the "main" runtime pipeline. For example, in the "main" pipeline we run tests on Ubuntu 21.10 but since we also support Ubuntu 18.04 which is an LTS release, we run tests on Ubuntu 18.04 of this pipeline just to make sure we have healthy tests on those platforms which we are releasing a product for.
+This pipeline runs inner loop tests on platforms where we don't have enough hardware capacity to run tests (mobile, browser) or on platforms where we believe tests should organically pass based on the coverage we have in the "main" runtime pipeline. For example, in the "main" pipeline we run tests on Ubuntu 21.10 but since we also support Ubuntu 18.04 which is an LTS release, we run tests on Ubuntu 18.04 of this pipeline just to make sure we have healthy tests on those platforms which we are releasing a product for.
 
 Another concrete scenario would be windows arm64 for libraries tests. Where we don't have enough hardware, but the JIT is the most important piece to test as that is what generates the native code to run on that platform, so we run JIT tests on arm64 in the "main" pipeline, but our libraries tests are only run on the `runtime-extra-platforms` pipeline.
 
-### Outerloop pipelines
+### Outer loop pipelines
+
 We have various pipelines that their names contain `Outerloop` on them. These pipelines will not run by default on every PR, they can also be invoked using the `/azp run` comment and will run on a daily basis to analyze test results.
 
-These pipelines will run tests that take very long, that are not very stable (i.e some networking tests), or that modify machine state. Such tests are called `Outerloop` tests rather than `innerloop`.
+These pipelines will run tests that take very long, that are not very stable (i.e. some networking tests), or that modify machine state. Such tests are called `Outerloop` tests rather than `innerloop`.
 
 ## Running of different runtime-level tests and their orchestration in Helix
 
@@ -99,7 +116,7 @@ sequenceDiagram
 
 ### SourceGen Orchestrated tests
 
-Consolidated runtime tests generate an entrypoint assembly during build. The source generation globs the tests that will run and essentially generates a `Main` method that runs each test in a `try`/`catch` block while capturing all the necessary output. There's a few tests that require isolation and instead of calling into them in-proc, the call essentially starts another process as appropriate. The main advantage of this method is that it relies less heavily on process isolation making testing more cost-efficient each test runs in process isolation. However, this also means the first native unhandled/ managed unhandleable exception will pause all testing - much like what happens with library test. The merged runner that invokes the tests sequentially is hosted under a watchdog to handle hangs and there's a log fixer that runs after to try to fixup the corrupted logs in case of a crash so that Helix can report the workitem progress as much as possible. The usual flow for a Helix workitem of this type is as follows:
+Consolidated runtime tests generate an entry point assembly during build. The source generation globs the tests that will run and essentially generates a `Main` method that runs each test in a `try`/`catch` block while capturing all the necessary output. There are a few tests that require isolation and instead of calling into them in-proc, the call essentially starts another process as appropriate. The main advantage of this method is that it relies less heavily on process isolation making testing more cost-efficient each test runs in process isolation. However, this also means the first native unhandled/ managed unhandleable exception will pause all testing - much like what happens with library test. The merged runner that invokes the tests sequentially is hosted under a watchdog to handle hangs and there's a log fixer that runs after to try to fixup the corrupted logs in case of a crash so that Helix can report the workitem progress as much as possible. The usual flow for a Helix workitem of this type is as follows:
 
 ```mermaid
 sequenceDiagram

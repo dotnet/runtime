@@ -1,5 +1,15 @@
 # Analyzing Failures with Build Analysis and Known Issues
 
+* [Triaging errors seen in CI](#triaging-errors-seen-in-ci)
+  * [Option 1: You have a defect in your PR](#option-1-you-have-a-defect-in-your-pr)
+  * [Option 2: There is a flaky test that is not related to your PR](#option-2-there-is-a-flaky-test-that-is-not-related-to-your-pr)
+  * [Option 3: The state of the main branch HEAD is bad.](#option-3-the-state-of-the-main-branch-head-is-bad)
+  * [Additional information:](#additional-information)
+* [What to do if you determine the failure is unrelated](#what-to-do-if-you-determine-the-failure-is-unrelated)
+  * [Examples of Build Analysis](#examples-of-build-analysis)
+    * [Good usage examples](#good-usage-examples)
+    * [Bad usage examples](#bad-usage-examples)
+
 ## Triaging errors seen in CI
 
 In case of failure, any PR on the runtime will have a failed GitHub check - PR Build Analysis - which has a summary of all failures, including a list of matching  known issues as well as any regressions introduced to the build or the tests. This tab should be your first stop for analyzing the PR failures.
@@ -75,11 +85,11 @@ If you have considered all the diagnostic artifacts and determined the failure i
       + Native crashes in libraries also require using the console log. This is needed as the crash corrupts the test results to be reported to Azure DevOps, so only the console logs are left.
     - Optionally you can add specifics as needed like leg, configuration parameters, available dump links.
 
-Once the issue is open, feel free to rerun the `Build Analysis` check and the issue should be recognized as know if all was filed correctly. there are some known limitations as previously described. It also has no support at looking at fields outside the error message, the stacktrace, and the console log in the helix queue, so this approach doesn't yet cover devices too well yet.
+Once the issue is open, feel free to rerun the `Build Analysis` check and the issue should be recognized as known if all was filed correctly and you are ready to merge once all unrelated issues are marked as known. However, there are some known limitations to the system as previously described. Additionally, the system only looks at the error message the stacktrace fields of an Azure DevOps test result, and the console log in the helix queue. If rerunning the check doesn't pick up the known issue and you feel it should, feel free to tag the infrastructure team for help.
 
-After you do this, if the failure is occuring frequently as per the data captured in the recently opened issue, please disable the failing test(s) with the corresponding issue link tracking the disable in a follow-up Pull Request
+After you do this, if the failure is occuring frequently as per the data captured in the recently opened issue, please disable the failing test(s) with the corresponding issue link tracking the disable in a follow-up Pull Request.
 
-* Update the tracking issue with the label `disabled-test`.
+* Update the tracking issue with the label `disabled-test` and remove the blocking tags.
 * For libraries tests add a [`[ActiveIssue(link)]`](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/Attributes/ActiveIssueAttribute.cs) attribute on the test method. You can narrow the disabling down to runtime variant, flavor, and platform. For an example see [File_AppendAllLinesAsync_Encoded](https://github.com/dotnet/runtime/blob/cf49643711ad8aa4685a8054286c1348cef6e1d8/src/libraries/System.IO.FileSystem/tests/File/AppendAsync.cs#L74)
 * For runtime tests found under `src/tests`, please edit [`issues.targets`](https://github.com/dotnet/runtime/blob/main/src/tests/issues.targets). There are several groups for different types of disable (mono vs. coreclr, different platforms, different scenarios). Add the folder containing the test and issue mimicking any of the samples in the file.
 

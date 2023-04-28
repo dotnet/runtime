@@ -1,14 +1,13 @@
 # Workflow Guide
 
-- [Workflow Guide](#workflow-guide)
-  - [Build Requirements](#build-requirements)
-  - [Getting Yourself Started](#getting-yourself-started)
-  - [Configurations and Subsets](#configurations-and-subsets)
-    - [What does this mean for me?](#what-does-this-mean-for-me)
-  - [Full Instructions on Building and Testing the Runtime Repo](#full-instructions-on-building-and-testing-the-runtime-repo)
-  - [Warnings as Errors](#warnings-as-errors)
-  - [Submitting a PR](#submitting-a-pr)
-  - [Triaging errors in CI](#triaging-errors-in-ci)
+- [Build Requirements](#build-requirements)
+- [Getting Yourself Started](#getting-yourself-started)
+- [Configurations and Subsets](#configurations-and-subsets)
+  - [What does this mean for me?](#what-does-this-mean-for-me)
+- [Full Instructions on Building and Testing the Runtime Repo](#full-instructions-on-building-and-testing-the-runtime-repo)
+- [Warnings as Errors](#warnings-as-errors)
+- [Submitting a PR](#submitting-a-pr)
+- [Triaging errors in CI](#triaging-errors-in-ci)
 
 The repo can be built for the following platforms, using the provided setup and the following instructions. Before attempting to clone or build, please check the requirements that match your machine, and ensure you install and prepare all as necessary.
 
