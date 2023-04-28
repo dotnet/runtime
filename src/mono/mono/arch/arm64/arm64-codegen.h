@@ -123,6 +123,15 @@ typedef enum {
 	ARMSIZE_X = 0x3
 } ARMSize;
 
+typedef enum {
+	ARMHINT_NOP = 0x0,
+	ARMHINT_YIELD = 0x1,
+	ARMHINT_WFE = 0x2,
+	ARMHINT_WFI = 0x3,
+	ARMHINT_SEV = 0x4,
+	ARMHINT_SEVL = 0x5
+} ARMHint;
+
 #define arm_emit(p, ins) do { *(guint32*)(p) = (ins); (p) += 4; } while (0)
 
 /* Overwrite bits [offset,offset+nbits] with value */

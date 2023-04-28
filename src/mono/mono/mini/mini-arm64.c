@@ -5363,6 +5363,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_rbitw (code, dreg, sreg1);
 			break;
 
+		case OP_ARM64_HINT:
+			g_assert (ins->inst_c0 <= ARMHINT_SEVL);
+			arm_hint (code, ins->inst_c0);
+			break;
+
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();

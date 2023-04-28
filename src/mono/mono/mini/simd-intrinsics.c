@@ -3599,7 +3599,8 @@ emit_arm64_intrinsics (
 				arg0_type, fsig, args);
 		case SN_Yield: {
 			MonoInst* ins;
-			MONO_INST_NEW (cfg, ins, OP_NOP);
+			MONO_INST_NEW (cfg, ins, OP_ARM64_HINT);
+			ins->inst_c0 = ARMHINT_YIELD;
 			MONO_ADD_INS (cfg->cbb, ins);
 			return ins;
 		}

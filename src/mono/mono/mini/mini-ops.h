@@ -1465,6 +1465,7 @@ MINI_OP(OP_ARM64_CBZX, "arm64_cbzx", NONE, IREG, NONE)
 /* Branch if sreg1 != 0 */
 MINI_OP(OP_ARM64_CBNZW, "arm64_cbnzw", NONE, IREG, NONE)
 MINI_OP(OP_ARM64_CBNZX, "arm64_cbnzx", NONE, IREG, NONE)
+MINI_OP(OP_ARM64_HINT, "arm64_hint", NONE, NONE, NONE)
 #endif
 
 /* Same as OUTARG_VT, but has a dreg */
