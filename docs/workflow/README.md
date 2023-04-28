@@ -101,4 +101,4 @@ Before submitting a PR, make sure to review the [contribution guidelines](../../
 
 ## Triaging errors in CI
 
-Given the size of the runtime repository, flaky tests are expected to some degree. There's a few mechanisms we use to help with the discoverability of widely impacting issues and also a regular procedure we ensure issues get properly tracked and prioritized. You can find more information on [triaging failures in CI](ci/failure-analysis.md).
+Given the size of the runtime repository, flaky tests are expected to some degree. There are a few mechanisms we use to help with the discoverability of widely impacting issues. We also have a regular procedure that ensures issues get properly tracked and prioritized. You can find more information on [triaging failures in CI](ci/failure-analysis.md).
