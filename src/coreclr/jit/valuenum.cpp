@@ -2440,10 +2440,10 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 {
                     // Constant is INT64, but we need INT32 for GT_ARR_LEN, so make sure it fits
                     ssize_t val = CoercedConstantValue<ssize_t>(funcApp.m_args[1]);
-                    if ((size_t)val <= UINT_MAX)
+                    if ((size_t)val <= INT_MAX)
                     {
                         // Return known length of the array
-                        resultVN = funcApp.m_args[1];
+                        resultVN = VNForIntCon((int)val);
                     }
                 }
             }
