@@ -61,6 +61,13 @@ namespace System
         AllocationExceeded = 3
     }
 
+    internal enum RefreshMemoryStatus
+    {
+        Succeeded = 0,
+        HardLimitTooLow = 1,
+        HardLimitInvalid = 2,
+    }
+
     public static partial class GC
     {
         public static int GetGeneration(object obj)
@@ -802,6 +809,39 @@ namespace System
         public static TimeSpan GetTotalPauseDuration()
         {
             return new TimeSpan(RuntimeImports.RhGetTotalPauseDuration());
+        }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
+        public static void RefreshMemoryLimit()
+        {
+            ulong heapHardLimit = (AppContext.GetData("GCHeapHardLimit") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitPercent = (AppContext.GetData("GCHeapHardLimitPercent") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitSOH = (AppContext.GetData("GCHeapHardLimitSOH") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitLOH = (AppContext.GetData("GCHeapHardLimitLOH") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitPOH = (AppContext.GetData("GCHeapHardLimitPOH") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitSOHPercent = (AppContext.GetData("GCHeapHardLimitSOHPercent") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitLOHPercent = (AppContext.GetData("GCHeapHardLimitLOHPercent") as ulong?) ?? ulong.MaxValue;
+            ulong heapHardLimitPOHPercent = (AppContext.GetData("GCHeapHardLimitPOHPercent") as ulong?) ?? ulong.MaxValue;
+            RuntimeImports.GCHeapHardLimitInfo heapHardLimitInfo = new RuntimeImports.GCHeapHardLimitInfo
+            {
+                HeapHardLimit = heapHardLimit,
+                HeapHardLimitPercent = heapHardLimitPercent,
+                HeapHardLimitSOH = heapHardLimitSOH,
+                HeapHardLimitLOH = heapHardLimitLOH,
+                HeapHardLimitPOH = heapHardLimitPOH,
+                HeapHardLimitSOHPercent = heapHardLimitSOHPercent,
+                HeapHardLimitLOHPercent = heapHardLimitLOHPercent,
+                HeapHardLimitPOHPercent = heapHardLimitPOHPercent,
+            };
+            RefreshMemoryStatus status = (RefreshMemoryStatus)RuntimeImports.RhRefreshMemoryLimit(heapHardLimitInfo);
+            switch (status)
+            {
+                case RefreshMemoryStatus.HardLimitTooLow:
+                    throw new InvalidOperationException(SR.InvalidOperationException_HardLimitTooLow);
+                case RefreshMemoryStatus.HardLimitInvalid:
+                    throw new InvalidOperationException(SR.InvalidOperationException_HardLimitInvalid);
+            }
+            Debug.Assert(status == RefreshMemoryStatus.Succeeded);
         }
     }
 }
