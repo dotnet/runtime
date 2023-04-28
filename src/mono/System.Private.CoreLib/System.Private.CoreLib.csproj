@@ -227,7 +227,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodOnTypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MonoArrayMethod.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeAssemblyBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeConstructorBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeEnumBuilder.Mono.cs" />
@@ -236,6 +235,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeGenericTypeParameterBuilder.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeMethodBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeModuleBuilder.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeParameterBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimePropertyBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeTypeBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />

@@ -18,6 +18,8 @@ set __BuildTarget="build"
 set __TargetOS=windows
 set CMAKE_BUILD_TYPE=Debug
 set __Ninja=1
+set __icuDir=""
+set __usePThreads=0
 set __ExtraCmakeParams=
 
 :Arg_Loop
@@ -43,6 +45,9 @@ if /i [%1] == [rebuild] ( set __BuildTarget=rebuild&&shift&goto Arg_Loop)
 
 if /i [%1] == [msbuild] ( set __Ninja=0&&shift&goto Arg_Loop)
 
+if /i [%1] == [icudir] ( set __icuDir=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [usepthreads] ( set __usePThreads=1&&shift&goto Arg_Loop)
+
 if /i [%1] == [-fsanitize] ( set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCLR_CMAKE_ENABLE_SANITIZERS=$2"&&shift&&shift&goto Arg_Loop)
 
 shift
@@ -62,6 +67,12 @@ call "%__engNativeDir%\version\copy_version_files.cmd"
 set __cmakeRepoRoot=%__repoRoot:\=/%
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
+
+if NOT %__icuDir% == "" (
+    set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_ICU_DIR=%__icuDir%"
+)
+set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_USE_PTHREADS=%__usePThreads%"
+
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
 

@@ -53,7 +53,9 @@ struct simd8_t
         return {};
     }
 };
+static_assert_no_msg(sizeof(simd8_t) == 8);
 
+#include <pshpack4.h>
 struct simd12_t
 {
     union {
@@ -109,6 +111,8 @@ struct simd12_t
         return {};
     }
 };
+#include <poppack.h>
+static_assert_no_msg(sizeof(simd12_t) == 12);
 
 struct simd16_t
 {
@@ -161,6 +165,7 @@ struct simd16_t
         return {};
     }
 };
+static_assert_no_msg(sizeof(simd16_t) == 16);
 
 #if defined(TARGET_XARCH)
 struct simd32_t
@@ -215,6 +220,7 @@ struct simd32_t
         return {};
     }
 };
+static_assert_no_msg(sizeof(simd32_t) == 32);
 
 struct simd64_t
 {
@@ -269,6 +275,7 @@ struct simd64_t
         return {};
     }
 };
+static_assert_no_msg(sizeof(simd64_t) == 64);
 
 typedef simd64_t simd_t;
 #else

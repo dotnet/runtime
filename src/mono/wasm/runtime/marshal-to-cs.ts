@@ -5,7 +5,7 @@ import monoWasmThreads from "consts:monoWasmThreads";
 import { isThenable } from "./cancelable-promise";
 import cwraps from "./cwraps";
 import { assert_not_disposed, cs_owned_js_handle_symbol, js_owned_gc_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, teardown_managed_proxy } from "./gc-handles";
-import { Module, runtimeHelpers } from "./imports";
+import { Module, runtimeHelpers } from "./globals";
 import {
     ManagedError,
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_b8, set_arg_date,

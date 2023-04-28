@@ -53,22 +53,65 @@ HRESULT STDMETHODCALLTYPE NonGcHeapProfiler::ObjectAllocated(ObjectID objectId, 
     return S_OK;
 }
 
+HRESULT NonGcHeapProfiler::GarbageCollectionFinished()
+{
+    SHUTDOWNGUARD();
+
+    _garbageCollections++;
+
+    // Let's make sure we got the same number of objects as we got from the callback
+    // by testing the EnumerateNonGCObjects API.
+    ICorProfilerObjectEnum* pEnum = NULL;
+    HRESULT hr = pCorProfilerInfo->EnumerateNonGCObjects(&pEnum);
+    if (FAILED(hr))
+    {
+        printf("EnumerateNonGCObjects returned an error\n!");
+        _failures++;
+    }
+    else
+    {
+        int nonGcObjectsEnumerated = 0;
+        ObjectID obj;
+        while (pEnum->Next(1, &obj, NULL) == S_OK)
+        {
+            nonGcObjectsEnumerated++;
+        }
+
+        if (nonGcObjectsEnumerated != _nonGcHeapObjects)
+        {
+            printf("objectAllocated(%d) != _nonGcHeapObjects(%d)\n!", nonGcObjectsEnumerated, (int)_nonGcHeapObjects);
+            _failures++;
+        }
+    }
+
+    return S_OK;
+}
+
 HRESULT NonGcHeapProfiler::Shutdown()
 {
+    Profiler::Shutdown();
+
+    if (_garbageCollections == 0)
+    {
+        printf("PROFILER TEST FAILS: no garbage collections were triggered\n");
+        _failures++;
+    }
+
+    if (_nonGcHeapObjects == 0)
+    {
+        printf("PROFILER TEST FAILS: non-GC heap objects were not allocated\n");
+        _failures++;
+    }
+
     if (_failures > 0)
     {
         printf("PROFILER TEST FAILS\n");
-    }
-    else if (_nonGcHeapObjects == 0)
-    {
-        printf("PROFILER TEST FAILS: non-GC heap objects were not allocated\n");
     }
     else
     {
         printf("PROFILER TEST PASSES\n");
     }
     printf("Non-GC objects allocated: %d\n", (int)_nonGcHeapObjects);
-    printf("PROFILER TEST PASSES\n");
     fflush(stdout);
     return S_OK;
 }

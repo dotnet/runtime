@@ -109,7 +109,7 @@ if(CLR_CMAKE_HOST_UNIX)
         endif()
     endif()
 
-    if(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_TARGET_ARCH_I386)
+    if(CLR_CMAKE_TARGET_LINUX AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_RISCV64))
       add_linker_flag(-Wl,-z,notext)
     endif()
 

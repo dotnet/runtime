@@ -177,6 +177,7 @@
       <ExcludeNativeLibrariesRuntimeFiles Condition="'$(IncludeOOBLibraries)' != 'true'"
                                           Include="$(LibrariesNativeArtifactsPath)libSystem.IO.Ports.Native.*" />
       <LibrariesRuntimeFiles Include="
+        $(LibrariesNativeArtifactsPath)*.dat;
         $(LibrariesNativeArtifactsPath)*.dll;
         $(LibrariesNativeArtifactsPath)*.dylib;
         $(LibrariesNativeArtifactsPath)*.a;

@@ -746,9 +746,9 @@ HCIMPLEND
 //========================================================================
 
 /*********************************************************************/
-// Returns the address of the field in the object (This is an interior
-// pointer and the caller has to use it appropriately). obj can be
-// either a reference or a byref
+// Returns the address of the instance field in the object (This is an interior
+// pointer and the caller has to use it appropriately) or a static field.
+// obj can be either a reference or a byref
 HCIMPL2(void*, JIT_GetFieldAddr_Framed, Object *obj, FieldDesc* pFD)
 {
     CONTRACTL {
@@ -761,9 +761,8 @@ HCIMPL2(void*, JIT_GetFieldAddr_Framed, Object *obj, FieldDesc* pFD)
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
 
-    if (objRef == NULL)
+    if (!pFD->IsStatic() && objRef == NULL)
         COMPlusThrow(kNullReferenceException);
-
 
     fldAddr = pFD->GetAddress(OBJECTREFToObject(objRef));
 
@@ -788,6 +787,25 @@ HCIMPL2(void*, JIT_GetFieldAddr, Object *obj, FieldDesc* pFD)
     }
 
     return pFD->GetAddressGuaranteedInHeap(obj);
+}
+HCIMPLEND
+#include <optdefault.h>
+
+#include <optsmallperfcritical.h>
+HCIMPL1(void*, JIT_GetStaticFieldAddr, FieldDesc* pFD)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+        PRECONDITION(CheckPointer(pFD));
+    } CONTRACTL_END;
+
+    // [TODO] Only handling EnC for now
+    _ASSERTE(pFD->IsEnCNew());
+
+    {
+        ENDFORBIDGC();
+        return HCCALL2(JIT_GetFieldAddr_Framed, NULL, pFD);
+    }
 }
 HCIMPLEND
 #include <optdefault.h>

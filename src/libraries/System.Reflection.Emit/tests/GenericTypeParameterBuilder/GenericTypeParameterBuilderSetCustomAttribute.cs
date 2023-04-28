@@ -30,17 +30,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void SetCustomAttribute_ConstructorInfo_ByteArray_NullBinaryAttribute_ThrowsArgumentNullException()
-        {
-            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            string[] typeParamNames = new string[] { "TFirst" };
-            GenericTypeParameterBuilder[] typeParams = type.DefineGenericParameters(typeParamNames);
-            ConstructorInfo attributeConstructor = typeof(HelperAttribute).GetConstructor(new Type[0]);
-
-            AssertExtensions.Throws<ArgumentNullException>("binaryAttribute", () => typeParams[0].SetCustomAttribute(attributeConstructor, null));
-        }
-
-        [Fact]
         public void SetCustomAttribute_CustomAttributeBuilder()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

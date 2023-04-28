@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { EarlyExports, MonoClass } from "../types";
+import type { GlobalObjects, MonoClass } from "../types";
 import type { VoidPtr } from "../types/emscripten";
 import type { BINDINGType, MONOType } from "./export-types";
 
@@ -11,11 +11,11 @@ export let BINDING: BINDINGType;
 export const legacyHelpers: LegacyHelpers = <any>{
 };
 
-export function set_legacy_exports(
-    exports: EarlyExports,
+export function initializeLegacyExports(
+    globals: GlobalObjects,
 ): void {
-    MONO = exports.mono;
-    BINDING = exports.binding;
+    MONO = globals.mono;
+    BINDING = globals.binding;
 }
 
 export type LegacyHelpers = {
