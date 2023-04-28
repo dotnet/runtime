@@ -47,20 +47,20 @@ namespace Microsoft.Extensions.Http.Logging
             _options = options;
         }
 
-        private Task<HttpResponseMessage> SendCoreAsync(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
+        protected virtual Task<HttpResponseMessage> SendCoreAsync(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
         {
             ThrowHelper.ThrowIfNull(request);
             return Core(request, cancellationToken);
 
             async Task<HttpResponseMessage> Core(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                var shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
+                Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
 
                 // Not using a scope here because we always expect this to be at the end of the pipeline, thus there's
                 // not really anything to surround.
                 Log.RequestStart(_logger, request, shouldRedactHeaderValue);
                 var stopwatch = ValueStopwatch.StartNew();
-                var response = useAsync
+                HttpResponseMessage response = useAsync
                     ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false)
 #if NET5_0_OR_GREATER
                     : base.Send(request, cancellationToken);
@@ -76,13 +76,13 @@ namespace Microsoft.Extensions.Http.Logging
         /// <inheritdoc />
         /// <remarks>Logs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            => SendCoreAsync(request, true, cancellationToken);
+            => SendCoreAsync(request, useAsync: true, cancellationToken);
 
 #if NET5_0_OR_GREATER
         /// <inheritdoc />
         /// <remarks>Logs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
         protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
-            => SendCoreAsync(request, false, cancellationToken).GetAwaiter().GetResult();
+            => SendCoreAsync(request, useAsync: false, cancellationToken).GetAwaiter().GetResult();
 #endif
 
         // Used in tests.
