@@ -11353,7 +11353,7 @@ void emitter::emitDispIns(
         case IF_RRW_CNS:
         case IF_RRW_SHF:
         {
-            printf("%s, ", emitRegName(id->idReg1(), attr));
+            printf("%s", emitRegName(id->idReg1(), attr));
 
             emitGetInsCns(id, &cnsVal);
             val = cnsVal.cnsVal;
@@ -11364,6 +11364,8 @@ void emitter::emitDispIns(
             }
             else
             {
+                printf(", ");
+
                 if (cnsVal.cnsReloc)
                 {
                     emitDispReloc(val);
