@@ -782,7 +782,8 @@ export async function configureWorkerStartup(module: DotnetModuleInternal): Prom
     pthreads_worker.setupPreloadChannelToMainThread();
     // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
-        console.debug("MONO_WASM: pthread created", ev.pthread_self.pthread_id);
+        if (runtimeHelpers.diagnosticTracing)
+            console.debug("MONO_WASM: pthread created 0x" + ev.pthread_self.pthread_id.toString(16));
     });
 
     // these are the only events which are called on worker
