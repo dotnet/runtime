@@ -170,11 +170,6 @@ namespace System.Globalization
         {
             _sortName = culture.SortName;
 
-            if (GlobalizationMode.UseNls)
-            {
-                NlsInitSortHandle();
-                return;
-            }
 #if TARGET_BROWSER
             if (GlobalizationMode.Hybrid)
             {
@@ -182,7 +177,14 @@ namespace System.Globalization
                 return;
             }
 #endif
-            IcuInitSortHandle(culture.InteropName!);
+            if (GlobalizationMode.UseNls)
+            {
+                NlsInitSortHandle();
+            }
+            else
+            {
+                IcuInitSortHandle(culture.InteropName!);
+            }
         }
 
         [OnDeserializing]
