@@ -11,6 +11,8 @@ using ILCompiler.DependencyAnalysis;
 using Internal.IL;
 using Internal.TypeSystem;
 
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+
 namespace ILCompiler
 {
     // Class that computes the initial state of static fields on a type by interpreting the static constructor.
@@ -1812,6 +1814,7 @@ namespace ILCompiler
         {
             TypeDesc Type { get; }
             void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory);
+            void GetNonRelocationDependencies(ref DependencyList dependencies, NodeFactory factory);
             bool IsKnownImmutable { get; }
             int ArrayLength { get; }
         }
@@ -2261,11 +2264,13 @@ namespace ILCompiler
                 data = null;
                 return false;
             }
+
+            public virtual void GetNonRelocationDependencies(ref DependencyList dependencies, NodeFactory factory)
+            {
+            }
         }
 
-#pragma warning disable CA1852
-        private class DelegateInstance : AllocatedReferenceTypeValue, ISerializableReference
-#pragma warning restore CA1852
+        private sealed class DelegateInstance : AllocatedReferenceTypeValue, ISerializableReference
         {
             private readonly MethodDesc _methodPointed;
             private readonly ReferenceTypeValue _firstParameter;
@@ -2277,16 +2282,27 @@ namespace ILCompiler
                 _firstParameter = firstParameter;
             }
 
-            public virtual void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
-            {
-                Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
-
-                var creationInfo = DelegateCreationInfo.Create(
+            private DelegateCreationInfo GetDelegateCreationInfo(NodeFactory factory)
+                => DelegateCreationInfo.Create(
                     Type.ConvertToCanonForm(CanonicalFormKind.Specific),
                     _methodPointed,
                     constrainedType: null,
                     factory,
                     followVirtualDispatch: false);
+
+            public override void GetNonRelocationDependencies(ref DependencyList dependencies, NodeFactory factory)
+            {
+                DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
+
+                MethodDesc targetMethod = creationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, targetMethod);
+            }
+
+            public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
+            {
+                Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
+
+                DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
 
                 Debug.Assert(!creationInfo.TargetNeedsVTableLookup);
 
@@ -2340,9 +2356,7 @@ namespace ILCompiler
             public int ArrayLength => throw new NotSupportedException();
         }
 
-#pragma warning disable CA1852
-        private class ArrayInstance : AllocatedReferenceTypeValue, ISerializableReference
-#pragma warning restore CA1852
+        private sealed class ArrayInstance : AllocatedReferenceTypeValue, ISerializableReference
         {
             private readonly int _elementCount;
             private readonly int _elementSize;
@@ -2405,7 +2419,7 @@ namespace ILCompiler
                 builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, this));
             }
 
-            public virtual void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
+            public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
                 // MethodTable
                 var node = factory.ConstructedTypeSymbol(Type);
@@ -2518,9 +2532,7 @@ namespace ILCompiler
             ByRefValue IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(_value).GetFieldAddress(field);
         }
 
-#pragma warning disable CA1852
-        private class ObjectInstance : AllocatedReferenceTypeValue, IHasInstanceFields, ISerializableReference
-#pragma warning restore CA1852
+        private sealed class ObjectInstance : AllocatedReferenceTypeValue, IHasInstanceFields, ISerializableReference
         {
             private readonly byte[] _data;
 
@@ -2574,7 +2586,7 @@ namespace ILCompiler
                 builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, this));
             }
 
-            public virtual void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
+            public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
                 // MethodTable
                 var node = factory.ConstructedTypeSymbol(Type);
