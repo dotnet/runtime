@@ -17514,7 +17514,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_shld:
         case INS_shrd:
             result.insLatency += PERFSCORE_LATENCY_3C;
-            if (insFmt == IF_RWR_RRD_CNS)
+            if (insFmt == IF_RRW_RRD_CNS)
             {
                 // ins   reg, reg, cns
                 result.insThroughput = PERFSCORE_THROUGHPUT_1C;
