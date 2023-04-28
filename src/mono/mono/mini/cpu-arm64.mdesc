@@ -525,8 +525,8 @@ insert_i1: dest:x src1:x src2:i len:8
 insert_i2: dest:x src1:x src2:i len:8
 insert_i4: dest:x src1:x src2:i len:8
 insert_i8: dest:x src1:x src2:i len:8
-insert_r4: dest:x src1:x src2:f len:8
-insert_r8: dest:x src1:x src2:f len:8
+insert_r4: dest:x src1:x src2:f len:12
+insert_r8: dest:x src1:x src2:f len:12
 create_scalar_int: dest:x src1:i len:8
 create_scalar_float: dest:x src1:f len:12
 create_scalar_unsafe_int: dest:x src1:i len:4
