@@ -7,6 +7,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="vt3_d.il" />
     <Compile Include="vt3.il" />
   </ItemGroup>
 </Project>

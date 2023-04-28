@@ -3,7 +3,7 @@
 
 .assembly extern System.Runtime {}
 .assembly extern System.Console {}
-.assembly GenericCatchInterface {}
+.assembly GenericCatchInterfaceProgram {}
 
 // IL in this file is based on this C# program with a few IL modifications:
 

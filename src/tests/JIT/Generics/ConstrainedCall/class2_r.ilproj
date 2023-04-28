@@ -8,6 +8,7 @@
     <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="class2_r.il" />
     <Compile Include="class2.il" />
   </ItemGroup>
 </Project>

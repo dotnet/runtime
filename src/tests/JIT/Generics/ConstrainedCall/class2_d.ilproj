@@ -7,6 +7,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="class2_d.il" />
     <Compile Include="class2.il" />
   </ItemGroup>
 </Project>

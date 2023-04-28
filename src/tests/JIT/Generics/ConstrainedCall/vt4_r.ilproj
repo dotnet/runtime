@@ -8,6 +8,7 @@
     <Optimize>False</Optimize>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="vt4_r.il" />
     <Compile Include="vt4.il" />
   </ItemGroup>
 </Project>

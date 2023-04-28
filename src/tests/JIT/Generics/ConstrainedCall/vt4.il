@@ -8,7 +8,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern mscorlib {}
-.assembly vt4 {}
+.assembly ASSEMBLY_NAME {}
 .class interface private abstract auto ansi IncrDecr
 {
   .method public hidebysig newslot abstract virtual 
