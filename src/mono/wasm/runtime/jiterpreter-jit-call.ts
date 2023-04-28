@@ -3,7 +3,7 @@
 
 import { mono_assert, MonoType, MonoMethod } from "./types";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
-import { Module, runtimeHelpers } from "./imports";
+import { Module, runtimeHelpers } from "./globals";
 import {
     getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked
 } from "./memory";
@@ -26,17 +26,17 @@ const
 
 /*
 struct _JitCallInfo {
-	gpointer addr; // 0
-	gpointer extra_arg; // 4
-	gpointer wrapper; // 8
-	MonoMethodSignature *sig; // 12
-	guint8 *arginfo; // 16
-	gint32 res_size; // 20
-	int ret_mt; // 24
-	gboolean no_wrapper; // 28
+    gpointer addr; // 0
+    gpointer extra_arg; // 4
+    gpointer wrapper; // 8
+    MonoMethodSignature *sig; // 12
+    guint8 *arginfo; // 16
+    gint32 res_size; // 20
+    int ret_mt; // 24
+    gboolean no_wrapper; // 28
 #if HOST_BROWSER
-	int hit_count;
-	WasmJitCallThunk jiterp_thunk;
+    int hit_count;
+    WasmJitCallThunk jiterp_thunk;
 #endif
 };
 */
@@ -52,15 +52,15 @@ const offsetOfAddr = 0,
 
 const maxJitQueueLength = 6,
     maxSharedQueueLength = 12;
-    // sizeOfStackval = 8;
+// sizeOfStackval = 8;
 
-let trampBuilder : WasmBuilder;
-let fnTable : WebAssembly.Table;
-let wasmEhSupported : boolean | undefined = undefined;
+let trampBuilder: WasmBuilder;
+let fnTable: WebAssembly.Table;
+let wasmEhSupported: boolean | undefined = undefined;
 let nextDisambiguateIndex = 0;
-const fnCache : Array<Function | undefined> = [];
-const targetCache : { [target: number] : TrampolineInfo } = {};
-const jitQueue : TrampolineInfo[] = [];
+const fnCache: Array<Function | undefined> = [];
+const targetCache: { [target: number]: TrampolineInfo } = {};
+const jitQueue: TrampolineInfo[] = [];
 
 class TrampolineInfo {
     method: MonoMethod;
@@ -90,7 +90,7 @@ class TrampolineInfo {
     wasmNativeSignature: WasmValtype[];
     enableDirect: boolean;
 
-    constructor (
+    constructor(
         method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
         arg_offsets: VoidPtr, catch_exceptions: boolean
     ) {
@@ -159,7 +159,7 @@ class TrampolineInfo {
 // this is cached replacements for Module.getWasmTableEntry();
 // we could add <EmccExportedLibraryFunction Include="$getWasmTableEntry" /> and <EmccExportedRuntimeMethod Include="getWasmTableEntry" /> 
 // if we need to export the original
-function getWasmTableEntry (index: number) {
+function getWasmTableEntry(index: number) {
     let result = fnCache[index];
     if (!result) {
         if (index >= fnCache.length)
@@ -172,7 +172,7 @@ function getWasmTableEntry (index: number) {
     return result;
 }
 
-export function mono_interp_invoke_wasm_jit_call_trampoline (
+export function mono_interp_invoke_wasm_jit_call_trampoline(
     thunkIndex: number, ret_sp: number, sp: number, ftndesc: number, thrown: NativePointer
 ) {
     const thunk = <Function>getWasmTableEntry(thunkIndex);
@@ -183,10 +183,10 @@ export function mono_interp_invoke_wasm_jit_call_trampoline (
     }
 }
 
-export function mono_interp_jit_wasm_jit_call_trampoline (
+export function mono_interp_jit_wasm_jit_call_trampoline(
     method: MonoMethod, rmethod: VoidPtr, cinfo: VoidPtr,
     arg_offsets: VoidPtr, catch_exceptions: number
-) : void {
+): void {
     // multiple cinfos can share the same target function, so for that scenario we want to
     //  use the same TrampolineInfo for all of them. if that info has already been jitted
     //  we want to immediately store its pointer into the cinfo, otherwise we add it to
@@ -227,9 +227,9 @@ export function mono_interp_jit_wasm_jit_call_trampoline (
 // pure wasm implementation of do_jit_call_indirect (using wasm EH). see do-jit-call.wat / do-jit-call.wasm
 const doJitCall16 =
     "0061736d01000000010b0260017f0060037f7f7f00021d020169066d656d6f727902000001690b6a69745f63616c6c5f636200000302010107180114646f5f6a69745f63616c6c5f696e64697265637400010a1301110006402001100019200241013602000b0b";
-let doJitCallModule : WebAssembly.Module | undefined = undefined;
+let doJitCallModule: WebAssembly.Module | undefined = undefined;
 
-function getIsWasmEhSupported () : boolean {
+function getIsWasmEhSupported(): boolean {
     if (wasmEhSupported !== undefined)
         return wasmEhSupported;
 
@@ -254,9 +254,9 @@ function getIsWasmEhSupported () : boolean {
 // this is the generic entry point for do_jit_call that is registered by default at runtime startup.
 // its job is to do initialization for the optimized do_jit_call path, which will either use a jitted
 //  wasm trampoline or will use a specialized JS function.
-export function mono_jiterp_do_jit_call_indirect (
+export function mono_jiterp_do_jit_call_indirect(
     jit_call_cb: number, cb_data: VoidPtr, thrown: Int32Ptr
-) : void {
+): void {
     mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
     const table = getWasmFunctionTable();
     const jitCallCb = table.get(jit_call_cb);
@@ -311,7 +311,7 @@ export function mono_jiterp_do_jit_call_indirect (
     do_jit_call_indirect_js(jit_call_cb, cb_data, thrown);
 }
 
-export function mono_interp_flush_jitcall_queue () : void {
+export function mono_interp_flush_jitcall_queue(): void {
     if (jitQueue.length === 0)
         return;
 
@@ -320,7 +320,8 @@ export function mono_interp_flush_jitcall_queue () : void {
         trampBuilder = builder = new WasmBuilder(0);
         // Function type for compiled trampolines
         builder.defineType(
-            "trampoline", {
+            "trampoline",
+            {
                 "ret_sp": WasmValtype.i32,
                 "sp": WasmValtype.i32,
                 "ftndesc": WasmValtype.i32,
@@ -338,7 +339,7 @@ export function mono_interp_flush_jitcall_queue () : void {
     if (builder.options.enableWasmEh) {
         if (!getIsWasmEhSupported()) {
             // The user requested to enable wasm EH but it's not supported, so turn the option back off
-            applyOptions(<any>{enableWasmEh: false});
+            applyOptions(<any>{ enableWasmEh: false });
             builder.options.enableWasmEh = false;
         }
     }
@@ -347,7 +348,7 @@ export function mono_interp_flush_jitcall_queue () : void {
     let compileStarted = 0;
     let rejected = true, threw = false;
 
-    const trampImports : Array<[string, string, Function | number]> = [
+    const trampImports: Array<[string, string, Function | number]> = [
     ];
 
     try {
@@ -361,7 +362,7 @@ export function mono_interp_flush_jitcall_queue () : void {
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
 
-            const sig : any = {};
+            const sig: any = {};
 
             if (info.enableDirect) {
                 if (info.hasThisReference)
@@ -425,7 +426,7 @@ export function mono_interp_flush_jitcall_queue () : void {
         builder.appendULeb(jitQueue.length);
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
-            builder.beginFunction("trampoline", {"old_sp": WasmValtype.i32});
+            builder.beginFunction("trampoline", { "old_sp": WasmValtype.i32 });
 
             const ok = generate_wasm_body(builder, info);
             // FIXME
@@ -572,66 +573,66 @@ const enum CilOpcodes {
 const wasmTypeFromCilOpcode = {
     [CilOpcodes.DUMMY_BYREF]: WasmValtype.i32,
 
-    [CilOpcodes.LDIND_I1]:  WasmValtype.i32,
-    [CilOpcodes.LDIND_U1]:  WasmValtype.i32,
-    [CilOpcodes.LDIND_I2]:  WasmValtype.i32,
-    [CilOpcodes.LDIND_U2]:  WasmValtype.i32,
-    [CilOpcodes.LDIND_I4]:  WasmValtype.i32,
-    [CilOpcodes.LDIND_U4]:  WasmValtype.i32,
-    [CilOpcodes.LDIND_I8]:  WasmValtype.i64,
-    [CilOpcodes.LDIND_I]:   WasmValtype.i32,
-    [CilOpcodes.LDIND_R4]:  WasmValtype.f32,
-    [CilOpcodes.LDIND_R8]:  WasmValtype.f64,
+    [CilOpcodes.LDIND_I1]: WasmValtype.i32,
+    [CilOpcodes.LDIND_U1]: WasmValtype.i32,
+    [CilOpcodes.LDIND_I2]: WasmValtype.i32,
+    [CilOpcodes.LDIND_U2]: WasmValtype.i32,
+    [CilOpcodes.LDIND_I4]: WasmValtype.i32,
+    [CilOpcodes.LDIND_U4]: WasmValtype.i32,
+    [CilOpcodes.LDIND_I8]: WasmValtype.i64,
+    [CilOpcodes.LDIND_I]: WasmValtype.i32,
+    [CilOpcodes.LDIND_R4]: WasmValtype.f32,
+    [CilOpcodes.LDIND_R8]: WasmValtype.f64,
     [CilOpcodes.LDIND_REF]: WasmValtype.i32,
     [CilOpcodes.STIND_REF]: WasmValtype.i32,
-    [CilOpcodes.STIND_I1]:  WasmValtype.i32,
-    [CilOpcodes.STIND_I2]:  WasmValtype.i32,
-    [CilOpcodes.STIND_I4]:  WasmValtype.i32,
-    [CilOpcodes.STIND_I8]:  WasmValtype.i64,
-    [CilOpcodes.STIND_R4]:  WasmValtype.f32,
-    [CilOpcodes.STIND_R8]:  WasmValtype.f64,
-    [CilOpcodes.STIND_I]:   WasmValtype.i32,
+    [CilOpcodes.STIND_I1]: WasmValtype.i32,
+    [CilOpcodes.STIND_I2]: WasmValtype.i32,
+    [CilOpcodes.STIND_I4]: WasmValtype.i32,
+    [CilOpcodes.STIND_I8]: WasmValtype.i64,
+    [CilOpcodes.STIND_R4]: WasmValtype.f32,
+    [CilOpcodes.STIND_R8]: WasmValtype.f64,
+    [CilOpcodes.STIND_I]: WasmValtype.i32,
 };
 
 // Maps a CIL ld/st opcode to the wasm opcode to perform it, if any
 const wasmOpcodeFromCilOpcode = {
-    [CilOpcodes.LDIND_I1]:  WasmOpcode.i32_load8_s,
-    [CilOpcodes.LDIND_U1]:  WasmOpcode.i32_load8_u,
-    [CilOpcodes.LDIND_I2]:  WasmOpcode.i32_load16_s,
-    [CilOpcodes.LDIND_U2]:  WasmOpcode.i32_load16_u,
-    [CilOpcodes.LDIND_I4]:  WasmOpcode.i32_load,
-    [CilOpcodes.LDIND_U4]:  WasmOpcode.i32_load,
-    [CilOpcodes.LDIND_I8]:  WasmOpcode.i64_load,
-    [CilOpcodes.LDIND_I]:   WasmOpcode.i32_load,
-    [CilOpcodes.LDIND_R4]:  WasmOpcode.f32_load,
-    [CilOpcodes.LDIND_R8]:  WasmOpcode.f64_load,
+    [CilOpcodes.LDIND_I1]: WasmOpcode.i32_load8_s,
+    [CilOpcodes.LDIND_U1]: WasmOpcode.i32_load8_u,
+    [CilOpcodes.LDIND_I2]: WasmOpcode.i32_load16_s,
+    [CilOpcodes.LDIND_U2]: WasmOpcode.i32_load16_u,
+    [CilOpcodes.LDIND_I4]: WasmOpcode.i32_load,
+    [CilOpcodes.LDIND_U4]: WasmOpcode.i32_load,
+    [CilOpcodes.LDIND_I8]: WasmOpcode.i64_load,
+    [CilOpcodes.LDIND_I]: WasmOpcode.i32_load,
+    [CilOpcodes.LDIND_R4]: WasmOpcode.f32_load,
+    [CilOpcodes.LDIND_R8]: WasmOpcode.f64_load,
     [CilOpcodes.LDIND_REF]: WasmOpcode.i32_load, // TODO: Memory barrier?
 
     [CilOpcodes.STIND_REF]: WasmOpcode.i32_store, // Memory barrier not needed
-    [CilOpcodes.STIND_I1]:  WasmOpcode.i32_store8,
-    [CilOpcodes.STIND_I2]:  WasmOpcode.i32_store16,
-    [CilOpcodes.STIND_I4]:  WasmOpcode.i32_store,
-    [CilOpcodes.STIND_I8]:  WasmOpcode.i64_store,
-    [CilOpcodes.STIND_R4]:  WasmOpcode.f32_store,
-    [CilOpcodes.STIND_R8]:  WasmOpcode.f64_store,
-    [CilOpcodes.STIND_I]:   WasmOpcode.i32_store,
+    [CilOpcodes.STIND_I1]: WasmOpcode.i32_store8,
+    [CilOpcodes.STIND_I2]: WasmOpcode.i32_store16,
+    [CilOpcodes.STIND_I4]: WasmOpcode.i32_store,
+    [CilOpcodes.STIND_I8]: WasmOpcode.i64_store,
+    [CilOpcodes.STIND_R4]: WasmOpcode.f32_store,
+    [CilOpcodes.STIND_R8]: WasmOpcode.f64_store,
+    [CilOpcodes.STIND_I]: WasmOpcode.i32_store,
 };
 
-function append_ldloc (builder: WasmBuilder, offsetBytes: number, opcode: WasmOpcode) {
+function append_ldloc(builder: WasmBuilder, offsetBytes: number, opcode: WasmOpcode) {
     builder.local("sp");
     builder.appendU8(opcode);
     builder.appendMemarg(offsetBytes, 0);
 }
 
-function append_ldloca (builder: WasmBuilder, offsetBytes: number) {
+function append_ldloca(builder: WasmBuilder, offsetBytes: number) {
     builder.local("sp");
     builder.i32_const(offsetBytes);
     builder.appendU8(WasmOpcode.i32_add);
 }
 
-function generate_wasm_body (
+function generate_wasm_body(
     builder: WasmBuilder, info: TrampolineInfo
-) : boolean {
+): boolean {
     let stack_index = 0;
 
     // If wasm EH is enabled we will perform the call inside a catch-all block and set a flag
@@ -744,18 +745,18 @@ function generate_wasm_body (
     builder.callImport(info.name);
 
     /*
-	if (sig->ret->type != MONO_TYPE_VOID) {
-		// Store return value
-		stind_op = mono_type_to_stind (sig->ret);
-		// FIXME:
-		if (stind_op == CEE_STOBJ)
-			mono_mb_emit_op (mb, CEE_STOBJ, mono_class_from_mono_type_internal (sig->ret));
-		else if (stind_op == CEE_STIND_REF)
-			// Avoid write barriers, the vret arg points to the stack
-			mono_mb_emit_byte (mb, CEE_STIND_I);
-		else
-			mono_mb_emit_byte (mb, stind_op);
-	}
+    if (sig->ret->type != MONO_TYPE_VOID) {
+        // Store return value
+        stind_op = mono_type_to_stind (sig->ret);
+        // FIXME:
+        if (stind_op == CEE_STOBJ)
+            mono_mb_emit_op (mb, CEE_STOBJ, mono_class_from_mono_type_internal (sig->ret));
+        else if (stind_op == CEE_STIND_REF)
+            // Avoid write barriers, the vret arg points to the stack
+            mono_mb_emit_byte (mb, CEE_STIND_I);
+        else
+            mono_mb_emit_byte (mb, stind_op);
+    }
     */
 
     // The stack should now contain [ret_sp, retval], so write retval through the return address
