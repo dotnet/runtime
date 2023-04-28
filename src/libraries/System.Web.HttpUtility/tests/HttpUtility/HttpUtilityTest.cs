@@ -284,6 +284,20 @@ namespace System.Web.Tests
             });
         }
 
+        [Fact]
+        public void HtmlEncode_IHtmlString_UseToHtmlString()
+        {
+            Assert.Equal(string.Empty, HttpUtility.HtmlEncode(new ActionHtmlString(() => null)));
+            Assert.Equal(string.Empty, HttpUtility.HtmlEncode(new ActionHtmlString(() => string.Empty)));
+            Assert.Equal("42", HttpUtility.HtmlEncode(new ActionHtmlString(() => "42")));
+            Assert.Throws<FormatException>(() => HttpUtility.HtmlEncode(new ActionHtmlString(() => throw new FormatException())));
+        }
+
+        private sealed class ActionHtmlString(Func<string> toHtmlString) : IHtmlString
+        {
+            public string ToHtmlString() => toHtmlString();
+        }
+
         #endregion HtmlEncode
 
         #region JavaScriptStringEncode
