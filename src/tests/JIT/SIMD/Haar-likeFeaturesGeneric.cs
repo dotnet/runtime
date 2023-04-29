@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using Point = System.Numerics.Vector<double>;
+using Xunit;
 
 namespace VectorMathTests
 {
@@ -140,7 +141,8 @@ namespace VectorMathTests
             return true;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Random random = new Random(Seed);
             int count = Point.Count;

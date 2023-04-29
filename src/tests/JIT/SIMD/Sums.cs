@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using Point = System.Numerics.Vector4;
+using Xunit;
 
 namespace VectorMathTests
 {
@@ -38,7 +39,8 @@ namespace VectorMathTests
             return s.X;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             System.Diagnostics.Stopwatch clock = new System.Diagnostics.Stopwatch();
             clock.Start();

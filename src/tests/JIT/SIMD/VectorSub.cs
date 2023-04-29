@@ -4,6 +4,7 @@
 
 using System;
 using System.Numerics;
+using Xunit;
 
 public partial class VectorTest
 {
@@ -66,7 +67,8 @@ public partial class VectorTest
             return Pass;
         }
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnVal = Pass;
         if (VectorSubTest<float>.VectorSub(3, 2, (float)(3 - 2)) != Pass) returnVal = Fail;

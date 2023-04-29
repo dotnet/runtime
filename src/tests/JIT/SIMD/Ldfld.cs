@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using Point = System.Numerics.Vector4;
+using Xunit;
 
 namespace VectorMathTests
 {
@@ -23,7 +24,8 @@ namespace VectorMathTests
             public Point p;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Point p = new Point(1, 2, 3, 4);
 

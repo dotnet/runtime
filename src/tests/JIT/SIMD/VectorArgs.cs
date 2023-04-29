@@ -4,6 +4,7 @@
 
 using System;
 using System.Numerics;
+using Xunit;
 
 internal class Color
 {
@@ -59,7 +60,8 @@ public partial class VectorTest
         return Pass;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return VectorArgs();
     }

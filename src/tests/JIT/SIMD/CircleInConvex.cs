@@ -9,6 +9,7 @@ using System.Text;
 using System.Numerics;
 
 using Point = System.Numerics.Vector2;
+using Xunit;
 
 
 namespace ClassLibrary
@@ -242,7 +243,8 @@ namespace ClassLibrary
             return (float)(mantissa * exponent);
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             List<Point> points = new List<Point>();
             Random random = new Random(13);

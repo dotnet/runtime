@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Xunit;
 
 namespace VectorMathTests
 {
@@ -16,7 +17,8 @@ namespace VectorMathTests
             _ => DefaultSeed
         };
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Random random = new Random(Seed);
             var a = new System.Numerics.Vector<short>(25);

@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using Point = System.Numerics.Vector3;
+using Xunit;
 
 namespace VectorTests
 {
@@ -15,7 +16,8 @@ namespace VectorTests
             return Math.Abs(a - b) < EPS;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Point a = new Point(1, 2, 3);
             Point b = new Point(2, 2, 5);

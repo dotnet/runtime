@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Xunit;
 
 public partial class VectorTest
 {
@@ -70,7 +71,8 @@ public partial class VectorTest
             return 100;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int returnVal = Pass;
             

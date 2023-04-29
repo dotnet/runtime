@@ -4,13 +4,15 @@
 
 using System;
 using System.Numerics;
+using Xunit;
 
 public partial class VectorTest
 {
     private const int Pass = 100;
     private const int Fail = -1;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int returnVal = Pass;
         

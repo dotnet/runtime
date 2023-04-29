@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Xunit;
 
 namespace VectorMathTests
 {
@@ -20,7 +21,8 @@ namespace VectorMathTests
             return arr;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             short[] arr = GenerateArray(60, 5);
             var a = new System.Numerics.Vector<short>(arr);

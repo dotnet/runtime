@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using Point = System.Numerics.Vector2;
+using Xunit;
 
 namespace VectorMathTests
 {
@@ -108,7 +109,8 @@ namespace VectorMathTests
             return 100;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (TestDouble() != 100)
             {

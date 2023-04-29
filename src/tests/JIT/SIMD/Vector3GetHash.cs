@@ -11,6 +11,7 @@
 
 using System;
 using System.Numerics;
+using Xunit;
 
 internal partial class VectorTest
 {
@@ -60,7 +61,8 @@ internal partial class VectorTest
             Assert.NotEqual(v7.GetHashCode(), v9.GetHashCode());
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int returnVal = Pass;
 

@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using Point = System.Numerics.Vector2;
+using Xunit;
 
 namespace VectorMathTests
 {
@@ -41,7 +42,8 @@ namespace VectorMathTests
             return 100;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Point a = new Point(0, 0), b = new Point(1, 0);
             Point c = a + b;
