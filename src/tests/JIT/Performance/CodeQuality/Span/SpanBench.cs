@@ -9,6 +9,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
+#pragma warning disable xUnit1013
+
 namespace Span
 {
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
@@ -1111,3 +1113,5 @@ namespace Span
         }
     }
 }
+
+#pragma warning restore xUnit1013

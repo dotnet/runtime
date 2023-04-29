@@ -38,7 +38,7 @@ public class BilinearTest
     //ref values 
     double[] A, B, input, output;
 
-    public void Setup()
+    internal void Setup()
     {
         A = new double[lengthA];
         B = new double[lengthB];
@@ -289,7 +289,7 @@ public class BilinearTest
         return true;
     }
 
-    public void RunTests()
+    internal void RunTests()
     {
         Setup();
 
