@@ -968,7 +968,7 @@ public:
             const char* sep = "";
             for (const Segment& segment : m_segments)
             {
-                printf("%s[%03x..%03x)", sep, segment.Start, segment.End);
+                printf("%s[%03u..%03u)", sep, segment.Start, segment.End);
                 sep = " ";
             }
         }
@@ -1339,7 +1339,7 @@ private:
             {
                 if (!IsInit() || CanInitPrimitive(primitiveType))
                 {
-                    JITDUMP("  => remainder strategy: %s at %03x\n", varTypeName(primitiveType), segment.Start);
+                    JITDUMP("  => remainder strategy: %s at %03u\n", varTypeName(primitiveType), segment.Start);
                     return RemainderStrategy(RemainderStrategy::Primitive, segment.Start, primitiveType);
                 }
                 else
@@ -2141,7 +2141,7 @@ public:
                     // Write it directly to the destination struct local.
                     unsigned offs = srcRep->Offset - srcBaseOffs;
                     plan->CopyFromReplacement(srcRep->LclNum, offs, srcRep->AccessType);
-                    JITDUMP("  dst+%03x <- V%02u (%s)\n", offs, srcRep->LclNum, srcRep->Description);
+                    JITDUMP("  dst+%03u <- V%02u (%s)\n", offs, srcRep->LclNum, srcRep->Description);
                     srcRep++;
                     continue;
                 }
@@ -2152,7 +2152,7 @@ public:
                     // Read it directly from the source struct local.
                     unsigned offs = dstRep->Offset - dstBaseOffs;
                     plan->CopyToReplacement(dstRep->LclNum, offs, dstRep->AccessType);
-                    JITDUMP("  V%02u (%s) <- src+%03x\n", dstRep->LclNum, dstRep->Description, offs);
+                    JITDUMP("  V%02u (%s) <- src+%03u\n", dstRep->LclNum, dstRep->Description, offs);
                     dstRep->NeedsWriteBack = true;
                     dstRep->NeedsReadBack  = false;
                     dstRep++;
@@ -2215,7 +2215,7 @@ public:
                 // directly to the destination's struct local and mark the
                 // overlapping fields as needing read back to avoid this DNER.
                 plan->CopyToReplacement(dstRep->LclNum, offs, dstRep->AccessType);
-                JITDUMP("  V%02u (%s) <- src+%03x\n", dstRep->LclNum, dstRep->Description, offs);
+                JITDUMP("  V%02u (%s) <- src+%03u\n", dstRep->LclNum, dstRep->Description, offs);
                 dstRep->NeedsWriteBack = true;
                 dstRep->NeedsReadBack  = false;
                 dstRep++;
@@ -2244,7 +2244,7 @@ public:
                 }
 
                 plan->CopyFromReplacement(srcRep->LclNum, offs, srcRep->AccessType);
-                JITDUMP("  dst+%03x <- V%02u (%s)\n", offs, srcRep->LclNum, srcRep->Description);
+                JITDUMP("  dst+%03u <- V%02u (%s)\n", offs, srcRep->LclNum, srcRep->Description);
                 srcRep++;
             }
         }
