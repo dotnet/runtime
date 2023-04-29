@@ -10,7 +10,7 @@ namespace Inline_GenericMethods
 {
     public class Inline_GenericMethods
     {
-        public static void GetType_NoInline<T>()
+        internal static void GetType_NoInline<T>()
         {
             Console.WriteLine(typeof(T));
         }

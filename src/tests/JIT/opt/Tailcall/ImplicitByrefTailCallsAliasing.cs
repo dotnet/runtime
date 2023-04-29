@@ -25,7 +25,7 @@ public struct R
 public class ImplicitByrefTailCalls
 {
     // Helper method to make callees unattractive for inlining.
-    public static void Z() { }
+    internal static void Z() { }
 
     // Will return different answers if x and y refer to the same struct.
     [MethodImpl(MethodImplOptions.NoOptimization)]

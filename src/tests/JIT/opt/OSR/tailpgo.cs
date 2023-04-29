@@ -10,7 +10,7 @@ public class X
     static int s;
     static int N;
 
-    public static void F(int[] a)
+    internal static void F(int[] a)
     {
         for (int j = 0; j < N; j++)
         {
@@ -28,7 +28,7 @@ public class X
     // the return to happen before the
     // tail calls.
     //
-    public static void T(bool p, int[] a)
+    internal static void T(bool p, int[] a)
     {
         if (p)
         {

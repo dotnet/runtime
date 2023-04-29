@@ -29,7 +29,7 @@ class Mul : I
 public class CloningForTypeTests
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int BothTypeAndArray(I m, int[] xs, int[] ys, int from, int to)
+    internal static int BothTypeAndArray(I m, int[] xs, int[] ys, int from, int to)
     {
         int r = 0;
 
@@ -43,7 +43,7 @@ public class CloningForTypeTests
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int JustType(I m, int from, int to)
+    internal static int JustType(I m, int from, int to)
     {
         int r = 0;
 

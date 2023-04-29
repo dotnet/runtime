@@ -189,7 +189,7 @@ public class LargeFuncletFrame
             return s1_44;
         }
     }
-    public void Method0()
+    internal void Method0()
     {
         unchecked
         {
@@ -205,10 +205,9 @@ public class LargeFuncletFrame
     }
 
     [Fact]
-    public static int TestEntryPoint()
+    public static void TestEntryPoint()
     {
         new LargeFuncletFrame().Method0();
-        return 100;
     }
 }
 /*

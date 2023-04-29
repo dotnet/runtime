@@ -7,7 +7,7 @@ using Xunit;
 
 public class MainApp
 {
-    public static void Foo_NoInline(string s)
+    internal static void Foo_NoInline(string s)
     {
         Console.WriteLine(s);
         s = "New string";

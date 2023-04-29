@@ -41,6 +41,7 @@ public class NotRedundantInitsAreRemoved_Github_48394
         val.b = 43;
     }
 
+    [Fact]
     public static void TestRefs()
     {
         object obj = null;
@@ -53,6 +54,7 @@ public class NotRedundantInitsAreRemoved_Github_48394
         while (i++ < 2);
     }
 
+    [Fact]
     public static void TestInt()
     {
         int val = 0;
@@ -65,6 +67,7 @@ public class NotRedundantInitsAreRemoved_Github_48394
         while (i++ < 2);
     }
 
+    [Fact]
     public static void TestStruct()
     {
         Struct1 val = default;
@@ -78,6 +81,7 @@ public class NotRedundantInitsAreRemoved_Github_48394
         while (i++ < 2);
     }
 
+    [Fact]
     public static unsafe void TestTakeAddress()
     {
         int a = 0;
@@ -88,7 +92,10 @@ public class NotRedundantInitsAreRemoved_Github_48394
             throw new Exception("a was expected to be zero");
     }
 
-    public static unsafe void TestTakeAddress(bool cond)
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public static unsafe void TestTakeAddressCond(bool cond)
     {
         int a = 0;
         if (cond)
@@ -101,6 +108,7 @@ public class NotRedundantInitsAreRemoved_Github_48394
             throw new Exception("a was expected to be zero");
     }
 
+    [Fact]
     public static void ReproFrom_GitHub_48394()
     {
         bool x = false;
@@ -130,6 +138,7 @@ public class NotRedundantInitsAreRemoved_Github_48394
 
     public static int Zero => 0;
 
+    [Fact]
     public static void TestInt2()
     {
         int val = Zero;
@@ -141,19 +150,5 @@ public class NotRedundantInitsAreRemoved_Github_48394
         i++;
         if (i < 10)
             goto label;
-    }
-
-    [Fact]
-    public static int TestEntryPoint()
-    {
-        ReproFrom_GitHub_48394();
-        TestTakeAddress();
-        TestTakeAddress(true);
-        TestTakeAddress(false);
-        TestInt();
-        TestInt2();
-        TestRefs();
-        TestStruct();
-        return 100;
     }
 }

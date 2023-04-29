@@ -47,7 +47,7 @@ public class ShortEnregisteredLocal
             return float_27 /= 15+4;
         }
     }
-    public void Method0()
+    internal void Method0()
     {
         unchecked
         {
@@ -66,7 +66,7 @@ public class ShortEnregisteredLocal
         return 100;
     }
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Log(string varName, object varValue)
+    internal static void Log(string varName, object varValue)
     {
     }
 }

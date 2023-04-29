@@ -38,7 +38,7 @@ public class Program
         return 101;
     }
 
-    public static void Foo(object o)
+    internal static void Foo(object o)
     {
         s_rt = o;
         var vr3 = new sbyte[]{0};

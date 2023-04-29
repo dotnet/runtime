@@ -42,7 +42,7 @@ public class TestCases
         return x;
     }
 
-    public static void OneThrowHelperTail(int x)
+    internal static void OneThrowHelperTail(int x)
     {
         if (x > 0) 
         {
@@ -107,7 +107,7 @@ public class TestCases
         return x;
     }
 
-    public static void TwoIdenticalThrowHelpers_IfOneTail(int x)
+    internal static void TwoIdenticalThrowHelpers_IfOneTail(int x)
     {
         if (x == 0) 
         {
@@ -121,7 +121,7 @@ public class TestCases
         }
     }
 
-    public static void TwoIdenticalThrowHelpers_IfTwoTail(int x)
+    internal static void TwoIdenticalThrowHelpers_IfTwoTail(int x)
     {
         if (x == 0) 
         {
@@ -136,7 +136,7 @@ public class TestCases
         }
     }
 
-    public static int ThreeIdenticalThrowHelpers_If(int x)
+    internal static int ThreeIdenticalThrowHelpers_If(int x)
     {
         if (x == 0) 
         {
@@ -156,7 +156,7 @@ public class TestCases
         return x;
     }
 
-    public static void ThreeIdenticalThrowHelpers_IfOneTail(int x)
+    internal static void ThreeIdenticalThrowHelpers_IfOneTail(int x)
     {
         if (x == 0) 
         {
@@ -175,7 +175,7 @@ public class TestCases
         }
     }
 
-    public static void ThreeIdenticalThrowHelpers_IfTwoTail(int x)
+    internal static void ThreeIdenticalThrowHelpers_IfTwoTail(int x)
     {
         if (x == 0) 
         {
@@ -195,7 +195,7 @@ public class TestCases
         }
     }
 
-    public static void ThreeIdenticalThrowHelpers_IfThreeTail(int x)
+    internal static void ThreeIdenticalThrowHelpers_IfThreeTail(int x)
     {
         if (x == 0) 
         {
@@ -237,7 +237,7 @@ public class TestCases
         return x;
     }
 
-    public static void TwoIdenticalThrowHelpers_GotoOneTail(int x)
+    internal static void TwoIdenticalThrowHelpers_GotoOneTail(int x)
     {
         if (x == 0) 
         {
@@ -257,7 +257,7 @@ public class TestCases
         Throw();
     }
 
-    public static void TwoIdenticalThrowHelpers_GotoTwoTail(int x)
+    internal static void TwoIdenticalThrowHelpers_GotoTwoTail(int x)
     {
         if (x == 0) 
         {
@@ -298,7 +298,7 @@ public class TestCases
         return x;
     }
 
-    public static void TwoIdenticalThrowHelpers_SwitchOneTail(int x)
+    internal static void TwoIdenticalThrowHelpers_SwitchOneTail(int x)
     {
         switch (x)
         {
@@ -316,7 +316,7 @@ public class TestCases
         }
     }
 
-    public static void TwoIdenticalThrowHelpers_SwitchTwoTail(int x)
+    internal static void TwoIdenticalThrowHelpers_SwitchTwoTail(int x)
     {
         switch (x)
         {
@@ -359,7 +359,7 @@ public class TestCases
         return x;
     }
 
-    public static void TwoIdenticalThrowHelpers_SwitchGotoOneTail(int x)
+    internal static void TwoIdenticalThrowHelpers_SwitchGotoOneTail(int x)
     {
         switch (x)
         {
@@ -382,7 +382,7 @@ public class TestCases
         Throw();
     }
 
-    public static void TwoIdenticalThrowHelpers_SwitchGotoTwoTail(int x)
+    internal static void TwoIdenticalThrowHelpers_SwitchGotoTwoTail(int x)
     {
         switch (x)
         {

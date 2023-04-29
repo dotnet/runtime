@@ -56,7 +56,7 @@ public class TestStruct
         return nStruct;
     }
 
-    public static void dMethod_Inline()
+    internal static void dMethod_Inline()
     {
         X x;
         x.f = new SingleInt();

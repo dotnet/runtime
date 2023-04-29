@@ -12,7 +12,7 @@ public class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static T ToVar<T>(T t) => t;
 
-    public static void AssertTrue(bool cond, [CallerLineNumber] int line = 0)
+    internal static void AssertTrue(bool cond, [CallerLineNumber] int line = 0)
     {
         if (!cond) 
             throw new InvalidOperationException($"Test failed at line {line}.");

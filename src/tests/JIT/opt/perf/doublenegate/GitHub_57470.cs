@@ -20,7 +20,7 @@ public class TestClass8505
             return s_sbyte_8 <<= s_int32_6 >>= s_int32_6 ^ (-2 - (s_int32_6 &= -5)) / (-1 * s_int32_6 * (2 ^ -2)) + 77;
         }
     }
-    public void Method0()
+    internal void Method0()
     {
         unchecked
         {

@@ -7,22 +7,22 @@ using Xunit;
 
 public class MainApp
 {
-    public static void PrintA_NoInline()
+    internal static void PrintA_NoInline()
     {
         Console.WriteLine("A_NoInline");
         throw new Exception("throw in method PrintA_Inline");
     }
-    public static void PrintA_Inline()
+    internal static void PrintA_Inline()
     {
         Console.WriteLine("A");
     }
 
-    public static void PrintB_Inline()
+    internal static void PrintB_Inline()
     {
         Console.WriteLine("B");
     }
 
-    public static void PrintC_Inline()
+    internal static void PrintC_Inline()
     {
         Console.WriteLine("C");
     }

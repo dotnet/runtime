@@ -17,7 +17,7 @@ public class X
     // the return to happen before the
     // tail calls.
     //
-    public static void T(int x, int[] a)
+    internal static void T(int x, int[] a)
     {
         for (int j = 0; j < N; j++)
         {

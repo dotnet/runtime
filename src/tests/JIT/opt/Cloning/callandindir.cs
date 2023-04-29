@@ -10,10 +10,10 @@ using Xunit;
 public class CallAndIndir
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void S() { }
+    internal static void S() { }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void F(int[] a, int low, int high, ref int z)
+    internal static void F(int[] a, int low, int high, ref int z)
     {
         for (int i = low; i < high; i++)
         {
@@ -23,7 +23,7 @@ public class CallAndIndir
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void G(int[] a, int low, int high, ref int z)
+    internal static void G(int[] a, int low, int high, ref int z)
     {
         for (int i = low; i < high; i++)
         {
@@ -32,7 +32,7 @@ public class CallAndIndir
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void H(int[] a, int low, int high, ref int z)
+    internal static void H(int[] a, int low, int high, ref int z)
     {
         int r = 0;
         for (int i = low; i < high; i++)

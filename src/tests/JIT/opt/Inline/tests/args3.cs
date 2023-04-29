@@ -8,7 +8,7 @@ namespace JitInliningTest
 {
     public class Args3
     {
-        public static void FillArray(ref int[] arr)
+        internal static void FillArray(ref int[] arr)
         {
             if (arr == null)
                 arr = new int[10];

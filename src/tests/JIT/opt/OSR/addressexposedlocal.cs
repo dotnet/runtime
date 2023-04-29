@@ -13,7 +13,7 @@ public class AddressExposedLocal
     public static unsafe int I(ref int p) => p;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static unsafe void J(ref int p)  {}
+    internal static unsafe void J(ref int p)  {}
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static unsafe int F(int from, int to)

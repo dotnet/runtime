@@ -25,7 +25,7 @@ public class FastTailCallCandidates
     /// <summary>
     /// Check the return value of the test and set s_ret_value if incorrect
     /// </summary>
-    public static void CheckOutput(int code)
+    internal static void CheckOutput(int code)
     {
         // If there has been a previous failure then do not reset the first
         // failure this will be the return value.

@@ -12,7 +12,7 @@ using Xunit;
 
 public class ImplicitByrefTailCalls
 {
-    public static void Z() { }
+    internal static void Z() { }
     public static bool Z(bool b) => b;
 
     [MethodImpl(MethodImplOptions.NoOptimization)]

@@ -35,7 +35,7 @@ public class Program
         return s_rt.Count;
     }
 
-    public static void M59(byte arg2, bool arg3, ref uint arg4)
+    internal static void M59(byte arg2, bool arg3, ref uint arg4)
     {
         for (int var0 = 0; var0 < 2; var0++)
         {
