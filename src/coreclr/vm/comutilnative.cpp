@@ -976,6 +976,7 @@ FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 len
 }
 FCIMPLEND
 
+
 FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
 {
     FCALL_CONTRACT;

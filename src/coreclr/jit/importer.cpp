@@ -9779,6 +9779,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_NEWARR:
             {
+
                 /* Get the class type index operand */
 
                 _impResolveToken(CORINFO_TOKENKIND_Newarr);
@@ -9814,9 +9815,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
                 {
-                    helper = CORINFO_HELP_READYTORUN_NEWARR_1;
-                    op1 = impReadyToRunHelperToTree(&resolvedToken, helper, TYP_REF, nullptr,
-                                                    op2);
+                    helper                = CORINFO_HELP_READYTORUN_NEWARR_1;
+                    op1                   = impReadyToRunHelperToTree(&resolvedToken, helper, TYP_REF, nullptr, op2);
                     usingReadyToRunHelper = (op1 != nullptr);
 
                     if (!usingReadyToRunHelper)
@@ -9857,7 +9857,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // We replace default heap allocator for newarr with the one that prefers frozen segments.
                 // This is a very simple and conservative implementation targeting Array.Empty<T>(), ideally
                 // we want to be able to use frozen allocators more broadly, but that analysis is not trivial.
-                // 
+                //
                 if (((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
                     // Does VM allow us to use frozen allocators? (e.g. are we in a non-collectible assembly)
                     opts.jitFlags->IsSet(JitFlags::JIT_FLAG_FROZEN_ALLOC_ALLOWED))
@@ -9870,8 +9870,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if (getU1LittleEndian(nextOpcode2) == CEE_RET)
                         {
                             // TODO in this PR: R2R
-                            if (helper == CORINFO_HELP_NEWARR_1_OBJ ||
-                                helper == CORINFO_HELP_NEWARR_1_VC)
+                            if (helper == CORINFO_HELP_NEWARR_1_OBJ || helper == CORINFO_HELP_NEWARR_1_VC)
                             {
                                 // Check that the field is "static readonly"
                                 CORINFO_RESOLVED_TOKEN fldToken;
