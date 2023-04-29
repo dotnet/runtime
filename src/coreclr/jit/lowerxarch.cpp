@@ -347,7 +347,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 bool willUseSimd = canUseSimd && (size >= XMM_REGSIZE_BYTES) && comp->IsBaselineSimdIsaSupported();
 #ifndef TARGET_AMD64
                 // TODO-CQ: Current codegen logic relies on size being a multiple of 8
-                // to unroll for 32-bit targets.
+                // to unroll for 32-bit targets (for INS_movq)
                 willUseSimd = willUseSimd && (size % 8) == 0;
 #endif
                 if (willUseSimd)
