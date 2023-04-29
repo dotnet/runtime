@@ -52,7 +52,7 @@ namespace ClassLibrary
             return a > b ? a : b;
         }
 
-        static public void swap(ref float a, ref float b)
+        static internal void swap(ref float a, ref float b)
         {
             float c = a;
             a = b;

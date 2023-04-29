@@ -39,7 +39,7 @@ public partial class VectorTest
     };
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void init()
+    internal static void init()
     {
         Random random = new Random(Seed);
 
