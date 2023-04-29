@@ -105,9 +105,6 @@ namespace System
         internal static extern Array AllocateNewArray(IntPtr typeHandle, int length, GC_ALLOC_FLAGS flags);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Array AllocateFrozenArray(IntPtr typeHandle, int length);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern int GetGenerationWR(IntPtr handle);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
@@ -710,15 +707,6 @@ namespace System
             }
 
             return Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, flags));
-        }
-
-        /// <summary>
-        /// Allocate an array with a "prefer frozen segments" hint. If VM can't allocate it on a frozen segment,
-        /// it will fallback to a normal heap allocation.
-        /// </summary>
-        internal static T[] AllocateFrozenArray<T>(int length)
-        {
-            return Unsafe.As<T[]>(AllocateFrozenArray(typeof(T[]).TypeHandle.Value, length));
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

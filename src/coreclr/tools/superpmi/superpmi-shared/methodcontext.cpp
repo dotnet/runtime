@@ -1201,6 +1201,8 @@ const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
         return "CORJIT_FLAG_OSR";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ALT_JIT:
         return "CORJIT_FLAG_ALT_JIT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FROZEN_ALLOC_ALLOWED:
+        return "CORJIT_FLAG_FROZEN_ALLOC_ALLOWED";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_MAKEFINALCODE:
         return "CORJIT_FLAG_MAKEFINALCODE";
     case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_READYTORUN:

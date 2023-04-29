@@ -178,7 +178,6 @@ public:
     static FCDECL1(INT64,    GetTotalAllocatedBytes, CLR_BOOL precise);
 
     static FCDECL3(Object*, AllocateNewArray, void* elementTypeHandle, INT32 length, INT32 flags);
-    static FCDECL2(Object*, AllocateFrozenArray, void* elementTypeHandle, INT32 length);
 
     NOINLINE static void SendEtwRemoveMemoryPressureEvent(UINT64 bytesAllocated);
     static void SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated);

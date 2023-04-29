@@ -457,7 +457,6 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("GetTotalAllocatedBytes", GCInterface::GetTotalAllocatedBytes)
 
     FCFuncElement("AllocateNewArray", GCInterface::AllocateNewArray)
-    FCFuncElement("AllocateFrozenArray", GCInterface::AllocateFrozenArray)
 FCFuncEnd()
 
 FCFuncStart(gGCSettingsFuncs)

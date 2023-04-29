@@ -2719,6 +2719,46 @@ HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 }
 HCIMPLEND
 
+
+/*************************************************************/
+HCIMPL2(Object*, JIT_NewArr1Frozen, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
+{
+    FCALL_CONTRACT;
+
+    OBJECTREF newArray = NULL;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
+
+    MethodTable* pArrayMT = (MethodTable*)arrayMT;
+
+    _ASSERTE(pArrayMT->IsFullyLoaded());
+    _ASSERTE(pArrayMT->IsArray());
+    _ASSERTE(!pArrayMT->IsMultiDimArray());
+
+    if (size < 0)
+        COMPlusThrow(kOverflowException);
+
+#ifdef HOST_64BIT
+    // Even though ECMA allows using a native int as the argument to newarr instruction
+    // (therefore size is INT_PTR), ArrayBase::m_NumComponents is 32-bit, so even on 64-bit
+    // platforms we can't create an array whose size exceeds 32 bits.
+    if (size > INT_MAX)
+        EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
+#endif
+
+#ifdef _DEBUG
+    if (g_pConfig->FastGCStressLevel()) {
+        GetThread()->DisableStressHeap();
+    }
+#endif // _DEBUG
+
+    newArray = AllocateFrozenSzArray(pArrayMT, (INT32)size);
+    HELPER_METHOD_FRAME_END();
+
+    return(OBJECTREFToObject(newArray));
+}
+HCIMPLEND
+
 /*************************************************************/
 HCIMPL3(Object*, JIT_NewMDArr, CORINFO_CLASS_HANDLE classHnd, unsigned dwNumArgs, INT32 * pArgList)
 {

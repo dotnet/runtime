@@ -1335,6 +1335,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEW_MDARR:
             case CORINFO_HELP_NEW_MDARR_RARE:
             case CORINFO_HELP_NEWARR_1_DIRECT:
+            case CORINFO_HELP_NEWARR_1_FROZEN:
             case CORINFO_HELP_NEWARR_1_OBJ:
             case CORINFO_HELP_READYTORUN_NEWARR_1:
 

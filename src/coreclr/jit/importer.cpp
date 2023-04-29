@@ -9779,7 +9779,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_NEWARR:
             {
-
                 /* Get the class type index operand */
 
                 _impResolveToken(CORINFO_TOKENKIND_Newarr);
@@ -9810,10 +9809,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // So if we have an int, explicitly extend it to be a native int.
                 op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
 
+                CorInfoHelpFunc helper = CORINFO_HELP_UNDEF;
+
 #ifdef FEATURE_READYTORUN
                 if (opts.IsReadyToRun())
                 {
-                    op1 = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_NEWARR_1, TYP_REF, nullptr,
+                    helper = CORINFO_HELP_READYTORUN_NEWARR_1;
+                    op1 = impReadyToRunHelperToTree(&resolvedToken, helper, TYP_REF, nullptr,
                                                     op2);
                     usingReadyToRunHelper = (op1 != nullptr);
 
@@ -9839,11 +9841,52 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #endif
                 {
                     /* Create a call to 'new' */
+                    helper = info.compCompHnd->getNewArrHelper(resolvedToken.hClass);
 
                     // Note that this only works for shared generic code because the same helper is used for all
                     // reference array types
-                    op1 =
-                        gtNewHelperCallNode(info.compCompHnd->getNewArrHelper(resolvedToken.hClass), TYP_REF, op1, op2);
+                    op1 = gtNewHelperCallNode(helper, TYP_REF, op1, op2);
+                }
+
+                // If we're jitting a static constructor and detect the following code pattern:
+                //
+                //  newarr
+                //  stsfld
+                //  ret
+                //
+                // We replace default heap allocator for newarr with the one that prefers frozen segments.
+                // This is a very simple and conservative implementation targeting Array.Empty<T>(), ideally
+                // we want to be able to use frozen allocators more broadly, but that analysis is not trivial.
+                // 
+                if (((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
+                    // Does VM allow us to use frozen allocators? (e.g. are we in a non-collectible assembly)
+                    opts.jitFlags->IsSet(JitFlags::JIT_FLAG_FROZEN_ALLOC_ALLOWED))
+                {
+                    // Check next two opcodes
+                    const BYTE* nextOpcode1 = codeAddr + sizeof(mdToken);
+                    const BYTE* nextOpcode2 = nextOpcode1 + sizeof(mdToken) + 1;
+                    if (nextOpcode2 <= codeEndp && getU1LittleEndian(nextOpcode1) == CEE_STSFLD)
+                    {
+                        if (getU1LittleEndian(nextOpcode2) == CEE_RET)
+                        {
+                            // TODO in this PR: R2R
+                            if (helper == CORINFO_HELP_NEWARR_1_OBJ ||
+                                helper == CORINFO_HELP_NEWARR_1_VC)
+                            {
+                                // Check that the field is "static readonly"
+                                CORINFO_RESOLVED_TOKEN fldToken;
+                                impResolveToken(nextOpcode1 + 1, &fldToken, CORINFO_TOKENKIND_Field);
+                                CORINFO_FIELD_INFO fi;
+                                eeGetFieldInfo(&fldToken, CORINFO_ACCESS_SET, &fi);
+                                unsigned flagsToCheck = CORINFO_FLG_FIELD_STATIC | CORINFO_FLG_FIELD_FINAL;
+                                if ((fi.fieldFlags & flagsToCheck) == flagsToCheck)
+                                {
+                                    // Replace the helper with the frozen version
+                                    op1->AsCall()->gtCallMethHnd = eeFindHelper(CORINFO_HELP_NEWARR_1_FROZEN);
+                                }
+                            }
+                        }
+                    }
                 }
 
                 op1->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)resolvedToken.hClass;
