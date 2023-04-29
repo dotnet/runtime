@@ -222,7 +222,7 @@ namespace System.Reflection.Emit
             if (type.is_created)
                 throw not_after_created();
 
-            ParameterBuilder pb = new ParameterBuilder(this, iSequence, attributes, strParamName);
+            ParameterBuilder pb = new RuntimeParameterBuilder(this, iSequence, attributes, strParamName);
             pinfo ??= new ParameterBuilder[parameters!.Length + 1];
             pinfo[iSequence] = pb;
             return pb;

@@ -72,9 +72,9 @@ namespace System.Reflection.Emit
         public override int LocalIndex { get { throw null; } }
         public override System.Type LocalType { get { throw null; } }
     }
-    public partial class ParameterBuilder
+    public abstract partial class ParameterBuilder
     {
-        internal ParameterBuilder() { }
+        protected ParameterBuilder() { }
         public virtual int Attributes { get { throw null; } }
         public bool IsIn { get { throw null; } }
         public bool IsOptional { get { throw null; } }
@@ -84,6 +84,7 @@ namespace System.Reflection.Emit
         public virtual void SetConstant(object? defaultValue) { }
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
+        protected abstract void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, System.ReadOnlySpan<byte> binaryAttribute);
     }
     public sealed partial class SignatureHelper
     {

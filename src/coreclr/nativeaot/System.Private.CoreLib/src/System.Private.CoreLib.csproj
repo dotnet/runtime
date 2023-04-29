@@ -145,7 +145,6 @@
     <Compile Include="System\Reflection\Emit\DynamicMethod.cs" />
     <Compile Include="System\Reflection\Emit\ILGenerator.cs" />
     <Compile Include="System\Reflection\Emit\LocalBuilder.cs" />
-    <Compile Include="System\Reflection\Emit\ParameterBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ReflectionEmitThrower.cs" />
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
     <Compile Include="System\Reflection\EnumInfo.cs" />

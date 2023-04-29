@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -30,7 +31,12 @@ namespace System.Reflection.Emit.Tests
                 MethodInfo[] methods = type.IsInterface ? type.GetMethods() : type.GetMethods(BindingFlags.DeclaredOnly);
                 foreach (var method in methods)
                 {
-                    MethodBuilder meb = tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, null);
+                    ParameterInfo[] parameters = method.GetParameters();
+                    MethodBuilder meb = tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, parameters.Select(p => p.ParameterType).ToArray());
+                    foreach(ParameterInfo param in parameters)
+                    {
+                        meb.DefineParameter(param.Position + 1, param.Attributes, param.Name);
+                    }
                 }
 
                 foreach (FieldInfo field in type.GetFields())
@@ -122,6 +128,20 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
                 Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
                 Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
+                AssertParameters(sourceMethod.GetParameters(), methodFromDisk.GetParameters());
+            }
+        }
+
+        private static void AssertParameters(ParameterInfo[] sourceParameters, ParameterInfo[] parametersLoaded)
+        {
+            Assert.Equal(sourceParameters.Length, parametersLoaded.Length);
+
+            for (int i = 0; i < sourceParameters.Length; i++)
+            {
+                Assert.Equal(sourceParameters[i].Name, parametersLoaded[i].Name);
+                Assert.Equal(sourceParameters[i].ParameterType.FullName, parametersLoaded[i].ParameterType.FullName);
+                Assert.Equal(sourceParameters[i].Attributes, parametersLoaded[i].Attributes);
+                Assert.Equal(sourceParameters[i].Position, parametersLoaded[i].Position);
             }
         }
     }
