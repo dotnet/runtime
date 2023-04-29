@@ -461,7 +461,11 @@ namespace System.Threading.RateLimiting
                 // is going to invoke the callback synchronously, but this does not create
                 // a deadlock because lock are reentrant
                 if (cancellationToken.CanBeCanceled)
+#if NETCOREAPP || NETSTANDARD2_1
                     _cancellationTokenRegistration = cancellationToken.UnsafeRegister(Cancel, this) ;
+#else
+                    _cancellationTokenRegistration = cancellationToken.Register(Cancel, this) ;
+#endif
             }
 
             public int Count { get; }
