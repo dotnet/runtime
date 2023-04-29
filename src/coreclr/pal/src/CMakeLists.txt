@@ -152,7 +152,7 @@ set(SOURCES
   loader/module.cpp
   locale/unicode.cpp
   locale/unicodedata.cpp
-  locale/utf8.cpp
+  ${CLR_SRC_NATIVE_DIR}/minipal/utf8converter.c
   map/common.cpp
   map/map.cpp
   map/virtual.cpp
@@ -212,6 +212,8 @@ set(SOURCES
   thread/thread.cpp
   thread/threadsusp.cpp
 )
+
+set_source_files_properties("${CLR_SRC_NATIVE_DIR}/minipal/utf8converter.c" PROPERTIES COMPILE_FLAGS -Wno-implicit-fallthrough)
 
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   set(LIBUNWIND_OBJECTS $<TARGET_OBJECTS:libunwind>)

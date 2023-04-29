@@ -20,7 +20,7 @@ set(eglib_common_sources
     gbytearray.c
     gerror.c
     ghashtable.c
-    giconv.c
+    ${CLR_SRC_NATIVE_DIR}/minipal/utf8converter.c
     gmem.c
     goutput.c
     gstr.c
@@ -32,8 +32,7 @@ set(eglib_common_sources
     gpath.c
     gspawn.c
     gfile.c
-    gfile-posix.c
-    gutf8.c)
+    gfile-posix.c)
 
 set(eglib_headers
   glib.h

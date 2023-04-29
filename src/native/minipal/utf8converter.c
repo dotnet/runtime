@@ -1,32 +1,7 @@
-/* -*- Mode: C; tab-width: 8; indent-tabs-mode: t; c-basic-offset: 8 -*- */
-/*
- *  Copyright (C) 2011 Jeffrey Stedfast
- *
- *  Permission is hereby granted, free of charge, to any person
- *  obtaining a copy of this software and associated documentation
- *  files (the "Software"), to deal in the Software without
- *  restriction, including without limitation the rights to use, copy,
- *  modify, merge, publish, distribute, sublicense, and/or sell copies
- *  of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *
- *  The above copyright notice and this permission notice shall be
- *  included in all copies or substantial portions of the Software.
- *
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- *  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- *  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- *  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- *  DEALINGS IN THE SOFTWARE.
- */
-#include <config.h>
-#include <glib.h>
-#include <string.h>
-#include <errno.h>
-#include "../utils/mono-errno.h"
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#include <minipal/utf8converter.h>
 
 #ifdef _MSC_VER
 #define FORCE_INLINE(RET_TYPE) __forceinline RET_TYPE
@@ -34,39 +9,332 @@
 #define FORCE_INLINE(RET_TYPE) inline RET_TYPE __attribute__((always_inline))
 #endif
 
-
-#define UNROLL_DECODE_UTF8 0
-#define UNROLL_ENCODE_UTF8 0
-
-static int decode_utf32be (char *inbuf, size_t inleft, gunichar *outchar);
-static int encode_utf32be (gunichar c, char *outbuf, size_t outleft);
-
-static int decode_utf32le (char *inbuf, size_t inleft, gunichar *outchar);
-static int encode_utf32le (gunichar c, char *outbuf, size_t outleft);
-
-static int decode_utf16be (char *inbuf, size_t inleft, gunichar *outchar);
-static int encode_utf16be (gunichar c, char *outbuf, size_t outleft);
-
-static int decode_utf16le (char *inbuf, size_t inleft, gunichar *outchar);
-static int encode_utf16le (gunichar c, char *outbuf, size_t outleft);
-
-static FORCE_INLINE (int) decode_utf8 (char *inbuf, size_t inleft, gunichar *outchar);
-static int encode_utf8 (gunichar c, char *outbuf, size_t outleft);
-
-static int decode_latin1 (char *inbuf, size_t inleft, gunichar *outchar);
-static int encode_latin1 (gunichar c, char *outbuf, size_t outleft);
-
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 #define decode_utf32 decode_utf32le
 #define encode_utf32 encode_utf32le
 #define decode_utf16 decode_utf16le
 #define encode_utf16 encode_utf16le
+#define GUINT16_TO_LE(x) (x)
+#define GUINT16_TO_BE(x) GUINT16_SWAP_LE_BE(x)
 #else
 #define decode_utf32 decode_utf32be
 #define encode_utf32 encode_utf32be
 #define decode_utf16 decode_utf16be
 #define encode_utf16 encode_utf16be
+#define GUINT16_TO_LE(x) GUINT16_SWAP_LE_BE(x)
+#define GUINT16_TO_BE(x) (x)
 #endif
+
+/*
+ * Index into the table below with the first byte of a UTF-8 sequence to get
+ * the number of bytes that are supposed to follow it to complete the sequence.
+ *
+ * Note that *legal* UTF-8 values can't have 4 or 5-bytes. The table is left
+ * as-is for anyone who may want to do such conversion, which was allowed in
+ * earlier algorithms.
+*/
+const guchar g_utf8_jump_table[256] = {
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3, 4,4,4,4,4,4,4,4,5,5,5,5,6,6,1,1
+};
+
+static gboolean
+utf8_validate (const unsigned char *inptr, size_t len)
+{
+	const unsigned char *ptr = inptr + len;
+	unsigned char c;
+
+	/* Everything falls through when TRUE... */
+	switch (len) {
+	default:
+		return FALSE;
+	case 4:
+		if ((c = (*--ptr)) < 0x80 || c > 0xBF)
+			return FALSE;
+
+		if ((c == 0xBF || c == 0xBE) && ptr[-1] == 0xBF) {
+			if (ptr[-2] == 0x8F || ptr[-2] == 0x9F ||
+			    ptr[-2] == 0xAF || ptr[-2] == 0xBF)
+				return FALSE;
+		}
+	case 3:
+		if ((c = (*--ptr)) < 0x80 || c > 0xBF)
+			return FALSE;
+	case 2:
+		if ((c = (*--ptr)) < 0x80 || c > 0xBF)
+			return FALSE;
+
+		/* no fall-through in this inner switch */
+		switch (*inptr) {
+		case 0xE0: if (c < 0xA0) return FALSE; break;
+		case 0xED: if (c > 0x9F) return FALSE; break;
+		case 0xEF: if (c == 0xB7 && (ptr[1] > 0x8F && ptr[1] < 0xB0)) return FALSE;
+			if (c == 0xBF && (ptr[1] == 0xBE || ptr[1] == 0xBF)) return FALSE;
+			break;
+		case 0xF0: if (c < 0x90) return FALSE; break;
+		case 0xF4: if (c > 0x8F) return FALSE; break;
+		default:   if (c < 0x80) return FALSE; break;
+		}
+	case 1: if (*inptr >= 0x80 && *inptr < 0xC2) return FALSE;
+	}
+
+	if (*inptr > 0xF4)
+		return FALSE;
+
+	return TRUE;
+}
+
+/**
+ * g_utf8_validate:
+ * @str: a utf-8 encoded string
+ * @max_len: max number of bytes to validate (or -1 to validate the entire null-terminated string)
+ * @end: output parameter to mark the end of the valid input
+ *
+ * Checks @utf for being valid UTF-8. @str is assumed to be
+ * null-terminated. This function is not super-strict, as it will
+ * allow longer UTF-8 sequences than necessary. Note that Java is
+ * capable of producing these sequences if provoked. Also note, this
+ * routine checks for the 4-byte maximum size, but does not check for
+ * 0x10ffff maximum value.
+ *
+ * Return value: %TRUE if @str is valid or %FALSE otherwise.
+ **/
+gboolean
+g_utf8_validate (const gchar *str, gssize max_len, const gchar **end)
+{
+	guchar *inptr = (guchar *) str;
+	gboolean valid = TRUE;
+	guint length, min;
+	gssize n = 0;
+
+	if (max_len == 0)
+		return FALSE;
+
+	if (max_len < 0) {
+		while (*inptr != 0) {
+			length = g_utf8_jump_table[*inptr];
+			if (!utf8_validate (inptr, length)) {
+				valid = FALSE;
+				break;
+			}
+
+			inptr += length;
+		}
+	} else {
+		while (n < max_len) {
+			if (*inptr == 0) {
+				/* Note: return FALSE if we encounter nul-byte
+				 * before max_len is reached. */
+				valid = FALSE;
+				break;
+			}
+
+			length = g_utf8_jump_table[*inptr];
+			min = MIN (length, GSSIZE_TO_UINT (max_len - n));
+
+			if (!utf8_validate (inptr, min)) {
+				valid = FALSE;
+				break;
+			}
+
+			if (min < length) {
+				valid = FALSE;
+				break;
+			}
+
+			inptr += length;
+			n += length;
+		}
+	}
+
+	if (end != NULL)
+		*end = (gchar *) inptr;
+
+	return valid;
+}
+
+gunichar
+g_utf8_get_char_validated (const gchar *str, gssize max_len)
+{
+	unsigned char *inptr = (unsigned char *) str;
+	gunichar u = *inptr;
+	int n, i;
+
+	if (max_len == 0)
+		return -2;
+
+	if (u < 0x80) {
+		/* simple ascii case */
+		return u;
+	} else if (u < 0xc2) {
+		return -1;
+	} else if (u < 0xe0) {
+		u &= 0x1f;
+		n = 2;
+	} else if (u < 0xf0) {
+		u &= 0x0f;
+		n = 3;
+	} else if (u < 0xf8) {
+		u &= 0x07;
+		n = 4;
+	} else if (u < 0xfc) {
+		u &= 0x03;
+		n = 5;
+	} else if (u < 0xfe) {
+		u &= 0x01;
+		n = 6;
+	} else {
+		return -1;
+	}
+
+	if (max_len > 0) {
+		if (!utf8_validate (inptr, MIN (max_len, n)))
+			return -1;
+
+		if (max_len < n)
+			return -2;
+	} else {
+		if (!utf8_validate (inptr, n))
+			return -1;
+	}
+
+	for (i = 1; i < n; i++)
+		u = (u << 6) | (*++inptr ^ 0x80);
+
+	return u;
+}
+
+glong
+g_utf8_strlen (const gchar *str, gssize max_len)
+{
+	const guchar *inptr = (const guchar *) str;
+	glong clen = 0, len = 0, n;
+
+	if (max_len == 0)
+		return 0;
+
+	if (max_len < 0) {
+		while (*inptr) {
+			inptr += g_utf8_jump_table[*inptr];
+			len++;
+		}
+	} else {
+		while (len < max_len && *inptr) {
+			n = g_utf8_jump_table[*inptr];
+			if ((clen + n) > max_len)
+				break;
+
+			inptr += n;
+			clen += n;
+			len++;
+		}
+	}
+
+	return len;
+}
+
+gunichar
+g_utf8_get_char (const gchar *src)
+{
+	unsigned char *inptr = (unsigned char *) src;
+	gunichar u = *inptr;
+	int n, i;
+
+	if (u < 0x80) {
+		/* simple ascii case */
+		return u;
+	} else if (u < 0xe0) {
+		u &= 0x1f;
+		n = 2;
+	} else if (u < 0xf0) {
+		u &= 0x0f;
+		n = 3;
+	} else if (u < 0xf8) {
+		u &= 0x07;
+		n = 4;
+	} else if (u < 0xfc) {
+		u &= 0x03;
+		n = 5;
+	} else {
+		u &= 0x01;
+		n = 6;
+	}
+
+	for (i = 1; i < n; i++)
+		u = (u << 6) | (*++inptr ^ 0x80);
+
+	return u;
+}
+
+gchar *
+g_utf8_offset_to_pointer (const gchar *str, glong offset)
+{
+	const gchar *p = str;
+
+	if (offset > 0) {
+		do {
+			p = g_utf8_next_char (p);
+			offset --;
+		} while (offset > 0);
+	}
+	else if (offset < 0) {
+		const gchar *jump = str;
+		do {
+			// since the minimum size of a character is 1
+			// we know we can step back at least offset bytes
+			jump = jump + offset;
+
+			// if we land in the middle of a character
+			// walk to the beginning
+			while ((*jump & 0xc0) == 0x80)
+				jump --;
+
+			// count how many characters we've actually walked
+			// by going forward
+			p = jump;
+			do {
+				p = g_utf8_next_char (p);
+				offset ++;
+			} while (p < jump);
+
+		} while (offset < 0);
+	}
+
+	return (gchar *)p;
+}
+
+glong
+g_utf8_pointer_to_offset (const gchar *str, const gchar *pos)
+{
+	const gchar *inptr, *inend;
+	glong offset = 0;
+	glong sign = 1;
+
+	if (pos == str)
+		return 0;
+
+	if (str < pos) {
+		inptr = str;
+		inend = pos;
+	} else {
+		inptr = pos;
+		inend = str;
+		sign = -1;
+	}
+
+	do {
+		inptr = g_utf8_next_char (inptr);
+		offset++;
+	} while (inptr < inend);
+
+	return offset * sign;
+}
 
 /*
  * Unicode encoders and decoders
@@ -419,12 +687,12 @@ encode_latin1 (gunichar c, char *outbuf, size_t outleft)
  * Simple conversion API
  */
 
-static gpointer error_quark = (gpointer)"ConvertError";
+static gpointer g_error_quark = (gpointer)"ConvertError";
 
 gpointer
 g_convert_error_quark (void)
 {
-	return error_quark;
+	return g_error_quark;
 }
 /*
  * Unicode conversion
@@ -546,7 +814,7 @@ g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
 	if (items_written)
 		*items_written = n;
 
-	outptr = outbuf = g_malloc ((n + 1) * sizeof (gunichar));
+	outptr = outbuf = (gunichar *)g_malloc ((n + 1) * sizeof (gunichar));
 	inptr = (char *) str;
 
 	for (i = 0; i < n; i++) {
@@ -560,7 +828,7 @@ g_utf8_to_ucs4_fast (const gchar *str, glong len, glong *items_written)
 }
 
 static gunichar2 *
-eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, gboolean replace_invalid_codepoints, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err, unsigned endian)
+eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, gboolean replace_invalid_codepoints, gboolean null_terminate, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err, unsigned endian)
 {
 	gunichar2 *outbuf, *outptr;
 	size_t outlen = 0;
@@ -611,7 +879,7 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 		*items_written = (glong)outlen;
 
 	if (G_LIKELY (!custom_alloc_func))
-		outptr = outbuf = g_malloc ((outlen + 1) * sizeof (gunichar2));
+		outptr = outbuf = (gunichar2 *)g_malloc ((outlen + 1) * sizeof (gunichar2));
 	else
 		outptr = outbuf = (gunichar2 *)custom_alloc_func ((outlen + 1) * sizeof (gunichar2), custom_alloc_data);
 
@@ -642,7 +910,8 @@ eg_utf8_to_utf16_general (const gchar *str, glong len, glong *items_read, glong 
 		inptr += n;
 	}
 
-	*outptr = '\0';
+	if (null_terminate)
+		*outptr = '\0';
 
 	return outbuf;
 
@@ -672,49 +941,55 @@ error:
 gunichar2 *
 g_utf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, NULL, NULL, err, G_BYTE_ORDER);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, TRUE, NULL, NULL, err, G_BYTE_ORDER);
 }
 
 gunichar2 *
 g_utf8_to_utf16be (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, NULL, NULL, err, G_BIG_ENDIAN);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, TRUE, NULL, NULL, err, G_BIG_ENDIAN);
 }
 
 gunichar2 *
 g_utf8_to_utf16le (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, NULL, NULL, err, G_LITTLE_ENDIAN);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, TRUE, NULL, NULL, err, G_LITTLE_ENDIAN);
 }
 
 gunichar2 *
 g_utf8_to_utf16_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, custom_alloc_func, custom_alloc_data, err, G_BYTE_ORDER);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, TRUE, custom_alloc_func, custom_alloc_data, err, G_BYTE_ORDER);
+}
+
+gunichar2 *
+g_utf8_to_utf16_custom_alloc_optional (const gchar *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, gboolean replace_invalid_codepoints, gboolean null_terminate, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
+{
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, include_nuls, replace_invalid_codepoints, null_terminate, custom_alloc_func, custom_alloc_data, err, G_BYTE_ORDER);
 }
 
 gunichar2 *
 g_utf8_to_utf16be_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, custom_alloc_func, custom_alloc_data, err, G_BIG_ENDIAN);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, TRUE, custom_alloc_func, custom_alloc_data, err, G_BIG_ENDIAN);
 }
 
 gunichar2 *
 g_utf8_to_utf16le_custom_alloc (const gchar *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, custom_alloc_func, custom_alloc_data, err, G_LITTLE_ENDIAN);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, FALSE, FALSE, TRUE, custom_alloc_func, custom_alloc_data, err, G_LITTLE_ENDIAN);
 }
 
 gunichar2 *
 eg_utf8_to_utf16_with_nuls (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, FALSE, NULL, NULL, err, G_BYTE_ORDER);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, FALSE, TRUE, NULL, NULL, err, G_BYTE_ORDER);
 }
 
 gunichar2 *
 eg_wtf8_to_utf16 (const gchar *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, TRUE, NULL, NULL, err, G_BYTE_ORDER);
+	return eg_utf8_to_utf16_general (str, len, items_read, items_written, TRUE, TRUE, TRUE, NULL, NULL, err, G_BYTE_ORDER);
 }
 
 gunichar *
@@ -769,7 +1044,7 @@ g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_wri
 	if (items_read)
 		*items_read = GPTRDIFF_TO_LONG (inptr - str);
 
-	outptr = outbuf = g_malloc (outlen + 4);
+	outptr = outbuf = (gunichar *)g_malloc (outlen + 4);
 	inptr = (char *) str;
 	inleft = len;
 
@@ -791,17 +1066,23 @@ g_utf8_to_ucs4 (const gchar *str, glong len, glong *items_read, glong *items_wri
 
 static
 gchar *
-eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err, unsigned endian)
+eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, gboolean replace_invalid_codepoints, gboolean null_terminate, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err, unsigned endian)
 {
 	char *inptr, *outbuf, *outptr;
 	size_t outlen = 0;
 	size_t inleft;
 	gunichar c;
+	gboolean replaced = FALSE;
 	int n;
 
 	g_return_val_if_fail (str != NULL, NULL);
 
 	if (len < 0) {
+		if (include_nuls) {
+			g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_FAILED, "Conversions with embedded nulls must pass the string length");
+			return NULL;
+		}
+
 		len = 0;
 		while (str[len])
 			len++;
@@ -818,30 +1099,37 @@ eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, gl
 				inptr += 2;
 			}
 
-			if (errno == EILSEQ) {
+			if (errno == EILSEQ && !replace_invalid_codepoints) {
 				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_ILLEGAL_SEQUENCE,
 					     "Illegal byte sequence encountered in the input.");
-			} else if (items_read) {
+			} else if (items_read && !replace_invalid_codepoints) {
 				/* partial input is ok if we can let our caller know... */
 				break;
-			} else {
+			} else if (!replace_invalid_codepoints) {
 				g_set_error (err, G_CONVERT_ERROR, G_CONVERT_ERROR_PARTIAL_INPUT,
 					     "Partial byte sequence encountered in the input.");
 			}
 
-			if (items_read)
-				*items_read = GPTRDIFF_TO_LONG ((inptr - (char *) str) / 2);
+			if (replace_invalid_codepoints) {
+				n = sizeof(gunichar);
+				c = '?';
+				replaced = TRUE;
+			} else {
+				if (items_read)
+					*items_read = GPTRDIFF_TO_LONG ((inptr - (char *) str) / 2);
 
-			if (items_written)
-				*items_written = 0;
+				if (items_written)
+					*items_written = 0;
 
-			return NULL;
-		} else if (c == 0)
+				return NULL;
+			}
+		} else if (c == 0 && !include_nuls)
 			break;
 
-		outlen += g_unichar_to_utf8 (c, NULL);
+		outlen += (replaced && replace_invalid_codepoints) ? n - 1 : g_unichar_to_utf8 (c, NULL);
 		inleft -= n;
 		inptr += n;
+		replaced = FALSE;
 	}
 
 	if (items_read)
@@ -851,7 +1139,7 @@ eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, gl
 		*items_written = (glong)outlen;
 
 	if (G_LIKELY (!custom_alloc_func))
-		outptr = outbuf = g_malloc (outlen + 1);
+		outptr = outbuf = (char *)g_malloc (outlen + 1);
 	else
 		outptr = outbuf = (char *)custom_alloc_func (outlen + 1, custom_alloc_data);
 
@@ -866,17 +1154,24 @@ eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, gl
 	inleft = len * 2;
 
 	while (inleft > 0) {
-		if ((n = decode_utf16_endian (inptr, inleft, &c, endian)) < 0)
+		if ((n = decode_utf16_endian (inptr, inleft, &c, endian)) < 0) {
+			if (replace_invalid_codepoints) {
+				outptr += '?';
+				n = sizeof(gunichar);
+			} else
+				break;
+		} else if (c == 0 && !include_nuls) {
 			break;
-		else if (c == 0)
-			break;
+		} else {
+			outptr += g_unichar_to_utf8 (c, outptr);
+		}
 
-		outptr += g_unichar_to_utf8 (c, outptr);
 		inleft -= n;
 		inptr += n;
 	}
 
-	*outptr = '\0';
+	if (null_terminate)
+		*outptr = '\0';
 
 	return outbuf;
 }
@@ -884,25 +1179,31 @@ eg_utf16_to_utf8_general (const gunichar2 *str, glong len, glong *items_read, gl
 gchar *
 g_utf16_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf16_to_utf8_general (str, len, items_read, items_written, NULL, NULL, err, G_BYTE_ORDER);
+	return eg_utf16_to_utf8_general (str, len, items_read, items_written, FALSE, FALSE, TRUE, NULL, NULL, err, G_BYTE_ORDER);
 }
 
 gchar *
 g_utf16le_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf16_to_utf8_general (str, len, items_read, items_written, NULL, NULL, err, G_LITTLE_ENDIAN);
+	return eg_utf16_to_utf8_general (str, len, items_read, items_written, FALSE, FALSE, TRUE, NULL, NULL, err, G_LITTLE_ENDIAN);
 }
 
 gchar *
 g_utf16be_to_utf8 (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GError **err)
 {
-	return eg_utf16_to_utf8_general (str, len, items_read, items_written, NULL, NULL, err, G_BIG_ENDIAN);
+	return eg_utf16_to_utf8_general (str, len, items_read, items_written, FALSE, FALSE, TRUE, NULL, NULL, err, G_BIG_ENDIAN);
 }
 
 gchar *
 g_utf16_to_utf8_custom_alloc (const gunichar2 *str, glong len, glong *items_read, glong *items_written, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
 {
-	return eg_utf16_to_utf8_general (str, len, items_read, items_written, custom_alloc_func, custom_alloc_data, err, G_BYTE_ORDER);
+	return eg_utf16_to_utf8_general (str, len, items_read, items_written, FALSE, FALSE, TRUE, custom_alloc_func, custom_alloc_data, err, G_BYTE_ORDER);
+}
+
+gchar *
+g_utf16_to_utf8_custom_alloc_with_nulls (const gunichar2 *str, glong len, glong *items_read, glong *items_written, gboolean include_nuls, gboolean null_terminate, GCustomAllocator custom_alloc_func, gpointer custom_alloc_data, GError **err)
+{
+	return eg_utf16_to_utf8_general (str, len, items_read, items_written, include_nuls, TRUE, null_terminate, custom_alloc_func, custom_alloc_data, err, G_BYTE_ORDER);
 }
 
 gunichar *
@@ -966,7 +1267,7 @@ g_utf16_to_ucs4 (const gunichar2 *str, glong len, glong *items_read, glong *item
 	if (items_written)
 		*items_written = (glong)(outlen / 4);
 
-	outptr = outbuf = g_malloc (outlen + 4);
+	outptr = outbuf = (gunichar *)g_malloc (outlen + 4);
 	inptr = (char *) str;
 	inleft = len * 2;
 
@@ -1034,7 +1335,7 @@ g_ucs4_to_utf8 (const gunichar *str, glong len, glong *items_read, glong *items_
 
 	len = i;
 
-	outptr = outbuf = g_malloc (outlen + 1);
+	outptr = outbuf = (char *)g_malloc (outlen + 1);
 	for (i = 0; i < len; i++)
 		outptr += g_unichar_to_utf8 (str[i], outptr);
 	*outptr = 0;
@@ -1096,7 +1397,7 @@ g_ucs4_to_utf16 (const gunichar *str, glong len, glong *items_read, glong *items
 
 	len = i;
 
-	outptr = outbuf = g_malloc ((outlen + 1) * sizeof (gunichar2));
+	outptr = outbuf = (gunichar2 *)g_malloc ((outlen + 1) * sizeof (gunichar2));
 	for (i = 0; i < len; i++)
 		outptr += g_unichar_to_utf16 (str[i], outptr);
 	*outptr = 0;

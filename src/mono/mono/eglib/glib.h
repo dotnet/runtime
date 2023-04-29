@@ -29,6 +29,7 @@
 #include <eglib-config.h>
 #include <minipal/utils.h>
 #include <time.h>
+#include "../utils/mono-errno.h"
 
 #ifndef EGLIB_NO_REMAP
 #include <eglib-remap.h>
