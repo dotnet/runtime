@@ -947,7 +947,13 @@ namespace System
         private static class EmptyArray<T>
         {
 #pragma warning disable CA1825 // this is the implementation of Array.Empty<T>()
+#if CORECLR
+            internal static readonly T[] Value = GC.AllocateFrozenArray<T>(0);
+#else
+            // NativeAOT will preallocate this field on a frozen segment as is.
+            // Mono doesn't support frozen heaps
             internal static readonly T[] Value = new T[0];
+#endif
 #pragma warning restore CA1825
         }
 

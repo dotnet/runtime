@@ -976,6 +976,24 @@ FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 len
 }
 FCIMPLEND
 
+FCIMPL2(Object*, GCInterface::AllocateFrozenArray, void* arrayTypeHandle, INT32 length)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+    } CONTRACTL_END;
+
+    OBJECTREF pRet = NULL;
+    TypeHandle arrayType = TypeHandle::FromPtr(arrayTypeHandle);
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
+
+    pRet = AllocateFrozenSzArray(arrayType.AsMethodTable(), length);
+
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(pRet);
+}
+FCIMPLEND
 
 FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
 {

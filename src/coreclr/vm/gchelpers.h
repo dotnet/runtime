@@ -23,6 +23,9 @@
 OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
 OBJECTREF AllocateSzArray(TypeHandle  arrayType, INT32 length, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
 
+// Allocate single-dimensional array with a hint to prefer frozen segments
+OBJECTREF AllocateFrozenSzArray(MethodTable* pArrayMT, INT32 length);
+
 // The main Array allocation routine, can do multi-dimensional
 OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);
 OBJECTREF AllocateArrayEx(TypeHandle  arrayType, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS);

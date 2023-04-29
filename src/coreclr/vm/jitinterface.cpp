@@ -747,7 +747,7 @@ size_t CEEInfo::printObjectDescription (
     }
     else
     {
-        _ASSERTE(!"Unexpected object type");
+        obj->GetMethodTable()->_GetFullyQualifiedNameForClass(stackStr);
     }
 
     const UTF8* utf8data = stackStr.GetUTF8();
@@ -6157,20 +6157,30 @@ bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objHandle)
 
     _ASSERT(objHandle != NULL);
 
-#ifdef DEBUG
+    bool isImmutable = false;
+
     JIT_TO_EE_TRANSITION();
 
     GCX_COOP();
     OBJECTREF obj = getObjectFromJitHandle(objHandle);
     MethodTable* type = obj->GetMethodTable();
 
-    _ASSERTE(type->IsString() || type == g_pRuntimeTypeClass);
+    if (type->IsString() || type == g_pRuntimeTypeClass)
+    {
+        // These types are always immutable
+        isImmutable = true;
+    }
+    else if (type->IsArray() && ((ArrayBase*)OBJECTREFToObject(obj))->GetComponentSize() == 0)
+    {
+        // Empty arrays are always immutable
+        isImmutable = true;
+    }
+    // delegates and types with no instance fields are also immutable but we never allocate
+    // them on frozen segments (yet).
 
     EE_TO_JIT_TRANSITION();
-#endif
 
-     // All currently allocated frozen objects can be treated as immutable
-    return true;
+    return isImmutable;
 }
 
 /***********************************************************************/

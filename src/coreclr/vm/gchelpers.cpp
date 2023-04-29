@@ -493,6 +493,85 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     return ObjectToOBJECTREF((Object*)orArray);
 }
 
+// Same as AllocateSzArray but attempts to allocate the array on a frozen segment.
+// It fallbacks to AllocateSzArray if it fails to allocate on a frozen segment.
+OBJECTREF AllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    SetTypeHandleOnThreadForAlloc(TypeHandle(pArrayMT));
+
+    _ASSERTE(pArrayMT->CheckInstanceActivated());
+    _ASSERTE(pArrayMT->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
+
+    // The initial validation is copied from AllocateSzArray impl
+
+    CorElementType elemType = pArrayMT->GetArrayElementType();
+
+    if (pArrayMT->ContainsPointers() && cElements > 0)
+    {
+        // For arrays with GC pointers we can only work with empty arrays
+        return AllocateSzArray(pArrayMT, cElements);
+    }
+
+    // Disallow the creation of void[] (an array of System.Void)
+    if (elemType == ELEMENT_TYPE_VOID)
+        COMPlusThrow(kArgumentException);
+
+    if (cElements < 0)
+        COMPlusThrow(kOverflowException);
+
+    if ((SIZE_T)cElements > MaxArrayLength())
+        ThrowOutOfMemoryDimensionsExceeded();
+
+    SIZE_T componentSize = pArrayMT->GetComponentSize();
+#ifdef TARGET_64BIT
+    // POSITIVE_INT32 * UINT16 + SMALL_CONST
+    // this cannot overflow on 64bit
+    size_t totalSize = cElements * componentSize + pArrayMT->GetBaseSize();
+
+#else
+    S_SIZE_T safeTotalSize = S_SIZE_T((DWORD)cElements) * S_SIZE_T((DWORD)componentSize) + S_SIZE_T((DWORD)pArrayMT->GetBaseSize());
+    if (safeTotalSize.IsOverflow())
+        ThrowOutOfMemoryDimensionsExceeded();
+
+    size_t totalSize = safeTotalSize.Value();
+#endif
+
+    // FrozenObjectHeapManager doesn't yet support objects with a custom alignment,
+    // so we give up on arrays of value types requiring 8 byte alignment on 32bit platforms.
+    if ((DATA_ALIGNMENT < sizeof(double)) && (elemType == ELEMENT_TYPE_R8))
+    {
+        return AllocateSzArray(pArrayMT, cElements);
+    }
+#ifdef FEATURE_64BIT_ALIGNMENT
+    MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
+    if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
+    {
+        return AllocateSzArray(pArrayMT, cElements);
+    }
+#endif
+
+    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+    ArrayBase* orArray = static_cast<ArrayBase*>(foh->TryAllocateObject(pArrayMT, totalSize, /*publish*/ false));
+    if (orArray == nullptr)
+    {
+        // We failed to allocate on a frozen segment, fallback to AllocateSzArray
+        // E.g. if the array is too big to fit on a frozen segment
+        return AllocateSzArray(pArrayMT, cElements);
+    }
+    orArray->m_NumComponents = cElements;
+
+    // Publish needs to be postponed in this case because we need to specify array length 
+    PublishObjectAndNotify(orArray, GC_ALLOC_NO_FLAGS);
+
+    return ObjectToOBJECTREF(orArray);
+}
+
 void ThrowOutOfMemoryDimensionsExceeded()
 {
     CONTRACTL {
