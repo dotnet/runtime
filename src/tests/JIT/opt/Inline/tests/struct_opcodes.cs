@@ -28,7 +28,7 @@ public class SingleInt
 
 public class TestStruct
 {
-    public static SimpleStruct aMethod_Inline(SimpleStruct Struct)
+    internal static SimpleStruct aMethod_Inline(SimpleStruct Struct)
     {
         Struct.i = 10;
         Struct.str = "abc";
@@ -37,7 +37,7 @@ public class TestStruct
         return Struct;
     }
 
-    public static newStruct bMethod_Inline()
+    internal static newStruct bMethod_Inline()
     {
         newStruct nStruct;
         nStruct.S.i = 1;
@@ -48,7 +48,7 @@ public class TestStruct
         return nStruct;
     }
 
-    public static newStruct cMethod_Inline()
+    internal static newStruct cMethod_Inline()
     {
         newStruct nStruct;
         nStruct.S.i = 1;

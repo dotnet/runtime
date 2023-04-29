@@ -73,30 +73,30 @@ public class P
         return e;
     }
 
-    public static bool ByrefE(ref E e1, E e2)
+    internal static bool ByrefE(ref E e1, E e2)
     {
         return e1.HasFlag(e2);
     }
 
-    public static bool ByrefF(ref F e1, F e2)
+    internal static bool ByrefF(ref F e1, F e2)
     {
         return e1.HasFlag(e2);
     }
 
-    public static bool ByrefG(ref G e1, G e2)
+    internal static bool ByrefG(ref G e1, G e2)
     {
         return e1.HasFlag(e2);
     }
 
     // Example from GitHub 23847
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static bool GitHub23847(E e1, short s)
+    internal static bool GitHub23847(E e1, short s)
     {
         return GitHub23847Aux(s).HasFlag(e1);
     }
 
     // Once this is inlined we end up with a short pre-boxed value
-    public static E GitHub23847Aux(short s)
+    internal static E GitHub23847Aux(short s)
     {
         ShortHolder h = new ShortHolder(s);
         return (E)h.v;

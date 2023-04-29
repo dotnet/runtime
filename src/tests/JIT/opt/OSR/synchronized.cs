@@ -28,7 +28,7 @@ public class X
     Z z;
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Synchronized)]
-    public S G()
+    internal S G()
     {
         S s = new S();
 
