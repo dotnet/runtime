@@ -153,7 +153,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [Event(63, Level = EventLevel.Verbose, Message = Messages.IOEnqueue, Task = Tasks.ThreadPool, Opcode = Opcodes.IOEnqueue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
-        private static unsafe void ThreadPoolIOEnqueue(
+        private unsafe void ThreadPoolIOEnqueue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             bool MultiDequeues,
@@ -188,7 +188,7 @@ namespace System.Diagnostics.Tracing
         }
 
         [Event(64, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IODequeue, Version = 0, Keywords = Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword)]
-        private static unsafe void ThreadPoolIODequeue(
+        private unsafe void ThreadPoolIODequeue(
             IntPtr NativeOverlapped,
             IntPtr Overlapped,
             ushort ClrInstanceID = DefaultClrInstanceId)
