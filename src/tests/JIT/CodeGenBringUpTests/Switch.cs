@@ -3,7 +3,7 @@
 //
 
 using System;
-class SwitchTest
+public class SwitchTest
 {
  const int Pass = 100;
  const int Fail = -1;

@@ -16,7 +16,7 @@ public class BringUpTest_Array1
         a[1] = 5;
     }
 
-    static int Main()
+    public static int Main()
     {
         int[] a = {1, 2, 3, 4};
         Array1(a);

@@ -18,7 +18,7 @@ public class BringUpTest_ArrayMD2
         return a[x, y];
     }
 
-    static int Main()
+    public static int Main()
     {
         if (ArrayMD2(1, 1) != 42) return Fail;
         return Pass;

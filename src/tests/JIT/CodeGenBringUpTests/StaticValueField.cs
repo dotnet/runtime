@@ -12,7 +12,7 @@ struct TestValue
 
 // This test stores a primitive (no-GC fields) value type to a static field
 // and checks if the contents are correct.
-class StaticValueField
+public class StaticValueField
 {
   const int Pass = 100;
   const int Fail = -1;

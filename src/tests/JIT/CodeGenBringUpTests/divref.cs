@@ -6,9 +6,9 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class child
+public class child
 {
-    static int Main()
+    public static int Main()
     {
         int b = 5;
         const int Pass = 100;

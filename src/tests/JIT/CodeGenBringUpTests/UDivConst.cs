@@ -101,7 +101,7 @@ static class UDivConst
     }
 }
 
-static class UDivProgram
+public static class UDivProgram
 {
     public static int Main()
     {

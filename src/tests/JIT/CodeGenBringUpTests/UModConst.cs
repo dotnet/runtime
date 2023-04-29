@@ -101,7 +101,7 @@ static class UModConst
     }
 }
 
-static class UModProgram
+public static class UModProgram
 {
     public static int Main()
     {

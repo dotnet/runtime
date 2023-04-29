@@ -17,7 +17,7 @@ public class BringUpTest_ArrayExc
         return a[5];
     }
 
-    static int Main()
+    public static int Main()
     {
         try
         {

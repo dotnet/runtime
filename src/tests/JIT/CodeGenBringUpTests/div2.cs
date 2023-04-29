@@ -7,9 +7,9 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class child
+public class child
 {
-    static int Main()
+    public static int Main()
     {
         const int Pass = 100;
         const int Fail = -1;

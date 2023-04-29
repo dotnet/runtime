@@ -27,7 +27,7 @@ public class BringUpTest_ArrayObj
         return a[i].field;
     }
 
-    static int Main()
+    public static int Main()
     {
         if (ArrayObj(1) != 1) return Fail;
         return Pass;

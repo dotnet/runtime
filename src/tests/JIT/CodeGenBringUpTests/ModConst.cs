@@ -173,7 +173,7 @@ static class ModConst
     }
 }
 
-static class ModProgram
+public static class ModProgram
 {
     public static int Main()
     {

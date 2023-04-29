@@ -16,7 +16,7 @@ public class BringUpTest_Array2
         return a[1];
     }
 
-    static int Main()
+    public static int Main()
     {
         int[] a = {1, 2, 3, 4};
         if (Array2(a) != 2) return Fail;

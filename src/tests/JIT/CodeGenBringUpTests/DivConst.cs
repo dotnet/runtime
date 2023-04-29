@@ -187,7 +187,7 @@ class Point
     public int Y;
 }
 
-static class DivProgram
+public static class DivProgram
 {
     public static int Main()
     {

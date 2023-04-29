@@ -18,7 +18,7 @@ public class BringUpTest_Array3
         return a[1];
     }
 
-    static int Main()
+    public static int Main()
     {
         if (Array3() != 5) return Fail;
         return Pass;

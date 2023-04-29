@@ -19,7 +19,7 @@ public class BringUpTest_ArrayJagged
         return a[1][i];
     }
 
-    static int Main()
+    public static int Main()
     {
         if (ArrayJagged(1) != 3) return Fail;
         return Pass;

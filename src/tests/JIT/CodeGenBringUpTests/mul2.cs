@@ -15,12 +15,12 @@ struct vc
     public vc (int xx, int yy, int zz) { x = xx; y = yy; z = zz; }
 }
 
-class child
+public class child
 {
     const int Pass = 100;
     const int Fail = -1;
 
-    static int Main()
+    public static int Main()
     {
         int result = mul2(3);
         if (result == 15)
