@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
@@ -169,7 +170,8 @@ public class Program
         return (short)(x / y);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var result1 = Test1(24648);
         var result2 = Test2();

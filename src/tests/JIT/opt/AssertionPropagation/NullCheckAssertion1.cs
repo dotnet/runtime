@@ -4,6 +4,7 @@
 //Unit test for null check assertion.
 
 using System;
+using Xunit;
 
 internal class Sample3
 {
@@ -15,7 +16,8 @@ internal class Sample3
         o.GetType();
     }
 
-    private static int Main()
+    [Fact]
+    private static int TestEntryPoint()
     {
         try
         {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class CMyException : System.Exception
 {
@@ -92,7 +93,8 @@ public class CTest
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestObjects(1, 2, 3, 4);
 

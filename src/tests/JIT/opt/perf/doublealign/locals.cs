@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class CMyException : System.Exception
 {
@@ -109,7 +110,8 @@ public class CTest
         UseByte(b1);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

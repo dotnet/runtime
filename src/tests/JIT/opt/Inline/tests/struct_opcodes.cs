@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 internal struct SimpleStruct
 {
@@ -61,7 +62,8 @@ internal class TestStruct
         x.f = new SingleInt();
         x.f.i1 = 77;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         SimpleStruct st;
         newStruct newst;

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 interface I<T>
 {
@@ -28,7 +29,8 @@ class Z
         return j is I<string>;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var j0 = new J<object>();
         var j1 = new J<string>();

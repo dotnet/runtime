@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Loops in F, G, H should all clone
 
@@ -42,7 +43,8 @@ class CallAndIndir
         z += r;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
          int[] a = new int[] { 1, 2, 3, 4 };
          int z = 0;

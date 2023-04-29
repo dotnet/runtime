@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class EarlyLiveness_ForwardSub
 {
-    static int Main()
+    [Fact]
+    static int TestEntryPoint()
     {
         int result = 100;
         int test1 = Test1();

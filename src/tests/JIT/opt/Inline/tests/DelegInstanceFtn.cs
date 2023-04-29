@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 internal class Test_DelegInstanceFtn
 {
@@ -15,7 +16,8 @@ internal class Test_DelegInstanceFtn
             return 1;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test_DelegInstanceFtn t = new Test_DelegInstanceFtn();
         MyDeleg d2 = new MyDeleg(t.f2);

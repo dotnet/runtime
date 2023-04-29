@@ -7,10 +7,12 @@
 // 
 //     File: D:\a\_work\1\s\src\coreclr\jit\lowerxarch.cpp Line: 5118
 // 
+using Xunit;
 public class Program
 {
     public static bool s_26;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var vr2 = new uint[,] { { 0 } };
         int vr7 = default(int);

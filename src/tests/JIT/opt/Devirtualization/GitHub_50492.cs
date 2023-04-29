@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 class Base
 {
@@ -23,7 +24,8 @@ class ClassB : ClassA
 
 class Program
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {

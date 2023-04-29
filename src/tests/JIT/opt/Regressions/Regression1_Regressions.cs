@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class C0
 {
@@ -22,7 +23,8 @@ public class Program
    public static IRuntime s_rt;
    public static int[][] s_13 = new int[][] { new int[] { 0 } };
 
-   public static int Main()
+   [Fact]
+   public static int TestEntryPoint()
    {
        s_rt = new Runtime();
        var result = M74(0);

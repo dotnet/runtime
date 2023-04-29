@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace JitInliningTest
 {
@@ -107,7 +108,8 @@ namespace JitInliningTest
         private static long f98() { return f97() + 1; }
         private static long f99() { return f98() + 1; }
         private static long f100() { return f99() + 1; }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return (int)f100();
         }

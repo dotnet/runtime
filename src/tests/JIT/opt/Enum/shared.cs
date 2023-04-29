@@ -6,6 +6,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class MyG<T,U> 
 {
@@ -24,7 +25,8 @@ class MyG<T,U>
 
 class My 
 {
-    public static int Main() 
+    [Fact]
+    public static int TestEntryPoint() 
     {
         int result = 0;
         try 

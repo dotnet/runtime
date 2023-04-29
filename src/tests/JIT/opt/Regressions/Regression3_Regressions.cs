@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class C1
 {
@@ -21,7 +22,8 @@ public class Program
     public static bool s_25;
     public static short[] s_42;
     public static S0[][] s_43 = new S0[][]{new S0[]{new S0()}};
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         CollectibleALC alc = new CollectibleALC();
         System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(System.Reflection.Assembly.GetExecutingAssembly().Location);

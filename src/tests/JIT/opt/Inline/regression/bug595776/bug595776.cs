@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 internal class Buffer
 {
     private byte[] _buffer;
@@ -41,7 +42,8 @@ internal class Buffer
 
 internal class Test_bug595776
 {
-    private static int Main()
+    [Fact]
+    private static int TestEntryPoint()
     {
         Buffer b1 = new Buffer("Abra-cadabra");
         int result = 0;

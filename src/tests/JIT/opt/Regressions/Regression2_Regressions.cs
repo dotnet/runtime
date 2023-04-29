@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
@@ -60,7 +61,8 @@ public class Program
         }
     }
 
-    static int Main()
+    [Fact]
+    static int TestEntryPoint()
     {
         Add_SmallType_Correctness();
         Sub_SmallType_Correctness();

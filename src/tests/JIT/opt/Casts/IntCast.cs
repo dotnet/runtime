@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
@@ -26,7 +27,8 @@ namespace CodeGenTests
             return (long)value1 + (long)value2;
         }
 
-        static int Main()
+        [Fact]
+        static int TestEntryPoint()
         {
             if (Cast_Short_To_Long(Int16.MaxValue) != 32767)
                 return 0;

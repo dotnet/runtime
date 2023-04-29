@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Method creates has two OSR methods
 
@@ -34,7 +35,8 @@ class TwoOSRMethods
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int final = 1_000_000;
         int result1 = F(0, final, true);

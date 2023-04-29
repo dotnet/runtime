@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Numerics;
+using Xunit;
 
 
 namespace TestStructFields
@@ -1713,7 +1714,8 @@ namespace TestStructFields
             return 100;
         }
 
-        static int Main()
+        [Fact]
+        static int TestEntryPoint()
         {
             return Test();
         }

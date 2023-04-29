@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 class EqualityComparer_GitHub_10050
 {
@@ -111,7 +112,8 @@ class EqualityComparer_GitHub_10050
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int h = Hoist();
         int s = Sink(33, 33);

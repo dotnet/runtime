@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 interface IPrint 
 {
@@ -17,7 +18,8 @@ struct X<T> : IPrint
 
 class Y
 {
-    static int Main()
+    [Fact]
+    static int TestEntryPoint()
     {
         var s = new X<string>("hello, world!");
         // Jit should devirtualize, remove box,

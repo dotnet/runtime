@@ -4,10 +4,12 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 class StaticReadonlyStructWithGC
 {
-    static int Main()
+    [Fact]
+    static int TestEntryPoint()
     {
         // Pre-initialize host type
         RuntimeHelpers.RunClassConstructor(typeof(StaticReadonlyStructWithGC).TypeHandle);

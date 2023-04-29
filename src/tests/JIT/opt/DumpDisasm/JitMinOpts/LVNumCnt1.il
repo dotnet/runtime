@@ -5,6 +5,7 @@
 // V2000 (loc2000)      int
 // OPTIONS: opts.MinOpts() == true
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -13,6 +14,9 @@
 .assembly LVNumCnt1_DumpDisasm {}
 .method public static int32 Main()
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 call int32 TestLVNumCnt()
 ldc.i4 100000199

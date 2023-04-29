@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class IntegerSumLoop
 {
@@ -18,7 +19,8 @@ class IntegerSumLoop
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int final = 1_000_000;
         long frequency = Stopwatch.Frequency;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 internal class A
 {
     public virtual string f1() { return "A.f1"; }
@@ -12012,7 +12013,8 @@ internal class D : C
 }
 internal class CTest
 {
-    private static int Main()
+    [Fact]
+    private static int TestEntryPoint()
     {
         D d = new D();
         A a = d;

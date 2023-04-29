@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
@@ -257,7 +258,8 @@ namespace CodeGenTests
 
         }
 
-        static int Main()
+        [Fact]
+        static int TestEntryPoint()
         {
             if (UInt32_MultiplyWithUInt32MaxValue(1) != UInt32.MaxValue)
                 return 0;

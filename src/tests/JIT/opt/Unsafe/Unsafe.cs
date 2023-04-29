@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
@@ -29,7 +30,8 @@ namespace CodeGenTests
             return Unsafe.As<long, byte>(ref value);
         }
 
-        static int Main()
+        [Fact]
+        static int TestEntryPoint()
         {
             if (UnsafeAsNarrowCast_Short(255) != 255)
                 return 0;

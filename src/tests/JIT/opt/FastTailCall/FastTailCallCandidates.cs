@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices; 
 using System.Runtime.InteropServices;
+using Xunit;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Types
@@ -1871,7 +1872,8 @@ public class FastTailCallCandidates
     // Main
     ////////////////////////////////////////////////////////////////////////////
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Tester(1);
     }

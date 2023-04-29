@@ -6,6 +6,7 @@
 // TID 330: IL Code Size,Instr 1893, 560, Basic Block count   1, Local Variable Num,Ref count 2000,279 for method <Module>.f():int
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -14,6 +15,9 @@
 .assembly LVNumCnt0 {}
 .method public static int32  Main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   // Code size       12 (0xc)
   .maxstack  8

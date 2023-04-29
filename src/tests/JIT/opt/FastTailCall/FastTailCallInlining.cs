@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Test_FastTailCallInlining
 {
-   public static int Main()
+   [Fact]
+   public static int TestEntryPoint()
    {
        A(2);
        return 100;

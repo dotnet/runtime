@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct ArrayWrapper
 {
@@ -35,7 +36,8 @@ class Runtime_61040_1
     [MethodImpl(MethodImplOptions.NoInlining)]
     static ArrayWrapper GetArrayLong() => new() { Array = new int[10000] };
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = -1;
         try

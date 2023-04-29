@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CSEWithDoubleNegation
 {
@@ -10,7 +11,8 @@ namespace CSEWithDoubleNegation
     {
         private static int _static = 0;
 
-        static int Main()
+        [Fact]
+        static int TestEntryPoint()
         {
             if (DoubleNeg() != 22)
             {

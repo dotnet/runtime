@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class ConditionalIncrementTest
 {
@@ -84,7 +85,8 @@ public class ConditionalIncrementTest
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (cinc_byte(72) != 6)
         {

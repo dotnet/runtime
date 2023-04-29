@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public class Program
 {
@@ -11,7 +12,8 @@ public class Program
     private static IFoo<Program> _foo;
     private static IFooCov<object> _fooCov;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         _foo = new Foo1<Program>();
         _fooCov = new Foo1Cov<Program>();

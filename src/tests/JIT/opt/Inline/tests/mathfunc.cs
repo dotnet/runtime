@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace JitInliningTest
 {
@@ -15,7 +16,8 @@ namespace JitInliningTest
             _ => DefaultSeed
         };
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Random r = new Random(Seed);
 

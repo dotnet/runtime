@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class B
 {
@@ -40,7 +41,8 @@ class X
         return S.F();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var p = S;
         int a = After();

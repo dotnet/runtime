@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 class ImprovedType
 {
@@ -11,7 +12,8 @@ class ImprovedType
         Console.WriteLine(o.ToString());
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Print("hello, world!");
         return 100;

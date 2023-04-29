@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Examples where methods potentially return multiple types
 // but the jit can prune the set down to one type during
@@ -92,7 +93,8 @@ public class Test
         return 100;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return TestEntry(false);
     }

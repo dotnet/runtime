@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 class Fact {
     static int factTR(int n, int a) {
@@ -23,7 +24,8 @@ class Fact {
         return n * factRx(n - 1, a, b, c);
     }
 
-    public static int Main() {
+    [Fact]
+    public static int TestEntryPoint() {
         int resultTR = fact(6);
         int resultR = factR(6);
         int resultRx = factRx(6);

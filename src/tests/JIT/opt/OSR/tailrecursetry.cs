@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Tail recursion, OSR entry in try region
 
@@ -29,7 +30,8 @@ class TailRecursionWithOsrEntryInTry
         return F(to, to + to - from, n-1, result);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine($"starting sum");
         int result = F(0, 100_000, 9, 0);

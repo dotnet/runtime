@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // OSR complications with promoted structs
 
@@ -41,7 +42,8 @@ class OSRMethodStructPromotion
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int final = 1_000_000;
         F(0, 10);

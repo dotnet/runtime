@@ -4,6 +4,7 @@
 // Setter 34 bytes il (inlined), Getter 36 bytes il (not-inlined)
 
 using System;
+using Xunit;
 
 namespace JitInliningTest
 {
@@ -18,7 +19,8 @@ namespace JitInliningTest
     }
     internal class PropTest
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             A a = new A();
             a.prop = 1;

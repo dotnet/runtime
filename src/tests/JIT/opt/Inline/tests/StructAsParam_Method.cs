@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Xunit;
 
 namespace ConsoleApplication1
 {
@@ -19,7 +20,8 @@ namespace ConsoleApplication1
             s.fieldinStruct = "xyz";
         }
 
-        private static int Main()
+        [Fact]
+        private static int TestEntryPoint()
         {
             TheStruct testStruct = new TheStruct();
 

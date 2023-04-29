@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace GitHub_16065a
 {
@@ -72,7 +73,8 @@ namespace GitHub_16065a
 
     class Program
     {
-        static int Main()
+        [Fact]
+        static int TestEntryPoint()
         {
             int result = 0;
             var A = new Matrix(new Array2D(0, 4));

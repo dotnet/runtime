@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
@@ -71,7 +72,8 @@ namespace CodeGenTests
             return (byte)(_fieldValueUnsigned % (Byte.MaxValue + 1));
         }
 
-        static int Main()
+        [Fact]
+        static int TestEntryPoint()
         {
             if (Int32_RemainderByOneWithValue(-123) != 0)
                 return 0;

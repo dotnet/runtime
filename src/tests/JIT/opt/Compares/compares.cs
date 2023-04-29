@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class FullRangeComparisonTest
 {
@@ -425,7 +426,8 @@ public class FullRangeComparisonTest
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Optimize comparison with full range values
         // RHS Const Optimization

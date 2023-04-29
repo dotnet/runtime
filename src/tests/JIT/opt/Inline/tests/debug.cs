@@ -4,6 +4,7 @@
 // Getter and Setter, simple, compiled debug+, both should NOT be inlined.
 
 using System;
+using Xunit;
 public class A
 {
     private int _prop;
@@ -15,7 +16,8 @@ public class A
 }
 internal class debug
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         A a = new A();
         a.prop = 100;

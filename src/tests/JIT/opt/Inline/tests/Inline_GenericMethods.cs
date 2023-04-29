@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Xunit;
 
 namespace Inline_GenericMethods
 {
@@ -14,7 +15,8 @@ namespace Inline_GenericMethods
             Console.WriteLine(typeof(T));
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

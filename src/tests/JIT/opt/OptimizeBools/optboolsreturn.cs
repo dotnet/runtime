@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class CBoolTest
 {
@@ -191,7 +192,8 @@ public class CBoolTest
         return b;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Optimize boolean
 

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Nested do lops
 
@@ -20,7 +21,8 @@ class NestedDoLoops
         return outer;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine($"starting sum");
         int result1 = F(0, 10, 0, 100_000);

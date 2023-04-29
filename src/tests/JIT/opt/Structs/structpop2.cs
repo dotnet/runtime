@@ -9,6 +9,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Sequential)]
 struct VT
@@ -42,7 +43,8 @@ class P
         return Do(v1);
     }
     
-    unsafe static int Main()
+    [Fact]
+    unsafe static int TestEntryPoint()
     {
         byte* pDataBytes = stackalloc byte[VT.Size];
         VT* pVT = (VT*)pDataBytes;

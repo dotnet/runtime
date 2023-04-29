@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class ComparisonTestAnd2Chains
 {
@@ -295,7 +296,8 @@ public class ComparisonTestAnd2Chains
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (!Eq_byte_2(10, 11))
         {

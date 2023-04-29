@@ -7,6 +7,7 @@
 //
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class TestClass8505
 {
     static int s_int32_6 = -5;
@@ -41,7 +42,8 @@ public class TestClass8505
             return;
         }
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestClass8505 objTestClass8505 = new TestClass8505();
         objTestClass8505.Method0();

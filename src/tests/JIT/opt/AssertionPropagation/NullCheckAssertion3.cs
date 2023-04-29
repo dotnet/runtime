@@ -4,6 +4,7 @@
 //Unit test for Null check assertion propagation.
 
 using System;
+using Xunit;
 
 internal class Point
 {
@@ -36,7 +37,8 @@ internal class Sample5
         return h;
     }
 
-    private static int Main()
+    [Fact]
+    private static int TestEntryPoint()
     {
         try
         {

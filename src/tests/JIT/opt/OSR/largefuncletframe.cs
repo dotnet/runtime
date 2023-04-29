@@ -9,6 +9,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class LargeFuncletFrame
 {
@@ -203,7 +204,8 @@ public class LargeFuncletFrame
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         new LargeFuncletFrame().Method0();
         return 100;

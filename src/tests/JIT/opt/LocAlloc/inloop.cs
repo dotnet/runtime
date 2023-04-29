@@ -5,6 +5,7 @@
 // to local buffer
 
 using System;
+using Xunit;
 
 unsafe class Program
 {
@@ -35,7 +36,8 @@ unsafe class Program
         return sum;
     }
 
-    static int Main()
+    [Fact]
+    static int TestEntryPoint()
     {
         return foo(10) + 55;
     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 interface I<in T>
 {
@@ -24,7 +25,8 @@ class T
         return i.A("A");
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Jit should inline F and then devirtualize
         // and inline the call to A.

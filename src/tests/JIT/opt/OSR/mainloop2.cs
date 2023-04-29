@@ -3,12 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Simple OSR test case -- nested loop in Main
 
 class MainNestedLoop
 {
-   public static int Main()
+   [Fact]
+   public static int TestEntryPoint()
    {
        long result = 0;
        for (int i = 0; i < 1_000; i++)

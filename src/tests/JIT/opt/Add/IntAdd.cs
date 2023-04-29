@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
@@ -86,7 +87,8 @@ namespace CodeGenTests
             return x + y;
         }
 
-        static int Main()
+        [Fact]
+        static int TestEntryPoint()
         {
             // Int8
             if (Int8_Add(SByte.MaxValue, 15) != -114)

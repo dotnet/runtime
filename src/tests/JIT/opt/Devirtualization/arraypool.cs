@@ -4,6 +4,7 @@
 using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class X
 {
@@ -16,7 +17,8 @@ class X
 
     // We expect calls to Rent and Return to be 
     // devirtualized.
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         N = 100;
         byte[] buffer = ArrayPool<byte>.Shared.Rent(N);

@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using Xunit;
 
 // Runtime issue 52975.
 //
@@ -37,7 +38,8 @@ class X
         return r;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Dictionary<string, string> s = new Dictionary<string, string>();
         s["hello"] = "world";

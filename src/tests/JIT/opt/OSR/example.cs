@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Example from the OSR doc
 
@@ -41,7 +42,8 @@ class OSR_Example
         return result == 499999500000 ? 100 : -1;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Test(null);
     }

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // OSR method has address exposed local
 
@@ -26,7 +27,8 @@ class AddressExposedLocal
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine($"starting sum");
         int result = F(0, 1_000_000);

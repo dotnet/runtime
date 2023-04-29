@@ -4,6 +4,7 @@
 //Simple dev unit test for constant propagation assertion.
 
 using System;
+using Xunit;
 
 internal class Sample1
 {
@@ -18,7 +19,8 @@ internal class Sample1
         else
             return y;
     }
-    private static int Main()
+    [Fact]
+    private static int TestEntryPoint()
     {
         bool failed = false;
         if (func(0) != 5)

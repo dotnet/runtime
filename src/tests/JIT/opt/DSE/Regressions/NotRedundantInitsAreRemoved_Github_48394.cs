@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct Struct1
 {
@@ -142,7 +143,8 @@ public class NotRedundantInitsAreRemoved_Github_48394
             goto label;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ReproFrom_GitHub_48394();
         TestTakeAddress();

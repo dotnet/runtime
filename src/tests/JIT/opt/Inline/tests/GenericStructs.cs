@@ -4,6 +4,7 @@
 //This test is used to check whether a method that takes a generic struct is inlined.
 
 using System;
+using Xunit;
 internal struct XY<T>
 {
     private T _x;
@@ -35,7 +36,8 @@ internal class StructTest
         xy.X = 10;
         xy.Y = 20;
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
@@ -18,7 +19,8 @@ public class Program
     }
 
     // Tests for https://github.com/dotnet/runtime/pull/61045 optimization
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         unchecked
         {

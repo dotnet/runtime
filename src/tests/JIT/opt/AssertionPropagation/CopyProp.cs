@@ -4,6 +4,7 @@
 //Unit test for copy propagation assertion.
 
 using System;
+using Xunit;
 
 internal class Sample2
 {
@@ -21,7 +22,8 @@ internal class Sample2
         return (sbyte)res;
     }
 
-    private static int Main()
+    [Fact]
+    private static int TestEntryPoint()
     {
         bool failed = false;
         if (func(1, 2) != -1)

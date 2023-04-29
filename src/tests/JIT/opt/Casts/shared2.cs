@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 interface IBar {}
 interface IFoo<T> {}
@@ -71,7 +72,8 @@ class X
         return (t as IBar) != null;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var c = new C();
         var ci = new C<int>();

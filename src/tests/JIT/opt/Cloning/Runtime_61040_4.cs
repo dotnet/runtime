@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class Runtime_61040_4
 {
@@ -44,6 +45,7 @@ class Runtime_61040_4
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int[] GetArrayLong() => new int[10000];
 
-    public static int Main() => Problem();
+    [Fact]
+    public static int TestEntryPoint() => Problem();
 }
 

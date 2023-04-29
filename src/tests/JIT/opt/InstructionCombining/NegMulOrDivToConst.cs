@@ -13,6 +13,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace TestIntLimits
 {
@@ -339,7 +340,8 @@ namespace TestIntLimits
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long LongNegDivMinus1(long a) => -(a / -1);
 
-        static int Main()
+        [Fact]
+        static int TestEntryPoint()
         {
             if (CheckMulNeg() != 100)
             {

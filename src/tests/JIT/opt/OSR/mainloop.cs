@@ -3,12 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Simple OSR test case -- long running loop in Main
 
 class MainLoop
 {
-   public static int Main()
+   [Fact]
+   public static int TestEntryPoint()
    {
        long result = 0;
        for (int i = 0; i < 1_000_000; i++)

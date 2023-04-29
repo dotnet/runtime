@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct S
 {
@@ -236,7 +237,8 @@ public class ImplicitByrefTailCalls
         return Alias7(s, ref s);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         S s = new S();
         s.s_x = 1;

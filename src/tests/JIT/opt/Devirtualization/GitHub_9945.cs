@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Base
 {
@@ -67,7 +68,8 @@ public class Test
         return b.value;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return TestEntry(false);
     }

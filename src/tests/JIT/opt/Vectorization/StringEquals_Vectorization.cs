@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class StringEquals
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int testCount = 0;
         foreach (var method in typeof(Tests).GetMethods())

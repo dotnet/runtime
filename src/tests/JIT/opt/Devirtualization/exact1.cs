@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // The jit should be able to inline M() if it gets the
 // exact context G<string>
@@ -15,5 +16,6 @@ class G<T>
 
 class Program
 {
-    static int Main() => new G<string>().M() ? 100 : -1;
+    [Fact]
+    static int TestEntryPoint() => new G<string>().M() ? 100 : -1;
 }

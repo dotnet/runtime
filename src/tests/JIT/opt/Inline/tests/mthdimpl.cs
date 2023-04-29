@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 internal class MthdImpl
 {
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -11,7 +12,8 @@ internal class MthdImpl
         return a + 3;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int retval = f(97);
         return retval;

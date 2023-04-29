@@ -1,4 +1,5 @@
 using System;
+using Xunit;
 
 public interface IGeneric<T>
 {
@@ -46,7 +47,8 @@ public class GenericClass<A,B> : IMakeClassMethodSealedVirtual
 
 public class GitHub_51918
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         IGeneric<int> genInterface = new GenericClass<int, string>().GetInnerClass();
         // Validate that two levels of inlining we don't behave incorrectly due to generic

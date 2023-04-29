@@ -9,6 +9,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 interface I
 {
@@ -55,7 +56,8 @@ class CloningForTypeTests
         return r;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int[] xs = new int[] { 1, 2, 3, 4 };
         int[] ys = new int[] { 4, 3, 2, 1 };

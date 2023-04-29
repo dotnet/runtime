@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
@@ -10,7 +11,8 @@ public class Program
     public static bool[,] s_32 = new bool[,] { { false } };
     public static sbyte[] s_53 = new sbyte[] { 0 };
     public static ushort s_62;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         s_rt = new Runtime();
         var vr9 = s_32[0, 0];

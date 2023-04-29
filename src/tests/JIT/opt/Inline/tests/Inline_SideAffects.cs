@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Xunit;
 
 namespace Inline_SideAffects
 {
@@ -22,7 +23,8 @@ namespace Inline_SideAffects
             s_i += 3;
             return false;
         }
-        private static int Main()
+        [Fact]
+        private static int TestEntryPoint()
         {
             if ((Foo_Inline()) && (Bar_Inline()))
             {

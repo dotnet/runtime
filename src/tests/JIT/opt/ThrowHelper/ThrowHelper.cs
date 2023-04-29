@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 class TestException : Exception
 {
@@ -505,7 +506,8 @@ class TestCases
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Try(OneThrowHelper);
         Try(OneThrowHelperTail);

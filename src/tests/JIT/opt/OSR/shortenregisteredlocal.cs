@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class ShortEnregisteredLocal
 {
     public struct S2
@@ -58,7 +59,8 @@ public class ShortEnregisteredLocal
             return;
         }
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         new ShortEnregisteredLocal().Method0();
         return 100;

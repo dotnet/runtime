@@ -8,6 +8,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 enum E
 {
@@ -101,7 +102,8 @@ class P
         return (E)h.v;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         E e1 = E.RED;
         E e2 = E.BLUE;

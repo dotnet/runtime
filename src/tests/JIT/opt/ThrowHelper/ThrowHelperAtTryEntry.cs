@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Test case where throw helper is in the try entry block.
 //
@@ -15,7 +16,8 @@ class ThrowHelperAtTryEntry
         throw new Exception();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int x = 0;
         bool p = true;

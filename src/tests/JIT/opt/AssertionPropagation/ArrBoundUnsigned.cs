@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class ArrBoundUnsigned
 {
@@ -300,7 +301,8 @@ class ArrBoundUnsigned
             return a[i];
     }
 
-    static int Main()
+    [Fact]
+    static int TestEntryPoint()
     {
         const int Pass = 100;
         const int Fail = -1;

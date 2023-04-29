@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class B 
 {
@@ -45,7 +46,8 @@ class X
         return b2.F()[0] + b1.F()[0] - 37;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return Test(false);
     }

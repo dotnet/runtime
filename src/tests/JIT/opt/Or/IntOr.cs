@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace CodeGenTests
 {
@@ -45,7 +46,8 @@ namespace CodeGenTests
             return false;
         }
 
-        static int Main()
+        [Fact]
+        static int TestEntryPoint()
         {
             uint leftMostBit  = 0b10000000000000000000000000000000;
             uint rightMostBit = 0b00000000000000000000000000000001;

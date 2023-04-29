@@ -5,11 +5,13 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 
 public unsafe class StackallocTests
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int numberOftests = 0;
         foreach (var method in typeof(StackallocTests)

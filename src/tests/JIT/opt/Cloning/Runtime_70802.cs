@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public class B 
 {
@@ -38,7 +39,8 @@ class Runtime_70802
         return r;     
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         D d = new D();
         

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Tail recursion candidate with OSR entry in a try region
 
@@ -29,7 +30,8 @@ class TailRecursionCandidateOSREntryInTry
         return F(to, to + delta, n-1, result, &result);
     }
 
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         int x = 0;
         int result = F(0, 100_000, 9, 0, &x);

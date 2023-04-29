@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public enum Enum1 : int { A }
 public enum Enum2 : uint { A }
@@ -130,7 +131,8 @@ class TypeTestFolding
     //    return t0 == t1;
     //}
 
-    unsafe static int Main()
+    [Fact]
+    unsafe static int TestEntryPoint()
     {
         delegate*<bool>[] trueFuncs = new delegate*<bool>[] { &True2, &True3, &True4, &True5 };
         delegate*<bool>[] falseFuncs = new delegate*<bool>[] { &False0, &False1, &False2, &False3, &False4, &False5,

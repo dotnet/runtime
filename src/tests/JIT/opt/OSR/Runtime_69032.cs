@@ -4,6 +4,7 @@
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Assert in F() with OSR+PGO
 
@@ -21,7 +22,8 @@ class Runtime_69032
         return n;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return F(10_000) / 100;
     }

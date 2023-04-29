@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct StructWithIndex
 {
@@ -41,5 +42,6 @@ class Runtime_61040_3
     [MethodImpl(MethodImplOptions.NoInlining)]
     static StructWithIndex GetStructWithIndex() => new() { Index = 100_000_000 };
     
-    public static int Main() => Problem(new() { Index = 0, Value = 33 }, new int[10]);
+    [Fact]
+    public static int TestEntryPoint() => Problem(new() { Index = 0, Value = 33 }, new int[10]);
 }

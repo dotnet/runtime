@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class Program
 {
@@ -10,7 +11,8 @@ class Program
 
     private static int[] arr = new int[6];
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         RunTestThrows(Tests.GreaterOutOfBound);
         RunTestThrows(Tests.GreaterEqualOutOfBound);
