@@ -20,9 +20,9 @@ namespace Sandbox3
 
     public class Dummy { }
 
-    internal class Program
+    public class Program
     {
-        private static int Main()
+        public static int Main()
         {
             string s = "hello";
 

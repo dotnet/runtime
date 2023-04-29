@@ -43,7 +43,7 @@ class MyCounter<T> where T : IncrDecr
         return counter.GetHashCode();
     }
 }
-class test
+public class test
 {
     public static int Main()
     {

@@ -57,7 +57,7 @@ enum DS
     Day = 1, Night = 0
 };
 
-struct mainMethod
+public struct mainMethod
 {
     public static bool failed = false;
     public static void checkGetTypeValueType(System.ValueType x)

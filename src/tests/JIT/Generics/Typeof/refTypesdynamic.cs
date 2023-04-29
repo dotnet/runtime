@@ -87,7 +87,7 @@ sealed class DS : B
     public override void incCount() { ds_count *= 41; }
 }
 
-class mainMethod
+public class mainMethod
 {
     public static bool failed = false;
     public static void checkGetType<T>(X<T> x)

@@ -20,7 +20,7 @@ internal struct Foo<T> : IFoo<T>
     }
 }
 
-internal class Test_Delegate022
+public class Test_Delegate022
 {
     public static int Main()
     {

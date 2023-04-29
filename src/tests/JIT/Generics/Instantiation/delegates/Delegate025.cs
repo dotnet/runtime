@@ -15,7 +15,7 @@ internal class Foo
     }
 }
 
-internal class Test_Delegate025
+public class Test_Delegate025
 {
     public static int Main()
     {

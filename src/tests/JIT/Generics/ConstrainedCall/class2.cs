@@ -65,7 +65,7 @@ class MyCounter<T> where T : IncrDecr, new()
         return counters[index].Val();
     }
 }
-class test
+public class test
 {
     public static int Main()
     {

@@ -61,13 +61,13 @@
 // class MyException : Exception, IMyInterface {}
 
 
-.class private abstract auto ansi sealed beforefieldinit GenericCatchInterfaceProgram
+.class public abstract auto ansi sealed beforefieldinit GenericCatchInterfaceProgram
        extends [System.Runtime]System.Object
 {
   // 
   .field private static int32 retCode
 
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .entrypoint
     .maxstack  2
