@@ -179,6 +179,52 @@ struct Replacement
     }
 };
 
+//------------------------------------------------------------------------
+// CreateWriteBack:
+//   Create IR that writes a replacement local's value back to its struct local:
+//
+//     ASG
+//       LCL_FLD int V00 [+4]
+//       LCL_VAR int V01
+//
+// Parameters:
+//   structLclNum - Struct local
+//   replacement  - Information about the replacement
+//
+// Returns:
+//   IR nodes.
+//
+static GenTree* CreateWriteBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement)
+{
+    GenTree* dst = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
+    GenTree* src = compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
+    GenTree* asg = compiler->gtNewAssignNode(dst, src);
+    return asg;
+}
+
+//------------------------------------------------------------------------
+// CreateReadBack:
+//   Create IR that reads a replacement local's value back from its struct local:
+//
+//     ASG
+//       LCL_VAR int V01
+//       LCL_FLD int V00 [+4]
+//
+// Parameters:
+//   structLclNum - Struct local
+//   replacement  - Information about the replacement
+//
+// Returns:
+//   IR nodes.
+//
+static GenTree* CreateReadBack(Compiler* compiler, unsigned structLclNum, const Replacement& replacement)
+{
+    GenTree* dst = compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
+    GenTree* src = compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
+    GenTree* asg = compiler->gtNewAssignNode(dst, src);
+    return asg;
+}
+
 enum class AccessKindFlags : uint32_t
 {
     None                    = 0,
@@ -982,10 +1028,12 @@ class DecompositionPlan
 {
     struct Entry
     {
-        unsigned  ToLclNum;
-        unsigned  FromLclNum;
-        unsigned  Offset;
-        var_types Type;
+        unsigned     ToLclNum;
+        Replacement* ToReplacement;
+        unsigned     FromLclNum;
+        Replacement* FromReplacement;
+        unsigned     Offset;
+        var_types    Type;
     };
 
     Compiler*         m_compiler;
@@ -1006,20 +1054,53 @@ public:
 
     //------------------------------------------------------------------------
     // CopyBetweenReplacements:
-    //   Add an entry specifying to copy from a local into another local.
+    //   Add an entry specifying to copy from a replacement into another replacement.
     //
     // Parameters:
-    //   dstLcl - The destination local to write.
-    //   srcLcl - The source local.
+    //   dstRep - The destination replacement.
+    //   srcRep - The source replacement.
+    //   offset - The offset this covers in the struct copy.
+    //   type   - The type of copy.
+    //
+    void CopyBetweenReplacements(Replacement* dstRep, Replacement* srcRep, unsigned offset)
+    {
+        m_entries.Push(Entry{dstRep->LclNum, dstRep, srcRep->LclNum, srcRep, offset, dstRep->AccessType});
+    }
+
+    //------------------------------------------------------------------------
+    // CopyBetweenReplacements:
+    //   Add an entry specifying to copy from a promoted field into a replacement.
+    //
+    // Parameters:
+    //   dstRep - The destination replacement.
+    //   srcLcl - Local number of regularly promoted source field.
     //   offset - The offset this covers in the struct copy.
     //   type   - The type of copy.
     //
     // Remarks:
-    //   This may be used for cases where the destination or source is a regularly promoted field.
+    //   Used when the source local is a regular promoted field.
     //
-    void CopyBetweenReplacements(unsigned dstLcl, unsigned srcLcl, unsigned offset, var_types type)
+    void CopyBetweenReplacements(Replacement* dstRep, unsigned srcLcl, unsigned offset)
     {
-        m_entries.Push(Entry{dstLcl, srcLcl, offset, type});
+        m_entries.Push(Entry{dstRep->LclNum, dstRep, srcLcl, nullptr, offset, dstRep->AccessType});
+    }
+
+    //------------------------------------------------------------------------
+    // CopyBetweenReplacements:
+    //   Add an entry specifying to copy from a promoted field into a replacement.
+    //
+    // Parameters:
+    //   dstRep - The destination replacement.
+    //   srcLcl - Local number of regularly promoted source field.
+    //   offset - The offset this covers in the struct copy.
+    //   type   - The type of copy.
+    //
+    // Remarks:
+    //   Used when the source local is a regular promoted field.
+    //
+    void CopyBetweenReplacements(unsigned dstLcl, Replacement* srcRep, unsigned offset)
+    {
+        m_entries.Push(Entry{dstLcl, nullptr, srcRep->LclNum, srcRep, offset, srcRep->AccessType});
     }
 
     //------------------------------------------------------------------------
@@ -1031,9 +1112,23 @@ public:
     //   offset - The relative offset into the source.
     //   type   - The type of copy.
     //
-    void CopyToReplacement(unsigned dstLcl, unsigned offset, var_types type)
+    void CopyToReplacement(Replacement* dstRep, unsigned offset)
     {
-        m_entries.Push(Entry{dstLcl, BAD_VAR_NUM, offset, type});
+        m_entries.Push(Entry{dstRep->LclNum, dstRep, BAD_VAR_NUM, nullptr, offset, dstRep->AccessType});
+    }
+
+    //------------------------------------------------------------------------
+    // CopyFromReplacement:
+    //   Add an entry specifying to copy from a replacement local into the destination.
+    //
+    // Parameters:
+    //   srcLcl - The source local to copy from.
+    //   offset - The relative offset into the destination to write.
+    //   type   - The type of copy.
+    //
+    void CopyFromReplacement(Replacement* srcRep, unsigned offset)
+    {
+        m_entries.Push(Entry{BAD_VAR_NUM, nullptr, srcRep->LclNum, srcRep, offset, srcRep->AccessType});
     }
 
     //------------------------------------------------------------------------
@@ -1047,7 +1142,7 @@ public:
     //
     void CopyFromReplacement(unsigned srcLcl, unsigned offset, var_types type)
     {
-        m_entries.Push(Entry{BAD_VAR_NUM, srcLcl, offset, type});
+        m_entries.Push(Entry{BAD_VAR_NUM, nullptr, srcLcl, nullptr, offset, type});
     }
 
     //------------------------------------------------------------------------
@@ -1060,9 +1155,9 @@ public:
     //   offset - The offset covered by this initialization.
     //   type   - The type to initialize.
     //
-    void InitReplacement(unsigned dstLcl, unsigned offset, var_types type)
+    void InitReplacement(Replacement* dstRep, unsigned offset)
     {
-        m_entries.Push(Entry{dstLcl, BAD_VAR_NUM, offset, type});
+        m_entries.Push(Entry{dstRep->LclNum, dstRep, BAD_VAR_NUM, nullptr, offset, dstRep->AccessType});
     }
 
     //------------------------------------------------------------------------
@@ -1301,12 +1396,10 @@ private:
         }
 
         StructSegments::Segment segment;
-        // See if we can "plug the hole" with a single primitive. For LCL_VAR
-        // destinations do not do this as it will essentially add a use of the
-        // local due to the partial def -- so it is better to prefer the full
-        // def that DCE might be able to get rid of.
+        // See if we can "plug the hole" with a single primitive.
+        // TODO-CQ: Why does doing this for LCL_VAR result in so many regressions?
         // TODO-CQ: Once we have liveness we can unlock this for LCL_VARs.
-        if (remainder.IsSingleSegment(&segment) && !m_dst->OperIs(GT_LCL_VAR))
+        if (remainder.IsSingleSegment(&segment))
         {
             var_types primitiveType = TYP_UNDEF;
             unsigned  size          = segment.End - segment.Start;
@@ -1339,17 +1432,17 @@ private:
             {
                 if (!IsInit() || CanInitPrimitive(primitiveType))
                 {
-                    JITDUMP("  => remainder strategy: %s at %03u\n", varTypeName(primitiveType), segment.Start);
+                    JITDUMP("  => Remainder strategy: %s at %03u\n", varTypeName(primitiveType), segment.Start);
                     return RemainderStrategy(RemainderStrategy::Primitive, segment.Start, primitiveType);
                 }
                 else
                 {
-                    JITDUMP("Cannot handle initing remainder as primitive of type %s\n", varTypeName(primitiveType));
+                    JITDUMP("  Cannot handle initing remainder as primitive of type %s\n", varTypeName(primitiveType));
                 }
             }
         }
 
-        JITDUMP("  => remainder strategy: retain a full block op\n");
+        JITDUMP("  => Remainder strategy: retain a full block op\n");
         return RemainderStrategy(RemainderStrategy::FullBlock);
     }
 
@@ -1466,6 +1559,33 @@ private:
 
         RemainderStrategy remainderStrategy = DetermineRemainderStrategy();
 
+        // If the remainder is a full block and is going to incur write barrier
+        // then avoid incurring multiple write barriers for each source
+        // replacement that is a GC pointer -- write them back to the struct
+        // first instead.
+        if ((remainderStrategy.Type == RemainderStrategy::FullBlock) && m_dst->OperIs(GT_BLK, GT_FIELD) &&
+            m_dst->GetLayout(m_compiler)->HasGCPtr())
+        {
+            for (int i = 0; i < m_entries.Height(); i++)
+            {
+                const Entry& entry = m_entries.BottomRef(i);
+                // TODO: Double check that TYP_BYREF do not incur any write barriers.
+                if ((entry.FromReplacement != nullptr) && (entry.Type == TYP_REF))
+                {
+                    Replacement* rep = entry.FromReplacement;
+                    if (rep->NeedsWriteBack)
+                    {
+                        statements->AddStatement(
+                            CreateWriteBack(m_compiler, m_src->AsLclVarCommon()->GetLclNum(), *rep));
+                        JITDUMP("  Will write back V%02u (%s) to avoid an additional write barrier\n", rep->LclNum,
+                                rep->Description);
+
+                        rep->NeedsWriteBack = false;
+                    }
+                }
+            }
+        }
+
         GenTree*     addr         = nullptr;
         unsigned     addrBaseOffs = 0;
         GenTreeFlags indirFlags   = GTF_EMPTY;
@@ -1497,10 +1617,18 @@ private:
 
         if (addr != nullptr)
         {
-            numAddrUses += m_entries.Height();
+            for (int i = 0; i < m_entries.Height(); i++)
+            {
+                if (!IsHandledByRemainder(m_entries.BottomRef(i), remainderStrategy))
+                {
+                    numAddrUses++;
+                }
+            }
 
             if (remainderStrategy.Type != RemainderStrategy::NoRemainder)
+            {
                 numAddrUses++;
+            }
         }
 
         bool needsNullCheck = false;
@@ -1510,12 +1638,20 @@ private:
             {
                 case RemainderStrategy::NoRemainder:
                 case RemainderStrategy::Primitive:
+                    needsNullCheck = true;
                     // See if our first indirection will subsume the null check (usual case).
-                    assert(m_entries.Height() > 0);
-                    const Entry& entry = m_entries.BottomRef(0);
+                    for (int i = 0; i < m_entries.Height(); i++)
+                    {
+                        if (IsHandledByRemainder(m_entries.BottomRef(i), remainderStrategy))
+                        {
+                            continue;
+                        }
 
-                    assert((entry.FromLclNum == BAD_VAR_NUM) || (entry.ToLclNum == BAD_VAR_NUM));
-                    needsNullCheck = m_compiler->fgIsBigOffset(addrBaseOffs + entry.Offset);
+                        const Entry& entry = m_entries.BottomRef(0);
+
+                        assert((entry.FromLclNum == BAD_VAR_NUM) || (entry.ToLclNum == BAD_VAR_NUM));
+                        needsNullCheck = m_compiler->fgIsBigOffset(addrBaseOffs + entry.Offset);
+                    }
                     break;
             }
         }
@@ -1617,6 +1753,14 @@ private:
         for (int i = 0; i < m_entries.Height(); i++)
         {
             const Entry& entry = m_entries.BottomRef(i);
+
+            if (IsHandledByRemainder(entry, remainderStrategy))
+            {
+                JITDUMP("  Skipping dst+%03u <- V%02u (%s); it is up-to-date in its struct local and will be handled "
+                        "as part of the remainder\n",
+                        entry.Offset, entry.FromReplacement->LclNum, entry.FromReplacement->Description);
+                continue;
+            }
 
             GenTree* dst;
             if (entry.ToLclNum != BAD_VAR_NUM)
@@ -1722,6 +1866,14 @@ private:
         assert(numAddrUses == 0);
     }
 
+    bool IsHandledByRemainder(const Entry& entry, const RemainderStrategy& remainderStrategy)
+    {
+        // If the remainder is being handled as a full block copy and this
+        // replacement is up-to-date in its struct local then we can skip
+        // copying the replacement explicitly.
+        return (remainderStrategy.Type == RemainderStrategy::FullBlock) && (entry.FromReplacement != nullptr) &&
+               !entry.FromReplacement->NeedsWriteBack && (entry.ToLclNum == BAD_VAR_NUM);
+    }
     //------------------------------------------------------------------------
     // GetPropagatedIndirFlags:
     //   Convert GT_BLK or GT_FIELD indir flags into flags that should be
@@ -1945,7 +2097,7 @@ public:
                         // operation.
                         // We accomplish this by an initial write back, the struct copy, followed by a later read back.
                         // TODO-CQ: This is very expensive and unreflected in heuristics, but it is also very rare.
-                        result.AddStatement(CreateWriteBack(dstLcl->GetLclNum(), *dstFirstRep));
+                        result.AddStatement(CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstFirstRep));
 
                         dstFirstRep->NeedsWriteBack = false;
                     }
@@ -1965,7 +2117,7 @@ public:
                                     "read-backs are "
                                     "necessary.\n",
                                     dstLastRep->LclNum, dstLastRep->Description);
-                            result.AddStatement(CreateWriteBack(dstLcl->GetLclNum(), *dstLastRep));
+                            result.AddStatement(CreateWriteBack(m_compiler, dstLcl->GetLclNum(), *dstLastRep));
 
                             dstLastRep->NeedsWriteBack = false;
                         }
@@ -1989,7 +2141,7 @@ public:
                             "*** Block operation partially overlaps with source V%02u (%s). Write back is necessary.\n",
                             srcFirstRep->LclNum, srcFirstRep->Description);
 
-                        result.AddStatement(CreateWriteBack(srcLcl->GetLclNum(), *srcFirstRep));
+                        result.AddStatement(CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcFirstRep));
 
                         srcFirstRep->NeedsWriteBack = false;
                     }
@@ -2008,7 +2160,7 @@ public:
                                     "necessary.\n",
                                     srcLastRep->LclNum, srcLastRep->Description);
 
-                            result.AddStatement(CreateWriteBack(srcLcl->GetLclNum(), *srcLastRep));
+                            result.AddStatement(CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcLastRep));
                             srcLastRep->NeedsWriteBack = false;
                         }
 
@@ -2078,7 +2230,7 @@ public:
             }
 
             JITDUMP("  Init V%02u (%s)\n", rep->LclNum, rep->Description);
-            plan->InitReplacement(rep->LclNum, rep->Offset - dst->GetLclOffs(), rep->AccessType);
+            plan->InitReplacement(rep, rep->Offset - dst->GetLclOffs());
             rep->NeedsWriteBack = true;
             rep->NeedsReadBack  = false;
         }
@@ -2128,7 +2280,7 @@ public:
                         srcRep->Description);
 
                 assert(srcLcl != nullptr);
-                statements->AddStatement(CreateReadBack(srcLcl->GetLclNum(), *srcRep));
+                statements->AddStatement(CreateReadBack(m_compiler, srcLcl->GetLclNum(), *srcRep));
                 srcRep->NeedsReadBack = false;
                 assert(!srcRep->NeedsWriteBack);
             }
@@ -2140,7 +2292,7 @@ public:
                     // This source replacement ends before the next destination replacement starts.
                     // Write it directly to the destination struct local.
                     unsigned offs = srcRep->Offset - srcBaseOffs;
-                    plan->CopyFromReplacement(srcRep->LclNum, offs, srcRep->AccessType);
+                    plan->CopyFromReplacement(srcRep, offs);
                     JITDUMP("  dst+%03u <- V%02u (%s)\n", offs, srcRep->LclNum, srcRep->Description);
                     srcRep++;
                     continue;
@@ -2151,7 +2303,7 @@ public:
                     // Destination replacement ends before the next source replacement starts.
                     // Read it directly from the source struct local.
                     unsigned offs = dstRep->Offset - dstBaseOffs;
-                    plan->CopyToReplacement(dstRep->LclNum, offs, dstRep->AccessType);
+                    plan->CopyToReplacement(dstRep, offs);
                     JITDUMP("  V%02u (%s) <- src+%03u\n", dstRep->LclNum, dstRep->Description, offs);
                     dstRep->NeedsWriteBack = true;
                     dstRep->NeedsReadBack  = false;
@@ -2164,8 +2316,7 @@ public:
                 if (((dstRep->Offset - dstBaseOffs) == (srcRep->Offset - srcBaseOffs)) &&
                     (dstRep->AccessType == srcRep->AccessType))
                 {
-                    plan->CopyBetweenReplacements(dstRep->LclNum, srcRep->LclNum, dstRep->Offset - dstBaseOffs,
-                                                  dstRep->AccessType);
+                    plan->CopyBetweenReplacements(dstRep, srcRep, dstRep->Offset - dstBaseOffs);
                     JITDUMP("  V%02u (%s) <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description, srcRep->LclNum,
                             srcRep->Description);
 
@@ -2179,7 +2330,7 @@ public:
                 // Partial overlap. Write source back to the struct local. We
                 // will handle the destination replacement in a future
                 // iteration of the loop.
-                statements->AddStatement(CreateWriteBack(srcLcl->GetLclNum(), *srcRep));
+                statements->AddStatement(CreateWriteBack(m_compiler, srcLcl->GetLclNum(), *srcRep));
                 JITDUMP("  Partial overlap of V%02u (%s) <- V%02u (%s). Will read source back before copy\n",
                         dstRep->LclNum, dstRep->Description, srcRep->LclNum, srcRep->Description);
                 srcRep++;
@@ -2200,7 +2351,7 @@ public:
                         LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
                         if (dsc->lvType == dstRep->AccessType)
                         {
-                            plan->CopyBetweenReplacements(dstRep->LclNum, fieldLcl, offs, dstRep->AccessType);
+                            plan->CopyBetweenReplacements(dstRep, fieldLcl, offs);
                             JITDUMP("  V%02u (%s) <- V%02u (%s)\n", dstRep->LclNum, dstRep->Description, dsc->lvReason);
                             dstRep->NeedsWriteBack = true;
                             dstRep->NeedsReadBack  = false;
@@ -2214,7 +2365,7 @@ public:
                 // DNER'ing it. Alternatively we could copy the promoted field
                 // directly to the destination's struct local and mark the
                 // overlapping fields as needing read back to avoid this DNER.
-                plan->CopyToReplacement(dstRep->LclNum, offs, dstRep->AccessType);
+                plan->CopyToReplacement(dstRep, offs);
                 JITDUMP("  V%02u (%s) <- src+%03u\n", dstRep->LclNum, dstRep->Description, offs);
                 dstRep->NeedsWriteBack = true;
                 dstRep->NeedsReadBack  = false;
@@ -2234,7 +2385,7 @@ public:
                         LclVarDsc* dsc = m_compiler->lvaGetDesc(fieldLcl);
                         if (dsc->lvType == srcRep->AccessType)
                         {
-                            plan->CopyBetweenReplacements(fieldLcl, srcRep->LclNum, offs, srcRep->AccessType);
+                            plan->CopyBetweenReplacements(fieldLcl, srcRep, offs);
                             JITDUMP("  V%02u (%s) <- V%02u (%s)\n", fieldLcl, dsc->lvReason, srcRep->LclNum,
                                     srcRep->Description);
                             srcRep++;
@@ -2243,7 +2394,7 @@ public:
                     }
                 }
 
-                plan->CopyFromReplacement(srcRep->LclNum, offs, srcRep->AccessType);
+                plan->CopyFromReplacement(srcRep, offs);
                 JITDUMP("  dst+%03u <- V%02u (%s)\n", offs, srcRep->LclNum, srcRep->Description);
                 srcRep++;
             }
@@ -2511,7 +2662,8 @@ public:
         }
         else if (rep.NeedsReadBack)
         {
-            *use = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(), CreateReadBack(lclNum, rep), *use);
+            *use =
+                m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(), CreateReadBack(m_compiler, lclNum, rep), *use);
             rep.NeedsReadBack = false;
 
             // TODO-CQ: Local copy prop does not take into account that the
@@ -2602,7 +2754,7 @@ public:
             if (rep.NeedsWriteBack)
             {
                 GenTreeOp* comma =
-                    m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(), CreateWriteBack(lcl, rep), *use);
+                    m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(), CreateWriteBack(m_compiler, lcl, rep), *use);
                 *use = comma;
                 use  = &comma->gtOp2;
 
@@ -2612,52 +2764,6 @@ public:
 
             index++;
         }
-    }
-
-    //------------------------------------------------------------------------
-    // CreateWriteBack:
-    //   Create IR that writes a replacement local's value back to its struct local:
-    //
-    //     ASG
-    //       LCL_FLD int V00 [+4]
-    //       LCL_VAR int V01
-    //
-    // Parameters:
-    //   structLclNum - Struct local
-    //   replacement  - Information about the replacement
-    //
-    // Returns:
-    //   IR nodes.
-    //
-    GenTree* CreateWriteBack(unsigned structLclNum, const Replacement& replacement)
-    {
-        GenTree* dst = m_compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
-        GenTree* src = m_compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
-        GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
-        return asg;
-    }
-
-    //------------------------------------------------------------------------
-    // CreateReadBack:
-    //   Create IR that reads a replacement local's value back from its struct local:
-    //
-    //     ASG
-    //       LCL_VAR int V01
-    //       LCL_FLD int V00 [+4]
-    //
-    // Parameters:
-    //   structLclNum - Struct local
-    //   replacement  - Information about the replacement
-    //
-    // Returns:
-    //   IR nodes.
-    //
-    GenTree* CreateReadBack(unsigned structLclNum, const Replacement& replacement)
-    {
-        GenTree* dst = m_compiler->gtNewLclvNode(replacement.LclNum, genActualType(replacement.AccessType));
-        GenTree* src = m_compiler->gtNewLclFldNode(structLclNum, replacement.AccessType, replacement.Offset);
-        GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
-        return asg;
     }
 
     //------------------------------------------------------------------------
@@ -2813,7 +2919,7 @@ PhaseStatus Promotion::Run()
                     JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n", i,
                             rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, bb->bbNum);
 
-                    GenTree*   readBack = replacer.CreateReadBack(i, rep);
+                    GenTree*   readBack = CreateReadBack(m_compiler, i, rep);
                     Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
                     DISPSTMT(stmt);
                     m_compiler->fgInsertStmtNearEnd(bb, stmt);
@@ -2869,12 +2975,9 @@ void Promotion::InsertInitialReadBack(unsigned                           lclNum,
 {
     for (unsigned i = 0; i < replacements.size(); i++)
     {
-        const Replacement& rep = replacements[i];
-
-        GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
-        GenTree* src = m_compiler->gtNewLclFldNode(lclNum, rep.AccessType, rep.Offset);
-        GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
-        InsertInitStatement(prevStmt, asg);
+        const Replacement& rep      = replacements[i];
+        GenTree*           readBack = CreateReadBack(m_compiler, lclNum, rep);
+        InsertInitStatement(prevStmt, readBack);
     }
 }
 
