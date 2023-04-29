@@ -17,12 +17,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace BenchmarksGame
 {
     public class SpectralNorm_3
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test(null);
         }

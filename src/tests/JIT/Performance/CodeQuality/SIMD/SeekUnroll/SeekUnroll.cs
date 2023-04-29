@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public static class SeekUnroll
 {
@@ -95,7 +96,8 @@ public static class SeekUnroll
     // Set of indices to pass to Test(int)
     static int[] IndicesToTest = new int[] { 1, 3, 11, 19, 27 };
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return TestEntry(null);
     }

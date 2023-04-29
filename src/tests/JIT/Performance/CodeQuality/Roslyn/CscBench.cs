@@ -9,6 +9,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public static class CscBench
 {
@@ -142,7 +143,8 @@ public class C {
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool result = true;
         if (!FindMscorlib())

@@ -53,6 +53,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Benchstone.MDBenchF
 {
@@ -599,7 +600,8 @@ public class MDLLoops
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var lloops = new MDLLoops();
         bool result = lloops.TestBase();

@@ -23,6 +23,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -35,7 +36,8 @@ namespace BenchmarksGame
         const int IC = 29573;
         static int seed = 42;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test(null);
         }

@@ -14,6 +14,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -72,7 +73,8 @@ namespace BenchmarksGame
             } while (true);
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test(null);
         }

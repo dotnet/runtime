@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace SIMD
 {
@@ -63,7 +64,8 @@ namespace SIMD
             Console.WriteLine("In benchmark mode, a larger set is computed but nothing is dumped.");
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test(Array.Empty<string>());
         }

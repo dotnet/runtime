@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Test code taken directly from https://github.com/dotnet/runtime/issues/7474
 // Laying the loop's early return path in-line can cost 30% on this micro-benchmark.
@@ -10,7 +11,8 @@ namespace Layout
 {
     public unsafe class SearchLoops
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // Make sure equal strings compare as such
             if (!LoopReturn("hello", "hello") || !LoopGoto("goodbye", "goodbye"))

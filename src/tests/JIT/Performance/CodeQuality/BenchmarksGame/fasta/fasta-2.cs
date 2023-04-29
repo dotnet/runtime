@@ -17,12 +17,14 @@ using System;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Xunit;
 
 namespace BenchmarksGame
 {
     public class Fasta_2
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test(null);
         }

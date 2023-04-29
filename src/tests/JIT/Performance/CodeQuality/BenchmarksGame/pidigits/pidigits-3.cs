@@ -21,6 +21,7 @@ using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -122,7 +123,8 @@ namespace BenchmarksGame
             }
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test(null);
         }

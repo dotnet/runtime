@@ -21,6 +21,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -82,7 +83,8 @@ namespace BenchmarksGame
             return (byte)(res ^ -1);
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test(null);
         }

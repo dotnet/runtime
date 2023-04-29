@@ -14,6 +14,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace SciMark2
 {
@@ -26,7 +27,8 @@ namespace SciMark2
 
     public class CommandLine
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test(Array.Empty<string>());
         }

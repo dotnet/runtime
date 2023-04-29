@@ -33,6 +33,7 @@
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 internal class global
 {
@@ -261,7 +262,8 @@ public class ByteMark
     private static double[] s_bindex;
     private static HarnessTest[] s_tests;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ByteMark app = new ByteMark();
         int result = app.ExecuteCore(Array.Empty<string>());

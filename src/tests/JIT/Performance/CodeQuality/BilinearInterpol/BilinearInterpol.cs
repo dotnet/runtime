@@ -12,6 +12,7 @@ using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Diagnostics;
+using Xunit;
 
 public class BilinearTest
 {
@@ -337,7 +338,8 @@ public class BilinearTest
             }
         }
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         BilinearTest test = new BilinearTest();
         test.RunTests();

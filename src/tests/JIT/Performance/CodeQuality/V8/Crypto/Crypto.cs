@@ -41,6 +41,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace V8.Crypto
 {
@@ -48,7 +49,8 @@ namespace V8.Crypto
     {
         private const string INPUT = "The quick brown fox jumped over the extremely lazy frogs!";
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test(null, false);
         }

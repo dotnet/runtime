@@ -15,6 +15,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace BenchmarksGame
 {
@@ -22,7 +23,8 @@ namespace BenchmarksGame
     {
         const int minDepth = 4;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test(null);
         }

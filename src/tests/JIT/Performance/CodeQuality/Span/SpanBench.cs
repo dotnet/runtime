@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Xunit;
 
 namespace Span
 {
@@ -1074,7 +1075,8 @@ namespace Span
         #endregion // TestSpanAPIs
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             // Now simulate xunit-perf's benchmark discovery so we know what tests to invoke
             TypeInfo t = typeof(SpanBench).GetTypeInfo();

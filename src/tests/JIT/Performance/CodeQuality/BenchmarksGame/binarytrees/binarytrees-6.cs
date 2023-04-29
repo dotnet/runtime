@@ -15,6 +15,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Xunit;
 //using BenchmarkDotNet.Attributes;
 //using MicroBenchmarks;
 
@@ -33,7 +34,8 @@ namespace BenchmarksGame
         // 21 is used in official numbers; about 7.8s
         const int N = 18;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test(null);
         }

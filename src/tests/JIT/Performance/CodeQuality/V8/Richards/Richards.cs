@@ -11,6 +11,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace V8.Richards
 {
@@ -99,7 +100,8 @@ namespace V8.Richards
 
         public const int DATA_SIZE = 4;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test(null);
         }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Functions
 {
@@ -57,7 +58,8 @@ namespace Functions
             ["tanhsingle"] = MathTests.TanhSingleTest
         };
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return Test(Array.Empty<string>());
         }
