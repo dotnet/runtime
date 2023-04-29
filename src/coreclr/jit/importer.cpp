@@ -1231,7 +1231,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree*             val,
 
         case GT_COMMA:
             impAppendTree(val->AsOp()->gtGetOp1(), curLevel, impCurStmtDI);
-            return impGetStructAddr(val->AsOp()->gtGetOp2(), typeHnd, curLevel, willDeref);
+            return impGetNodeAddr(val->AsOp()->gtGetOp2(), typeHnd, curLevel, willDeref);
 
         default:
             break;
