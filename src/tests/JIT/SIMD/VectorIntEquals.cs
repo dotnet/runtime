@@ -5,7 +5,7 @@
 using System;
 using System.Numerics;
 
-internal partial class VectorTest
+public partial class VectorTest
 {
     private static int VectorIntEquals()
     {
@@ -81,7 +81,7 @@ internal partial class VectorTest
         return Pass;
     }
 
-    private static int Main()
+    public static int Main()
     {
         return VectorIntEquals();
     }

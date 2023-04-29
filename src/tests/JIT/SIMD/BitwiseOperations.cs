@@ -6,7 +6,7 @@ using Point = System.Numerics.Vector2;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
         public const int DefaultSeed = 20010415;
         public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
@@ -108,7 +108,7 @@ namespace VectorMathTests
             return 100;
         }
 
-        static int Main()
+        public static int Main()
         {
             if (TestDouble() != 100)
             {

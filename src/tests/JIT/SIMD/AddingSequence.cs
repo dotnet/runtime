@@ -6,7 +6,7 @@ using Point = System.Numerics.Vector2;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
 		const float EPS = Single.Epsilon * 5;
 		
@@ -41,7 +41,7 @@ namespace VectorMathTests
             return 100;
         }
 
-        static int Main()
+        public static int Main()
         {
             Point a = new Point(0, 0), b = new Point(1, 0);
             Point c = a + b;

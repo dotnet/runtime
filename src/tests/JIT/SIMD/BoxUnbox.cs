@@ -6,9 +6,9 @@ using System.Numerics;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
-        static int Main()
+        public static int Main()
         {
             {
                 var a = new System.Numerics.Vector<int>(1);

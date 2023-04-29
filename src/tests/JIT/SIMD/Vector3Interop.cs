@@ -549,7 +549,7 @@ class RPInvokeTest
     }     
 }
 
-class Test_Vector3Interop 
+public class Test_Vector3Interop 
 {  
     public static int Main() 
     {

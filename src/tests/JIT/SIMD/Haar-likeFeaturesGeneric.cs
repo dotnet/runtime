@@ -6,7 +6,7 @@ using Point = System.Numerics.Vector<double>;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
 		const float EPS = Single.Epsilon * 5;
         public const int DefaultSeed = 20010415;
@@ -140,7 +140,7 @@ namespace VectorMathTests
             return true;
         }
 
-        static int Main()
+        public static int Main()
         {
             Random random = new Random(Seed);
             int count = Point.Count;

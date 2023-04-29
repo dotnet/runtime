@@ -7,9 +7,9 @@ using Point = System.Numerics.Vector4;
 
 namespace Test
 { 
-    static class Program
+    public static class Program
     {
-        static int Main()
+        public static int Main()
         {
             Point x = new Point(1);
 			Point y, z;

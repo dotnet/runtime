@@ -6,7 +6,7 @@ using Point = System.Numerics.Vector4;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
         public const int DefaultSeed = 20010415;
         public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
@@ -38,7 +38,7 @@ namespace VectorMathTests
             return s.X;
         }
 
-        static int Main()
+        public static int Main()
         {
             System.Diagnostics.Stopwatch clock = new System.Diagnostics.Stopwatch();
             clock.Start();

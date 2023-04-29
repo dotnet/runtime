@@ -5,7 +5,7 @@
 using System;
 using System.Numerics;
 
-partial class VectorTest
+public partial class VectorTest
 {
     const int Pass = 100;
     const int Fail = -1;
@@ -493,7 +493,7 @@ partial class VectorTest
         }
     }
 
-    static int Main()
+    public static int Main()
     {
         int returnVal = Pass;
 

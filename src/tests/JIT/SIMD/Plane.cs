@@ -3,7 +3,7 @@
 using System;
 using System.Numerics;
 
-class PlaneTest
+public class PlaneTest
 {
     private const int Pass = 100;
     private const int Fail = -1;
@@ -25,7 +25,7 @@ class PlaneTest
         return returnVal;
     }
 
-    static int Main()
+    public static int Main()
     {
         return PlaneCreateFromVerticesTest();
     }

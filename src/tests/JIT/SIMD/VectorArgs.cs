@@ -29,7 +29,7 @@ internal class Color
     public Vector<float> RGB { get { return _rgb; } }
 }
 
-internal partial class VectorTest
+public partial class VectorTest
 {
     private static int VectorArgs()
     {
@@ -59,7 +59,7 @@ internal partial class VectorTest
         return Pass;
     }
 
-    private static int Main()
+    public static int Main()
     {
         return VectorArgs();
     }

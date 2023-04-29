@@ -6,9 +6,9 @@ using Point = System.Numerics.Vector4;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
-        static int Main()
+        public static int Main()
         {
             Point a = new Point(10, 50,0,-100);
             Point b = new Point(10);

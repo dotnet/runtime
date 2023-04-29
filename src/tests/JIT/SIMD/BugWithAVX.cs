@@ -5,9 +5,9 @@ using System.Numerics;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
-        static int Main()
+        public static int Main()
         {
             int Count = System.Numerics.Vector<int>.Count;
             return 100;

@@ -5,7 +5,7 @@
 using System;
 using System.Numerics;
 
-internal partial class VectorTest
+public partial class VectorTest
 {
     private const int Pass = 100;
     private const int Fail = -1;
@@ -70,7 +70,7 @@ internal partial class VectorTest
         }
     }
 
-    private static int Main()
+    public static int Main()
     {
         int returnVal = Pass;
         if (VectorMulTest<float>.VectorDiv(6f, 2f, 6f / 2f) != Pass) returnVal = Fail;

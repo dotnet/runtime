@@ -6,7 +6,7 @@ using Point = System.Numerics.Vector3;
 
 namespace VectorTests
 {
-    class Program
+    public class Program
     {
         const float EPS = Single.Epsilon * 5;
 		
@@ -15,7 +15,7 @@ namespace VectorTests
             return Math.Abs(a - b) < EPS;
         }
 
-        static int Main()
+        public static int Main()
         {
             Point a = new Point(1, 2, 3);
             Point b = new Point(2, 2, 5);

@@ -9,7 +9,7 @@ internal partial class VectorTest
     private const int Pass = 100;
     private const int Fail = -1;
 
-    class Program
+    public class Program
     {		
         const float EPS = Single.Epsilon * 5;
 
@@ -70,7 +70,7 @@ internal partial class VectorTest
             return 100;
         }
 
-        static int Main()
+        public static int Main()
         {
             int returnVal = Pass;
             

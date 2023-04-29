@@ -6,9 +6,9 @@ using Point = System.Numerics.Vector<int>;
 
 namespace VectorTests
 {
-    class Program
+    public class Program
     {
-        static int Main()
+        public static int Main()
         {
             Point p = new Point(1);
             Point[] arr = new Point[10];

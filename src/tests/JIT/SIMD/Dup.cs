@@ -6,10 +6,10 @@ using Point = System.Numerics.Vector4;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
         static Point a;
-        static int Main()
+        public static int Main()
         {
             Point p = new Point(1, 2, 3, 4);
             Point c = p;

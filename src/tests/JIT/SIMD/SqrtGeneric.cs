@@ -6,7 +6,7 @@ using System.Numerics;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
         public const int DefaultSeed = 20010415;
         public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
@@ -16,7 +16,7 @@ namespace VectorMathTests
             _ => DefaultSeed
         };
 
-        static int Main()
+        public static int Main()
         {
             Random random = new Random(Seed);
             var a = new System.Numerics.Vector<short>(25);

@@ -6,7 +6,7 @@ using Point = System.Numerics.Vector4;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
         static float Do(Point p)
         {
@@ -23,7 +23,7 @@ namespace VectorMathTests
             public Point p;
         }
 
-        static int Main()
+        public static int Main()
         {
             Point p = new Point(1, 2, 3, 4);
 

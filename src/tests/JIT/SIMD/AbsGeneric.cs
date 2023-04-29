@@ -6,7 +6,7 @@ using System.Numerics;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
         const float EPS = Single.Epsilon * 5;
 
@@ -20,7 +20,7 @@ namespace VectorMathTests
             return arr;
         }
 
-        static int Main()
+        public static int Main()
         {
             short[] arr = GenerateArray(60, 5);
             var a = new System.Numerics.Vector<short>(arr);

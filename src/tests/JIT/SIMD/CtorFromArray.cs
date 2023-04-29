@@ -6,7 +6,7 @@ using Point = System.Numerics.Vector<int>;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
         static int[] GenerateArray(int size, int value)
         {
@@ -18,7 +18,7 @@ namespace VectorMathTests
             return arr;
         }
 
-        static int Main()
+        public static int Main()
         {
             int v = 2;
             int[] arr = GenerateArray(20, v);
