@@ -4051,7 +4051,18 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsStruct(fromType) || varTypeIsStruct(toType))
             {
-                GenTree* addr = impGetNodeAddr(impPopStack().val, fromTypeHnd, CHECK_SPILL_ALL, true);
+                GenTree* addr;
+                GenTree* val = impPopStack().val;
+                if (val->OperIsIndir() && (fromSize != val->AsIndir()->Size()))
+                {
+                    unsigned lclNum = lvaGrabTemp(true DEBUGARG("bitcast small type extension"));
+                    impAssignTempGen(lclNum, val, fromTypeHnd, CHECK_SPILL_ALL);
+                    addr = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
+                }
+                else
+                {
+                    addr = impGetNodeAddr(val, fromTypeHnd, CHECK_SPILL_ALL, true);
+                }
                 return gtNewLoadValueNode(toType, toLayout, addr);
             }
 
