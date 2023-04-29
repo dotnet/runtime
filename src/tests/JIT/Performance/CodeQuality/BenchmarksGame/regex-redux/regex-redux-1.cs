@@ -22,7 +22,7 @@ namespace BenchmarksGame
 {
     public class RegexRedux_1
     {
-        static int Main()
+        public static int Main()
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
 

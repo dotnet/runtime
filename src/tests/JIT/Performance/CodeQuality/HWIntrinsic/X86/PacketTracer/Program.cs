@@ -10,7 +10,7 @@ using System.Collections.Concurrent;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-class Program
+public class Program
 {
 #if DEBUG
 
@@ -48,7 +48,7 @@ class Program
         _freeBuffers = new ObjectPool<int[]>(() => new int[_width * 3 * _height]); // Each pixel has 3 fields (RGB)
     }
 
-    static unsafe int Main()
+    public static unsafe int Main()
     {
         if (Avx2.IsSupported)
         {

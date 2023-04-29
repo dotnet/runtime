@@ -98,7 +98,7 @@ public static class CscBench
     public static bool DataflowBench()
     {
         var text = @"
-class C {
+public class C {
     public void F(int x)
     {
         int a;
