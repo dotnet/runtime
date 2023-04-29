@@ -5067,7 +5067,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             assert((tgtBlock->bbTgtStkDepth * sizeof(int) == genStackLevel) || isFramePointerUsed());
 #endif // !FEATURE_FIXED_OUT_ARGS
 
-            emit->emitIns_J(INS_bcnez, tgtBlock, (int)1 /* cc */);
+            instruction ins = treeNode->gtFlags & GTF_JCC_FALSE ? INS_bceqz : INS_bcnez;
+            emit->emitIns_J(ins, tgtBlock, (int)1 /* cc */);
         }
         break;
 
