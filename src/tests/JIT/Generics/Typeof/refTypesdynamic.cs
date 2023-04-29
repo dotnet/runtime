@@ -90,7 +90,7 @@ sealed class DS : B
 public class mainMethod
 {
     public static bool failed = false;
-    public static void checkGetType<T>(X<T> x)
+    internal static void checkGetType<T>(X<T> x)
     {
         if (x.GetType() == typeof(DS)) (new DS()).incCount();
         if (x.GetType() == typeof(CS)) (new CS()).incCount();
@@ -107,7 +107,7 @@ public class mainMethod
         if (x.GetType() == null) (new X<class_string>()).incCount();
     }
 
-    public static void checkIs<T>(X<T> x)
+    internal static void checkIs<T>(X<T> x)
     {
         //start from X<class_T>
         if (x is X<X<class_double>>) (new X<X<class_double>>()).incCount();
@@ -123,7 +123,7 @@ public class mainMethod
         if (x is CS) (new CS()).incCount();
         if (x is DS) (new DS()).incCount();
     }
-    public static void checkAs<T>(X<T> x)
+    internal static void checkAs<T>(X<T> x)
     {
         X<X<class_double>> x6 = x as X<X<class_double>>;
         if (x6 != null) (new X<X<class_double>>()).incCount();
@@ -151,7 +151,7 @@ public class mainMethod
         if (ds != null) (new DS()).incCount();
 
     }
-    public static void checkGetTypeStringCast(X<class_string> x)
+    internal static void checkGetTypeStringCast(X<class_string> x)
     {
         if (x.GetType() == typeof(DS)) ((DS)x).incCount();
         if (x.GetType() == typeof(D)) ((D)x).incCount();
@@ -159,7 +159,7 @@ public class mainMethod
         if (x.GetType() == typeof(X<class_string>)) ((X<class_string>)x).incCount();
         if (x.GetType() == null) ((X<class_string>)x).incCount();
     }
-    public static void checkGetTypeIntCast(X<class_int> x)
+    internal static void checkGetTypeIntCast(X<class_int> x)
     {
         if (x.GetType() == typeof(CS)) ((CS)x).incCount();
         if (x.GetType() == typeof(C)) ((C)x).incCount();
@@ -168,7 +168,7 @@ public class mainMethod
         if (x.GetType() == null) ((X<class_int>)x).incCount();
 
     }
-    public static void checkIsStringCast(X<class_string> x)
+    internal static void checkIsStringCast(X<class_string> x)
     {
         if (x is X<class_string>) ((X<class_string>)x).incCount();
         if (x is B) ((B)x).incCount();
@@ -176,7 +176,7 @@ public class mainMethod
         if (x is DS) ((DS)x).incCount();
 
     }
-    public static void checkIsIntCast(X<class_int> x)
+    internal static void checkIsIntCast(X<class_int> x)
     {
         if (x is X<class_int>) ((X<class_int>)x).incCount();
         if (x is A) ((A)x).incCount();
@@ -184,7 +184,7 @@ public class mainMethod
         if (x is CS) ((CS)x).incCount();
 
     }
-    public static void checkAsStringCast(X<class_string> x)
+    internal static void checkAsStringCast(X<class_string> x)
     {
         X<class_string> x2 = x as X<class_string>;
         if (x2 != null) ((X<class_string>)x).incCount();
@@ -196,7 +196,7 @@ public class mainMethod
         if (ds != null) ((DS)x).incCount();
 
     }
-    public static void checkAsIntCast(X<class_int> x)
+    internal static void checkAsIntCast(X<class_int> x)
     {
         X<class_int> x1 = x as X<class_int>;
         if (x1 != null) ((X<class_int>)x).incCount();
