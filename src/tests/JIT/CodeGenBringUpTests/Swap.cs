@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_Swap
 {
     const int Pass = 100;
@@ -19,7 +20,8 @@ public class BringUpTest_Swap
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int a = 10, b= 20;
         Console.WriteLine("Before swap: " + a + "," + b);

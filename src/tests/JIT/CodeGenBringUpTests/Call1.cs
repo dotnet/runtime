@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_Call1
 {
     const int Pass = 100;
@@ -17,7 +18,8 @@ public class BringUpTest_Call1
     {
         M();
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Call1();
         return 100;

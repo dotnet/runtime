@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_BinaryRMW
 {
     const int Pass = 100;
@@ -17,7 +18,8 @@ public class BringUpTest_BinaryRMW
         x |= 2;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int x = 12;
         BinaryRMW(ref x, 17);

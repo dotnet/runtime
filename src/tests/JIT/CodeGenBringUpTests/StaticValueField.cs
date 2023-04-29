@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 struct TestValue
 {
   public int a;
@@ -26,7 +27,8 @@ public class StaticValueField
     sField = v;
   }
 
-  public static int Main()
+  [Fact]
+  public static int TestEntryPoint()
   {
     Init();
     if (sField.a == 100

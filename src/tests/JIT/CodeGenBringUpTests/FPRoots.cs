@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPRoots
 {
     const int Pass = 100;
@@ -20,7 +21,8 @@ public class BringUpTest_FPRoots
        return ; 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float x1 = 0;
         float x2 = 0;

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 static class DivConst
 {
@@ -189,7 +190,8 @@ class Point
 
 public static class DivProgram
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         const int Pass = 100;
         const int Fail = -1;

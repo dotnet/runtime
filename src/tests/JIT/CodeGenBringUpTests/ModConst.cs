@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 static class ModConst
 {
@@ -175,7 +176,8 @@ static class ModConst
 
 public static class ModProgram
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         const int Pass = 100;
         const int Fail = -1;

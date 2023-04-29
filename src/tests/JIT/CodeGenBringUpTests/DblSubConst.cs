@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_DblSubConst
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_DblSubConst
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static double DblSubConst(double x) { return x-1d; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double y = DblSubConst(1d);
         Console.WriteLine(y);

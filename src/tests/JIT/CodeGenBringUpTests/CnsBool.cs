@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_CnsBool
 {
     const int Pass = 100;
@@ -22,7 +23,8 @@ public class BringUpTest_CnsBool
        return true;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool b = CnsBool(false);
         if (b) return Pass;

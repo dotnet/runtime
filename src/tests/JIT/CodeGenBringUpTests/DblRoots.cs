@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_DblRoots
 {
     const int Pass = 100;
@@ -18,7 +19,8 @@ public class BringUpTest_DblRoots
        return ; 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double x1 = 0;
         double x2 = 0;

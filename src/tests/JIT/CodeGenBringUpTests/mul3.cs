@@ -6,6 +6,7 @@
 using System;
 using System.Text;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct vc
 {
@@ -20,7 +21,8 @@ public class child
     const int Pass = 100;
     const int Fail = -1;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result=  mul3(3);
         if (result == 15369)

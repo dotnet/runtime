@@ -5,10 +5,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class child
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int b = 5;
         const int Pass = 100;

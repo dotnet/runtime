@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_NegRMW
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_NegRMW
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static void NegRMW(ref int x) { x = -x; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int x = 12;
         NegRMW(ref x);
