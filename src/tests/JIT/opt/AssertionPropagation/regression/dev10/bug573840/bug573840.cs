@@ -13,10 +13,10 @@ internal struct Position
 }
 
 
-internal class Program
+public class Program
 {
     [Fact]
-    private static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         Console.WriteLine("Main called");
 

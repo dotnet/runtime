@@ -10,7 +10,7 @@ struct ArrayWrapper
     public int[] Array;
 }
 
-class Runtime_61040_1
+public class Runtime_61040_1
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void JitUse<T>(T arg) { }

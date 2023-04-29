@@ -6,7 +6,7 @@ using Xunit;
 
 namespace JitInliningTest
 {
-    internal class MathFunc
+    public class MathFunc
     {
         public const int DefaultSeed = 20010415;
         public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch

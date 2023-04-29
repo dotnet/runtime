@@ -6,7 +6,7 @@
 using System;
 using Xunit;
 
-internal class Sample6
+public class Sample6
 {
     [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
     private static int func(int[] a1)
@@ -24,7 +24,7 @@ internal class Sample6
     }
 
     [Fact]
-    private static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         try
         {

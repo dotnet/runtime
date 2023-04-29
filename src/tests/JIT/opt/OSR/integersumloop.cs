@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class IntegerSumLoop
+public class IntegerSumLoop
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int F(int from, int to)

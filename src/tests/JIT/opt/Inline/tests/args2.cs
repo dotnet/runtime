@@ -6,7 +6,7 @@ using Xunit;
 
 namespace JitInliningTest
 {
-    internal class Args2
+    public class Args2
     {
         static public void FillArray(out int[] myArray)
         {

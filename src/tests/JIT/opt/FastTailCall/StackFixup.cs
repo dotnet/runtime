@@ -9,7 +9,7 @@ public struct A
     public short b;
 }
 
-class TailCallStructPassing
+public class TailCallStructPassing
 {
     public static int bar(int count, A temp)
     {

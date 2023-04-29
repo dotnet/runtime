@@ -7,7 +7,7 @@ using Xunit;
 
 // Simple OSR test case -- nested loop in Main
 
-class MainNestedLoop
+public class MainNestedLoop
 {
    [Fact]
    public static int TestEntryPoint()

@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class Test_UnsafeBlockCopy 
+public class Test_UnsafeBlockCopy 
 {
     static int SIZE = 100;
 

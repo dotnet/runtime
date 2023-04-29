@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
-internal class MthdImpl
+public class MthdImpl
 {
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int f(int a)

@@ -7,7 +7,7 @@ using Xunit;
 
 // Patchpoint in generic method
 
-class GenericMethodPatchpoint
+public class GenericMethodPatchpoint
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int F<T>(T[] data, int from, int to) where T : class

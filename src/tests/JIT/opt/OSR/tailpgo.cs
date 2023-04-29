@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class X
+public class X
 {
     static int s;
     static int N;

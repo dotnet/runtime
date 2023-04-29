@@ -29,7 +29,7 @@ internal struct XY<T>
     }
 }
 
-internal class StructTest
+public class StructTest
 {
     private static void XYZ_Inline(XY<int> xy)
     {

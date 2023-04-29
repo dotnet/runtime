@@ -6,7 +6,7 @@ using Xunit;
 
 // Multiple patchpoints each in a try
 
-class MainLoopTry2
+public class MainLoopTry2
 {
    [Fact]
    public static int TestEntryPoint()

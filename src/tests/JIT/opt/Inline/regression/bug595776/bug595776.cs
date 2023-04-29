@@ -40,10 +40,10 @@ internal class Buffer
 }
 
 
-internal class Test_bug595776
+public class Test_bug595776
 {
     [Fact]
-    private static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         Buffer b1 = new Buffer("Abra-cadabra");
         int result = 0;

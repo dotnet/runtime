@@ -8,7 +8,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
 using Xunit;
 
-unsafe class Hoisting
+public unsafe class Hoisting
 {
     [Fact]
     public static int TestEntryPoint()

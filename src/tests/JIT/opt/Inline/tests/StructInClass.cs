@@ -11,7 +11,7 @@ namespace StructInClass
     internal class StructInClass
     {
     }
-    internal class TestClass
+    public class TestClass
     {
         public struct TheStruct
         {
@@ -24,7 +24,7 @@ namespace StructInClass
         }
 
         [Fact]
-        private static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             try
             {

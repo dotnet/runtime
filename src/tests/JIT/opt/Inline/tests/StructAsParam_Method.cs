@@ -13,7 +13,7 @@ namespace ConsoleApplication1
         public string fieldinStruct;
     }
 
-    internal class TestStruct
+    public class TestStruct
     {
         private static void StructTaker_Inline(TheStruct s)
         {
@@ -21,7 +21,7 @@ namespace ConsoleApplication1
         }
 
         [Fact]
-        private static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             TheStruct testStruct = new TheStruct();
 

@@ -22,7 +22,7 @@ class ClassB : ClassA
     public override int Test(Base b1, Base b2, bool p) => b1.Test(b1, b2, p);
 }
 
-class Program
+public class Program
 {
     [Fact]
     public static int TestEntryPoint()

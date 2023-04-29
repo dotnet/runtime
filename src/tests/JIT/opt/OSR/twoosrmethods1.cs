@@ -7,7 +7,7 @@ using Xunit;
 
 // Two OSR methods from one original method
 
-class X
+public class X
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int F(int from, int to, bool sumUp)

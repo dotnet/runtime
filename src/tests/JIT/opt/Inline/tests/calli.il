@@ -7,7 +7,7 @@
 .assembly extern xunit.core {}
 
 .assembly legacy library 'calli' {}
-.class private auto ansi beforefieldinit calli_test
+.class public auto ansi beforefieldinit calli_test
        extends [mscorlib]System.Object
 {
   .field private static int32 a

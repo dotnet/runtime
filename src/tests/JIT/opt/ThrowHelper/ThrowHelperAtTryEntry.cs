@@ -9,7 +9,7 @@ using Xunit;
 // Throw helper merging is run lexically backwards,
 // so the optimization may introduce a jump into the middle of the try.
 
-class ThrowHelperAtTryEntry
+public class ThrowHelperAtTryEntry
 {
     static void ThrowHelper()
     {

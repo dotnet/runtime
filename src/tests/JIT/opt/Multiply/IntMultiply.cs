@@ -7,7 +7,7 @@ using Xunit;
 
 namespace CodeGenTests
 {
-    static class IntMultiply
+    public static class IntMultiply
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static uint UInt32_MultiplyWithUInt32MaxValue(uint value)
@@ -259,7 +259,7 @@ namespace CodeGenTests
         }
 
         [Fact]
-        static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             if (UInt32_MultiplyWithUInt32MaxValue(1) != UInt32.MaxValue)
                 return 0;

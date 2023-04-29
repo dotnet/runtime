@@ -6,7 +6,7 @@ using Xunit;
 
 // OSR and tail recursion
 
-class OSRTailRecursion
+public class OSRTailRecursion
 {
     public static int F(int from, int to, int n, int a)
     {

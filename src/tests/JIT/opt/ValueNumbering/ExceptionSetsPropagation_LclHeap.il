@@ -7,7 +7,7 @@
 
 .assembly ExceptionSetsPropagation_LclHeap { }
 
-.class ExceptionSetsPropagation_LclHeap extends [System.Runtime]System.Object
+.class public ExceptionSetsPropagation_LclHeap extends [System.Runtime]System.Object
 {
     .method public static int32 Main()
     {

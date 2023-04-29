@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class ZeroOffsetFieldSeqs
+public class ZeroOffsetFieldSeqs
 {
     private static UnionStruct s_union;
 

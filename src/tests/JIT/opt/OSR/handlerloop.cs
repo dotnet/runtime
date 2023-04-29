@@ -6,7 +6,7 @@ using Xunit;
 
 // OSR can't bail us out of a loop in a handler
 //
-class OSRHandlerLoop
+public class OSRHandlerLoop
 {
     [Fact]
     public static int TestEntryPoint()

@@ -7,7 +7,7 @@
 using System;
 using Xunit;
 
-class L
+public class L
 {
     unsafe static int Use4()
     {

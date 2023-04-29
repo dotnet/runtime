@@ -73,10 +73,10 @@ namespace GitHub_16065b
         }
     }
 
-    class Program
+    public class Program
     {
         [Fact]
-        static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             int result = 0;
             var A = new Matrix(new Array2D(0, 4));

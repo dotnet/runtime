@@ -13,6 +13,7 @@
   .ver 4:0:0:0
 }
 .assembly InstrCnt0 {}
+.class public auto ansi InstrCnt0 {
 .method public static int32  Main() cil managed
 {
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -26,6 +27,7 @@
   IL_000a:  add
   IL_000b:  ret
 } // end of global method Main
+}
 
 .method public static int32  f() cil managed
 {

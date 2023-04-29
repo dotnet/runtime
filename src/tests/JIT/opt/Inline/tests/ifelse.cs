@@ -26,7 +26,7 @@ namespace JitInliningTest
             }
         }
     }
-    internal class IfElse
+    public class IfElse
     {
         [Fact]
         public static int TestEntryPoint()

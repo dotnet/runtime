@@ -7,10 +7,10 @@ using Xunit;
 
 namespace VirtFunc
 {
-    internal class CTest1
+    public class CTest1
     {
         [Fact]
-        private static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             Dictionary<object, int> myHT = new Dictionary<object, int>();
 

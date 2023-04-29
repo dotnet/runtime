@@ -16,7 +16,7 @@ public class D : B
     public override int V() => 44;
 }
 
-class Runtime_70802
+public class Runtime_70802
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void G() {}

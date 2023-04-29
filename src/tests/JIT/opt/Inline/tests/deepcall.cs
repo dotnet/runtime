@@ -6,7 +6,7 @@ using Xunit;
 
 namespace JitInliningTest
 {
-    internal class DeepCall
+    public class DeepCall
     {
         private static long f1() { return 1; }
         private static long f2() { return f1() + 1; }

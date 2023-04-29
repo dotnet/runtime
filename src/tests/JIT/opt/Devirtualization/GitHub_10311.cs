@@ -65,7 +65,7 @@ public class MyCollection<T> : ICollection<T>
     }
 }
 
-class Bug
+public class Bug
 {
     [Fact]
     public static int TestEntryPoint()

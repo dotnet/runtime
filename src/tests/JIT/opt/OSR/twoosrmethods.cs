@@ -7,7 +7,7 @@ using Xunit;
 
 // Method creates has two OSR methods
 
-class TwoOSRMethods
+public class TwoOSRMethods
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void I(ref int p, int i) => p = p + i;

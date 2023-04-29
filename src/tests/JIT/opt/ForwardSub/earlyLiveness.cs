@@ -5,10 +5,10 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class EarlyLiveness_ForwardSub
+public class EarlyLiveness_ForwardSub
 {
     [Fact]
-    static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         int result = 100;
         int test1 = Test1();

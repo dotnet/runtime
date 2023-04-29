@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
 
-class CloningForIEnumerable
+public class CloningForIEnumerable
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Sum(IEnumerable<int> e)

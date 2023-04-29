@@ -8,7 +8,7 @@ using Xunit;
 
 // We're testing whether HWI nodes with > 2 operands propagate exception sets correctly.
 //
-class ExceptionSetsPropagation_Hwi
+public class ExceptionSetsPropagation_Hwi
 {
     [Fact]
     public static int TestEntryPoint()

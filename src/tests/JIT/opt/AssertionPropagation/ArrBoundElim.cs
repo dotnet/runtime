@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class Program
+public class Program
 {
     private static int returnCode = 100;
 

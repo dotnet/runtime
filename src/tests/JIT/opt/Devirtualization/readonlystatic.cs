@@ -15,7 +15,7 @@ class D : B
     public override int F() => 100;
 }
 
-class X 
+public class X 
 {
     static readonly B S;
     static int R;

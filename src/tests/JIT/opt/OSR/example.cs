@@ -8,7 +8,7 @@ using Xunit;
 
 // Example from the OSR doc
 
-class OSR_Example
+public class OSR_Example
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static double F(int from, int to)

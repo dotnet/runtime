@@ -15,7 +15,7 @@ class TestException : Exception
     public TestException(string _y) { y = _y; }
 }
 
-class TestCases
+public class TestCases
 {
     static void Throw() => throw new TestException();
     static void Throw(int x) => throw new TestException(x);

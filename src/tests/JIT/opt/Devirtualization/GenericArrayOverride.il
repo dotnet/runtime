@@ -199,10 +199,10 @@
 
 } // end of class GenericArrayOverride.Derived
 
-.class private auto ansi beforefieldinit GenericArrayOverride.Program
+.class public auto ansi beforefieldinit GenericArrayOverride.Program
        extends [System.Runtime]System.Object
 {
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

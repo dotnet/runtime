@@ -38,7 +38,7 @@ namespace JitInliningTest
         }
     }
 
-    internal class InterfaceCall
+    public class InterfaceCall
     {
         [Fact]
         public static int TestEntryPoint()

@@ -14,7 +14,7 @@ struct SBar : IBar {}
 
 // More tests for shared types passing through compareTypesForCast
 
-class X
+public class X
 {
     static int _errors;
 

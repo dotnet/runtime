@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-interface Io<T,U> where T:class where U:class
+public interface Io<T,U> where T:class where U:class
 {
     T FromU(U u);
     T FromS(string s);

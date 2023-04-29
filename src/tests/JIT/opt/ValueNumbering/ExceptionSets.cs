@@ -7,7 +7,7 @@ using Xunit;
 
 #pragma warning disable CS0253 // Possible unintended reference comparison
 
-class ExceptionSets
+public class ExceptionSets
 {
     [Fact]
     public static int TestEntryPoint()

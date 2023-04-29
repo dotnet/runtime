@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Inline_GenericMethods
 {
-    internal class Inline_GenericMethods
+    public class Inline_GenericMethods
     {
         public static void GetType_NoInline<T>()
         {

@@ -17,7 +17,7 @@ class X<T> : I<T> where T: class
     }
 }
 
-class T
+public class T
 {
     static object F(I<object> i)
     {

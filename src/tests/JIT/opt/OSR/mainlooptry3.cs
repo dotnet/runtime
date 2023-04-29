@@ -11,7 +11,7 @@
 using System;
 using Xunit;
 
-class MainLoopCloselyNestedTry
+public class MainLoopCloselyNestedTry
 {
    [Fact]
    public static int TestEntryPoint()

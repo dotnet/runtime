@@ -17,7 +17,7 @@ using Xunit;
 
 namespace TestIntLimits
 {
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static int CheckMulNeg()
@@ -341,7 +341,7 @@ namespace TestIntLimits
         static long LongNegDivMinus1(long a) => -(a / -1);
 
         [Fact]
-        static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             if (CheckMulNeg() != 100)
             {

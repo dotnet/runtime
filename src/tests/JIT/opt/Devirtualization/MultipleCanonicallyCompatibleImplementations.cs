@@ -6,7 +6,7 @@ using Xunit;
 public class MultipleCanonicallyCompatibleImplementations
 {
     [Fact]
-    static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         string atom1Call = Foo<Atom1>.Call();
         string atom2Call = Foo<Atom2>.Call();

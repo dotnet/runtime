@@ -5,10 +5,10 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class Program
+public class Program
 {
     [Fact]
-    static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         MyStruct<Atom> s = default;
 

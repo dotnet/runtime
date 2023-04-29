@@ -14,8 +14,8 @@ class G<T>
     public virtual bool M() => typeof(T) == typeof(string);
 }
 
-class Program
+public class Program
 {
     [Fact]
-    static int TestEntryPoint() => new G<string>().M() ? 100 : -1;
+    public static int TestEntryPoint() => new G<string>().M() ? 100 : -1;
 }

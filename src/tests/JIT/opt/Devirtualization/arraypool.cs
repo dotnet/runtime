@@ -6,7 +6,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class X
+public class X
 {
     static int N;
     static int J;

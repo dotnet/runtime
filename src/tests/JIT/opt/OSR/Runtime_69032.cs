@@ -8,7 +8,7 @@ using Xunit;
 
 // Assert in F() with OSR+PGO
 
-class Runtime_69032
+public class Runtime_69032
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int F(int n)

@@ -6,7 +6,7 @@ using Xunit;
 
 // An example where OSR must preserve original method addreses for locals
 
-class LiveLocalAddress
+public class LiveLocalAddress
 {
     [Fact]
     public static unsafe int TestEntryPoint()        

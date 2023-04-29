@@ -12,7 +12,7 @@ interface IX
 {
 }
 
-class X : IX
+public class X : IX
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     bool P1(object o) => false;

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace CodeGenTests
 {
-    class IntCast
+    public class IntCast
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static long Cast_Short_To_Long(short value)
@@ -28,7 +28,7 @@ namespace CodeGenTests
         }
 
         [Fact]
-        static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             if (Cast_Short_To_Long(Int16.MaxValue) != 32767)
                 return 0;

@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-internal class Sample4
+public class Sample4
 {
     private static int s_s = 1;
 
@@ -21,7 +21,7 @@ internal class Sample4
     }
 
     [Fact]
-    private static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         try
         {

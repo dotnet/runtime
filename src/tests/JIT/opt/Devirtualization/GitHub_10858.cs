@@ -20,7 +20,7 @@ sealed class E : B
     public override string F() { return "E"; }
 }
 
-class X
+public class X
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Test(bool arg)

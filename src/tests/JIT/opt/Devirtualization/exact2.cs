@@ -29,7 +29,7 @@ class G<T> : E
 
 // All of the calls to F() in Main should devirtualize and inline
 
-class Program
+public class Program
 {
     [Fact]
     public static int TestEntryPoint()

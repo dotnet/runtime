@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-internal class MainApp_Inline
+public class MainApp_Inline
 {
     private int _v;
 

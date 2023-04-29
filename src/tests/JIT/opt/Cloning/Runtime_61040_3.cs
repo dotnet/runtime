@@ -11,7 +11,7 @@ struct StructWithIndex
     public int Value;
 }
 
-class Runtime_61040_3
+public class Runtime_61040_3
 {
     static int z = 100;
 

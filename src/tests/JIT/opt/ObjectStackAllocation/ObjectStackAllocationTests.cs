@@ -88,7 +88,7 @@ namespace ObjectStackAllocation
         Undefined
     }
 
-    class Tests
+    public class Tests
     {
         static volatile int f1 = 5;
         static volatile int f2 = 7;

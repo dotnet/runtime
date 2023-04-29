@@ -7,7 +7,7 @@
 using System;
 using Xunit;
 
-unsafe class Program
+public unsafe class Program
 {
     struct Element
     {
@@ -37,7 +37,7 @@ unsafe class Program
     }
 
     [Fact]
-    static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         return foo(10) + 55;
     }

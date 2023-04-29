@@ -7,7 +7,7 @@ using Xunit;
 
 namespace CodeGenTests
 {
-    static class CalculateChecksumTest
+    public static class CalculateChecksumTest
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static ushort CalculateChecksum(ref byte buffer, int length)
@@ -100,7 +100,7 @@ namespace CodeGenTests
         }
 
         [Fact]
-        static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             var buffer = new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
             var result = CalculateChecksum(ref buffer[0], buffer.Length);

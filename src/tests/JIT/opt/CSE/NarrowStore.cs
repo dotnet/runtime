@@ -6,7 +6,7 @@ using Xunit;
 
 namespace NarrowStore
 {
-    class Program 
+    public class Program 
     { 
         byte x01;
         byte t01;
@@ -28,7 +28,7 @@ namespace NarrowStore
         }
 
         [Fact]
-        static int TestEntryPoint() 
+        public static int TestEntryPoint() 
         { 
             Program prog = new Program();
             

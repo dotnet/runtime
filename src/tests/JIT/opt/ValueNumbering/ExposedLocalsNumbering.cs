@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-unsafe class ExposedLocalsNumbering
+public unsafe class ExposedLocalsNumbering
 {
     private static volatile bool s_mutateIndex;
     private static volatile bool s_finished;

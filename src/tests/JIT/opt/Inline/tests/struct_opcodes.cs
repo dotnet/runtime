@@ -26,7 +26,7 @@ public class SingleInt
     public int i1;
 }
 
-internal class TestStruct
+public class TestStruct
 {
     public static SimpleStruct aMethod_Inline(SimpleStruct Struct)
     {

@@ -22,7 +22,7 @@ using Xunit;
 // DOTNET_TieredPGO=1
 // DOTNET_TC_QuickJitForLoopsO=1
 //
-class X
+public class X
 {
     static int F(IDictionary i)
     {

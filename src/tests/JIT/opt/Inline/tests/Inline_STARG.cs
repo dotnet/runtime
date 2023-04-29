@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-internal class MainApp
+public class MainApp
 {
     public static void Foo_NoInline(string s)
     {

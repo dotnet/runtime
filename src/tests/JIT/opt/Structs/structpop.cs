@@ -27,7 +27,7 @@ struct VT
     }
 }
 
-class P
+public class P
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     unsafe static int TestMethodInlining(VT* pVT)
@@ -58,7 +58,7 @@ class P
     }
     
     [Fact]
-    unsafe static int TestEntryPoint()
+    public unsafe static int TestEntryPoint()
     {
         byte* pDataBytes = stackalloc byte[VT.Size];
         VT* pVT = (VT*)pDataBytes;

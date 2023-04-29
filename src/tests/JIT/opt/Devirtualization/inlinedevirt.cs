@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-class ImprovedType
+public class ImprovedType
 {
     // Jit should inline this method and then devirtualize ToString()
     static void Print(object o)

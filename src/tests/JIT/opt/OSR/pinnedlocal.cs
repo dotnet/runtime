@@ -6,7 +6,7 @@ using Xunit;
 
 // Run under DOTNET_GCStress=3
 
-class PinnedLocal
+public class PinnedLocal
 {
     static int F(char c)
     {

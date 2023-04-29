@@ -7,7 +7,7 @@ using Xunit;
 
 // Nested do lops
 
-class NestedDoLoops
+public class NestedDoLoops
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int F(int inner, int outer, int innerTo, int outerTo)

@@ -34,7 +34,7 @@ sealed class L : K, I<object>
     }
 }
 
-class F
+public class F
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool IsIString<T>(I<T> i)

@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class RedundantBranchAnd
+public class RedundantBranchAnd
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int And_00(int a, int b)

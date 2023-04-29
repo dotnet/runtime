@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Inline_SideAffects
 {
-    internal class Inline_SideAffects
+    public class Inline_SideAffects
     {
         private static int s_i = 0;
         private static bool Foo_Inline()
@@ -24,7 +24,7 @@ namespace Inline_SideAffects
             return false;
         }
         [Fact]
-        private static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             if ((Foo_Inline()) && (Bar_Inline()))
             {

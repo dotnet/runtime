@@ -14,10 +14,10 @@ sealed class MyInterfaceImpl<T> : IMyInterface<string>
     public int MyMethod() => 100;
 }
 
-class Program
+public class Program
 {
     [Fact]
-    static int TestEntryPoint() => Test<string>();
+    public static int TestEntryPoint() => Test<string>();
 
     [MethodImpl(MethodImplOptions.NoInlining | 
                 MethodImplOptions.AggressiveOptimization)]

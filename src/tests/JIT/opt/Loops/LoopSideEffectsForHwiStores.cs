@@ -7,7 +7,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
 using Xunit;
 
-unsafe class LoopSideEffectsForHwiStores
+public unsafe class LoopSideEffectsForHwiStores
 {
     [Fact]
     public static int TestEntryPoint()

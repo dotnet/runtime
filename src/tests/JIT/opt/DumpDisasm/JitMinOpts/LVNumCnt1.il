@@ -12,6 +12,7 @@
   .ver 4:0:0:0
 }
 .assembly LVNumCnt1_DumpDisasm {}
+.class public auto ansi LVNumCnt1 {
 .method public static int32 Main()
 {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -22,6 +23,7 @@ call int32 TestLVNumCnt()
 ldc.i4 100000199
 add
 ret
+}
 }
 .method public static int32 TestLVNumCnt()
 {

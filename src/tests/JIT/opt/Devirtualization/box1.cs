@@ -16,10 +16,10 @@ struct X<T> : IPrint
     T _t;
 }
 
-class Y
+public class Y
 {
     [Fact]
-    static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         var s = new X<string>("hello, world!");
         // Jit should devirtualize, remove box,

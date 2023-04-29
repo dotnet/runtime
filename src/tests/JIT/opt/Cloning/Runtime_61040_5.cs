@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-unsafe class Runtime_61040_5
+public unsafe class Runtime_61040_5
 {
     private const int ArrLen = 10;
 

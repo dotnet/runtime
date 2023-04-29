@@ -10,7 +10,7 @@ struct Wrap1<T> {}
 
 struct Wrap2<T> {}
 
-class EqualityTests
+public class EqualityTests
 {
     static bool IsInt<T>()
     {

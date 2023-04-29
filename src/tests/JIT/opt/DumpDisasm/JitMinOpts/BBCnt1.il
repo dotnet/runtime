@@ -12,7 +12,7 @@
   .ver 4:0:0:0
 }
 .assembly BBCnt1_DumpDisasm {}
-.class private auto ansi beforefieldinit BBCnt1
+.class public auto ansi beforefieldinit BBCnt1
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed

@@ -26,7 +26,7 @@ class Mul : I
     int I.F(int x, int y) => x * y;
 }
 
-class CloningForTypeTests
+public class CloningForTypeTests
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int BothTypeAndArray(I m, int[] xs, int[] ys, int from, int to)

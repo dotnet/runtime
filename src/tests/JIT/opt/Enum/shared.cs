@@ -23,7 +23,7 @@ class MyG<T,U>
     }
 }
 
-class My 
+public class My 
 {
     [Fact]
     public static int TestEntryPoint() 

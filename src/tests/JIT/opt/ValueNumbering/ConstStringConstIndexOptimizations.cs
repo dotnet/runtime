@@ -103,7 +103,7 @@ public static class ConstStringConstIndexOptimizations
     }
 
     [Fact]
-    static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {

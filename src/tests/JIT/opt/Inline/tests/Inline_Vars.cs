@@ -2817,7 +2817,7 @@ public class Test_Inline_Vars
         return 100;
     }
     [Fact]
-    private static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         (new Test_Inline_Vars()).RunTest0_Inline();
 

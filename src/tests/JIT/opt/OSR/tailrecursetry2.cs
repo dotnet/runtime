@@ -7,7 +7,7 @@ using Xunit;
 
 // Tail recursion candidate with OSR entry in a try region
 
-class TailRecursionCandidateOSREntryInTry
+public class TailRecursionCandidateOSREntryInTry
 {
     public unsafe static int F(int from, int to, int n, int result, int *x)
     {

@@ -15,7 +15,7 @@ sealed class J<T> : I<T>
     public int E(T t) { return 3; }
 }
 
-class Z
+public class Z
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool F0<T>(I<T> i)

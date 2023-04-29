@@ -17,7 +17,7 @@ namespace JitInliningTest
             set { _prop = value * value + (value + 1) * (value - 1) - (value + 2) * (value - 2) + (value + 3) * (value - 3); }
         }
     }
-    internal class PropTest
+    public class PropTest
     {
         [Fact]
         public static int TestEntryPoint()

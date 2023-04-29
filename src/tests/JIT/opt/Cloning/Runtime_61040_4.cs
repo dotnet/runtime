@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class Runtime_61040_4
+public class Runtime_61040_4
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void JitUse<T>(T arg) { }

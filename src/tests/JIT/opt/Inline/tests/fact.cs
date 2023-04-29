@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-class Fact {
+public class Fact {
     static int factTR(int n, int a) {
         if (n <= 1) return a;
         return factTR(n - 1, a * n);

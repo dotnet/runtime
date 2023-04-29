@@ -7,7 +7,7 @@ using Xunit;
 
 // Simple OSR test case -- long running loop in Main
 
-class MainLoop
+public class MainLoop
 {
    [Fact]
    public static int TestEntryPoint()

@@ -7,12 +7,12 @@ using Xunit;
 
 namespace CSEWithDoubleNegation
 {
-    class DoNotMorphAwayCSEThatRepresentsDoubleNegation
+    public class DoNotMorphAwayCSEThatRepresentsDoubleNegation
     {
         private static int _static = 0;
 
         [Fact]
-        static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             if (DoubleNeg() != 22)
             {

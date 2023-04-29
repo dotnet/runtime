@@ -7,7 +7,7 @@ using Xunit;
 
 // OSR method must access memory argument
 
-class MemoryArgument
+public class MemoryArgument
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int F(int a, int b, int c, int d, int from, int to)

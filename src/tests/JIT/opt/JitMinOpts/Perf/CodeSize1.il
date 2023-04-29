@@ -14,7 +14,7 @@
   .ver 4:0:0:0
 }
 .assembly CodeSize1_Perf {}
-.class private auto ansi beforefieldinit CodeSize1
+.class public auto ansi beforefieldinit CodeSize1
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed

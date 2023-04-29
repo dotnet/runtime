@@ -9,7 +9,7 @@
 using System;
 using Xunit;
 
-class DoubleStackAlloc
+public class DoubleStackAlloc
 {
     static int outerSize = 1000;
     static int innerSize = 1;

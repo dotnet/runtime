@@ -6,7 +6,7 @@ using Xunit;
 
 namespace JitInliningTest
 {
-    internal class Args1
+    public class Args1
     {
         private static string f1a(bool a) { return a.ToString(); }
         private static string f1c(ref bool a) { return a.ToString(); }

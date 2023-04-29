@@ -7,7 +7,7 @@ using Xunit;
 
 // Loops in F, G, H should all clone
 
-class CallAndIndir
+public class CallAndIndir
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void S() { }

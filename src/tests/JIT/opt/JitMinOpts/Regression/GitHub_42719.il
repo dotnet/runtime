@@ -4,6 +4,7 @@
 .assembly extern mscorlib { }
 .assembly extern xunit.core {}
 .assembly ASSEMBLY_NAME {}
+.class public auto ansi GitHub_42719 {
 .method public static int32 Main() cil managed
 {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -18,4 +19,5 @@
     cgt.un
     add  
     ret
+}
 }

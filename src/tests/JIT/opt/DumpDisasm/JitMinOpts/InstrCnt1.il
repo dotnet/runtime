@@ -11,7 +11,7 @@
   .ver 4:0:0:0
 }
 .assembly InstrCnt1_DumpDisasm {}
-.class private auto ansi beforefieldinit InstrCnt1
+.class public auto ansi beforefieldinit InstrCnt1
        extends [mscorlib]System.Object
 {
   .method public hidebysig static int32  Main() cil managed

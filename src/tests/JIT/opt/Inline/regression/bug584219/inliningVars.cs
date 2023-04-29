@@ -6,10 +6,10 @@ using Xunit;
 
 namespace ConsoleApplication1
 {
-    internal class Program
+    public class Program
     {
         [Fact]
-        private static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             int result = 100;
             int byteCount = 0;

@@ -18,7 +18,7 @@ class X<T> : I<T>
     }
 }
 
-class T
+public class T
 {
     static int F(I<string> i) 
     {

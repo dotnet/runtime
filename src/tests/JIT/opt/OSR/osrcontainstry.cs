@@ -7,7 +7,7 @@ using Xunit;
 
 // OSR method contains try
 
-class OSRContainsTry
+public class OSRContainsTry
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static unsafe int I(ref int p) => p;

@@ -12011,10 +12011,10 @@ internal class D : C
     public override string f2998() { return "D.f2998"; }
     public override string f2999() { return "D.f2999"; }
 }
-internal class CTest
+public class CTest
 {
     [Fact]
-    private static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         D d = new D();
         A a = d;

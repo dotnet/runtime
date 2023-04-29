@@ -7,7 +7,7 @@ using Xunit;
 
 // OSR method has address exposed local
 
-class AddressExposedLocal
+public class AddressExposedLocal
 {
     // [MethodImpl(MethodImplOptions.NoInlining)]
     public static unsafe int I(ref int p) => p;

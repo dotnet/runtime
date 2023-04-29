@@ -7,7 +7,7 @@ using Xunit;
 
 // Original method has stackalloc, osr does not
 
-class OriginalStackalloc
+public class OriginalStackalloc
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static unsafe int F(int from, int to, int s)

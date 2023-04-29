@@ -6,7 +6,7 @@ using Xunit;
 
 // Example where local address is live in a stackalloc region
 
-class LiveLocalStackalloc
+public class LiveLocalStackalloc
 {
     static int n = 100;
     static int j = 30;

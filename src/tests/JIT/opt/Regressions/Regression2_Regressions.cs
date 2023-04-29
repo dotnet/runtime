@@ -62,7 +62,7 @@ public class Program
     }
 
     [Fact]
-    static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         Add_SmallType_Correctness();
         Sub_SmallType_Correctness();

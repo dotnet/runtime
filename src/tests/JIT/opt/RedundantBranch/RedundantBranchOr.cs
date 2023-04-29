@@ -5,7 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-class RedundantBranchOr
+public class RedundantBranchOr
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Or_00(int a, int b)

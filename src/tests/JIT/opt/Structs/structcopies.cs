@@ -15,7 +15,7 @@ using Xunit;
 
 namespace TestStructFields
 {
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void blockPromotion<T>(ref T s)
@@ -1715,7 +1715,7 @@ namespace TestStructFields
         }
 
         [Fact]
-        static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             return Test();
         }

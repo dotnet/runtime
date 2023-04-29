@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-class InnerLoop
+public class InnerLoop
 {
     [Fact]
     public static int TestEntryPoint()

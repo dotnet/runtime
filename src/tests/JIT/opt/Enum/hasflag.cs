@@ -47,7 +47,7 @@ class ShortHolder
     public short v;
 }
 
-class P
+public class P
 {
     static E[] ArrayOfE = { E.RED, E.BLUE };
 

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace CodeGenTests
 {
-    static class IntRemainder
+    public static class IntRemainder
     {
         static int _fieldValue = 123;
         static uint _fieldValueUnsigned = 123;
@@ -73,7 +73,7 @@ namespace CodeGenTests
         }
 
         [Fact]
-        static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             if (Int32_RemainderByOneWithValue(-123) != 0)
                 return 0;

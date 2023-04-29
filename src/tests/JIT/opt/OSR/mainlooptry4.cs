@@ -13,7 +13,7 @@ using Xunit;
 
 class E : Exception {}
 
-class MainLoopMutuallyProtectiveTry
+public class MainLoopMutuallyProtectiveTry
 {
    [Fact]
    public static int TestEntryPoint()

@@ -1406,7 +1406,7 @@
 
 } // end of class TailcallVerify.MyCompare
 
-.class private auto ansi beforefieldinit TailcallVerify.Program
+.class public auto ansi beforefieldinit TailcallVerify.Program
        extends [mscorlib]System.Object
 {
   .field private static int32 result
@@ -2244,7 +2244,7 @@
     IL_07ab:  ret
   } // end of method Program::Run
 
-  .method private hidebysig static int32
+  .method public hidebysig static int32
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

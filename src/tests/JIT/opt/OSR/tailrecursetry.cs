@@ -6,7 +6,7 @@ using Xunit;
 
 // Tail recursion, OSR entry in try region
 
-class TailRecursionWithOsrEntryInTry
+public class TailRecursionWithOsrEntryInTry
 {
     public static int F(int from, int to, int n, int a)
     {

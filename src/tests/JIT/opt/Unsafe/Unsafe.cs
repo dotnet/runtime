@@ -7,7 +7,7 @@ using Xunit;
 
 namespace CodeGenTests
 {
-    class UnsafeTests
+    public class UnsafeTests
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         static byte UnsafeAsNarrowCast_Short(short value)
@@ -31,7 +31,7 @@ namespace CodeGenTests
         }
 
         [Fact]
-        static int TestEntryPoint()
+        public static int TestEntryPoint()
         {
             if (UnsafeAsNarrowCast_Short(255) != 255)
                 return 0;

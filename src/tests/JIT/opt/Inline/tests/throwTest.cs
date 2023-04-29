@@ -27,7 +27,7 @@ namespace JitInliningTest
             }
         }
     }
-    internal class throwTest
+    public class throwTest
     {
         [Fact]
         public static int TestEntryPoint()

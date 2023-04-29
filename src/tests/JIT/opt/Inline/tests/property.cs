@@ -14,7 +14,7 @@ public class A
         set { _prop = value; }
     }
 }
-internal class Property
+public class Property
 {
     [Fact]
     public static int TestEntryPoint()

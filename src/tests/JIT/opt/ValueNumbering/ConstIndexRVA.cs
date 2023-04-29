@@ -8,10 +8,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
-class RvaTests
+public class RvaTests
 {
     [Fact]
-    static int TestEntryPoint()
+    public static int TestEntryPoint()
     {
         if (!BitConverter.IsLittleEndian)
         {

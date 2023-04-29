@@ -7,7 +7,7 @@ using Xunit;
 
 // Ensure small OSR locals are marked as normalize on load
 
-class Runtime_83959
+public class Runtime_83959
 {
     static bool B(out byte b)
     {

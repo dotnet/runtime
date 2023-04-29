@@ -25,7 +25,7 @@ namespace JitInliningTest
             }
         }
     }
-    internal class PropTest5
+    public class PropTest5
     {
         [Fact]
         public static int TestEntryPoint()

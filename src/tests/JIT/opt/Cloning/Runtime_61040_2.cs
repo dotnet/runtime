@@ -17,7 +17,7 @@ struct StructWithHoles
     public int C;
 }
 
-class Runtime_61040_2
+public class Runtime_61040_2
 {
     static int z = 0;
 

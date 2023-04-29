@@ -55,7 +55,7 @@ internal interface ITest5
     int f9();
 }
 
-internal class C : ITest5
+public class C : ITest5
 {
     private int _code;
     public C()
@@ -68,7 +68,7 @@ internal class C : ITest5
     public virtual int f9() { GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); if (this.GetHashCode() != _code) return 999; else return 18; }
 }
 
-internal class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDerived2, IDerived
+public class CTest : C, ITest1, ITest2, ITest3, ITest4, IBase1, IDerived1, IDerived2, IDerived
 {
     private int _code;
     public CTest()

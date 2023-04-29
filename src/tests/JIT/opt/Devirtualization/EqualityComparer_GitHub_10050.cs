@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 
-class EqualityComparer_GitHub_10050
+public class EqualityComparer_GitHub_10050
 {
     // Would like to see just one call to Default per call to Hoist
     public static int Hoist()

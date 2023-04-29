@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-internal class Test_DelegStaticFtn
+public class Test_DelegStaticFtn
 {
     private delegate object MyDeleg(string s);
 

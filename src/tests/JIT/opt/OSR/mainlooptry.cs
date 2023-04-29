@@ -6,7 +6,7 @@ using Xunit;
 
 // OSR entry in a try region
 
-class MainLoopTry
+public class MainLoopTry
 {
    [Fact]
    public static int TestEntryPoint()
