@@ -132,7 +132,7 @@ namespace System.Threading.RateLimiting
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
             }
 
-            using var disposer = new RequestRegistration.Disposer();
+            using var disposer = default(RequestRegistration.Disposer);
 
             // Perf: Check SemaphoreSlim implementation instead of locking
             lock (Lock)
@@ -218,7 +218,7 @@ namespace System.Threading.RateLimiting
 
         private void Release(int releaseCount)
         {
-            using var disposer = new RequestRegistration.Disposer();
+            using var disposer = default(RequestRegistration.Disposer);
             lock (Lock)
             {
                 if (_disposed)
@@ -295,7 +295,7 @@ namespace System.Threading.RateLimiting
                 return;
             }
 
-            using var disposer = new RequestRegistration.Disposer();
+            using var disposer = default(RequestRegistration.Disposer);
             lock (Lock)
             {
                 if (_disposed)

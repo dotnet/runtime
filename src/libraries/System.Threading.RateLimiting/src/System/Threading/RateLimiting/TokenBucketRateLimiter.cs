@@ -156,7 +156,7 @@ namespace System.Threading.RateLimiting
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
             }
 
-            using var disposer = new RequestRegistration.Disposer();
+            using var disposer = default(RequestRegistration.Disposer);
             lock (Lock)
             {
                 if (TryLeaseUnsynchronized(tokenCount, out RateLimitLease? lease))
@@ -279,7 +279,7 @@ namespace System.Threading.RateLimiting
         // Used in tests to avoid dealing with real time
         private void ReplenishInternal(long nowTicks)
         {
-            using var disposer = new RequestRegistration.Disposer();
+            using var disposer = default(RequestRegistration.Disposer);
 
             // method is re-entrant (from Timer), lock to avoid multiple simultaneous replenishes
             lock (Lock)
@@ -380,7 +380,7 @@ namespace System.Threading.RateLimiting
                 return;
             }
 
-            using var disposer = new RequestRegistration.Disposer();
+            using var disposer = default(RequestRegistration.Disposer);
             lock (Lock)
             {
                 if (_disposed)
