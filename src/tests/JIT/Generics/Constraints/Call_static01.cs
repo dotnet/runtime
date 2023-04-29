@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public interface IFoo
 {
@@ -55,7 +56,8 @@ public class Test_Call_static01
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Eval(GenClass<FooClass>.CallOnConstraint(new FooClass()));
         Eval(GenClass<FooStruct>.CallOnConstraint(new FooStruct()));

@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
 internal delegate T GenDelegate<T>(T p1, out T p2);
 
@@ -17,7 +18,8 @@ internal struct Foo
 
 public class Test_Delegate029
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int i, j;
         GenDelegate<int> MyDelegate = new GenDelegate<int>(Foo.Function);

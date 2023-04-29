@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct ValX0 { }
 public struct ValY0 { }
@@ -53,7 +54,8 @@ public class Test_specific_class_instance02
 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int cLabel = 0;
 

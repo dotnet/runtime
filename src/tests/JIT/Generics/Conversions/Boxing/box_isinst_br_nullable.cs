@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public static class Tests
 {
@@ -38,7 +39,8 @@ public static class Tests
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         BoxIsInstBr1<int?>(1).Expect(1);
         BoxIsInstBr1<int?>(null).Expect(0);

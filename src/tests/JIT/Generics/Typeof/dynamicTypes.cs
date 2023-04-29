@@ -42,6 +42,7 @@ sealed class DS : B
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class X<T>
 {
@@ -752,7 +753,8 @@ public class mainMethod
                 //Console.WriteLine("-----------{0}", i++);
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
                 callCheckGetType();
                 callCheckIs();

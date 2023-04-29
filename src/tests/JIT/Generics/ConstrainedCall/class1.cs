@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 interface IncrDecr
 {
     void Incr(int a);
@@ -58,7 +59,8 @@ class MyCounter<T> where T : IncrDecr, new()
 }
 public class test
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MyCounter<MyInt> mc = new MyCounter<MyInt>();
         mc.Increment();

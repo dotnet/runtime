@@ -7,6 +7,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 interface X
 {
@@ -223,7 +224,8 @@ int tmp = 1;
         Console.WriteLine("-----------{0}", i++);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         callCheckGetTypeValueType();
         callCheckIsValueType();

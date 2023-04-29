@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Test unsupported outside of windows -->
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' != 'true'">true</CLRTestTargetUnsupported>
