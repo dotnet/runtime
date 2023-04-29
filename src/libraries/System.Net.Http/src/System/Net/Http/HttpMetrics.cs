@@ -28,19 +28,37 @@ namespace System.Net.Http
 
         public void RequestStart(HttpRequestMessage request)
         {
-#pragma warning disable SA1129 // Do not use default value type constructor
-            var tags = new TagList();
-#pragma warning restore SA1129 // Do not use default value type constructor
-            InitializeCommonTags(ref tags, request);
-            _currentRequests.Add(1, tags);
+            if (_currentRequests.Enabled)
+            {
+                RequestStartCore(request);
+            }
         }
 
-        public void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, Exception? unhandledException, long startTimestamp, long currentTimestamp)
+        public void RequestStartCore(HttpRequestMessage request)
         {
 #pragma warning disable SA1129 // Do not use default value type constructor
             var tags = new TagList();
 #pragma warning restore SA1129 // Do not use default value type constructor
             InitializeCommonTags(ref tags, request);
+
+            _currentRequests.Add(1, tags);
+        }
+
+        public void RequestStop(HttpRequestMessage request, HttpResponseMessage? response, Exception? unhandledException, long startTimestamp, long currentTimestamp)
+        {
+            if (_currentRequests.Enabled || _requestsDuration.Enabled)
+            {
+                RequestStopCore(request, response, unhandledException, startTimestamp, currentTimestamp);
+            }
+        }
+
+        private void RequestStopCore(HttpRequestMessage request, HttpResponseMessage? response, Exception? unhandledException, long startTimestamp, long currentTimestamp)
+        {
+#pragma warning disable SA1129 // Do not use default value type constructor
+            var tags = new TagList();
+#pragma warning restore SA1129 // Do not use default value type constructor
+            InitializeCommonTags(ref tags, request);
+
             _currentRequests.Add(-1, tags);
 
             if (response is not null)
