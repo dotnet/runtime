@@ -957,7 +957,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
             WellKnownArg wellKnownArgType =
                 srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
-            GenTree*   destAddr = impGetStructAddr(dest, srcCall->gtRetClsHnd, CHECK_SPILL_ALL, /* willDeref */ true);
+            GenTree*   destAddr = impGetNodeAddr(dest, srcCall->gtRetClsHnd, CHECK_SPILL_ALL, /* willDeref */ true);
             NewCallArg newArg   = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
 
 #if !defined(TARGET_ARM)
@@ -1059,7 +1059,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
         if (call->ShouldHaveRetBufArg())
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
-            GenTree* destAddr = impGetStructAddr(dest, call->gtRetClsHnd, CHECK_SPILL_ALL, /* willDeref */ true);
+            GenTree* destAddr = impGetNodeAddr(dest, call->gtRetClsHnd, CHECK_SPILL_ALL, /* willDeref */ true);
             call->gtArgs.InsertAfterThisOrFirst(this,
                                                 NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
 
@@ -1076,7 +1076,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
     {
         // Since we are assigning the result of a GT_MKREFANY, "destAddr" must point to a refany.
         // TODO-CQ: we can do this without address-exposing the local on the LHS.
-        GenTree* destAddr = impGetStructAddr(dest, impGetRefAnyClass(), CHECK_SPILL_ALL, /* willDeref */ true);
+        GenTree* destAddr = impGetNodeAddr(dest, impGetRefAnyClass(), CHECK_SPILL_ALL, /* willDeref */ true);
         GenTree* destAddrClone;
         destAddr = impCloneExpr(destAddr, &destAddrClone, NO_CLASS_HANDLE, curLevel,
                                 pAfterStmt DEBUGARG("MKREFANY assignment"));
@@ -1182,44 +1182,43 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 }
 
 //------------------------------------------------------------------------
-// impGetStructAddr: Get the address of a struct value.
+// impGetNodeAddr: Get the address of a value.
 //
 // Arguments:
-//    structVal - The value in question
-//    structHnd - The struct handle for "structVal"
+//    val       - The value in question
+//    typeHnd   - The type handle for "val"
 //    curLevel  - Stack level for spilling
 //    willDeref - Whether the caller will dereference the address
 //
 // Return Value:
-//    In case "structVal" can represent locations (is an indirection/local),
+//    In case "val" can represent locations (is an indirection/local),
 //    will return its address. Otherwise, address of a temporary assigned
-//    the value of "structVal" will be returned.
+//    the value of "val" will be returned.
 //
-GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
-                                    CORINFO_CLASS_HANDLE structHnd,
-                                    unsigned             curLevel,
-                                    bool                 willDeref)
+GenTree* Compiler::impGetNodeAddr(GenTree*             val,
+                                  CORINFO_CLASS_HANDLE typeHnd,
+                                  unsigned             curLevel,
+                                  bool                 willDeref)
 {
-    assert(varTypeIsStruct(structVal));
-    switch (structVal->OperGet())
+    switch (val->OperGet())
     {
         case GT_BLK:
         case GT_IND:
             if (willDeref)
             {
-                return structVal->AsIndir()->Addr();
+                return val->AsIndir()->Addr();
             }
             break;
 
         case GT_LCL_VAR:
-            return gtNewLclVarAddrNode(structVal->AsLclVar()->GetLclNum(), TYP_BYREF);
+            return gtNewLclVarAddrNode(val->AsLclVar()->GetLclNum(), TYP_BYREF);
 
         case GT_LCL_FLD:
-            return gtNewLclAddrNode(structVal->AsLclFld()->GetLclNum(), structVal->AsLclFld()->GetLclOffs(), TYP_BYREF);
+            return gtNewLclAddrNode(val->AsLclFld()->GetLclNum(), val->AsLclFld()->GetLclOffs(), TYP_BYREF);
 
         case GT_FIELD:
         {
-            GenTreeField* fieldNode = structVal->AsField();
+            GenTreeField* fieldNode = val->AsField();
             GenTreeField* fieldAddr =
                 new (this, GT_FIELD_ADDR) GenTreeField(GT_FIELD_ADDR, TYP_BYREF, fieldNode->GetFldObj(),
                                                        fieldNode->gtFldHnd, fieldNode->gtFldOffset);
@@ -1231,15 +1230,15 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
         }
 
         case GT_COMMA:
-            impAppendTree(structVal->AsOp()->gtGetOp1(), curLevel, impCurStmtDI);
-            return impGetStructAddr(structVal->AsOp()->gtGetOp2(), structHnd, curLevel, willDeref);
+            impAppendTree(val->AsOp()->gtGetOp1(), curLevel, impCurStmtDI);
+            return impGetStructAddr(val->AsOp()->gtGetOp2(), typeHnd, curLevel, willDeref);
 
         default:
             break;
     }
 
     unsigned lclNum = lvaGrabTemp(true DEBUGARG("location for address-of(RValue)"));
-    impAssignTempGen(lclNum, structVal, structHnd, curLevel);
+    impAssignTempGen(lclNum, val, typeHnd, curLevel);
 
     // The 'return value' is now address of the temp itself.
     return gtNewLclVarAddrNode(lclNum, TYP_BYREF);
@@ -3272,7 +3271,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         GenTree* objToBox = impPopStack().val;
 
                                         // Spill struct to get its address (to access hasValue field)
-                                        objToBox = impGetStructAddr(objToBox, nullableCls, CHECK_SPILL_ALL, true);
+                                        objToBox = impGetNodeAddr(objToBox, nullableCls, CHECK_SPILL_ALL, true);
 
                                         impPushOnStack(gtNewFieldRef(TYP_BOOL, hasValueFldHnd, objToBox, 0),
                                                        typeInfo(TI_INT));
@@ -3625,7 +3624,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             return;
         }
 
-        op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetStructAddr(exprToBox, operCls, CHECK_SPILL_ALL, true));
+        op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetNodeAddr(exprToBox, operCls, CHECK_SPILL_ALL, true));
     }
 
     /* Push the result back on the stack, */
@@ -8293,7 +8292,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             }
                             else
                             {
-                                op1 = impGetStructAddr(op1, clsHnd, CHECK_SPILL_ALL, false);
+                                op1 = impGetNodeAddr(op1, clsHnd, CHECK_SPILL_ALL, false);
                             }
 
                             JITDUMP("\n ... optimized to ...\n");
@@ -9256,7 +9255,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             {
                                 BADCODE("top of stack must be a value type");
                             }
-                            obj = impGetStructAddr(obj, objType, CHECK_SPILL_ALL, true);
+                            obj = impGetNodeAddr(obj, objType, CHECK_SPILL_ALL, true);
                         }
 
                         if (isLoadAddress)
@@ -10012,7 +10011,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 else
                 {
                     // Get the address of the refany
-                    op1 = impGetStructAddr(op1, impGetRefAnyClass(), CHECK_SPILL_ALL, /* willDeref */ true);
+                    op1 = impGetNodeAddr(op1, impGetRefAnyClass(), CHECK_SPILL_ALL, /* willDeref */ true);
 
                     // Fetch the type from the correct slot
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,

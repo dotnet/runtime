@@ -4051,7 +4051,7 @@ public:
                                 const DebugInfo&     di         = DebugInfo(),
                                 BasicBlock*          block      = nullptr);
 
-    GenTree* impGetStructAddr(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel, bool willDeref);
+    GenTree* impGetNodeAddr(GenTree* val, CORINFO_CLASS_HANDLE typeHnd, unsigned curLevel, bool willDeref);
 
     var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoType* simdBaseJitType = nullptr);
 

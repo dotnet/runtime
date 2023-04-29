@@ -15937,7 +15937,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
             // helper needs pointer to struct, not struct itself
             if (pFieldInfo->helper == CORINFO_HELP_SETFIELDSTRUCT)
             {
-                assg = impGetStructAddr(assg, structType, CHECK_SPILL_ALL, true);
+                assg = impGetNodeAddr(assg, structType, CHECK_SPILL_ALL, true);
             }
             else if (lclTyp == TYP_DOUBLE && assg->TypeGet() == TYP_FLOAT)
             {
@@ -16013,7 +16013,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
                 if (!varTypeIsStruct(lclTyp))
                 {
                     // get the result as primitive type
-                    result = impGetStructAddr(result, structType, CHECK_SPILL_ALL, true);
+                    result = impGetNodeAddr(result, structType, CHECK_SPILL_ALL, true);
                     result = gtNewIndir(lclTyp, result);
                 }
             }

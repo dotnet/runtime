@@ -4037,40 +4037,22 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                 return nullptr;
             }
 
-            CorInfoType fromJitType = info.compCompHnd->asCorInfoType(fromTypeHnd);
-            var_types   fromType    = JITtype2varType(fromJitType);
+            ClassLayout* fromLayout = nullptr;
+            var_types    fromType   = TypeHandleToVarType(fromTypeHnd, &fromLayout);
 
-            CorInfoType toJitType = info.compCompHnd->asCorInfoType(toTypeHnd);
-            var_types   toType    = JITtype2varType(toJitType);
+            ClassLayout* toLayout = nullptr;
+            var_types    toType   = TypeHandleToVarType(toTypeHnd, &toLayout);
 
-            bool involvesStructType = false;
-
-            if (fromType == TYP_STRUCT)
+            if (fromLayout != nullptr && toLayout != nullptr && ClassLayout::AreCompatible(fromLayout, toLayout))
             {
-                involvesStructType = true;
-
-                if (toType == TYP_STRUCT)
-                {
-                    ClassLayout* fromLayout = typGetObjLayout(fromTypeHnd);
-                    ClassLayout* toLayout   = typGetObjLayout(toTypeHnd);
-
-                    if (ClassLayout::AreCompatible(fromLayout, toLayout))
-                    {
-                        // Handle compatible struct layouts where we can simply return op1
-                        return impPopStack().val;
-                    }
-                }
-            }
-            else if (toType == TYP_STRUCT)
-            {
-                involvesStructType = true;
+                // Handle compatible struct layouts where we can simply return op1
+                return impPopStack().val;
             }
 
-            if (involvesStructType)
+            if (varTypeIsStruct(fromType) || varTypeIsStruct(toType))
             {
-                // TODO-CQ: Handle this by getting the address of `op1` and then dereferencing
-                // that as TTo, much as `Unsafe.As<TFrom, TTo>(ref op1)` would work.
-                return nullptr;
+                GenTree* addr = impGetNodeAddr(impPopStack().val, fromTypeHnd, CHECK_SPILL_ALL, true);
+                return gtNewLoadValueNode(toType, toLayout, addr);
             }
 
             if (varTypeIsFloating(fromType))
@@ -4300,26 +4282,21 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_SRCS_UNSAFE_Read:
-        {
-            assert(sig->sigInst.methInstCount == 1);
-
-            // ldarg.0
-            // ldobj !!T
-            // ret
-
-            return nullptr;
-        }
-
         case NI_SRCS_UNSAFE_ReadUnaligned:
         {
             assert(sig->sigInst.methInstCount == 1);
 
             // ldarg.0
-            // unaligned. 0x1
+            // if NI_SRCS_UNSAFE_ReadUnaligned: unaligned. 0x1
             // ldobj !!T
             // ret
 
-            return nullptr;
+            CORINFO_CLASS_HANDLE typeHnd = sig->sigInst.methInst[0];
+            ClassLayout*         layout  = nullptr;
+            var_types            type    = TypeHandleToVarType(typeHnd, &layout);
+            GenTreeFlags         flags   = intrinsic == NI_SRCS_UNSAFE_ReadUnaligned ? GTF_IND_UNALIGNED : GTF_EMPTY;
+
+            return gtNewLoadValueNode(type, layout, impPopStack().val, flags);
         }
 
         case NI_SRCS_UNSAFE_SizeOf:
@@ -4410,28 +4387,24 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_SRCS_UNSAFE_Write:
-        {
-            assert(sig->sigInst.methInstCount == 1);
-
-            // ldarg.0
-            // ldarg.1
-            // stobj !!T
-            // ret
-
-            return nullptr;
-        }
-
         case NI_SRCS_UNSAFE_WriteUnaligned:
         {
             assert(sig->sigInst.methInstCount == 1);
 
             // ldarg.0
             // ldarg.1
-            // unaligned. 0x01
+            // if NI_SRCS_UNSAFE_WriteUnaligned: unaligned. 0x01
             // stobj !!T
             // ret
 
-            return nullptr;
+            GenTree* op1 = impPopStack().val;
+            GenTree* op2 = impPopStack().val;
+
+            CORINFO_CLASS_HANDLE typeHnd = sig->sigInst.methInst[0];
+            var_types            type    = TypeHandleToVarType(typeHnd, nullptr);
+            GenTreeFlags         flags   = intrinsic == NI_SRCS_UNSAFE_WriteUnaligned ? GTF_IND_UNALIGNED : GTF_EMPTY;
+
+            return gtNewAssignNode(gtNewIndir(type, op1, flags), op2);
         }
 
         default:
