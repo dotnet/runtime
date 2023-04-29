@@ -1195,10 +1195,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 //    will return its address. Otherwise, address of a temporary assigned
 //    the value of "val" will be returned.
 //
-GenTree* Compiler::impGetNodeAddr(GenTree*             val,
-                                  CORINFO_CLASS_HANDLE typeHnd,
-                                  unsigned             curLevel,
-                                  bool                 willDeref)
+GenTree* Compiler::impGetNodeAddr(GenTree* val, CORINFO_CLASS_HANDLE typeHnd, unsigned curLevel, bool willDeref)
 {
     switch (val->OperGet())
     {
