@@ -747,14 +747,14 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
     GenTree* expr = stmt->GetRootNode();
     if (expr->OperGet() == GT_ASG && expr->TypeGet() == TYP_FLOAT)
     {
-        GenTree*    curDst          = expr->AsOp()->gtOp1;
-        GenTree*    curSrc          = expr->AsOp()->gtOp2;
-        unsigned    index           = 0;
-        CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-        unsigned    simdSize        = 0;
-        GenTree*    srcSimdLclAddr  = getSIMDStructFromField(curSrc, &simdBaseJitType, &index, &simdSize, true);
+        GenTree*  curDst         = expr->AsOp()->gtOp1;
+        GenTree*  curSrc         = expr->AsOp()->gtOp2;
+        unsigned  index          = 0;
+        var_types simdBaseType   = curSrc->TypeGet();
+        unsigned  simdSize       = 0;
+        GenTree*  srcSimdLclAddr = getSIMDStructFromField(curSrc, &index, &simdSize, true);
 
-        if (srcSimdLclAddr == nullptr || simdBaseJitType != CORINFO_TYPE_FLOAT)
+        if (srcSimdLclAddr == nullptr || simdBaseType != TYP_FLOAT)
         {
             fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
         }
@@ -765,10 +765,9 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
         else if (fgPreviousCandidateSIMDFieldAsgStmt != nullptr)
         {
             assert(index > 0);
-            var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-            GenTree*  prevAsgExpr  = fgPreviousCandidateSIMDFieldAsgStmt->GetRootNode();
-            GenTree*  prevDst      = prevAsgExpr->AsOp()->gtOp1;
-            GenTree*  prevSrc      = prevAsgExpr->AsOp()->gtOp2;
+            GenTree* prevAsgExpr = fgPreviousCandidateSIMDFieldAsgStmt->GetRootNode();
+            GenTree* prevDst     = prevAsgExpr->AsOp()->gtOp1;
+            GenTree* prevSrc     = prevAsgExpr->AsOp()->gtOp2;
             if (!areArgumentsContiguous(prevDst, curDst) || !areArgumentsContiguous(prevSrc, curSrc))
             {
                 fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
