@@ -563,7 +563,7 @@ OBJECTREF AllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 #endif
 
     FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
-    ArrayBase* orArray = static_cast<ArrayBase*>(foh->TryAllocateObject(pArrayMT, totalSize, /*publish*/ false));
+    ArrayBase* orArray = static_cast<ArrayBase*>(foh->TryAllocateObject(pArrayMT, PtrAlign(totalSize), /*publish*/ false));
     if (orArray == nullptr)
     {
         // We failed to allocate on a frozen segment, fallback to AllocateSzArray
