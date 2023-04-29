@@ -12,7 +12,7 @@ public class BringUpTest_FPRoots
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void FPRoots(float a, float b, float c, ref float r1, ref float r2) 
+    internal static void FPRoots(float a, float b, float c, ref float r1, ref float r2) 
     { 
        r1 = (-b + (float)Math.Sqrt((double)(b*b - 4*a*c)))/(2*a);
        r2  = (-b - (float)Math.Sqrt((double)(b*b - 4*a*c)))/(2*a);

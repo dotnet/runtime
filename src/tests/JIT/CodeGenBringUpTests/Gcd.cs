@@ -12,7 +12,7 @@ public class BringUpTest_Gcd
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void print(int a, int b)
+    internal static void print(int a, int b)
     {
          Console.WriteLine("GCD: " + a + "," + b);
     }

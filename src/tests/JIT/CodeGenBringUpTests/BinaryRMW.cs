@@ -12,7 +12,7 @@ public class BringUpTest_BinaryRMW
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void BinaryRMW(ref int x, int y)
+    internal static void BinaryRMW(ref int x, int y)
     {
         x += y;
         x |= 2;

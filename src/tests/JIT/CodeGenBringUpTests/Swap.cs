@@ -12,7 +12,7 @@ public class BringUpTest_Swap
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void Swap(ref int a, ref int b)
+    internal static void Swap(ref int a, ref int b)
     {
       int t = a;
       a = b;

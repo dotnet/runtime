@@ -12,7 +12,7 @@ public class BringUpTest_NotRMW
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void NotRMW(ref int x) { x = ~x; }
+    internal static void NotRMW(ref int x) { x = ~x; }
 
     [Fact]
     public static int TestEntryPoint()

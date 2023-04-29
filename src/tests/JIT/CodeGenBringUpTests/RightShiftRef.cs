@@ -12,7 +12,7 @@ public class BringUpTest_RightShiftRef
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void RightShiftRef(ref int x, int y) { x >>= y; }
+    internal static void RightShiftRef(ref int x, int y) { x >>= y; }
 
     [Fact]
     public static int TestEntryPoint()

@@ -12,7 +12,7 @@ public class BringUpTest_Ind1
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void Ind1(ref int x) { x = 1; return; }
+    internal static void Ind1(ref int x) { x = 1; return; }
 
     [Fact]
     public static int TestEntryPoint()

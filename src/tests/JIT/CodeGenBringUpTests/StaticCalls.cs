@@ -93,12 +93,6 @@ public class BringUpTest_StaticCalls
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void Print(int s)
-    {
-       Console.WriteLine(s);
-    }
-
-    [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static int StaticCalls()
     {
         int a = 1;
