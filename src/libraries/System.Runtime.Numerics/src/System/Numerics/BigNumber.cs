@@ -1017,20 +1017,30 @@ namespace System.Numerics
 
             Debug.Assert(!bits.IsEmpty);
 
-            byte highByte = bits[bits.Length - 1];
-            int charCount = highByte == 0 ? 1 : 8 - byte.LeadingZeroCount(highByte);
-            charCount += (bits.Length - 1) * 8;
-            if (digits > charCount)
+            byte highByte = bits[^1];
+
+            long tmpCharCount = highByte == 0 ? 1 : 8 - byte.LeadingZeroCount(highByte);
+            tmpCharCount += (long)(bits.Length - 1) << 3;
+
+            if (tmpCharCount > Array.MaxLength)
             {
-                charCount = digits;
+                Debug.Assert(arrayToReturnToPool is not null);
+                ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
+
+                throw GetException(ParsingStatus.Overflow);
             }
 
-            // each byte is typically eight chars
-            ValueStringBuilder sb = charCount > 512 ? new ValueStringBuilder(charCount) : new ValueStringBuilder(stackalloc char[charCount]);
+            int charsForBits = (int)tmpCharCount;
 
-            if (digits > charCount)
+            Debug.Assert(digits < Array.MaxLength);
+            int charsIncludeDigits = digits > charsForBits ? digits : charsForBits;
+
+            // each byte is typically eight chars
+            ValueStringBuilder sb = charsIncludeDigits > 512 ? new ValueStringBuilder(charsIncludeDigits) : new ValueStringBuilder(stackalloc char[charsIncludeDigits]);
+
+            if (digits > charsForBits)
             {
-                sb.Append(value._sign >= 0 ? '0' : '1', digits - charCount);
+                sb.Append(value._sign >= 0 ? '0' : '1', digits - charsForBits);
             }
 
             if (highByte == 0)
