@@ -3823,6 +3823,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				g_assert_not_reached ();
 			}
 			break;
+		case OP_XOP_OVR_X_X_X: {
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			switch (iid) {
+			case INTRINS_AARCH64_ADV_SIMD_TBL1:
+				arm_neon_tbl1_16b (code, dreg, sreg1, sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
 		case OP_XZERO:
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
 			break;
