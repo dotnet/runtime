@@ -503,9 +503,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_MUL_64RSLT              = 0x40000000, // GT_MUL     -- produce 64-bit result
 
-#ifdef TARGET_LOONGARCH64
-    GTF_JCC_FALSE               = 0x40000000, // GT_JCC     -- Branch on false rather than not true for float comparing.
-#endif
     GTF_RELOP_NAN_UN            = 0x80000000, // GT_<relop> -- Is branch taken if ops are NaN?
     GTF_RELOP_JMP_USED          = 0x40000000, // GT_<relop> -- result of compare used for jump or ?:
     GTF_RELOP_ZTT               = 0x08000000, // GT_<relop> -- Loop test cloned for converting while-loops into do-while

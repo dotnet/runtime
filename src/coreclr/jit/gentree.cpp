@@ -3574,12 +3574,8 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
     }
     else if (tree->OperIs(GT_JCC, GT_SETCC))
     {
-#if defined(TARGET_LOONGARCH64)
-        tree->gtFlags ^= GTF_JCC_FALSE;
-#else
         GenTreeCC* cc   = tree->AsCC();
         cc->gtCondition = GenCondition::Reverse(cc->gtCondition);
-#endif
     }
     else if (tree->OperIs(GT_JCMP, GT_JTEST))
     {
