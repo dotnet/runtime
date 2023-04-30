@@ -335,7 +335,7 @@ namespace System.Net.Quic.Tests
             // TODO: the exception may change if we implement https://github.com/dotnet/runtime/issues/73152 to make server close
             // connections with CONNECTION_REFUSED in such cases
             var authEx = await Assert.ThrowsAsync<AuthenticationException>(() => clientTask);
-            Assert.Contains("UserCanceled", authEx.Message);
+            Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), authEx.Message);
             Assert.Equal(clientOptions.ClientAuthenticationOptions.TargetHost, receivedHostName);
             await Assert.ThrowsAsync<ArgumentException>(async () => await listener.AcceptConnectionAsync());
 

@@ -171,7 +171,7 @@ Statement* Compiler::fgNewStmtAtEnd(BasicBlock* block, GenTree* tree, const Debu
 
 //------------------------------------------------------------------------
 // fgInsertStmtNearEnd: Insert the given statement at the end of the given basic block,
-//   but before the GT_JTRUE, if present.
+//   but before the terminating node, if present.
 //
 // Arguments:
 //   block - the block into which 'stmt' will be inserted;
@@ -182,7 +182,7 @@ void Compiler::fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt)
     // This routine can only be used when in tree order.
     assert(fgOrder == FGOrderTree);
 
-    if (block->KindIs(BBJ_COND, BBJ_SWITCH, BBJ_RETURN))
+    if (block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_COND, BBJ_SWITCH, BBJ_RETURN))
     {
         Statement* firstStmt = block->firstStmt();
         noway_assert(firstStmt != nullptr);
@@ -191,24 +191,28 @@ void Compiler::fgInsertStmtNearEnd(BasicBlock* block, Statement* stmt)
         Statement* insertionPoint = lastStmt->GetPrevStmt();
 
 #if DEBUG
-        if (block->bbJumpKind == BBJ_COND)
+        if (block->KindIs(BBJ_COND))
         {
-            assert(lastStmt->GetRootNode()->gtOper == GT_JTRUE);
+            assert(lastStmt->GetRootNode()->OperIs(GT_JTRUE));
         }
-        else if (block->bbJumpKind == BBJ_RETURN)
+        else if (block->KindIs(BBJ_RETURN))
         {
-            assert((lastStmt->GetRootNode()->gtOper == GT_RETURN) || (lastStmt->GetRootNode()->gtOper == GT_JMP) ||
+            assert((lastStmt->GetRootNode()->OperIs(GT_RETURN, GT_JMP)) ||
                    // BBJ_RETURN blocks in functions returning void do not get a GT_RETURN node if they
                    // have a .tail prefix (even if canTailCall returns false for these calls)
                    // code:Compiler::impImportBlockCode (search for the RET: label)
                    // Ditto for real tail calls (all code after them has been removed)
-                   ((lastStmt->GetRootNode()->gtOper == GT_CALL) &&
+                   (lastStmt->GetRootNode()->OperIs(GT_CALL) &&
                     ((info.compRetType == TYP_VOID) || lastStmt->GetRootNode()->AsCall()->IsTailCall())));
+        }
+        else if (block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
+        {
+            assert(lastStmt->GetRootNode()->OperIs(GT_RETFILT));
         }
         else
         {
-            assert(block->bbJumpKind == BBJ_SWITCH);
-            assert(lastStmt->GetRootNode()->gtOper == GT_SWITCH);
+            assert(block->KindIs(BBJ_SWITCH));
+            assert(lastStmt->GetRootNode()->OperIs(GT_SWITCH));
         }
 #endif // DEBUG
 
@@ -524,6 +528,7 @@ inline bool OperIsControlFlow(genTreeOps oper)
     {
         case GT_JTRUE:
         case GT_JCMP:
+        case GT_JTEST:
         case GT_JCC:
         case GT_SWITCH:
         case GT_LABEL:

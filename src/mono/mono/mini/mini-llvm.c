@@ -1220,6 +1220,12 @@ simd_op_to_llvm_type (int opcode)
 #endif
 }
 
+#if defined(TARGET_OSX) || defined(TARGET_LINUX)
+#define COLD_CCONV_SUPPORTED 1
+#elif !defined(TARGET_WATCHOS) && !defined(TARGET_ARM) && !defined(TARGET_ARM64)
+#define COLD_CCONV_SUPPORTED 1
+#endif
+
 static void
 set_cold_cconv (LLVMValueRef func)
 {
@@ -1227,7 +1233,7 @@ set_cold_cconv (LLVMValueRef func)
 	 * xcode10 (watchOS) and ARM/ARM64 doesn't seem to support preserveall, it fails with:
 	 * fatal error: error in backend: Unsupported calling convention
 	 */
-#if !defined(TARGET_WATCHOS) && !defined(TARGET_ARM) && !defined(TARGET_ARM64)
+#ifdef COLD_CCONV_SUPPORTED
 	LLVMSetFunctionCallConv (func, LLVMColdCallConv);
 #endif
 }
@@ -1235,7 +1241,7 @@ set_cold_cconv (LLVMValueRef func)
 static void
 set_call_cold_cconv (LLVMValueRef func)
 {
-#if !defined(TARGET_WATCHOS) && !defined(TARGET_ARM) && !defined(TARGET_ARM64)
+#ifdef COLD_CCONV_SUPPORTED
 	LLVMSetInstructionCallConv (func, LLVMColdCallConv);
 #endif
 }
@@ -5834,6 +5840,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_NOT_NULL:
 		case OP_LIVERANGE_START:
 		case OP_LIVERANGE_END:
+		case OP_TAILCALL_PARAMETER:
 			break;
 		case OP_ICONST:
 			values [ins->dreg] = const_int32 (ins->inst_c0);
@@ -7781,6 +7788,12 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_XOP_OVR_X_X: {
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
+			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "");
+			break;
+		}
 #endif
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_WASM)
 		case OP_EXTRACTX_U2:
@@ -8702,12 +8715,6 @@ MONO_RESTORE_WARNING
 			IntrinsicId id = (IntrinsicId)ins->inst_c0;
 			LLVMValueRef args [] = { lhs, rhs };
 			values [ins->dreg] = call_intrins (ctx, id, args, "");
-			break;
-		}
-		case OP_XOP_OVR_X_X: {
-			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
-			llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
-			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, &lhs, "");
 			break;
 		}
 #endif
@@ -11741,13 +11748,20 @@ MONO_RESTORE_WARNING
 		}
 		case OP_IL_SEQ_POINT:
 			break;
-		default: {
+		case OP_ARGLIST:
+		case OP_TAILCALL:
+		case OP_TAILCALL_REG:
+		case OP_TAILCALL_MEMBASE:
+		case OP_CKFINITE: {
 			char reason [128];
 
 			sprintf (reason, "opcode %s", mono_inst_name (ins->opcode));
 			set_failure (ctx, reason);
 			break;
 		}
+		default:
+			g_error ("opcode %d %s", ins->opcode, mono_inst_name (ins->opcode));
+			break;
 		}
 
 		if (!ctx_ok (ctx))

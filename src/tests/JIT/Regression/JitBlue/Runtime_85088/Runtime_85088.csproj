@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitStressModeNames" Value="STRESS_PHYSICAL_PROMOTION STRESS_PHYSICAL_PROMOTION_COST STRESS_NO_OLD_PROMOTION" />
+  </ItemGroup>
+</Project>

@@ -5305,20 +5305,20 @@ public:
     void SplitTreesRandomly();
     void SplitTreesRemoveCommas();
 
-    template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
+    template <bool (Compiler::*ExpansionFunction)(BasicBlock**, Statement*, GenTreeCall*)>
     PhaseStatus fgExpandHelper(bool skipRarelyRunBlocks);
 
-    template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
-    bool fgExpandHelperForBlock(BasicBlock* block);
+    template <bool (Compiler::*ExpansionFunction)(BasicBlock**, Statement*, GenTreeCall*)>
+    bool fgExpandHelperForBlock(BasicBlock** pBlock);
 
     PhaseStatus fgExpandRuntimeLookups();
-    bool fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+    bool fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgExpandThreadLocalAccess();
-    bool fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+    bool fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgExpandStaticInit();
-    bool fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+    bool fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
@@ -8896,12 +8896,6 @@ public:
         {
             maxRegSize = maxSIMDStructBytes();
 #if defined(TARGET_XARCH)
-            if (type != UnrollKind::Memmove)
-            {
-                // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial.
-                // Enabled for Memmove only for now.
-                maxRegSize = min(maxRegSize, YMM_REGSIZE_BYTES);
-            }
             threshold = maxRegSize;
 #elif defined(TARGET_ARM64)
             // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
@@ -8933,7 +8927,7 @@ public:
         //
         // | arch        | memset | memcpy |
         // |-------------|--------|--------|
-        // | x86 avx512  |   512  |   256  | (TODO-XARCH-AVX512: ignored for now)
+        // | x86 avx512  |   512  |   256  |
         // | x86 avx     |   256  |   128  |
         // | x86 sse     |   128  |    64  |
         // | arm64       |   256  |   128  | ldp/stp (2x128bit)

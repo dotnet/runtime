@@ -64,20 +64,6 @@ export declare interface EmscriptenModule {
     onAbort?: { (error: any): void };
 }
 
-export declare interface EmscriptenModuleInternal {
-    __locateFile?: (path: string, prefix?: string) => string;
-    locateFile?: (path: string, prefix?: string) => string;
-    mainScriptUrlOrBlob?: string;
-    wasmModule: WebAssembly.Instance | null;
-    ready: Promise<unknown>;
-    asm: { memory?: WebAssembly.Memory };
-    wasmMemory?: WebAssembly.Memory;
-    getWasmTableEntry(index: number): any;
-    removeRunDependency(id: string): void;
-    addRunDependency(id: string): void;
-}
-
-
 export type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;
 export type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
 

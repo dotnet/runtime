@@ -37,6 +37,7 @@
 using System.Globalization;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Buffers.Binary;
 
 namespace System.Reflection.Emit
 {
@@ -221,7 +222,7 @@ namespace System.Reflection.Emit
             if (type.is_created)
                 throw not_after_created();
 
-            ParameterBuilder pb = new ParameterBuilder(this, iSequence, attributes, strParamName);
+            ParameterBuilder pb = new RuntimeParameterBuilder(this, iSequence, attributes, strParamName);
             pinfo ??= new ParameterBuilder[parameters!.Length + 1];
             pinfo[iSequence] = pb;
             return pb;
@@ -254,20 +255,16 @@ namespace System.Reflection.Emit
             return ilgen;
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
-            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
+            string? attrname = con.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.MethodImplAttribute")
             {
-                byte[] data = customBuilder.Data;
-                int impla; // the (stupid) ctor takes a short or an int ...
-                impla = (int)data[2];
-                impla |= ((int)data[3]) << 8;
+                int impla = BinaryPrimitives.ReadUInt16LittleEndian(binaryAttribute.Slice(2));
                 SetImplementationFlags((MethodImplAttributes)impla);
                 return;
             }
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -280,14 +277,6 @@ namespace System.Reflection.Emit
                 cattrs = new CustomAttributeBuilder[1];
                 cattrs[0] = customBuilder;
             }
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
