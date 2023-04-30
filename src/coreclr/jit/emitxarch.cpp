@@ -9453,20 +9453,202 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 }
 #endif
 
+//------------------------------------------------------------------------
+// emitSizeOfInsDsc_AMD: The allocated size, in bytes, of the AMD or AMD_CNS instrDesc
+//
+// Arguments:
+//    id - The instrDesc for which to get the size
+//
+// Returns:
+//    The allocated size, in bytes, of id
+//
+size_t emitter::emitSizeOfInsDsc_AMD(instrDesc* id) const
+{
+    assert(!emitIsSmallInsDsc(id));
+
+#if defined(DEBUG)
+    assert((unsigned)id->idInsFmt() < emitFmtCount);
+    ID_OPS idOp = (ID_OPS)emitFmtToOps[id->idInsFmt()];
+    assert((idOp == ID_OP_AMD) || (idOp == ID_OP_AMD_CNS));
+#endif // DEBUG
+
+    if (id->idIsLargeCns())
+    {
+        if (id->idIsLargeDsp())
+        {
+            return sizeof(instrDescCnsAmd);
+        }
+        else
+        {
+            return sizeof(instrDescCns);
+        }
+    }
+    else if (id->idIsLargeDsp())
+    {
+        return sizeof(instrDescAmd);
+    }
+    else
+    {
+        return sizeof(instrDesc);
+    }
+}
+
+//------------------------------------------------------------------------
+// emitSizeOfInsDsc_CNS: The allocated size, in bytes, of the CNS or SCNS instrDesc
+//
+// Arguments:
+//    id - The instrDesc for which to get the size
+//
+// Returns:
+//    The allocated size, in bytes, of id
+//
+size_t emitter::emitSizeOfInsDsc_CNS(instrDesc* id) const
+{
+#if defined(DEBUG)
+    assert((unsigned)id->idInsFmt() < emitFmtCount);
+    ID_OPS idOp = (ID_OPS)emitFmtToOps[id->idInsFmt()];
+    assert((idOp == ID_OP_CNS) || (idOp == ID_OP_SCNS));
+#endif // DEBUG
+
+    if (emitIsSmallInsDsc(id))
+    {
+        return SMALL_IDSC_SIZE;
+    }
+    else if (id->idIsLargeCns())
+    {
+        return sizeof(instrDescCns);
+    }
+    else
+    {
+        return sizeof(instrDesc);
+    }
+}
+
+//------------------------------------------------------------------------
+// emitSizeOfInsDsc_NONE: The allocated size, in bytes, of the NONE instrDesc
+//
+// Arguments:
+//    id - The instrDesc for which to get the size
+//
+// Returns:
+//    The allocated size, in bytes, of id
+//
+size_t emitter::emitSizeOfInsDsc_NONE(instrDesc* id) const
+{
+#if defined(DEBUG)
+    assert((unsigned)id->idInsFmt() < emitFmtCount);
+    ID_OPS idOp = (ID_OPS)emitFmtToOps[id->idInsFmt()];
+    assert(idOp == ID_OP_NONE);
+#endif // DEBUG
+
+    if (emitIsSmallInsDsc(id))
+    {
+        return SMALL_IDSC_SIZE;
+    }
+#if FEATURE_LOOP_ALIGN
+    else if (id->idIns() == INS_align)
+    {
+        return sizeof(instrDescAlign);
+    }
+#endif
+    else
+    {
+        return sizeof(instrDesc);
+    }
+}
+
+//------------------------------------------------------------------------
+// emitSizeOfInsDsc_SPEC: The allocated size, in bytes, of the CALL or SPEC instrDesc
+//
+// Arguments:
+//    id - The instrDesc for which to get the size
+//
+// Returns:
+//    The allocated size, in bytes, of id
+//
+size_t emitter::emitSizeOfInsDsc_SPEC(instrDesc* id) const
+{
+    assert(!emitIsSmallInsDsc(id));
+
+#if defined(DEBUG)
+    assert((unsigned)id->idInsFmt() < emitFmtCount);
+    ID_OPS idOp = (ID_OPS)emitFmtToOps[id->idInsFmt()];
+    assert((idOp == ID_OP_CALL) || (idOp == ID_OP_SPEC));
+#endif // DEBUG
+
+    if (id->idIsLargeCall())
+    {
+        /* Must be a "fat" indirect call descriptor */
+        return sizeof(instrDescCGCA);
+    }
+    else if (id->idIsLargeCns())
+    {
+        if (id->idIsLargeDsp())
+        {
+            return sizeof(instrDescCnsDsp);
+        }
+        else
+        {
+            return sizeof(instrDescCns);
+        }
+    }
+    else if (id->idIsLargeDsp())
+    {
+        return sizeof(instrDescDsp);
+    }
+    else
+    {
+        return sizeof(instrDesc);
+    }
+}
+
+//------------------------------------------------------------------------
+// emitSizeOfInsDsc_DSP: The allocated size, in bytes, of the DSP or DSP_CNS instrDesc
+//
+// Arguments:
+//    id - The instrDesc for which to get the size
+//
+// Returns:
+//    The allocated size, in bytes, of id
+//
+size_t emitter::emitSizeOfInsDsc_DSP(instrDesc* id) const
+{
+    assert(!emitIsSmallInsDsc(id));
+
+#if defined(DEBUG)
+    assert((unsigned)id->idInsFmt() < emitFmtCount);
+    ID_OPS idOp = (ID_OPS)emitFmtToOps[id->idInsFmt()];
+    assert((idOp == ID_OP_DSP) || (idOp == ID_OP_DSP_CNS));
+#endif // DEBUG
+
+    if (id->idIsLargeCns())
+    {
+        if (id->idIsLargeDsp())
+        {
+            return sizeof(instrDescCnsDsp);
+        }
+        else
+        {
+            return sizeof(instrDescCns);
+        }
+    }
+    else if (id->idIsLargeDsp())
+    {
+        return sizeof(instrDescDsp);
+    }
+    else
+    {
+        return sizeof(instrDesc);
+    }
+}
+
 /*****************************************************************************
  *
  *  Return the allocated size (in bytes) of the given instruction descriptor.
  */
-
-size_t emitter::emitSizeOfInsDsc(instrDesc* id)
+size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
-    if (emitIsScnsInsDsc(id))
-    {
-        return SMALL_IDSC_SIZE;
-    }
-
     assert((unsigned)id->idInsFmt() < emitFmtCount);
-
     ID_OPS idOp = (ID_OPS)emitFmtToOps[id->idInsFmt()];
 
     // An INS_call instruction may use a "fat" direct/indirect call descriptor
@@ -9476,95 +9658,58 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
 
     if (id->idIns() == INS_call)
     {
-        assert(idOp == ID_OP_CALL || // is a direct   call
-               idOp == ID_OP_SPEC || // is a indirect call
-               idOp == ID_OP_JMP);   // is a local call to finally clause
+        assert((idOp == ID_OP_CALL) || // is a direct   call
+               (idOp == ID_OP_SPEC) || // is a indirect call
+               (idOp == ID_OP_JMP));   // is a local call to finally clause
     }
 
     switch (idOp)
     {
         case ID_OP_NONE:
-#if FEATURE_LOOP_ALIGN
-            if (id->idIns() == INS_align)
-            {
-                return sizeof(instrDescAlign);
-            }
-#endif
-            break;
+        {
+            return emitSizeOfInsDsc_NONE(id);
+        }
 
         case ID_OP_LBL:
+        {
             return sizeof(instrDescLbl);
+        }
 
         case ID_OP_JMP:
+        {
             return sizeof(instrDescJmp);
+        }
 
         case ID_OP_CALL:
         case ID_OP_SPEC:
-            if (id->idIsLargeCall())
-            {
-                /* Must be a "fat" indirect call descriptor */
-                return sizeof(instrDescCGCA);
-            }
-
-            FALLTHROUGH;
+        {
+            return emitSizeOfInsDsc_SPEC(id);
+        }
 
         case ID_OP_SCNS:
         case ID_OP_CNS:
+        {
+            return emitSizeOfInsDsc_CNS(id);
+        }
+
         case ID_OP_DSP:
         case ID_OP_DSP_CNS:
-            if (id->idIsLargeCns())
-            {
-                if (id->idIsLargeDsp())
-                {
-                    return sizeof(instrDescCnsDsp);
-                }
-                else
-                {
-                    return sizeof(instrDescCns);
-                }
-            }
-            else
-            {
-                if (id->idIsLargeDsp())
-                {
-                    return sizeof(instrDescDsp);
-                }
-                else
-                {
-                    return sizeof(instrDesc);
-                }
-            }
+        {
+            return emitSizeOfInsDsc_DSP(id);
+        }
+
         case ID_OP_AMD:
         case ID_OP_AMD_CNS:
-            if (id->idIsLargeCns())
-            {
-                if (id->idIsLargeDsp())
-                {
-                    return sizeof(instrDescCnsAmd);
-                }
-                else
-                {
-                    return sizeof(instrDescCns);
-                }
-            }
-            else
-            {
-                if (id->idIsLargeDsp())
-                {
-                    return sizeof(instrDescAmd);
-                }
-                else
-                {
-                    return sizeof(instrDesc);
-                }
-            }
+        {
+            return emitSizeOfInsDsc_AMD(id);
+        }
 
         default:
+        {
             NO_WAY("unexpected instruction descriptor format");
-            break;
+            return sizeof(instrDesc);
+        }
     }
-
-    return sizeof(instrDesc);
 }
 
 /*****************************************************************************
@@ -15677,7 +15822,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_CNS:
         {
             dst = emitOutputIV(dst, id);
-            sz  = emitSizeOfInsDsc(id);
+            sz  = emitSizeOfInsDsc_CNS(id);
             break;
         }
 
@@ -15945,7 +16090,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
             dst += emitOutputWord(dst, code);
             dst += emitOutputByte(dst, emitGetInsSC(id));
-            sz = emitSizeOfInsDsc(id);
+            sz = emitSizeOfInsDsc_CNS(id);
 
             // Update GC info.
             assert(!id->idGCref());
@@ -15968,7 +16113,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RRW_CNS:
         {
             dst = emitOutputRI(dst, id);
-            sz  = emitSizeOfInsDsc(id);
+            sz  = emitSizeOfInsDsc_CNS(id);
             break;
         }
 
@@ -15978,7 +16123,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_RWR_RRD:
         {
             dst = emitOutputRRR(dst, id);
-            sz  = emitSizeOfInsDsc(id);
+            sz = sizeof(instrDesc);
             break;
         }
 
@@ -15986,8 +16131,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_RRD_RRD_RRD:
         {
             dst = emitOutputRRR(dst, id);
-            sz  = emitSizeOfInsDsc(id);
             dst += emitOutputByte(dst, emitGetInsSC(id));
+            sz = sizeof(instrDesc);
             break;
         }
 
@@ -16105,7 +16250,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
 
             dst += emitOutputByte(dst, emitGetInsSC(id));
-            sz = emitSizeOfInsDsc(id);
+            sz = emitSizeOfInsDsc_CNS(id);
 
             // Kill any GC ref in the destination register if necessary.
             if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
@@ -16159,8 +16304,17 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     goto DONE_CALL;
 
                 default:
-                    sz = emitSizeOfInsDsc(id);
+                {
+                    if (id->idInsFmt() == IF_ARD)
+                    {
+                        sz = emitSizeOfInsDsc_SPEC(id);
+                    }
+                    else
+                    {
+                        sz = emitSizeOfInsDsc_AMD(id);
+                    }
                     break;
+                }
             }
             break;
         }
@@ -16185,7 +16339,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 dst     = emitOutputAM(dst, id, code | regcode, &cnsVal);
             }
 
-            sz = emitSizeOfInsDsc(id);
+            sz = emitSizeOfInsDsc_AMD(id);
             break;
         }
 
@@ -16197,7 +16351,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeMR(ins);
             dst  = emitOutputAM(dst, id, code, &cnsVal);
-            sz   = emitSizeOfInsDsc(id);
+            sz   = emitSizeOfInsDsc_AMD(id);
             break;
         }
 
@@ -16220,7 +16374,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputAM(dst, id, code | regcode);
             }
-            sz = emitSizeOfInsDsc(id);
+            sz = emitSizeOfInsDsc_AMD(id);
             break;
         }
 
@@ -16231,7 +16385,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(IsAVX2GatherInstruction(ins));
             code = insCodeRM(ins);
             dst  = emitOutputAM(dst, id, code);
-            sz   = emitSizeOfInsDsc(id);
+            sz   = emitSizeOfInsDsc_AMD(id);
             break;
         }
 
@@ -16251,7 +16405,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputAM(dst, id, code | regcode, &cnsVal);
             }
-            sz = emitSizeOfInsDsc(id);
+            sz = emitSizeOfInsDsc_AMD(id);
             break;
         }
 
@@ -16263,7 +16417,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code    = AddSimdPrefixIfNeeded(id, code, size);
             regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
             dst     = emitOutputAM(dst, id, code | regcode);
-            sz      = emitSizeOfInsDsc(id);
+            sz      = emitSizeOfInsDsc_AMD(id);
             break;
         }
 
@@ -16272,7 +16426,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = insCodeMR(ins);
             code = AddSimdPrefixIfNeeded(id, code, size);
             dst  = emitOutputAM(dst, id, code);
-            sz   = emitSizeOfInsDsc(id);
+            sz   = emitSizeOfInsDsc_AMD(id);
             break;
         }
 
@@ -16282,7 +16436,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             emitGetInsAmdCns(id, &cnsVal);
             dst = emitOutputAM(dst, id, insCodeMI(ins), &cnsVal);
-            sz  = emitSizeOfInsDsc(id);
+            sz  = emitSizeOfInsDsc_AMD(id);
             break;
         }
 
@@ -16290,7 +16444,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             emitGetInsAmdCns(id, &cnsVal);
             dst = emitOutputAM(dst, id, insCodeMR(ins), &cnsVal);
-            sz  = emitSizeOfInsDsc(id);
+            sz  = emitSizeOfInsDsc_AMD(id);
             break;
         }
 
@@ -16325,7 +16479,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 goto IND_CALL;
             }
-
             break;
         }
 
@@ -16335,7 +16488,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             emitGetInsCns(id, &cnsVal);
             dst = emitOutputSV(dst, id, insCodeMI(ins), &cnsVal);
-            sz  = emitSizeOfInsDsc(id);
+            sz  = emitSizeOfInsDsc_CNS(id);
             break;
         }
 
@@ -16343,7 +16496,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             emitGetInsCns(id, &cnsVal);
             dst = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);
-            sz  = emitSizeOfInsDsc(id);
+            sz  = emitSizeOfInsDsc_CNS(id);
             break;
         }
 
@@ -16355,7 +16508,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             emitGetInsAmdCns(id, &cnsVal);
             code = insCodeMR(ins);
             dst  = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);
-            sz   = emitSizeOfInsDsc(id);
+            sz   = emitSizeOfInsDsc_CNS(id);
             break;
         }
 
@@ -16392,7 +16545,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 dst     = emitOutputSV(dst, id, code | regcode, &cnsVal);
             }
 
-            sz = emitSizeOfInsDsc(id);
+            sz = emitSizeOfInsDsc_CNS(id);
             break;
         }
 
@@ -16421,8 +16574,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputSV(dst, id, code | regcode);
             }
-
-            sz = emitSizeOfInsDsc(id);
+            sz = sizeof(instrDesc);
             break;
         }
 
@@ -16449,8 +16601,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputSV(dst, id, code | regcode);
             }
-
-            sz = emitSizeOfInsDsc(id);
+            sz = sizeof(instrDesc);
             break;
         }
 
@@ -16477,8 +16628,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputSV(dst, id, code | regcode, &cnsVal);
             }
-
-            sz = emitSizeOfInsDsc(id);
+            sz = sizeof(instrDesc);
             break;
         }
 
@@ -16503,7 +16653,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
             dst     = emitOutputSV(dst, id, code | regcode);
-            sz      = emitSizeOfInsDsc(id);
+            sz      = sizeof(instrDesc);
             break;
         }
 
@@ -16530,13 +16680,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             noway_assert(ins != INS_call);
             dst = emitOutputCV(dst, id, insCodeMR(ins) | 0x0500);
-            sz  = emitSizeOfInsDsc(id);
+            if (id->idInsFmt() == IF_MRD)
+            {
+                sz = emitSizeOfInsDsc_SPEC(id);
+            }
+            else
+            {
+                sz = emitSizeOfInsDsc_DSP(id);
+            }
             break;
         }
 
         case IF_MRD_OFF:
         {
             dst = emitOutputCV(dst, id, insCodeMI(ins));
+            sz  = sizeof(instrDesc);
             break;
         }
 
@@ -16573,7 +16731,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 dst     = emitOutputCV(dst, id, code | regcode | 0x0500, &cnsVal);
             }
 
-            sz = emitSizeOfInsDsc(id);
+            sz = emitSizeOfInsDsc_DSP(id);
             break;
         }
 
@@ -16589,7 +16747,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = insCodeMR(ins);
             // we do not need VEX.vvvv to encode the register operand
             dst = emitOutputCV(dst, id, code, &cnsVal);
-            sz  = emitSizeOfInsDsc(id);
+            sz  = emitSizeOfInsDsc_DSP(id);
             break;
         }
 
@@ -16626,7 +16784,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 }
             }
 
-            sz = emitSizeOfInsDsc(id);
+            sz = emitSizeOfInsDsc_DSP(id);
             break;
         }
 
@@ -16653,7 +16811,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
             }
-            sz = emitSizeOfInsDsc(id);
+            sz = emitSizeOfInsDsc_DSP(id);
             break;
         }
 
@@ -16679,7 +16837,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputCV(dst, id, code | regcode | 0x0500, &cnsVal);
             }
-            sz = emitSizeOfInsDsc(id);
+            sz = emitSizeOfInsDsc_DSP(id);
             break;
         }
 
@@ -16702,7 +16860,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             regcode = insEncodeReg012(id, id->idReg1(), size, &code);
             dst     = emitOutputCV(dst, id, code | 0x30 | regcode);
-            sz      = emitSizeOfInsDsc(id);
+            sz      = emitSizeOfInsDsc_DSP(id);
             break;
         }
 
@@ -16727,7 +16885,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
             regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
             dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
-            sz      = emitSizeOfInsDsc(id);
+            sz      = emitSizeOfInsDsc_DSP(id);
             break;
         }
 
@@ -16737,7 +16895,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             emitGetInsDcmCns(id, &cnsVal);
             dst = emitOutputCV(dst, id, insCodeMI(ins) | 0x0500, &cnsVal);
-            sz  = emitSizeOfInsDsc(id);
+            sz  = emitSizeOfInsDsc_DSP(id);
             break;
         }
 
@@ -16745,7 +16903,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             emitGetInsDcmCns(id, &cnsVal);
             dst = emitOutputCV(dst, id, insCodeMR(ins) | 0x0500, &cnsVal);
-            sz  = emitSizeOfInsDsc(id);
+            sz  = emitSizeOfInsDsc_DSP(id);
             break;
         }
 

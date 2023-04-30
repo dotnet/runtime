@@ -495,6 +495,12 @@ void emitAdjustStackDepthPushPop(instruction ins);
 void emitAdjustStackDepth(instruction ins, ssize_t val);
 #endif // !FEATURE_FIXED_OUT_ARGS
 
+size_t emitSizeOfInsDsc_AMD(instrDesc* id) const;
+size_t emitSizeOfInsDsc_CNS(instrDesc* id) const;
+size_t emitSizeOfInsDsc_DSP(instrDesc* id) const;
+size_t emitSizeOfInsDsc_NONE(instrDesc* id) const;
+size_t emitSizeOfInsDsc_SPEC(instrDesc* id) const;
+
 /*****************************************************************************
 *
 *  Convert between an index scale in bytes to a smaller encoding used for

@@ -1575,7 +1575,7 @@ protected:
         {
             _idDspReloc = val;
         }
-        bool idIsReloc()
+        bool idIsReloc() const
         {
             return idIsDspReloc() || idIsCnsReloc();
         }
@@ -2787,9 +2787,9 @@ private:
     static const unsigned emitFmtCount;
 #endif
 
-    bool emitIsScnsInsDsc(instrDesc* id);
+    bool emitIsSmallInsDsc(instrDesc* id) const;
 
-    size_t emitSizeOfInsDsc(instrDesc* id);
+    size_t emitSizeOfInsDsc(instrDesc* id) const;
 
     /************************************************************************/
     /*        The following keeps track of stack-based GC values            */
@@ -3172,7 +3172,7 @@ inline void emitter::instrDesc::checkSizes()
  *  fields allocated).
  */
 
-inline bool emitter::emitIsScnsInsDsc(instrDesc* id)
+inline bool emitter::emitIsSmallInsDsc(instrDesc* id) const
 {
     return id->idIsSmallDsc();
 }
