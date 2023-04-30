@@ -1212,7 +1212,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree*             val,
         case GT_IND:
             if (derefFlags != nullptr)
             {
-                *derefFlags |= val->gtFlags;
+                *derefFlags |= (val->gtFlags & GTF_IND_FLAGS);
                 return val->AsIndir()->Addr();
             }
             break;
