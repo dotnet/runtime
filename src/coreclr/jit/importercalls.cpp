@@ -4415,7 +4415,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             var_types            type    = TypeHandleToVarType(typeHnd, nullptr);
             GenTreeFlags         flags   = intrinsic == NI_SRCS_UNSAFE_WriteUnaligned ? GTF_IND_UNALIGNED : GTF_EMPTY;
 
-            return gtNewAssignNode(gtNewIndir(type, op1, flags), op2);
+            return gtNewAssignNode(gtNewIndir(type, op2, flags), op1);
         }
 
         default:
