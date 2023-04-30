@@ -12045,7 +12045,9 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // relative addressing which results in smaller instruction size.
         if ((ins == INS_mov) && (id->idReg1() == REG_EAX) && (reg == REG_NA) && (rgx == REG_NA))
         {
-            if (id->idInsFmt() == IF_RWR_ARD)
+            insFormat insFmt = id->idInsFmt();
+
+            if (insFmt == IF_RWR_ARD)
             {
                 assert(code == (insCodeRM(ins) | (insEncodeReg345(id, REG_EAX, EA_PTRSIZE, NULL) << 8)));
 
@@ -12053,9 +12055,8 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 code |= 0xA0;
                 isMoffset = true;
             }
-            else
+            else if (insFmt == IF_AWR_RRD)
             {
-                assert(id->idInsFmt() == IF_AWR_RRD);
                 assert(code == (insCodeMR(ins) | (insEncodeReg345(id, REG_EAX, EA_PTRSIZE, NULL) << 8)));
 
                 code &= ~((code_t)0xFFFFFFFF);
@@ -13467,7 +13468,9 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // relative addressing which results in smaller instruction size.
         if (ins == INS_mov && id->idReg1() == REG_EAX)
         {
-            if (id->idInsFmt() == IF_RWR_MRD)
+            insFormat insFmt = id->idInsFmt();
+
+            if (insFmt == IF_RWR_MRD)
             {
                 assert(code == (insCodeRM(ins) | (insEncodeReg345(id, REG_EAX, EA_PTRSIZE, NULL) << 8) | 0x0500));
 
@@ -13475,9 +13478,8 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 code |= 0xA0;
                 isMoffset = true;
             }
-            else
+            else if (insFmt == IF_MWR_RRD)
             {
-                assert(id->idInsFmt() == IF_MWR_RRD);
                 assert(code == (insCodeMR(ins) | (insEncodeReg345(id, REG_EAX, EA_PTRSIZE, NULL) << 8) | 0x0500));
 
                 code &= ~((code_t)0xFFFFFFFF);
