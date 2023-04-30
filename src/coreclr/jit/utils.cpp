@@ -1387,7 +1387,6 @@ void HelperCallProperties::init()
                 noThrow = true; // These return null for a failing cast
                 break;
 
-            case CORINFO_HELP_ARE_TYPES_EQUIVALENT:
             case CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
                 isPure  = true;
                 noThrow = true;

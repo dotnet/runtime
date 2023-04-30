@@ -13335,27 +13335,8 @@ GenTree* Compiler::gtCreateHandleCompare(genTreeOps             oper,
                                          GenTree*               op2,
                                          CorInfoInlineTypeCheck typeCheckInliningResult)
 {
-    // If we can compare pointers directly, just emit the binary operation
-    if (typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_PASS)
-    {
-        return gtNewOperNode(oper, TYP_INT, op1, op2);
-    }
-
-    assert(typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_USE_HELPER);
-
-    // Emit a call to a runtime helper
-    GenTree* ret = gtNewHelperCallNode(CORINFO_HELP_ARE_TYPES_EQUIVALENT, TYP_INT, op1, op2);
-    if (oper == GT_EQ)
-    {
-        ret = gtNewOperNode(GT_NE, TYP_INT, ret, gtNewIconNode(0, TYP_INT));
-    }
-    else
-    {
-        assert(oper == GT_NE);
-        ret = gtNewOperNode(GT_EQ, TYP_INT, ret, gtNewIconNode(0, TYP_INT));
-    }
-
-    return ret;
+    assert(typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_PASS);
+    return gtNewOperNode(oper, TYP_INT, op1, op2);
 }
 
 //------------------------------------------------------------------------

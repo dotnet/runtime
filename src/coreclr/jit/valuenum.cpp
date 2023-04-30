@@ -12309,10 +12309,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_TypeHandleToRuntimeTypeHandle;
             break;
 
-        case CORINFO_HELP_ARE_TYPES_EQUIVALENT:
-            vnf = VNF_AreTypesEquivalent;
-            break;
-
         case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
             vnf = VNF_ReadyToRunIsInstanceOf;
             break;

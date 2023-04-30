@@ -518,12 +518,6 @@ OBJECTREF AllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
         return AllocateSzArray(pArrayMT, cElements);
     }
 
-    if (pArrayMT->Collectible())
-    {
-        // Ignore arrays of collectible types
-        return AllocateSzArray(pArrayMT, cElements);
-    }
-
     // Disallow the creation of void[] (an array of System.Void)
     if (elemType == ELEMENT_TYPE_VOID)
         COMPlusThrow(kArgumentException);
