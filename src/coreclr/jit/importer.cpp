@@ -9859,6 +9859,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // we want to be able to use frozen allocators more broadly, but that analysis is not trivial.
                 //
                 if (((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
+                    // NativeAOT is able to preinitialize objects on frozen segments without our help
+                    !IsTargetAbi(CORINFO_NATIVEAOT_ABI) &&
                     // Does VM allow us to use frozen allocators? (e.g. are we in a non-collectible assembly)
                     opts.jitFlags->IsSet(JitFlags::JIT_FLAG_FROZEN_ALLOC_ALLOWED))
                 {
@@ -9869,8 +9871,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         if (getU1LittleEndian(nextOpcode2) == CEE_RET)
                         {
-                            // TODO in this PR: R2R
-                            if (helper == CORINFO_HELP_NEWARR_1_OBJ || helper == CORINFO_HELP_NEWARR_1_VC)
+                            if (CORINFO_HELP_NEWARR_1_OBJ || helper == CORINFO_HELP_NEWARR_1_VC
+#ifdef FEATURE_READYTORUN
+                                    || helper == CORINFO_HELP_READYTORUN_NEWARR_1
+#endif
+                                )
                             {
                                 // Check that the field is "static readonly"
                                 CORINFO_RESOLVED_TOKEN fldToken;
