@@ -958,9 +958,9 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
                 srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
             // TODO: deal with flags
-            GenTreeFlags indirFlags    = GTF_EMPTY;
-            GenTree*     destAddr      = impGetNodeAddr(dest, srcCall->gtRetClsHnd, CHECK_SPILL_ALL, &indirFlags);
-            NewCallArg   newArg        = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
+            GenTreeFlags indirFlags = GTF_EMPTY;
+            GenTree*     destAddr   = impGetNodeAddr(dest, srcCall->gtRetClsHnd, CHECK_SPILL_ALL, &indirFlags);
+            NewCallArg   newArg     = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
 
 #if !defined(TARGET_ARM)
             // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
@@ -1062,8 +1062,8 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
             // TODO: deal with flags
-            GenTreeFlags indirFlags    = GTF_EMPTY;
-            GenTree*     destAddr      = impGetNodeAddr(dest, call->gtRetClsHnd, CHECK_SPILL_ALL, &indirFlags);
+            GenTreeFlags indirFlags = GTF_EMPTY;
+            GenTree*     destAddr   = impGetNodeAddr(dest, call->gtRetClsHnd, CHECK_SPILL_ALL, &indirFlags);
             call->gtArgs.InsertAfterThisOrFirst(this,
                                                 NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
 
@@ -1080,8 +1080,8 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
     {
         // Since we are assigning the result of a GT_MKREFANY, "destAddr" must point to a refany.
         // TODO-CQ: we can do this without address-exposing the local on the LHS.
-        GenTreeFlags indirFlags    = GTF_EMPTY;
-        GenTree*     destAddr      = impGetNodeAddr(dest, impGetRefAnyClass(), CHECK_SPILL_ALL, &indirFlags);
+        GenTreeFlags indirFlags = GTF_EMPTY;
+        GenTree*     destAddr   = impGetNodeAddr(dest, impGetRefAnyClass(), CHECK_SPILL_ALL, &indirFlags);
         GenTree*     destAddrClone;
         destAddr = impCloneExpr(destAddr, &destAddrClone, NO_CLASS_HANDLE, curLevel,
                                 pAfterStmt DEBUGARG("MKREFANY assignment"));
@@ -3639,7 +3639,8 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
         // TODO: deal with flags
         GenTreeFlags indirFlags = GTF_EMPTY;
-        op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetNodeAddr(exprToBox, operCls, CHECK_SPILL_ALL, &indirFlags));
+        op1                     = gtNewHelperCallNode(boxHelper, TYP_REF, op2,
+                                  impGetNodeAddr(exprToBox, operCls, CHECK_SPILL_ALL, &indirFlags));
     }
 
     /* Push the result back on the stack, */
@@ -10035,7 +10036,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // Fetch the type from the correct slot
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
                                         gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
-                    op1 = gtNewIndir(TYP_BYREF, op1, flags);
+                    op1 = gtNewIndir(TYP_BYREF, op1, indirFlags);
                 }
 
                 // Convert native TypeHandle to RuntimeTypeHandle.

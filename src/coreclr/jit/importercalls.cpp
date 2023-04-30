@@ -4416,7 +4416,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             ClassLayout*         layout  = nullptr;
             var_types            type    = TypeHandleToVarType(typeHnd, &layout);
             GenTreeFlags         flags   = intrinsic == NI_SRCS_UNSAFE_WriteUnaligned ? GTF_IND_UNALIGNED : GTF_EMPTY;
-            GenTree* indir = gtNewLoadValueNode(type, layout, op2, flags);
+            GenTree*             indir   = gtNewLoadValueNode(type, layout, op2, flags);
 
             if (varTypeIsStruct(type))
             {
