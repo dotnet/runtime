@@ -15938,8 +15938,8 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
             if (pFieldInfo->helper == CORINFO_HELP_SETFIELDSTRUCT)
             {
                 // TODO: deal with flags
-                GenTreeFlags flags = GTF_EMPTY;
-                assg               = impGetNodeAddr(assg, structType, CHECK_SPILL_ALL, &flags);
+                GenTreeFlags indirFlags = GTF_EMPTY;
+                assg                    = impGetNodeAddr(assg, structType, CHECK_SPILL_ALL, &indirFlags);
             }
             else if (lclTyp == TYP_DOUBLE && assg->TypeGet() == TYP_FLOAT)
             {
@@ -16015,9 +16015,9 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
                 if (!varTypeIsStruct(lclTyp))
                 {
                     // get the result as primitive type
-                    GenTreeFlags flags = GTF_EMPTY;
-                    result             = impGetNodeAddr(result, structType, CHECK_SPILL_ALL, &flags);
-                    result             = gtNewIndir(lclTyp, result, flags);
+                    GenTreeFlags indirFlags = GTF_EMPTY;
+                    result                  = impGetNodeAddr(result, structType, CHECK_SPILL_ALL, &indirFlags);
+                    result                  = gtNewIndir(lclTyp, result, indirFlags);
                 }
             }
             else if (varTypeIsIntegral(lclTyp) && genTypeSize(lclTyp) < genTypeSize(TYP_INT))

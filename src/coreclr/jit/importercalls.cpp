@@ -4052,8 +4052,8 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             if (varTypeIsStruct(fromType) || varTypeIsStruct(toType))
             {
                 GenTree*     addr;
-                GenTreeFlags flags = GTF_EMPTY;
-                GenTree*     val   = impPopStack().val;
+                GenTreeFlags indirFlags = GTF_EMPTY;
+                GenTree*     val        = impPopStack().val;
                 if (val->OperIsIndir() && (fromSize != val->AsIndir()->Size()))
                 {
                     unsigned lclNum = lvaGrabTemp(true DEBUGARG("bitcast small type extension"));
@@ -4062,9 +4062,9 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                 }
                 else
                 {
-                    addr = impGetNodeAddr(val, fromTypeHnd, CHECK_SPILL_ALL, &flags);
+                    addr = impGetNodeAddr(val, fromTypeHnd, CHECK_SPILL_ALL, &indirFlags);
                 }
-                return gtNewLoadValueNode(toType, toLayout, addr, flags);
+                return gtNewLoadValueNode(toType, toLayout, addr, indirFlags);
             }
 
             if (varTypeIsFloating(fromType))
@@ -4416,8 +4416,16 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             ClassLayout*         layout  = nullptr;
             var_types            type    = TypeHandleToVarType(typeHnd, &layout);
             GenTreeFlags         flags   = intrinsic == NI_SRCS_UNSAFE_WriteUnaligned ? GTF_IND_UNALIGNED : GTF_EMPTY;
+            GenTree* indir = gtNewLoadValueNode(type, layout, op2, flags);
 
-            return gtNewAssignNode(gtNewLoadValueNode(type, layout, op2, flags), op1);
+            if (varTypeIsStruct(type))
+            {
+                return impAssignStruct(indir, op1, CHECK_SPILL_ALL);
+            }
+            else
+            {
+                return gtNewAssignNode(indir, op1);
+            }
         }
 
         default:
