@@ -210,6 +210,56 @@ namespace System.Text.RegularExpressions
                 return input;
             }
 
+            // Handle the common case of a left-to-right pattern with no backreferences in the replacement pattern such that the replacement is just a string of text.
+            if (!regex.RightToLeft && !_hasBackreferences)
+            {
+                // With no backreferences, there should either be no rules (in the case of an empty replacement)
+                // or one rule (in the case of a single text string).
+                Debug.Assert(_rules.Length <= 1);
+                Debug.Assert(_rules.Length == 0 || (_rules[0] == 0 && _strings.Length == 1));
+
+                return ReplaceSimpleText(regex, input, _rules.Length != 0 ? _strings[0] : "", count, startat);
+            }
+            else
+            {
+                return ReplaceNonSimpleText(regex, input, count, startat);
+            }
+        }
+
+        private static string ReplaceSimpleText(Regex regex, string input, string replacement, int count, int startat)
+        {
+            // As the replacement text is the same for every match, we don't need to store any information in the segments
+            // about the string itself.  For segments from the input, we store the relevant offset and count.  For segments
+            // that are the replacement text, we store -1 for the offset and count, just serving as a placeholder.
+            var state = (input, replacement, segments: OffsetCountStringBuilder.Create(), inputMemory: input.AsMemory(), prevat: 0, count);
+
+            regex.RunAllMatchesWithCallback(input, startat, ref state, (ref (string input, string replacement, OffsetCountStringBuilder segments, ReadOnlyMemory<char> inputMemory, int prevat, int count) state, Match match) =>
+            {
+                state.segments.Add(state.prevat, match.Index - state.prevat); // the input text from the last match ending until here
+                state.prevat = match.Index + match.Length;
+                if (replacement.Length != 0) // using Replace to remove is common, so special-case the empty string
+                {
+                    state.segments.Add(-1, -1); // placeholder for the replacement
+                }
+                return --state.count != 0;
+            }, RegexRunnerMode.BoundsRequired, reuseMatchObject: true);
+
+            if (state.segments.Count == 0)
+            {
+                // No matches, so just return the input string.
+                return input;
+            }
+
+            // Final segment of the input string after the last match.
+            state.segments.Add(state.prevat, input.Length - state.prevat);
+
+            // Compose the final string from the built up segments.
+            return state.segments.ToString(input, replacement);
+        }
+
+        /// <summary>Handles cases other than left-to-right with a simple replacement string.</summary>
+        private string ReplaceNonSimpleText(Regex regex, string input, int count, int startat)
+        {
             var state = (replacement: this, segments: SegmentStringBuilder.Create(), inputMemory: input.AsMemory(), prevat: 0, count);
 
             if (!regex.RightToLeft)
@@ -227,6 +277,7 @@ namespace System.Text.RegularExpressions
                     return input;
                 }
 
+                // Final segment of the input string after the last match.
                 state.segments.Add(state.inputMemory.Slice(state.prevat));
             }
             else
@@ -246,10 +297,14 @@ namespace System.Text.RegularExpressions
                     return input;
                 }
 
+                // Final segment of the input string after the last match.
                 state.segments.Add(state.inputMemory.Slice(0, state.prevat));
+
+                // Reverse the segments as we're dealing with right-to-left handling.
                 state.segments.AsSpan().Reverse();
             }
 
+            // Compose the final string from the built up segments.
             return state.segments.ToString();
         }
     }
