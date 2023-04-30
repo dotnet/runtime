@@ -957,7 +957,9 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
             WellKnownArg wellKnownArgType =
                 srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
-            GenTree*   destAddr = impGetNodeAddr(dest, srcCall->gtRetClsHnd, CHECK_SPILL_ALL, /* willDeref */ true);
+            // TODO: deal with flags
+            GenTreeFlags flags = GTF_EMPTY;
+            GenTree*   destAddr = impGetNodeAddr(dest, srcCall->gtRetClsHnd, CHECK_SPILL_ALL, &flags);
             NewCallArg newArg   = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
 
 #if !defined(TARGET_ARM)
@@ -1059,7 +1061,9 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
         if (call->ShouldHaveRetBufArg())
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
-            GenTree* destAddr = impGetNodeAddr(dest, call->gtRetClsHnd, CHECK_SPILL_ALL, /* willDeref */ true);
+            // TODO: deal with flags
+            GenTreeFlags flags = GTF_EMPTY;
+            GenTree* destAddr = impGetNodeAddr(dest, call->gtRetClsHnd, CHECK_SPILL_ALL, &flags);
             call->gtArgs.InsertAfterThisOrFirst(this,
                                                 NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
 
@@ -1076,7 +1080,8 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
     {
         // Since we are assigning the result of a GT_MKREFANY, "destAddr" must point to a refany.
         // TODO-CQ: we can do this without address-exposing the local on the LHS.
-        GenTree* destAddr = impGetNodeAddr(dest, impGetRefAnyClass(), CHECK_SPILL_ALL, /* willDeref */ true);
+        GenTreeFlags flags = GTF_EMPTY;
+        GenTree* destAddr = impGetNodeAddr(dest, impGetRefAnyClass(), CHECK_SPILL_ALL, &flags);
         GenTree* destAddrClone;
         destAddr = impCloneExpr(destAddr, &destAddrClone, NO_CLASS_HANDLE, curLevel,
                                 pAfterStmt DEBUGARG("MKREFANY assignment"));
@@ -1084,11 +1089,11 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
         assert(OFFSETOF__CORINFO_TypedReference__dataPtr == 0);
         assert(destAddr->gtType == TYP_I_IMPL || destAddr->gtType == TYP_BYREF);
 
-        GenTree*       ptrSlot         = gtNewIndir(TYP_I_IMPL, destAddr);
+        GenTree*       ptrSlot         = gtNewIndir(TYP_I_IMPL, destAddr, flags);
         GenTreeIntCon* typeFieldOffset = gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL);
 
         GenTree* typeSlot =
-            gtNewIndir(TYP_I_IMPL, gtNewOperNode(GT_ADD, destAddr->gtType, destAddrClone, typeFieldOffset));
+            gtNewIndir(TYP_I_IMPL, gtNewOperNode(GT_ADD, destAddr->gtType, destAddrClone, typeFieldOffset), flags);
 
         // append the assign of the pointer value
         GenTree* asg = gtNewAssignNode(ptrSlot, src->AsOp()->gtOp1);
@@ -1185,24 +1190,26 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 // impGetNodeAddr: Get the address of a value.
 //
 // Arguments:
-//    val       - The value in question
-//    typeHnd   - The type handle for "val"
-//    curLevel  - Stack level for spilling
-//    willDeref - Whether the caller will dereference the address
+//    val        - The value in question
+//    typeHnd    - The type handle for "val"
+//    curLevel   - Stack level for spilling
+//    derefFlags - Flags to be used on dereference, nullptr when
+//                 the address won't be dereferenced
 //
 // Return Value:
 //    In case "val" can represent locations (is an indirection/local),
 //    will return its address. Otherwise, address of a temporary assigned
 //    the value of "val" will be returned.
 //
-GenTree* Compiler::impGetNodeAddr(GenTree* val, CORINFO_CLASS_HANDLE typeHnd, unsigned curLevel, bool willDeref)
+GenTree* Compiler::impGetNodeAddr(GenTree* val, CORINFO_CLASS_HANDLE typeHnd, unsigned curLevel, GenTreeFlags* derefFlags)
 {
     switch (val->OperGet())
     {
         case GT_BLK:
         case GT_IND:
-            if (willDeref)
+            if (derefFlags != nullptr)
             {
+                flags |= val->gtFlags;
                 return val->AsIndir()->Addr();
             }
             break;
@@ -1215,6 +1222,10 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, CORINFO_CLASS_HANDLE typeHnd, un
 
         case GT_FIELD:
         {
+            if (derefFlags != nullptr)
+            {
+                flags |= (val->gtFlags & GTF_IND_FLAGS);
+            }
             GenTreeField* fieldNode = val->AsField();
             GenTreeField* fieldAddr =
                 new (this, GT_FIELD_ADDR) GenTreeField(GT_FIELD_ADDR, TYP_BYREF, fieldNode->GetFldObj(),
@@ -1228,7 +1239,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, CORINFO_CLASS_HANDLE typeHnd, un
 
         case GT_COMMA:
             impAppendTree(val->AsOp()->gtGetOp1(), curLevel, impCurStmtDI);
-            return impGetNodeAddr(val->AsOp()->gtGetOp2(), typeHnd, curLevel, willDeref);
+            return impGetNodeAddr(val->AsOp()->gtGetOp2(), typeHnd, curLevel, derefFlags);
 
         default:
             break;
@@ -3268,7 +3279,9 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         GenTree* objToBox = impPopStack().val;
 
                                         // Spill struct to get its address (to access hasValue field)
-                                        objToBox = impGetNodeAddr(objToBox, nullableCls, CHECK_SPILL_ALL, true);
+                                        // TODO: deal with flags
+                                        GenTreeFlags flags = GTF_EMPTY;
+                                        objToBox = impGetNodeAddr(objToBox, nullableCls, CHECK_SPILL_ALL, &flags);
 
                                         impPushOnStack(gtNewFieldRef(TYP_BOOL, hasValueFldHnd, objToBox, 0),
                                                        typeInfo(TI_INT));
@@ -3621,7 +3634,9 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             return;
         }
 
-        op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetNodeAddr(exprToBox, operCls, CHECK_SPILL_ALL, true));
+        // TODO: deal with flags
+        GenTreeFlags flags = GTF_EMPTY;
+        op1 = gtNewHelperCallNode(boxHelper, TYP_REF, op2, impGetNodeAddr(exprToBox, operCls, CHECK_SPILL_ALL, &flags));
     }
 
     /* Push the result back on the stack, */
@@ -8289,7 +8304,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             }
                             else
                             {
-                                op1 = impGetNodeAddr(op1, clsHnd, CHECK_SPILL_ALL, false);
+                                op1 = impGetNodeAddr(op1, clsHnd, CHECK_SPILL_ALL, nullptr);
                             }
 
                             JITDUMP("\n ... optimized to ...\n");
@@ -9252,7 +9267,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             {
                                 BADCODE("top of stack must be a value type");
                             }
-                            obj = impGetNodeAddr(obj, objType, CHECK_SPILL_ALL, true);
+
+                            // TODO: deal with flags
+                            GenTreeFlags flags = GTF_EMPTY;
+                            obj = impGetNodeAddr(obj, objType, CHECK_SPILL_ALL, &flags);
                         }
 
                         if (isLoadAddress)
@@ -10008,12 +10026,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 else
                 {
                     // Get the address of the refany
-                    op1 = impGetNodeAddr(op1, impGetRefAnyClass(), CHECK_SPILL_ALL, /* willDeref */ true);
+                    GenTreeFlags flags = GTF_EMPTY;
+                    op1 = impGetNodeAddr(op1, impGetRefAnyClass(), CHECK_SPILL_ALL, &flags);
 
                     // Fetch the type from the correct slot
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
                                         gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
-                    op1 = gtNewIndir(TYP_BYREF, op1);
+                    op1 = gtNewIndir(TYP_BYREF, op1, flags);
                 }
 
                 // Convert native TypeHandle to RuntimeTypeHandle.
