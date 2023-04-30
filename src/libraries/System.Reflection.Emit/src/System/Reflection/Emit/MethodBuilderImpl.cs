@@ -1,9 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
@@ -12,10 +16,15 @@ namespace System.Reflection.Emit
         private readonly Type _returnType;
         private readonly Type[]? _parameterTypes;
         private readonly ModuleBuilderImpl _module;
-        private readonly MethodAttributes _attributes;
         private readonly string _name;
         private readonly CallingConventions _callingConventions;
         private readonly TypeBuilderImpl _declaringType;
+        private MethodAttributes _attributes;
+        private MethodImplAttributes _methodImplFlags;
+
+        internal DllImportData? _dllImportData;
+        internal List<CustomAttributeWrapper>? _customAttributes;
+        internal ParameterBuilderImpl[]? _parameters;
 
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
@@ -30,11 +39,14 @@ namespace System.Reflection.Emit
             if (parameterTypes != null)
             {
                 _parameterTypes = new Type[parameterTypes.Length];
+                _parameters = new ParameterBuilderImpl[parameterTypes.Length + 1]; // parameter 0 reserved for return type
                 for (int i = 0; i < parameterTypes.Length; i++)
                 {
                     ArgumentNullException.ThrowIfNull(_parameterTypes[i] = parameterTypes[i], nameof(parameterTypes));
                 }
             }
+
+            _methodImplFlags = MethodImplAttributes.IL;
         }
 
         internal BlobBuilder GetMethodSignatureBlob() =>
@@ -42,11 +54,57 @@ namespace System.Reflection.Emit
 
         protected override bool InitLocalsCore { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names) => throw new NotImplementedException();
-        protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName) => throw new NotImplementedException();
+        protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName)
+        {
+            if (position > 0 && (_parameterTypes == null || position > _parameterTypes.Length))
+                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
+
+            _parameters ??= new ParameterBuilderImpl[1];
+
+            attributes &= ~ParameterAttributes.ReservedMask;
+            ParameterBuilderImpl parameter = new ParameterBuilderImpl(this, position, attributes, strParamName);
+            _parameters[position] = parameter;
+            return parameter;
+        }
         protected override ILGenerator GetILGeneratorCore(int size) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
-        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes) => throw new NotImplementedException();
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
+        {
+            // Handle pseudo custom attributes
+            switch (con.ReflectedType!.FullName)
+            {
+                case "System.Runtime.CompilerServices.MethodImplAttribute":
+                    int implValue = BinaryPrimitives.ReadUInt16LittleEndian(binaryAttribute.Slice(2));
+                    _methodImplFlags |= (MethodImplAttributes)implValue;
+                    return;
+                case "System.Runtime.InteropServices.DllImportAttribute":
+                    {
+                        _dllImportData = DllImportData.CreateDllImportData(CustomAttributeInfo.DecodeCustomAttribute(con, binaryAttribute), out var preserveSig);
+                        _attributes |= MethodAttributes.PinvokeImpl;
+                        if (preserveSig)
+                        {
+                            _methodImplFlags |= MethodImplAttributes.PreserveSig;
+                        }
+                    }
+                    return;
+                case "System.Runtime.InteropServices.PreserveSigAttribute":
+                    _methodImplFlags |= MethodImplAttributes.PreserveSig;
+                    return;
+                case "System.Runtime.CompilerServices.SpecialNameAttribute":
+                    _attributes |= MethodAttributes.SpecialName;
+                    return;
+                case "System.Security.SuppressUnmanagedCodeSecurityAttribute":
+                    _attributes |= MethodAttributes.HasSecurity;
+                    break;
+            }
+
+            _customAttributes ??= new List<CustomAttributeWrapper>();
+            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+        }
+
+        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
+        {
+            _methodImplFlags = attributes;
+        }
         protected override void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
             Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers) => throw new NotImplementedException();
         public override string Name => _name;
@@ -83,7 +141,7 @@ namespace System.Reflection.Emit
             => throw new NotImplementedException();
 
         public override MethodImplAttributes GetMethodImplementationFlags()
-            => throw new NotImplementedException();
+            => _methodImplFlags;
 
         public override ParameterInfo[] GetParameters()
             => throw new NotImplementedException();

@@ -1778,7 +1778,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_movfr2gr_s : INS_movfr2gr_d;
 #elif defined(TARGET_RISCV64)
         assert(!varTypeIsSIMD(dstType));
-        return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_fcvt_w_d : INS_fcvt_l_d;
+        return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_fmv_x_w : INS_fmv_x_d;
 #else
         NYI("ins_Copy");
 #endif
@@ -1834,15 +1834,16 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
     }
 #elif defined(TARGET_RISCV64)
     assert(!varTypeIsSIMD(dstType));
+    assert(!genIsValidFloatReg(srcReg));
 
     if (dstType == TYP_DOUBLE)
     {
-        return INS_fcvt_d_l;
+        return INS_fmv_d_x;
     }
     else
     {
         assert(dstType == TYP_FLOAT);
-        return INS_fcvt_s_l;
+        return INS_fmv_w_x;
     }
 #else
     NYI("ins_Copy");

@@ -32,42 +32,24 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
                 }
 
-                if (jsonTypeInfo.CreateObject == null)
+                if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
                 {
-                    ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
+                    obj = state.Current.ReturnValue!;
                 }
-
-                obj = jsonTypeInfo.CreateObject()!;
-
-                jsonTypeInfo.OnDeserializing?.Invoke(obj);
-                state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
-
-                // Process all properties.
-                while (true)
+                else
                 {
-                    // Read the property name or EndObject.
-                    reader.ReadWithVerify();
-
-                    JsonTokenType tokenType = reader.TokenType;
-
-                    if (tokenType == JsonTokenType.EndObject)
+                    if (jsonTypeInfo.CreateObject == null)
                     {
-                        break;
+                        ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
                     }
 
-                    // Read method would have thrown if otherwise.
-                    Debug.Assert(tokenType == JsonTokenType.PropertyName);
-
-                    ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
-                    JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
-                        obj,
-                        unescapedPropertyName,
-                        ref state,
-                        options,
-                        out bool useExtensionProperty);
-
-                    ReadPropertyValue(obj, ref state, ref reader, jsonPropertyInfo, useExtensionProperty);
+                    obj = jsonTypeInfo.CreateObject()!;
                 }
+
+                PopulatePropertiesFastPath(obj, jsonTypeInfo, options, ref reader, ref state);
+                Debug.Assert(obj != null);
+                value = (T)obj;
+                return true;
             }
             else
             {
@@ -126,12 +108,19 @@ namespace System.Text.Json.Serialization.Converters
                         return true;
                     }
 
-                    if (jsonTypeInfo.CreateObject == null)
+                    if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
                     {
-                        ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
+                        obj = state.Current.ReturnValue!;
                     }
+                    else
+                    {
+                        if (jsonTypeInfo.CreateObject == null)
+                        {
+                            ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
+                        }
 
-                    obj = jsonTypeInfo.CreateObject()!;
+                        obj = jsonTypeInfo.CreateObject()!;
+                    }
 
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                     {
@@ -203,7 +192,7 @@ namespace System.Text.Json.Serialization.Converters
 
                     if (state.Current.PropertyState < StackFramePropertyState.ReadValue)
                     {
-                        if (!jsonPropertyInfo.CanDeserialize)
+                        if (!jsonPropertyInfo.CanDeserializeOrPopulate)
                         {
                             if (!reader.TrySkip())
                             {
@@ -266,6 +255,50 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             return true;
+        }
+
+        // This method is using aggressive inlining to avoid extra stack frame for deep object graphs.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void PopulatePropertiesFastPath(object obj, JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options, ref Utf8JsonReader reader, scoped ref ReadStack state)
+        {
+            jsonTypeInfo.OnDeserializing?.Invoke(obj);
+            state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
+
+            // Process all properties.
+            while (true)
+            {
+                // Read the property name or EndObject.
+                reader.ReadWithVerify();
+
+                JsonTokenType tokenType = reader.TokenType;
+
+                if (tokenType == JsonTokenType.EndObject)
+                {
+                    break;
+                }
+
+                // Read method would have thrown if otherwise.
+                Debug.Assert(tokenType == JsonTokenType.PropertyName);
+
+                ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader);
+                JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
+                    obj,
+                    unescapedPropertyName,
+                    ref state,
+                    options,
+                    out bool useExtensionProperty);
+
+                ReadPropertyValue(obj, ref state, ref reader, jsonPropertyInfo, useExtensionProperty);
+            }
+
+            jsonTypeInfo.OnDeserialized?.Invoke(obj);
+            state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
+
+            // Check if we are trying to build the sorted cache.
+            if (state.Current.PropertyRefCache != null)
+            {
+                jsonTypeInfo.UpdateSortedPropertyCache(ref state.Current);
+            }
         }
 
         internal sealed override bool OnTryWrite(
@@ -420,7 +453,7 @@ namespace System.Text.Json.Serialization.Converters
             bool useExtensionProperty)
         {
             // Skip the property if not found.
-            if (!jsonPropertyInfo.CanDeserialize)
+            if (!jsonPropertyInfo.CanDeserializeOrPopulate)
             {
                 reader.Skip();
             }

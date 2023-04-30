@@ -722,6 +722,11 @@ namespace System.Runtime.Loader
             return InvokeResolveEvent(AssemblyResolve, assembly, assemblyFullName);
         }
 
+        internal static void InvokeAssemblyLoadEvent(Assembly assembly)
+        {
+            AssemblyLoad?.Invoke(AppDomain.CurrentDomain, new AssemblyLoadEventArgs(assembly));
+        }
+
         [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
             Justification = "The code handles the Assembly.Location equals null")]
         private static RuntimeAssembly? InvokeResolveEvent(ResolveEventHandler? eventHandler, RuntimeAssembly? assembly, string name)

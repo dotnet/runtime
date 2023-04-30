@@ -26,6 +26,8 @@ namespace Profiler.Tests
             int gen = GC.GetGeneration("string7");
             if (gen != int.MaxValue)
                 throw new Exception("object is expected to be in a non-gc heap for this test to work");
+
+            GC.Collect();
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

@@ -67,10 +67,10 @@ internal static class WebWorkerEventLoop
         // not needed by PortableThreadPool.WorkerThread
         if (captureContext)
             throw new InvalidOperationException();
-        // hack: threadpool threads are exitable, and nothing else is.
-        // see create_thread() in mono/metadata/threads.c
+        // for now, threadpool threads are exitable, and nothing else is.
         if (!thread.IsThreadPoolThread)
             throw new InvalidOperationException();
+        thread.HasExternalEventLoop = true;
         thread.UnsafeStart();
     }
 

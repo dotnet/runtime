@@ -32,6 +32,8 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_Avx512cd_vl = 0x100000,
     XArchIntrinsicConstants_Avx512dq = 0x200000,
     XArchIntrinsicConstants_Avx512dq_vl = 0x400000,
+    XArchIntrinsicConstants_Avx512Vbmi = 0x800000,
+    XArchIntrinsicConstants_Avx512Vbmi_vl = 0x1000000,
 };
 #endif //HOST_X86 || HOST_AMD64
 
@@ -48,6 +50,11 @@ enum ARM64IntrinsicConstants
     ARM64IntrinsicConstants_Atomics = 0x0080,
     ARM64IntrinsicConstants_Rcpc = 0x0100,
 };
+
+// Bit position for the ARM64IntrinsicConstants_Atomics flags, to be used with tbz / tbnz instructions
+static const int ARM64_ATOMICS_FEATURE_FLAG_BIT = 7;
+static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_Atomics, "ARM64_ATOMICS_FEATURE_FLAG_BIT must match with ARM64IntrinsicConstants_Atomics");
+
 #endif //HOST_ARM64
 
 #endif //!INTRINSICCONSTANTS_INCLUDED

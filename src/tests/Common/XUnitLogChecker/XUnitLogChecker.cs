@@ -14,8 +14,8 @@ public class XUnitLogChecker
 {
     private static class Patterns
     {
-        public const string OpenTag = @"(\B<\w+)|(\B<!\[CDATA\[)";
-        public const string CloseTag = @"(\B</\w+>)|(\]\]>)";
+        public const string OpenTag = @"(\B<\w+[-]?(\w+)?)|(\B<!\[CDATA\[)";
+        public const string CloseTag = @"(\B</\w+[-]?(\w+)?)|(\]\]>)";
     }
 
     private readonly struct TagResult
@@ -59,6 +59,16 @@ public class XUnitLogChecker
         string finalLogPath = Path.Combine(resultsDir, finalLogName);
         string statsCsvPath = Path.Combine(resultsDir, statsCsvName);
 
+        // If the final results log file is present, then we can assume everything
+        // went fine, and it's ready to go without any further processing.
+
+        if (File.Exists(finalLogPath))
+        {
+            Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did"
+                              + " complete successfully!");
+            return SUCCESS;
+        }
+
         // If there are no logs, then this work item was probably entirely skipped.
         // This can happen under certain specific circumstances, such as with the
         // JIT Hardware Intrinsics tests with DOTNET_GCStress enabled. See Github
@@ -75,16 +85,6 @@ public class XUnitLogChecker
             Console.WriteLine($"[XUnitLogChecker]: If this is a mistake, then"
                               + " something went very wrong. The expected temp"
                               + $" log name would be: '{tempLogName}'");
-            return SUCCESS;
-        }
-
-        // If the final results log file is present, then we can assume everything
-        // went fine, and it's ready to go without any further processing.
-
-        if (File.Exists(finalLogPath))
-        {
-            Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did"
-                              + " complete successfully!");
             return SUCCESS;
         }
 
@@ -197,18 +197,6 @@ public class XUnitLogChecker
         return fileContents;
     }
 
-    static void PrintMissingCrashPath(string wrapperName,
-                                      string crashFileType,
-                                      string crashFilePath)
-    {
-        Console.WriteLine($"[XUnitLogChecker]: Item '{wrapperName}' did not complete"
-                        + $" successfully, but there was no {crashFileType} found."
-                        + " The XML log was fixed successfully though.");
-
-        Console.WriteLine($"[XUnitLogChecker]: Expected {crashFileType} path"
-                        + $" was '{crashFilePath}'");
-    }
-
     static void PrintWorkItemSummary(int numExpectedTests, int[] workItemEndStatus)
     {
         Console.WriteLine($"\n{workItemEndStatus[0]}/{numExpectedTests} tests run.");
@@ -255,12 +243,21 @@ public class XUnitLogChecker
                     // We are beginning to process a test's output. Set the flag to
                     // treat everything as such, until we get the closing output tag.
                     if (tagText.Equals("output") && !inOutput && !inCData)
+                    {
                         inOutput = true;
+                    }
                     else if (tagText.Equals("CDATA") && !inCData)
+                    {
                         inCData = true;
+                        tags.Push(tagText);
+                        continue;
+                    }
 
-                    tags.Push(tagText);
-                    continue;
+                    // CDATA tags store plain output, which can include tag-like
+                    // looking strings. So, we skip those until we're done processing
+                    // the current CDATA tag.
+                    if (!inCData)
+                        tags.Push(tagText);
                 }
 
                 // Found a closing tag. If we're currently in an output state, then
@@ -280,28 +277,26 @@ public class XUnitLogChecker
 
                     if (inCData)
                     {
-                        if (tagText.Equals("CDATA"))
+                        if (tagText.Equals("CDATA") && tagText.Equals(tags.Peek()))
                         {
                             tags.Pop();
                             inCData = false;
                         }
-                        else continue;
+                        continue;
                     }
 
                     if (inOutput)
                     {
-                         if (tagText.Equals("output"))
-                         {
-                             tags.Pop();
-                             inOutput = false;
-                         }
-                         else continue;
+                        if (tagText.Equals("output") && tagText.Equals(tags.Peek()))
+                        {
+                            tags.Pop();
+                            inOutput = false;
+                        }
+                        continue;
                     }
 
                     if (tagText.Equals(tags.Peek()))
-                    {
                         tags.Pop();
-                    }
                 }
             }
         }

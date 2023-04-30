@@ -3172,9 +3172,12 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         regNumber srcXmmReg = node->GetSingleTempReg(RBM_ALLFLOAT);
 
-        unsigned regSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
-                               ? YMM_REGSIZE_BYTES
-                               : XMM_REGSIZE_BYTES;
+        unsigned regSize = compiler->roundDownSIMDSize(size);
+        if (size < ZMM_RECOMMENDED_THRESHOLD)
+        {
+            // Involve ZMM only for large data due to possible downclocking.
+            regSize = min(regSize, YMM_REGSIZE_BYTES);
+        }
 
         bool zeroing = false;
         if (src->gtSkipReloadOrCopy()->IsIntegralConst(0))
@@ -3186,6 +3189,9 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         }
         else
         {
+            // TODO-AVX512-ARCH: Enable AVX-512 for non-zeroing initblk.
+            regSize = min(regSize, YMM_REGSIZE_BYTES);
+
             emit->emitIns_Mov(INS_movd, EA_PTRSIZE, srcXmmReg, srcIntReg, /* canSkip */ false);
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
 #ifdef TARGET_X86
@@ -3232,6 +3238,11 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             dstOffset += regSize;
             bytesWritten += regSize;
 
+            if (!zeroing)
+            {
+                assert(regSize <= YMM_REGSIZE_BYTES);
+            }
+
             if (!zeroing && regSize == YMM_REGSIZE_BYTES && size - bytesWritten < YMM_REGSIZE_BYTES)
             {
                 regSize = XMM_REGSIZE_BYTES;
@@ -3250,8 +3261,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
             }
             else
             {
-                // if reminder is <=16 then switch to XMM
-                regSize = size <= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : regSize;
+                // Get optimal register size to cover the whole remainder (with overlapping)
+                regSize = compiler->roundUpSIMDSize(size);
 
                 // Rewind dstOffset so we can fit a vector for the while remainder
                 dstOffset -= (regSize - size);
@@ -3469,9 +3480,12 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         instruction simdMov = simdUnalignedMovIns();
 
         // Get the largest SIMD register available if the size is large enough
-        unsigned regSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
-                               ? YMM_REGSIZE_BYTES
-                               : XMM_REGSIZE_BYTES;
+        unsigned regSize = compiler->roundDownSIMDSize(size);
+        if (size < ZMM_RECOMMENDED_THRESHOLD)
+        {
+            // Involve ZMM only for large data due to possible downclocking.
+            regSize = min(regSize, YMM_REGSIZE_BYTES);
+        }
 
         auto emitSimdMovs = [&]() {
             if (srcLclNum != BAD_VAR_NUM)
@@ -3516,8 +3530,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
             }
             else
             {
-                // if reminder is <=16 then switch to XMM
-                regSize = size <= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : regSize;
+                // Get optimal register size to cover the whole remainder (with overlapping)
+                regSize = compiler->roundUpSIMDSize(size);
 
                 // Rewind dstOffset so we can fit a vector for the while remainder
                 srcOffset -= (regSize - size);
@@ -5632,6 +5646,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         case NI_AVX2_ExtractVector128:
                         case NI_AVX512F_ExtractVector128:
                         case NI_AVX512F_ExtractVector256:
+                        case NI_AVX512DQ_ExtractVector128:
+                        case NI_AVX512DQ_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8"
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -5656,18 +5672,47 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             break;
                         }
 
-                        case NI_AVX512F_ConvertToVector128Int16:
-                        case NI_AVX512F_ConvertToVector128Int32:
-                        case NI_AVX512F_ConvertToVector128UInt16:
-                        case NI_AVX512F_ConvertToVector128UInt32:
-                        case NI_AVX512F_ConvertToVector256Int16:
                         case NI_AVX512F_ConvertToVector256Int32:
-                        case NI_AVX512F_ConvertToVector256UInt16:
                         case NI_AVX512F_ConvertToVector256UInt32:
-                        case NI_AVX512BW_ConvertToVector128Byte:
-                        case NI_AVX512BW_ConvertToVector128SByte:
+                        case NI_AVX512F_VL_ConvertToVector128UInt32:
+                        case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
+                        {
+                            assert(!varTypeIsFloating(baseType));
+                            FALLTHROUGH;
+                        }
+
+                        case NI_AVX512F_ConvertToVector128Byte:
+                        case NI_AVX512F_ConvertToVector128ByteWithSaturation:
+                        case NI_AVX512F_ConvertToVector128Int16:
+                        case NI_AVX512F_ConvertToVector128Int16WithSaturation:
+                        case NI_AVX512F_ConvertToVector128SByte:
+                        case NI_AVX512F_ConvertToVector128SByteWithSaturation:
+                        case NI_AVX512F_ConvertToVector128UInt16:
+                        case NI_AVX512F_ConvertToVector128UInt16WithSaturation:
+                        case NI_AVX512F_ConvertToVector256Int16:
+                        case NI_AVX512F_ConvertToVector256Int16WithSaturation:
+                        case NI_AVX512F_ConvertToVector256Int32WithSaturation:
+                        case NI_AVX512F_ConvertToVector256UInt16:
+                        case NI_AVX512F_ConvertToVector256UInt16WithSaturation:
+                        case NI_AVX512F_ConvertToVector256UInt32WithSaturation:
+                        case NI_AVX512F_VL_ConvertToVector128Byte:
+                        case NI_AVX512F_VL_ConvertToVector128ByteWithSaturation:
+                        case NI_AVX512F_VL_ConvertToVector128Int16:
+                        case NI_AVX512F_VL_ConvertToVector128Int16WithSaturation:
+                        case NI_AVX512F_VL_ConvertToVector128Int32:
+                        case NI_AVX512F_VL_ConvertToVector128Int32WithSaturation:
+                        case NI_AVX512F_VL_ConvertToVector128SByte:
+                        case NI_AVX512F_VL_ConvertToVector128SByteWithSaturation:
+                        case NI_AVX512F_VL_ConvertToVector128UInt16:
+                        case NI_AVX512F_VL_ConvertToVector128UInt16WithSaturation:
                         case NI_AVX512BW_ConvertToVector256Byte:
+                        case NI_AVX512BW_ConvertToVector256ByteWithSaturation:
                         case NI_AVX512BW_ConvertToVector256SByte:
+                        case NI_AVX512BW_ConvertToVector256SByteWithSaturation:
+                        case NI_AVX512BW_VL_ConvertToVector128Byte:
+                        case NI_AVX512BW_VL_ConvertToVector128ByteWithSaturation:
+                        case NI_AVX512BW_VL_ConvertToVector128SByte:
+                        case NI_AVX512BW_VL_ConvertToVector128SByteWithSaturation:
                         {
                             // These intrinsics are "ins reg/mem, xmm"
                             ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);

@@ -138,7 +138,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     GenTree*     cmpOp1;
     GenTree*     cmpOp2;
 
-    if (op->OperIsCompare())
+    if (op->OperIsCompare() && !varTypeIsFloating(op->gtGetOp1()))
     {
         // We do not expect any other relops on LA64
         assert(op->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
@@ -165,12 +165,10 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     // for RISCV64's compare and condition-branch instructions,
     // it's very similar to the IL instructions.
-    jtrue->SetOper(GT_JCMP);
-    jtrue->gtOp1 = cmpOp1;
-    jtrue->gtOp2 = cmpOp2;
-
-    jtrue->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_MASK);
-    jtrue->gtFlags |= (GenTreeFlags)(cond.GetCode() << 25);
+    jtrue->ChangeOper(GT_JCMP);
+    jtrue->gtOp1                 = cmpOp1;
+    jtrue->gtOp2                 = cmpOp2;
+    jtrue->AsOpCC()->gtCondition = cond;
 
     if (cmpOp2->IsCnsIntOrI())
     {
@@ -191,30 +189,6 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 //
 GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
 {
-    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_AND))
-    {
-        GenTree* opNode  = nullptr;
-        GenTree* notNode = nullptr;
-        if (binOp->gtGetOp1()->OperIs(GT_NOT))
-        {
-            notNode = binOp->gtGetOp1();
-            opNode  = binOp->gtGetOp2();
-        }
-        else if (binOp->gtGetOp2()->OperIs(GT_NOT))
-        {
-            notNode = binOp->gtGetOp2();
-            opNode  = binOp->gtGetOp1();
-        }
-
-        if (notNode != nullptr)
-        {
-            binOp->gtOp1 = opNode;
-            binOp->gtOp2 = notNode->AsUnOp()->gtGetOp1();
-            binOp->ChangeOper(GT_AND_NOT);
-            BlockRange().Remove(notNode);
-        }
-    }
-
     ContainCheckBinary(binOp);
 
     return binOp->gtNext;

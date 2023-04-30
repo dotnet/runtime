@@ -3,6 +3,9 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
@@ -10,23 +13,16 @@ namespace System.Reflection.Emit.Tests
     {
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation)
         {
-            WriteAssemblyToDisk(assemblyName, types, fileLocation, null);
-        }
+            AssemblyBuilder assemblyBuilder = PopulateAssemblyBuilderAndSaveMethod(
+                assemblyName, null, typeof(string), out MethodInfo saveMethod);
 
-        internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation, List<CustomAttributeBuilder> assemblyAttributes)
-        {
-            MethodInfo defineDynamicAssemblyMethod = PopulateMethods(typeof(string), out MethodInfo saveMethod);
-
-            AssemblyBuilder assemblyBuilder = (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null,
-                new object[] { assemblyName, CoreMetadataAssemblyResolver.s_coreAssembly, assemblyAttributes });
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
-
-            PopulateMembersForModule(types, mb);
+            PopulateMembersForModule(mb, types);
 
             saveMethod.Invoke(assemblyBuilder, new object[] { fileLocation });
         }
 
-        private static void PopulateMembersForModule(Type[] types, ModuleBuilder mb)
+        private static void PopulateMembersForModule(ModuleBuilder mb, Type[] types)
         {
             foreach (Type type in types)
             {
@@ -35,7 +31,12 @@ namespace System.Reflection.Emit.Tests
                 MethodInfo[] methods = type.IsInterface ? type.GetMethods() : type.GetMethods(BindingFlags.DeclaredOnly);
                 foreach (var method in methods)
                 {
-                    MethodBuilder meb = tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, null);
+                    ParameterInfo[] parameters = method.GetParameters();
+                    MethodBuilder meb = tb.DefineMethod(method.Name, method.Attributes, method.CallingConvention, method.ReturnType, parameters.Select(p => p.ParameterType).ToArray());
+                    foreach(ParameterInfo param in parameters)
+                    {
+                        meb.DefineParameter(param.Position + 1, param.Attributes, param.Name);
+                    }
                 }
 
                 foreach (FieldInfo field in type.GetFields())
@@ -47,33 +48,27 @@ namespace System.Reflection.Emit.Tests
 
         internal static void WriteAssemblyToStream(AssemblyName assemblyName, Type[] types, Stream stream)
         {
-            WriteAssemblyToStream(assemblyName, types, stream, null);
-        }
-
-        internal static void WriteAssemblyToStream(AssemblyName assemblyName, Type[] types, Stream stream, List<CustomAttributeBuilder>? assemblyAttributes)
-        {
-            MethodInfo defineDynamicAssemblyMethod = PopulateMethods(typeof(Stream), out MethodInfo saveMethod);
-
-            AssemblyBuilder assemblyBuilder = (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null,
-                new object[] { assemblyName, CoreMetadataAssemblyResolver.s_coreAssembly, assemblyAttributes });
+            AssemblyBuilder assemblyBuilder = PopulateAssemblyBuilderAndSaveMethod(
+                assemblyName, null, typeof(Stream), out MethodInfo saveMethod);
 
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
-
-            PopulateMembersForModule(types, mb);
+            PopulateMembersForModule(mb, types);
 
             saveMethod.Invoke(assemblyBuilder, new object[] { stream });
         }
 
-        internal static MethodInfo PopulateMethods(Type parameterType, out MethodInfo saveMethod)
+        internal static AssemblyBuilder PopulateAssemblyBuilderAndSaveMethod(AssemblyName assemblyName,
+            List<CustomAttributeBuilder>? assemblyAttributes, Type parameterType, out MethodInfo saveMethod)
         {
-            Type assemblyType = Type.GetType(
-                    "System.Reflection.Emit.AssemblyBuilderImpl, System.Reflection.Emit",
-                    throwOnError: true)!;
+            Type assemblyType = Type.GetType("System.Reflection.Emit.AssemblyBuilderImpl, System.Reflection.Emit", throwOnError: true)!;
 
             saveMethod = assemblyType.GetMethod("Save", BindingFlags.NonPublic | BindingFlags.Instance, new Type[] { parameterType });
 
-            return assemblyType.GetMethod("DefinePersistedAssembly", BindingFlags.NonPublic | BindingFlags.Static,
+            MethodInfo defineDynamicAssemblyMethod = assemblyType.GetMethod("DefinePersistedAssembly", BindingFlags.NonPublic | BindingFlags.Static,
                 new Type[] { typeof(AssemblyName), typeof(Assembly), typeof(List<CustomAttributeBuilder>) });
+
+            return (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null,
+                new object[] { assemblyName, CoreMetadataAssemblyResolver.s_coreAssembly, assemblyAttributes });
         }
 
         internal static Assembly LoadAssemblyFromPath(string filePath) =>
@@ -81,6 +76,74 @@ namespace System.Reflection.Emit.Tests
 
         internal static Assembly LoadAssemblyFromStream(Stream stream) =>
             new MetadataLoadContext(new CoreMetadataAssemblyResolver()).LoadFromStream(stream);
+
+        internal static void AssertAssemblyNameAndModule(AssemblyName sourceAName, AssemblyName aNameFromDisk, Module moduleFromDisk)
+        {
+            // Runtime assemblies adding AssemblyNameFlags.PublicKey in Assembly.GetName() overloads
+            Assert.Equal(sourceAName.Flags | AssemblyNameFlags.PublicKey, aNameFromDisk.Flags);
+            Assert.Equal(sourceAName.Name, aNameFromDisk.Name);
+            Assert.Equal(sourceAName.Version, aNameFromDisk.Version);
+            Assert.Equal(sourceAName.CultureInfo, aNameFromDisk.CultureInfo);
+            Assert.Equal(sourceAName.CultureName, aNameFromDisk.CultureName);
+            Assert.Equal(sourceAName.ContentType, aNameFromDisk.ContentType);
+
+            Assert.NotNull(moduleFromDisk);
+            Assert.Equal(sourceAName.Name, moduleFromDisk.ScopeName);
+            Assert.Empty(moduleFromDisk.GetTypes());
+        }
+
+        internal static void AssertTypeProperties(Type sourceType, Type typeFromDisk)
+        {
+            Assert.Equal(sourceType.Name, typeFromDisk.Name);
+            Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
+            Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
+            Assert.Equal(sourceType.IsInterface, typeFromDisk.IsInterface);
+            Assert.Equal(sourceType.IsValueType, typeFromDisk.IsValueType);
+        }
+
+        internal static void AssertFields(FieldInfo[] declaredFields, FieldInfo[] fieldsFromDisk)
+        {
+            Assert.Equal(declaredFields.Length, fieldsFromDisk.Length);
+
+            for (int j = 0; j < declaredFields.Length; j++)
+            {
+                FieldInfo sourceField = declaredFields[j];
+                FieldInfo fieldFromDisk = fieldsFromDisk[j];
+
+                Assert.Equal(sourceField.Name, fieldFromDisk.Name);
+                Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
+                Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
+            }
+        }
+
+        internal static void AssertMethods(MethodInfo[] sourceMethods, MethodInfo[] methodsFromDisk)
+        {
+            Assert.Equal(sourceMethods.Length, methodsFromDisk.Length);
+
+            for (int j = 0; j < sourceMethods.Length; j++)
+            {
+                MethodInfo sourceMethod = sourceMethods[j];
+                MethodInfo methodFromDisk = methodsFromDisk[j];
+
+                Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+                Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
+                AssertParameters(sourceMethod.GetParameters(), methodFromDisk.GetParameters());
+            }
+        }
+
+        private static void AssertParameters(ParameterInfo[] sourceParameters, ParameterInfo[] parametersLoaded)
+        {
+            Assert.Equal(sourceParameters.Length, parametersLoaded.Length);
+
+            for (int i = 0; i < sourceParameters.Length; i++)
+            {
+                Assert.Equal(sourceParameters[i].Name, parametersLoaded[i].Name);
+                Assert.Equal(sourceParameters[i].ParameterType.FullName, parametersLoaded[i].ParameterType.FullName);
+                Assert.Equal(sourceParameters[i].Attributes, parametersLoaded[i].Attributes);
+                Assert.Equal(sourceParameters[i].Position, parametersLoaded[i].Position);
+            }
+        }
     }
 
     // The resolver copied from MLC tests

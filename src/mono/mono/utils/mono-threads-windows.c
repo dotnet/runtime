@@ -501,6 +501,15 @@ typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
 static gboolean is_wow64 = FALSE;
 #endif
 
+gboolean
+mono_thread_platform_external_eventloop_keepalive_check (void)
+{
+	/* We don't support thread creation with an external eventloop on WIN32: when the thread start
+	   function returns, the thread is done.
+	*/
+	return FALSE;
+}
+
 /* We do this at init time to avoid potential races with module opening */
 void
 mono_threads_platform_init (void)

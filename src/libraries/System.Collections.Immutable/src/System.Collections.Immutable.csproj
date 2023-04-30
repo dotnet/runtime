@@ -24,7 +24,6 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Collections\Frozen\FrozenHashTable.cs" />
     <Compile Include="System\Collections\Frozen\FrozenSet.cs" />
     <Compile Include="System\Collections\Frozen\FrozenSetInternalBase.cs" />
-    <Compile Include="System\Collections\Frozen\ImmutableArrayFactory.cs" />
     <Compile Include="System\Collections\Frozen\ItemsFrozenSet.cs" />
     <Compile Include="System\Collections\Frozen\KeysAndValuesFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\SmallFrozenDictionary.cs" />
@@ -141,6 +140,7 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Collections\Immutable\SortedInt32KeyNode.cs" />
     <Compile Include="System\Collections\Immutable\SortedInt32KeyNode.Enumerator.cs" />
     <Compile Include="System\Linq\ImmutableArrayExtensions.cs" />
+    <Compile Include="System\Runtime.InteropServices\ImmutableCollectionsMarshal.cs" />
     <Compile Include="Validation\Requires.cs" />
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs" Link="Common\System\Runtime\Versioning\NonVersionableAttribute.cs" />
     <None Include="Interfaces.cd" />

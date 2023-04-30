@@ -335,7 +335,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <PropertyGroup>
       <_IgnoreLinkerWarnings>false</_IgnoreLinkerWarnings>
       <_IgnoreLinkerWarnings Condition="'$(_IsApplePlatform)' == 'true'">true</_IgnoreLinkerWarnings>
-      <StripFlag Condition="'$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">-x</StripFlag> <!-- keep global symbols in dylib -->
+      <_StripFlag Condition="'$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'">-x</_StripFlag> <!-- keep global symbols in dylib -->
+      <_StripFlag Condition="'$(_IsApplePlatform)' == 'true' and '$(NativeLib)' != 'Shared' and '$(IlcExportUnmanagedEntrypoints)' == 'true'">-i -s $(ExportsFile)</_StripFlag> <!-- keep global symbols when explicitly specified -->
     </PropertyGroup>
 
     <!-- write linker script for lld (13+) to retain the __modules section -->
@@ -362,7 +363,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Exec Condition="'$(StripSymbols)' == 'true' and '$(_IsApplePlatform)' == 'true' and '$(NativeLib)' != 'Static'"
       Command="
         dsymutil $(DsymUtilOptions) &quot;$(NativeBinary)&quot; &amp;&amp;
-        strip -no_code_signature_warning $(StripFlag) &quot;$(NativeBinary)&quot;" />
+        strip -no_code_signature_warning $(_StripFlag) &quot;$(NativeBinary)&quot;" />
   </Target>
 
   <Target Name="CreateLib"
