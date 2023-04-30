@@ -2155,17 +2155,25 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
 
         if (call->gtCallType == CT_HELPER)
         {
-            switch (eeGetHelperNum(call->gtCallMethHnd))
+            CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
+            switch (helper)
             {
-                case CORINFO_HELP_NEWARR_1_DIRECT:
                 case CORINFO_HELP_NEWARR_1_FROZEN:
+                case CORINFO_HELP_NEWARR_1_DIRECT:
                 case CORINFO_HELP_NEWARR_1_OBJ:
                 case CORINFO_HELP_NEWARR_1_VC:
                 case CORINFO_HELP_NEWARR_1_ALIGN8:
                 {
-                    // This is an array allocation site. Grab the array length node.
-                    arrayLength = call->gtArgs.GetArgByIndex(1)->GetNode();
-                    break;
+                    if (opts.IsReadyToRun() && helper == CORINFO_HELP_NEWARR_1_FROZEN)
+                    {
+                        FALLTHROUGH;
+                    }
+                    else
+                    {
+                        // This is an array allocation site. Grab the array length node.
+                        arrayLength = call->gtArgs.GetArgByIndex(1)->GetNode();
+                        break;
+                    }
                 }
 
                 case CORINFO_HELP_READYTORUN_NEWARR_1:

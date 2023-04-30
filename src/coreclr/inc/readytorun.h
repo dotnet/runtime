@@ -17,10 +17,10 @@
 // Keep these in sync with
 //  src/coreclr/tools/Common/Internal/Runtime/ModuleHeaders.cs
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
-#define READYTORUN_MAJOR_VERSION 0x000A
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MAJOR_VERSION 0x0009
+#define READYTORUN_MINOR_VERSION 0x0001
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 0x00A
+#define MINIMUM_READYTORUN_MAJOR_VERSION 0x009
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -30,7 +30,7 @@
 //     R2R 6.0 is not backward compatible with 5.x or earlier.
 // R2R Version 8.0 Changes the alignment of the Int128 type
 // R2R Version 9.0 adds support for the Vector512 type
-// R2R Version 10.0 adds support for "frozen" allocators
+// R2R Version 9.1 adds new helpers to allocate objects on frozen segments
 
 struct READYTORUN_CORE_HEADER
 {
