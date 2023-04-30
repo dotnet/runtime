@@ -9860,10 +9860,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 //
                 if (((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
                     // NativeAOT is able to preinitialize objects on frozen segments without our help
-                    !IsTargetAbi(CORINFO_NATIVEAOT_ABI)
+                    !IsTargetAbi(CORINFO_NATIVEAOT_ABI) &&
                     // Does VM allow us to use frozen allocators? (e.g. are we in a non-collectible assembly)
                     opts.jitFlags->IsSet(JitFlags::JIT_FLAG_FROZEN_ALLOC_ALLOWED))
-                    )
                 {
                     // Check next two opcodes
                     const BYTE* nextOpcode1 = codeAddr + sizeof(mdToken);
