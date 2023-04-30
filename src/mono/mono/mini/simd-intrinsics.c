@@ -1349,12 +1349,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!(!strcmp (m_class_get_name (cmethod->klass), "Vector128") || !strcmp (m_class_get_name (cmethod->klass), "Vector")))
 			return NULL;
 		switch (id) {
-		case SN_Create:
 		case SN_GetLower:
 		case SN_GetUpper:
-		case SN_Shuffle:
-		case SN_ToVector128:
-		case SN_ToVector128Unsafe:
 			return NULL;
 		default:
 			break;
@@ -1569,8 +1565,14 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			MonoInst* ins = emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), args [0]->dreg, -1);
 			ins->inst_c1 = arg0_type;
 			return ins;
-		} else if (is_create_from_half_vectors_overload (fsig))
+		} else if (is_create_from_half_vectors_overload (fsig)) {
+#if defined(TARGET_ARM64)
+			// Require Vector64 SIMD support
+			if (!COMPILE_LLVM (cfg))
+				return NULL;
+#endif
 			return emit_simd_ins (cfg, klass, OP_XCONCAT, args [0]->dreg, args [1]->dreg);
+		}
 		else if (is_elementwise_create_overload (fsig, etype))
 			return emit_vector_create_elementwise (cfg, fsig, fsig->ret, arg0_type, args);
 		break;
@@ -5043,8 +5045,12 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_AverageRounded},
 	{SN_Bitmask, OP_WASM_SIMD_BITMASK},
 	{SN_BitwiseSelect, OP_BSL},
-	{SN_CompareEqual},
-	{SN_CompareNotEqual},
+	{SN_CompareEqual, OP_XCOMPARE, CMP_EQ, OP_XCOMPARE, CMP_EQ, OP_XCOMPARE_FP, CMP_EQ},
+	{SN_CompareGreaterThan, OP_XCOMPARE, CMP_GT, OP_XCOMPARE, CMP_GT_UN, OP_XCOMPARE_FP, CMP_GT},
+	{SN_CompareGreaterThanOrEqual, OP_XCOMPARE, CMP_GE, OP_XCOMPARE, CMP_GE_UN, OP_XCOMPARE_FP, CMP_GE},
+	{SN_CompareLessThan, OP_XCOMPARE, CMP_LT, OP_XCOMPARE, CMP_LT_UN, OP_XCOMPARE_FP, CMP_LT},
+	{SN_CompareLessThanOrEqual, OP_XCOMPARE, CMP_LE, OP_XCOMPARE, CMP_LE_UN, OP_XCOMPARE_FP, CMP_LE},
+	{SN_CompareNotEqual, OP_XCOMPARE, CMP_NE, OP_XCOMPARE, CMP_NE, OP_XCOMPARE_FP, CMP_NE},
 	{SN_ConvertNarrowingSignedSaturate},
 	{SN_ConvertNarrowingUnsignedSaturate},
 	{SN_Dot, OP_XOP_X_X_X, INTRINS_WASM_DOT},

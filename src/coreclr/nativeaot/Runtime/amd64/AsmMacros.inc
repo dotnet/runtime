@@ -420,4 +420,3 @@ endif
 ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 EXTERN g_write_watch_table  : QWORD
 endif
-

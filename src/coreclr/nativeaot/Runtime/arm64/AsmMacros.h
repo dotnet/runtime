@@ -116,6 +116,7 @@ OFFSETOF__Thread__m_alloc_context__alloc_limit      equ OFFSETOF__Thread__m_rgbA
     EXTERN g_write_watch_table
 #endif
 
+    EXTERN g_cpuFeatures
 
 ;; -----------------------------------------------------------------------------
 ;; Macro used to assign an alternate name to a symbol containing characters normally disallowed in a symbol
@@ -162,6 +163,16 @@ MovInstr SETS "movk"
         adrp $Reg, $Name
         ldr  $Reg, [$Reg, $Name]
     MEND
+
+;; ---------------------------------------------------------------------------- -
+;; Macro for loading a 32bit value of a global variable into a register
+    MACRO
+        PREPARE_EXTERNAL_VAR_INDIRECT_W $Name, $RegNum
+
+        adrp x$RegNum, $Name
+        ldr  w$RegNum, [x$RegNum, $Name]
+    MEND
+
 
 ;; -----------------------------------------------------------------------------
 ;;

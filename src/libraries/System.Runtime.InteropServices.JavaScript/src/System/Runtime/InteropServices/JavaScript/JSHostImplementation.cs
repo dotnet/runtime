@@ -15,7 +15,20 @@ namespace System.Runtime.InteropServices.JavaScript
         private const string TaskGetResultName = "get_Result";
         private static MethodInfo? s_taskGetResultMethodInfo;
         // we use this to maintain identity of JSHandle for a JSObject proxy
-        public static readonly Dictionary<int, WeakReference<JSObject>> s_csOwnedObjects = new Dictionary<int, WeakReference<JSObject>>();
+#if FEATURE_WASM_THREADS
+        [ThreadStatic]
+#endif
+        private static Dictionary<int, WeakReference<JSObject>>? s_csOwnedObjects;
+
+        public static Dictionary<int, WeakReference<JSObject>> ThreadCsOwnedObjects
+        {
+            get
+            {
+                s_csOwnedObjects ??= new ();
+                return s_csOwnedObjects;
+            }
+        }
+
         // we use this to maintain identity of GCHandle for a managed object
         public static Dictionary<object, IntPtr> s_gcHandleFromJSOwnedObject = new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
 
@@ -24,10 +37,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (jsHandle != IntPtr.Zero)
             {
-                lock (s_csOwnedObjects)
-                {
-                    s_csOwnedObjects.Remove((int)jsHandle);
-                }
+                ThreadCsOwnedObjects.Remove((int)jsHandle);
                 Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
             }
         }
@@ -175,17 +185,14 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static JSObject CreateCSOwnedProxy(nint jsHandle)
         {
-            JSObject? res = null;
+            JSObject? res;
 
-            lock (s_csOwnedObjects)
+            if (!ThreadCsOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
+                !reference.TryGetTarget(out res) ||
+                res.IsDisposed)
             {
-                if (!s_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
-                    !reference.TryGetTarget(out res) ||
-                    res.IsDisposed)
-                {
-                    res = new JSObject(jsHandle);
-                    s_csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
-                }
+                res = new JSObject(jsHandle);
+                ThreadCsOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
             }
             return res;
         }

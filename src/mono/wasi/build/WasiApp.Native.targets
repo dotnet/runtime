@@ -94,7 +94,7 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="_WasiBuildNativeCore" DependsOnTargets="$(_WasiBuildNativeCoreDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
+  <Target Name="_WasiBuildNativeCore" BeforeTargets="_WasiGenerateAppBundle" DependsOnTargets="$(_WasiBuildNativeCoreDependsOn)" Condition="'$(WasmBuildNative)' == 'true'" />
 
   <Target Name="_PrepareForWasiBuildNative">
     <Error Condition="'$(_IsToolchainMissing)' == 'true'"
@@ -446,8 +446,8 @@
       <_WasiFilePathForFixup Include="@(_WasmNativeFileForLinking)" />
       <_WasiFilePathForFixup Include="@(_WasmRuntimePackSrcFile)" />
 
-      <_WasiSdkClangArgs Condition="'$(OS)' == 'Windows_NT'" Include="$([System.String]::new(%(_WasiFilePathForFixup.Identity)).Replace('\', '/'))" />
-      <_WasiSdkClangArgs Condition="'$(OS)' != 'Windows_NT'" Include="@(_WasiFilePathForFixup)" />
+      <_WasiSdkClangArgs Condition="'$(OS)' == 'Windows_NT'" Include="&quot;$([System.String]::new(%(_WasiFilePathForFixup.Identity)).Replace('\', '/'))&quot;" />
+      <_WasiSdkClangArgs Condition="'$(OS)' != 'Windows_NT'" Include="@(_WasiFilePathForFixup -> '&quot;%(Identity)&quot;')" />
 
       <_WasiSdkClangArgs Include="@(_WasmCommonCFlags)" />
 
@@ -470,9 +470,9 @@
 
     <WriteLinesToFile Lines="@(_WasiSdkClangArgs)" File="$(_WasmIntermediateOutputPath)clang-compile.rsp" Overwrite="true" />
     <!--<Message Importance="High" Text="Performing WASI SDK build: &quot;$(WasiClang)&quot; @(_WasiSdkClangArgs, ' ')" />-->
-    <Message Importance="High" Text="Performing WASI SDK build: &quot;$(WasiClang)&quot; @$(_WasmIntermediateOutputPath)clang-compile.rsp" />
+    <Message Importance="High" Text="Performing WASI SDK build: &quot;$(WasiClang)&quot; &quot;@$(_WasmIntermediateOutputPath)clang-compile.rsp&quot;" />
     <!--<Exec Command="&quot;$(WasiClang)&quot; @(_WasiSdkClangArgs, ' ')" />-->
-    <Exec Command="&quot;$(WasiClang)&quot; @$(_WasmIntermediateOutputPath)clang-compile.rsp" />
+    <Exec Command="&quot;$(WasiClang)&quot; &quot;@$(_WasmIntermediateOutputPath)clang-compile.rsp&quot;" />
 
     <!-- FIXME: this will be done by the bundler -->
     <Copy SourceFiles="$(_WasmOutputFileName)" DestinationFolder="$(WasmAppDir)" />

@@ -163,6 +163,7 @@ if ($AndroidMono) {
     {
         mkdir $WorkItemDirectory
     }
+    Copy-Item -path "$SourceDirectory\MonoBenchmarksDroid.apk" $PayloadDirectory -Verbose
     Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory -Verbose
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }

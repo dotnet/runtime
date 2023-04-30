@@ -2,3 +2,5 @@ v16.0.2
 https://github.com/llvm/llvm-project/releases/tag/llvmorg-16.0.2
 
 Apply https://github.com/dotnet/runtime/commit/1bafb60792b91747d9c2a9dd38461cf090a987a4
+Apply https://github.com/dotnet/runtime/commit/0ee8827547405408b37d1aae2a83629c1632eea8
+
