@@ -8,6 +8,7 @@ const assemblyName = "Wasm.Browser.Threads.Minimal.Sample.dll";
 
 try {
     const { setModuleImports, getAssemblyExports, runMain } = await dotnet
+        .withMonoConfig()    
         .withEnvironmentVariable("MONO_LOG_LEVEL", "debug")
         .withElementOnExit()
         .withExitCodeLogging()

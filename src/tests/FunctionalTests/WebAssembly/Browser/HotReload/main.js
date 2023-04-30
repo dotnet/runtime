@@ -11,6 +11,7 @@ function wasm_exit(exit_code) {
 
 try {
     const { getAssemblyExports } = await dotnet
+        .withMonoConfig()
         .withElementOnExit()
         .withEnvironmentVariable("DOTNET_MODIFIABLE_ASSEMBLIES", "debug")
         .create();

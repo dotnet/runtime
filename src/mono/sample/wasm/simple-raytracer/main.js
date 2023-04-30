@@ -13,7 +13,7 @@ function renderCanvas(rgbaView) {
     canvas.style = "";
 }
 
-const { setModuleImports, getAssemblyExports, getConfig } = await dotnet.create();
+const { setModuleImports, getAssemblyExports, getConfig } = await dotnet.withMonoConfig().create();
 setModuleImports("main.js", { renderCanvas });
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);

@@ -20,6 +20,7 @@ function saveProfile(aotProfileData) {
 }
 try {
     const { INTERNAL, getAssemblyExports: getAssemblyExports } = await dotnet
+        .withMonoConfig()
         .withElementOnExit()
         .withExitCodeLogging()
         .withConfig({

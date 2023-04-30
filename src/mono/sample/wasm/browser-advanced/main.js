@@ -12,6 +12,7 @@ let testError = true;
 
 try {
     const { runtimeBuildInfo, setModuleImports, getAssemblyExports, runMain, getConfig, Module } = await dotnet
+        .withMonoConfig()
         .withElementOnExit()
         // 'withModuleConfig' is internal lower level API 
         // here we show how emscripten could be further configured

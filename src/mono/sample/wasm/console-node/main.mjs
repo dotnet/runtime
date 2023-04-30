@@ -4,6 +4,7 @@
 import { dotnet } from './dotnet.js'
 
 dotnet
+    .withMonoConfig()
     .withDiagnosticTracing(false)
     .withApplicationArguments("dotnet", "is", "great!")
     .run()
