@@ -2619,12 +2619,6 @@ public:
             CORINFO_CLASS_HANDLE        parent  // base type
             ) = 0;
 
-    // TRUE if cls1 and cls2 are considered equivalent types.
-    virtual bool areTypesEquivalent(
-            CORINFO_CLASS_HANDLE        cls1,
-            CORINFO_CLASS_HANDLE        cls2
-            ) = 0;
-
     // See if a cast from fromClass to toClass will succeed, fail, or needs
     // to be resolved at runtime.
     virtual TypeCompareState compareTypesForCast(

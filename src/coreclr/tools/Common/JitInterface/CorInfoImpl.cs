@@ -2571,8 +2571,6 @@ namespace Internal.JitInterface
 
         private bool canCast(CORINFO_CLASS_STRUCT_* child, CORINFO_CLASS_STRUCT_* parent)
         { throw new NotImplementedException("canCast"); }
-        private bool areTypesEquivalent(CORINFO_CLASS_STRUCT_* cls1, CORINFO_CLASS_STRUCT_* cls2)
-        { throw new NotImplementedException("areTypesEquivalent"); }
 
         private TypeCompareState compareTypesForCast(CORINFO_CLASS_STRUCT_* fromClass, CORINFO_CLASS_STRUCT_* toClass)
         {

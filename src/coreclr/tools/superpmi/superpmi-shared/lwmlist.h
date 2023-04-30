@@ -18,7 +18,6 @@
 
 LWM(AllocPgoInstrumentationBySchema, DWORDLONG, Agnostic_AllocPgoInstrumentationBySchema)
 LWM(GetPgoInstrumentationResults, DWORDLONG, Agnostic_GetPgoInstrumentationResults)
-LWM(AreTypesEquivalent, DLDL, DWORD)
 LWM(AsCorInfoType, DWORDLONG, DWORD)
 LWM(CanAccessClass, Agnostic_CanAccessClassIn, Agnostic_CanAccessClassOut)
 LWM(CanAccessFamily, DLDL, DWORD)

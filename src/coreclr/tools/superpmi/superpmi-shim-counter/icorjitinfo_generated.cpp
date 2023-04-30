@@ -650,14 +650,6 @@ bool interceptor_ICJI::canCast(
     return original_ICorJitInfo->canCast(child, parent);
 }
 
-bool interceptor_ICJI::areTypesEquivalent(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2)
-{
-    mcs->AddCall("areTypesEquivalent");
-    return original_ICorJitInfo->areTypesEquivalent(cls1, cls2);
-}
-
 TypeCompareState interceptor_ICJI::compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
           CORINFO_CLASS_HANDLE toClass)

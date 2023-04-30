@@ -339,10 +339,6 @@ bool canCast(
           CORINFO_CLASS_HANDLE child,
           CORINFO_CLASS_HANDLE parent) override;
 
-bool areTypesEquivalent(
-          CORINFO_CLASS_HANDLE cls1,
-          CORINFO_CLASS_HANDLE cls2) override;
-
 TypeCompareState compareTypesForCast(
           CORINFO_CLASS_HANDLE fromClass,
           CORINFO_CLASS_HANDLE toClass) override;

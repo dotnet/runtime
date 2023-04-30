@@ -898,15 +898,6 @@ bool interceptor_ICJI::canCast(CORINFO_CLASS_HANDLE child, // subtype (extends p
     return temp;
 }
 
-// TRUE if cls1 and cls2 are considered equivalent types.
-bool interceptor_ICJI::areTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
-{
-    mc->cr->AddCall("areTypesEquivalent");
-    bool temp = original_ICorJitInfo->areTypesEquivalent(cls1, cls2);
-    mc->recAreTypesEquivalent(cls1, cls2, temp);
-    return temp;
-}
-
 // See if a cast from fromClass to toClass will succeed, fail, or needs
 // to be resolved at runtime.
 TypeCompareState interceptor_ICJI::compareTypesForCast(CORINFO_CLASS_HANDLE fromClass, CORINFO_CLASS_HANDLE toClass)

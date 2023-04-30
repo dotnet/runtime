@@ -7757,6 +7757,14 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 #endif
     }
 
+    if (call->IsHelperCall() && strstr(info.compClassName, "MyClass"))
+    {
+        if (eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_NEWSFAST)
+        {
+            call->AsCall()->gtCallMethHnd = eeFindHelper(CORINFO_HELP_NEWFAST_FROZEN);
+        }
+    }
+
     if (((call->gtCallMoreFlags & (GTF_CALL_M_SPECIAL_INTRINSIC | GTF_CALL_M_LDVIRTFTN_INTERFACE)) == 0) &&
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR)
 #ifdef FEATURE_READYTORUN

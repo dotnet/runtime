@@ -4206,29 +4206,6 @@ bool CEEInfo::canCast(
 }
 
 /*********************************************************************/
-// TRUE if cls1 and cls2 are considered equivalent types.
-bool CEEInfo::areTypesEquivalent(
-        CORINFO_CLASS_HANDLE        cls1,
-        CORINFO_CLASS_HANDLE        cls2)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    bool result = false;
-
-    JIT_TO_EE_TRANSITION();
-
-    result = !!((TypeHandle)cls1).IsEquivalentTo((TypeHandle)cls2);
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-/*********************************************************************/
 // See if a cast from fromClass to toClass will succeed, fail, or needs
 // to be resolved at runtime.
 TypeCompareState CEEInfo::compareTypesForCast(

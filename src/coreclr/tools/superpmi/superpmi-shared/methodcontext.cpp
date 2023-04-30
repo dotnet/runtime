@@ -6196,37 +6196,6 @@ CORINFO_FIELD_HANDLE MethodContext::repEmbedFieldHandle(CORINFO_FIELD_HANDLE han
     return (CORINFO_FIELD_HANDLE)value.B;
 }
 
-void MethodContext::recAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, bool result)
-{
-    if (AreTypesEquivalent == nullptr)
-        AreTypesEquivalent = new LightWeightMap<DLDL, DWORD>();
-
-    DLDL key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(cls1);
-    key.B = CastHandle(cls2);
-
-    DWORD value = result ? 1 : 0;
-    AreTypesEquivalent->Add(key, value);
-    DEBUG_REC(dmpAreTypesEquivalent(key, value));
-}
-void MethodContext::dmpAreTypesEquivalent(DLDL key, DWORD value)
-{
-    printf("AreTypesEquivalent NYI");
-}
-bool MethodContext::repAreTypesEquivalent(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
-{
-    DLDL key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(cls1);
-    key.B = CastHandle(cls2);
-
-    DWORD value = LookupByKeyOrMiss(AreTypesEquivalent, key, ": key %016" PRIX64 " %016" PRIX64 "", key.A, key.B);
-
-    DEBUG_REP(dmpAreTypesEquivalent(key, value));
-    return value != 0;
-}
-
 void MethodContext::recCompareTypesForCast(CORINFO_CLASS_HANDLE fromClass,
                                            CORINFO_CLASS_HANDLE toClass,
                                            TypeCompareState     result)
