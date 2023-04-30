@@ -1212,7 +1212,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree*             val,
         case GT_IND:
             if (derefFlags != nullptr)
             {
-                derefFlags |= val->gtFlags;
+                *derefFlags |= val->gtFlags;
                 return val->AsIndir()->Addr();
             }
             break;
@@ -1227,7 +1227,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree*             val,
         {
             if (derefFlags != nullptr)
             {
-                derefFlags |= (val->gtFlags & GTF_IND_FLAGS);
+                *derefFlags |= (val->gtFlags & GTF_IND_FLAGS);
             }
             GenTreeField* fieldNode = val->AsField();
             GenTreeField* fieldAddr =
