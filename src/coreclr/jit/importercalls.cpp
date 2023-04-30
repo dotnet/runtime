@@ -4412,10 +4412,11 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op2 = impPopStack().val;
 
             CORINFO_CLASS_HANDLE typeHnd = sig->sigInst.methInst[0];
-            var_types            type    = TypeHandleToVarType(typeHnd, nullptr);
+            ClassLayout*         layout  = nullptr;
+            var_types            type    = TypeHandleToVarType(typeHnd, &layout);
             GenTreeFlags         flags   = intrinsic == NI_SRCS_UNSAFE_WriteUnaligned ? GTF_IND_UNALIGNED : GTF_EMPTY;
 
-            return gtNewAssignNode(gtNewIndir(type, op2, flags), op1);
+            return gtNewAssignNode(gtNewLoadValueNode(type, layout, op2, flags), op1);
         }
 
         default:
