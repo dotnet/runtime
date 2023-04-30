@@ -14220,8 +14220,8 @@ void Compiler::fgPostExpandQmarkChecks()
 //
 // Arguments:
 //    expr  - the tree, a root node that may contain a top level qmark.
-//    ppDst - [optional] if the top level GT_QMARK node is assigned ot a
-//            GT_LCL_VAR, then this is that local node. Otherwise nullptr.
+//    ppDst - [optional] if the top level GT_QMARK node is stored into
+//            a local, then this is that store node. Otherwise nullptr.
 //
 // Returns:
 //    The GT_QMARK node, or nullptr if there is no top level qmark.
@@ -14239,14 +14239,13 @@ GenTree* Compiler::fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst /* = NULL *
     {
         topQmark = expr;
     }
-    else if (expr->OperIs(GT_ASG) && expr->gtGetOp2()->OperIs(GT_QMARK) &&
-             expr->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    else if (expr->OperIsLocalRead() && expr->AsLclVarCommon()->Data()->OperIs(GT_QMARK))
     {
-        topQmark = expr->gtGetOp2();
+        topQmark = expr->AsLclVarCommon()->Data();
 
         if (ppDst != nullptr)
         {
-            *ppDst = expr->gtGetOp1();
+            *ppDst = expr;
         }
     }
 
@@ -14299,8 +14298,7 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     GenTree* qmark = fgGetTopLevelQmark(expr, &dst);
 
     noway_assert(dst != nullptr);
-    assert(dst->OperIs(GT_LCL_VAR, GT_LCL_FLD));
-
+    assert(dst->OperIsLocalStore());
     assert(qmark->gtFlags & GTF_QMARK_CAST_INSTOF);
 
     // Get cond, true, false exprs for the qmark.
@@ -14397,15 +14395,23 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
     jmpStmt = fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
     fgInsertStmtAtEnd(cond2Block, jmpStmt);
 
-    // AsgBlock should get tmp = op1 assignment.
-    trueExpr            = gtNewAssignNode(gtClone(dst), trueExpr);
-    Statement* trueStmt = fgNewStmtFromTree(trueExpr, stmt->GetDebugInfo());
+    unsigned dstLclNum = dst->AsLclVarCommon()->GetLclNum();
+
+    // AsgBlock should get tmp = op1.
+    GenTree* trueExprStore =
+        dst->OperIs(GT_STORE_LCL_FLD)
+            ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), trueExpr)
+            : gtNewStoreLclVarNode(dstLclNum, trueExpr)->AsLclVarCommon();
+    Statement* trueStmt = fgNewStmtFromTree(trueExprStore, stmt->GetDebugInfo());
     fgInsertStmtAtEnd(asgBlock, trueStmt);
 
     // Since we are adding helper in the JTRUE false path, reverse the cond2 and add the helper.
     gtReverseCond(cond2Expr);
-    GenTree*   helperExpr = gtNewAssignNode(gtClone(dst), true2Expr);
-    Statement* helperStmt = fgNewStmtFromTree(helperExpr, stmt->GetDebugInfo());
+    GenTree* helperExprStore =
+        dst->OperIs(GT_STORE_LCL_FLD)
+            ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), true2Expr)
+            : gtNewStoreLclVarNode(dstLclNum, true2Expr)->AsLclVarCommon();
+    Statement* helperStmt = fgNewStmtFromTree(helperExprStore, stmt->GetDebugInfo());
     fgInsertStmtAtEnd(helperBlock, helperStmt);
 
     // Finally remove the nested qmark stmt.
@@ -14617,11 +14623,12 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     fgRemoveStmt(block, stmt);
 
     // Since we have top level qmarks, we either have a dst for it in which case
-    // we need to create tmps for true and falseExprs, else just don't bother
-    // assigning.
+    // we need to create tmps for true and falseExprs, else just don't bother assigning.
+    unsigned dstLclNum = BAD_VAR_NUM;
     if (dst != nullptr)
     {
-        assert(dst->OperIs(GT_LCL_VAR, GT_LCL_FLD));
+        dstLclNum = dst->AsLclVarCommon()->GetLclNum();
+        assert(dst->OperIsLocalStore());
     }
     else
     {
@@ -14632,7 +14639,9 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     {
         if (dst != nullptr)
         {
-            trueExpr = gtNewAssignNode(gtClone(dst), trueExpr);
+            trueExpr = dst->OperIs(GT_STORE_LCL_FLD)
+                           ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), trueExpr)
+                           : gtNewStoreLclVarNode(dstLclNum, trueExpr)->AsLclVarCommon();
         }
         Statement* trueStmt = fgNewStmtFromTree(trueExpr, stmt->GetDebugInfo());
         fgInsertStmtAtEnd(thenBlock, trueStmt);
@@ -14643,7 +14652,9 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     {
         if (dst != nullptr)
         {
-            falseExpr = gtNewAssignNode(gtClone(dst), falseExpr);
+            falseExpr = dst->OperIs(GT_STORE_LCL_FLD)
+                            ? gtNewStoreLclFldNode(dstLclNum, dst->TypeGet(), dst->AsLclFld()->GetLclOffs(), falseExpr)
+                            : gtNewStoreLclVarNode(dstLclNum, falseExpr)->AsLclVarCommon();
         }
         Statement* falseStmt = fgNewStmtFromTree(falseExpr, stmt->GetDebugInfo());
         fgInsertStmtAtEnd(elseBlock, falseStmt);
