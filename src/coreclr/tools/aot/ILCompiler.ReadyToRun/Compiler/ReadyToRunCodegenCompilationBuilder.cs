@@ -291,6 +291,8 @@ namespace ILCompiler
                     break;
             }
 
+            corJitFlags.Add(CorJitFlag.CORJIT_FLAG_FROZEN_ALLOC_ALLOWED);
+
             if (!_isJitInitialized)
             {
                 JitConfigProvider.Initialize(_context.Target, corJitFlags, _ryujitOptions, _jitPath);
