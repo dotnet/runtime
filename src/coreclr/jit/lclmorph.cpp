@@ -462,7 +462,6 @@ public:
     {
         DoPreOrder        = true,
         DoPostOrder       = true,
-        ComputeStack      = true,
         DoLclVarsOnly     = false,
         UseExecutionOrder = true,
     };
@@ -569,7 +568,7 @@ public:
             unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
             LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
 
-            UpdateEarlyRefCount(lclNum);
+            UpdateEarlyRefCount(lclNum, node, user);
 
             if (varDsc->lvIsStructField)
             {
@@ -577,7 +576,7 @@ public:
                 //
                 assert(!m_compiler->lvaIsImplicitByRefLocal(lclNum));
                 unsigned parentLclNum = varDsc->lvParentLcl;
-                UpdateEarlyRefCount(parentLclNum);
+                UpdateEarlyRefCount(parentLclNum, node, user);
             }
 
             if (varDsc->lvPromoted)
@@ -587,7 +586,7 @@ public:
                 for (unsigned childLclNum = varDsc->lvFieldLclStart;
                      childLclNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++childLclNum)
                 {
-                    UpdateEarlyRefCount(childLclNum);
+                    UpdateEarlyRefCount(childLclNum, node, user);
                 }
             }
         }
@@ -1535,14 +1534,14 @@ public:
     //
     // Arguments:
     //    lclNum - the local number to update the count for.
+    //    node   - local node representing the reference
+    //    user   - "node"'s user
     //
     // Notes:
-    //    fgMakeOutgoingStructArgCopy checks the ref counts for implicit byref params when it decides
-    //    if it's legal to elide certain copies of them;
     //    fgRetypeImplicitByRefArgs checks the ref counts when it decides to undo promotions.
-    //    fgForwardSub uses ref counts to decide when to forward sub.
+    //    fgForwardSub may use ref counts to decide when to forward sub.
     //
-    void UpdateEarlyRefCount(unsigned lclNum)
+    void UpdateEarlyRefCount(unsigned lclNum, GenTree* node, GenTree* user)
     {
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
@@ -1563,43 +1562,7 @@ public:
         // But the pattern should at least subset the implicit byref cases that are
         // handled in fgCanFastTailCall and fgMakeOutgoingStructArgCopy.
         //
-        // CALL(OBJ(LCL_VAR_ADDR...))
-        // -or-
-        // CALL(LCL_VAR)
-
-        // TODO-1stClassStructs: We've removed most, but not all, cases where OBJ(LCL_VAR_ADDR)
-        // is introduced (it was primarily from impNormStructVal). But until all cases are gone
-        // we still want to handle it as well.
-
-        if (m_ancestors.Height() < 2)
-        {
-            return;
-        }
-
-        GenTree* node = m_ancestors.Top(0);
-
-        if (node->OperIs(GT_LCL_VAR))
-        {
-            node = m_ancestors.Top(1);
-        }
-        else if (node->IsLclVarAddr())
-        {
-            if (m_ancestors.Height() < 3)
-            {
-                return;
-            }
-
-            node = m_ancestors.Top(1);
-
-            if (!node->OperIs(GT_BLK))
-            {
-                return;
-            }
-
-            node = m_ancestors.Top(2);
-        }
-
-        if (node->IsCall())
+        if ((node != nullptr) && node->OperIs(GT_LCL_VAR) && (user != nullptr) && user->IsCall())
         {
             JITDUMP("LocalAddressVisitor incrementing weighted ref count from " FMT_WT " to " FMT_WT
                     " for implicit by-ref V%02d arg passed to call\n",
@@ -1711,7 +1674,7 @@ PhaseStatus Compiler::fgMarkAddressExposedLocals()
             // GT_JMP has implicit uses of all arguments.
             for (unsigned lclNum = 0; lclNum < info.compArgsCount; lclNum++)
             {
-                visitor.UpdateEarlyRefCount(lclNum);
+                visitor.UpdateEarlyRefCount(lclNum, nullptr, nullptr);
             }
         }
     }
