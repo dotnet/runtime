@@ -689,7 +689,9 @@ FlattenTypeResult interceptor_ICJI::flattenType(
     bool* significantPadding)
 {
     mc->cr->AddCall("flattenType");
+    size_t maxFields = *numFields;
     FlattenTypeResult result = original_ICorJitInfo->flattenType(clsHnd, fields, numFields, significantPadding);
+    mc->recFlattenType(result, clsHnd, fields, maxFields, numFields, significantPadding);
     return result;
 }
 

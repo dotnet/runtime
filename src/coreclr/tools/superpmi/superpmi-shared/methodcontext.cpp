@@ -4848,6 +4848,72 @@ CORINFO_FIELD_HANDLE MethodContext::repGetFieldInClass(CORINFO_CLASS_HANDLE clsH
     return result;
 }
 
+void MethodContext::recFlattenType(FlattenTypeResult result, CORINFO_CLASS_HANDLE clsHnd, CORINFO_FLATTENED_TYPE_FIELD* fields, size_t maxFields, size_t* numFields, bool* significantPadding)
+{
+    if (FlattenType == nullptr)
+        FlattenType = new LightWeightMap<DLD, Agnostic_FlattenTypeResult>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(clsHnd);
+    key.B = (DWORD)maxFields;
+
+    Agnostic_FlattenTypeResult value;
+    ZeroMemory(&value, sizeof(value));
+
+    value.result = (DWORD)result;
+    if (result == FlattenTypeResult::Failure)
+    {
+        value.fieldsBuffer = UINT_MAX;
+    }
+    else
+    {
+        Agnostic_CORINFO_FLATTENED_TYPE_FIELD* agnosticFields = new Agnostic_CORINFO_FLATTENED_TYPE_FIELD[*numFields];
+        for (size_t i = 0; i < *numFields; i++)
+        {
+            agnosticFields[i] = SpmiRecordsHelper::StoreAgnostic_CORINFO_FLATTENED_TYPE_FIELD(fields[i]);
+        }
+
+        value.fieldsBuffer = FlattenType->AddBuffer((unsigned char*)agnosticFields, (unsigned int)(sizeof(Agnostic_CORINFO_FLATTENED_TYPE_FIELD) * *numFields));
+        value.numFields = (DWORD)*numFields;
+        value.significantPadding = *significantPadding ? 1 : 0;
+
+        delete[] agnosticFields;
+    }
+
+    FlattenType->Add(key, value);
+}
+void MethodContext::dmpFlattenType(DLD key, const Agnostic_FlattenTypeResult& value)
+{
+    printf("FlattenType key cls-%016" PRIX64 " fields-%d, value result=%d fields=%d", key.A, key.B, (DWORD)value.result, value.numFields);
+}
+FlattenTypeResult MethodContext::repFlattenType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_FLATTENED_TYPE_FIELD* fields, size_t* numFields, bool* significantPadding)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(clsHnd);
+    key.B = (DWORD)*numFields;
+
+    Agnostic_FlattenTypeResult value = LookupByKeyOrMiss(FlattenType, key, ": key cls-%016" PRIX64 " fields-%d", key.A, key.B);
+
+    FlattenTypeResult result = (FlattenTypeResult)value.result;
+    if (result == FlattenTypeResult::Failure)
+    {
+        return result;
+    }
+
+    Assert(value.numFields <= *numFields); // since it's part of the key
+    Agnostic_CORINFO_FLATTENED_TYPE_FIELD* valueFields = (Agnostic_CORINFO_FLATTENED_TYPE_FIELD*)FlattenType->GetBuffer(value.fieldsBuffer);
+    for (size_t i = 0; i < value.numFields; i++)
+    {
+        fields[i] = SpmiRecordsHelper::RestoreCORINFO_FLATTENED_TYPE_FIELD(valueFields[i]);
+    }
+
+    *numFields = value.numFields;
+    *significantPadding = value.significantPadding != 0;
+    return result;
+}
+
 void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
                                     CORINFO_CLASS_HANDLE* structType,
                                     CORINFO_CLASS_HANDLE  memberParent,

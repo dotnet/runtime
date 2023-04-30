@@ -204,6 +204,22 @@ struct Agnostic_GetStaticFieldCurrentClass
     bool      isSpeculative;
 };
 
+struct Agnostic_CORINFO_FLATTENED_TYPE_FIELD
+{
+    DWORDLONG intrinsicValueClassHnd;
+    DWORDLONG fieldHandle;
+    DWORD type;
+    DWORD offset;
+};
+
+struct Agnostic_FlattenTypeResult
+{
+    DWORD result;
+    DWORD fieldsBuffer;
+    DWORD numFields;
+    DWORD significantPadding;
+};
+
 struct Agnostic_CORINFO_RESOLVED_TOKEN
 {
     Agnostic_CORINFO_RESOLVED_TOKENin inValue;

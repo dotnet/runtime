@@ -109,6 +109,9 @@ public:
     static Agnostic_CORINFO_LOOKUP StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup);
 
     static CORINFO_LOOKUP RestoreCORINFO_LOOKUP(Agnostic_CORINFO_LOOKUP& agnosticLookup);
+
+    static Agnostic_CORINFO_FLATTENED_TYPE_FIELD StoreAgnostic_CORINFO_FLATTENED_TYPE_FIELD(const CORINFO_FLATTENED_TYPE_FIELD& field);
+    static CORINFO_FLATTENED_TYPE_FIELD RestoreCORINFO_FLATTENED_TYPE_FIELD(const Agnostic_CORINFO_FLATTENED_TYPE_FIELD& field);
 };
 
 inline Agnostic_CORINFO_RESOLVED_TOKENin SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(
@@ -540,6 +543,26 @@ inline CORINFO_LOOKUP SpmiRecordsHelper::RestoreCORINFO_LOOKUP(Agnostic_CORINFO_
         lookup.constLookup = RestoreCORINFO_CONST_LOOKUP(agnosticLookup.constLookup);
     }
     return lookup;
+}
+
+inline Agnostic_CORINFO_FLATTENED_TYPE_FIELD SpmiRecordsHelper::StoreAgnostic_CORINFO_FLATTENED_TYPE_FIELD(const CORINFO_FLATTENED_TYPE_FIELD& field)
+{
+    Agnostic_CORINFO_FLATTENED_TYPE_FIELD result;
+    result.type = (DWORD)field.type;
+    result.intrinsicValueClassHnd = CastHandle(field.intrinsicValueClassHnd);
+    result.offset = field.offset;
+    result.fieldHandle = CastHandle(field.fieldHandle);
+    return result;
+}
+
+inline CORINFO_FLATTENED_TYPE_FIELD SpmiRecordsHelper::RestoreCORINFO_FLATTENED_TYPE_FIELD(const Agnostic_CORINFO_FLATTENED_TYPE_FIELD& field)
+{
+    CORINFO_FLATTENED_TYPE_FIELD result;
+    result.type = (CorInfoType)field.type;
+    result.intrinsicValueClassHnd = (CORINFO_CLASS_HANDLE)field.intrinsicValueClassHnd;
+    result.offset = field.offset;
+    result.fieldHandle = (CORINFO_FIELD_HANDLE)field.fieldHandle;
+    return result;
 }
 
 #endif

@@ -583,8 +583,7 @@ FlattenTypeResult MyICJI::flattenType(
     bool* significantPadding)
 {
     jitInstance->mc->cr->AddCall("flattenType");
-    return FlattenTypeResult::Failure;
-    //return jitInstance->mc->repFlattenType(;
+    return jitInstance->mc->repFlattenType(clsHnd, fields, numFields, significantPadding);
 }
 
 bool MyICJI::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional)

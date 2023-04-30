@@ -624,6 +624,10 @@ public:
     void dmpGetFieldInClass(DLD key, DWORDLONG value);
     CORINFO_FIELD_HANDLE repGetFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num);
 
+    void recFlattenType(FlattenTypeResult result, CORINFO_CLASS_HANDLE clsHnd, CORINFO_FLATTENED_TYPE_FIELD* fields, size_t maxFields, size_t* numFields, bool* significantPadding);
+    void dmpFlattenType(DLD key, const Agnostic_FlattenTypeResult& value);
+    FlattenTypeResult repFlattenType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_FLATTENED_TYPE_FIELD* fields, size_t* numFields, bool* significantPadding);
+
     void recGetFieldType(CORINFO_FIELD_HANDLE  field,
                          CORINFO_CLASS_HANDLE* structType,
                          CORINFO_CLASS_HANDLE  memberParent,
@@ -1192,6 +1196,7 @@ enum mcPackets
     Packet_GetThreadLocalStaticBlocksInfo = 208,
     Packet_GetRISCV64PassStructInRegisterFlags = 209,
     Packet_GetObjectContent = 210,
+    Packet_FlattenType = 211,
 };
 
 void SetDebugDumpVariables();
