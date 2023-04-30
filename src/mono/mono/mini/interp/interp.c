@@ -8687,18 +8687,22 @@ mono_ee_interp_init (const char *opts)
 }
 
 #ifdef HOST_BROWSER
-EMSCRIPTEN_KEEPALIVE int
+EMSCRIPTEN_KEEPALIVE void
 mono_jiterp_stackval_to_data (MonoType *type, stackval *val, void *data)
 {
-	g_error ("FIXME");
-	return 0; //stackval_to_data (type, val, data, FALSE);
+	stackval_to_data (type, val, data, FALSE);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_stackval_from_data (MonoType *type, stackval *result, const void *data)
+{
+	stackval_from_data (type, result, data, FALSE);
 }
 
 EMSCRIPTEN_KEEPALIVE int
-mono_jiterp_stackval_from_data (MonoType *type, stackval *result, const void *data)
+mono_jiterp_get_arg_offset (InterpMethod *imethod, MonoMethodSignature *sig, int index)
 {
-	g_error ("FIXME");
-	return 0; //stackval_from_data (type, result, data, FALSE);
+	return get_arg_offset_fast (imethod, sig, index);
 }
 
 EMSCRIPTEN_KEEPALIVE int
@@ -8778,7 +8782,7 @@ mono_jiterp_isinst (MonoObject* object, MonoClass* klass)
 //  in the correct place and compute the stack offset, then it passes that in to this
 //  function in order to actually enter the interpreter and process the return value
 EMSCRIPTEN_KEEPALIVE void
-mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res)
+mono_jiterp_interp_entry (JiterpEntryData *_data, void *res)
 {
 	JiterpEntryDataHeader header;
 	MonoType *type;
@@ -8791,7 +8795,6 @@ mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res)
 
 	g_assert(header.rmethod);
 	g_assert(header.rmethod->method);
-	g_assert(sp_args);
 
 	stackval *sp = (stackval*)header.context->stack_pointer;
 
@@ -8800,8 +8803,11 @@ mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res)
 	frame.stack = sp;
 	frame.retval = sp;
 
-	header.context->stack_pointer = (guchar*)sp_args;
-	g_assert ((guchar*)sp_args < header.context->stack_end);
+	int params_size = get_arg_offset_fast (header.rmethod, NULL, header.params_count);
+	// g_printf ("jiterp_interp_entry: rmethod=%d, params_count=%d, params_size=%d\n", header.rmethod, header.params_count, params_size);
+	header.context->stack_pointer = (guchar*)ALIGN_TO ((guchar*)sp + params_size, MINT_STACK_ALIGNMENT);
+;
+	g_assert (header.context->stack_pointer < header.context->stack_end);
 
 	MONO_ENTER_GC_UNSAFE;
 	mono_interp_exec_method (&frame, header.context, NULL);

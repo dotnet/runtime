@@ -339,11 +339,14 @@ mono_jiterp_overflow_check_u4 (guint32 lhs, guint32 rhs, int opcode);
 void
 mono_jiterp_ld_delegate_method_ptr (gpointer *destination, MonoDelegate **source);
 
-int
+void
 mono_jiterp_stackval_to_data (MonoType *type, stackval *val, void *data);
 
-int
+void
 mono_jiterp_stackval_from_data (MonoType *type, stackval *result, const void *data);
+
+int
+mono_jiterp_get_arg_offset (InterpMethod *imethod, MonoMethodSignature *sig, int index);
 
 gpointer
 mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *frame, int size);
