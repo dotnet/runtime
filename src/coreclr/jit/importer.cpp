@@ -13863,24 +13863,21 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
 
             lvaTable[tmpNum].lvType = lclTyp;
 
+            // If arg can't be modified, mark it as single def.
+            // For ref types, determine the class of the arg temp.
             if (!argCanBeModified)
             {
                 assert(lvaTable[tmpNum].lvSingleDef == 0);
                 lvaTable[tmpNum].lvSingleDef = 1;
                 JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
-            }
-
-            // For ref types, determine the type of the temp.
-            if (lclTyp == TYP_REF)
-            {
-                if (!argCanBeModified)
+                if (lclTyp == TYP_REF)
                 {
-                    // If the arg can't be modified in the method
-                    // body, use the type of the value, if
-                    // known. Otherwise, use the declared type.
                     lvaSetClass(tmpNum, argNode, lclInfo.lclVerTypeInfo.GetClassHandleForObjRef());
                 }
-                else
+            }
+            else
+            {
+                if (lclTyp == TYP_REF)
                 {
                     // Arg might be modified, use the declared type of
                     // the argument.
