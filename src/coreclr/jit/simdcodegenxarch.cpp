@@ -530,8 +530,7 @@ void CodeGen::genSimd12UpperClear(regNumber tgtReg)
         // COUNT_D: 0b11   - Insert into element 3
         // COUNT_S: 0b11   - Insert from element 3
 
-        GetEmitter()->emitIns_SIMD_R_R_R_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, tgtReg,
-                                           static_cast<int8_t>(0xF8));
+        GetEmitter()->emitIns_SIMD_R_R_R_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, tgtReg, static_cast<int8_t>(0xF8));
     }
     else
     {

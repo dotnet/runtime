@@ -16123,7 +16123,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_RWR_RRD:
         {
             dst = emitOutputRRR(dst, id);
-            sz = sizeof(instrDesc);
+            sz  = sizeof(instrDesc);
             break;
         }
 

@@ -7966,7 +7966,11 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
         constValue.u64[0] = mask;
         constValue.u64[1] = mask;
 
+#if defined(FEATURE_SIMD)
         *maskFld = GetEmitter()->emitSimd16Const(constValue);
+#else
+        *maskFld = GetEmitter()->emitBlkConst(&constValue, 16, 16, treeNode->TypeGet());
+#endif
     }
 
     GetEmitter()->emitIns_SIMD_R_R_C(ins, EA_16BYTE, targetReg, operandReg, *maskFld, 0);
