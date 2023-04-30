@@ -152,13 +152,20 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
         // LA64's float compare and condition-branch instructions, have
         // condition flags indicating the comparing results.
+        // For LoongArch64, the floating compare result is saved to the specific register,
+        // where there are 8 bits for saveing at most eight different results, that is the FCC0 ~ FCC7.
+        // This is very different with the AArch64 and AMD64.
+        // For AArch64 and AMD64:                       |  // For LoongArch64
+        // cmp  $f1, $f2     <--just compare.           |  fcmp.cond cc,$f1,$f2  <--the condition is here.
+        // branch.condition  <--the condition is here.  |  branch true or false by the cc flag.
         if (varTypeIsFloating(cmpOp1))
         {
             op->gtType = TYP_VOID;
             op->gtFlags |= GTF_SET_FLAGS;
             assert(op->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
+
             jtrue->SetOper(GT_JCC);
-            jtrue->AsCC()->gtCondition = cond;
+            jtrue->AsCC()->gtCondition = GenCondition::NE; // For LA64 is only NE or EQ.
             return nullptr;
         }
 

@@ -5857,7 +5857,7 @@ struct _Unwind_Exception;
 // This is a personality routine for TheUMEntryPrestub and UMThunkStub Unix asm stubs.
 // An exception propagating through these stubs is an unhandled exception.
 // This function dumps managed stack trace and terminates the current process.
-EXTERN_C __attribute__((visibility("default"))) _Unwind_Reason_Code
+EXTERN_C _Unwind_Reason_Code
 UnhandledExceptionHandlerUnix(
                 IN int version,
                 IN _Unwind_Action action,

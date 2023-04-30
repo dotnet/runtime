@@ -1,8 +1,8 @@
-import { INTERNAL, Module } from "../imports";
-import { AssetEntry, LoadingResource, MonoConfigInternal } from "../types";
+import { INTERNAL, Module } from "../globals";
+import { MonoConfigInternal } from "../types";
+import { AssetEntry, LoadingResource, WebAssemblyBootResourceType } from "../types-api";
 import { BootConfigResult, BootJsonData, ICUDataMode } from "./BootConfig";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
-import { WebAssemblyBootResourceType } from "./WebAssemblyStartOptions";
 import { hasDebuggingEnabled } from "./_Polyfill";
 
 export async function loadBootConfig(config: MonoConfigInternal,) {

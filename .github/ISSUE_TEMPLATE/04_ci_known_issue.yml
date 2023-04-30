@@ -10,7 +10,7 @@ body:
     id: background
     attributes:
       label: Error Blob
-      description: Please identify a clear error string that can help identify future instances of this issue. For more information on how to fill this check https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/KnownIssues.md#filling-out-known-issues-json-blob
+      description: Please identify a clear error string that can help identify future instances of this issue. For more information on how to fill this check our issue triage guidelines at [Failure Analysis](/dotnet/runtime/blob/main/docs/workflow/ci/failure-analysis.md#what-to-do-if-you-determine-the-failure-is-unrelated)
       value: |
         ```json
         {

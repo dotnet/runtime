@@ -3943,9 +3943,8 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
         if (lcl != nullptr)
         {
-            const unsigned       varNum           = lcl->GetLclNum();
-            LclVarDsc* const     varDsc           = lvaGetDesc(varNum);
-            const unsigned short totalAppearances = varDsc->lvRefCnt(RCS_EARLY);
+            const unsigned   varNum = lcl->GetLclNum();
+            LclVarDsc* const varDsc = lvaGetDesc(varNum);
 
             // We generally use liveness to figure out if we can omit creating
             // this copy. However, even without liveness (e.g. due to too many
@@ -3958,9 +3957,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             //   We also check for just one reference here as we are not doing
             //   alias analysis of the call's parameters, or checking if the call
             //   site is not within some try region.
-            //
-            // * (may not copy) if there is exactly one use of the local in the method,
-            //   and the call is not in loop, this is a last use.
             //
             bool omitCopy = call->IsTailCall();
 

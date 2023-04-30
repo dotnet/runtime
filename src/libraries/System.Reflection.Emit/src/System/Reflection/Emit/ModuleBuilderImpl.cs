@@ -24,6 +24,7 @@ namespace System.Reflection.Emit
         private int _nextTypeDefRowId = 1;
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
+        private int _nextParameterRowId = 1;
         private bool _coreTypesFullyPopulated;
         private Type?[]? _coreTypes;
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
@@ -133,9 +134,32 @@ namespace System.Reflection.Emit
 
                 foreach (MethodBuilderImpl method in typeBuilder._methodDefinitions)
                 {
-                    MethodDefinitionHandle methodHandle = AddMethodDefinition(method, method.GetMethodSignatureBlob());
+                    MethodDefinitionHandle methodHandle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), _nextParameterRowId);
                     WriteCustomAttributes(method._customAttributes, methodHandle);
                     _nextMethodDefRowId++;
+
+                    if (method._parameters != null)
+                    {
+                        foreach (ParameterBuilderImpl parameter in method._parameters)
+                        {
+                            if (parameter != null)
+                            {
+                                ParameterHandle parameterHandle = AddParameter(parameter);
+                                WriteCustomAttributes(parameter._customAttributes, parameterHandle);
+                                _nextParameterRowId++;
+
+                                if (parameter._marshallingData != null)
+                                {
+                                    AddMarshalling(parameterHandle, parameter._marshallingData.SerializeMarshallingData());
+                                }
+
+                                if (parameter._defaultValue != DBNull.Value)
+                                {
+                                    AddDefaultValue(parameterHandle, parameter._defaultValue);
+                                }
+                            }
+                        }
+                    }
 
                     if (method._dllImportData != null)
                     {
@@ -155,9 +179,9 @@ namespace System.Reflection.Emit
                         AddFieldLayout(fieldHandle, field._offset);
                     }
 
-                    if (field._marshallingInfo != null)
+                    if (field._marshallingData != null)
                     {
-                        AddFieldMarshalling(fieldHandle, field._marshallingInfo.PopulateMarshallingBlob(_metadataBuilder));
+                        AddMarshalling(fieldHandle, field._marshallingData.SerializeMarshallingData());
                     }
                 }
             }
@@ -223,6 +247,9 @@ namespace System.Reflection.Emit
             return handle;
         }
 
+        private void AddDefaultValue(ParameterHandle parameterHandle, object? defaultValue) =>
+            _metadataBuilder.AddConstant(parameterHandle, defaultValue);
+
         private FieldDefinitionHandle AddFieldDefinition(FieldBuilderImpl field, BlobBuilder fieldSignature) =>
             _metadataBuilder.AddFieldDefinition(
                 attributes: field.Attributes,
@@ -238,14 +265,14 @@ namespace System.Reflection.Emit
                 fieldList: MetadataTokens.FieldDefinitionHandle(fieldToken),
                 methodList: MetadataTokens.MethodDefinitionHandle(methodToken));
 
-        private MethodDefinitionHandle AddMethodDefinition(MethodBuilderImpl method, BlobBuilder methodSignature) =>
+        private MethodDefinitionHandle AddMethodDefinition(MethodBuilderImpl method, BlobBuilder methodSignature, int parameterToken) =>
             _metadataBuilder.AddMethodDefinition(
                 attributes: method.Attributes,
                 implAttributes: method.GetMethodImplementationFlags(),
                 name: _metadataBuilder.GetOrAddString(method.Name),
                 signature: _metadataBuilder.GetOrAddBlob(methodSignature),
                 bodyOffset: -1, // No body supported yet
-                parameterList: MetadataTokens.ParameterHandle(1));
+                parameterList: MetadataTokens.ParameterHandle(parameterToken));
 
         private TypeReferenceHandle AddTypeReference(Type type, AssemblyReferenceHandle parent) =>
             _metadataBuilder.AddTypeReference(
@@ -276,10 +303,14 @@ namespace System.Reflection.Emit
         private void AddFieldLayout(FieldDefinitionHandle fieldHandle, int offset) =>
             _metadataBuilder.AddFieldLayout(field: fieldHandle, offset: offset);
 
-        private void AddFieldMarshalling(FieldDefinitionHandle fieldHandle, BlobHandle descriptor)
-        {
-            _metadataBuilder.AddMarshallingDescriptor(fieldHandle, descriptor);
-        }
+        private void AddMarshalling(EntityHandle fieldHandle, BlobBuilder builder) =>
+            _metadataBuilder.AddMarshallingDescriptor(fieldHandle, _metadataBuilder.GetOrAddBlob(builder));
+
+        private ParameterHandle AddParameter(ParameterBuilderImpl parameter) =>
+            _metadataBuilder.AddParameter(
+                attributes: (ParameterAttributes)parameter.Attributes,
+                name: parameter.Name != null ? _metadataBuilder.GetOrAddString(parameter.Name) : default,
+                sequenceNumber: parameter.Position);
 
         private AssemblyReferenceHandle AddAssemblyReference(string name, Version? version, string? culture,
             byte[]? publicKeyToken, AssemblyNameFlags flags, AssemblyContentType contentType) =>

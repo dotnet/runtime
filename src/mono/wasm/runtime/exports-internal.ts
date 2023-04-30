@@ -5,7 +5,7 @@ import { mono_wasm_cancel_promise } from "./cancelable-promise";
 import cwraps from "./cwraps";
 import { mono_wasm_send_dbg_command_with_parms, mono_wasm_send_dbg_command, mono_wasm_get_dbg_command_info, mono_wasm_get_details, mono_wasm_release_object, mono_wasm_call_function_on, mono_wasm_debugger_resume, mono_wasm_detach_debugger, mono_wasm_raise_debug_event, mono_wasm_change_debugger_log_level, mono_wasm_debugger_attached } from "./debug";
 import { http_wasm_supports_streaming_response, http_wasm_create_abort_controler, http_wasm_abort_request, http_wasm_abort_response, http_wasm_fetch, http_wasm_fetch_bytes, http_wasm_get_response_header_names, http_wasm_get_response_header_values, http_wasm_get_response_bytes, http_wasm_get_response_length, http_wasm_get_streamed_response_bytes } from "./http";
-import { exportedRuntimeAPI, Module, runtimeHelpers } from "./imports";
+import { exportedRuntimeAPI, Module, runtimeHelpers } from "./globals";
 import { get_property, set_property, has_property, get_typeof_property, get_global_this, dynamic_import } from "./invoke-js";
 import { mono_intern_string } from "./strings";
 import { mono_wasm_stringify_as_error_with_stack } from "./logging";

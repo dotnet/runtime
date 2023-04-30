@@ -4,7 +4,7 @@
 import { legacy_c_functions as cwraps } from "../cwraps";
 import { mono_wasm_runtime_ready } from "../debug";
 import { mono_wasm_load_icu_data } from "../icu";
-import { runtimeHelpers } from "../imports";
+import { runtimeHelpers } from "../globals";
 import { mono_wasm_load_bytes_into_heap, setB32, setI8, setI16, setI32, setI52, setU52, setI64Big, setU8, setU16, setU32, setF32, setF64, getB32, getI8, getI16, getI32, getI52, getU52, getI64Big, getU8, getU16, getU32, getF32, getF64 } from "../memory";
 import { mono_wasm_new_root_buffer, mono_wasm_new_root, mono_wasm_new_external_root, mono_wasm_release_roots } from "../roots";
 import { mono_run_main, mono_run_main_and_exit } from "../run";

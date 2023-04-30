@@ -70,7 +70,8 @@ RangeCheck::OverflowMap* RangeCheck::GetOverflowMap()
 int RangeCheck::GetArrLength(ValueNum vn)
 {
     ValueNum arrRefVN = m_pCompiler->vnStore->GetArrForLenVn(vn);
-    return m_pCompiler->vnStore->GetNewArrSize(arrRefVN);
+    int      size;
+    return m_pCompiler->vnStore->TryGetNewArrSize(arrRefVN, &size) ? size : 0;
 }
 
 //------------------------------------------------------------------------
