@@ -16132,7 +16132,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             dst = emitOutputRRR(dst, id);
             dst += emitOutputByte(dst, emitGetInsSC(id));
-            sz = sizeof(instrDesc);
+            sz = emitSizeOfInsDsc_CNS(id);
             break;
         }
 
@@ -16628,7 +16628,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputSV(dst, id, code | regcode, &cnsVal);
             }
-            sz = sizeof(instrDesc);
+            sz = emitSizeOfInsDsc_CNS(id);
             break;
         }
 
