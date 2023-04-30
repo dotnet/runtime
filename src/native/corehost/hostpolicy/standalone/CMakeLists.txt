@@ -14,6 +14,9 @@ include(../files.cmake)
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         hostpolicy.def)
+
+    # Load all imported DLLs from the System32 directory.
+    add_linker_flag("/DEPENDENTLOADFLAG:0x800")
 else(CLR_CMAKE_TARGET_WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/hostpolicy_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/hostpolicy.exports)

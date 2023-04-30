@@ -145,6 +145,9 @@ add_subdirectory(minipal)
 
 if(CLR_CMAKE_TARGET_WIN32)
   add_subdirectory(gc/sample)
+
+  # Load all imported DLLs from the System32 directory.
+  add_linker_flag("/DEPENDENTLOADFLAG:0x800")
 endif()
 
 #-------------------------------------

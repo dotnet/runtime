@@ -41,11 +41,14 @@ include(../../exe.cmake)
 
 add_definitions(-DFEATURE_APPHOST=1)
 
-# Disable manifest generation into the file .exe on Windows
 if(CLR_CMAKE_TARGET_WIN32)
+    # Disable manifest generation into the file .exe on Windows
     set_property(TARGET ${PROJECT_NAME} PROPERTY
             LINK_FLAGS "/MANIFEST:NO"
         )
+
+    # Load all imported DLLs from the System32 directory.
+    add_linker_flag("/DEPENDENTLOADFLAG:0x800")
 endif()
 
 # Specify non-default Windows libs to be used for Arm/Arm64 builds

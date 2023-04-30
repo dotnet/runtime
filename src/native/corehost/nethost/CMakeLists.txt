@@ -17,6 +17,9 @@ set(SOURCES
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         Exports.def)
+
+    # Load all imported DLLs from the System32 directory.
+    add_linker_flag("/DEPENDENTLOADFLAG:0x800")
 endif()
 
 include(../lib.cmake)

@@ -106,6 +106,9 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     # Delay load libraries required for WinRT as that is not supported on all platforms
     add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
+
+    # Load all imported DLLs from the System32 directory.
+    add_linker_flag("/DEPENDENTLOADFLAG:0x800")
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)

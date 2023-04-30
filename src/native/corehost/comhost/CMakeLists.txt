@@ -38,6 +38,9 @@ if (CLR_CMAKE_TARGET_WIN32)
         list(APPEND WINLIBS Ole32.lib OleAut32.lib)
     endif()
 
+    # Load all imported DLLs from the System32 directory.
+    add_linker_flag("/DEPENDENTLOADFLAG:0x800")
+
     target_link_libraries(comhost PRIVATE ${WINLIBS})
 endif()
 

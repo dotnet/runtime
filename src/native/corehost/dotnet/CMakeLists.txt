@@ -8,6 +8,9 @@ if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         dotnet.manifest
         dotnet.rc)
+
+    # Load all imported DLLs from the System32 directory.
+    add_linker_flag("/DEPENDENTLOADFLAG:0x800")
 endif()
 
 list(APPEND SOURCES
