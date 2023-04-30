@@ -1538,10 +1538,8 @@ public:
     //    user   - "node"'s user
     //
     // Notes:
-    //    fgMakeOutgoingStructArgCopy checks the ref counts for implicit byref params when it decides
-    //    if it's legal to elide certain copies of them;
     //    fgRetypeImplicitByRefArgs checks the ref counts when it decides to undo promotions.
-    //    fgForwardSub uses ref counts to decide when to forward sub.
+    //    fgForwardSub may use ref counts to decide when to forward sub.
     //
     void UpdateEarlyRefCount(unsigned lclNum, GenTree* node, GenTree* user)
     {
