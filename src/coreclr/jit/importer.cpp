@@ -9248,25 +9248,25 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             obj = impGetStructAddr(obj, objType, CHECK_SPILL_ALL, true);
                         }
 
-                        op1 = gtNewFieldAddrNode(varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, resolvedToken.hField,
-                                                 obj, fieldInfo.offset);
+                        op1 = gtNewFieldAddrNode(varTypeIsGC(obj) ? TYP_BYREF : TYP_I_IMPL, resolvedToken.hField, obj,
+                                                 fieldInfo.offset);
 
 #ifdef FEATURE_READYTORUN
                         if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
                         {
-                            op1->AsField()->gtFieldLookup = fieldInfo.fieldLookup;
+                            op1->AsFieldAddr()->gtFieldLookup = fieldInfo.fieldLookup;
                         }
 #endif
                         if (StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass)))
                         {
-                            op1->AsField()->gtFldMayOverlap = true;
+                            op1->AsFieldAddr()->gtFldMayOverlap = true;
                         }
 
                         if (!isLoadAddress)
                         {
                             ClassLayout* layout;
                             lclTyp = TypeHandleToVarType(fieldInfo.fieldType, clsHnd, &layout);
-                            op1    = gtNewFieldIndirNode(lclTyp, layout, op1->AsField());
+                            op1    = gtNewFieldIndirNode(lclTyp, layout, op1->AsFieldAddr());
 
                             if (compIsForInlining() &&
                                 impInlineIsGuaranteedThisDerefBeforeAnySideEffects(nullptr, nullptr, obj,
@@ -9561,15 +9561,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef FEATURE_READYTORUN
                         if (fieldInfo.fieldAccessor == CORINFO_FIELD_INSTANCE_WITH_BASE)
                         {
-                            op1->AsField()->gtFieldLookup = fieldInfo.fieldLookup;
+                            op1->AsFieldAddr()->gtFieldLookup = fieldInfo.fieldLookup;
                         }
 #endif
                         if (StructHasOverlappingFields(info.compCompHnd->getClassAttribs(resolvedToken.hClass)))
                         {
-                            op1->AsField()->gtFldMayOverlap = true;
+                            op1->AsFieldAddr()->gtFldMayOverlap = true;
                         }
 
-                        op1 = gtNewFieldIndirNode(lclTyp, layout, op1->AsField());
+                        op1 = gtNewFieldIndirNode(lclTyp, layout, op1->AsFieldAddr());
 
                         if (compIsForInlining() &&
                             impInlineIsGuaranteedThisDerefBeforeAnySideEffects(op2, nullptr, obj,
@@ -9586,7 +9586,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1->gtFlags |= GTF_FLD_TLS; // fgMorphExpandTlsField will handle the transformation.
 
                         op1 = (lclTyp == TYP_STRUCT) ? gtNewBlkIndir(layout, op1, GTF_IND_NONFAULTING)
-                                                  : gtNewIndir(lclTyp, op1, GTF_IND_NONFAULTING);
+                                                     : gtNewIndir(lclTyp, op1, GTF_IND_NONFAULTING);
                         break;
 #else
                         fieldInfo.fieldAccessor = CORINFO_FIELD_STATIC_ADDR_HELPER;
@@ -12680,9 +12680,9 @@ bool Compiler::impIsInvariant(const GenTree* tree)
 bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 {
     const GenTree* op = tree;
-    while (op->OperIs(GT_FIELD_ADDR) && op->AsField()->IsInstance())
+    while (op->OperIs(GT_FIELD_ADDR) && op->AsFieldAddr()->IsInstance())
     {
-        op = op->AsField()->GetFldObj();
+        op = op->AsFieldAddr()->GetFldObj();
     }
 
     if (op->OperIs(GT_LCL_ADDR))

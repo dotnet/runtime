@@ -4945,7 +4945,7 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree)
 // Return Value:
 //    The local number.
 //
-unsigned Compiler::fgGetFieldMorphingTemp(GenTreeField* fieldNode)
+unsigned Compiler::fgGetFieldMorphingTemp(GenTreeFieldAddr* fieldNode)
 {
     assert(fieldNode->IsInstance());
 
@@ -4996,9 +4996,9 @@ GenTree* Compiler::fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac)
 {
     assert(tree->OperIs(GT_FIELD_ADDR));
 
-    GenTreeField* fieldNode = tree->AsField();
-    GenTree*      objRef    = fieldNode->GetFldObj();
-    bool          isAddr    = ((tree->gtFlags & GTF_FLD_DEREFERENCED) == 0);
+    GenTreeFieldAddr* fieldNode = tree->AsFieldAddr();
+    GenTree*          objRef    = fieldNode->GetFldObj();
+    bool              isAddr    = ((tree->gtFlags & GTF_FLD_DEREFERENCED) == 0);
 
     if (fieldNode->IsInstance())
     {
@@ -5052,11 +5052,11 @@ GenTree* Compiler::fgMorphFieldAddr(GenTree* tree, MorphAddrContext* mac)
 //
 GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* mac)
 {
-    assert(tree->OperIs(GT_FIELD_ADDR) && tree->AsField()->IsInstance());
+    assert(tree->OperIs(GT_FIELD_ADDR) && tree->AsFieldAddr()->IsInstance());
 
-    GenTree*             objRef      = tree->AsField()->GetFldObj();
-    CORINFO_FIELD_HANDLE fieldHandle = tree->AsField()->gtFldHnd;
-    unsigned             fieldOffset = tree->AsField()->gtFldOffset;
+    GenTree*             objRef      = tree->AsFieldAddr()->GetFldObj();
+    CORINFO_FIELD_HANDLE fieldHandle = tree->AsFieldAddr()->gtFldHnd;
+    unsigned             fieldOffset = tree->AsFieldAddr()->gtFldOffset;
 
     noway_assert(varTypeIsI(genActualType(objRef)));
 
@@ -5067,16 +5067,11 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
                                   +----------+---------+
                                              |
                               +--------------+-------------+
-                              |tree->AsField()->GetFldObj()|
+                              |     tree->GetFldObj()      |
                               +--------------+-------------+
 
             We want to make it like this (when fldOffset is <= MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT):
 
-                                  +--------------------+
-                                  |   GT_IND/GT_BLK    |   tree (for FIELD)
-                                  +---------+----------+
-                                            |
-                                            |
                                   +---------+----------+
                                   |       GT_ADD       |   addr
                                   +---------+----------+
@@ -5153,7 +5148,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
 
         if (!objRef->OperIs(GT_LCL_VAR) || lvaIsLocalImplicitlyAccessedByRef(objRef->AsLclVar()->GetLclNum()))
         {
-            lclNum = fgGetFieldMorphingTemp(tree->AsField());
+            lclNum = fgGetFieldMorphingTemp(tree->AsFieldAddr());
 
             // Create the "asg" node
             asg = gtNewTempAssign(lclNum, objRef);
@@ -5190,12 +5185,12 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
     }
 
 #ifdef FEATURE_READYTORUN
-    if (tree->AsField()->gtFieldLookup.addr != nullptr)
+    if (tree->AsFieldAddr()->gtFieldLookup.addr != nullptr)
     {
         GenTree* offsetNode = nullptr;
-        if (tree->AsField()->gtFieldLookup.accessType == IAT_PVALUE)
+        if (tree->AsFieldAddr()->gtFieldLookup.accessType == IAT_PVALUE)
         {
-            offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsField()->gtFieldLookup.addr,
+            offsetNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)tree->AsFieldAddr()->gtFieldLookup.addr,
                                                   GTF_ICON_CONST_PTR, true);
 #ifdef DEBUG
             offsetNode->gtGetOp1()->AsIntCon()->gtTargetHandle = (size_t)fieldHandle;
@@ -5212,7 +5207,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
 
     // We only need to attach the field offset information for class fields.
     FieldSeq* fieldSeq = nullptr;
-    if ((objRefType == TYP_REF) && !tree->AsField()->gtFldMayOverlap)
+    if ((objRefType == TYP_REF) && !tree->AsFieldAddr()->gtFldMayOverlap)
     {
         fieldSeq = GetFieldSeqStore()->Create(fieldHandle, fieldOffset, FieldSeq::FieldKind::Instance);
     }
@@ -5251,10 +5246,10 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
 //
 GenTree* Compiler::fgMorphExpandTlsFieldAddr(GenTree* tree)
 {
-    assert(tree->OperIs(GT_FIELD_ADDR) && tree->AsField()->IsTlsStatic());
+    assert(tree->OperIs(GT_FIELD_ADDR) && tree->AsFieldAddr()->IsTlsStatic());
 
-    CORINFO_FIELD_HANDLE fieldHandle = tree->AsField()->gtFldHnd;
-    int                  fieldOffset = tree->AsField()->gtFldOffset;
+    CORINFO_FIELD_HANDLE fieldHandle = tree->AsFieldAddr()->gtFldHnd;
+    int                  fieldOffset = tree->AsFieldAddr()->gtFldOffset;
 
     // Thread Local Storage static field reference
     //
@@ -5321,7 +5316,7 @@ GenTree* Compiler::fgMorphExpandTlsFieldAddr(GenTree* tree)
     tlsRef = gtNewIndir(TYP_I_IMPL, tlsRef);
 
     // Add the TLS static field offset to the address.
-    assert(!tree->AsField()->gtFldMayOverlap);
+    assert(!tree->AsFieldAddr()->gtFldMayOverlap);
     FieldSeq* fieldSeq   = GetFieldSeqStore()->Create(fieldHandle, fieldOffset, FieldSeq::FieldKind::SimpleStatic);
     GenTree*  offsetNode = gtNewIconNode(fieldOffset, fieldSeq);
 
@@ -8271,12 +8266,12 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
     if (tree->OperIs(GT_IND))
     {
         GenTree* addr = tree->AsIndir()->Addr();
-        if (!addr->OperIs(GT_FIELD_ADDR) || !addr->AsField()->IsInstance())
+        if (!addr->OperIs(GT_FIELD_ADDR) || !addr->AsFieldAddr()->IsInstance())
         {
             return nullptr;
         }
 
-        GenTree* objRef = addr->AsField()->GetFldObj();
+        GenTree* objRef = addr->AsFieldAddr()->GetFldObj();
         if (objRef->IsLclVarAddr())
         {
             LclVarDsc* varDsc = lvaGetDesc(objRef->AsLclVarCommon());
@@ -8284,7 +8279,7 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
             {
                 CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
                 var_types   simdBaseType    = JITtype2varType(simdBaseJitType);
-                unsigned    fieldOffset     = addr->AsField()->gtFldOffset;
+                unsigned    fieldOffset     = addr->AsFieldAddr()->gtFldOffset;
                 unsigned    baseTypeSize    = genTypeSize(simdBaseType);
 
                 // Below condition is convervative. We don't actually need the two types to

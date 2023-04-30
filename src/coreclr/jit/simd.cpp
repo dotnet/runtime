@@ -489,12 +489,12 @@ bool Compiler::areFieldsContiguous(GenTreeIndir* op1, GenTreeIndir* op2)
     // TODO-1stClassStructs: delete once IND<struct> nodes are no more.
     assert(!op1->TypeIs(TYP_STRUCT) && !op2->TypeIs(TYP_STRUCT));
 
-    var_types     op1Type      = op1->TypeGet();
-    var_types     op2Type      = op2->TypeGet();
-    GenTreeField* op1Addr      = op1->Addr()->AsField();
-    GenTreeField* op2Addr      = op2->Addr()->AsField();
-    unsigned      op1EndOffset = op1Addr->gtFldOffset + genTypeSize(op1Type);
-    unsigned      op2Offset    = op2Addr->gtFldOffset;
+    var_types         op1Type      = op1->TypeGet();
+    var_types         op2Type      = op2->TypeGet();
+    GenTreeFieldAddr* op1Addr      = op1->Addr()->AsFieldAddr();
+    GenTreeFieldAddr* op2Addr      = op2->Addr()->AsFieldAddr();
+    unsigned          op1EndOffset = op1Addr->gtFldOffset + genTypeSize(op1Type);
+    unsigned          op2Offset    = op2Addr->gtFldOffset;
     if ((op1Type == op2Type) && (op1EndOffset == op2Offset) && op1Addr->IsInstance() && op2Addr->IsInstance() &&
         GenTree::Compare(op1Addr->GetFldObj(), op2Addr->GetFldObj()))
     {
@@ -629,9 +629,9 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
 
     if (addr->OperIs(GT_FIELD_ADDR))
     {
-        assert(addr->AsField()->IsInstance());
+        assert(addr->AsFieldAddr()->IsInstance());
 
-        GenTree* objRef = addr->AsField()->GetFldObj();
+        GenTree* objRef = addr->AsFieldAddr()->GetFldObj();
         if (objRef->IsLclVarAddr())
         {
             // If the field is directly from a struct, then in this case,
@@ -654,7 +654,7 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
         // TODO-FIELD: this seems unnecessary. Simply "return addr;"?
         byrefNode = gtCloneExpr(objRef);
         assert(byrefNode != nullptr);
-        offset = addr->AsField()->gtFldOffset;
+        offset = addr->AsFieldAddr()->gtFldOffset;
     }
     else
     {
@@ -741,7 +741,7 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
 
                     if (curDst->OperIs(GT_IND) && curDst->AsIndir()->Addr()->OperIs(GT_FIELD_ADDR))
                     {
-                        GenTreeField* addr = curDst->AsIndir()->Addr()->AsField();
+                        GenTreeFieldAddr* addr = curDst->AsIndir()->Addr()->AsFieldAddr();
                         if (addr->IsInstance())
                         {
                             GenTree* objRef = addr->GetFldObj();

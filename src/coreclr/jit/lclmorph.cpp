@@ -697,12 +697,12 @@ public:
             }
 
             case GT_FIELD_ADDR:
-                if (node->AsField()->IsInstance())
+                if (node->AsFieldAddr()->IsInstance())
                 {
                     assert(TopValue(1).Node() == node);
-                    assert(TopValue(0).Node() == node->AsField()->GetFldObj());
+                    assert(TopValue(0).Node() == node->AsFieldAddr()->GetFldObj());
 
-                    if (!TopValue(1).AddOffset(TopValue(0), node->AsField()->gtFldOffset))
+                    if (!TopValue(1).AddOffset(TopValue(0), node->AsFieldAddr()->gtFldOffset))
                     {
                         // The field object did not represent an address, or the latter overflowed.
                         EscapeValue(TopValue(0), node);
@@ -1404,11 +1404,11 @@ private:
         unsigned offset       = 0;
         bool     isSpanLength = false;
         GenTree* addr         = node;
-        if (addr->OperIs(GT_FIELD_ADDR) && addr->AsField()->IsInstance())
+        if (addr->OperIs(GT_FIELD_ADDR) && addr->AsFieldAddr()->IsInstance())
         {
-            offset       = addr->AsField()->gtFldOffset;
-            isSpanLength = addr->AsField()->IsSpanLength();
-            addr         = addr->AsField()->GetFldObj();
+            offset       = addr->AsFieldAddr()->gtFldOffset;
+            isSpanLength = addr->AsFieldAddr()->IsSpanLength();
+            addr         = addr->AsFieldAddr()->GetFldObj();
         }
 
         if (addr->IsLclVarAddr())

@@ -318,7 +318,7 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeConditional)  <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeCast)         <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeBox)          <= TREE_NODE_SZ_LARGE); // *** large node
-    static_assert_no_msg(sizeof(GenTreeField)        <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeFieldAddr)    <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeFieldList)    <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeColon)        <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeCall)         <= TREE_NODE_SZ_LARGE); // *** large node
@@ -2750,7 +2750,7 @@ AGAIN:
                     break;
 
                 case GT_FIELD_ADDR:
-                    if (op1->AsField()->gtFldHnd != op2->AsField()->gtFldHnd)
+                    if (op1->AsFieldAddr()->gtFldHnd != op2->AsFieldAddr()->gtFldHnd)
                     {
                         return false;
                     }
@@ -3303,7 +3303,7 @@ AGAIN:
                     break;
 
                 case GT_FIELD_ADDR:
-                    hash = genTreeHashAdd(hash, tree->AsField()->gtFldHnd);
+                    hash = genTreeHashAdd(hash, tree->AsFieldAddr()->gtFldHnd);
                     break;
 
                 // For the ones below no extra argument matters for comparison.
@@ -6888,7 +6888,7 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
             return ExceptionSetFlags::IndexOutOfRangeException;
 
         case GT_FIELD_ADDR:
-            if (AsField()->IsInstance() && comp->fgAddrCouldBeNull(AsField()->GetFldObj()))
+            if (AsFieldAddr()->IsInstance() && comp->fgAddrCouldBeNull(AsFieldAddr()->GetFldObj()))
             {
                 return ExceptionSetFlags::NullReferenceException;
             }
@@ -7841,11 +7841,11 @@ GenTreeRetExpr* Compiler::gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCand
 // Return Value:
 //    The created node.
 //
-GenTreeField* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
+GenTreeFieldAddr* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE fldHnd, GenTree* obj, DWORD offset)
 {
     assert(varTypeIsI(genActualType(type)));
 
-    GenTreeField* fieldNode = new (this, GT_FIELD_ADDR) GenTreeField(GT_FIELD_ADDR, type, obj, fldHnd, offset);
+    GenTreeFieldAddr* fieldNode = new (this, GT_FIELD_ADDR) GenTreeFieldAddr(type, obj, fldHnd, offset);
 
     // If "obj" is the address of a local, note that a field of that struct local has been accessed.
     if ((obj != nullptr) && obj->IsLclVarAddr())
@@ -7877,7 +7877,7 @@ GenTreeField* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE 
 //    This method exists to preserve previous behavior. New code should
 //    use "gtNewIndir"/"gtNewBlkIndir" directly.
 //
-GenTreeIndir* Compiler::gtNewFieldIndirNode(var_types type, ClassLayout* layout, GenTreeField* addr)
+GenTreeIndir* Compiler::gtNewFieldIndirNode(var_types type, ClassLayout* layout, GenTreeFieldAddr* addr)
 {
     GenTreeIndir* indir = (type == TYP_STRUCT) ? gtNewBlkIndir(layout, addr, GTF_IND_NONFAULTING)
                                                : gtNewIndir(type, addr, GTF_IND_NONFAULTING);
@@ -8554,8 +8554,8 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 
             if (tree->OperIs(GT_IND, GT_BLK) && tree->AsIndir()->Addr()->OperIs(GT_FIELD_ADDR))
             {
-                GenTree*      objp = nullptr;
-                GenTreeField* addr = tree->AsIndir()->Addr()->AsField();
+                GenTree*          objp = nullptr;
+                GenTreeFieldAddr* addr = tree->AsIndir()->Addr()->AsFieldAddr();
 
                 if (addr->IsInstance())
                 {
@@ -8567,13 +8567,13 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
                 }
 
                 copy = gtNewFieldAddrNode(addr->TypeGet(), addr->gtFldHnd, objp, addr->gtFldOffset);
-                copy->AsField()->gtFldMayOverlap = addr->gtFldMayOverlap;
-                copy->AsField()->SetIsSpanLength(addr->IsSpanLength());
+                copy->AsFieldAddr()->gtFldMayOverlap = addr->gtFldMayOverlap;
+                copy->AsFieldAddr()->SetIsSpanLength(addr->IsSpanLength());
 #ifdef FEATURE_READYTORUN
-                copy->AsField()->gtFieldLookup = addr->gtFieldLookup;
+                copy->AsFieldAddr()->gtFieldLookup = addr->gtFieldLookup;
 #endif
                 ClassLayout* layout = tree->OperIs(GT_BLK) ? tree->AsBlk()->GetLayout() : nullptr;
-                copy                = gtNewFieldIndirNode(tree->TypeGet(), layout, copy->AsField());
+                copy                = gtNewFieldIndirNode(tree->TypeGet(), layout, copy->AsFieldAddr());
             }
             else if (tree->OperIs(GT_ADD, GT_SUB))
             {
@@ -8920,14 +8920,14 @@ GenTree* Compiler::gtCloneExpr(
                 break;
 
             case GT_FIELD_ADDR:
-                copy = new (this, tree->OperGet())
-                    GenTreeField(tree->OperGet(), tree->TypeGet(), tree->AsField()->GetFldObj(),
-                                 tree->AsField()->gtFldHnd, tree->AsField()->gtFldOffset);
-                copy->AsField()->gtFldMayOverlap = tree->AsField()->gtFldMayOverlap;
+                copy = new (this, GT_FIELD_ADDR)
+                    GenTreeFieldAddr(tree->TypeGet(), tree->AsFieldAddr()->GetFldObj(), tree->AsFieldAddr()->gtFldHnd,
+                                     tree->AsFieldAddr()->gtFldOffset);
+                copy->AsFieldAddr()->gtFldMayOverlap = tree->AsFieldAddr()->gtFldMayOverlap;
 #ifdef FEATURE_READYTORUN
-                copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
+                copy->AsFieldAddr()->gtFieldLookup = tree->AsFieldAddr()->gtFieldLookup;
 #endif
-                copy->AsField()->SetIsSpanLength(tree->AsField()->IsSpanLength());
+                copy->AsFieldAddr()->SetIsSpanLength(tree->AsFieldAddr()->IsSpanLength());
                 break;
 
             case GT_BOX:
@@ -12122,7 +12122,7 @@ void Compiler::gtDispTree(GenTree*     tree,
         {
             auto disp = [&]() {
                 char buffer[256];
-                printf(" %s", eeGetFieldName(tree->AsField()->gtFldHnd, true, buffer, sizeof(buffer)));
+                printf(" %s", eeGetFieldName(tree->AsFieldAddr()->gtFldHnd, true, buffer, sizeof(buffer)));
             };
             disp();
         }
@@ -16159,7 +16159,7 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
         // TODO-FIELD: delete this zero-diff quirk.
         if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_FIELD_ADDR))
         {
-            GenTreeField* addr = tree->AsIndir()->Addr()->AsField();
+            GenTreeFieldAddr* addr = tree->AsIndir()->Addr()->AsFieldAddr();
             if (addr->IsInstance() && ((addr->gtFlags & GTF_FLD_DEREFERENCED) != 0) &&
                 fgAddrCouldBeNull(addr->GetFldObj()))
             {
@@ -18197,7 +18197,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             }
             else if (base->OperIs(GT_FIELD_ADDR))
             {
-                objClass = gtGetFieldClassHandle(base->AsField()->gtFldHnd, pIsExact, pIsNonNull);
+                objClass = gtGetFieldClassHandle(base->AsFieldAddr()->gtFldHnd, pIsExact, pIsNonNull);
             }
             break;
         }

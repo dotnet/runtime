@@ -2803,12 +2803,12 @@ public:
     GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
     GenTreeRetExpr* gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type);
 
-    GenTreeField* gtNewFieldAddrNode(var_types            type,
-                                     CORINFO_FIELD_HANDLE fldHnd,
-                                     GenTree*             obj    = nullptr,
-                                     DWORD                offset = 0);
+    GenTreeFieldAddr* gtNewFieldAddrNode(var_types            type,
+                                         CORINFO_FIELD_HANDLE fldHnd,
+                                         GenTree*             obj    = nullptr,
+                                         DWORD                offset = 0);
 
-    GenTreeIndir* gtNewFieldIndirNode(var_types type, ClassLayout* layout, GenTreeField* addr);
+    GenTreeIndir* gtNewFieldIndirNode(var_types type, ClassLayout* layout, GenTreeFieldAddr* addr);
 
     GenTreeIndexAddr* gtNewIndexAddr(GenTree*             arrayOp,
                                      GenTree*             indexOp,
@@ -6013,7 +6013,7 @@ private:
     Statement* fgMorphStmt;
     unsigned   fgBigOffsetMorphingTemps[TYP_COUNT];
 
-    unsigned fgGetFieldMorphingTemp(GenTreeField* type);
+    unsigned fgGetFieldMorphingTemp(GenTreeFieldAddr* fieldNode);
 
     //----------------------- Liveness analysis -------------------------------
 
