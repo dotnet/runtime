@@ -404,6 +404,7 @@ enum CorInfoHelpFunc
        which is the right helper to use to allocate an object of a given type. */
 
     CORINFO_HELP_NEWFAST,
+    CORINFO_HELP_NEWFAST_FROZEN,    // allocator for objects on a frozen segment
     CORINFO_HELP_NEWSFAST,          // allocator for small, non-finalizer, non-array object
     CORINFO_HELP_NEWSFAST_FINALIZE, // allocator for small, finalizable, non-array object
     CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned

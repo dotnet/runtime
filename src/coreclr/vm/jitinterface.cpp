@@ -6175,8 +6175,11 @@ bool CEEInfo::isObjectImmutable(CORINFO_OBJECT_HANDLE objHandle)
         // Empty arrays are always immutable
         isImmutable = true;
     }
-    // delegates and types with no instance fields are also immutable but we never allocate
-    // them on frozen segments (yet).
+    else if (type->IsDelegate() || type->GetNumInstanceFields() == 0)
+    {
+        // Delegates and types without fields are always immutable
+        isImmutable = true;
+    }
 
     EE_TO_JIT_TRANSITION();
 

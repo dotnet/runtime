@@ -1318,6 +1318,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEWSFAST_ALIGN8:
             case CORINFO_HELP_NEWSFAST_ALIGN8_VC:
             case CORINFO_HELP_NEWFAST:
+            case CORINFO_HELP_NEWFAST_FROZEN:
             case CORINFO_HELP_NEWSFAST_FINALIZE:
             case CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
             case CORINFO_HELP_READYTORUN_NEW:

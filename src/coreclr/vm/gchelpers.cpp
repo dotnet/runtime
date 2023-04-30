@@ -493,9 +493,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     return ObjectToOBJECTREF((Object*)orArray);
 }
 
-// Same as AllocateSzArray but for frozen segments.
-// Fallbacks to AllocateSzArray if it fails.
-OBJECTREF AllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
+OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 {
     CONTRACTL{
         THROWS;
@@ -515,7 +513,7 @@ OBJECTREF AllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
     if (pArrayMT->ContainsPointers() && cElements > 0)
     {
         // For arrays with GC pointers we can only work with empty arrays
-        return AllocateSzArray(pArrayMT, cElements);
+        return NULL;
     }
 
     // Disallow the creation of void[] (an array of System.Void)
@@ -546,13 +544,13 @@ OBJECTREF AllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
     // so we give up on arrays of value types requiring 8 byte alignment on 32bit platforms.
     if ((DATA_ALIGNMENT < sizeof(double)) && (elemType == ELEMENT_TYPE_R8))
     {
-        return AllocateSzArray(pArrayMT, cElements);
+        return NULL;
     }
 #ifdef FEATURE_64BIT_ALIGNMENT
     MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
     if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
     {
-        return AllocateSzArray(pArrayMT, cElements);
+        return NULL;
     }
 #endif
 
@@ -562,7 +560,7 @@ OBJECTREF AllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
     {
         // We failed to allocate on a frozen segment, fallback to AllocateSzArray
         // E.g. if the array is too big to fit on a frozen segment
-        return AllocateSzArray(pArrayMT, cElements);
+        return NULL;
     }
     orArray->m_NumComponents = cElements;
 
@@ -1113,6 +1111,37 @@ OBJECTREF AllocateObject(MethodTable *pMT
     }
 
     return UNCHECKED_OBJECTREF_TO_OBJECTREF(oref);
+}
+
+OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(pObjMT));
+        PRECONDITION(pObjMT->CheckInstanceActivated());
+    } CONTRACTL_END;
+
+    SetTypeHandleOnThreadForAlloc(TypeHandle(pObjMT));
+
+    if (pObjMT->ContainsPointers() || pObjMT->IsComObjectType())
+    {
+        return NULL;
+    }
+
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (pObjMT->RequiresAlign8())
+    {
+        // Custom alignment is not supported for frozen objects yet.
+        return NULL;
+    }
+#endif // FEATURE_64BIT_ALIGNMENT
+
+    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+    Object* orObject = foh->TryAllocateObject(pObjMT, PtrAlign(pObjMT->GetBaseSize()), /*publish*/ true);
+
+    return ObjectToOBJECTREF(orObject);
 }
 
 //========================================================================

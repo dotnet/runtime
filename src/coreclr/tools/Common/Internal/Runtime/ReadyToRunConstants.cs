@@ -257,6 +257,7 @@ namespace Internal.ReadyToRunConstants
         VirtualFuncPtr              = 0x68,
         IsInstanceOfException       = 0x69,
         NewFrozenArray              = 0x6A,
+        NewFrozenObject             = 0x6B,
 
         // Long mul/div/shift ops
         LMul                        = 0xC0,

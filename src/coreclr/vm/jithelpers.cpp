@@ -2404,6 +2404,37 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 }
 HCIMPLEND
 
+/*************************************************************/
+HCIMPL1(Object*, JIT_NewFrozen, CORINFO_CLASS_HANDLE typeHnd_)
+{
+    FCALL_CONTRACT;
+
+    OBJECTREF newobj = NULL;
+    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
+
+    TypeHandle typeHnd(typeHnd_);
+
+    _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
+    MethodTable* pMT = typeHnd.AsMethodTable();
+    _ASSERTE(pMT->IsRestored_NoLogging());
+
+#ifdef _DEBUG
+    if (g_pConfig->FastGCStressLevel()) {
+        GetThread()->DisableStressHeap();
+    }
+#endif // _DEBUG
+
+    newobj = TryAllocateFrozenObject(pMT);
+    if (newobj == NULL)
+    {
+        // Fallback to normal heap allocation.
+        newobj = AllocateObject(pMT);
+    }
+
+    HELPER_METHOD_FRAME_END();
+    return(OBJECTREFToObject(newobj));
+}
+HCIMPLEND
 
 
 //========================================================================
@@ -2752,7 +2783,14 @@ HCIMPL2(Object*, JIT_NewArr1Frozen, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
     }
 #endif // _DEBUG
 
-    newArray = AllocateFrozenSzArray(pArrayMT, (INT32)size);
+    newArray = TryAllocateFrozenSzArray(pArrayMT, (INT32)size);
+    if (newArray == NULL)
+    {
+        // Fallback to default heap allocation
+        newArray = AllocateSzArray(pArrayMT, (INT32)size);
+    }
+    _ASSERTE(newArray != NULL);
+
     HELPER_METHOD_FRAME_END();
 
     return(OBJECTREFToObject(newArray));

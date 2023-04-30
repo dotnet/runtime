@@ -12187,6 +12187,10 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_JitReadyToRunNewArr;
             break;
 
+        case CORINFO_HELP_NEWFAST_FROZEN:
+            vnf = opts.IsReadyToRun() ? VNF_JitReadyToRunNew : VNF_JitNew;
+            break;
+
         case CORINFO_HELP_NEWARR_1_FROZEN:
             vnf = opts.IsReadyToRun() ? VNF_JitReadyToRunNewArr : VNF_JitNewArr;
             break;

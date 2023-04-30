@@ -901,6 +901,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_FROZEN:
                     id = ReadyToRunHelper.NewFrozenArray;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_NEWFAST_FROZEN:
+                    id = ReadyToRunHelper.NewFrozenObject;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR:
                     id = ReadyToRunHelper.VirtualFuncPtr;
                     break;
