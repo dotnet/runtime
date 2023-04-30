@@ -599,6 +599,18 @@ CORINFO_FIELD_HANDLE WrapICorJitInfo::getFieldInClass(
     return temp;
 }
 
+FlattenTypeResult WrapICorJitInfo::flattenType(
+          CORINFO_CLASS_HANDLE clsHnd,
+          CORINFO_FLATTENED_TYPE_FIELD* fields,
+          size_t* numFields,
+          bool* significantPadding)
+{
+    API_ENTER(flattenType);
+    FlattenTypeResult temp = wrapHnd->flattenType(clsHnd, fields, numFields, significantPadding);
+    API_LEAVE(flattenType);
+    return temp;
+}
+
 bool WrapICorJitInfo::checkMethodModifier(
           CORINFO_METHOD_HANDLE hMethod,
           const char* modifier,

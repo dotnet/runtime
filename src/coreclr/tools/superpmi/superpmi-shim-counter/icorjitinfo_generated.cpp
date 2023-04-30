@@ -494,6 +494,16 @@ CORINFO_FIELD_HANDLE interceptor_ICJI::getFieldInClass(
     return original_ICorJitInfo->getFieldInClass(clsHnd, num);
 }
 
+FlattenTypeResult interceptor_ICJI::flattenType(
+          CORINFO_CLASS_HANDLE clsHnd,
+          CORINFO_FLATTENED_TYPE_FIELD* fields,
+          size_t* numFields,
+          bool* significantPadding)
+{
+    mcs->AddCall("flattenType");
+    return original_ICorJitInfo->flattenType(clsHnd, fields, numFields, significantPadding);
+}
+
 bool interceptor_ICJI::checkMethodModifier(
           CORINFO_METHOD_HANDLE hMethod,
           const char* modifier,

@@ -2216,6 +2216,123 @@ CEEInfo::getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num)
     return result;
 }
 
+static FlattenTypeResult FlattenTypeHelper(
+    MethodTable* pMT,
+    unsigned baseOffs,
+    CORINFO_FLATTENED_TYPE_FIELD* fields,
+    size_t maxFields,
+    size_t* numFields,
+    bool* significantPadding)
+{
+    STANDARD_VM_CONTRACT;
+
+    EEClass* pClass = pMT->GetClass();
+    if (pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize() || pClass->IsInlineArray()))
+    {
+        *significantPadding = true;
+    }
+
+    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
+    {
+        CorElementType fieldType = pFD->GetFieldType();
+
+        size_t firstFieldIndex = *numFields;
+
+        if (fieldType == ELEMENT_TYPE_VALUETYPE)
+        {
+            MethodTable* pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            if (pFieldMT->IsIntrinsicType())
+            {
+                if (*numFields >= maxFields)
+                {
+                    return FlattenTypeResult::Partial;
+                }
+
+                CORINFO_FLATTENED_TYPE_FIELD& field = fields[(*numFields)++];
+                field.type = CorInfoType::CORINFO_TYPE_VALUECLASS;
+                field.intrinsicValueClassHnd = CORINFO_CLASS_HANDLE(pFieldMT);
+                field.fieldHandle = CORINFO_FIELD_HANDLE(pFD);
+                field.offset = baseOffs + pFD->GetOffset();
+            }
+            else
+            {
+                FlattenTypeResult result = FlattenTypeHelper(pFieldMT, baseOffs + pFD->GetOffset(), fields, maxFields, numFields, significantPadding);
+                if (result != FlattenTypeResult::Success)
+                {
+                    return result;
+                }
+            }
+        }
+        else
+        {
+            CorInfoType corInfoType = CEEInfo::asCorInfoType(fieldType);
+            _ASSERTE(corInfoType != CORINFO_TYPE_UNDEF);
+
+            if (*numFields >= maxFields)
+            {
+                return FlattenTypeResult::Partial;
+            }
+
+            CORINFO_FLATTENED_TYPE_FIELD& field = fields[(*numFields)++];
+            field.type = corInfoType;
+            field.intrinsicValueClassHnd = CORINFO_CLASS_HANDLE(nullptr);
+            field.fieldHandle = CORINFO_FIELD_HANDLE(pFD);
+            field.offset = baseOffs + pFD->GetOffset();
+        }
+
+        if (pMT->GetClass()->IsInlineArray())
+        {
+            size_t fieldEnd = *numFields;
+            uint32_t elemSize = pFD->GetSize();
+            uint32_t arrSize = pMT->GetNumInstanceFieldBytes();
+
+            for (uint32_t elemOffset = elemSize; elemOffset < arrSize; elemOffset += elemSize)
+            {
+                for (size_t templateFieldIndex = firstFieldIndex; templateFieldIndex < fieldEnd; templateFieldIndex++)
+                {
+                    if (*numFields >= maxFields)
+                    {
+                        return FlattenTypeResult::Partial;
+                    }
+
+                    CORINFO_FLATTENED_TYPE_FIELD& field = fields[(*numFields)++];
+                    field = fields[templateFieldIndex];
+                    field.offset += elemOffset;
+                }
+            }
+        }
+    }
+
+    return FlattenTypeResult::Success;
+}
+
+FlattenTypeResult CEEInfo::flattenType(
+    CORINFO_CLASS_HANDLE clsHnd,
+    CORINFO_FLATTENED_TYPE_FIELD* fields,
+    size_t* numFields,
+    bool* significantPadding)
+{
+    STANDARD_VM_CONTRACT;
+
+    FlattenTypeResult result = FlattenTypeResult::Failure;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle VMClsHnd(clsHnd);
+
+    MethodTable* pMT = VMClsHnd.AsMethodTable();
+
+    size_t maxFields = *numFields;
+    *numFields = 0;
+    *significantPadding = false;
+    result = FlattenTypeHelper(pMT, 0, fields, maxFields, numFields, significantPadding);
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
 mdMethodDef
 CEEInfo::getMethodDefFromMethod(CORINFO_METHOD_HANDLE hMethod)
 {
@@ -3743,21 +3860,11 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             if (pMT->IsByRefLike())
                 ret |= CORINFO_FLG_BYREF_LIKE;
 
-            if ((pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize())) ||
-                pMT == g_TypedReferenceMT ||
-                VMClsHnd.IsNativeValueType())
-            {
-                ret |= CORINFO_FLG_CUSTOMLAYOUT;
-            }
-
             if (pClass->IsUnsafeValueClass())
                 ret |= CORINFO_FLG_UNSAFE_VALUECLASS;
         }
         if (pClass->HasExplicitFieldOffsetLayout() && pClass->HasOverlaidField())
             ret |= CORINFO_FLG_OVERLAPPING_FIELDS;
-
-        if (pClass->IsInlineArray())
-            ret |= CORINFO_FLG_INDEXABLE_FIELDS;
 
         if (VMClsHnd.IsCanonicalSubtype())
             ret |= CORINFO_FLG_SHAREDINST;
@@ -3772,9 +3879,7 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             ret |= CORINFO_FLG_DELEGATE;
 
         if (pClass->IsBeforeFieldInit())
-        {
             ret |= CORINFO_FLG_BEFOREFIELDINIT;
-        }
 
         if (pClass->IsAbstract())
             ret |= CORINFO_FLG_ABSTRACT;

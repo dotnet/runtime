@@ -857,10 +857,8 @@ enum CorInfoFlag
     CORINFO_FLG_OVERLAPPING_FIELDS    = 0x00100000, // struct or class has fields that overlap (aka union)
     CORINFO_FLG_INTERFACE             = 0x00200000, // it is an interface
     CORINFO_FLG_DONT_DIG_FIELDS       = 0x00400000, // don't ask field info (used for types outside of AOT compilation version bubble)
-    CORINFO_FLG_CUSTOMLAYOUT          = 0x00800000, // does this struct have custom layout?
     CORINFO_FLG_CONTAINS_GC_PTR       = 0x01000000, // does the class contain a gc ptr ?
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
-    CORINFO_FLG_INDEXABLE_FIELDS      = 0x04000000, // struct fields may be accessed via indexing (used for inline arrays)
     CORINFO_FLG_BYREF_LIKE            = 0x08000000, // it is byref-like value type
     CORINFO_FLG_VARIANCE              = 0x10000000, // MethodTable::HasVariance (sealed does *not* mean uncast-able)
     CORINFO_FLG_BEFOREFIELDINIT       = 0x20000000, // Additional flexibility for when to run .cctor (see code:#ClassConstructionFlags)
@@ -1946,6 +1944,25 @@ struct CORINFO_VarArgInfo
                                             // (The CORINFO_VARARGS_HANDLE counts as an arg)
 };
 
+struct CORINFO_FLATTENED_TYPE_FIELD
+{
+    // Primitive type, or CORINFO_TYPE_VALUECLASS for value classes marked as intrinsic.
+    CorInfoType type;
+    // For an intrinsic value class this is the handle for it.
+    CORINFO_CLASS_HANDLE intrinsicValueClassHnd;
+    // Offset of the field into the root struct.
+    unsigned offset;
+    // Field handle (only used for diagnostic purposes)
+    CORINFO_FIELD_HANDLE fieldHandle;
+};
+
+enum class FlattenTypeResult
+{
+    Success,
+    Partial,
+    Failure,
+};
+
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define CORINFO_Array_MaxLength                           0x7FFFFFC7
@@ -2447,6 +2464,29 @@ public:
             CORINFO_CLASS_HANDLE clsHnd,
             int32_t num
             ) = 0;
+
+    //------------------------------------------------------------------------------
+    // flattenType: Flatten a type into its primitive/intrinsic constituent
+    // fields.
+    //
+    // Parameters:
+    //    clsHnd             - Handle of the type.
+    //    fields             - [out] Pointer to entries to write.
+    //    numFields          - [in, out] Size of 'fields'. Updated to contain
+    //                         the number of entries written in 'fields'.
+    //    significantPadding - [out] Whether data not covered by fields should
+    //                         be considered as significant or whether the JIT
+    //                         is allowed to discard it on copies.
+    //
+    // Returns:
+    //    A result indicating whether the type was successfully flattened and
+    //    whether the result is partial or not.
+    //
+    virtual FlattenTypeResult flattenType(
+            CORINFO_CLASS_HANDLE clsHnd,
+            CORINFO_FLATTENED_TYPE_FIELD* fields,
+            size_t* numFields,
+            bool* significantPadding) = 0;
 
     virtual bool checkMethodModifier(
             CORINFO_METHOD_HANDLE hMethod,

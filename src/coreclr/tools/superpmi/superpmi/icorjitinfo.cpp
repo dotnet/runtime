@@ -576,6 +576,17 @@ CORINFO_FIELD_HANDLE MyICJI::getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT nu
     return jitInstance->mc->repGetFieldInClass(clsHnd, num);
 }
 
+FlattenTypeResult MyICJI::flattenType(
+    CORINFO_CLASS_HANDLE clsHnd,
+    CORINFO_FLATTENED_TYPE_FIELD* fields,
+    size_t* numFields,
+    bool* significantPadding)
+{
+    jitInstance->mc->cr->AddCall("flattenType");
+    return FlattenTypeResult::Failure;
+    //return jitInstance->mc->repFlattenType(;
+}
+
 bool MyICJI::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR modifier, bool fOptional)
 {
     jitInstance->mc->cr->AddCall("checkMethodModifier");

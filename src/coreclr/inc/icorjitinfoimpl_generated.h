@@ -263,6 +263,12 @@ CORINFO_FIELD_HANDLE getFieldInClass(
           CORINFO_CLASS_HANDLE clsHnd,
           int32_t num) override;
 
+FlattenTypeResult flattenType(
+          CORINFO_CLASS_HANDLE clsHnd,
+          CORINFO_FLATTENED_TYPE_FIELD* fields,
+          size_t* numFields,
+          bool* significantPadding) override;
+
 bool checkMethodModifier(
           CORINFO_METHOD_HANDLE hMethod,
           const char* modifier,

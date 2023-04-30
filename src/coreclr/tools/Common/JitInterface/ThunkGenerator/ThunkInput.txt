@@ -89,6 +89,7 @@ CORINFO_FIELD_INFO*,CORINFO_FIELD_INFO*
 CORINFO_THREAD_STATIC_BLOCKS_INFO*,CORINFO_THREAD_STATIC_BLOCKS_INFO*
 CORINFO_CALL_INFO*,CORINFO_CALL_INFO*
 CORINFO_DEVIRTUALIZATION_INFO*,CORINFO_DEVIRTUALIZATION_INFO*
+CORINFO_FLATTENED_TYPE_FIELD*,CORINFO_FLATTENED_TYPE_FIELD*
 PatchpointInfo*
 DelegateCtorArgs*,ref DelegateCtorArgs
 ICorDynamicInfo*,IntPtr
@@ -132,6 +133,7 @@ TypeCompareState
 CORINFO_InstructionSet,InstructionSet
 ICorJitInfo::PgoSource, PgoSource
 ICorJitInfo::PgoSource*, ref PgoSource
+FlattenTypeResult
 
 ; Handle types
 CORINFO_MODULE_HANDLE,CORINFO_MODULE_STRUCT_*
@@ -219,6 +221,7 @@ FUNCTIONS
     unsigned getClassGClayout(CORINFO_CLASS_HANDLE cls, uint8_t* gcPtrs)
     unsigned getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls)
     CORINFO_FIELD_HANDLE getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, int32_t num)
+    FlattenTypeResult flattenType(CORINFO_CLASS_HANDLE clsHnd, CORINFO_FLATTENED_TYPE_FIELD* fields, size_t* numFields, bool* significantPadding)
     bool checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, const char * modifier, bool fOptional)
     CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool* pHasSideEffects)
     CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls)

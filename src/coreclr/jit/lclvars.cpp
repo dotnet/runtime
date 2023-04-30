@@ -1640,22 +1640,6 @@ void Compiler::lvSetMinOptsDoNotEnreg()
     }
 }
 
-//--------------------------------------------------------------------------------------------
-// lvaFieldOffsetCmp - a static compare function passed to jitstd::sort() by Compiler::StructPromotionHelper;
-//   compares fields' offsets.
-//
-// Arguments:
-//   field1 - pointer to the first field;
-//   field2 - pointer to the second field.
-//
-// Return value:
-//   0 if the fields' offsets are equal, 1 if the first field has bigger offset, -1 otherwise.
-//
-bool Compiler::lvaFieldOffsetCmp::operator()(const lvaStructFieldInfo& field1, const lvaStructFieldInfo& field2)
-{
-    return field1.fldOffset < field2.fldOffset;
-}
-
 //------------------------------------------------------------------------
 // StructPromotionHelper constructor.
 //
@@ -1745,8 +1729,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     // lvaStructFieldInfo.fieldCnt is byte-sized
     assert(static_cast<unsigned char>(MAX_NumOfFieldsInPromotableStruct) == MAX_NumOfFieldsInPromotableStruct);
 
-    bool containsGCpointers = false;
-
     COMP_HANDLE compHandle = compiler->info.compCompHnd;
 
     unsigned structSize = compHandle->getClassSize(typeHnd);
@@ -1755,28 +1737,9 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
         return false; // struct is too large
     }
 
-    unsigned fieldCnt = compHandle->getClassNumInstanceFields(typeHnd);
-    if (fieldCnt == 0 || fieldCnt > MAX_NumOfFieldsInPromotableStruct)
-    {
-        return false; // struct must have between 1 and MAX_NumOfFieldsInPromotableStruct fields
-    }
+    DWORD typeFlags = compHandle->getClassAttribs(typeHnd);
 
-    structPromotionInfo.fieldCnt = (unsigned char)fieldCnt;
-    DWORD typeFlags              = compHandle->getClassAttribs(typeHnd);
-
-    bool overlappingFields = StructHasOverlappingFields(typeFlags);
-    if (overlappingFields)
-    {
-        return false;
-    }
-
-    if (StructHasIndexableFields(typeFlags))
-    {
-        return false;
-    }
-
-    // Don't struct promote if we have an CUSTOMLAYOUT flag on an HFA type
-    if (StructHasCustomLayout(typeFlags) && compiler->IsHfa(typeHnd))
+    if (StructHasOverlappingFields(typeFlags))
     {
         return false;
     }
@@ -1786,65 +1749,75 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     unsigned structAlignment = roundUp(compHandle->getClassAlignmentRequirement(typeHnd), TARGET_POINTER_SIZE);
 #endif // TARGET_ARM
 
-    // If we have "Custom Layout" then we might have an explicit Size attribute
-    // Managed C++ uses this for its structs, such C++ types will not contain GC pointers.
-    //
-    // The current VM implementation also incorrectly sets the CORINFO_FLG_CUSTOMLAYOUT
-    // whenever a managed value class contains any GC pointers.
-    // (See the comment for VMFLAG_NOT_TIGHTLY_PACKED in class.h)
-    //
-    // It is important to struct promote managed value classes that have GC pointers
-    // So we compute the correct value for "CustomLayout" here
-    //
-    if (StructHasCustomLayout(typeFlags) && ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) == 0))
+    CORINFO_FLATTENED_TYPE_FIELD fields[MAX_NumOfFieldsInPromotableStruct];
+    size_t                       numFields = ArrLen(fields);
+    bool                         significantPadding;
+    FlattenTypeResult            result = compHandle->flattenType(typeHnd, fields, &numFields, &significantPadding);
+
+    if ((result != FlattenTypeResult::Success) || (numFields == 0))
     {
-        structPromotionInfo.customLayout = true;
+        return false;
     }
 
-    if (StructHasDontDigFieldsFlagSet(typeFlags))
-    {
-        return CanConstructAndPromoteField(&structPromotionInfo);
-    }
+    structPromotionInfo.fieldCnt = (unsigned char)numFields;
 
     unsigned fieldsSize = 0;
 
-    for (BYTE ordinal = 0; ordinal < fieldCnt; ++ordinal)
+    for (size_t i = 0; i < numFields; i++)
     {
-        CORINFO_FIELD_HANDLE fieldHnd       = compHandle->getFieldInClass(typeHnd, ordinal);
-        structPromotionInfo.fields[ordinal] = GetFieldInfo(fieldHnd, ordinal);
-        const lvaStructFieldInfo& fieldInfo = structPromotionInfo.fields[ordinal];
+        const CORINFO_FLATTENED_TYPE_FIELD& field     = fields[i];
+        lvaStructFieldInfo&                 promField = structPromotionInfo.fields[i];
+        promField.fldHnd                              = field.fieldHandle;
+        // Should be ensured by limit on struct size we have.
+        noway_assert(field.offset <= BYTE_MAX);
+        promField.fldOffset  = static_cast<uint8_t>(field.offset);
+        promField.fldOrdinal = static_cast<uint8_t>(i);
+        promField.fldTypeHnd = NO_CLASS_HANDLE;
 
-        noway_assert(fieldInfo.fldOffset < structSize);
-
-        if (fieldInfo.fldSize == 0)
+        if (field.type == CORINFO_TYPE_VALUECLASS)
         {
-            // Not a scalar type.
+#ifdef FEATURE_SIMD
+            if (!compiler->usesSIMDTypes() || !compiler->isSIMDorHWSIMDClass(field.intrinsicValueClassHnd))
+            {
+                // TODO-CQ: This discards fields of certain struct types (like Int128) that we could recursively handle
+                // here.
+                return false;
+            }
+
+            unsigned    simdSize;
+            CorInfoType simdBaseJitType =
+                compiler->getBaseJitTypeAndSizeOfSIMDType(field.intrinsicValueClassHnd, &simdSize);
+            // We will only promote fields of SIMD types that fit into a SIMD register.
+            if (simdBaseJitType == CORINFO_TYPE_UNDEF)
+            {
+                return false;
+            }
+
+            if ((simdSize < compiler->minSIMDStructBytes()) || (simdSize > compiler->maxSIMDStructBytes()))
+            {
+                return false;
+            }
+
+            promField.fldType    = compiler->getSIMDTypeForSize(simdSize);
+            promField.fldSize    = simdSize;
+            promField.fldTypeHnd = field.intrinsicValueClassHnd;
+#else
             return false;
+#endif
         }
-
-        if ((fieldInfo.fldOffset % fieldInfo.fldSize) != 0)
+        else
         {
-            // The code in Compiler::genPushArgList that reconstitutes
-            // struct values on the stack from promoted fields expects
-            // those fields to be at their natural alignment.
-            return false;
+            promField.fldType = JITtype2varType(field.type);
+            promField.fldSize = genTypeSize(promField.fldType);
         }
 
-        if (varTypeIsGC(fieldInfo.fldType))
-        {
-            containsGCpointers = true;
-        }
-
-        // The end offset for this field should never be larger than our structSize.
-        noway_assert(fieldInfo.fldOffset + fieldInfo.fldSize <= structSize);
-
-        fieldsSize += fieldInfo.fldSize;
+        noway_assert(promField.fldOffset + promField.fldSize <= structSize);
 
 #ifdef TARGET_ARM
         // On ARM, for struct types that don't use explicit layout, the alignment of the struct is
         // at least the max alignment of its fields.  We take advantage of this invariant in struct promotion,
         // so verify it here.
-        if (fieldInfo.fldSize > structAlignment)
+        if (promField.fldSize > structAlignment)
         {
             // Don't promote vars whose struct types violates the invariant.  (Alignment == size for primitives.)
             return false;
@@ -1852,79 +1825,37 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 #endif // TARGET_ARM
     }
 
-    // If we saw any GC pointer or by-ref fields above then CORINFO_FLG_CONTAINS_GC_PTR or
-    // CORINFO_FLG_BYREF_LIKE has to be set!
-    noway_assert((containsGCpointers == false) ||
-                 ((typeFlags & (CORINFO_FLG_CONTAINS_GC_PTR | CORINFO_FLG_BYREF_LIKE)) != 0));
+    // Now check for overlap and holes. Note that the fast flag check above
+    // will not discard potentially overlapping fields in recursively promoted
+    // child structs.
+    jitstd::sort(structPromotionInfo.fields, structPromotionInfo.fields + structPromotionInfo.fieldCnt,
+                 [](const lvaStructFieldInfo& lhs, const lvaStructFieldInfo& rhs) {
+                     return lhs.fldOffset < rhs.fldOffset;
+                 });
 
-    // Check if this promoted struct contains any holes.
-    assert(!overlappingFields);
-    if (fieldsSize != structSize)
+    unsigned lastEnd = 0;
+    for (int i = 0; i < structPromotionInfo.fieldCnt; i++)
     {
-        // If sizes do not match it means we have an overlapping fields or holes.
-        // Overlapping fields were rejected early, so here it can mean only holes.
-        structPromotionInfo.containsHoles = true;
+        lvaStructFieldInfo& fieldInf = structPromotionInfo.fields[i];
+        if (fieldInf.fldOffset < lastEnd)
+        {
+            // Overlapping fields
+            return false;
+        }
+
+        if (fieldInf.fldOffset > lastEnd)
+        {
+            structPromotionInfo.containsHoles = true;
+        }
+
+        lastEnd = fieldInf.fldOffset + fieldInf.fldSize;
     }
+
+    structPromotionInfo.anySignificantPadding = significantPadding && structPromotionInfo.containsHoles;
 
     // Cool, this struct is promotable.
 
     structPromotionInfo.canPromote = true;
-    return true;
-}
-
-//--------------------------------------------------------------------------------------------
-// CanConstructAndPromoteField - checks if we can construct field types without asking about them directly.
-//
-// Arguments:
-//   structPromotionInfo - struct promotion candidate information.
-//
-// Return value:
-//   true if we can figure out the fields from available knowledge.
-//
-// Notes:
-//   This is needed for AOT R2R compilation when we can't cross compilation bubble borders
-//   so we should not ask about fields that are not directly referenced. If we do VM will have
-//   to emit a type check for this field type but it does not have enough information about it.
-//   As a workaround for performance critical corner case: struct with 1 gcref, we try to construct
-//   the field information from indirect observations.
-//
-bool Compiler::StructPromotionHelper::CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo)
-{
-    const CORINFO_CLASS_HANDLE typeHnd    = structPromotionInfo->typeHnd;
-    const COMP_HANDLE          compHandle = compiler->info.compCompHnd;
-    const DWORD                typeFlags  = compHandle->getClassAttribs(typeHnd);
-    if (structPromotionInfo->fieldCnt != 1)
-    {
-        // Can't find out values for several fields.
-        return false;
-    }
-    if ((typeFlags & CORINFO_FLG_CONTAINS_GC_PTR) == 0)
-    {
-        // Can't find out type of a non-gc field.
-        return false;
-    }
-
-    const unsigned structSize = compHandle->getClassSize(typeHnd);
-    if (structSize != TARGET_POINTER_SIZE)
-    {
-        return false;
-    }
-
-    assert(!structPromotionInfo->containsHoles);
-    assert(!structPromotionInfo->customLayout);
-    lvaStructFieldInfo& fldInfo = structPromotionInfo->fields[0];
-
-    fldInfo.fldHnd = compHandle->getFieldInClass(typeHnd, 0);
-
-    // We should not read it anymore.
-    fldInfo.fldTypeHnd = 0;
-
-    fldInfo.fldOffset  = 0;
-    fldInfo.fldOrdinal = 0;
-    fldInfo.fldSize    = TARGET_POINTER_SIZE;
-    fldInfo.fldType    = TYP_REF;
-
-    structPromotionInfo->canPromote = true;
     return true;
 }
 
@@ -2033,7 +1964,6 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
 #elif defined(UNIX_AMD64_ABI)
         else
         {
-            SortStructFields();
             // Only promote if the field types match the registers, unless we have a single SIMD field.
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
@@ -2114,9 +2044,9 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
                 structPromotionInfo.fieldCnt, varDsc->lvFieldAccessed);
         shouldPromote = false;
     }
-    else if (varDsc->lvIsMultiRegRet && structPromotionInfo.containsHoles && structPromotionInfo.customLayout)
+    else if (varDsc->lvIsMultiRegRet && structPromotionInfo.anySignificantPadding)
     {
-        JITDUMP("Not promoting multi-reg returned struct local V%02u with holes.\n", lclNum);
+        JITDUMP("Not promoting multi-reg returned struct local V%02u with significant padding.\n", lclNum);
         shouldPromote = false;
     }
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -2137,9 +2067,9 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         // multiple registers?
         if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
         {
-            if (structPromotionInfo.containsHoles && structPromotionInfo.customLayout)
+            if (structPromotionInfo.anySignificantPadding)
             {
-                JITDUMP("Not promoting multi-reg struct local V%02u with holes.\n", lclNum);
+                JITDUMP("Not promoting multi-reg struct local V%02u with significant padding.\n", lclNum);
                 shouldPromote = false;
             }
             else if ((structPromotionInfo.fieldCnt != 2) &&
@@ -2193,153 +2123,6 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
 }
 
 //--------------------------------------------------------------------------------------------
-// SortStructFields - sort the fields according to the increasing order of the field offset.
-//
-// Notes:
-//   This is needed because the fields need to be pushed on stack (when referenced as a struct) in offset order.
-//
-void Compiler::StructPromotionHelper::SortStructFields()
-{
-    if (!structPromotionInfo.fieldsSorted)
-    {
-        jitstd::sort(structPromotionInfo.fields, structPromotionInfo.fields + structPromotionInfo.fieldCnt,
-                     lvaFieldOffsetCmp());
-        structPromotionInfo.fieldsSorted = true;
-    }
-}
-
-//--------------------------------------------------------------------------------------------
-// GetFieldInfo - get struct field information.
-// Arguments:
-//   fieldHnd - field handle to get info for;
-//   ordinal  - field ordinal.
-//
-// Return value:
-//  field information.
-//
-Compiler::lvaStructFieldInfo Compiler::StructPromotionHelper::GetFieldInfo(CORINFO_FIELD_HANDLE fieldHnd, BYTE ordinal)
-{
-    lvaStructFieldInfo fieldInfo;
-    fieldInfo.fldHnd = fieldHnd;
-
-    unsigned fldOffset  = compiler->info.compCompHnd->getFieldOffset(fieldInfo.fldHnd);
-    fieldInfo.fldOffset = (BYTE)fldOffset;
-
-    fieldInfo.fldOrdinal = ordinal;
-    CorInfoType corType  = compiler->info.compCompHnd->getFieldType(fieldInfo.fldHnd, &fieldInfo.fldTypeHnd);
-    fieldInfo.fldType    = JITtype2varType(corType);
-    fieldInfo.fldSize    = genTypeSize(fieldInfo.fldType);
-
-#ifdef FEATURE_SIMD
-    // Check to see if this is a SIMD type.
-    // We will only check this if we have already found a SIMD type, which will be true if
-    // we have encountered any SIMD intrinsics.
-    if (compiler->usesSIMDTypes() && (fieldInfo.fldSize == 0) && compiler->isSIMDorHWSIMDClass(fieldInfo.fldTypeHnd))
-    {
-        unsigned    simdSize;
-        CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(fieldInfo.fldTypeHnd, &simdSize);
-        // We will only promote fields of SIMD types that fit into a SIMD register.
-        if (simdBaseJitType != CORINFO_TYPE_UNDEF)
-        {
-            if ((simdSize >= compiler->minSIMDStructBytes()) && (simdSize <= compiler->maxSIMDStructBytes()))
-            {
-                fieldInfo.fldType = compiler->getSIMDTypeForSize(simdSize);
-                fieldInfo.fldSize = simdSize;
-            }
-        }
-    }
-#endif // FEATURE_SIMD
-
-    if (fieldInfo.fldSize == 0)
-    {
-        TryPromoteStructField(fieldInfo);
-    }
-
-    return fieldInfo;
-}
-
-//--------------------------------------------------------------------------------------------
-// TryPromoteStructField - checks that this struct's field is a struct that can be promoted as scalar type
-//   aligned at its natural boundary. Promotes the field as a scalar if the check succeeded.
-//
-// Arguments:
-//   fieldInfo - information about the field in the outer struct.
-//
-// Return value:
-//   true if the internal struct was promoted.
-//
-bool Compiler::StructPromotionHelper::TryPromoteStructField(lvaStructFieldInfo& fieldInfo)
-{
-    if (fieldInfo.fldType != TYP_STRUCT)
-    {
-        return false;
-    }
-
-    COMP_HANDLE compHandle = compiler->info.compCompHnd;
-
-    // Do not promote if the struct field in turn has more than one field.
-    if (compHandle->getClassNumInstanceFields(fieldInfo.fldTypeHnd) != 1)
-    {
-        return false;
-    }
-
-    // Do not promote if the single field is not aligned at its natural boundary within
-    // the struct field.
-    CORINFO_FIELD_HANDLE innerFieldHndl   = compHandle->getFieldInClass(fieldInfo.fldTypeHnd, 0);
-    unsigned             innerFieldOffset = compHandle->getFieldOffset(innerFieldHndl);
-    if (innerFieldOffset != 0)
-    {
-        return false;
-    }
-
-    CorInfoType fieldCorType = compHandle->getFieldType(innerFieldHndl);
-    var_types   fieldVarType = JITtype2varType(fieldCorType);
-    unsigned    fieldSize    = genTypeSize(fieldVarType);
-
-    // Do not promote if the field is not a primitive type or is not properly aligned.
-    //
-    // TODO-CQ: Right now we only promote an actual SIMD typed field, which would cause
-    // a nested SIMD type to fail promotion.
-    if (fieldSize == 0 || fieldSize > TARGET_POINTER_SIZE)
-    {
-        JITDUMP("Promotion blocked: struct contains struct field with one field,"
-                " but that field has invalid size.\n");
-        return false;
-    }
-
-    if (fieldSize != TARGET_POINTER_SIZE)
-    {
-        unsigned outerFieldOffset = compHandle->getFieldOffset(fieldInfo.fldHnd);
-
-        if ((outerFieldOffset % fieldSize) != 0)
-        {
-            JITDUMP("Promotion blocked: struct contains struct field with one field,"
-                    " but the outer struct offset %u is not a multiple of the inner field size %u.\n",
-                    outerFieldOffset, fieldSize);
-            return false;
-        }
-    }
-
-    // Insist this wrapped field occupy all of its parent storage.
-    unsigned innerStructSize = compHandle->getClassSize(fieldInfo.fldTypeHnd);
-
-    if (fieldSize != innerStructSize)
-    {
-        JITDUMP("Promotion blocked: struct contains struct field with one field,"
-                " but that field is not the same size as its parent.\n");
-        return false;
-    }
-
-    // Retype the field as the type of the single field of the struct.
-    // This is a hack that allows us to promote such fields before we support recursive struct promotion
-    // (tracked by #10019).
-    fieldInfo.fldType = fieldVarType;
-    fieldInfo.fldSize = fieldSize;
-
-    return true;
-}
-
-//--------------------------------------------------------------------------------------------
 // PromoteStructVar - promote struct variable.
 //
 // Arguments:
@@ -2355,11 +2138,11 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     assert(varDsc->GetLayout()->GetClassHandle() == structPromotionInfo.typeHnd);
     assert(structPromotionInfo.canPromote);
 
-    varDsc->lvFieldCnt      = structPromotionInfo.fieldCnt;
-    varDsc->lvFieldLclStart = compiler->lvaCount;
-    varDsc->lvPromoted      = true;
-    varDsc->lvContainsHoles = structPromotionInfo.containsHoles;
-    varDsc->lvCustomLayout  = structPromotionInfo.customLayout;
+    varDsc->lvFieldCnt              = structPromotionInfo.fieldCnt;
+    varDsc->lvFieldLclStart         = compiler->lvaCount;
+    varDsc->lvPromoted              = true;
+    varDsc->lvContainsHoles         = structPromotionInfo.containsHoles;
+    varDsc->lvAnySignificantPadding = structPromotionInfo.anySignificantPadding;
 
 #ifdef DEBUG
     // Don't stress this in LCL_FLD stress.
@@ -2373,8 +2156,6 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
                compiler->eeGetClassName(varDsc->GetLayout()->GetClassHandle()));
     }
 #endif
-
-    SortStructFields();
 
     for (unsigned index = 0; index < structPromotionInfo.fieldCnt; ++index)
     {
@@ -2392,10 +2173,10 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
 // Now grab the temp for the field local.
 
 #ifdef DEBUG
+        char        buf[200];
         char        fieldNameBuffer[128];
         const char* fieldName =
             compiler->eeGetFieldName(pFieldInfo->fldHnd, false, fieldNameBuffer, sizeof(fieldNameBuffer));
-        char buf[200];
         sprintf_s(buf, sizeof(buf), "field V%02u.%s (fldOffset=0x%x)", lclNum, fieldName, pFieldInfo->fldOffset);
 
         // We need to copy 'buf' as lvaGrabTemp() below caches a copy to its argument.
@@ -7695,44 +7476,28 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             printf(" unsafe-buffer");
         }
     }
-    if (varDsc->lvIsStructField)
-    {
-        LclVarDsc* parentvarDsc = lvaGetDesc(varDsc->lvParentLcl);
-#if !defined(TARGET_64BIT)
-        if (varTypeIsLong(parentvarDsc))
-        {
-            bool isLo = (lclNum == parentvarDsc->lvFieldLclStart);
-            printf(" V%02u.%s(offs=0x%02x)", varDsc->lvParentLcl, isLo ? "lo" : "hi", isLo ? 0 : genTypeSize(TYP_INT));
-        }
-        else
-#endif // !defined(TARGET_64BIT)
-        {
-            CORINFO_CLASS_HANDLE typeHnd = parentvarDsc->GetLayout()->GetClassHandle();
-            CORINFO_FIELD_HANDLE fldHnd  = info.compCompHnd->getFieldInClass(typeHnd, varDsc->lvFldOrdinal);
-
-            char buffer[128];
-            printf(" V%02u.%s(offs=0x%02x)", varDsc->lvParentLcl, eeGetFieldName(fldHnd, false, buffer, sizeof(buffer)),
-                   varDsc->lvFldOffset);
-
-            lvaPromotionType promotionType = lvaGetPromotionType(parentvarDsc);
-            switch (promotionType)
-            {
-                case PROMOTION_TYPE_NONE:
-                    printf(" P-NONE");
-                    break;
-                case PROMOTION_TYPE_DEPENDENT:
-                    printf(" P-DEP");
-                    break;
-                case PROMOTION_TYPE_INDEPENDENT:
-                    printf(" P-INDEP");
-                    break;
-            }
-        }
-    }
 
     if (varDsc->lvReason != nullptr)
     {
         printf(" \"%s\"", varDsc->lvReason);
+    }
+
+    if (varDsc->lvIsStructField)
+    {
+        LclVarDsc*       parentVarDsc  = lvaGetDesc(varDsc->lvParentLcl);
+        lvaPromotionType promotionType = lvaGetPromotionType(parentVarDsc);
+        switch (promotionType)
+        {
+            case PROMOTION_TYPE_NONE:
+                printf(" P-NONE");
+                break;
+            case PROMOTION_TYPE_DEPENDENT:
+                printf(" P-DEP");
+                break;
+            case PROMOTION_TYPE_INDEPENDENT:
+                printf(" P-INDEP");
+                break;
+        }
     }
 
     printf("\n");

@@ -1736,7 +1736,7 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
     {
         // Do not consider this store dead if the parent local variable is an address exposed local or
         // if the struct has a custom layout and holes.
-        return !(varDsc.IsAddressExposed() || (varDsc.lvCustomLayout && varDsc.lvContainsHoles));
+        return !varDsc.IsAddressExposed() && !varDsc.lvAnySignificantPadding;
     }
 
     return false;

@@ -71,6 +71,7 @@ struct JitInterfaceCallbacks
     unsigned (* getClassGClayout)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, uint8_t* gcPtrs);
     unsigned (* getClassNumInstanceFields)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CORINFO_FIELD_HANDLE (* getFieldInClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clsHnd, int32_t num);
+    FlattenTypeResult (* flattenType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE clsHnd, CORINFO_FLATTENED_TYPE_FIELD* fields, size_t* numFields, bool* significantPadding);
     bool (* checkMethodModifier)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hMethod, const char* modifier, bool fOptional);
     CorInfoHelpFunc (* getNewHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool* pHasSideEffects);
     CorInfoHelpFunc (* getNewArrHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE arrayCls);
@@ -794,6 +795,18 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CORINFO_FIELD_HANDLE temp = _callbacks->getFieldInClass(_thisHandle, &pException, clsHnd, num);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual FlattenTypeResult flattenType(
+          CORINFO_CLASS_HANDLE clsHnd,
+          CORINFO_FLATTENED_TYPE_FIELD* fields,
+          size_t* numFields,
+          bool* significantPadding)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    FlattenTypeResult temp = _callbacks->flattenType(_thisHandle, &pException, clsHnd, fields, numFields, significantPadding);
     if (pException != nullptr) throw pException;
     return temp;
 }

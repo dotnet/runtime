@@ -2004,15 +2004,8 @@ namespace Internal.JitInterface
                 if (metadataType.IsByRefLike)
                     result |= CorInfoFlag.CORINFO_FLG_BYREF_LIKE;
 
-                // The CLR has more complicated rules around CUSTOMLAYOUT, but this will do.
-                if (metadataType.IsExplicitLayout || (metadataType.IsSequentialLayout && metadataType.GetClassLayout().Size != 0) || metadataType.IsWellKnownType(WellKnownType.TypedReference))
-                    result |= CorInfoFlag.CORINFO_FLG_CUSTOMLAYOUT;
-
                 if (metadataType.IsUnsafeValueType)
                     result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
-
-                if (metadataType.IsInlineArray)
-                    result |= CorInfoFlag.CORINFO_FLG_INDEXABLE_FIELDS;
             }
 
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
@@ -2373,6 +2366,101 @@ namespace Internal.JitInterface
 
             // We could not find the field that was searched for.
             throw new InvalidOperationException();
+        }
+
+        private FlattenTypeResult FlattenTypeHelper(MetadataType type, uint baseOffs, CORINFO_FLATTENED_TYPE_FIELD* fields, nuint maxFields, nuint* numFields, ref bool significantPadding)
+        {
+            if (type.IsExplicitLayout || (type.IsSequentialLayout && type.GetClassLayout().Size != 0) || type.IsInlineArray)
+            {
+                significantPadding = true;
+            }
+
+            foreach (FieldDesc fd in type.GetFields())
+            {
+                if (fd.IsStatic)
+                    continue;
+
+                nuint firstFieldIndex = *numFields;
+                Debug.Assert(fd.Offset != FieldAndOffset.InvalidOffset);
+
+                TypeDesc fieldType = fd.FieldType;
+                CorInfoType corInfoType = asCorInfoType(fieldType);
+                if (corInfoType == CorInfoType.CORINFO_TYPE_VALUECLASS)
+                {
+                    if (fieldType.IsIntrinsic)
+                    {
+                        if (*numFields >= maxFields)
+                            return FlattenTypeResult.Partial;
+
+                        CORINFO_FLATTENED_TYPE_FIELD* field = &fields[(*numFields)++];
+                        field->type = CorInfoType.CORINFO_TYPE_VALUECLASS;
+                        field->intrinsicValueClassHnd = ObjectToHandle(fieldType);
+                        field->fieldHandle = ObjectToHandle(fd);
+                        field->offset = baseOffs + (uint)fd.Offset.AsInt;
+                    }
+                    else
+                    {
+                        Debug.Assert(fieldType is MetadataType);
+                        FlattenTypeResult result = FlattenTypeHelper((MetadataType)fieldType, (uint)fd.Offset.AsInt, fields, maxFields, numFields, ref significantPadding);
+                        if (result != FlattenTypeResult.Success)
+                            return result;
+                    }
+                }
+                else
+                {
+                    if (*numFields >= maxFields)
+                        return FlattenTypeResult.Partial;
+
+                    CORINFO_FLATTENED_TYPE_FIELD* field = &fields[(*numFields)++];
+                    field->type = corInfoType;
+                    field->intrinsicValueClassHnd = null;
+                    field->fieldHandle = ObjectToHandle(fd);
+                    field->offset = baseOffs + (uint)fd.Offset.AsInt;
+                }
+
+                if (type.IsInlineArray)
+                {
+                    nuint fieldEnd = *numFields;
+                    int elemSize = fieldType.GetElementSize().AsInt;
+                    int arrSize = type.GetElementSize().AsInt;
+
+                    for (int elemOffset = elemSize; elemOffset < arrSize; elemOffset += elemSize)
+                    {
+                        for (nuint templateFieldIndex = firstFieldIndex; templateFieldIndex < fieldEnd; templateFieldIndex++)
+                        {
+                            if (*numFields >= maxFields)
+                                return FlattenTypeResult.Partial;
+
+                            CORINFO_FLATTENED_TYPE_FIELD* field = &fields[(*numFields)++];
+                            *field = fields[templateFieldIndex];
+                            field->offset += (uint)elemOffset;
+                        }
+                    }
+                }
+            }
+
+            return FlattenTypeResult.Success;
+        }
+
+        private FlattenTypeResult flattenType(CORINFO_CLASS_STRUCT_* clsHnd, CORINFO_FLATTENED_TYPE_FIELD* fields, UIntPtr* numFields, ref bool significantPadding)
+        {
+            MetadataType type = (MetadataType)HandleToObject(clsHnd);
+            significantPadding = false;
+            nuint maxFields = *numFields;
+            *numFields = 0;
+            FlattenTypeResult result = FlattenTypeHelper(type, 0, fields, maxFields, numFields, ref significantPadding);
+
+#if READYTORUN
+            // TODO: Do we need a version bubble check here if we're going to
+            // add this type layout check anyway?
+            if (NeedsTypeLayoutCheck(type))
+            {
+                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                AddPrecodeFixup(node);
+            }
+#endif
+
+            return result;
         }
 
         private bool checkMethodModifier(CORINFO_METHOD_STRUCT_* hMethod, byte* modifier, bool fOptional)
