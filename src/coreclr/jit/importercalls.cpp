@@ -4051,7 +4051,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsStruct(fromType) || varTypeIsStruct(toType))
             {
-                GenTree* addr;
+                GenTree*     addr;
                 GenTreeFlags flags = GTF_EMPTY;
                 GenTree*     val   = impPopStack().val;
                 if (val->OperIsIndir() && (fromSize != val->AsIndir()->Size()))

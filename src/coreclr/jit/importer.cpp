@@ -958,9 +958,9 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
                 srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
             // TODO: deal with flags
-            GenTreeFlags flags = GTF_EMPTY;
-            GenTree*   destAddr = impGetNodeAddr(dest, srcCall->gtRetClsHnd, CHECK_SPILL_ALL, &flags);
-            NewCallArg newArg   = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
+            GenTreeFlags flags    = GTF_EMPTY;
+            GenTree*     destAddr = impGetNodeAddr(dest, srcCall->gtRetClsHnd, CHECK_SPILL_ALL, &flags);
+            NewCallArg   newArg   = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
 
 #if !defined(TARGET_ARM)
             // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
@@ -1062,8 +1062,8 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
             // TODO: deal with flags
-            GenTreeFlags flags = GTF_EMPTY;
-            GenTree* destAddr = impGetNodeAddr(dest, call->gtRetClsHnd, CHECK_SPILL_ALL, &flags);
+            GenTreeFlags flags    = GTF_EMPTY;
+            GenTree*     destAddr = impGetNodeAddr(dest, call->gtRetClsHnd, CHECK_SPILL_ALL, &flags);
             call->gtArgs.InsertAfterThisOrFirst(this,
                                                 NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
 
@@ -1080,9 +1080,9 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
     {
         // Since we are assigning the result of a GT_MKREFANY, "destAddr" must point to a refany.
         // TODO-CQ: we can do this without address-exposing the local on the LHS.
-        GenTreeFlags flags = GTF_EMPTY;
-        GenTree* destAddr = impGetNodeAddr(dest, impGetRefAnyClass(), CHECK_SPILL_ALL, &flags);
-        GenTree* destAddrClone;
+        GenTreeFlags flags    = GTF_EMPTY;
+        GenTree*     destAddr = impGetNodeAddr(dest, impGetRefAnyClass(), CHECK_SPILL_ALL, &flags);
+        GenTree*     destAddrClone;
         destAddr = impCloneExpr(destAddr, &destAddrClone, NO_CLASS_HANDLE, curLevel,
                                 pAfterStmt DEBUGARG("MKREFANY assignment"));
 
@@ -1201,7 +1201,10 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 //    will return its address. Otherwise, address of a temporary assigned
 //    the value of "val" will be returned.
 //
-GenTree* Compiler::impGetNodeAddr(GenTree* val, CORINFO_CLASS_HANDLE typeHnd, unsigned curLevel, GenTreeFlags* derefFlags)
+GenTree* Compiler::impGetNodeAddr(GenTree*             val,
+                                  CORINFO_CLASS_HANDLE typeHnd,
+                                  unsigned             curLevel,
+                                  GenTreeFlags*        derefFlags)
 {
     switch (val->OperGet())
     {
@@ -1209,7 +1212,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, CORINFO_CLASS_HANDLE typeHnd, un
         case GT_IND:
             if (derefFlags != nullptr)
             {
-                flags |= val->gtFlags;
+                derefFlags |= val->gtFlags;
                 return val->AsIndir()->Addr();
             }
             break;
@@ -1224,7 +1227,7 @@ GenTree* Compiler::impGetNodeAddr(GenTree* val, CORINFO_CLASS_HANDLE typeHnd, un
         {
             if (derefFlags != nullptr)
             {
-                flags |= (val->gtFlags & GTF_IND_FLAGS);
+                derefFlags |= (val->gtFlags & GTF_IND_FLAGS);
             }
             GenTreeField* fieldNode = val->AsField();
             GenTreeField* fieldAddr =
@@ -9270,7 +9273,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                             // TODO: deal with flags
                             GenTreeFlags flags = GTF_EMPTY;
-                            obj = impGetNodeAddr(obj, objType, CHECK_SPILL_ALL, &flags);
+                            obj                = impGetNodeAddr(obj, objType, CHECK_SPILL_ALL, &flags);
                         }
 
                         if (isLoadAddress)
@@ -10027,7 +10030,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     // Get the address of the refany
                     GenTreeFlags flags = GTF_EMPTY;
-                    op1 = impGetNodeAddr(op1, impGetRefAnyClass(), CHECK_SPILL_ALL, &flags);
+                    op1                = impGetNodeAddr(op1, impGetRefAnyClass(), CHECK_SPILL_ALL, &flags);
 
                     // Fetch the type from the correct slot
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1,
