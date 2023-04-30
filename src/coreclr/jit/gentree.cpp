@@ -2166,6 +2166,8 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
                 {
                     if (opts.IsReadyToRun() && helper == CORINFO_HELP_NEWARR_1_FROZEN)
                     {
+                        // CORINFO_HELP_NEWARR_1_FROZEN is used in both JIT and R2R,
+                        // for R2R take the same path as CORINFO_HELP_READYTORUN_NEWARR_1
                         FALLTHROUGH;
                     }
                     else
@@ -13318,28 +13320,6 @@ GenTree* Compiler::gtFoldExprConditional(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// gtCreateHandleCompare: generate a type handle comparison
-//
-// Arguments:
-//    oper -- comparison operation (equal/not equal)
-//    op1 -- first operand
-//    op2 -- second operand
-//    typeCheckInliningResult -- indicates how the comparison should happen
-//
-// Returns:
-//    Type comparison tree
-//
-
-GenTree* Compiler::gtCreateHandleCompare(genTreeOps             oper,
-                                         GenTree*               op1,
-                                         GenTree*               op2,
-                                         CorInfoInlineTypeCheck typeCheckInliningResult)
-{
-    assert(typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_PASS);
-    return gtNewOperNode(oper, TYP_INT, op1, op2);
-}
-
-//------------------------------------------------------------------------
 // gtFoldTypeCompare: see if a type comparison can be further simplified
 //
 // Arguments:
@@ -13451,9 +13431,9 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
             inliningKind = info.compCompHnd->canInlineTypeCheck(cls2Hnd, CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN);
         }
 
-        assert(inliningKind == CORINFO_INLINE_TYPECHECK_PASS || inliningKind == CORINFO_INLINE_TYPECHECK_USE_HELPER);
+        assert(inliningKind == CORINFO_INLINE_TYPECHECK_PASS);
 
-        GenTree* compare = gtCreateHandleCompare(oper, op1ClassFromHandle, op2ClassFromHandle, inliningKind);
+        GenTree* compare = gtNewOperNode(oper, TYP_INT, op1ClassFromHandle, op2ClassFromHandle);
 
         // Drop any now-irrelevant flags
         compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
@@ -13489,11 +13469,10 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
         arg2 = gtNewMethodTableLookup(arg2);
 
-        CorInfoInlineTypeCheck inliningKind =
-            info.compCompHnd->canInlineTypeCheck(nullptr, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
-        assert(inliningKind == CORINFO_INLINE_TYPECHECK_PASS || inliningKind == CORINFO_INLINE_TYPECHECK_USE_HELPER);
+        assert(info.compCompHnd->canInlineTypeCheck(nullptr, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE) ==
+               CORINFO_INLINE_TYPECHECK_PASS);
 
-        GenTree* compare = gtCreateHandleCompare(oper, arg1, arg2, inliningKind);
+        GenTree* compare = gtNewOperNode(oper, TYP_INT, arg1, arg2);
 
         // Drop any now-irrelevant flags
         compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE);
@@ -13591,7 +13570,8 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     GenTree* const objMT = gtNewMethodTableLookup(objOp);
 
     // Compare the two method tables
-    GenTree* const compare = gtCreateHandleCompare(oper, objMT, knownMT, typeCheckInliningResult);
+    assert(typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_PASS);
+    GenTree* const compare = gtNewOperNode(oper, TYP_INT, objMT, knownMT);
 
     // Drop any now irrelevant flags
     compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_DONT_CSE);

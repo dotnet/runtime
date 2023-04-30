@@ -493,8 +493,8 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     return ObjectToOBJECTREF((Object*)orArray);
 }
 
-// Same as AllocateSzArray but attempts to allocate the array on a frozen segment.
-// It fallbacks to AllocateSzArray if it fails to allocate on a frozen segment.
+// Same as AllocateSzArray but for frozen segments.
+// Fallbacks to AllocateSzArray if it fails.
 OBJECTREF AllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 {
     CONTRACTL{

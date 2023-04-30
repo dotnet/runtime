@@ -9817,22 +9817,24 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 //  stsfld
                 //  ret
                 //
-                // We replace default heap allocator for newarr with the one that prefers frozen segments.
-                // This is a very simple and conservative implementation targeting Array.Empty<T>(), ideally
-                // we want to be able to use frozen allocators more broadly, but that analysis is not trivial.
+                // we emit a "frozen" allocator for newarr to, hopefully, allocate that array on a frozen segment.
+                // This is a very simple and conservative implementation targeting Array.Empty<T>()'s shape
+                // Ideally, we want to be able to use frozen allocators more broadly, but such an analysis is
+                // not trivial.
                 //
                 if (((info.compFlags & FLG_CCTOR) == FLG_CCTOR) &&
                     // Does VM allow us to use frozen allocators?
                     opts.jitFlags->IsSet(JitFlags::JIT_FLAG_FROZEN_ALLOC_ALLOWED))
                 {
-                    // Check next two opcodes
+                    // Check next two opcodes (have to be STSFLD and RET)
                     const BYTE* nextOpcode1 = codeAddr + sizeof(mdToken);
                     const BYTE* nextOpcode2 = nextOpcode1 + sizeof(mdToken) + 1;
                     if (nextOpcode2 <= codeEndp && getU1LittleEndian(nextOpcode1) == CEE_STSFLD)
                     {
                         if (getU1LittleEndian(nextOpcode2) == CEE_RET)
                         {
-                            // Check that the field is "static readonly"
+                            // Check that the field is "static readonly", we don't want to waste memory
+                            // for potentially mutable fields.
                             CORINFO_RESOLVED_TOKEN fldToken;
                             impResolveToken(nextOpcode1 + 1, &fldToken, CORINFO_TOKENKIND_Field);
                             CORINFO_FIELD_INFO fi;
