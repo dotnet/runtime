@@ -3,7 +3,7 @@
 
 import { mono_wasm_new_root_buffer } from "./roots";
 import { MonoString, MonoStringNull, is_nullish, WasmRoot, WasmRootBuffer } from "./types";
-import { Module } from "./imports";
+import { Module } from "./globals";
 import cwraps from "./cwraps";
 import { mono_wasm_new_root } from "./roots";
 import { getI32, getU32 } from "./memory";

@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace System.Collections.Frozen
 {
@@ -274,7 +275,7 @@ namespace System.Collections.Frozen
 
         /// <summary>Gets a collection containing the values in the set.</summary>
         /// <remarks>The order of the values in the set is unspecified.</remarks>
-        public ImmutableArray<T> Items => ImmutableArrayFactory.Create(ItemsCore);
+        public ImmutableArray<T> Items => ImmutableCollectionsMarshal.AsImmutableArray(ItemsCore);
 
         /// <inheritdoc cref="Items" />
         private protected abstract T[] ItemsCore { get; }

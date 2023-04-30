@@ -3,7 +3,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { legacy_c_functions as cwraps } from "../cwraps";
-import { ENVIRONMENT_IS_PTHREAD, Module } from "../imports";
+import { ENVIRONMENT_IS_PTHREAD, Module } from "../globals";
 import { parseFQN } from "../invoke-cs";
 import { setI32, setU32, setF32, setF64, setU52, setI52, setB32, setI32_unchecked, setU32_unchecked, _zero_region, _create_temp_frame, getB32, getI32, getU32, getF32, getF64 } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
@@ -12,7 +12,7 @@ import { MonoMethod, MonoObject, MonoType, MonoClass, mono_assert, VoidPtrNull, 
 import { VoidPtr } from "../types/emscripten";
 import { legacyManagedExports } from "./corebindings";
 import { get_js_owned_object_by_gc_handle_ref, _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
-import { BINDING, legacyHelpers } from "./imports";
+import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root, _js_to_mono_uri_root, js_to_mono_enum } from "./js-to-cs";
 import { _teardown_after_call } from "./method-calls";
 
@@ -99,18 +99,18 @@ export function _create_rebindable_named_function(name: string, argumentNames: s
 export function _create_primitive_converters(): void {
     const result = primitiveConverters;
     result.set("m", { steps: [{}], size: 0 });
-    result.set("s", { steps: [{ convert_root: js_string_to_mono_string_root.bind(BINDING) }], size: 0, needs_root: true });
-    result.set("S", { steps: [{ convert_root: js_string_to_mono_string_interned_root.bind(BINDING) }], size: 0, needs_root: true });
+    result.set("s", { steps: [{ convert_root: js_string_to_mono_string_root.bind(Module) }], size: 0, needs_root: true });
+    result.set("S", { steps: [{ convert_root: js_string_to_mono_string_interned_root.bind(Module) }], size: 0, needs_root: true });
     // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri,
     // because we will root the reference, so we don't need in-flight reference
     // also as those are callback arguments and we don't have platform code which would release the in-flight reference on C# end
-    result.set("o", { steps: [{ convert_root: js_to_mono_obj_root.bind(BINDING) }], size: 0, needs_root: true });
-    result.set("u", { steps: [{ convert_root: _js_to_mono_uri_root.bind(BINDING, false) }], size: 0, needs_root: true });
+    result.set("o", { steps: [{ convert_root: js_to_mono_obj_root.bind(Module) }], size: 0, needs_root: true });
+    result.set("u", { steps: [{ convert_root: _js_to_mono_uri_root.bind(Module, false) }], size: 0, needs_root: true });
     // ref object aka T&&
-    result.set("R", { steps: [{ convert_root: js_to_mono_obj_root.bind(BINDING), byref: true }], size: 0, needs_root: true });
+    result.set("R", { steps: [{ convert_root: js_to_mono_obj_root.bind(Module), byref: true }], size: 0, needs_root: true });
 
     // result.set ('k', { steps: [{ convert: js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
-    result.set("j", { steps: [{ convert: js_to_mono_enum.bind(BINDING), indirect: "i32" }], size: 8 });
+    result.set("j", { steps: [{ convert: js_to_mono_enum.bind(Module), indirect: "i32" }], size: 8 });
 
     result.set("b", { steps: [{ indirect: "bool" }], size: 8 });
     result.set("i", { steps: [{ indirect: "i32" }], size: 8 });

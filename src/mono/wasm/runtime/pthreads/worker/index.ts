@@ -4,10 +4,10 @@
 /// <reference lib="webworker" />
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { Module, ENVIRONMENT_IS_PTHREAD, runtimeHelpers, ENVIRONMENT_IS_WEB } from "../../imports";
+import { Module, ENVIRONMENT_IS_PTHREAD, runtimeHelpers, ENVIRONMENT_IS_WEB } from "../../globals";
 import { makeChannelCreatedMonoMessage, makePreloadMonoMessage } from "../shared";
 import type { pthread_ptr } from "../shared/types";
-import { mono_assert, is_nullish, MonoConfig, MonoConfigInternal } from "../../types";
+import { is_nullish, MonoConfigInternal, mono_assert } from "../../types";
 import type { MonoThreadMessage } from "../shared";
 import {
     PThreadSelf,
@@ -18,6 +18,7 @@ import {
 } from "./events";
 import { setup_proxy_console } from "../../logging";
 import { afterConfigLoaded, preRunWorker } from "../../startup";
+import { MonoConfig } from "../../types-api";
 
 // re-export some of the events types
 export {
@@ -114,7 +115,8 @@ function onMonoConfigReceived(config: MonoConfigInternal): void {
 export function mono_wasm_pthread_on_pthread_attached(pthread_id: pthread_ptr): void {
     const self = pthread_self;
     mono_assert(self !== null && self.pthread_id == pthread_id, "expected pthread_self to be set already when attaching");
-    console.debug("MONO_WASM: attaching pthread to runtime", pthread_id);
+    if (runtimeHelpers.diagnosticTracing)
+        console.debug("MONO_WASM: attaching pthread to runtime 0x" + pthread_id.toString(16));
     preRunWorker();
     currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadAttached, self));
 }
@@ -127,7 +129,8 @@ export function afterThreadInitTLS(): void {
     if (ENVIRONMENT_IS_PTHREAD) {
         const pthread_ptr = (<any>Module)["_pthread_self"]();
         mono_assert(!is_nullish(pthread_ptr), "pthread_self() returned null");
-        console.debug("MONO_WASM: after thread init, pthread ptr", pthread_ptr);
+        if (runtimeHelpers.diagnosticTracing)
+            console.debug("MONO_WASM: after thread init, pthread ptr 0x" + pthread_ptr.toString(16));
         const self = setupChannelToMainThread(pthread_ptr);
         currentWorkerThreadEvents.dispatchEvent(makeWorkerThreadEvent(dotnetPthreadCreated, self));
     }

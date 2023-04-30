@@ -87,7 +87,6 @@
     <Compile Include="Utilities\StringUtilsTests.cs" />
     <Compile Include="Utilities\BlobReaderTests.cs" />
     <Compile Include="Utilities\CompressedIntegerTests.cs" />
-    <Compile Include="Utilities\ImmutableByteArrayInteropTest.cs" />
     <Compile Include="Utilities\MemoryBlockTests.cs" />
     <Compile Include="Utilities\OrderByTests.cs" />
   </ItemGroup>
