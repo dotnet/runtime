@@ -6,6 +6,11 @@ set(NATIVECOMPRESSION_SOURCES
     pal_zlib.c
 )
 
+if(CLR_CMAKE_TARGET_WIN32)
+  # Load all imported DLLs from the System32 directory.
+  add_linker_flag("/DEPENDENTLOADFLAG:0x800")
+endif()
+
 if (NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
 
     if (CLR_CMAKE_USE_SYSTEM_BROTLI)
