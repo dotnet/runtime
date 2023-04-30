@@ -1851,6 +1851,11 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
         lastEnd = fieldInf.fldOffset + fieldInf.fldSize;
     }
 
+    if (lastEnd < structSize)
+    {
+        structPromotionInfo.containsHoles = true;
+    }
+
     structPromotionInfo.anySignificantPadding = significantPadding && structPromotionInfo.containsHoles;
 
     // Cool, this struct is promotable.

@@ -2401,7 +2401,7 @@ namespace Internal.JitInterface
                     else
                     {
                         Debug.Assert(fieldType is MetadataType);
-                        FlattenTypeResult result = FlattenTypeHelper((MetadataType)fieldType, (uint)fd.Offset.AsInt, fields, maxFields, numFields, ref significantPadding);
+                        FlattenTypeResult result = FlattenTypeHelper((MetadataType)fieldType, baseOffs + (uint)fd.Offset.AsInt, fields, maxFields, numFields, ref significantPadding);
                         if (result != FlattenTypeResult.Success)
                             return result;
                     }
