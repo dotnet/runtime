@@ -327,19 +327,10 @@ namespace Internal.TypeSystem.Ecma
 
         public MethodSignature ParseMethodSignature()
         {
-            try
-            {
-                _indexStack = new Stack<int>();
-                _indexStack.Push(0);
-                _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
-                return ParseMethodSignatureInternal(skipEmbeddedSignatureData: false);
-            }
-            finally
-            {
-                _indexStack = null;
-                _embeddedSignatureDataList = null;
-            }
-
+            _indexStack = new Stack<int>();
+            _indexStack.Push(0);
+            _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
+            return ParseMethodSignatureInternal(skipEmbeddedSignatureData: false);
         }
 
         private MethodSignature ParseMethodSignatureInternal(bool skipEmbeddedSignatureData)
@@ -473,21 +464,13 @@ namespace Internal.TypeSystem.Ecma
 
         public TypeDesc ParseFieldSignature(out EmbeddedSignatureData[] embeddedSigData)
         {
-            try
-            {
-                _indexStack = new Stack<int>();
-                _indexStack.Push(1);
-                _indexStack.Push(0);
-                _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
-                TypeDesc parsedType = ParseFieldSignature();
-                embeddedSigData = _embeddedSignatureDataList.Count == 0 ? null : _embeddedSignatureDataList.ToArray();
-                return parsedType;
-            }
-            finally
-            {
-                _indexStack = null;
-                _embeddedSignatureDataList = null;
-            }
+            _indexStack = new Stack<int>();
+            _indexStack.Push(1);
+            _indexStack.Push(0);
+            _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
+            TypeDesc parsedType = ParseFieldSignature();
+            embeddedSigData = _embeddedSignatureDataList.Count == 0 ? null : _embeddedSignatureDataList.ToArray();
+            return parsedType;
         }
 
         public LocalVariableDefinition[] ParseLocalsSignature()
