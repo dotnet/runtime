@@ -6818,32 +6818,39 @@ ValueNum EvaluateBinarySimd(ValueNumStore* vns,
 
             var_types vn1Type = vns->TypeOfVN(arg0VN);
             var_types vn2Type = vns->TypeOfVN(arg1VN);
-            assert(vn1Type == vn2Type && varTypeIsSIMD(vn1Type));
+
+            assert((vn1Type == vn2Type) && varTypeIsSIMD(vn1Type));
             assert(!varTypeIsFloating(baseType));
 
-            ValueNum packed = EvaluateBinarySimd(vns, oper, scalar, vn1Type, baseType, arg0VN, arg1VN);
+            ValueNum packed     = EvaluateBinarySimd(vns, GT_EQ, scalar, vn1Type, baseType, arg0VN, arg1VN);
+            bool     allBitsSet = false;
             switch (vn1Type)
             {
                 case TYP_SIMD8:
                 {
-                    return vns->VNForIntCon(GetConstantSimd8(vns, baseType, packed).IsAllBitsSet());
+                    allBitsSet = GetConstantSimd8(vns, baseType, packed).IsAllBitsSet();
+                    break;
                 }
                 case TYP_SIMD12:
                 {
-                    return vns->VNForIntCon(GetConstantSimd12(vns, baseType, packed).IsAllBitsSet());
+                    allBitsSet = GetConstantSimd12(vns, baseType, packed).IsAllBitsSet();
+                    break;
                 }
                 case TYP_SIMD16:
                 {
-                    return vns->VNForIntCon(GetConstantSimd16(vns, baseType, packed).IsAllBitsSet());
+                    allBitsSet = GetConstantSimd16(vns, baseType, packed).IsAllBitsSet();
+                    break;
                 }
 #if defined(TARGET_XARCH)
                 case TYP_SIMD32:
                 {
-                    return vns->VNForIntCon(GetConstantSimd32(vns, baseType, packed).IsAllBitsSet());
+                    allBitsSet = GetConstantSimd32(vns, baseType, packed).IsAllBitsSet();
+                    break;
                 }
                 case TYP_SIMD64:
                 {
-                    return vns->VNForIntCon(GetConstantSimd64(vns, baseType, packed).IsAllBitsSet());
+                    allBitsSet = GetConstantSimd64(vns, baseType, packed).IsAllBitsSet();
+                    break;
                 }
 #endif
                 default:
@@ -6851,6 +6858,7 @@ ValueNum EvaluateBinarySimd(ValueNumStore* vns,
                     unreached();
                 }
             }
+            return vns->VNForIntCon(oper == GT_EQ ? allBitsSet : !allBitsSet);
         }
 
         default:
