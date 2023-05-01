@@ -6812,6 +6812,47 @@ ValueNum EvaluateBinarySimd(ValueNumStore* vns,
         }
 #endif // TARGET_XARCH
 
+        case TYP_BOOL:
+        {
+            assert((oper == GT_EQ) || (oper == GT_NE));
+
+            var_types vn1Type = vns->TypeOfVN(arg0VN);
+            var_types vn2Type = vns->TypeOfVN(arg1VN);
+            assert(vn1Type == vn2Type && varTypeIsSIMD(vn1Type));
+            assert(!varTypeIsFloating(baseType));
+
+            ValueNum packed = EvaluateBinarySimd(vns, oper, scalar, vn1Type, baseType, arg0VN, arg1VN);
+            switch (vn1Type)
+            {
+                case TYP_SIMD8:
+                {
+                    return vns->VNForIntCon(GetConstantSimd8(vns, baseType, packed).IsAllBitsSet());
+                }
+                case TYP_SIMD12:
+                {
+                    return vns->VNForIntCon(GetConstantSimd12(vns, baseType, packed).IsAllBitsSet());
+                }
+                case TYP_SIMD16:
+                {
+                    return vns->VNForIntCon(GetConstantSimd16(vns, baseType, packed).IsAllBitsSet());
+                }
+#if defined(TARGET_XARCH)
+                case TYP_SIMD32:
+                {
+                    return vns->VNForIntCon(GetConstantSimd32(vns, baseType, packed).IsAllBitsSet());
+                }
+                case TYP_SIMD64:
+                {
+                    return vns->VNForIntCon(GetConstantSimd64(vns, baseType, packed).IsAllBitsSet());
+                }
+#endif
+                default:
+                {
+                    unreached();
+                }
+            }
+        }
+
         default:
         {
             unreached();
@@ -7167,6 +7208,43 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(var_types      type,
 
         switch (ni)
         {
+#ifdef TARGET_ARM64
+            case NI_Vector64_op_Equality:
+            case NI_Vector128_op_Equality:
+            case NI_Vector64_EqualsAll:
+            case NI_Vector128_EqualsAll:
+#else
+            case NI_Vector128_op_Equality:
+            case NI_Vector256_op_Equality:
+            case NI_Vector512_op_Equality:
+            case NI_Vector128_EqualsAll:
+            case NI_Vector256_EqualsAll:
+            case NI_Vector512_EqualsAll:
+#endif
+            {
+                if (!varTypeIsFloating(baseType))
+                {
+                    return EvaluateBinarySimd(this, GT_EQ, /* scalar */ false, type, baseType, arg0VN, arg1VN);
+                }
+                break;
+            }
+
+#ifdef TARGET_ARM64
+            case NI_Vector64_op_Inequality:
+            case NI_Vector128_op_Inequality:
+#else
+            case NI_Vector128_op_Inequality:
+            case NI_Vector256_op_Inequality:
+            case NI_Vector512_op_Inequality:
+#endif
+            {
+                if (!varTypeIsFloating(baseType))
+                {
+                    return EvaluateBinarySimd(this, GT_NE, /* scalar */ false, type, baseType, arg0VN, arg1VN);
+                }
+                break;
+            }
+
 #ifdef TARGET_ARM64
             case NI_AdvSimd_Add:
             case NI_AdvSimd_Arm64_Add:

@@ -440,6 +440,13 @@ TBase EvaluateBinaryScalarRSZ(TBase arg0, TBase arg1)
     return arg0 >> (arg1 & ((sizeof(TBase) * 8) - 1));
 }
 
+template <typename TBase>
+TBase GetAllBitsSetScalar()
+{
+    uint8_t bitSize = (sizeof(TBase) * 8);
+    return static_cast<TBase>((1ULL << bitSize) - 1);
+}
+
 template <>
 inline int8_t EvaluateBinaryScalarRSZ<int8_t>(int8_t arg0, int8_t arg1)
 {
@@ -518,6 +525,16 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
         case GT_XOR:
         {
             return arg0 ^ arg1;
+        }
+
+        case GT_EQ:
+        {
+            return arg0 == arg1 ? GetAllBitsSetScalar<TBase>() : 0;
+        }
+
+        case GT_NE:
+        {
+            return arg0 != arg1 ? GetAllBitsSetScalar<TBase>() : 0;
         }
 
         default:
