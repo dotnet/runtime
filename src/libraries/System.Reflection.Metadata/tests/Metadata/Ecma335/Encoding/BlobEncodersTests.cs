@@ -972,6 +972,10 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             AssertEx.Equal(new byte[] { 0x0E }, b.ToArray());
             b.Clear();
 
+            e.TypedReference();
+            AssertEx.Equal(new byte[] { 0x16 }, b.ToArray());
+            b.Clear();
+
             e.IntPtr();
             AssertEx.Equal(new byte[] { 0x18 }, b.ToArray());
             b.Clear();
@@ -1044,6 +1048,10 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             AssertEx.Equal(new byte[] { 0x0E }, b.ToArray());
             b.Clear();
 
+            e.PrimitiveType(PrimitiveTypeCode.TypedReference);
+            AssertEx.Equal(new byte[] { 0x16 }, b.ToArray());
+            b.Clear();
+
             e.PrimitiveType(PrimitiveTypeCode.IntPtr);
             AssertEx.Equal(new byte[] { 0x18 }, b.ToArray());
             b.Clear();
@@ -1057,7 +1065,6 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             b.Clear();
 
             Assert.Throws<ArgumentOutOfRangeException>(() => e.PrimitiveType(PrimitiveTypeCode.Void));
-            Assert.Throws<ArgumentOutOfRangeException>(() => e.PrimitiveType(PrimitiveTypeCode.TypedReference));
             Assert.Throws<ArgumentOutOfRangeException>(() => e.PrimitiveType((PrimitiveTypeCode)255));
         }
 
