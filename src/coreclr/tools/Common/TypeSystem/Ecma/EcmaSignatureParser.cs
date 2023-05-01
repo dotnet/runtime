@@ -421,19 +421,10 @@ namespace Internal.TypeSystem.Ecma
 
         public PropertySignature ParsePropertySignature()
         {
-            try
-            {
-                _indexStack = new Stack<int>();
-                _indexStack.Push(0);
-                _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
-                return ParsePropertySignatureInternal();
-            }
-            finally
-            {
-                _indexStack = null;
-                _embeddedSignatureDataList = null;
-            }
-
+            _indexStack = new Stack<int>();
+            _indexStack.Push(0);
+            _embeddedSignatureDataList = new List<EmbeddedSignatureData>();
+            return ParsePropertySignatureInternal();
         }
 
         private PropertySignature ParsePropertySignatureInternal()

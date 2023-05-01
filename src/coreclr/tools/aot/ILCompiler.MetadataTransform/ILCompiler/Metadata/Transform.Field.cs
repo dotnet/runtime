@@ -78,6 +78,10 @@ namespace ILCompiler.Metadata
                 if (offset >= 0)
                     record.Offset = (uint)offset;
             }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private MetadataRecord HandleFieldSignature(Cts.Ecma.EcmaModule module, Ecma.BlobHandle sigBlob)
