@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../../imports";
+import { Module } from "../../globals";
 import { pthread_ptr } from "./types";
 
 /** @module emscripten-internals accessors to the functions in the emscripten PThreads library, including

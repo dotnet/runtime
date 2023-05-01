@@ -1231,35 +1231,8 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
         }
 
         case GT_COMMA:
-        {
-            Statement* oldLastStmt   = impLastStmt;
-            structVal->AsOp()->gtOp2 = impGetStructAddr(structVal->AsOp()->gtOp2, structHnd, curLevel, willDeref);
-            structVal->gtType        = TYP_BYREF;
-
-            if (oldLastStmt != impLastStmt)
-            {
-                // Some temp assignment statement was placed on the statement list
-                // for Op2, but that would be out of order with op1, so we need to
-                // spill op1 onto the statement list after whatever was last
-                // before we recursed on Op2 (i.e. before whatever Op2 appended).
-                Statement* beforeStmt;
-                if (oldLastStmt == nullptr)
-                {
-                    // The op1 stmt should be the first in the list.
-                    beforeStmt = impStmtList;
-                }
-                else
-                {
-                    // Insert after the oldLastStmt before the first inserted for op2.
-                    beforeStmt = oldLastStmt->GetNextStmt();
-                }
-
-                impInsertTreeBefore(structVal->AsOp()->gtOp1, impCurStmtDI, beforeStmt);
-                structVal->AsOp()->gtOp1 = gtNewNothingNode();
-            }
-
-            return structVal;
-        }
+            impAppendTree(structVal->AsOp()->gtGetOp1(), curLevel, impCurStmtDI);
+            return impGetStructAddr(structVal->AsOp()->gtGetOp2(), structHnd, curLevel, willDeref);
 
         default:
             break;
@@ -1327,57 +1300,38 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
 }
 
 //------------------------------------------------------------------------
-//  Compiler::impNormStructVal: Normalize a struct value
+// impNormStructVal: Normalize a struct call argument
 //
-//  Arguments:
-//     structVal          - the node we are going to normalize
-//     structHnd          - the class handle for the node
-//     curLevel           - the current stack level
+// Spills call-like STRUCT arguments to temporaries. "Unwraps" commas.
 //
-// Notes:
-//     Given struct value 'structVal', make sure it is 'canonical', that is
-//     it is either:
-//     - a known struct type (non-TYP_STRUCT, e.g. TYP_SIMD8)
-//     - a BLK or a MKREFANY node, or
-//     - a node (e.g. GT_FIELD) that will be morphed.
-//    If the node is a CALL or RET_EXPR, a copy will be made to a new temp.
+// Arguments:
+//    structVal - The node to normalize
+//    structHnd - The struct type
+//    curLevel  - The current stack level
+//
+// Return Value:
+//    The normalized "structVal".
 //
 GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel)
 {
     assert(varTypeIsStruct(structVal));
-    assert(structHnd != NO_CLASS_HANDLE);
     var_types structType = structVal->TypeGet();
-    bool      makeTemp   = false;
-    if (structType == TYP_STRUCT)
-    {
-        structType = impNormStructType(structHnd);
-    }
-    GenTreeLclVarCommon* structLcl = nullptr;
 
     switch (structVal->OperGet())
     {
         case GT_CALL:
         case GT_RET_EXPR:
-            makeTemp = true;
-            break;
+        {
+            unsigned lclNum = lvaGrabTemp(true DEBUGARG("spilled call-like call argument"));
+            impAssignTempGen(lclNum, structVal, curLevel);
 
-        case GT_LCL_VAR:
-        case GT_LCL_FLD:
-        case GT_IND:
-        case GT_BLK:
-        case GT_FIELD:
-        case GT_CNS_VEC:
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HWINTRINSIC:
-#endif
-        case GT_MKREFANY:
-            // These should already have the appropriate type.
-            assert(structVal->TypeGet() == structType);
-            break;
+            // The structVal is now the temp itself
+            structVal = gtNewLclvNode(lclNum, structType);
+        }
+        break;
 
         case GT_COMMA:
         {
-            // The second thing could either be a block node or a GT_FIELD or a GT_COMMA node.
             GenTree* blockNode = structVal->AsOp()->gtOp2;
             assert(blockNode->gtType == structType);
 
@@ -1394,16 +1348,8 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 } while (blockNode->OperGet() == GT_COMMA);
             }
 
-#ifdef FEATURE_SIMD
-            if (blockNode->OperIsHWIntrinsic() || blockNode->IsCnsVec())
+            if (blockNode->OperIsBlk() || blockNode->OperIs(GT_FIELD))
             {
-                parent->AsOp()->gtOp2 = impNormStructVal(blockNode, structHnd, curLevel);
-            }
-            else
-#endif
-            {
-                noway_assert(blockNode->OperIsIndir() || blockNode->OperIs(GT_FIELD));
-
                 // Sink the GT_COMMA below the blockNode addr.
                 // That is GT_COMMA(op1, op2=blockNode) is transformed into
                 // blockNode(GT_COMMA(TYP_BYREF, op1, op2's op1)).
@@ -1416,6 +1362,7 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 commaNode->gtType        = blockNodeAddr->gtType;
                 commaNode->AsOp()->gtOp2 = blockNodeAddr;
                 blockNode->AsOp()->gtOp1 = commaNode;
+                blockNode->AddAllEffectsFlags(commaNode);
                 if (parent == structVal)
                 {
                     structVal = blockNode;
@@ -1425,36 +1372,9 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
         break;
 
         default:
-            noway_assert(!"Unexpected node in impNormStructVal()");
             break;
     }
 
-    if (makeTemp)
-    {
-        unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
-
-        impAssignTempGen(tmpNum, structVal, structHnd, curLevel);
-
-        // The structVal is now the temp itself
-
-        structLcl = gtNewLclvNode(tmpNum, structType)->AsLclVarCommon();
-        structVal = structLcl;
-    }
-
-    if (structLcl != nullptr)
-    {
-        // A BLK on a ADDR(LCL_VAR) can never raise an exception
-        // so we don't set GTF_EXCEPT here.
-        if (!lvaIsImplicitByRefLocal(structLcl->GetLclNum()))
-        {
-            structVal->gtFlags &= ~GTF_GLOB_REF;
-        }
-    }
-    else if (structVal->OperIsBlk())
-    {
-        // In general a BLK is an indirection and could raise an exception.
-        structVal->gtFlags |= GTF_EXCEPT;
-    }
     return structVal;
 }
 
@@ -1942,14 +1862,18 @@ bool Compiler::impSpillStackEntry(unsigned level,
     /* Assign the spilled entry to the temp */
     impAssignTempGen(tnum, tree, verCurrentState.esStack[level].seTypeInfo.GetClassHandle(), level);
 
-    // If temp is newly introduced and a ref type, grab what type info we can.
-    if (isNewTemp && (lvaTable[tnum].lvType == TYP_REF))
+    if (isNewTemp)
     {
         assert(lvaTable[tnum].lvSingleDef == 0);
         lvaTable[tnum].lvSingleDef = 1;
         JITDUMP("Marked V%02u as a single def temp\n", tnum);
-        CORINFO_CLASS_HANDLE stkHnd = verCurrentState.esStack[level].seTypeInfo.GetClassHandle();
-        lvaSetClass(tnum, tree, stkHnd);
+
+        // If temp is newly introduced and a ref type, grab what type info we can.
+        if (lvaTable[tnum].lvType == TYP_REF)
+        {
+            CORINFO_CLASS_HANDLE stkHnd = verCurrentState.esStack[level].seTypeInfo.GetClassHandle();
+            lvaSetClass(tnum, tree, stkHnd);
+        }
 
         // If we're assigning a GT_RET_EXPR, note the temp over on the call,
         // so the inliner can use it in case it needs a return spill temp.
@@ -8453,12 +8377,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), CHECK_SPILL_ALL);
                         var_types type = genActualType(lvaTable[tmpNum].TypeGet());
 
+                        assert(lvaTable[tmpNum].lvSingleDef == 0);
+                        lvaTable[tmpNum].lvSingleDef = 1;
+                        JITDUMP("Marked V%02u as a single def local\n", tmpNum);
                         // Propagate type info to the temp from the stack and the original tree
                         if (type == TYP_REF)
                         {
-                            assert(lvaTable[tmpNum].lvSingleDef == 0);
-                            lvaTable[tmpNum].lvSingleDef = 1;
-                            JITDUMP("Marked V%02u as a single def local\n", tmpNum);
                             lvaSetClass(tmpNum, tree, tiRetVal.GetClassHandle());
                         }
 
@@ -13662,19 +13586,19 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
         lvaTable[tmpNum].lvHasILStoreOp         = inlineeLocal.lclHasStlocOp;
         lvaTable[tmpNum].lvHasMultipleILStoreOp = inlineeLocal.lclHasMultipleStlocOp;
 
+        assert(lvaTable[tmpNum].lvSingleDef == 0);
+
+        lvaTable[tmpNum].lvSingleDef = !inlineeLocal.lclHasMultipleStlocOp && !inlineeLocal.lclHasLdlocaOp;
+        if (lvaTable[tmpNum].lvSingleDef)
+        {
+            JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
+        }
+
         // Copy over class handle for ref types. Note this may be a
         // shared type -- someday perhaps we can get the exact
         // signature and pass in a more precise type.
         if (lclTyp == TYP_REF)
         {
-            assert(lvaTable[tmpNum].lvSingleDef == 0);
-
-            lvaTable[tmpNum].lvSingleDef = !inlineeLocal.lclHasMultipleStlocOp && !inlineeLocal.lclHasLdlocaOp;
-            if (lvaTable[tmpNum].lvSingleDef)
-            {
-                JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
-            }
-
             lvaSetClass(tmpNum, inlineeLocal.lclVerTypeInfo.GetClassHandleForObjRef());
         }
 
@@ -13859,20 +13783,21 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
 
             lvaTable[tmpNum].lvType = lclTyp;
 
-            // For ref types, determine the type of the temp.
-            if (lclTyp == TYP_REF)
+            // If arg can't be modified, mark it as single def.
+            // For ref types, determine the class of the arg temp.
+            if (!argCanBeModified)
             {
-                if (!argCanBeModified)
+                assert(lvaTable[tmpNum].lvSingleDef == 0);
+                lvaTable[tmpNum].lvSingleDef = 1;
+                JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
+                if (lclTyp == TYP_REF)
                 {
-                    // If the arg can't be modified in the method
-                    // body, use the type of the value, if
-                    // known. Otherwise, use the declared type.
-                    assert(lvaTable[tmpNum].lvSingleDef == 0);
-                    lvaTable[tmpNum].lvSingleDef = 1;
-                    JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
                     lvaSetClass(tmpNum, argNode, lclInfo.lclVerTypeInfo.GetClassHandleForObjRef());
                 }
-                else
+            }
+            else
+            {
+                if (lclTyp == TYP_REF)
                 {
                     // Arg might be modified, use the declared type of
                     // the argument.

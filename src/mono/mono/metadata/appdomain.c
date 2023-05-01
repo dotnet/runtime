@@ -571,6 +571,10 @@ mono_domain_fire_assembly_load_event (MonoDomain *domain, MonoAssembly *assembly
 	if (!method)
 		goto exit;
 
+	if (assembly->dynamic)
+		/* Called by RuntimeAssemblyBuilder:.ctor () after the manifest module has been created */
+		goto exit;
+
 	MonoReflectionAssemblyHandle assembly_handle;
 	assembly_handle = mono_assembly_get_object_handle (assembly, error);
 	goto_if_nok (error, exit);

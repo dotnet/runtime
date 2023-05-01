@@ -192,7 +192,7 @@ namespace System
             }
             else
             {
-                if (RuntimeImports.AreTypesEquivalent(sourceElementEEType, destinationElementEEType))
+                if (sourceElementEEType == destinationElementEEType)
                 {
                     if (sourceElementEEType.ContainsGCPointers)
                     {
@@ -387,7 +387,7 @@ namespace System
         //
         private static unsafe void CopyImplValueTypeArrayWithInnerGcRefs(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-            Debug.Assert(RuntimeImports.AreTypesEquivalent(sourceArray.GetEETypePtr(), destinationArray.GetEETypePtr()));
+            Debug.Assert(sourceArray.GetEETypePtr() == destinationArray.GetEETypePtr());
             Debug.Assert(sourceArray.ElementEEType.IsValueType);
 
             EETypePtr sourceElementEEType = sourceArray.GetEETypePtr().ArrayElementType;

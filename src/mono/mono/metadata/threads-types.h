@@ -78,6 +78,10 @@ typedef enum {
 	MONO_THREAD_CREATE_FLAGS_DEBUGGER		= 0x02,
 	MONO_THREAD_CREATE_FLAGS_FORCE_CREATE	= 0x04,
 	MONO_THREAD_CREATE_FLAGS_SMALL_STACK	= 0x08,
+	// "external eventloop" means the thread main function can return without killing the thread
+	// and the thread will continue to be attached to the runtime and may invoke embedding APIs
+	// and managed calls.  There is usually some platform-specific way to shut down the thread.
+	MONO_THREAD_CREATE_FLAGS_EXTERNAL_EVENTLOOP = 0x10,
 } MonoThreadCreateFlags;
 
 MONO_COMPONENT_API MonoInternalThread*

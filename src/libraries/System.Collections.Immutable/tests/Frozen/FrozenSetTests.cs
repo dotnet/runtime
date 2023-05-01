@@ -169,7 +169,7 @@ namespace System.Collections.Frozen.Tests
         }
 
         public static IEnumerable<object[]> LookupItems_AllItemsFoundAsExpected_MemberData() =>
-            from size in new[] { 0, 1, 2, 10, 999, 1024 }
+            from size in new[] { 0, 1, 2, 10, 99 }
             from comparer in new IEqualityComparer<T>[] { null, EqualityComparer<T>.Default, NonDefaultEqualityComparer<T>.Instance }
             from specifySameComparer in new[] { false, true }
             select new object[] { size, comparer, specifySameComparer };

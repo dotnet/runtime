@@ -581,6 +581,7 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:PackageOS=$(PackageOS)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeFlavor=$(RuntimeFlavor)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeVariant=$(RuntimeVariant)"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(ServerGarbageCollection)' != ''">$(GroupBuildCmd) "/p:ServerGarbageCollection=$(ServerGarbageCollection)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:CLRTestBuildAllTargets=$(CLRTestBuildAllTargets)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:UseCodeFlowEnforcement=$(UseCodeFlowEnforcement)"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__TestGroupToBuild=$(__TestGroupToBuild)"</GroupBuildCmd>

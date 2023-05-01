@@ -1257,3 +1257,11 @@ namespace System.Linq
         public static System.Collections.Generic.IEnumerable<T> Where<T>(this System.Collections.Immutable.ImmutableArray<T> immutableArray, System.Func<T, bool> predicate) { throw null; }
     }
 }
+namespace System.Runtime.InteropServices
+{
+    public static partial class ImmutableCollectionsMarshal
+    {
+        public static System.Collections.Immutable.ImmutableArray<T> AsImmutableArray<T>(T[]? array) { throw null; }
+        public static T[]? AsArray<T>(System.Collections.Immutable.ImmutableArray<T> array) { throw null; }
+    }
+}
