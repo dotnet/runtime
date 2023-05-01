@@ -714,9 +714,9 @@ namespace ILCompiler
                     {
                         ThreadStaticsNode threadStaticNode = threadStaticNodes[i];
                         MetadataType t = threadStaticNode.Type;
-                        // REVIEW: how to filter these more precisely?
-                        //       List<int> is ok, but List<object> is not.
-                        if (t.HasInstantiation)
+
+                        // do not inline storage for shared generics
+                        if (t.ConvertToCanonForm(CanonicalFormKind.Specific) != t)
                             continue;
 
 #if DEBUG

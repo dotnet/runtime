@@ -97,59 +97,23 @@ namespace ILCompiler.DependencyAnalysis
             return result;
         }
 
-        public override bool HasConditionalStaticDependencies
-        {
-            get
-            {
-                if (_type != null)
-                {
-                    return _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type;
-                }
-                else
-                {
-                    foreach (var type in _inlined.GetTypes())
-                    {
-                        if (type.ConvertToCanonForm(CanonicalFormKind.Specific) != type)
-                        {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-            }
-        }
-
-        private IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependenciesMany(NodeFactory factory)
-        {
-            foreach (var type in _inlined.GetTypes())
-            {
-                if (type.ConvertToCanonForm(CanonicalFormKind.Specific) != type)
-                {
-                    yield return new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(type),
-                        factory.NativeLayout.TemplateTypeLayout(type.ConvertToCanonForm(CanonicalFormKind.Specific)),
-                        "Keeping track of template-constructable type static bases");
-                }
-            }
-        }
+        public override bool HasConditionalStaticDependencies =>
+            _type != null ?
+                _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type:
+                false;
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
-            if (_type != null)
+            Debug.Assert(_type != null);
+
+            // If we have a type loader template for this type, we need to keep track of the generated
+            // bases in the type info hashtable. The type symbol node does such accounting.
+            return new CombinedDependencyListEntry[]
             {
-                // If we have a type loader template for this type, we need to keep track of the generated
-                // bases in the type info hashtable. The type symbol node does such accounting.
-                return new CombinedDependencyListEntry[]
-                {
-                    new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
-                        factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
-                        "Keeping track of template-constructable type static bases"),
-                };
-            }
-            else
-            {
-                return GetConditionalStaticDependenciesMany(factory);
-            }
+                new CombinedDependencyListEntry(factory.NecessaryTypeSymbol(_type),
+                    factory.NativeLayout.TemplateTypeLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific)),
+                    "Keeping track of template-constructable type static bases"),
+            };
         }
 
         public override bool StaticDependenciesAreComputed => true;
