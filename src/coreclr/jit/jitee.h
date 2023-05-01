@@ -40,7 +40,7 @@ public:
         JIT_FLAG_OSR                     = 13, // Generate alternate version for On Stack Replacement
 
         JIT_FLAG_ALT_JIT                 = 14, // JIT should consider itself an ALT_JIT
-        JIT_FLAG_FROZEN_ALLOC_ALLOWED    = 15, // JIT is allowed to use *_FROZEN allocators
+        JIT_FLAG_FROZEN_ALLOC_ALLOWED    = 15, // JIT is allowed to use *_MAYBEFROZEN allocators
         JIT_FLAG_UNUSED9                 = 16,
 
     #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
