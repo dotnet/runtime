@@ -1943,8 +1943,8 @@ HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex
     // Check if the class constructor needs to be run
     pThreadLocalModule->CheckRunClassInitThrowing(pMT);
 
-    // Lookup the non-GC statics base pointer
-    staticBlock = (void*) pMT->GetGCThreadStaticsBasePointer();
+    // Lookup the GC statics base handle and cache it
+    staticBlock = (void*) pMT->GetGCThreadStaticsBaseHandle();
     CONSISTENCY_CHECK(staticBlock != NULL);
 
     if (t_threadStaticBlocksSize <= staticBlockIndex)
@@ -1972,6 +1972,9 @@ HCIMPL1(void*, JIT_GetSharedGCThreadStaticBaseOptimized, UINT32 staticBlockIndex
         t_threadStaticBlocks[staticBlockIndex] = staticBlock;
         t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
     }
+
+    staticBlock = (void*) pMT->GetGCThreadStaticsBasePointer();
+
     HELPER_METHOD_FRAME_END();
 #else
     _ASSERTE(!"JIT_GetSharedNonGCThreadStaticBaseOptimized not supported on non-windows.");

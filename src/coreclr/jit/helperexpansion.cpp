@@ -598,6 +598,16 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         gtNewOperNode(GT_ADD, TYP_I_IMPL, threadStaticBlocksValue, typeThreadStaticBlockIndexValue);
     GenTree* typeThreadStaticBlockValue = gtNewIndir(TYP_I_IMPL, typeThreadStaticBlockRef, GTF_IND_NONFAULTING);
 
+    if (eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+    {
+        // Need to add extra indirection to access the data pointer.
+        // TODO: Get the offsetOfDataPtr() from runtime.
+        
+        typeThreadStaticBlockValue = gtNewIndir(TYP_I_IMPL, typeThreadStaticBlockValue, GTF_IND_NONFAULTING);
+        typeThreadStaticBlockValue =
+            gtNewOperNode(GT_ADD, TYP_I_IMPL, typeThreadStaticBlockValue, gtNewIconNode(16, TYP_I_IMPL));
+    }
+
     // Cache the threadStaticBlock value
     unsigned threadStaticBlockBaseLclNum         = lvaGrabTemp(true DEBUGARG("ThreadStaticBlockBase access"));
     lvaTable[threadStaticBlockBaseLclNum].lvType = TYP_I_IMPL;
