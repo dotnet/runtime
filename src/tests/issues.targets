@@ -1237,12 +1237,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DictionaryExpansion/DictionaryExpansion/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/154</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/Casting/Functionpointer/*">
-            <Issue>https://github.com/dotnet/runtime/issues/71883</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Pointers/Pointers/*">
-            <Issue>https://github.com/dotnet/runtime/issues/71883</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/explicitlayout/Regressions/ASURT/ASURT150271/test3/*">
             <Issue>Won't fix https://github.com/dotnet/corert/issues/2396</Issue>
         </ExcludeList>
@@ -1308,9 +1302,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Regressions/Regression4/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Assembly.Load</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ValueNumbering/TypeTestFolding/*">
-            <Issue>https://github.com/dotnet/runtime/issues/71883</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_461649/DevDiv_461649/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Reflection emit</Issue>

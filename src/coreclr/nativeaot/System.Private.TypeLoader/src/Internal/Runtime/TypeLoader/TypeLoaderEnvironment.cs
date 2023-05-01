@@ -349,15 +349,33 @@ namespace Internal.Runtime.TypeLoader
 
             using (LockHolder.Hold(_typeLoaderLock))
             {
-                throw new NotImplementedException();
+                return TypeBuilder.TryBuildFunctionPointerType(returnTypeHandle, parameterHandles, isUnmanaged, out runtimeTypeHandle);
             }
         }
 
         public bool TryLookupFunctionPointerTypeForComponents(RuntimeTypeHandle returnTypeHandle, RuntimeTypeHandle[] parameterHandles, bool isUnmanaged, out RuntimeTypeHandle runtimeTypeHandle)
         {
-            // TODO: cache same as for arrays
-            // TODO: lookup dynamically built ones
-            return TryGetStaticFunctionPointerTypeForComponents(returnTypeHandle, parameterHandles, isUnmanaged, out runtimeTypeHandle);
+            var key = new TypeSystemContext.FunctionPointerTypeKey(returnTypeHandle, parameterHandles, isUnmanaged);
+            if (TypeSystemContext.FunctionPointerTypesCache.TryGetValue(key, out runtimeTypeHandle))
+                return true;
+
+            if (!RuntimeAugments.IsDynamicType(returnTypeHandle)
+                && AllNonDynamicTypes(parameterHandles)
+                && TryGetStaticFunctionPointerTypeForComponents(returnTypeHandle, parameterHandles, isUnmanaged, out runtimeTypeHandle))
+            {
+                TypeSystemContext.FunctionPointerTypesCache.AddOrGetExisting(runtimeTypeHandle);
+                return true;
+            }
+
+            return false;
+
+            static bool AllNonDynamicTypes(RuntimeTypeHandle[] handles)
+            {
+                foreach (RuntimeTypeHandle h in handles)
+                    if (RuntimeAugments.IsDynamicType(h))
+                        return false;
+                return true;
+            }
         }
 
         // Get an array RuntimeTypeHandle given an element's RuntimeTypeHandle and rank. Pass false for isMdArray, and rank == -1 for SzArrays

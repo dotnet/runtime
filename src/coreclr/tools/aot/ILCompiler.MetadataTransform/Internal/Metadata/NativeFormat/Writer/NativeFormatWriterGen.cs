@@ -77,7 +77,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(ElementType == null ||
                 ElementType.HandleType == HandleType.TypeDefinition ||
                 ElementType.HandleType == HandleType.TypeReference ||
-                ElementType.HandleType == HandleType.TypeSpecification);
+                ElementType.HandleType == HandleType.TypeSpecification ||
+                ElementType.HandleType == HandleType.ModifiedType);
             writer.Write(ElementType);
             writer.Write(Rank);
             writer.Write(Sizes);
@@ -151,7 +152,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(Type == null ||
                 Type.HandleType == HandleType.TypeDefinition ||
                 Type.HandleType == HandleType.TypeReference ||
-                Type.HandleType == HandleType.TypeSpecification);
+                Type.HandleType == HandleType.TypeSpecification ||
+                Type.HandleType == HandleType.ModifiedType);
             writer.Write(Type);
         } // Save
 
@@ -2994,7 +2996,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(GenericTypeArguments.TrueForAll(handle => handle == null ||
                 handle.HandleType == HandleType.TypeDefinition ||
                 handle.HandleType == HandleType.TypeReference ||
-                handle.HandleType == HandleType.TypeSpecification));
+                handle.HandleType == HandleType.TypeSpecification ||
+                handle.HandleType == HandleType.ModifiedType));
             writer.Write(GenericTypeArguments);
         } // Save
 
@@ -4692,7 +4695,8 @@ namespace Internal.Metadata.NativeFormat.Writer
             Debug.Assert(GenericTypeArguments.TrueForAll(handle => handle == null ||
                 handle.HandleType == HandleType.TypeDefinition ||
                 handle.HandleType == HandleType.TypeReference ||
-                handle.HandleType == HandleType.TypeSpecification));
+                handle.HandleType == HandleType.TypeSpecification ||
+                handle.HandleType == HandleType.ModifiedType));
             writer.Write(GenericTypeArguments);
         } // Save
 

@@ -1649,7 +1649,7 @@ namespace Internal.Runtime
                 if (((nint)_pFirst & IsRelative) != 0)
                     return (((RelativePointer<MethodTable>*)((nint)_pFirst - IsRelative)) + index)->Value;
 
-                return *(MethodTable**)_pFirst + index;
+                return *((MethodTable**)_pFirst + index);
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
