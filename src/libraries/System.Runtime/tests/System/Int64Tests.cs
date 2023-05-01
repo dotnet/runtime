@@ -116,11 +116,15 @@ namespace System.Tests
                 yield return new object[] { (long)4567, "D99\09", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
                 yield return new object[] { (long)-4567, "D99", defaultFormat, "-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
 
+                yield return new object[] { (long)0, "x", defaultFormat, "0" };
                 yield return new object[] { (long)0x2468, "x", defaultFormat, "2468" };
                 yield return new object[] { (long)-0x2468, "x", defaultFormat, "ffffffffffffdb98" };
+
+                yield return new object[] { (long)0, "b", defaultFormat, "0" };
+                yield return new object[] { (long)0x2468, "b", defaultFormat, "10010001101000" };
+                yield return new object[] { (long)-0x2468, "b", defaultFormat, "1111111111111111111111111111111111111111111111111101101110011000" };
+
                 yield return new object[] { (long)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
-
-
             }
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
@@ -131,6 +135,7 @@ namespace System.Tests
             yield return new object[] { (long)32, "F100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (long)32, "N100", invariantFormat, "32.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { (long)32, "X100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020" };
+            yield return new object[] { (long)32, "B100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000" };
 
             var customFormat = new NumberFormatInfo()
             {
@@ -196,7 +201,9 @@ namespace System.Tests
             // Reuse all Int32 test data
             foreach (object[] objs in Int32Tests.Parse_Valid_TestData())
             {
-                bool unsigned = (((NumberStyles)objs[1]) & NumberStyles.HexNumber) == NumberStyles.HexNumber;
+                bool unsigned =
+                    (((NumberStyles)objs[1]) & NumberStyles.HexNumber) == NumberStyles.HexNumber ||
+                    (((NumberStyles)objs[1]) & NumberStyles.BinaryNumber) == NumberStyles.BinaryNumber;
                 yield return new object[] { objs[0], objs[1], objs[2], unsigned ? (long)(uint)(int)objs[3] : (long)(int)objs[3] };
             }
 
@@ -225,6 +232,18 @@ namespace System.Tests
                 }
             }
 
+            // All lengths binary
+            {
+                string s = "";
+                long result = 0;
+                for (int i = 1; i <= 64; i++)
+                {
+                    result = (result * 2) + (i % 2);
+                    s += (i % 2).ToString("B");
+                    yield return new object[] { s, NumberStyles.BinaryNumber, null, result };
+                }
+            }
+
             // And test boundary conditions for Int64
             yield return new object[] { "-9223372036854775808", NumberStyles.Integer, null, long.MinValue };
             yield return new object[] { "9223372036854775807", NumberStyles.Integer, null, long.MaxValue };
@@ -234,6 +253,10 @@ namespace System.Tests
             yield return new object[] { "8000000000000000", NumberStyles.HexNumber, null, long.MinValue };
             yield return new object[] { "FFFFFFFFFFFFFFFF", NumberStyles.HexNumber, null, -1L };
             yield return new object[] { "   FFFFFFFFFFFFFFFF  ", NumberStyles.HexNumber, null, -1L };
+            yield return new object[] { "111111111111111111111111111111111111111111111111111111111111111", NumberStyles.BinaryNumber, null, long.MaxValue };
+            yield return new object[] { "1000000000000000000000000000000000000000000000000000000000000000", NumberStyles.BinaryNumber, null, long.MinValue };
+            yield return new object[] { "1111111111111111111111111111111111111111111111111111111111111111", NumberStyles.BinaryNumber, null, -1L };
+            yield return new object[] { "   1111111111111111111111111111111111111111111111111111111111111111  ", NumberStyles.BinaryNumber, null, -1L };
         }
 
         [Theory]
@@ -279,7 +302,9 @@ namespace System.Tests
             foreach (object[] objs in Int32Tests.Parse_Invalid_TestData())
             {
                 if ((Type)objs[3] == typeof(OverflowException) &&
-                    (!BigInteger.TryParse((string)objs[0], out BigInteger bi) || (bi >= long.MinValue && bi <= long.MaxValue)))
+                    (((NumberStyles)objs[1] & NumberStyles.AllowBinarySpecifier) != 0 || // TODO https://github.com/dotnet/runtime/issues/83619: Remove once BigInteger supports binary parsing
+                     !BigInteger.TryParse((string)objs[0], (NumberStyles)objs[1], null, out BigInteger bi) ||
+                     (bi >= long.MinValue && bi <= long.MaxValue)))
                 {
                     continue;
                 }
@@ -325,16 +350,18 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses, null)]
-        [InlineData(unchecked((NumberStyles)0xFFFFFC00), "style")]
-        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style, string paramName)
+        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.BinaryNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.HexNumber | NumberStyles.BinaryNumber)]
+        [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
+        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
         {
             long result = 0;
-            AssertExtensions.Throws<ArgumentException>(paramName, () => long.TryParse("1", style, null, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => long.TryParse("1", style, null, out result));
             Assert.Equal(default(long), result);
 
-            AssertExtensions.Throws<ArgumentException>(paramName, () => long.Parse("1", style));
-            AssertExtensions.Throws<ArgumentException>(paramName, () => long.Parse("1", style, null));
+            AssertExtensions.Throws<ArgumentException>("style", () => long.Parse("1", style));
+            AssertExtensions.Throws<ArgumentException>("style", () => long.Parse("1", style, null));
         }
 
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
@@ -348,6 +375,7 @@ namespace System.Tests
             yield return new object[] { "09223372036854775807", 1, 19, NumberStyles.Integer, null, 9223372036854775807 };
             yield return new object[] { "9223372036854775807", 0, 1, NumberStyles.Integer, null, 9 };
             yield return new object[] { "ABC", 0, 2, NumberStyles.HexNumber, null, (long)0xAB };
+            yield return new object[] { "101010110101", 0, 8, NumberStyles.BinaryNumber, null, (long)0b10101011 };
             yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, null, (long)123 };
             yield return new object[] { "$1,000", 0, 2, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (long)1 };
         }
@@ -395,46 +423,8 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void TryFormat(long i, string format, IFormatProvider provider, string expected)
-        {
-            char[] actual;
-            int charsWritten;
-
-            // Just right
-            actual = new char[expected.Length];
-            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(actual));
-
-            // Longer than needed
-            actual = new char[expected.Length + 1];
-            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(actual, 0, charsWritten));
-
-            // Too short
-            if (expected.Length > 0)
-            {
-                actual = new char[expected.Length - 1];
-                Assert.False(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-                Assert.Equal(0, charsWritten);
-            }
-
-            if (format != null)
-            {
-                // Upper format
-                actual = new char[expected.Length];
-                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToUpperInvariant(), provider));
-                Assert.Equal(expected.Length, charsWritten);
-                Assert.Equal(expected.ToUpperInvariant(), new string(actual));
-
-                // Lower format
-                actual = new char[expected.Length];
-                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToLowerInvariant(), provider));
-                Assert.Equal(expected.Length, charsWritten);
-                Assert.Equal(expected.ToLowerInvariant(), new string(actual));
-            }
-        }
+        public static void TryFormat(long i, string format, IFormatProvider provider, string expected) =>
+            NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
 
         [Fact]
         public static void TestNegativeNumberParsingWithHyphen()

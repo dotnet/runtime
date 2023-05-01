@@ -1453,7 +1453,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
             {
                 LclVarDsc* returnSpillVarDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
 
-                if (returnSpillVarDsc->lvSingleDef)
+                if ((returnSpillVarDsc->lvType == TYP_REF) && returnSpillVarDsc->lvSingleDef)
                 {
                     lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact);
                 }
@@ -2776,15 +2776,6 @@ bool Compiler::fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBloc
         optimizeJump = true;
     }
 
-    // If we are optimizing using real profile weights
-    // then don't optimize a conditional jump to an unconditional jump
-    // until after we have computed the edge weights
-    //
-    if (fgIsUsingProfileWeights() && !fgEdgeWeightsComputed)
-    {
-        optimizeJump = false;
-    }
-
     if (optimizeJump)
     {
 #ifdef DEBUG
@@ -3152,15 +3143,6 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
             // However jumping to a block that is not in any try region is OK
             //
             if (bDest->hasTryIndex() && !BasicBlock::sameTryRegion(block, bDest))
-            {
-                optimizeJump = false;
-            }
-
-            // If we are optimize using real profile weights
-            // then don't optimize a switch jump to an unconditional jump
-            // until after we have computed the edge weights
-            //
-            if (fgIsUsingProfileWeights() && !fgEdgeWeightsComputed)
             {
                 optimizeJump = false;
             }

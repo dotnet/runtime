@@ -730,9 +730,8 @@ namespace System.Xml
                 try
                 {
                     // If we're asking for more than are possibly available, or more than are truly available then we can return the entire thing
-                    if (charCount >= encoding.GetMaxCharCount(byteCount) || charCount >= encoding.GetCharCount(bytes, byteOffset, byteCount))
+                    if (encoding.TryGetChars(bytes.AsSpan(byteOffset, byteCount), chars.AsSpan(charOffset, charCount), out actualCharCount))
                     {
-                        actualCharCount = encoding.GetChars(bytes, byteOffset, byteCount, chars, charOffset);
                         actualByteCount = byteCount;
                     }
                     else

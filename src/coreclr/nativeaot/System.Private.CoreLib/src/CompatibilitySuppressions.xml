@@ -574,6 +574,10 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:Internal.Metadata.NativeFormat.SignatureCallingConvention</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:Internal.Metadata.NativeFormat.SingleCollection</Target>
   </Suppression>
   <Suppression>

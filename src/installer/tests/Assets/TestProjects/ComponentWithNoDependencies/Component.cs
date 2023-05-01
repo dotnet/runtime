@@ -19,6 +19,7 @@ namespace Component
         {
             Assembly asm = Assembly.GetExecutingAssembly();
             Console.WriteLine($"{asm.GetName().Name}: AssemblyLoadContext = {AssemblyLoadContext.GetLoadContext(asm)}");
+            Console.WriteLine($"{asm.GetName().Name}: Location = '{asm.Location}'");
         }
 
         private static void PrintComponentCallLog(string name, IntPtr arg, int size)

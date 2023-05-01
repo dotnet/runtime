@@ -52,9 +52,10 @@ namespace System.Runtime
             MethodTable* pObjType = obj.GetMethodTable();
 
             Debug.Assert(!pTargetType->IsParameterizedType, "IsInstanceOfClass called with parameterized MethodTable");
+            Debug.Assert(!pTargetType->IsFunctionPointerType, "IsInstanceOfClass called with function pointer MethodTable");
             Debug.Assert(!pTargetType->IsInterface, "IsInstanceOfClass called with interface MethodTable");
 
-            // Quick check if both types are good for simple casting: canonical, no related type via IAT, no generic variance
+            // Quick check if both types are good for simple casting: canonical, no generic variance
             if (Internal.Runtime.MethodTable.BothSimpleCasting(pObjType, pTargetType))
             {
                 // walk the type hierarchy looking for a match
@@ -80,16 +81,6 @@ namespace System.Runtime
 
         private static unsafe object IsInstanceOfClass_Helper(MethodTable* pTargetType, object obj, MethodTable* pObjType)
         {
-            if (pTargetType->IsCloned)
-            {
-                pTargetType = pTargetType->CanonicalEEType;
-            }
-
-            if (pObjType->IsCloned)
-            {
-                pObjType = pObjType->CanonicalEEType;
-            }
-
             // if the EETypes pointers match, we're done
             if (pObjType == pTargetType)
             {
@@ -133,14 +124,11 @@ namespace System.Runtime
             // walk the type hierarchy looking for a match
             while (true)
             {
-                pObjType = pObjType->NonClonedNonArrayBaseType;
+                pObjType = pObjType->NonArrayBaseType;
                 if (pObjType == null)
                 {
                     return null;
                 }
-
-                if (pObjType->IsCloned)
-                    pObjType = pObjType->CanonicalEEType;
 
                 if (pObjType == pTargetType)
                 {
@@ -180,7 +168,6 @@ namespace System.Runtime
             MethodTable* pObjType = obj.GetMethodTable();
 
             Debug.Assert(pTargetType->IsArray, "IsInstanceOfArray called with non-array MethodTable");
-            Debug.Assert(!pTargetType->IsCloned, "cloned array types are disallowed");
 
             // if the types match, we are done
             if (pObjType == pTargetType)
@@ -193,8 +180,6 @@ namespace System.Runtime
             {
                 return null;
             }
-
-            Debug.Assert(!pObjType->IsCloned, "cloned array types are disallowed");
 
             // compare the array types structurally
 
@@ -267,25 +252,14 @@ namespace System.Runtime
         internal static unsafe bool ImplementsInterface(MethodTable* pObjType, MethodTable* pTargetType, EETypePairList* pVisited)
         {
             Debug.Assert(!pTargetType->IsParameterizedType, "did not expect parameterized type");
+            Debug.Assert(!pTargetType->IsFunctionPointerType, "did not expect function pointer type");
             Debug.Assert(pTargetType->IsInterface, "IsInstanceOfInterface called with non-interface MethodTable");
 
-            // This can happen with generic interface types
-            // Debug.Assert(!pTargetType->IsCloned, "cloned interface types are disallowed");
-
-            // canonicalize target type
-            if (pTargetType->IsCloned)
-                pTargetType = pTargetType->CanonicalEEType;
-
             int numInterfaces = pObjType->NumInterfaces;
-            EEInterfaceInfo* interfaceMap = pObjType->InterfaceMap;
+            MethodTable** interfaceMap = pObjType->InterfaceMap;
             for (int i = 0; i < numInterfaces; i++)
             {
-                MethodTable* pInterfaceType = interfaceMap[i].InterfaceType;
-
-                // canonicalize the interface type
-                if (pInterfaceType->IsCloned)
-                    pInterfaceType = pInterfaceType->CanonicalEEType;
-
+                MethodTable* pInterfaceType = interfaceMap[i];
                 if (pInterfaceType == pTargetType)
                 {
                     return true;
@@ -313,7 +287,7 @@ namespace System.Runtime
 
                 for (int i = 0; i < numInterfaces; i++)
                 {
-                    MethodTable* pInterfaceType = interfaceMap[i].InterfaceType;
+                    MethodTable* pInterfaceType = interfaceMap[i];
 
                     // We can ignore interfaces which are not also marked as having generic variance
                     // unless we're dealing with array covariance.
@@ -426,7 +400,7 @@ namespace System.Runtime
                     case GenericVariance.NonVariant:
                         // Non-variant type params need to be identical.
 
-                        if (!AreTypesEquivalent(pSourceArgType, pTargetArgType))
+                        if (pSourceArgType != pTargetArgType)
                             return false;
 
                         break;
@@ -510,7 +484,7 @@ namespace System.Runtime
             {
                 MethodTable* pNullableType = pTargetType->NullableType;
 
-                return AreTypesEquivalent(pSourceType, pNullableType);
+                return pSourceType == pNullableType;
             }
 
             return AreTypesAssignableInternal(pSourceType, pTargetType, AssignmentVariation.BoxedSource, null);
@@ -529,7 +503,7 @@ namespace System.Runtime
             //
             // Are the types identical?
             //
-            if (AreTypesEquivalent(pSourceType, pTargetType))
+            if (pSourceType == pTargetType)
                 return true;
 
             //
@@ -564,20 +538,28 @@ namespace System.Runtime
                 if (pSourceType->IsParameterizedType
                     && (pTargetType->ParameterizedTypeShape == pSourceType->ParameterizedTypeShape))
                 {
+                    MethodTable* pSourceRelatedParameterType = pSourceType->RelatedParameterType;
                     // Source type is also a parameterized type. Are the parameter types compatible?
-                    if (pSourceType->RelatedParameterType->IsPointerType)
+                    if (pSourceRelatedParameterType->IsPointerType)
                     {
                         // If the parameter types are pointers, then only exact matches are correct.
-                        // As we've already called AreTypesEquivalent at the start of this function,
+                        // As we've already compared equality at the start of this function,
                         // return false as the exact match case has already been handled.
                         // int** is not compatible with uint**, nor is int*[] oompatible with uint*[].
                         return false;
                     }
-                    else if (pSourceType->RelatedParameterType->IsByRefType)
+                    else if (pSourceRelatedParameterType->IsByRefType)
                     {
                         // Only allow exact matches for ByRef types - same as pointers above. This should
                         // be unreachable and it's only a defense in depth. ByRefs can't be parameters
                         // of any parameterized type.
+                        return false;
+                    }
+                    else if (pSourceRelatedParameterType->IsFunctionPointerType)
+                    {
+                        // If the parameter types are function pointers, then only exact matches are correct.
+                        // As we've already compared equality at the start of this function,
+                        // return false as the exact match case has already been handled.
                         return false;
                     }
                     else
@@ -593,12 +575,23 @@ namespace System.Runtime
                 // Can't cast a non-parameter type to a parameter type or a parameter type of different shape to a parameter type
                 return false;
             }
+
+            if (pTargetType->IsFunctionPointerType)
+            {
+                // Function pointers only cast if source and target are equivalent types.
+                return false;
+            }
+
             if (pSourceType->IsArray)
             {
                 // Target type is not an array. But we can still cast arrays to Object or System.Array.
                 return WellKnownEETypes.IsSystemObject(pTargetType) || WellKnownEETypes.IsSystemArray(pTargetType);
             }
             else if (pSourceType->IsParameterizedType)
+            {
+                return false;
+            }
+            else if (pSourceType->IsFunctionPointerType)
             {
                 return false;
             }
@@ -702,36 +695,6 @@ namespace System.Runtime
             // to find the correct classlib.
 
             throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
-        }
-
-        [RuntimeExport("RhTypeCast_CheckVectorElemAddr")]
-        public static unsafe void CheckVectorElemAddr(MethodTable* elemType, object array)
-        {
-            if (array == null)
-            {
-                return;
-            }
-
-            Debug.Assert(array.GetMethodTable()->IsArray, "second argument must be an array");
-
-            MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
-
-            if (!AreTypesEquivalent(elemType, arrayElemType)
-            // In addition to the exactness check, add another check to allow non-exact matches through
-            // if the element type is a ValueType. The issue here is Universal Generics. The Universal
-            // Generic codegen will generate a call to this helper for all ldelema opcodes if the exact
-            // type is not known, and this can include ValueTypes. For ValueTypes, the exact check is not
-            // desirable as enum's are allowed to pass through this code if they are size matched.
-            // While this check is overly broad and allows non-enum valuetypes to also skip the check
-            // that is OK, because in the non-enum case the casting operations are sufficient to ensure
-            // type safety.
-                && !elemType->IsValueType)
-            {
-                // Throw the array type mismatch exception defined by the classlib, using the input array's MethodTable*
-                // to find the correct classlib.
-
-                throw array.GetMethodTable()->GetClasslibException(ExceptionIDs.ArrayTypeMismatch);
-            }
         }
 
         internal struct ArrayElement
@@ -845,7 +808,7 @@ namespace System.Runtime
             MethodTable* elemType = (MethodTable*)elementType;
             MethodTable* arrayElemType = array.GetMethodTable()->RelatedParameterType;
 
-            if (AreTypesEquivalent(elemType, arrayElemType))
+            if (elemType == arrayElemType)
             {
                 return ref element;
             }
@@ -857,57 +820,25 @@ namespace System.Runtime
         {
             Debug.Assert(!pDerivedType->IsArray, "did not expect array type");
             Debug.Assert(!pDerivedType->IsParameterizedType, "did not expect parameterType");
+            Debug.Assert(!pDerivedType->IsFunctionPointerType, "did not expect function pointer");
             Debug.Assert(!pBaseType->IsArray, "did not expect array type");
             Debug.Assert(!pBaseType->IsInterface, "did not expect interface type");
             Debug.Assert(!pBaseType->IsParameterizedType, "did not expect parameterType");
-            Debug.Assert(pBaseType->IsCanonical || pBaseType->IsCloned || pBaseType->IsGenericTypeDefinition, "unexpected MethodTable");
-            Debug.Assert(pDerivedType->IsCanonical || pDerivedType->IsCloned || pDerivedType->IsGenericTypeDefinition, "unexpected MethodTable");
+            Debug.Assert(!pBaseType->IsFunctionPointerType, "did not expect function pointer");
+            Debug.Assert(pBaseType->IsCanonical || pBaseType->IsGenericTypeDefinition, "unexpected MethodTable");
+            Debug.Assert(pDerivedType->IsCanonical || pDerivedType->IsGenericTypeDefinition, "unexpected MethodTable");
 
             // If a generic type definition reaches this function, then the function should return false unless the types are equivalent.
-            // This works as the NonClonedNonArrayBaseType of a GenericTypeDefinition is always null.
-
-            if (pBaseType->IsCloned)
-                pBaseType = pBaseType->CanonicalEEType;
+            // This works as the NonArrayBaseType of a GenericTypeDefinition is always null.
 
             do
             {
-                if (pDerivedType->IsCloned)
-                    pDerivedType = pDerivedType->CanonicalEEType;
-
                 if (pDerivedType == pBaseType)
                     return true;
 
-                pDerivedType = pDerivedType->NonClonedNonArrayBaseType;
+                pDerivedType = pDerivedType->NonArrayBaseType;
             }
             while (pDerivedType != null);
-
-            return false;
-        }
-
-        // Method to compare two types pointers for type equality
-        // We cannot just compare the pointers as there can be duplicate type instances
-        // for cloned and constructed types.
-        // There are three separate cases here
-        //   1. The pointers are Equal => true
-        //   2. Either one or both the types are CLONED, follow to the canonical MethodTable and check
-        //   3. For Arrays/Pointers, we have to further check for rank and element type equality
-        [RuntimeExport("RhTypeCast_AreTypesEquivalent")]
-        public static unsafe bool AreTypesEquivalent(MethodTable* pType1, MethodTable* pType2)
-        {
-            if (pType1 == pType2)
-                return true;
-
-            if (pType1->IsCloned)
-                pType1 = pType1->CanonicalEEType;
-
-            if (pType2->IsCloned)
-                pType2 = pType2->CanonicalEEType;
-
-            if (pType1 == pType2)
-                return true;
-
-            if (pType1->IsParameterizedType && pType2->IsParameterizedType)
-                return AreTypesEquivalent(pType1->RelatedParameterType, pType2->RelatedParameterType) && pType1->ParameterizedTypeShape == pType2->ParameterizedTypeShape;
 
             return false;
         }
@@ -922,7 +853,7 @@ namespace System.Runtime
                 return IsInstanceOfArray(pTargetType, obj);
             else if (pTargetType->IsInterface)
                 return IsInstanceOfInterface(pTargetType, obj);
-            else if (pTargetType->IsParameterizedType)
+            else if (pTargetType->IsParameterizedType || pTargetType->IsFunctionPointerType)
                 return null; // We handled arrays above so this is for pointers and byrefs only.
             else
                 return IsInstanceOfClass(pTargetType, obj);
@@ -938,12 +869,6 @@ namespace System.Runtime
 
             MethodTable* pObjType = obj.GetMethodTable();
 
-            if (pTargetType->IsCloned)
-                pTargetType = pTargetType->CanonicalEEType;
-
-            if (pObjType->IsCloned)
-                pObjType = pObjType->CanonicalEEType;
-
             if (pObjType == pTargetType)
                 return true;
 
@@ -953,12 +878,9 @@ namespace System.Runtime
 
             while (true)
             {
-                pObjType = pObjType->NonClonedNonArrayBaseType;
+                pObjType = pObjType->NonArrayBaseType;
                 if (pObjType == null)
                     return false;
-
-                if (pObjType->IsCloned)
-                    pObjType = pObjType->CanonicalEEType;
 
                 if (pObjType == pTargetType)
                     return true;
@@ -973,13 +895,13 @@ namespace System.Runtime
                 return CheckCastArray(pTargetType, obj);
             else if (pTargetType->IsInterface)
                 return CheckCastInterface(pTargetType, obj);
-            else if (pTargetType->IsParameterizedType)
-                return CheckCastNonArrayParameterizedType(pTargetType, obj);
+            else if (pTargetType->IsParameterizedType || pTargetType->IsFunctionPointerType)
+                return CheckCastNonboxableType(pTargetType, obj);
             else
                 return CheckCastClass(pTargetType, obj);
         }
 
-        private static unsafe object CheckCastNonArrayParameterizedType(MethodTable* pTargetType, object obj)
+        private static unsafe object CheckCastNonboxableType(MethodTable* pTargetType, object obj)
         {
             // a null value can be cast to anything
             if (obj == null)

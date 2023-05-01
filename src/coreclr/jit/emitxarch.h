@@ -183,6 +183,8 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
     return code;
 }
 
+insTupleType insTupleTypeInfo(instruction ins) const;
+
 //------------------------------------------------------------------------
 // HasKMaskRegisterDest: Temporary check to identify instructions that can
 // be Evex encoded but require Opmask(KMask) register support.

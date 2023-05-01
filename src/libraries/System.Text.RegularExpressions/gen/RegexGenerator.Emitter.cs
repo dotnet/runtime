@@ -714,6 +714,7 @@ namespace System.Text.RegularExpressions.Generator
                     switch (regexTree.FindOptimizations.FindMode)
                     {
                         case FindNextStartingPositionMode.LeadingString_LeftToRight:
+                        case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
                         case FindNextStartingPositionMode.FixedDistanceString_LeftToRight:
                             EmitIndexOf_LeftToRight();
                             break;
@@ -948,14 +949,20 @@ namespace System.Text.RegularExpressions.Generator
             {
                 RegexFindOptimizations opts = regexTree.FindOptimizations;
 
-                string substring = "";
-                string offset = "";
-                string offsetDescription = "at the beginning of the pattern";
+                string substring = "", stringComparison = "", offset = "", offsetDescription = "";
 
                 switch (opts.FindMode)
                 {
                     case FindNextStartingPositionMode.LeadingString_LeftToRight:
                         substring = regexTree.FindOptimizations.LeadingPrefix;
+                        offsetDescription = "at the beginning of the pattern";
+                        Debug.Assert(!string.IsNullOrEmpty(substring));
+                        break;
+
+                    case FindNextStartingPositionMode.LeadingString_OrdinalIgnoreCase_LeftToRight:
+                        substring = regexTree.FindOptimizations.LeadingPrefix;
+                        stringComparison = ", StringComparison.OrdinalIgnoreCase";
+                        offsetDescription = "ordinal case-insensitive at the beginning of the pattern";
                         Debug.Assert(!string.IsNullOrEmpty(substring));
                         break;
 
@@ -976,7 +983,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 writer.WriteLine($"// The pattern has the literal {Literal(substring)} {offsetDescription}. Find the next occurrence.");
                 writer.WriteLine($"// If it can't be found, there's no match.");
-                writer.WriteLine($"int i = inputSpan.Slice(pos{offset}).IndexOf({Literal(substring)});");
+                writer.WriteLine($"int i = inputSpan.Slice(pos{offset}).IndexOf({Literal(substring)}{stringComparison});");
                 using (EmitBlock(writer, "if (i >= 0)"))
                 {
                     writer.WriteLine("base.runtextpos = pos + i;");
@@ -4932,19 +4939,6 @@ namespace System.Text.RegularExpressions.Generator
                     $"({range0Clause} | {range1Clause})";
             }
 
-            const string Base = nameof(Base);
-            if (!requiredHelpers.ContainsKey(Base))
-            {
-                requiredHelpers.Add(Base, new string[]
-                {
-                    $"internal class {Base} : RegexRunner",
-                    $"{{",
-                    $"    /// <summary>Determines whether the specified character in is in the specified character class.</summary>",
-                    $"    internal static new bool CharInClass(char ch, string charClass) => RegexRunner.CharInClass(ch, charClass);",
-                    $"}}",
-                });
-            }
-
             if (analysis.ContainsNoAscii)
             {
                 // We determined that the character class contains only non-ASCII,
@@ -5041,20 +5035,20 @@ namespace System.Text.RegularExpressions.Generator
 
                 _ => $"({Literal(bitVectorString)}[ch >> 4] & (1 << (ch & 0xF))) {(negate ? "=" : "!")}= 0",
             };
-            return $"((ch = {chExpr}) < 128 ? {asciiExpr} : {(negate ? "!" : "")}{HelpersTypeName}.{Base}.CharInClass((char)ch, {Literal(charClass)}))";
+            return $"((ch = {chExpr}) < 128 ? {asciiExpr} : {(negate ? "!" : "")}RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
 
             string EmitContainsNoAscii()
             {
                 return negate ?
-                    $"((ch = {chExpr}) < 128 || !{HelpersTypeName}.{Base}.CharInClass((char)ch, {Literal(charClass)}))" :
-                    $"((ch = {chExpr}) >= 128 && {HelpersTypeName}.{Base}.CharInClass((char)ch, {Literal(charClass)}))";
+                    $"((ch = {chExpr}) < 128 || !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
+                    $"((ch = {chExpr}) >= 128 && RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
             }
 
             string EmitAllAsciiContained()
             {
                 return negate ?
-                    $"((ch = {chExpr}) >= 128 && !{HelpersTypeName}.{Base}.CharInClass((char)ch, {Literal(charClass)}))" :
-                    $"((ch = {chExpr}) < 128 || {HelpersTypeName}.{Base}.CharInClass((char)ch, {Literal(charClass)}))";
+                    $"((ch = {chExpr}) >= 128 && !RegexRunner.CharInClass((char)ch, {Literal(charClass)}))" :
+                    $"((ch = {chExpr}) < 128 || RegexRunner.CharInClass((char)ch, {Literal(charClass)}))";
             }
         }
 

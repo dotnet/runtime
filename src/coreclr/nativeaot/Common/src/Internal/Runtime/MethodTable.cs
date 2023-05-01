@@ -20,45 +20,6 @@ namespace Internal.Runtime
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct EEInterfaceInfo
-    {
-        [StructLayout(LayoutKind.Explicit)]
-        private unsafe struct InterfaceTypeUnion
-        {
-            [FieldOffset(0)]
-            public MethodTable* _pInterfaceEEType;
-            [FieldOffset(0)]
-            public MethodTable** _ppInterfaceEETypeViaIAT;
-        }
-
-        private InterfaceTypeUnion _interfaceType;
-
-        internal MethodTable* InterfaceType
-        {
-            get
-            {
-                if ((unchecked((uint)_interfaceType._pInterfaceEEType) & IndirectionConstants.IndirectionCellPointer) != 0)
-                {
-#if TARGET_64BIT
-                    MethodTable** ppInterfaceEETypeViaIAT = (MethodTable**)(((ulong)_interfaceType._ppInterfaceEETypeViaIAT) - IndirectionConstants.IndirectionCellPointer);
-#else
-                    MethodTable** ppInterfaceEETypeViaIAT = (MethodTable**)(((uint)_interfaceType._ppInterfaceEETypeViaIAT) - IndirectionConstants.IndirectionCellPointer);
-#endif
-                    return *ppInterfaceEETypeViaIAT;
-                }
-
-                return _interfaceType._pInterfaceEEType;
-            }
-#if TYPE_LOADER_IMPLEMENTATION
-            set
-            {
-                _interfaceType._pInterfaceEEType = value;
-            }
-#endif
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct DispatchMap
     {
         [StructLayout(LayoutKind.Sequential)]
@@ -179,20 +140,10 @@ namespace Internal.Runtime
             // Kinds.CanonicalEEType
             [FieldOffset(0)]
             public MethodTable* _pBaseType;
-            [FieldOffset(0)]
-            public MethodTable** _ppBaseTypeViaIAT;
-
-            // Kinds.ClonedEEType
-            [FieldOffset(0)]
-            public MethodTable* _pCanonicalType;
-            [FieldOffset(0)]
-            public MethodTable** _ppCanonicalTypeViaIAT;
 
             // Kinds.ArrayEEType
             [FieldOffset(0)]
             public MethodTable* _pRelatedParameterType;
-            [FieldOffset(0)]
-            public MethodTable** _ppRelatedParameterTypeViaIAT;
         }
 
         private static unsafe class OptionalFieldsReader
@@ -357,10 +308,25 @@ namespace Internal.Runtime
 #endif
         }
 
+        internal uint RawBaseSize
+        {
+            get
+            {
+                return _uBaseSize;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                _uBaseSize = value;
+            }
+#endif
+        }
+
         internal uint BaseSize
         {
             get
             {
+                Debug.Assert(IsCanonical || IsArray);
                 return _uBaseSize;
             }
 #if TYPE_LOADER_IMPLEMENTATION
@@ -455,14 +421,6 @@ namespace Internal.Runtime
             }
         }
 
-        internal bool IsCloned
-        {
-            get
-            {
-                return Kind == EETypeKind.ClonedEEType;
-            }
-        }
-
         internal bool IsCanonical
         {
             get
@@ -476,7 +434,7 @@ namespace Internal.Runtime
             get
             {
                 // String is currently the only non-array type with a non-zero component size.
-                return ComponentSize == StringComponentSize.Value && !IsArray && !IsGenericTypeDefinition;
+                return ComponentSize == StringComponentSize.Value && IsCanonical;
             }
         }
 
@@ -511,7 +469,8 @@ namespace Internal.Runtime
         {
             get
             {
-                return ElementType == EETypeElementType.SzArray;
+                Debug.Assert(IsArray);
+                return BaseSize == SZARRAY_BASE_SIZE;
             }
         }
 
@@ -712,6 +671,14 @@ namespace Internal.Runtime
             }
         }
 
+        internal bool IsFunctionPointerType
+        {
+            get
+            {
+                return Kind == EETypeKind.FunctionPointerEEType;
+            }
+        }
+
         // The parameterized type shape defines the particular form of parameterized type that
         // is being represented.
         // Currently, the meaning is a shape of 0 indicates that this is a Pointer,
@@ -721,6 +688,7 @@ namespace Internal.Runtime
         {
             get
             {
+                Debug.Assert(IsParameterizedType);
                 return _uBaseSize;
             }
 #if TYPE_LOADER_IMPLEMENTATION
@@ -731,12 +699,66 @@ namespace Internal.Runtime
 #endif
         }
 
-        internal bool IsRelatedTypeViaIAT
+        internal uint NumFunctionPointerParameters
         {
             get
             {
-                return ((_uFlags & (uint)EETypeFlags.RelatedTypeViaIATFlag) != 0);
+                Debug.Assert(IsFunctionPointerType);
+                return _uBaseSize & ~FunctionPointerFlags.FlagsMask;
             }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsFunctionPointerType);
+                _uBaseSize = value | (_uBaseSize & FunctionPointerFlags.FlagsMask);
+            }
+#endif
+        }
+
+        internal bool IsUnmanagedFunctionPointer
+        {
+            get
+            {
+                Debug.Assert(IsFunctionPointerType);
+                return (_uBaseSize & FunctionPointerFlags.IsUnmanaged) != 0;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsFunctionPointerType);
+                if (value)
+                    _uBaseSize |= FunctionPointerFlags.IsUnmanaged;
+                else
+                    _uBaseSize &= ~FunctionPointerFlags.IsUnmanaged;
+            }
+#endif
+        }
+
+        internal MethodTableList FunctionPointerParameters
+        {
+            get
+            {
+                void* pStart = (byte*)Unsafe.AsPointer(ref this) + GetFieldOffset(EETypeField.ETF_FunctionPointerParameters);
+                if (IsDynamicType || !SupportsRelativePointers)
+                    return new MethodTableList((MethodTable*)pStart);
+                return new MethodTableList((RelativePointer<MethodTable>*)pStart);
+            }
+        }
+
+        internal MethodTable* FunctionPointerReturnType
+        {
+            get
+            {
+                Debug.Assert(IsFunctionPointerType);
+                return _relatedType._pRelatedParameterType;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(IsDynamicType && IsFunctionPointerType);
+                _relatedType._pRelatedParameterType = value;
+            }
+#endif
         }
 
         internal bool RequiresAlign8
@@ -841,31 +863,12 @@ namespace Internal.Runtime
             }
         }
 
-        internal uint FieldByteCountNonGCAligned
+        internal MethodTable** InterfaceMap
         {
             get
             {
-                // This api is designed to return correct results for EETypes which can be derived from
-                // And results indistinguishable from correct for DefTypes which cannot be derived from (sealed classes)
-                // (For sealed classes, this should always return BaseSize-((uint)sizeof(ObjHeader));
-                Debug.Assert(!IsInterface && !IsParameterizedType);
-
-                // get_BaseSize returns the GC size including space for the sync block index field, the MethodTable* and
-                // padding for GC heap alignment. Must subtract all of these to get the size used for the fields of
-                // the type (where the fields of the type includes the MethodTable*)
-                return BaseSize - ((uint)sizeof(ObjHeader) + ValueTypeFieldPadding);
-            }
-        }
-
-        internal EEInterfaceInfo* InterfaceMap
-        {
-            get
-            {
-                fixed (MethodTable* start = &this)
-                {
-                    // interface info table starts after the vtable and has _usNumInterfaces entries
-                    return (EEInterfaceInfo*)((byte*)start + sizeof(MethodTable) + sizeof(void*) * _usNumVtableSlots);
-                }
+                // interface info table starts after the vtable and has _usNumInterfaces entries
+                return (MethodTable**)((byte*)Unsafe.AsPointer(ref this) + sizeof(MethodTable) + sizeof(void*) * _usNumVtableSlots);
             }
         }
 
@@ -944,12 +947,7 @@ namespace Internal.Runtime
         {
             get
             {
-                if (IsCloned)
-                {
-                    return CanonicalEEType->BaseType;
-                }
-
-                if (IsParameterizedType)
+                if (!IsCanonical)
                 {
                     if (IsArray)
                         return GetArrayEEType();
@@ -957,21 +955,15 @@ namespace Internal.Runtime
                         return null;
                 }
 
-                Debug.Assert(IsCanonical);
-
-                if (IsRelatedTypeViaIAT)
-                    return *_relatedType._ppBaseTypeViaIAT;
-                else
-                    return _relatedType._pBaseType;
+                return _relatedType._pBaseType;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert(IsDynamicType);
                 Debug.Assert(!IsParameterizedType);
-                Debug.Assert(!IsCloned);
+                Debug.Assert(!IsFunctionPointerType);
                 Debug.Assert(IsCanonical);
-                _uFlags &= (uint)~EETypeFlags.RelatedTypeViaIATFlag;
                 _relatedType._pBaseType = value;
             }
 #endif
@@ -981,38 +973,9 @@ namespace Internal.Runtime
         {
             get
             {
-                Debug.Assert(!IsArray, "array type not supported in BaseType");
-
-                if (IsCloned)
-                {
-                    // Assuming that since this is not an Array, the CanonicalEEType is also not an array
-                    return CanonicalEEType->NonArrayBaseType;
-                }
-
-                Debug.Assert(IsCanonical, "we expect canonical types here");
-
-                if (IsRelatedTypeViaIAT)
-                {
-                    return *_relatedType._ppBaseTypeViaIAT;
-                }
-
-                return _relatedType._pBaseType;
-            }
-        }
-
-        internal MethodTable* NonClonedNonArrayBaseType
-        {
-            get
-            {
                 Debug.Assert(!IsArray, "array type not supported in NonArrayBaseType");
-                Debug.Assert(!IsCloned, "cloned type not supported in NonClonedNonArrayBaseType");
-                Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect canonical types here");
-
-                if (IsRelatedTypeViaIAT)
-                {
-                    return *_relatedType._ppBaseTypeViaIAT;
-                }
-
+                Debug.Assert(IsCanonical || IsGenericTypeDefinition, "we expect type definitions here");
+                Debug.Assert(!IsGenericTypeDefinition || _relatedType._pBaseType == null, "callers assume this would be null for a generic definition");
                 return _relatedType._pBaseType;
             }
         }
@@ -1022,24 +985,8 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(!IsParameterizedType, "array type not supported in NonArrayBaseType");
-                Debug.Assert(!IsCloned, "cloned type not supported in NonClonedNonArrayBaseType");
                 Debug.Assert(IsCanonical, "we expect canonical types here");
-                Debug.Assert(!IsRelatedTypeViaIAT, "Non IAT");
-
                 return _relatedType._pBaseType;
-            }
-        }
-
-        internal MethodTable* CanonicalEEType
-        {
-            get
-            {
-                // cloned EETypes must always refer to types in other modules
-                Debug.Assert(IsCloned);
-                if (IsRelatedTypeViaIAT)
-                    return *_relatedType._ppCanonicalTypeViaIAT;
-                else
-                    return _relatedType._pCanonicalType;
             }
         }
 
@@ -1080,17 +1027,12 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsParameterizedType);
-
-                if (IsRelatedTypeViaIAT)
-                    return *_relatedType._ppRelatedParameterTypeViaIAT;
-                else
-                    return _relatedType._pRelatedParameterType;
+                return _relatedType._pRelatedParameterType;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert(IsDynamicType && IsParameterizedType);
-                _uFlags &= ((uint)~EETypeFlags.RelatedTypeViaIATFlag);
                 _relatedType._pRelatedParameterType = value;
             }
 #endif
@@ -1372,7 +1314,8 @@ namespace Internal.Runtime
         {
             get
             {
-                return (EETypeElementType)((_uFlags & (uint)EETypeFlags.ElementTypeMask) >> (byte)EETypeFlags.ElementTypeShift);
+                return (EETypeElementType)((_uFlags >> (byte)EETypeFlags.ElementTypeShift) &
+                    ((uint)EETypeFlags.ElementTypeMask >> (byte)EETypeFlags.ElementTypeShift));
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
@@ -1401,7 +1344,7 @@ namespace Internal.Runtime
                 Debug.Assert(NumInterfaces > 0);
                 return cbOffset;
             }
-            cbOffset += (uint)(sizeof(EEInterfaceInfo) * NumInterfaces);
+            cbOffset += (uint)(sizeof(MethodTable*) * NumInterfaces);
 
             uint relativeOrFullPointerOffset = (IsDynamicType || !SupportsRelativePointers ? (uint)IntPtr.Size : 4);
 
@@ -1470,6 +1413,16 @@ namespace Internal.Runtime
                 cbOffset += relativeOrFullPointerOffset;
             }
 
+            if (eField == EETypeField.ETF_FunctionPointerParameters)
+            {
+                Debug.Assert(IsFunctionPointerType);
+                return cbOffset;
+            }
+            if (IsFunctionPointerType)
+            {
+                cbOffset += NumFunctionPointerParameters * relativeOrFullPointerOffset;
+            }
+
             if (eField == EETypeField.ETF_DynamicTemplateType)
             {
                 Debug.Assert(IsDynamicType);
@@ -1522,18 +1475,20 @@ namespace Internal.Runtime
             bool fRequiresOptionalFields,
             bool fHasSealedVirtuals,
             bool fHasGenericInfo,
+            int cFunctionPointerTypeParameters,
             bool fHasNonGcStatics,
             bool fHasGcStatics,
             bool fHasThreadStatics)
         {
             return (uint)(sizeof(MethodTable) +
                 (IntPtr.Size * cVirtuals) +
-                (sizeof(EEInterfaceInfo) * cInterfaces) +
+                (sizeof(MethodTable*) * cInterfaces) +
                 sizeof(IntPtr) + // TypeManager
                 (SupportsWritableData ? sizeof(IntPtr) : 0) + // WritableData
                 (fHasFinalizer ? sizeof(UIntPtr) : 0) +
                 (fRequiresOptionalFields ? sizeof(IntPtr) : 0) +
                 (fHasSealedVirtuals ? sizeof(IntPtr) : 0) +
+                cFunctionPointerTypeParameters * sizeof(IntPtr) +
                 (fHasGenericInfo ? sizeof(IntPtr)*2 : 0) + // pointers to GenericDefinition and GenericComposition
                 (fHasNonGcStatics ? sizeof(IntPtr) : 0) + // pointer to data
                 (fHasGcStatics ? sizeof(IntPtr) : 0) +  // pointer to data
@@ -1661,6 +1616,48 @@ namespace Internal.Runtime
                     return *(T**)((byte*)Unsafe.AsPointer(ref Unsafe.AsRef(in _value)) + (_value & ~IndirectionConstants.IndirectionCellPointer));
                 }
             }
+        }
+    }
+
+    // Abstracts a list of MethodTable pointers that could either be relative
+    // pointers or full pointers. We store the IsRelative bit in the lowest
+    // bit so this assumes the list is at least 2 byte aligned.
+    internal readonly unsafe struct MethodTableList
+    {
+        private const int IsRelative = 1;
+
+        private readonly void* _pFirst;
+
+        public MethodTableList(MethodTable* pFirst)
+        {
+            // If the first element is not aligned, we don't have the spare bit we need
+            Debug.Assert(((nint)pFirst & IsRelative) == 0);
+            _pFirst = pFirst;
+        }
+
+        public MethodTableList(RelativePointer<MethodTable>* pFirst)
+        {
+            // If the first element is not aligned, we don't have the spare bit we need
+            Debug.Assert(((nint)pFirst & IsRelative) == 0);
+            _pFirst = (void*)((nint)pFirst | IsRelative);
+        }
+
+        public MethodTable* this[int index]
+        {
+            get
+            {
+                if (((nint)_pFirst & IsRelative) != 0)
+                    return (((RelativePointer<MethodTable>*)((nint)_pFirst - IsRelative)) + index)->Value;
+
+                return *((MethodTable**)_pFirst + index);
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(((nint)_pFirst & IsRelative) == 0);
+                *((MethodTable**)_pFirst + index) = value;
+            }
+#endif
         }
     }
 }

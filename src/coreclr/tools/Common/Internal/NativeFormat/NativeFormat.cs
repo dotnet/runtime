@@ -203,6 +203,7 @@ namespace Internal.NativeFormat
     {
         Generic                     = 0x1,
         Static                      = 0x2,
+        Unmanaged                   = 0x4,
     };
 
 #if NATIVEFORMAT_PUBLICWRITER

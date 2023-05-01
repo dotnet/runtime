@@ -146,8 +146,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
                                            comp->gtNewIconNode(static_cast<ssize_t>(indirOffs), TYP_I_IMPL));
             }
 
-            GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, addr);
-            indir->gtFlags |= GTF_IND_INVARIANT;
+            GenTree* const indir = comp->gtNewIndir(TYP_I_IMPL, addr, GTF_IND_INVARIANT);
             return indir;
         }
         case MethodAddr:
@@ -160,9 +159,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
         {
             GenTreeIntCon* slot = comp->gtNewIconHandleNode((size_t)methAddr, GTF_ICON_FTN_ADDR);
             INDEBUG(slot->gtTargetHandle = (size_t)targetMethHnd);
-            GenTree* indir = comp->gtNewIndir(TYP_I_IMPL, slot);
-            indir->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-            indir->gtFlags &= ~GTF_EXCEPT;
+            GenTree* indir = comp->gtNewIndir(TYP_I_IMPL, slot, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
             return indir;
         }
         default:

@@ -75,6 +75,24 @@ namespace Internal.Metadata.NativeFormat
     [CLSCompliant(false)]
     [ReflectionBlocked]
 #endif
+    public enum SignatureCallingConvention : byte
+    {
+        HasThis = 0x20,
+        ExplicitThis = 0x40,
+        Default = 0x00,
+        Vararg = 0x05,
+        Cdecl = 0x01,
+        StdCall = 0x02,
+        ThisCall = 0x03,
+        FastCall = 0x04,
+        Unmanaged = 0x09,
+        UnmanagedCallingConventionMask = 0x0F,
+    } // SignatureCallingConvention
+
+#if SYSTEM_PRIVATE_CORELIB
+    [CLSCompliant(false)]
+    [ReflectionBlocked]
+#endif
     public enum HandleType : byte
     {
         Null = 0x0,

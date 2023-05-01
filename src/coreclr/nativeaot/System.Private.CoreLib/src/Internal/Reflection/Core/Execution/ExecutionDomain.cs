@@ -152,6 +152,23 @@ namespace Internal.Reflection.Core.Execution
             return targetTypeHandle.GetTypeForRuntimeTypeHandle().GetPointerType(typeHandle);
         }
 
+        public Type GetFunctionPointerTypeForHandle(RuntimeTypeHandle typeHandle)
+        {
+            ExecutionEnvironment.GetFunctionPointerTypeComponents(typeHandle, out RuntimeTypeHandle returnTypeHandle,
+                                                                              out RuntimeTypeHandle[] parameterHandles,
+                                                                              out bool isUnmanaged);
+
+            RuntimeTypeInfo returnType = returnTypeHandle.GetTypeForRuntimeTypeHandle();
+            int count = parameterHandles.Length;
+            RuntimeTypeInfo[] parameterTypes = new RuntimeTypeInfo[count];
+            for (int i = 0; i < count; i++)
+            {
+                parameterTypes[i] = parameterHandles[i].GetTypeForRuntimeTypeHandle();
+            }
+
+            return RuntimeFunctionPointerTypeInfo.GetFunctionPointerTypeInfo(returnType, parameterTypes, isUnmanaged, typeHandle);
+        }
+
         public Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle)
         {
             RuntimeTypeHandle targetTypeHandle;

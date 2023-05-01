@@ -19,16 +19,6 @@
     <PublishTrimmed Condition="'$(NativeAotSupported)' != 'true'">true</PublishTrimmed>
   </PropertyGroup>
 
-  <!-- TODO: remove this once we pick up an SDK with https://github.com/dotnet/runtime/pull/82645.
-       This works around an incorrect ILC host package name when targeting linux-musl-x64 from linux-x64. -->
-  <Target Name="_FixIlcHostArch"
-          BeforeTargets="ImportRuntimeIlcPackageTarget">
-    <PropertyGroup>
-      <_hostOS>$(NETCoreSdkPortableRuntimeIdentifier.SubString(0, $(NETCoreSdkPortableRuntimeIdentifier.LastIndexOf('-'))))</_hostOS>
-      <OSIdentifier>$(_hostOS)</OSIdentifier>
-      <IlcHostPackageName>runtime.$(OSIdentifier)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
-    </PropertyGroup>
-  </Target>
 
   <!-- Needed for the amd64 -> amd64 musl cross-build to pass the target flag. -->
   <Target Name="_FixIlcTargetTriple"
@@ -72,7 +62,7 @@
   </Target>
 
   <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
-    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(IlcHostArch)' == '$(TargetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
+    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
   </ItemGroup>
 
   <Target Name="PublishCompiler"

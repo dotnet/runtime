@@ -4,7 +4,7 @@
 import { isThenable } from "../cancelable-promise";
 import { legacy_c_functions as cwraps } from "../cwraps";
 import { js_owned_gc_handle_symbol, assert_not_disposed, cs_owned_js_handle_symbol, mono_wasm_get_js_handle, setup_managed_proxy, mono_wasm_release_cs_owned_object, teardown_managed_proxy, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
-import { Module } from "../imports";
+import { Module } from "../globals";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { setI32_unchecked, setU32_unchecked, setF64, setB32 } from "../memory";
 import { mono_wasm_new_root, mono_wasm_release_roots, mono_wasm_new_external_root } from "../roots";
@@ -14,7 +14,7 @@ import { TypedArray, Int32Ptr } from "../types/emscripten";
 import { has_backing_array_buffer } from "./buffers";
 import { legacyManagedExports } from "./corebindings";
 import { get_js_owned_object_by_gc_handle_ref } from "./cs-to-js";
-import { legacyHelpers, wasm_type_symbol } from "./imports";
+import { legacyHelpers, wasm_type_symbol } from "./globals";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function _js_to_mono_uri_root(should_add_in_flight: boolean, js_obj: any, result: WasmRoot<MonoObject>): void {

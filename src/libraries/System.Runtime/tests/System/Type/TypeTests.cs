@@ -507,6 +507,8 @@ namespace System.Tests
         [InlineData("Outside[,,]", typeof(Outside[,,]))]
         [InlineData("Outside[][]", typeof(Outside[][]))]
         [InlineData("Outside`1[System.Nullable`1[System.Boolean]]", typeof(Outside<bool?>))]
+        [InlineData(".Outside`1", typeof(Outside<>))]
+        [InlineData(".Outside`1+.Inside`1", typeof(Outside<>.Inside<>))]
         public void GetTypeByName_ValidType_ReturnsExpected(string typeName, Type expectedType)
         {
             Assert.Equal(expectedType, Type.GetType(typeName, throwOnError: false, ignoreCase: false));
@@ -520,6 +522,8 @@ namespace System.Tests
         [InlineData("System.Int32[,*,]", typeof(ArgumentException), false)]
         [InlineData("Outside`2", typeof(TypeLoadException), false)]
         [InlineData("Outside`1[System.Boolean, System.Int32]", typeof(ArgumentException), true)]
+        [InlineData(".System.Int32", typeof(TypeLoadException), false)]
+        [InlineData("..Outside`1", typeof(TypeLoadException), false)]
         public void GetTypeByName_Invalid(string typeName, Type expectedException, bool alwaysThrowsException)
         {
             if (!alwaysThrowsException)
@@ -528,6 +532,16 @@ namespace System.Tests
             }
 
             Assert.Throws(expectedException, () => Type.GetType(typeName, throwOnError: true, ignoreCase: false));
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+        [InlineData(".GlobalStructStartingWithDot")]
+        [InlineData(" GlobalStructStartingWithSpace")]
+        public void GetTypeByName_NonRoundtrippable(string typeName)
+        {
+            Type type = Assembly.Load("System.TestStructs").GetTypes().Single((t) => t.FullName == typeName);
+            string assemblyQualifiedName = type.AssemblyQualifiedName;
+            Assert.Null(Type.GetType(assemblyQualifiedName));
         }
 
         [Fact]
