@@ -965,6 +965,7 @@ private:
 
             unsigned   lclNum    = val.LclNum();
             LclVarDsc* varDsc    = m_compiler->lvaGetDesc(lclNum);
+
             unsigned   indirSize = GetIndirSize(node);
             bool       isWide;
 
@@ -1094,7 +1095,18 @@ private:
         GenTree* node = val.Node();
         GenTree* addr = node->gtGetOp1();
 
-        MorphLocalAddress(addr, val.LclNum(), val.Offset());
+        // Rebase the local address off of the parent local if possible. This
+        // improves our chances of producing LCL_ADDR since IsValidLclAddr is
+        // true for more cases.
+        LclVarDsc* lclDsc = m_compiler->lvaGetDesc(val.LclNum());
+        if (lclDsc->lvIsStructField)
+        {
+            MorphLocalAddress(addr, lclDsc->lvParentLcl, lclDsc->lvFldOffset + val.Offset());
+        }
+        else
+        {
+            MorphLocalAddress(addr, val.LclNum(), val.Offset());
+        }
 
         if (node->OperIs(GT_FIELD))
         {
