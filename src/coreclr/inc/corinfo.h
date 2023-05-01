@@ -1736,8 +1736,8 @@ struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 {
     CORINFO_CONST_LOOKUP tlsIndex;
     uint32_t offsetOfThreadLocalStoragePointer;
-    uint32_t offsetOfMaxThreadStaticBlocks;
-    uint32_t offsetOfThreadStaticBlocks;
+    uint32_t offsetOfNonGCMaxThreadStaticBlocks;
+    uint32_t offsetOfNonGCThreadStaticBlocks;
 };
 
 //----------------------------------------------------------------------------

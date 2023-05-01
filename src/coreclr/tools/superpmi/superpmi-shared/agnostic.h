@@ -522,8 +522,8 @@ struct Agnostic_GetThreadLocalStaticBlocksInfo
 {
     Agnostic_CORINFO_CONST_LOOKUP tlsIndex;
     UINT                          offsetOfThreadLocalStoragePointer;
-    UINT                          offsetOfMaxThreadStaticBlocks;
-    UINT                          offsetOfThreadStaticBlocks;
+    UINT                          offsetOfNonGCMaxThreadStaticBlocks;
+    UINT                          offsetOfNonGCThreadStaticBlocks;
 };
 
 struct Agnostic_GetThreadLocalFieldInfo

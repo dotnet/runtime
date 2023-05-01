@@ -1225,6 +1225,7 @@ private:
     // MethodTable to `typeIndex` map. `typeIndex` is embedded in the code during codegen.
     // During execution corresponding thread static data blocks are stored in `t_threadStaticBlocks`
     // array at the `typeIndex`.
+    // During execution corresponding thread static data blocks are stored in `t_NonGCThreadStaticBlocks`
     TypeIDMap m_threadStaticBlockTypeIDMap;
 
 #endif // HOST_WINDOWS

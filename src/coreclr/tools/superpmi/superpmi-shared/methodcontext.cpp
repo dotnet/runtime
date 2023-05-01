@@ -3663,9 +3663,9 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 
     value.tlsIndex.handle                   = CastHandle(pInfo->tlsIndex.addr);
     value.tlsIndex.accessType               = pInfo->tlsIndex.accessType;
-    value.offsetOfMaxThreadStaticBlocks     = pInfo->offsetOfMaxThreadStaticBlocks;
-    value.offsetOfThreadLocalStoragePointer = pInfo->offsetOfThreadLocalStoragePointer;
-    value.offsetOfThreadStaticBlocks        = pInfo->offsetOfThreadStaticBlocks;
+    value.offsetOfNonGCMaxThreadStaticBlocks     = pInfo->offsetOfNonGCMaxThreadStaticBlocks;
+    value.offsetOfThreadLocalStoragePointer      = pInfo->offsetOfThreadLocalStoragePointer;
+    value.offsetOfNonGCThreadStaticBlocks        = pInfo->offsetOfNonGCThreadStaticBlocks;
 
     // This data is same for entire process, so just add it against key '0'.
     GetThreadLocalStaticBlocksInfo->Add(0, value);
@@ -3675,9 +3675,9 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 void MethodContext::dmpGetThreadLocalStaticBlocksInfo(DWORD key, const Agnostic_GetThreadLocalStaticBlocksInfo& value)
 {
     printf("GetThreadLocalStaticBlocksInfo key 0, value tlsIndex-%016" PRIX64
-           ", offsetOfMaxThreadStaticBlocks-%u, offsetOfThreadLocalStoragePointer-%u, offsetOfThreadStaticBlocks-%u",
-           value.tlsIndex.handle, value.offsetOfMaxThreadStaticBlocks, value.offsetOfThreadLocalStoragePointer,
-           value.offsetOfThreadStaticBlocks);
+           ", offsetOfNonGCMaxThreadStaticBlocks-%u, offsetOfThreadLocalStoragePointer-%u, offsetOfNonGCThreadStaticBlocks-%u",
+           value.tlsIndex.handle, value.offsetOfNonGCMaxThreadStaticBlocks, value.offsetOfThreadLocalStoragePointer,
+           value.offsetOfNonGCThreadStaticBlocks);
 }
 
 void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
@@ -3688,9 +3688,9 @@ void MethodContext::repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
 
     pInfo->tlsIndex.accessType = (InfoAccessType)value.tlsIndex.accessType;
     pInfo->tlsIndex.addr = (void*)value.tlsIndex.handle;
-    pInfo->offsetOfMaxThreadStaticBlocks = value.offsetOfMaxThreadStaticBlocks;
+    pInfo->offsetOfNonGCMaxThreadStaticBlocks = value.offsetOfNonGCMaxThreadStaticBlocks;
     pInfo->offsetOfThreadLocalStoragePointer = value.offsetOfThreadLocalStoragePointer;
-    pInfo->offsetOfThreadStaticBlocks = value.offsetOfThreadStaticBlocks;
+    pInfo->offsetOfNonGCThreadStaticBlocks = value.offsetOfNonGCThreadStaticBlocks;
 }
 
 void MethodContext::recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle,

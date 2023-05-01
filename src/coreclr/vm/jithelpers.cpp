@@ -1779,13 +1779,13 @@ HCIMPLEND
 
 
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) uint32_t t_maxThreadStaticBlocks;
-__declspec(selectany) __declspec(thread) uint32_t t_threadStaticBlocksSize;
-__declspec(selectany) __declspec(thread) void** t_threadStaticBlocks;
+__declspec(selectany) __declspec(thread) uint32_t t_NonGCMaxThreadStaticBlocks;
+__declspec(selectany) __declspec(thread) uint32_t t_NonGCThreadStaticBlocksSize;
+__declspec(selectany) __declspec(thread) void** t_NonGCThreadStaticBlocks;
 #else
-EXTERN_C __thread uint32_t t_maxThreadStaticBlocks;
-EXTERN_C __thread uint32_t t_threadStaticBlocksSize;
-EXTERN_C __thread void** t_threadStaticBlocks;
+EXTERN_C __thread uint32_t t_NonGCMaxThreadStaticBlocks;
+EXTERN_C __thread uint32_t t_NonGCThreadStaticBlocksSize;
+EXTERN_C __thread void** t_NonGCThreadStaticBlocks;
 #endif
 
 // *** This helper corresponds to both CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE and
@@ -1849,30 +1849,30 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
     staticBlock = (void*) pMT->GetNonGCThreadStaticsBasePointer();
     CONSISTENCY_CHECK(staticBlock != NULL);
 
-    if (t_threadStaticBlocksSize <= staticBlockIndex)
+    if (t_NonGCThreadStaticBlocksSize <= staticBlockIndex)
     {
-        UINT32 newThreadStaticBlocksSize = max(2 * t_threadStaticBlocksSize, staticBlockIndex + 1);
+        UINT32 newThreadStaticBlocksSize = max(2 * t_NonGCThreadStaticBlocksSize, staticBlockIndex + 1);
         void** newThreadStaticBlocks = (void**) new PTR_BYTE[newThreadStaticBlocksSize * sizeof(PTR_BYTE)];
-        memset(newThreadStaticBlocks + t_threadStaticBlocksSize, 0, (newThreadStaticBlocksSize - t_threadStaticBlocksSize) * sizeof(PTR_BYTE));
+        memset(newThreadStaticBlocks + t_NonGCThreadStaticBlocksSize, 0, (newThreadStaticBlocksSize - t_NonGCThreadStaticBlocksSize) * sizeof(PTR_BYTE));
 
-        if (t_threadStaticBlocksSize > 0)
+        if (t_NonGCThreadStaticBlocksSize > 0)
         {
-            memcpy(newThreadStaticBlocks, t_threadStaticBlocks, t_threadStaticBlocksSize * sizeof(PTR_BYTE));
-            delete t_threadStaticBlocks;
+            memcpy(newThreadStaticBlocks, t_NonGCThreadStaticBlocks, t_NonGCThreadStaticBlocksSize * sizeof(PTR_BYTE));
+            delete t_NonGCThreadStaticBlocks;
         }
 
-        t_threadStaticBlocksSize = newThreadStaticBlocksSize;
-        t_threadStaticBlocks = newThreadStaticBlocks;
+        t_NonGCThreadStaticBlocksSize = newThreadStaticBlocksSize;
+        t_NonGCThreadStaticBlocks = newThreadStaticBlocks;
     }
 
-    void* currentEntry = t_threadStaticBlocks[staticBlockIndex];
+    void* currentEntry = t_NonGCThreadStaticBlocks[staticBlockIndex];
     // We could be coming here 2nd time after running the ctor when we try to get the static block.
     // In such case, just avoid adding the same entry.
     if (currentEntry != staticBlock)
     {
         _ASSERTE(currentEntry == nullptr);
-        t_threadStaticBlocks[staticBlockIndex] = staticBlock;
-        t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
+        t_NonGCThreadStaticBlocks[staticBlockIndex] = staticBlock;
+        t_NonGCMaxThreadStaticBlocks = max(t_NonGCMaxThreadStaticBlocks, staticBlockIndex);
     }
     HELPER_METHOD_FRAME_END();
 #else

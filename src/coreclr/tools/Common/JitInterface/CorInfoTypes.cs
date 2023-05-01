@@ -1158,8 +1158,8 @@ namespace Internal.JitInterface
     {
         public CORINFO_CONST_LOOKUP tlsIndex;
         public uint offsetOfThreadLocalStoragePointer;
-        public CORINFO_CONST_LOOKUP offsetOfMaxThreadStaticBlocks;
-        public CORINFO_CONST_LOOKUP offsetOfThreadStaticBlocks;
+        public CORINFO_CONST_LOOKUP offsetOfNonGCMaxThreadStaticBlocks;
+        public CORINFO_CONST_LOOKUP offsetOfNonGCThreadStaticBlocks;
     };
 
     // System V struct passing
