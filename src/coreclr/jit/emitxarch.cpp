@@ -662,6 +662,120 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
         case INS_call:
             return true;
 
+        case INS_imul_AX:
+            if (reg == REG_RAX)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_BP:
+            if (reg == REG_RBP)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_BX:
+            if (reg == REG_RBX)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_CX:
+            if (reg == REG_RCX)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_DI:
+            if (reg == REG_RDI)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_DX:
+            if (reg == REG_RDX)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_SI:
+            if (reg == REG_RSI)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_SP:
+            if (reg == REG_RSP)
+            {
+                return true;
+            }
+            break;
+
+#ifdef TARGET_AMD64
+        case INS_imul_08:
+            if (reg == REG_R8)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_09:
+            if (reg == REG_R9)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_10:
+            if (reg == REG_R10)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_11:
+            if (reg == REG_R11)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_12:
+            if (reg == REG_R12)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_13:
+            if (reg == REG_R13)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_14:
+            if (reg == REG_R14)
+            {
+                return true;
+            }
+            break;
+
+        case INS_imul_15:
+            if (reg == REG_R15)
+            {
+                return true;
+            }
+            break;
+#endif // TARGET_AMD64
+
         // These always write to RAX and RDX.
         case INS_idiv:
         case INS_div:
