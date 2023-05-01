@@ -2405,7 +2405,7 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 HCIMPLEND
 
 /*************************************************************/
-HCIMPL1(Object*, JIT_NewFrozen, CORINFO_CLASS_HANDLE typeHnd_)
+HCIMPL1(Object*, JIT_NewMaybeFrozen, CORINFO_CLASS_HANDLE typeHnd_)
 {
     FCALL_CONTRACT;
 
@@ -2752,7 +2752,7 @@ HCIMPLEND
 
 
 /*************************************************************/
-HCIMPL2(Object*, JIT_NewArr1Frozen, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
+HCIMPL2(Object*, JIT_NewArr1MaybeFrozen, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 {
     FCALL_CONTRACT;
 

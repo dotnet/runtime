@@ -2158,38 +2158,14 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBloc
             CorInfoHelpFunc helper = eeGetHelperNum(call->gtCallMethHnd);
             switch (helper)
             {
-                case CORINFO_HELP_NEWARR_1_FROZEN:
+                case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
                 case CORINFO_HELP_NEWARR_1_DIRECT:
                 case CORINFO_HELP_NEWARR_1_OBJ:
                 case CORINFO_HELP_NEWARR_1_VC:
                 case CORINFO_HELP_NEWARR_1_ALIGN8:
                 {
-                    if (opts.IsReadyToRun() && helper == CORINFO_HELP_NEWARR_1_FROZEN)
-                    {
-                        // CORINFO_HELP_NEWARR_1_FROZEN is used in both JIT and R2R,
-                        // for R2R take the same path as CORINFO_HELP_READYTORUN_NEWARR_1
-                        FALLTHROUGH;
-                    }
-                    else
-                    {
-                        // This is an array allocation site. Grab the array length node.
-                        arrayLength = call->gtArgs.GetArgByIndex(1)->GetNode();
-                        break;
-                    }
-                }
-
-                case CORINFO_HELP_READYTORUN_NEWARR_1:
-                {
-                    // On arm when compiling on certain platforms for ready to
-                    // run, a handle will be inserted before the length. To
-                    // handle this case, we will grab the last argument as
-                    // that's always the length. See
-                    // CallArgs::AddFinalArgsAndDetermineABIInfo for where the
-                    // handle is inserted.
-                    for (CallArg& arg : call->gtArgs.Args())
-                    {
-                        arrayLength = arg.GetNode();
-                    }
+                    // This is an array allocation site. Grab the array length node.
+                    arrayLength = call->gtArgs.GetUserArgByIndex(1)->GetNode();
                     break;
                 }
 
@@ -18350,7 +18326,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
         }
 
         case CORINFO_HELP_NEWARR_1_DIRECT:
-        case CORINFO_HELP_NEWARR_1_FROZEN:
+        case CORINFO_HELP_NEWARR_1_MAYBEFROZEN:
         case CORINFO_HELP_NEWARR_1_OBJ:
         case CORINFO_HELP_NEWARR_1_VC:
         case CORINFO_HELP_NEWARR_1_ALIGN8:

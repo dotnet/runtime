@@ -9773,7 +9773,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                     op1 = impTokenToHandle(&resolvedToken, nullptr, true /*mustRestoreHandle*/);
                                 }
 #endif
-                                op1 = gtNewHelperCallNode(CORINFO_HELP_NEWARR_1_FROZEN, TYP_REF, op1, op2);
+                                op1 = gtNewHelperCallNode(CORINFO_HELP_NEWARR_1_MAYBEFROZEN, TYP_REF, op1, op2);
                                 isFrozenAllocator = true;
                             }
                         }

@@ -1774,12 +1774,12 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("NEW_ARRAY");
                     break;
 
-                case ReadyToRunHelper.NewFrozenArray:
-                    builder.Append("NEW_FROZEN_ARRAY");
+                case ReadyToRunHelper.NewMyabeFrozenArray:
+                    builder.Append("NEW_MAYBEFROZEN_ARRAY");
                     break;
 
-                case ReadyToRunHelper.NewFrozenObject:
-                    builder.Append("NEW_FROZEN_OBJECT");
+                case ReadyToRunHelper.NewMaybeFrozenObject:
+                    builder.Append("NEW_MAYBEFROZEN_OBJECT");
                     break;
 
                 case ReadyToRunHelper.CheckCastAny:

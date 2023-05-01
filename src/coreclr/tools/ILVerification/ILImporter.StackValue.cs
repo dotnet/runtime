@@ -612,7 +612,7 @@ namespace Internal.IL
 
         // Structures are compatible if they are equivalent
         // return jitInfo->areTypesEquivalent(child.m_cls, parent.m_cls);
-        return child.m_cls ==  parent.m_cls;
+        return child.m_cls == parent.m_cls;
     }
     else if (parent.IsByRef())
     {
