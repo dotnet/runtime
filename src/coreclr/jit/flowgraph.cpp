@@ -1814,8 +1814,8 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 
     if (block->bbJumpKind == BBJ_RETURN && block->lastStmt()->GetRootNode()->gtOper == GT_RETURN)
     {
-        GenTree* retNode = block->lastStmt()->GetRootNode();
-        GenTree* retExpr = retNode->AsOp()->gtOp1;
+        GenTreeUnOp* retNode = block->lastStmt()->GetRootNode()->AsUnOp();
+        GenTree*     retExpr = retNode->gtOp1;
 
         if (retExpr != nullptr)
         {
@@ -1823,16 +1823,16 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
             // ret(...) ->
             // ret(comma(comma(tmp=...,call mon_exit), tmp))
             //
-            GenTree* temp   = fgInsertCommaFormTemp(&retNode->AsOp()->gtOp1);
-            GenTree* lclVar = retNode->AsOp()->gtOp1->AsOp()->gtOp2;
+            TempInfo tempInfo = fgMakeTemp(retExpr);
+            GenTree* lclVar   = tempInfo.load;
 
-            // The return can't handle all of the trees that could be on the right-hand-side of an assignment,
-            // especially in the case of a struct. Therefore, we need to propagate GTF_DONT_CSE.
-            // If we don't, assertion propagation may, e.g., change a return of a local to a return of "CNS_INT   struct
-            // 0",
-            // which downstream phases can't handle.
+            // TODO-1stClassStructs: delete this NO_CSE propagation. Requires handling multi-regs in copy prop.
             lclVar->gtFlags |= (retExpr->gtFlags & GTF_DONT_CSE);
-            retNode->AsOp()->gtOp1->AsOp()->gtOp2 = gtNewOperNode(GT_COMMA, retExpr->TypeGet(), tree, lclVar);
+
+            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tree, lclVar);
+            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tempInfo.asg, retExpr);
+            retNode->gtOp1 = retExpr;
+            retNode->AddAllEffectsFlags(retExpr);
         }
         else
         {
