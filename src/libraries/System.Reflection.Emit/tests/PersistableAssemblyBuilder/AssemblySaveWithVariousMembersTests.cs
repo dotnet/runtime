@@ -160,7 +160,7 @@ namespace System.Reflection.Emit.Tests
     {
     }
 
-    public interface IMultipleMethod : IEnumerable
+    public interface IMultipleMethod
     {
         string Func(int a, string b);
         IOneMethod MoreFunc();
@@ -168,7 +168,7 @@ namespace System.Reflection.Emit.Tests
         void BuildAPerpetualMotionMachine();
     }
 
-    internal interface IAccess : IOneMethod
+    internal interface IAccess
     {
         public Version BuildAI(double field);
         public int DisableRogueAI();
