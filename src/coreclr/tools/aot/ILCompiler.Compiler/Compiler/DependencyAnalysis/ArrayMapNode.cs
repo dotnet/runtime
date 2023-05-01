@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var type in factory.MetadataManager.GetTypesWithConstructedEETypes())
             {
-                if (!type.IsSzArray)
+                if (!type.IsArray)
                     continue;
 
                 var arrayType = (ArrayType)type;

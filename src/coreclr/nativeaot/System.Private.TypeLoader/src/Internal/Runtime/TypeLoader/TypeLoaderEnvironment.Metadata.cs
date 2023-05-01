@@ -370,13 +370,12 @@ namespace Internal.Runtime.TypeLoader
         /// Preconditions:
         ///     elementTypeHandle is a valid RuntimeTypeHandle.
         /// </summary>
-        /// <param name="elementTypeHandle">MethodTable of the array element type</param>
-        /// <param name="arrayTypeHandle">Resolved MethodTable of the array type</param>
-        public static unsafe bool TryGetArrayTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle arrayTypeHandle)
+        public static unsafe bool TryGetArrayTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, bool isMdArray, int rank, out RuntimeTypeHandle arrayTypeHandle)
         {
             arrayTypeHandle = new RuntimeTypeHandle();
 
-            int arrayHashcode = TypeHashingAlgorithms.ComputeArrayTypeHashCode(elementTypeHandle.GetHashCode(), -1);
+            Debug.Assert(isMdArray || rank == -1);
+            int arrayHashcode = TypeHashingAlgorithms.ComputeArrayTypeHashCode(elementTypeHandle.GetHashCode(), rank);
 
             // Note: ReflectionMapBlob.ArrayMap may not exist in the module that contains the element type.
             // So we must enumerate all loaded modules in order to find ArrayMap and the array type for
@@ -398,7 +397,8 @@ namespace Internal.Runtime.TypeLoader
                     {
                         RuntimeTypeHandle foundArrayType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
                         RuntimeTypeHandle foundArrayElementType = RuntimeAugments.GetRelatedParameterTypeHandle(foundArrayType);
-                        if (foundArrayElementType.Equals(elementTypeHandle))
+                        if (foundArrayElementType.Equals(elementTypeHandle)
+                            && rank == RuntimeAugments.GetArrayRankOrMinusOneForSzArray(foundArrayType))
                         {
                             arrayTypeHandle = foundArrayType;
                             return true;
@@ -407,6 +407,43 @@ namespace Internal.Runtime.TypeLoader
                 }
             }
 
+            return false;
+        }
+
+        public static unsafe bool TryGetPointerTypeForNonDynamicElementType(RuntimeTypeHandle elementTypeHandle, out RuntimeTypeHandle pointerTypeHandle)
+        {
+            int pointerHashcode = TypeHashingAlgorithms.ComputePointerTypeHashCode(elementTypeHandle.GetHashCode());
+
+            // Note: ReflectionMapBlob.PointerTypeMap may not exist in the module that contains the element type.
+            // So we must enumerate all loaded modules in order to find PointerTypeMap and the pointer type for
+            // the given element.
+            foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+            {
+                NativeReader pointerMapReader;
+                if (TryGetNativeReaderForBlob(module, ReflectionMapBlob.PointerTypeMap, out pointerMapReader))
+                {
+                    NativeParser pointerMapParser = new NativeParser(pointerMapReader, 0);
+                    NativeHashtable pointerHashtable = new NativeHashtable(pointerMapParser);
+
+                    ExternalReferencesTable externalReferences = default(ExternalReferencesTable);
+                    externalReferences.InitializeCommonFixupsTable(module);
+
+                    var lookup = pointerHashtable.Lookup(pointerHashcode);
+                    NativeParser entryParser;
+                    while (!(entryParser = lookup.GetNext()).IsNull)
+                    {
+                        RuntimeTypeHandle foundPointerType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                        RuntimeTypeHandle foundPointerElementType = RuntimeAugments.GetRelatedParameterTypeHandle(foundPointerType);
+                        if (foundPointerElementType.Equals(elementTypeHandle))
+                        {
+                            pointerTypeHandle = foundPointerType;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            pointerTypeHandle = default;
             return false;
         }
 

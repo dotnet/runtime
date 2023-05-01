@@ -77,6 +77,7 @@ namespace ILCompiler.DependencyAnalysis
             DelegateMarshallingStubMapNode,
             StructMarshallingStubMapNode,
             ArrayMapNode,
+            PointerMapNode,
             FunctionPointerMapNode,
             ReflectionFieldMapNode,
             NativeLayoutInfoNode,
