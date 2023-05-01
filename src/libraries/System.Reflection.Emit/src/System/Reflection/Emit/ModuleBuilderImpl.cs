@@ -132,7 +132,7 @@ namespace System.Reflection.Emit
                 Debug.Assert(typeBuilder._handle.Equals(typeDefinitionHandle));
                 WriteCustomAttributes(typeBuilder._customAttributes, typeDefinitionHandle);
 
-                if (typeBuilder.Attributes.HasFlag(TypeAttributes.ExplicitLayout))
+                if ((typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
                 {
                     _metadataBuilder.AddTypeLayout(typeDefinitionHandle, (ushort)typeBuilder.PackingSize, (uint)typeBuilder.Size);
                 }

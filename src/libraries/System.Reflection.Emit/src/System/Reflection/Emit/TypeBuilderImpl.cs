@@ -54,9 +54,10 @@ namespace System.Reflection.Emit
                 _interfaces = new List<Type>();
                 for (int i = 0; i < interfaces.Length; i++)
                 {
+                    Type @interface = interfaces[i];
                     // cannot contain null in the interface list
-                    ArgumentNullException.ThrowIfNull(interfaces[i], nameof(interfaces));
-                    _interfaces.Add(interfaces[i]);
+                    ArgumentNullException.ThrowIfNull(@interface, nameof(interfaces));
+                    _interfaces.Add(@interface);
                 }
             }
         }
@@ -270,7 +271,8 @@ namespace System.Reflection.Emit
         public override Type? GetInterface(string name, bool ignoreCase) => throw new NotSupportedException();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        public override Type[] GetInterfaces() => throw new NotSupportedException();
+        public override Type[] GetInterfaces() => _interfaces == null ? EmptyTypes : _interfaces.ToArray();
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => throw new NotSupportedException();
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
