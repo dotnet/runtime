@@ -16222,8 +16222,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_AWR_RRD_CNS:
             assert(IsAvx512OrPriorInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
-            dst  = emitOutputAM(dst, id, insCodeMR(ins), &cnsVal);
-            sz   = emitSizeOfInsDsc(id);
+            dst = emitOutputAM(dst, id, insCodeMR(ins), &cnsVal);
+            sz  = emitSizeOfInsDsc(id);
             break;
 
         case IF_RRD_ARD:
@@ -16253,8 +16253,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_ARD_RRD:
         {
             assert(IsAVX2GatherInstruction(ins));
-            dst  = emitOutputAM(dst, id, insCodeRM(ins));
-            sz   = emitSizeOfInsDsc(id);
+            dst = emitOutputAM(dst, id, insCodeRM(ins));
+            sz  = emitSizeOfInsDsc(id);
             break;
         }
 
@@ -16379,8 +16379,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_SWR_RRD_CNS:
             assert(IsAvx512OrPriorInstruction(ins));
             emitGetInsAmdCns(id, &cnsVal);
-            dst  = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);
-            sz   = emitSizeOfInsDsc(id);
+            dst = emitOutputSV(dst, id, insCodeMR(ins), &cnsVal);
+            sz  = emitSizeOfInsDsc(id);
             break;
 
         case IF_RRW_SRD_CNS:
@@ -16719,7 +16719,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             regcode = insEncodeReg012(id, id->idReg1(), size, &code);
             dst     = emitOutputCV(dst, id, code | 0x30 | regcode);
 
-            sz      = emitSizeOfInsDsc(id);
+            sz = emitSizeOfInsDsc(id);
             break;
         }
 
@@ -16754,7 +16754,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
             }
-            sz      = emitSizeOfInsDsc(id);
+            sz = emitSizeOfInsDsc(id);
             break;
         }
 
