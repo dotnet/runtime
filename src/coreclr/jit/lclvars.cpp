@@ -1776,40 +1776,21 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 
         if (field.type == CORINFO_TYPE_VALUECLASS)
         {
-#ifdef FEATURE_SIMD
-            if (!compiler->usesSIMDTypes() || !compiler->isSIMDorHWSIMDClass(field.intrinsicValueClassHnd))
-            {
-                // TODO-CQ: This discards fields of certain struct types (like Int128) that we could recursively handle
-                // here.
-                return false;
-            }
-
-            unsigned    simdSize;
-            CorInfoType simdBaseJitType =
-                compiler->getBaseJitTypeAndSizeOfSIMDType(field.intrinsicValueClassHnd, &simdSize);
-            // We will only promote fields of SIMD types that fit into a SIMD register.
-            if (simdBaseJitType == CORINFO_TYPE_UNDEF)
+            var_types fldType = TryPromoteIntrinsicTypeAsPrimitive(field.intrinsicValueClassHnd);
+            if (fldType == TYP_UNDEF)
             {
                 return false;
             }
 
-            if ((simdSize < compiler->minSIMDStructBytes()) || (simdSize > compiler->maxSIMDStructBytes()))
-            {
-                return false;
-            }
-
-            promField.fldType    = compiler->getSIMDTypeForSize(simdSize);
-            promField.fldSize    = simdSize;
+            promField.fldType = fldType;
             promField.fldTypeHnd = field.intrinsicValueClassHnd;
-#else
-            return false;
-#endif
         }
         else
         {
             promField.fldType = JITtype2varType(field.type);
-            promField.fldSize = genTypeSize(promField.fldType);
         }
+
+        promField.fldSize = genTypeSize(promField.fldType);
 
         noway_assert(promField.fldOffset + promField.fldSize <= structSize);
 
@@ -1862,6 +1843,64 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 
     structPromotionInfo.canPromote = true;
     return true;
+}
+
+//--------------------------------------------------------------------------------------------
+// TryPromoteIntrinsicTypeAsPrimitive - Attempt to promote an intrinsic type as a primitive type.
+//
+// Arguments:
+//   typeHnd - struct handle to check.
+//
+// Return value:
+//   true if the struct type can be promoted.
+//
+// Notes:
+//   The last analyzed type is memorized to skip the check if we ask about the same time again next.
+//   However, it was not found profitable to memorize all analyzed types in a map.
+//
+//   The check initializes only necessary fields in lvaStructPromotionInfo,
+//   so if the promotion is rejected early than most fields will be uninitialized.
+//
+var_types Compiler::StructPromotionHelper::TryPromoteIntrinsicTypeAsPrimitive(CORINFO_CLASS_HANDLE typeHnd)
+{
+#ifdef FEATURE_SIMD
+    if (compiler->usesSIMDTypes() && compiler->isSIMDorHWSIMDClass(typeHnd))
+    {
+        unsigned    simdSize;
+        CorInfoType simdBaseJitType =
+            compiler->getBaseJitTypeAndSizeOfSIMDType(typeHnd, &simdSize);
+        // We will only promote fields of SIMD types that fit into a SIMD register.
+        if (simdBaseJitType != CORINFO_TYPE_UNDEF)
+        {
+            if ((simdSize >= compiler->minSIMDStructBytes()) && (simdSize <= compiler->maxSIMDStructBytes()))
+            {
+                return compiler->getSIMDTypeForSize(simdSize);
+            }
+        }
+    }
+#endif
+
+    const char* namespaceName;
+    const char* className = compiler->info.compCompHnd->getClassNameFromMetadata(typeHnd, &namespaceName);
+    if ((strcmp(namespaceName, "System.Runtime.InteropServices") == 0) && (strcmp(className, "NFloat") == 0))
+    {
+        return (TARGET_POINTER_SIZE == 4) ? TYP_FLOAT : TYP_DOUBLE;
+    }
+
+#ifdef TARGET_64BIT
+    // TODO-Quirk: Vector64 is an intrinsic type with one 64-bit field, so when
+    // compiler->usesSIMDTypes() == false, it used to be promoted as a long
+    // field. Retain this behavior for now.
+    if (compiler->isRuntimeIntrinsicsNamespace(namespaceName) && (strcmp(className, "Vector64`1") == 0))
+    {
+        return TYP_LONG;
+    }
+#endif
+
+    // TODO-CQ: This discards fields of certain struct types (like Int128) that
+    // could be recursively handled via flattenType (or we could special case
+    // it; it is an intrinsic type after all).
+    return TYP_UNDEF;
 }
 
 //--------------------------------------------------------------------------------------------

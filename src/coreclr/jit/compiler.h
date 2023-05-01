@@ -3595,6 +3595,7 @@ public:
         bool CanPromoteStructVar(unsigned lclNum);
         bool ShouldPromoteStructVar(unsigned lclNum);
         void PromoteStructVar(unsigned lclNum);
+        var_types TryPromoteIntrinsicTypeAsPrimitive(CORINFO_CLASS_HANDLE clsHnd);
 
     private:
         Compiler*              compiler;
@@ -8577,6 +8578,11 @@ private:
         return pTypeInfo->IsStruct() && isSIMDClass(pTypeInfo->GetClassHandleForValueClass());
     }
 
+    bool isRuntimeIntrinsicsNamespace(const char* ns)
+    {
+        return strcmp(ns, "System.Runtime.Intrinsics") == 0;
+    }
+
     bool isHWSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
 #ifdef FEATURE_HW_INTRINSICS
@@ -8584,7 +8590,7 @@ private:
         {
             const char* namespaceName = nullptr;
             (void)getClassNameFromMetadata(clsHnd, &namespaceName);
-            return strcmp(namespaceName, "System.Runtime.Intrinsics") == 0;
+            return isRuntimeIntrinsicsNamespace(namespaceName);
         }
 #endif // FEATURE_HW_INTRINSICS
         return false;
