@@ -898,7 +898,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <summary>
         /// Creates a <see cref="SignatureTypeEncoder"/>.
         /// </summary>
-        /// <param name="builder">The <see cref="BlobBuilder"/> where the signature will be wwritten.</param>
+        /// <param name="builder">The <see cref="BlobBuilder"/> where the signature will be written.</param>
         public SignatureTypeEncoder(BlobBuilder builder)
         {
             Builder = builder;
