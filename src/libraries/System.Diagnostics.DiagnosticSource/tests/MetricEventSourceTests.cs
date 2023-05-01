@@ -59,7 +59,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
             AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("-33", "-33"), ("-40", "-73"));
             AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "-11"), ("-11", "-22"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
@@ -100,7 +100,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
             AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
             AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
@@ -155,7 +155,7 @@ namespace System.Diagnostics.Metrics.Tests
                 AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
                 AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
                 AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
-                AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
+                AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
                 AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("33", "33"), ("40", "73"));
                 AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "-11"), ("-11", "-22"));
                 AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
@@ -211,7 +211,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
             AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("-33", "-33"), ("-40", "-73"));
             AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "11"), ("11", "22"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
@@ -287,8 +287,8 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "Color=blue,Size=4", "", ("", "20"), ("14", "34"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "Color=red,Size=19", "", "9", "18");
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "Color=blue,Size=4", "", "18", "36");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=123", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=124", "", "0.5=20;0.95=20;0.99=20", "0.5=27;0.95=27;0.99=27");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=123", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Size=124", "", ("0.5=20;0.95=20;0.99=20", "1", "20"), ("0.5=27;0.95=27;0.99=27", "1", "27"));
             AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "Color=red", "", ("-33", "-33"), ("40", "7"));
             AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "Color=blue", "", ("-34", "-34"), ("41", "7"));
             AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "Color=red,Size=19", "", ("", "-11"), ("-11", "-22"));
@@ -441,7 +441,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("0", "5"), ("12", "17"));
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("",  "17"), ("0", "17"), ("14", "31"), ("0", "31"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "18", "", "36", "");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "", "0.5=26;0.95=26;0.99=26", "");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("", "0", "0"), ("0.5=26;0.95=26;0.99=26", "1", "26"), ("", "0", "0"));
             AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("33", "33"), ("0", "33"), ("40", "73"));
             AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "22"), ("0", "22"), ("22", "44"), ("0", "44"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 5);
@@ -487,7 +487,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", og.Unit, "9", "18", "27");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
             AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
             AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
@@ -535,7 +535,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meterA.Name, c.Name, "", c.Unit, ("5", "5"), ("12", "17"));
             AssertCounterEventsPresent(events, meterA.Name, oc.Name, "", oc.Unit, ("", "10"), ("7", "17"), ("7", "24"));
             AssertGaugeEventsPresent(events, meterA.Name, og.Name, "", og.Unit, "9", "18", "27");
-            AssertHistogramEventsPresent(events, meterB.Name, h.Name, "", h.Unit, "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26", "0.5=21;0.95=21;0.99=21");
+            AssertHistogramEventsPresent(events, meterB.Name, h.Name, "", h.Unit, ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"), ("0.5=21;0.95=21;0.99=21", "1", "21"));
             AssertUpDownCounterEventsPresent(events, meterA.Name, udc.Name, "", udc.Unit, ("33", "33"), ("40", "73"));
             AssertUpDownCounterEventsPresent(events, meterA.Name, oudc.Name, "", oudc.Unit, ("", "11"), ("11", "22"), ("11", "33"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 4);
@@ -701,8 +701,8 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, h);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Color=red", "", "0.5=5;0.95=5;0.99=5", "0.5=12;0.95=12;0.99=12");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Color=blue", "", "0.5=6;0.95=6;0.99=6", "0.5=13;0.95=13;0.99=13");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Color=red", "", ("0.5=5;0.95=5;0.99=5", "1", "5"), ("0.5=12;0.95=12;0.99=12", "1", "12"));
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Color=blue", "", ("0.5=6;0.95=6;0.99=6", "1", "6"), ("0.5=13;0.95=13;0.99=13", "1", "13"));
             AssertHistogramLimitPresent(events);
             AssertHistogramEventsNotPresent(events, meter.Name, h.Name, "Color=green");
             AssertHistogramEventsNotPresent(events, meter.Name, h.Name, "Color=yellow");
@@ -771,7 +771,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "10"), ("7", "17"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "9", "18");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
             AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("33", "33"), ("40", "73"));
             AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "11"), ("11", "22"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
@@ -798,7 +798,7 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"), ("12", "17"));
             AssertCounterEventsPresent(events, meter.Name, oc.Name, "", "", ("", "31"), ("7", "38"));
             AssertGaugeEventsPresent(events, meter.Name, og.Name, "", "", "36", "45");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", "0.5=19;0.95=19;0.99=19", "0.5=26;0.95=26;0.99=26");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "", "", ("0.5=19;0.95=19;0.99=19", "1", "19"), ("0.5=26;0.95=26;0.99=26", "1", "26"));
             AssertUpDownCounterEventsPresent(events, meter.Name, udc.Name, "", "", ("33", "33"), ("40", "73"));
             AssertUpDownCounterEventsPresent(events, meter.Name, oudc.Name, "", "", ("", "44"), ("11", "55"));
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
@@ -835,8 +835,8 @@ namespace System.Diagnostics.Metrics.Tests
 
             AssertBeginInstrumentReportingEventsPresent(events, h);
             AssertInitialEnumerationCompleteEventPresent(events);
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Color=red", "", "0.5=5;0.95=5;0.99=5", "0.5=12;0.95=12;0.99=12");
-            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Color=blue", "", "0.5=6;0.95=6;0.99=6", "0.5=13;0.95=13;0.99=13");
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Color=red", "", ("0.5=5;0.95=5;0.99=5", "1", "5"), ("0.5=12;0.95=12;0.99=12", "1", "12"));
+            AssertHistogramEventsPresent(events, meter.Name, h.Name, "Color=blue", "", ("0.5=6;0.95=6;0.99=6", "1", "6"), ("0.5=13;0.95=13;0.99=13", "1", "13"));
             AssertHistogramLimitPresent(events);
             AssertTimeSeriesLimitNotPresent(events);
             AssertHistogramEventsNotPresent(events, meter.Name, h.Name, "Color=green");
@@ -1016,7 +1016,7 @@ namespace System.Diagnostics.Metrics.Tests
         }
 
         private void AssertHistogramEventsPresent(EventWrittenEventArgs[] events, string meterName, string instrumentName, string tags,
-            string expectedUnit, params string[] expectedQuantiles)
+            string expectedUnit, params (string, string, string)[] expected)
         {
             var counterEvents = events.Where(e => e.EventName == "HistogramValuePublished").Select(e =>
                 new
@@ -1026,14 +1026,18 @@ namespace System.Diagnostics.Metrics.Tests
                     InstrumentName = e.Payload[3].ToString(),
                     Unit = e.Payload[4].ToString(),
                     Tags = e.Payload[5].ToString(),
-                    Quantiles = (string)e.Payload[6]
+                    Quantiles = (string)e.Payload[6],
+                    Count = e.Payload[7].ToString(),
+                    Sum = e.Payload[8].ToString()
                 }).ToArray();
             var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
-            Assert.True(filteredEvents.Length >= expectedQuantiles.Length);
-            for (int i = 0; i < expectedQuantiles.Length; i++)
+            Assert.True(filteredEvents.Length >= expected.Length);
+            for (int i = 0; i < expected.Length; i++)
             {
                 Assert.Equal(filteredEvents[i].Unit, expectedUnit);
-                Assert.Equal(expectedQuantiles[i], filteredEvents[i].Quantiles);
+                Assert.Equal(expected[i].Item1, filteredEvents[i].Quantiles);
+                Assert.Equal(expected[i].Item2, filteredEvents[i].Count);
+                Assert.Equal(expected[i].Item3, filteredEvents[i].Sum);
             }
         }
 

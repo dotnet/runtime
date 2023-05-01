@@ -43,6 +43,8 @@ namespace System.Diagnostics.Metrics
         private const int ExponentArraySize = 4096;
         private const int ExponentShift = 52;
         private const double MinRelativeError = 0.0001;
+        private const int PositiveIntAndNan = ExponentArraySize / 2 - 1;
+        private const int NegativeIntAndNan = ExponentArraySize - 1;
 
         private readonly QuantileAggregation _config;
         private int[]?[] _counters;
@@ -100,9 +102,6 @@ namespace System.Diagnostics.Metrics
                 return new HistogramStatistics(quantiles, count, sum);
             }
 
-            // Reduce the count if there are any NaN or +/-Infinity values that were logged
-            count -= GetInvalidCount(counters);
-
             // Consider each bucket to have N entries in it, and each entry has value GetBucketCanonicalValue().
             // If all these entries were inserted in a sorted array, we are trying to find the value of the entry with
             // index=target.
@@ -128,28 +127,6 @@ namespace System.Diagnostics.Metrics
 
             Debug.Assert(count == 0);
             return new HistogramStatistics(Array.Empty<QuantileValue>(), count, sum);
-        }
-
-        private static int GetInvalidCount(int[]?[] counters)
-        {
-            int[]? positiveInfAndNan = counters[ExponentArraySize / 2 - 1];
-            int[]? negativeInfAndNan = counters[ExponentArraySize - 1];
-            int count = 0;
-            if (positiveInfAndNan != null)
-            {
-                foreach (int bucketCount in positiveInfAndNan)
-                {
-                    count += bucketCount;
-                }
-            }
-            if (negativeInfAndNan != null)
-            {
-                foreach (int bucketCount in negativeInfAndNan)
-                {
-                    count += bucketCount;
-                }
-            }
-            return count;
         }
 
         private IEnumerable<Bucket> IterateBuckets(int[]?[] counters)
@@ -209,11 +186,11 @@ namespace System.Diagnostics.Metrics
                 ref int[]? mantissaCounts = ref _counters[exponent];
                 mantissaCounts ??= new int[_mantissaMax];
                 mantissaCounts[mantissa]++;
-                _count++;
 
-                // ripped these values from GetInvalidCount - wouldn't do it this way.
-                if (!(exponent == ExponentArraySize / 2 - 1 || exponent == ExponentArraySize - 1))
+                // Don't increase the count if there are any NaN or +/-Infinity values that were logged
+                if (exponent != PositiveIntAndNan && exponent != NegativeIntAndNan)
                 {
+                    _count++;
                     _sum += measurement;
                 }
             }
