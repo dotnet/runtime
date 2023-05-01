@@ -86,7 +86,7 @@ namespace Internal.TypeSystem
                         }
 
                         RuntimeTypeHandle rtth;
-                        if (argumentsRegistered && TypeLoaderEnvironment.Instance.TryLookupConstructedGenericTypeForComponents(new TypeLoaderEnvironment.HandleBasedGenericTypeLookup(typeAsDefType), out rtth))
+                        if (argumentsRegistered && TypeLoaderEnvironment.Instance.TryLookupConstructedGenericTypeForComponents(new TypeLoaderEnvironment.GenericTypeLookupData(typeAsDefType), out rtth))
                         {
                             typeAsDefType.SetRuntimeTypeHandleUnsafe(rtth);
                             return true;
