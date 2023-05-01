@@ -21,8 +21,38 @@ int main(int argc, char * argv[]) {
 #endif
 	mono_wasm_load_runtime("", 0);
 
+	int arg_ofs = 0;
+#ifdef WASM_SINGLE_FILE
+	/*
+	 * For single-file bundle, running with wasmtime:
+	 *
+	 *  $ wasmtime run --dir . MainAssembly.wasm [args]
+	 *
+	 * arg0: MainAssembly
+	 * arg1-..: args
+	 */
 	const char* assembly_name = dotnet_wasi_getentrypointassemblyname();
 	MonoAssembly* assembly = mono_assembly_open(assembly_name, NULL);
+#else
+	/*
+	 * For default case which uses dotnet.wasm, running with wasmtime:
+	 *
+	 *  $ wasmtime run --dir . dotnet.wasm MainAssembly [args]
+	 *
+	 * arg0: dotnet.wasm
+	 * arg1: MainAssembly
+	 * arg2-..: args
+	 */
+
+	const char *assembly_name = argv[1];
+	arg_ofs = 1;
+	MonoAssembly* assembly = mono_wasm_assembly_load (assembly_name);
+	if (!assembly) {
+		printf("Could not load assembly %s\n", assembly_name);
+		return 1;
+	}
+#endif
+
 	MonoMethod* entry_method = mono_wasi_assembly_get_entry_point (assembly);
 	if (!entry_method) {
 		fprintf(stderr, "Could not find entrypoint in assembly %s\n", assembly_name);
@@ -31,7 +61,8 @@ int main(int argc, char * argv[]) {
 
 	MonoObject* out_exc;
 	MonoObject* out_res;
-	int ret = mono_runtime_run_main(entry_method, argc, argv, &out_exc);
+	// Managed app will see: arg0: MainAssembly, arg1-.. [args]
+	int ret = mono_runtime_run_main(entry_method, argc - arg_ofs, &argv[arg_ofs], &out_exc);
 	if (out_exc)
 	{
 		mono_print_unhandled_exception(out_exc);
