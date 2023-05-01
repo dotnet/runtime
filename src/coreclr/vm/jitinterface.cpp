@@ -2229,7 +2229,14 @@ static FlattenTypeResult FlattenTypeHelper(
     EEClass* pClass = pMT->GetClass();
     if (pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize() || pClass->IsInlineArray()))
     {
-        *significantPadding = true;
+        // Historically on the JIT side we did not consider types with GC
+        // pointers to have significant padding, even when they have explicit
+        // layout attributes. This retains the more liberal treatment and lets
+        // the JIT still optimize these cases.
+        if (!pMT->ContainsPointers() && pMT != g_TypedReferenceMT)
+        {
+            *significantPadding = true;
+        }
     }
 
     ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);

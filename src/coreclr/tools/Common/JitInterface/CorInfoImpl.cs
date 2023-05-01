@@ -2372,7 +2372,10 @@ namespace Internal.JitInterface
         {
             if (type.IsExplicitLayout || (type.IsSequentialLayout && type.GetClassLayout().Size != 0) || type.IsInlineArray)
             {
-                significantPadding = true;
+                if (!type.ContainsGCPointers && !type.IsByRefLike)
+                {
+                    significantPadding = true;
+                }
             }
 
             foreach (FieldDesc fd in type.GetFields())
